@@ -6,6 +6,7 @@ Monorepo for all projects
 
 - Install Bazel: Recommend using [Bazelisk](https://bazel.build/install/bazelisk) and the Bazel vscode extension.
 - Install Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
+- Install Perseus: `cargo install perseus-cli`
 
 # Build Module with Bazel
 
