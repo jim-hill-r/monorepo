@@ -8,6 +8,11 @@ Monorepo for all projects
 - Install Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 - Install Perseus: `cargo install perseus-cli`
 
+# Dev Module with Perseus
+
+- Navigate to module: Any folder containing a Cargo.toml including perseus as a dep
+- Run using Perseus: Run `perseus serve -w`
+
 # Build Module with Bazel
 
 - Navigate to module: Any folder containing a MODULE.bazel can be built independent of the rest of the repo.

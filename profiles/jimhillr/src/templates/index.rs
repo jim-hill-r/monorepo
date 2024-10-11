@@ -1,16 +1,30 @@
 use perseus::prelude::*;
 use sycamore::prelude::*;
 
+const TITLE: &str = "Jim Hill"; // TODO: Replace with content found in translations
+const TAGLINE: &str = "Be better, build better."; // TODO: Replace with content found in translations
+
 fn index_page<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         // Don't worry, there are much better ways of styling in Perseus!
-        div(style = "display: flex; flex-direction: column; justify-content: center; align-items: center; height: 95vh;") {
-            h1 { "Welcome to Perseus!" }
-            p {
-                "This is just an example app. Try changing some code inside "
-                code { "src/templates/index.rs" }
-                " and you'll be able to see the results here!"
+        div(class="splash") {
+            // h1 { (t!(cx, "tagline")) } // TODO: Debug why the t! macro is not working
+            h1(class="title") { (TITLE) }
+            h2(class="tagline") { (TAGLINE) }
+        }
+        div(class="content") {
+            div(class="section") {
+                h3(class="section_header") { "My Passions" }
             }
+            div(class="section") {
+                h3(class="section_header") { "My Projects" }
+            }
+            div(class="section") {
+                h3(class="section_header") { "My Hobbies" }
+            }
+        }
+        div(class="footer") {
+
         }
     }
 }
@@ -18,7 +32,10 @@ fn index_page<G: Html>(cx: Scope) -> View<G> {
 #[engine_only_fn]
 fn head(cx: Scope) -> View<SsrNode> {
     view! { cx,
-        title { "Welcome to Perseus!" }
+        title { (TITLE) }
+        link(rel = "stylesheet", href = ".perseus/static/css/reset.css")
+        link(rel = "stylesheet", href = ".perseus/static/css/theme.css")
+        link(rel = "stylesheet", href = ".perseus/static/css/index.css")
     }
 }
 
