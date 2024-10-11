@@ -6,7 +6,8 @@ body {
     font-family: system-ui, sans-serif;
     font-size: 1.125rem;
     line-height: 1.6;
-    overflow-x: hidden;
+    container-type: inline-size;
+    overflow-x: clip;
 }
 
 h1, h2, h3 {

@@ -18,6 +18,7 @@
 html {
   color-scheme: light; /* TODO: Support dark */
   hanging-punctuation: first last;
+  scrollbar-gutter: stable;
 }
 
 /* min body height */
