@@ -4,8 +4,6 @@
     background-size: cover;
     background-position-x: center;
     height: 100svh;
-    width: 100svw; /* Older browser support */
-    width: 100cqw; /* Per https://www.smashingmagazine.com/2023/12/new-css-viewport-units-not-solve-classic-scrollbar-problem/#avoiding-the-classic-scrollbar-problem */
 }
 
 .title {
