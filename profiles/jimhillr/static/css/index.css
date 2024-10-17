@@ -13,7 +13,7 @@
     text-align: right;
     padding-top: 6rem;
     padding-bottom: 2rem;
-    padding-right: 8svw;
+    padding-right: min(7rem, 8svw);
 }
 
 .tagline {
@@ -24,7 +24,7 @@
     text-align: right;
     padding-top: 2rem;
     padding-bottom: 2rem;
-    padding-right: 8svw;
+    padding-right: min(5rem, 8svw);
 }
 
 .content {

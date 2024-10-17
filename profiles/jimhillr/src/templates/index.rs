@@ -7,7 +7,7 @@ const TAGLINE: &str = "Be better, build better."; // TODO: Replace with content 
 fn index_page<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         // Don't worry, there are much better ways of styling in Perseus!
-        div(class="splash") {
+        header(class="splash") {
             // h1 { (t!(cx, "tagline")) } // TODO: Debug why the t! macro is not working
             h1(class="title") { (TITLE) }
             h2(class="tagline") { (TAGLINE) }
