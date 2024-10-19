@@ -2,6 +2,10 @@
 
 Monorepo for all projects
 
+# Documentation
+
+- Detailed documentation for this monorepo can be found in `~docs`.
+
 # Getting Started
 
 - Install Bazel: Recommend using [Bazelisk](https://bazel.build/install/bazelisk) and the Bazel vscode extension.
