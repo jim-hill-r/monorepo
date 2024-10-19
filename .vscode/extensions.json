@@ -1,6 +1,7 @@
 {
     "recommendations": [
       "bazelbuild.vscode-bazel",
-      "rust-lang.rust-analyzer"
+      "rust-lang.rust-analyzer",
+      "ritwickdey.liveserver"
     ]
   }
