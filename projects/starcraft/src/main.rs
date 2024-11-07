@@ -1,52 +1,40 @@
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
+
+pub mod helpers;
+
+fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Camera2dBundle::default());
+
+    let map_handle: Handle<helpers::tiled::TiledMap> = asset_server.load("iso_map.tmx");
+
+    commands.spawn(helpers::tiled::TiledMapBundle {
+        tiled_map: map_handle,
+        render_settings: TilemapRenderSettings {
+            // Map size is 12x12 so we'll have render chunks that are:
+            // 12 tiles wide and 1 tile tall.
+            render_chunk_size: UVec2::new(3, 1),
+            y_sort: true,
+        },
+        ..Default::default()
+    });
+}
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(HelloPlugin)
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: String::from("3D Isometric Example"),
+                        ..Default::default()
+                    }),
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
+        .add_plugins((TilemapPlugin, helpers::tiled::TiledMapPlugin))
+        .add_systems(Startup, startup)
+        .add_systems(Update, helpers::camera::movement)
         .run();
-}
-
-#[derive(Component)]
-struct Person;
-
-#[derive(Component)]
-struct Name(String);
-
-#[derive(Resource)]
-struct GreetTimer(Timer);
-
-fn add_people(mut commands: Commands) {
-    commands.spawn((Person, Name("Elaina Proctor".to_string())));
-    commands.spawn((Person, Name("Renzo Hume".to_string())));
-    commands.spawn((Person, Name("Zayna Nieves".to_string())));
-}
-
-fn greet_people(time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    // update our timer with the time elapsed since the last update
-    // if that caused the timer to finish, we say hello to everyone
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in &query {
-            println!("hello {}!", name.0);
-        }
-    }
-}
-
-fn update_people(mut query: Query<&mut Name, With<Person>>) {
-    for mut name in &mut query {
-        if name.0 == "Elaina Proctor" {
-            name.0 = "Elaina Hume".to_string();
-            break; // We don't need to change any other names.
-        }
-    }
-}
-
-pub struct HelloPlugin;
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)));
-        app.add_systems(Startup, add_people);
-        app.add_systems(Update, (update_people, greet_people).chain());
-    }
 }
