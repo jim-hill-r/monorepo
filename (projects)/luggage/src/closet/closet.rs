@@ -1,15 +1,12 @@
-use serde::{Deserialize, Serialize};
-use surrealdb::{Error, RecordId}; // TODO: Remove coupling with surrealdb
+use serde::Serialize;
 
-#[derive(Debug, Deserialize)]
-pub struct Record {
-    id: RecordId, // TODO: Remove coupling with surrealdb
-}
+use crate::error::LuggageError;
+use crate::item::item::Item;
 
 pub trait ClosetCreator {
-    async fn create<I>(&self, item: I) -> Result<Option<Record>, Error>
+    async fn create<I>(&self, item: I) -> Result<Option<Item>, LuggageError>
     where
-        I: Serialize + 'static; // TODO: Remove coupling with surrealdb
+        I: Serialize + 'static;
 }
 
 pub trait ClosetReader {
