@@ -8,7 +8,7 @@ use surrealdb::{
 use crate::{
     closet::closet::{ClosetCreator, ClosetReader},
     error::LuggageError,
-    item::item::{Item, ItemId},
+    item::item::ItemHeader,
 };
 
 #[derive(Debug, Deserialize)]
@@ -22,12 +22,11 @@ impl From<Error> for LuggageError {
     }
 }
 
-impl From<Record> for Item<'_> {
+impl From<Record> for ItemHeader<'_> {
     fn from(record: Record) -> Self {
-        return Item {
-            id: ItemId {
-                id: "TODO", // TODO: Figure out how to represent an ID in surrealdb
-            },
+        return ItemHeader {
+            id: "TODO",
+            r#type: "TODO",
         };
     }
 }
@@ -55,20 +54,30 @@ impl SurrealDbClosetProvider {
 }
 
 impl ClosetCreator for SurrealDbClosetProvider {
-    async fn create<I>(&self, item: I) -> Result<Option<Item>, LuggageError>
+    async fn create<I>(&self, item: I) -> Result<Option<ItemHeader>, LuggageError>
     where
         I: Serialize + 'static,
     {
         let created: Option<Record> = self.db.create("experience").content(item).await?;
         return match created {
-            Some(record) => Ok(Some(Item::from(record))),
+            Some(record) => Ok(Some(ItemHeader::from(record))),
             None => Err(LuggageError::Unknown),
         };
     }
 }
 
 impl ClosetReader for SurrealDbClosetProvider {
-    fn read(&self) -> String {
+    fn read(&self, _item_header: ItemHeader) -> String {
         return String::from("Hello World");
     }
+
+    // async fn read<'a, I>(&self, item_header: ItemHeader<'a>) -> Result<Option<I>, LuggageError>
+    // where
+    //     I: Deserialize<'a> + 'static,
+    // {
+    //     self.db
+    //         .query("SELECT * FROM type::table($table)")
+    //         .bind(("table", item_header.r#type))
+    //         .await?
+    // }
 }

@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
-pub struct Item<'a> {
-    #[serde(borrow)]
-    pub(crate) id: ItemId<'a>,
+pub trait LuggageItem {
+    fn item_header(&self) -> &ItemHeader;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ItemId<'a> {
+pub struct ItemHeader<'a> {
     pub(crate) id: &'a str,
+    pub(crate) r#type: &'a str,
 }

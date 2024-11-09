@@ -3,11 +3,13 @@ pub mod cube;
 pub mod error;
 pub mod item;
 
+use closet::closet::ClosetReader;
+use item::item::ItemHeader;
+
 use crate::closet::closet::ClosetCreator;
 use crate::closet::providers::surrealdb::SurrealDbClosetProvider;
-use crate::cube::providers::resume::experience::Experience;
+use crate::cube::providers::resume::experience::ExperienceCube;
 use crate::error::Result;
-use crate::item::item::ItemId;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,8 +17,11 @@ async fn main() -> Result<()> {
         SurrealDbClosetProvider::new("127.0.0.1:8000", "root", "root", "test", "test").await?;
 
     let created = provider
-        .create(Experience {
-            id: ItemId { id: "test" },
+        .create(ExperienceCube {
+            item_header: ItemHeader {
+                id: "test",
+                r#type: "Experience",
+            },
             title: "test",
             company: "test",
             timeframe: "test",
@@ -24,6 +29,12 @@ async fn main() -> Result<()> {
         })
         .await?;
     dbg!(created);
+
+    let cube = provider.read(ItemHeader {
+        id: "test",
+        r#type: "Experience",
+    });
+    dbg!(cube);
 
     Ok(())
 }
