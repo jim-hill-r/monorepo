@@ -5,7 +5,7 @@ pub trait LuggageItem {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ItemHeader<'a> {
-    pub(crate) id: &'a str,
-    pub(crate) r#type: &'a str,
+pub struct ItemHeader {
+    pub(crate) id: String,
+    pub(crate) r#type: String,
 }

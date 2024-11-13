@@ -22,11 +22,11 @@ impl From<Error> for LuggageError {
     }
 }
 
-impl From<Record> for ItemHeader<'_> {
+impl From<Record> for ItemHeader {
     fn from(record: Record) -> Self {
         return ItemHeader {
-            id: "TODO",
-            r#type: "TODO",
+            id: String::from("TODO"),
+            r#type: String::from("TODO"),
         };
     }
 }

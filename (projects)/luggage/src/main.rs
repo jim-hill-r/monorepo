@@ -19,20 +19,20 @@ async fn main() -> Result<()> {
     let created = provider
         .create(ExperienceCube {
             item_header: ItemHeader {
-                id: "test",
-                r#type: "Experience",
+                id: String::from("test"),
+                r#type: String::from("Experience"),
             },
-            title: "test",
-            company: "test",
-            timeframe: "test",
-            description: vec!["test"],
+            title: String::from("test"),
+            company: String::from("test"),
+            timeframe: String::from("test"),
+            description: vec![String::from("test")],
         })
         .await?;
     dbg!(created);
 
     let cube = provider.read(ItemHeader {
-        id: "test",
-        r#type: "Experience",
+        id: String::from("test"),
+        r#type: String::from("Experience"),
     });
     dbg!(cube);
 
