@@ -12,6 +12,7 @@ Monorepo for all projects
 # Getting Started
 
 - Install Bazel: Recommend using [Bazelisk](https://bazel.build/install/bazelisk) and the Bazel vscode extension.
+- Install Buildifer for Bazel: Recommend using [Brew](https://formulae.brew.sh/formula/buildifier)
 - Install Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 - Install SurrealDB: Install using [the documentation](https://surrealdb.com/docs/surrealdb/installation), the SurrealDB vscode extension and [Surrealist](https://surrealdb.com/docs/surrealist/installation) admin app.
 - Install Perseus: `cargo install perseus-cli`
