@@ -1,0 +1,3 @@
+- TODO: Evaluate WASM-free SSG
+- TODO: Evaluate JS auth interop
+- TODO: Evaluate Auth DOM interop

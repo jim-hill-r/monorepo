@@ -13,6 +13,7 @@
 
 ## Bonus Resources
 
+- [Algorithms](https://github.com/TheAlgorithms/Rust/blob/master/DIRECTORY.md)
 - [Rust Learning](https://github.com/ctjhoa/rust-learning)
 - [Exercism](https://exercism.org/tracks/rust)
 - [Rust Adventure](https://www.rustadventure.dev/)

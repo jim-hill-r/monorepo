@@ -1,3 +1,3 @@
 [workspace]
-members = [ "(projects)/luggage","(projects)/starcraft","(projects)/profiles/jimhillr","(projects)/sparkhill/website"]
+members = [ "docs/learning/computer_science/NeetCode150","docs/proof_of_concepts/dioxus/ssg","(projects)/luggage","(projects)/starcraft","(projects)/profiles/jimhillr","(projects)/sparkhill/website"]
 resolver = "2"
