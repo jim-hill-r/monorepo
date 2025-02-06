@@ -16,6 +16,7 @@ use crate::{
     error::LuggageError,
 };
 
+#[allow(dead_code)] // TODO: Figure out how to write create without an unused id field
 #[derive(Debug, Deserialize)]
 struct Record {
     id: RecordId,
@@ -66,7 +67,7 @@ where
 {
     async fn create<T>(&self, cube: Cube<T>) -> Result<CubeHeader, LuggageError>
     where
-        T: Serialize + 'static,
+        T: Serialize + Send + 'static,
     {
         let created: Option<Record> = self
             .db
@@ -86,7 +87,7 @@ where
 {
     async fn read<T>(&self, header: CubeHeader) -> Result<Cube<T>, LuggageError>
     where
-        T: for<'a> Deserialize<'a>,
+        T: for<'a> Deserialize<'a> + Send,
     {
         let saved_content: Option<T> = self.db.select((header.r#type.as_str(), header.id)).await?;
         return Ok(Cube {

@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,15 +6,21 @@ use crate::{
 };
 
 pub trait ClosetCreator {
-    async fn create<T>(&self, cube: Cube<T>) -> Result<CubeHeader, LuggageError>
+    fn create<T>(
+        &self,
+        cube: Cube<T>,
+    ) -> impl std::future::Future<Output = Result<CubeHeader, LuggageError>> + Send
     where
-        T: Serialize + 'static;
+        T: Serialize + Send + 'static;
 }
 
 pub trait ClosetReader {
-    async fn read<T>(&self, header: CubeHeader) -> Result<Cube<T>, LuggageError>
+    fn read<T>(
+        &self,
+        header: CubeHeader,
+    ) -> impl std::future::Future<Output = Result<Cube<T>, LuggageError>> + Send
     where
-        T: for<'a> Deserialize<'a>;
+        T: for<'a> Deserialize<'a> + Send;
 }
 
 pub trait ClosetUpdater {
