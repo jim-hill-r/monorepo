@@ -1,14 +1,19 @@
 use serde::{Deserialize, Serialize};
 use surrealdb::{
-    engine::remote::ws::{Client, Ws},
+    engine::{
+        local::{Db, Mem},
+        remote::ws::{Client, Ws},
+    },
     opt::auth::Root,
-    Error, RecordId, Surreal,
+    Error, // TODO: Convert errors to luggage errors
+    RecordId,
+    Surreal,
 };
 
 use crate::{
     closet::closet::{ClosetCreator, ClosetReader},
+    cube::cube::{Cube, CubeHeader},
     error::LuggageError,
-    item::item::ItemHeader,
 };
 
 #[derive(Debug, Deserialize)]
@@ -22,27 +27,21 @@ impl From<Error> for LuggageError {
     }
 }
 
-impl From<Record> for ItemHeader {
-    fn from(record: Record) -> Self {
-        return ItemHeader {
-            id: String::from("TODO"),
-            r#type: String::from("TODO"),
-        };
-    }
+pub struct SurrealDbClosetProvider<T>
+where
+    T: surrealdb::Connection,
+{
+    db: Surreal<T>,
 }
 
-pub struct SurrealDbClosetProvider {
-    db: Surreal<Client>,
-}
-
-impl SurrealDbClosetProvider {
+impl SurrealDbClosetProvider<Client> {
     pub async fn new<'a>(
         url: &'a str,
         username: &'a str,
         password: &'a str,
         namespace: &'a str,
         database: &'a str,
-    ) -> surrealdb::Result<Self> {
+    ) -> Result<Self, Error> {
         let db = Surreal::new::<Ws>(url).await?;
 
         db.signin(Root { username, password }).await?;
@@ -53,31 +52,80 @@ impl SurrealDbClosetProvider {
     }
 }
 
-impl ClosetCreator for SurrealDbClosetProvider {
-    async fn create<I>(&self, item: I) -> Result<Option<ItemHeader>, LuggageError>
-    where
-        I: Serialize + 'static,
-    {
-        let created: Option<Record> = self.db.create("experience").content(item).await?;
-        return match created {
-            Some(record) => Ok(Some(ItemHeader::from(record))),
-            None => Err(LuggageError::Unknown),
-        };
+impl SurrealDbClosetProvider<Db> {
+    pub async fn new<'a>(namespace: &str, database: &'a str) -> Result<Self, Error> {
+        let db = Surreal::new::<Mem>(()).await?;
+        db.use_ns(namespace).use_db(database).await?;
+        return Ok(Self { db });
     }
 }
 
-impl ClosetReader for SurrealDbClosetProvider {
-    fn read(&self, _item_header: ItemHeader) -> String {
-        return String::from("Hello World");
+impl<C> ClosetCreator for SurrealDbClosetProvider<C>
+where
+    C: surrealdb::Connection,
+{
+    async fn create<T>(&self, cube: Cube<T>) -> Result<CubeHeader, LuggageError>
+    where
+        T: Serialize + 'static,
+    {
+        let created: Option<Record> = self
+            .db
+            .create((&cube.header.r#type, &cube.header.id))
+            .content(cube.content)
+            .await?;
+        dbg!(&created);
+        match created {
+            Some(_) => Ok(cube.header),
+            None => Err(LuggageError::Unknown),
+        }
+    }
+}
+
+impl<C> ClosetReader for SurrealDbClosetProvider<C>
+where
+    C: surrealdb::Connection,
+{
+    async fn read<T>(&self, header: CubeHeader) -> Result<Cube<T>, LuggageError>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
+        let saved_content: Option<T> = self.db.select((&header.r#type, &header.id)).await?;
+        return Ok(Cube {
+            header,
+            content: saved_content,
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::error::Result;
+    use surrealdb::engine::local::Db;
+
+    use super::*;
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+    struct TestContent {
+        name: String,
     }
 
-    // async fn read<'a, I>(&self, item_header: ItemHeader<'a>) -> Result<Option<I>, LuggageError>
-    // where
-    //     I: Deserialize<'a> + 'static,
-    // {
-    //     self.db
-    //         .query("SELECT * FROM type::table($table)")
-    //         .bind(("table", item_header.r#type))
-    //         .await?
-    // }
+    #[tokio::test]
+    async fn create_then_read_test_content() -> Result<()> {
+        let test_name = "create_then_read_test_content";
+        let test_cube = Cube {
+            header: CubeHeader {
+                id: test_name.into(),
+                r#type: "Test".into(),
+            },
+            content: Some(TestContent {
+                name: "test".into(),
+            }),
+        };
+        let closet = SurrealDbClosetProvider::<Db>::new(test_name, "test").await?;
+        let saved_header = closet.create(test_cube.clone()).await?;
+        dbg!(&saved_header);
+        let saved_cube: Cube<TestContent> = closet.read(saved_header).await?;
+        assert_eq!(&test_cube.content, &saved_cube.content);
+        Ok(())
+    }
 }

@@ -1,28 +1,30 @@
+use std::future::Future;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    cube::cube::{Cube, CubeHeader},
     error::LuggageError,
-    item::item::{ItemHeader, LuggageItem},
 };
 
 pub trait ClosetCreator {
-    async fn create<I>(&self, item: I) -> Result<Option<ItemHeader>, LuggageError>
+    async fn create<T>(&self, cube: Cube<T>) -> Result<CubeHeader, LuggageError>
     where
-        I: Serialize + LuggageItem + 'static;
+        T: Serialize + 'static;
 }
 
 pub trait ClosetReader {
-    fn read(&self, item_header: ItemHeader) -> String;
-
-    // async fn read<'a, I>(&self, item: ItemHeader) -> Result<Option<I>, LuggageError>
-    // where
-    //     I: Deserialize<'a> + 'static;
+    async fn read<T>(&self, header: CubeHeader) -> Result<Cube<T>, LuggageError>
+    where
+        T: for<'a> Deserialize<'a>;
 }
 
 pub trait ClosetUpdater {
-    fn update(&self) -> String;
+    // TODO
+    // fn update(&self) -> String;
 }
 
 pub trait ClosetDeleter {
-    fn delete(&self) -> String;
+    // TODO
+    // fn delete(&self) -> String;
 }
