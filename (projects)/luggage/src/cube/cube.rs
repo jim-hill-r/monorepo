@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
+use urn::Urn;
+use uuid::Uuid;
 
-pub type CubeId = String; // TODO: Formalize this as UUIDv7
-pub type Urn = String; // TODO: Formalize this as more than string alias
+pub type CubeId = Uuid; // V7
+pub type CubeType = Urn; // URN
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CubeHeader {
     pub id: CubeId,
-    pub r#type: Urn,
+    pub r#type: CubeType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

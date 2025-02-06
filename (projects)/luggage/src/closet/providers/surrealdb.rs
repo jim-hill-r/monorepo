@@ -21,8 +21,8 @@ struct Record {
     id: RecordId,
 }
 
-impl From<Error> for LuggageError {
-    fn from(_value: Error) -> Self {
+impl From<surrealdb::Error> for LuggageError {
+    fn from(_value: surrealdb::Error) -> Self {
         return LuggageError::Unknown;
     }
 }
@@ -70,10 +70,9 @@ where
     {
         let created: Option<Record> = self
             .db
-            .create((&cube.header.r#type, &cube.header.id))
+            .create((cube.header.r#type.as_str(), cube.header.id))
             .content(cube.content)
             .await?;
-        dbg!(&created);
         match created {
             Some(_) => Ok(cube.header),
             None => Err(LuggageError::Unknown),
@@ -89,7 +88,7 @@ where
     where
         T: for<'a> Deserialize<'a>,
     {
-        let saved_content: Option<T> = self.db.select((&header.r#type, &header.id)).await?;
+        let saved_content: Option<T> = self.db.select((header.r#type.as_str(), header.id)).await?;
         return Ok(Cube {
             header,
             content: saved_content,
@@ -100,7 +99,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::error::Result;
+    use convert_case::{Case, Casing};
     use surrealdb::engine::local::Db;
+    use urn::UrnBuilder;
+    use uuid::Uuid;
 
     use super::*;
 
@@ -114,8 +116,8 @@ mod tests {
         let test_name = "create_then_read_test_content";
         let test_cube = Cube {
             header: CubeHeader {
-                id: test_name.into(),
-                r#type: "Test".into(),
+                id: Uuid::new_v4(),
+                r#type: UrnBuilder::new(&test_name.to_case(Case::Kebab), "1234:5678").build()?,
             },
             content: Some(TestContent {
                 name: "test".into(),
@@ -123,7 +125,6 @@ mod tests {
         };
         let closet = SurrealDbClosetProvider::<Db>::new(test_name, "test").await?;
         let saved_header = closet.create(test_cube.clone()).await?;
-        dbg!(&saved_header);
         let saved_cube: Cube<TestContent> = closet.read(saved_header).await?;
         assert_eq!(&test_cube.content, &saved_cube.content);
         Ok(())

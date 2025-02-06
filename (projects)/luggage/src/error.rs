@@ -7,3 +7,9 @@ pub enum LuggageError {
 }
 
 pub type Result<T> = std::result::Result<T, LuggageError>;
+
+impl From<urn::Error> for LuggageError {
+    fn from(_value: urn::Error) -> Self {
+        return LuggageError::Unknown;
+    }
+}

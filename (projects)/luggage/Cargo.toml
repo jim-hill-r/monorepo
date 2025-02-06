@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+convert_case = "0.7.1"
 futures = "0.3.31"
 schemars = "0.8.21"
 serde = { version = "1.0.214", features = ["derive"] }
 surrealdb = { version = "2.0.4", features = ["kv-mem"] }
 thiserror = "2.0.1"
 tokio = { version = "1.41.1", features = ["macros", "rt-multi-thread"] }
+urn = { version = "0.7.0", features = ["serde"] }
+uuid = { version = "1.13.1", features = ["v7"] }
