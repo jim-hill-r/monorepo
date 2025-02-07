@@ -3,51 +3,89 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+
+use semver::Version;
 use serde::{Deserialize, Serialize};
+use urn::Urn;
 
-pub async fn start() -> (tokio::net::TcpListener, Router) {
-    // build our application with a route
-    let app: Router<_> = Router::new()
-        // `GET /` goes to `root`
-        .route("/", get(root))
-        // `POST /users` goes to `create_user`
-        .route("/users", post(create_user));
-
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    return (listener, app);
-}
-
-// basic handler that responds with a static string
-async fn root() -> &'static str {
-    "Hello, World!"
-}
-
-async fn create_user(
-    // this argument tells axum to parse the request body
-    // as JSON into a `CreateUser` type
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-    // insert your application logic here
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
-
-    // this will be converted into a JSON response
-    // with a status code of `201 Created`
-    (StatusCode::CREATED, Json(user))
-}
-
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-// the output to our `create_user` handler
+type LuggageSchema = String; // Currently just JSONSchema, later expand to TOML, YAML, etc...
 #[derive(Serialize)]
-struct User {
-    id: u64,
-    username: String,
+struct Health {
+    description: String,
+}
+
+#[derive(Deserialize)]
+struct CreateType {
+    urn: Urn,
+    schema: LuggageSchema,
+    version: Version,
+}
+
+#[derive(Serialize)]
+struct Type {
+    urn: Urn,
+    schema: LuggageSchema,
+    version: Version,
+}
+
+impl From<CreateType> for Type {
+    fn from(value: CreateType) -> Self {
+        return Type {
+            urn: value.urn,
+            schema: value.schema,
+            version: value.version,
+        };
+    }
+}
+
+pub fn router() -> Router {
+    return Router::new()
+        .route("/", get(health_check))
+        .route("/v1/type", post(create_type));
+}
+
+pub async fn listener() -> tokio::net::TcpListener {
+    return tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+}
+
+async fn health_check() -> Json<Health> {
+    Json(Health {
+        description: "Belay On".into(),
+    })
+}
+
+async fn create_type(Json(payload): Json<CreateType>) -> (StatusCode, Json<Type>) {
+    let r#type = payload.into();
+
+    // TODO: Save to backend
+
+    return (StatusCode::CREATED, Json(r#type));
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::error::Result;
+    use axum_test::TestServer;
+    use convert_case::{Case, Casing};
+    use serde_json::json;
+    use urn::UrnBuilder;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn create_type() -> Result<()> {
+        let test_name = "create_type";
+        let server = TestServer::new(router()).unwrap(); //TODO: Remove unwrap (use ?)
+        let response = server
+            .post("/v1/type")
+            .json(&json!({
+                "urn": UrnBuilder::new(&test_name.to_case(Case::Kebab), "1234:5678").build()?,
+                "schema": "TODO",
+                "version": "1.0.0"
+            }))
+            .await;
+        dbg!(response);
+        assert!(false);
+        Ok(())
+    }
 }
