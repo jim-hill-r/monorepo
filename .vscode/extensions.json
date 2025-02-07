@@ -1,8 +1,9 @@
 {
-    "recommendations": [
-      "bazelbuild.vscode-bazel",
-      "rust-lang.rust-analyzer",
-      "surrealdb.surrealql",
-      "ritwickdey.liveserver"
-    ]
-  }
+  "recommendations": [
+    "bazelbuild.vscode-bazel",
+    "rust-lang.rust-analyzer",
+    "surrealdb.surrealql",
+    "ritwickdey.liveserver",
+    "antfu.slidev"
+  ]
+}
