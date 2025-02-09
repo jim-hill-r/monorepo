@@ -28,6 +28,7 @@ impl From<surrealdb::Error> for LuggageError {
     }
 }
 
+#[derive(Clone)]
 pub struct SurrealDbClosetProvider<T>
 where
     T: surrealdb::Connection,
@@ -102,7 +103,6 @@ mod tests {
     use crate::error::Result;
     use convert_case::{Case, Casing};
     use surrealdb::engine::local::Db;
-    use urn::UrnBuilder;
     use uuid::Uuid;
 
     use super::*;
@@ -117,8 +117,8 @@ mod tests {
         let test_name = "create_then_read_test_content";
         let test_cube = Cube {
             header: CubeHeader {
-                id: Uuid::new_v4(),
-                r#type: UrnBuilder::new(&test_name.to_case(Case::Kebab), "1234:5678").build()?,
+                id: Uuid::now_v7(),
+                r#type: format!("lug:://{}", test_name.to_case(Case::Kebab)),
             },
             content: Some(TestContent {
                 name: "test".into(),
