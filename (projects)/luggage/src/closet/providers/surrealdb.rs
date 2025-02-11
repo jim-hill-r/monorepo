@@ -72,7 +72,7 @@ where
     {
         let created: Option<Record> = self
             .db
-            .create((cube.header.r#type.as_str(), cube.header.id))
+            .create((cube.header.definition, cube.header.id))
             .content(cube.content)
             .await?;
         match created {
@@ -90,7 +90,7 @@ where
     where
         T: for<'a> Deserialize<'a> + Send,
     {
-        let saved_content: Option<T> = self.db.select((header.r#type.as_str(), header.id)).await?;
+        let saved_content: Option<T> = self.db.select((header.definition, header.id)).await?;
         return Ok(Cube {
             header,
             content: saved_content,
@@ -101,7 +101,6 @@ where
 #[cfg(test)]
 mod tests {
     use crate::error::Result;
-    use convert_case::{Case, Casing};
     use surrealdb::engine::local::Db;
     use uuid::Uuid;
 
@@ -116,10 +115,7 @@ mod tests {
     async fn create_then_read_test_content() -> Result<()> {
         let test_name = "create_then_read_test_content";
         let test_cube = Cube {
-            header: CubeHeader {
-                id: Uuid::now_v7(),
-                r#type: format!("lug:://{}", test_name.to_case(Case::Kebab)),
-            },
+            header: CubeHeader::new(Uuid::now_v7()),
             content: Some(TestContent {
                 name: "test".into(),
             }),

@@ -1,31 +1,50 @@
+use schemars::{schema_for, JsonSchema};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
-    cube::cube::{Cube, CubeDefinition, CubeHeader},
+    core::core::LuggageId,
+    cube::cube::{Cube, CubeHeader, CubeRegistration, CubeSchema},
     error::LuggageError,
 };
 
-// TODO: Figure out how to make this extensible for third-parties
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-pub enum ClosetType {
-    RemoteSurrealDb,
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema, Default)]
+pub enum ClosetBuiltinType {
+    #[default]
     LocalSurrealDb,
+    RemoteSurrealDb,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema, Default)]
+pub enum ClosetExecutionType {
+    #[default]
+    Builtin,
+    Plugin,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, JsonSchema)]
 pub struct Closet {
-    pub r#type: ClosetType,
+    pub name: String,
+    pub execution_type: ClosetExecutionType,
+    pub builtin_type: Option<ClosetBuiltinType>,
 }
 
-impl Into<Cube<Closet>> for Closet {
-    fn into(self) -> Cube<Closet> {
-        return Cube::new(CubeHeader::new(Closet::urn()), self);
+impl Default for Closet {
+    fn default() -> Self {
+        Self {
+            name: "default-luggage-closet".into(),
+            execution_type: Default::default(),
+            builtin_type: Default::default(),
+        }
     }
 }
 
-impl CubeDefinition for Closet {
-    fn urn() -> crate::cube::cube::CubeType {
-        return "lug://closet-definition".into();
+impl CubeRegistration for Closet {
+    fn id() -> LuggageId {
+        return Uuid::try_parse("0194f284-68d6-7072-805f-878ac5e94c7e").unwrap_or_default();
+    }
+    fn schema() -> CubeSchema {
+        return serde_json::to_string_pretty(&schema_for!(Closet)).unwrap_or_default();
     }
 }
 

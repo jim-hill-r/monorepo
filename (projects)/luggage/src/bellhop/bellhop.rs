@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
     extract::State,
     http::StatusCode,
@@ -5,66 +7,69 @@ use axum::{
     Json, Router,
 };
 
-use semver::Version;
 use serde::{Deserialize, Serialize};
 use surrealdb::engine::local::Db;
-use urn::Urn;
+use uuid::Uuid;
 
 use crate::{
     closet::{
-        closet::{Closet, ClosetCreator, ClosetReader, ClosetType},
+        closet::{Closet, ClosetBuiltinType, ClosetCreator, ClosetReader},
         providers::surrealdb::SurrealDbClosetProvider,
     },
+    core::core::LuggageId,
+    cube::cube::{Cube, CubeHeader},
     error::LuggageError,
 };
 
 use super::startup::StartupConfiguration;
 
-pub trait AppState: Clone + Send + Sync + 'static {
-    type C: ClosetCreator + ClosetReader;
-
-    fn closet_provider(&self) -> &Self::C;
-}
-
 #[derive(Clone)]
-pub struct LocalSurrealDbAppState {
-    pub closet_provider: SurrealDbClosetProvider<Db>,
+pub struct AppState {
+    pub root_closet_id: Uuid,
+    pub closet_registry: HashMap<Uuid, Closet>,
+    pub closet_providers: HashMap<Uuid, SurrealDbClosetProvider<Db>>, // TODO: Make the provider abstract
 }
 
-impl LocalSurrealDbAppState {
-    async fn new() -> Result<Self, LuggageError> {
-        return Ok(LocalSurrealDbAppState {
-            closet_provider: SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?,
-        });
-    }
-}
+pub async fn app(config: Option<StartupConfiguration>) -> Result<Router, LuggageError> {
+    let root_closet_id = Uuid::now_v7();
+    let root_closet = Closet::default();
+    let root_closet_provider = SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?;
+    let mut closet_registry: HashMap<Uuid, Closet> = HashMap::new();
+    closet_registry.insert(root_closet_id, root_closet);
+    let mut closet_providers: HashMap<Uuid, SurrealDbClosetProvider<Db>> = HashMap::new();
+    closet_providers.insert(root_closet_id, root_closet_provider);
 
-impl AppState for LocalSurrealDbAppState {
-    type C = SurrealDbClosetProvider<Db>;
-
-    fn closet_provider(&self) -> &Self::C {
-        return &self.closet_provider;
-    }
-}
-
-pub async fn router(config: Option<StartupConfiguration>) -> Result<Router, LuggageError> {
-    let state = if let Some(c) = config {
-        match c.closet_type {
-            ClosetType::LocalSurrealDb => LocalSurrealDbAppState::new().await?,
-            ClosetType::RemoteSurrealDb => LocalSurrealDbAppState::new().await?, // TODO: Implement remote
+    if let Some(c) = config {
+        if let Some(closet) = c.closet {
+            let additional_closet_id = Uuid::now_v7();
+            closet_registry.insert(additional_closet_id, closet.clone());
+            if let Some(t) = closet.builtin_type {
+                let closet_provider = match t {
+                    ClosetBuiltinType::LocalSurrealDb => {
+                        SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?
+                    }
+                    ClosetBuiltinType::RemoteSurrealDb => {
+                        // TODO: Actually connect to a remote db
+                        SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?
+                    }
+                };
+                closet_providers.insert(additional_closet_id, closet_provider);
+            }
         }
-    } else {
-        LocalSurrealDbAppState::new().await?
-    };
+    }
 
-    return Ok(build(state).await);
+    return Ok(router(AppState {
+        root_closet_id,
+        closet_registry,
+        closet_providers,
+    })
+    .await);
 }
 
-async fn build<S: AppState>(state: S) -> Router {
+async fn router(state: AppState) -> Router {
     let router = Router::new()
         .route("/", get(health_check))
-        .route("/v1/type", post(create_type))
-        .route("/v1/closet", post(create_closet::<S>))
+        .route("/v1/cube", post(create_cube))
         .with_state(state);
 
     return router;
@@ -73,7 +78,7 @@ async fn build<S: AppState>(state: S) -> Router {
 pub async fn listener() -> tokio::net::TcpListener {
     return tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 }
-type LuggageSchema = String; // Currently just JSONSchema, later expand to TOML, YAML, etc...
+
 #[derive(Serialize)]
 struct Health {
     description: String,
@@ -85,90 +90,85 @@ async fn health_check() -> Json<Health> {
     })
 }
 
-#[derive(Deserialize)]
-struct CreateType {
-    urn: Urn,
-    schema: LuggageSchema,
-    version: Version,
+#[derive(Deserialize, Serialize)]
+struct BellhopHeader {
+    closet_id: Option<LuggageId>,
 }
 
-#[derive(Serialize)]
-struct Type {
-    urn: Urn,
-    schema: LuggageSchema,
-    version: Version,
+#[derive(Deserialize, Serialize)]
+struct CreateCube {
+    bellhop_header: BellhopHeader,
+    cube_header: CubeHeader,
+    content: String,
 }
 
-impl From<CreateType> for Type {
-    fn from(value: CreateType) -> Self {
-        return Type {
-            urn: value.urn,
-            schema: value.schema,
-            version: value.version,
-        };
+async fn create_cube(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateCube>,
+) -> (StatusCode, Json<CubeHeader>) {
+    if let Some(provider) = state.closet_providers.get(&state.root_closet_id) {
+        let cube = Cube::new(payload.cube_header.clone(), payload.content);
+        let _ = provider.create(cube).await;
+        return (StatusCode::CREATED, Json(payload.cube_header));
     }
-}
-
-async fn create_type(Json(payload): Json<CreateType>) -> (StatusCode, Json<Type>) {
-    let r#type = payload.into();
-
-    // TODO: Save to backend
-
-    return (StatusCode::CREATED, Json(r#type));
-}
-
-#[derive(Deserialize, Clone)]
-struct CreateCloset {
-    r#type: ClosetType,
-}
-
-impl From<CreateCloset> for Closet {
-    fn from(value: CreateCloset) -> Self {
-        return Closet {
-            r#type: value.r#type,
-        };
-    }
-}
-
-async fn create_closet<S: AppState>(
-    State(state): State<S>,
-    Json(payload): Json<CreateCloset>,
-) -> (StatusCode, Json<Closet>) {
-    let provider = state.closet_provider();
-    let closet: Closet = payload.into();
-    let _ = provider.create(closet.clone().into()).await;
-    return (StatusCode::CREATED, Json(closet));
+    return (StatusCode::INTERNAL_SERVER_ERROR, Json(payload.cube_header));
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::error::Result;
+    use crate::{
+        closet::closet::Closet,
+        cube::cube::{CubeDefinition, CubeRegistration},
+        error::Result,
+    };
     use axum_test::TestServer;
-    use convert_case::{Case, Casing};
-    use schemars::{schema_for, JsonSchema};
     use serde_json::json;
+    use uuid::Uuid;
 
     use super::*;
 
-    #[derive(JsonSchema)]
-    struct TestContent {
-        name: String,
-    }
-
     #[tokio::test]
-    async fn create_type() -> Result<()> {
-        let test_name = "create_type";
-        let server = TestServer::new(router(None).await?).unwrap(); //TODO: Remove unwrap (use ?)
-        let _response = server
-            .post("/v1/type")
-            .json(&json!({
-                "urn": format!("lug:://{}",test_name.to_case(Case::Kebab)),
-                "schema": schema_for!(TestContent),
-                "version": "1.0.0"
-            }))
-            .await;
+    async fn create_cube_definition() -> Result<()> {
+        let _test_name = "create_cube_definition";
+        let server = TestServer::new(app(None).await?).unwrap(); //TODO: Remove unwrap (use ?)
+        let cube = CreateCube {
+            bellhop_header: BellhopHeader { closet_id: None },
+            cube_header: CubeHeader {
+                id: Uuid::now_v7(),
+                definition: CubeDefinition::id(),
+            },
+            content: json!({
+                "id": CubeDefinition::id(),
+                "schema": CubeDefinition::schema()
+            })
+            .to_string(),
+        };
+        let response = server.post("/v1/cube").json(&cube).await;
+        response.assert_status(StatusCode::CREATED);
         Ok(())
     }
 
-    // TODO: Write create_closet test
+    #[tokio::test]
+    async fn create_closet() -> Result<()> {
+        let _test_name = "create_closet";
+        let server = TestServer::new(app(None).await?).unwrap(); //TODO: Remove unwrap (use ?)
+        let cube = CreateCube {
+            bellhop_header: BellhopHeader { closet_id: None },
+            cube_header: CubeHeader {
+                id: Uuid::now_v7(),
+                definition: Closet::id(),
+            },
+            content: json!({
+                "id": Closet::id(),
+                "schema": Closet::schema()
+            })
+            .to_string(),
+        };
+        let response = server.post("/v1/cube").json(&cube).await;
+        println!("{}", response.status_code());
+        response.assert_status(StatusCode::CREATED);
+        Ok(())
+    }
+
+    // TODO: Write tests similar to a client where some arbitrary cube def gets created, then pushed into various providers
 }
