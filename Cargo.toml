@@ -1,3 +1,0 @@
-[workspace]
-members = ["docs/proof_of_concepts/dioxus/ssg","(projects)/luggage","(projects)/starcraft","(projects)/profiles/jimhillr","(projects)/sparkhill/website"]
-resolver = "2"

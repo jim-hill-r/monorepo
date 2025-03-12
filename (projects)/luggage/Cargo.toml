@@ -1,7 +1,11 @@
 [package]
 name = "luggage"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+
+[workspace]
+members = ["examples/*"]
+resolver = "2"
 
 [dependencies]
 axum = "0.8.1"
