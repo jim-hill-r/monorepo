@@ -4,11 +4,12 @@ Monorepo for all projects
 
 # Dependencies
 
-- Rust
-- Cargo
+- Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
+- Cargo: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 
 # Bootstrap Repo
 
+- Install dependencies
 - Run something similar based on your shell environment
 
 ```shell
@@ -17,6 +18,12 @@ cargo build --release
 cd ../..
 cp \(projects\)/cast/target/release/cast cast
 ```
+
+# Get Started
+
+- To start a work session, run `./cast session start`.
+
+# OLD DOCS: Remove these once irrelevant
 
 # Documentation
 
@@ -27,7 +34,6 @@ cp \(projects\)/cast/target/release/cast cast
 
 # Getting Started
 
-- Install Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 - Install SurrealDB: Install using [the documentation](https://surrealdb.com/docs/surrealdb/installation), the SurrealDB vscode extension and [Surrealist](https://surrealdb.com/docs/surrealist/installation) admin app.
 - Install Perseus: `cargo install perseus-cli`
 

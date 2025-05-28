@@ -1,11 +1,9 @@
-use chrono::prelude::*;
 use clap::{Parser, Subcommand};
-use std::fs::{create_dir_all, write};
 use std::io::Error; // TODO: Convert to better error handler
 use std::path::Path;
-use uuid::Uuid;
 
-const SESSIONS_DIRECTORY: &str = ".cast/sessions";
+pub mod sessions;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -32,18 +30,17 @@ pub fn execute(args: Args, cast_directory: &Path) -> Result<String, Error> {
     return match &args.cmd {
         Commands::Session { cmd } => match cmd {
             SessionCommands::Start => {
-                let sessions_directory = cast_directory.join(SESSIONS_DIRECTORY);
-                create_dir_all(&sessions_directory)?;
-
-                let id = Uuid::now_v7();
-                write(
-                    sessions_directory.join(id.to_string()),
-                    Utc::now().to_string(),
-                )?;
+                let _ = sessions::start(cast_directory);
                 Ok("Starting session.".to_string())
             }
-            SessionCommands::Pause => Ok("Pausing session.".to_string()),
-            SessionCommands::Stop => Ok("Stopping session.".to_string()),
+            SessionCommands::Pause => {
+                let _ = sessions::pause(cast_directory);
+                Ok("Pausing session.".to_string())
+            }
+            SessionCommands::Stop => {
+                let _ = sessions::stop(cast_directory);
+                Ok("Stopping session.".to_string())
+            }
         },
     };
 }
