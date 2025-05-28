@@ -1,6 +1,7 @@
-use cast::execute;
+use cast::{execute, Root};
+use clap::Parser;
 
 fn main() {
     println!("Executing cast command...");
-    execute()
+    execute(Root::parse());
 }
