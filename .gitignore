@@ -1,5 +1,6 @@
 bazel-*
 sandbox
 target
+.cast
 
 .DS_Store

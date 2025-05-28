@@ -2,6 +2,22 @@
 
 Monorepo for all projects
 
+# Dependencies
+
+- Rust
+- Cargo
+
+# Bootstrap Repo
+
+- Run something similar based on your shell environment
+
+```shell
+cd \(projects\)/cast
+cargo build --release
+cd ../..
+cp \(projects\)/cast/target/release/cast cast
+```
+
 # Documentation
 
 - Detailed documentation for this monorepo can be found in `docs`.
