@@ -6,22 +6,11 @@ Monorepo for all projects
 
 - Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 - Cargo: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
-
-# Bootstrap Repo
-
-- Install dependencies
-- Run something similar based on your shell environment
-
-```shell
-cd \(projects\)/cast
-cargo build --release
-cd ../..
-cp \(projects\)/cast/target/release/cast cast
-```
+- Cast (cli for this monorepo): Run `cargo install --path ./\(projects\)/cast`
 
 # Get Started
 
-- To start a work session, run `./cast session start`.
+- To start a work session, run `cast session start`.
 
 # OLD DOCS: Remove these once irrelevant
 
