@@ -17,7 +17,7 @@
     "commands": []
   },
   "scripts": {
-    "package": "vsce package",
+    "package": "vsce package && cp cast-0.0.1.vsix cast.vsix && rm cast-0.0.1.vsix",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
