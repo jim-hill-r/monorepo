@@ -1,0 +1,55 @@
+import * as vscode from "vscode";
+import fs from "fs";
+
+let myStatusBarItem: vscode.StatusBarItem;
+
+export function activate({
+  extensionPath,
+  subscriptions,
+}: vscode.ExtensionContext) {
+  myStatusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left,
+    100
+  );
+  subscriptions.push(myStatusBarItem);
+
+  updateStatusBarItem(`${extensionPath}/.cast/sessions`);
+}
+
+export function deactivate() {}
+
+function updateStatusBarItem(sessionDirectory: string): void {
+  fs.readdir(sessionDirectory, (err, files) => {
+    if (!err && files.length > 0) {
+      const sessionLogFilePath = `${sessionDirectory}/${files[0]}`;
+      const sessionLogContent = fs.readFileSync(sessionLogFilePath, "utf-8");
+      const sessionStart = getSessionStart(sessionLogContent);
+      if (sessionStart) {
+        const elapsed = Math.floor(
+          (Date.now() - sessionStart.getTime()) / 1000
+        );
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        myStatusBarItem.text = `${String(hours).padStart(2, "0")}:${String(
+          minutes
+        ).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+    }
+  });
+
+  myStatusBarItem.show();
+
+  setTimeout(() => updateStatusBarItem(sessionDirectory), 2000);
+}
+
+function getSessionStart(sessionLog: string): Date | undefined {
+  const lines = sessionLog.split("\n");
+  for (let line of lines) {
+    const [date, type] = line.split(",");
+    if (type === "start") {
+      return new Date(Date.parse(date));
+    }
+  }
+  return undefined;
+}

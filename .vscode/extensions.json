@@ -4,6 +4,7 @@
     "rust-lang.rust-analyzer",
     "surrealdb.surrealql",
     "ritwickdey.liveserver",
-    "antfu.slidev"
+    "antfu.slidev",
+    "fill-labs.dependi"
   ]
 }
