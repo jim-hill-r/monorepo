@@ -1,7 +1,4 @@
-bazel-*
+.cast
+.DS_Store
 sandbox
 target
-
-.cast
-
-.DS_Store

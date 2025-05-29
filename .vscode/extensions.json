@@ -1,10 +1,13 @@
 {
   "recommendations": [
-    "bazelbuild.vscode-bazel",
     "rust-lang.rust-analyzer",
+    "vadimcn.vscode-lldb",
+    "tamasfe.even-better-toml",
+    "fill-labs.dependi",
+
     "surrealdb.surrealql",
     "ritwickdey.liveserver",
+
     "antfu.slidev",
-    "fill-labs.dependi"
   ]
 }

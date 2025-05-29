@@ -1,4 +1,0 @@
-module(
-    name = "profiles_jimhillr",
-    version = "0.0.0",
-)

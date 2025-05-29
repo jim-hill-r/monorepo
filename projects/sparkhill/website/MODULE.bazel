@@ -1,4 +1,0 @@
-module(
-    name = "sparkhill_website",
-    version = "0.0.0",
-)
