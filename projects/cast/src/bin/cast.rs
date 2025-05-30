@@ -1,4 +1,4 @@
-use cast::{execute, Args};
+use cast::args::{execute, Args};
 use clap::Parser;
 use std::env;
 
