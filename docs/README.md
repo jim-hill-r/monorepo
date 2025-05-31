@@ -12,3 +12,7 @@ Monorepo for all projects
 
 - To start a work session, use `cast session start`.
 - To create a new project, use `cast project new`.
+
+# Contribute
+
+- All issues are contained within the codebase as TODO's. Use todo tree extension to find work.

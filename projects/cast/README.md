@@ -14,7 +14,3 @@ A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-c
 # Build
 
 - Run `cargo build --release`
-
-# Commands
-
-- Run `.\cast --help`

@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-use std::fs::{create_dir_all, write};
+use std::fs;
 use std::path::Path;
 use uuid::Uuid;
 
@@ -8,11 +8,11 @@ const SESSION_START_KEY: &str = "start";
 
 pub fn start(working_directory: impl AsRef<Path>) -> Result<(), Box<dyn std::error::Error>> {
     let sessions_directory = working_directory.as_ref().join(SESSIONS_DIRECTORY);
-    create_dir_all(&sessions_directory)?;
+    fs::create_dir_all(&sessions_directory)?;
 
     let id = Uuid::now_v7();
     let data = format!("{},{}", Utc::now().to_string(), SESSION_START_KEY);
-    write(sessions_directory.join(id.to_string()), data)?;
+    fs::write(sessions_directory.join(id.to_string()), data)?;
     Ok(())
 }
 
