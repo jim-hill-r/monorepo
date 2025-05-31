@@ -31,7 +31,7 @@ impl SessionEntry {
         } else {
             "".into()
         };
-        format!("{},{:?},{}", self.timestamp, self.kind, postfix)
+        format!("{},{:?}{}", self.timestamp, self.kind, postfix)
     }
 }
 
@@ -104,5 +104,36 @@ mod tests {
         )
     }
 
-    // TODO: Add entry to string tests
+    #[test]
+    fn entry_has_correct_default_to_string() {
+        const TEST_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
+        let test_timestamp: DateTime<Utc> = Utc.with_ymd_and_hms(2025, 1, 1, 12, 0, 0).unwrap();
+        let entry = SessionEntry {
+            session_id: uuid!(TEST_UUID),
+            timestamp: test_timestamp,
+            kind: SessionEntryKind::Start,
+            name: None,
+        };
+        assert_eq!(
+            entry.to_string(),
+            "2025-01-01 12:00:00 UTC,Start".to_string()
+        )
+    }
+
+    #[test]
+    fn entry_has_correct_named_to_string() {
+        const TEST_NAME: &str = "entry_has_correct_named_to_string";
+        const TEST_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
+        let test_timestamp: DateTime<Utc> = Utc.with_ymd_and_hms(2025, 1, 1, 12, 0, 0).unwrap();
+        let entry = SessionEntry {
+            session_id: uuid!(TEST_UUID),
+            timestamp: test_timestamp,
+            kind: SessionEntryKind::Start,
+            name: Some(TEST_NAME.into()),
+        };
+        assert_eq!(
+            entry.to_string(),
+            format!("2025-01-01 12:00:00 UTC,Start,{}", TEST_NAME)
+        )
+    }
 }
