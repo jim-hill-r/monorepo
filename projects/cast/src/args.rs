@@ -1,7 +1,8 @@
+use crate::sessions::SessionStartOptions;
 use crate::{projects, sessions};
 use clap::{Parser, Subcommand};
 use std::fs;
-use std::io::{Error, ErrorKind}; // TODO: Convert to better error handler
+use std::io::Error; // TODO: Convert to better error handler
 use std::path::Path;
 
 #[derive(Parser)]
@@ -25,7 +26,10 @@ enum Commands {
 
 #[derive(Subcommand)]
 pub enum SessionCommands {
-    Start,
+    Start {
+        #[arg(short, long)]
+        name: Option<String>,
+    },
     Pause,
     Stop,
 }
@@ -43,8 +47,11 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, Error> {
     if let Some(working_directory) = working_directory {
         return match &args.cmd {
             Commands::Session { cmd } => match cmd {
-                SessionCommands::Start => {
-                    let _ = sessions::start(working_directory);
+                SessionCommands::Start { name } => {
+                    let _ = sessions::start(
+                        working_directory,
+                        Some(SessionStartOptions { name: name.clone() }), // TODO: Refactor to remove this clone
+                    );
                     Ok("Starting session.".into())
                 }
                 SessionCommands::Pause => {
@@ -98,7 +105,7 @@ mod tests {
         let result = execute(
             Args {
                 cmd: Commands::Session {
-                    cmd: SessionCommands::Start,
+                    cmd: SessionCommands::Start { name: None },
                 },
             },
             tmp_dir.path(),
@@ -114,7 +121,7 @@ mod tests {
         let result = execute(
             Args {
                 cmd: Commands::Session {
-                    cmd: SessionCommands::Start,
+                    cmd: SessionCommands::Start { name: None },
                 },
             },
             tmp_dir.path(),

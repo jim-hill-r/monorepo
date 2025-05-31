@@ -4,15 +4,60 @@ use std::path::Path;
 use uuid::Uuid;
 
 const SESSIONS_DIRECTORY: &str = ".cast/sessions";
-const SESSION_START_KEY: &str = "start";
 
-pub fn start(working_directory: impl AsRef<Path>) -> Result<(), Box<dyn std::error::Error>> {
+pub struct SessionStartOptions {
+    pub(crate) name: Option<String>,
+}
+
+struct SessionEntry {
+    session_id: Uuid,
+    timestamp: DateTime<Utc>,
+    kind: SessionEntryKind,
+    name: Option<String>,
+}
+
+impl SessionEntry {
+    fn file_name(&self) -> String {
+        let postfix = if let Some(name) = &self.name {
+            format!("-{}", name)
+        } else {
+            "".into()
+        };
+        format!("{}{}.log", self.session_id, postfix)
+    }
+    fn to_string(&self) -> String {
+        let postfix = if let Some(name) = &self.name {
+            format!(",{}", name)
+        } else {
+            "".into()
+        };
+        format!("{},{:?},{}", self.timestamp, self.kind, postfix)
+    }
+}
+
+#[derive(Debug)] // TODO: Properly implement display trait
+enum SessionEntryKind {
+    Start,
+    Pause,
+    Stop,
+}
+
+pub fn start(
+    working_directory: impl AsRef<Path>,
+    options: Option<SessionStartOptions>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let sessions_directory = working_directory.as_ref().join(SESSIONS_DIRECTORY);
     fs::create_dir_all(&sessions_directory)?;
 
-    let id = Uuid::now_v7();
-    let data = format!("{},{}", Utc::now().to_string(), SESSION_START_KEY);
-    fs::write(sessions_directory.join(id.to_string()), data)?;
+    let entry = SessionEntry {
+        session_id: Uuid::now_v7(),
+        timestamp: Utc::now(),
+        kind: SessionEntryKind::Start,
+        name: options.or(None).map_or(None, |v| v.name),
+    };
+    let session_path = sessions_directory.join(entry.file_name());
+
+    fs::write(session_path, entry.to_string())?;
     Ok(())
 }
 
@@ -26,4 +71,38 @@ pub fn stop(_working_directory: impl AsRef<Path>) -> Result<(), Box<dyn std::err
     Ok(())
 }
 
-// TODO: Add tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::uuid;
+
+    #[test]
+    fn entry_has_correct_default_filename() {
+        const TEST_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
+        let entry = SessionEntry {
+            session_id: uuid!(TEST_UUID),
+            timestamp: Utc.with_ymd_and_hms(2025, 1, 1, 12, 0, 0).unwrap(),
+            kind: SessionEntryKind::Start,
+            name: None,
+        };
+        assert_eq!(entry.file_name(), format!("{}.log", TEST_UUID))
+    }
+
+    #[test]
+    fn entry_has_correct_named_filename() {
+        const TEST_NAME: &str = "entry_has_correct_named_filename";
+        const TEST_UUID: &str = "67e55044-10b1-426f-9247-bb680e5fe0c8";
+        let entry = SessionEntry {
+            session_id: uuid!(TEST_UUID),
+            timestamp: Utc.with_ymd_and_hms(2025, 1, 1, 12, 0, 0).unwrap(),
+            kind: SessionEntryKind::Start,
+            name: Some(TEST_NAME.into()),
+        };
+        assert_eq!(
+            entry.file_name(),
+            format!("{}-{}.log", TEST_UUID, TEST_NAME)
+        )
+    }
+
+    // TODO: Add entry to string tests
+}
