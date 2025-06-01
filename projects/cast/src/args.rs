@@ -14,44 +14,49 @@ pub struct Args {
 
 #[derive(Subcommand)]
 enum Commands {
-    Session {
-        #[command(subcommand)]
-        cmd: SessionCommands,
-    },
-    Project {
-        #[command(subcommand)]
-        cmd: ProjectCommands,
-    },
+    #[command(subcommand)]
+    Session(SessionCommands),
+    #[command(subcommand)]
+    Project(ProjectCommands),
 }
 
 #[derive(Subcommand)]
 pub enum SessionCommands {
-    Start {
-        #[arg(short, long)]
-        name: Option<String>,
-    },
+    Start(StartSessionCommand),
     Pause,
     Stop,
 }
 
-#[derive(Subcommand)]
-pub enum ProjectCommands {
-    New {
-        #[arg(short, long)]
-        name: String,
-    },
+#[derive(Parser)]
+struct StartSessionCommand {
+    #[arg(short, long)]
+    name: Option<String>,
 }
 
+#[derive(Subcommand)]
+pub enum ProjectCommands {
+    New(NewProjectCommand),
+}
+
+#[derive(Parser)]
+struct NewProjectCommand {
+    #[arg(short, long)]
+    name: String,
+}
+
+// TODO: Refactor Error to use specific error type ExecuteErrro
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, Error> {
     let working_directory = find_cast_toml(entry_directory);
     println!("Executing cast command...");
     if let Some(working_directory) = working_directory {
         return match &args.cmd {
-            Commands::Session { cmd } => match cmd {
-                SessionCommands::Start { name } => {
+            Commands::Session(session_command) => match session_command {
+                SessionCommands::Start(start_session_command) => {
                     let _ = sessions::start(
                         working_directory,
-                        Some(SessionStartOptions { name: name.clone() }), // TODO: Refactor to remove this clone
+                        Some(SessionStartOptions {
+                            name: start_session_command.name.clone(),
+                        }), // TODO: Refactor to remove this clone
                     );
                     Ok("Starting session.".into())
                 }
@@ -64,9 +69,9 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, Error> {
                     Ok("Stopping session.".into())
                 }
             },
-            Commands::Project { cmd } => match cmd {
-                ProjectCommands::New { name } => {
-                    let _ = projects::new(working_directory, name);
+            Commands::Project(project_command) => match project_command {
+                ProjectCommands::New(new_project_command) => {
+                    let _ = projects::new(working_directory, &new_project_command.name);
                     Ok("Creating project.".into())
                 }
             },
@@ -105,9 +110,7 @@ mod tests {
         let tmp_dir = TempDir::new("test").unwrap();
         let result = execute(
             Args {
-                cmd: Commands::Session {
-                    cmd: SessionCommands::Start { name: None },
-                },
+                cmd: Commands::Session(SessionCommands::Start(StartSessionCommand { name: None })),
             },
             tmp_dir.path(),
         )
@@ -121,9 +124,7 @@ mod tests {
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
         let result = execute(
             Args {
-                cmd: Commands::Session {
-                    cmd: SessionCommands::Start { name: None },
-                },
+                cmd: Commands::Session(SessionCommands::Start(StartSessionCommand { name: None })),
             },
             tmp_dir.path(),
         )
@@ -136,9 +137,7 @@ mod tests {
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
         let result = execute(
             Args {
-                cmd: Commands::Session {
-                    cmd: SessionCommands::Pause,
-                },
+                cmd: Commands::Session(SessionCommands::Pause),
             },
             tmp_dir.path(),
         )
@@ -146,14 +145,12 @@ mod tests {
         assert_eq!(result, "Pausing session.");
     }
     #[test]
-    fn it_ends_session() {
+    fn it_stops_session() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
         let result = execute(
             Args {
-                cmd: Commands::Session {
-                    cmd: SessionCommands::Stop,
-                },
+                cmd: Commands::Session(SessionCommands::Stop),
             },
             tmp_dir.path(),
         )
@@ -166,11 +163,9 @@ mod tests {
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
         let result = execute(
             Args {
-                cmd: Commands::Project {
-                    cmd: ProjectCommands::New {
-                        name: "test".into(),
-                    },
-                },
+                cmd: Commands::Project(ProjectCommands::New(NewProjectCommand {
+                    name: "test".into(),
+                })),
             },
             tmp_dir.path(),
         )
