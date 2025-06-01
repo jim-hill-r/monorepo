@@ -6,7 +6,7 @@ use std::io::Error; // TODO: Convert to better error handler
 use std::path::Path;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about = "Highly opinionated tooling for rust monorepos.", long_about = None)]
 pub struct Args {
     #[command(subcommand)]
     cmd: Commands,
@@ -44,6 +44,7 @@ pub enum ProjectCommands {
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, Error> {
     let working_directory = find_cast_toml(entry_directory);
+    println!("Executing cast command...");
     if let Some(working_directory) = working_directory {
         return match &args.cmd {
             Commands::Session { cmd } => match cmd {
