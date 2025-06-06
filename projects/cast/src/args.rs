@@ -2,8 +2,8 @@ use crate::sessions::SessionStartOptions;
 use crate::{projects, sessions};
 use clap::{Parser, Subcommand};
 use std::fs;
-use std::io::Error; // TODO: Convert to better error handler
 use std::path::Path;
+use thiserror::Error;
 
 #[derive(Parser)]
 #[command(author, version, about = "Highly opinionated tooling for rust monorepos.", long_about = None)]
@@ -44,11 +44,14 @@ struct NewProjectCommand {
     name: String,
 }
 
-// TODO: Refactor Error to use specific error type ExecuteErrro
-pub fn execute(args: Args, entry_directory: &Path) -> Result<String, Error> {
-    let working_directory = find_cast_toml(entry_directory);
-    println!("Executing cast command...");
-    if let Some(working_directory) = working_directory {
+#[derive(Error, Debug)]
+pub enum ExecuteError {
+    #[error("cast toml not found")]
+    CastTomlNotFound,
+}
+
+pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
+    if let Some(working_directory) = find_cast_toml(entry_directory) {
         return match &args.cmd {
             Commands::Session(session_command) => match session_command {
                 SessionCommands::Start(start_session_command) => {
@@ -77,7 +80,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, Error> {
             },
         };
     } else {
-        Ok("Could not find Cast.toml. Exiting.".into())
+        Err(ExecuteError::CastTomlNotFound)
     }
 }
 
@@ -113,9 +116,8 @@ mod tests {
                 cmd: Commands::Session(SessionCommands::Start(StartSessionCommand { name: None })),
             },
             tmp_dir.path(),
-        )
-        .unwrap();
-        assert_eq!(result, "Could not find Cast.toml. Exiting.");
+        );
+        assert!(result.is_err());
     }
 
     #[test]

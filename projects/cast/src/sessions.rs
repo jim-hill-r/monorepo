@@ -1,6 +1,7 @@
 use chrono::prelude::*;
-use std::fs;
 use std::path::Path;
+use std::{fs, io};
+use thiserror::Error;
 use uuid::Uuid;
 
 const SESSIONS_DIRECTORY: &str = ".cast/sessions";
@@ -42,10 +43,16 @@ enum SessionEntryKind {
     Stop,
 }
 
+#[derive(Error, Debug)]
+pub enum StartSessionError {
+    #[error("io error")]
+    Io(#[from] io::Error),
+}
+
 pub fn start(
     working_directory: impl AsRef<Path>,
     options: Option<SessionStartOptions>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), StartSessionError> {
     let sessions_directory = working_directory.as_ref().join(SESSIONS_DIRECTORY);
     fs::create_dir_all(&sessions_directory)?;
 
@@ -61,12 +68,22 @@ pub fn start(
     Ok(())
 }
 
-pub fn pause(_working_directory: impl AsRef<Path>) -> Result<(), Box<dyn std::error::Error>> {
+#[derive(Error, Debug)]
+pub enum PauseSessionError {
+    #[error("io error")]
+    Io(#[from] io::Error),
+}
+pub fn pause(_working_directory: impl AsRef<Path>) -> Result<(), PauseSessionError> {
     // TODO: Add pause implementation
     Ok(())
 }
 
-pub fn stop(_working_directory: impl AsRef<Path>) -> Result<(), Box<dyn std::error::Error>> {
+#[derive(Error, Debug)]
+pub enum StopSessionError {
+    #[error("io error")]
+    Io(#[from] io::Error),
+}
+pub fn stop(_working_directory: impl AsRef<Path>) -> Result<(), StopSessionError> {
     // TODO: Add stop implementation
     Ok(())
 }

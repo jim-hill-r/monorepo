@@ -1,3 +1,21 @@
-TODO: Update to use anyhow and this error as standard. the problems RFC is likely overkill for most things.
+# Languages
 
-Error handling and propagation standard. [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html)
+- Rust
+- TypeScript (for vscode extensions only)
+
+# Error Handling
+
+For applications: [anyhow](https://docs.rs/anyhow/latest/anyhow/index.html)
+For libraries: [thiserror](https://docs.rs/thiserror/latest/thiserror/index.html)
+
+For future consideration: [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html)
+
+# Gaming
+
+For engine: Bevy
+
+# Web applicaitons
+
+For framework: Dixous
+For http: Axum
+For OpenAPI: Utopia

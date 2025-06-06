@@ -1,10 +1,12 @@
 use std::path::Path;
 use std::{fs, io};
 
-pub fn new(
-    _working_directory: impl AsRef<Path>,
-    _name: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum NewProjectError {}
+
+pub fn new(_working_directory: impl AsRef<Path>, _name: &str) -> Result<(), NewProjectError> {
     // TODO: Call copy_dir_all on templates/base
     // TODO: Call copy_dir_all on templates/library (overwrite files)
     // TODO: Delete any unnecessary .gitignores
