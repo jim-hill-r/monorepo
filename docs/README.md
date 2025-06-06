@@ -6,7 +6,7 @@ Monorepo for all projects
 
 - Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 - Cargo: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
-- Cast (cli for this monorepo): Run `cargo install --path ./projects/cast` and `code --install-extension ./projects/cast_vscode/cast.vsix`
+- Cast (cli for this monorepo): Run `cargo install --path ./projects/cast_cli` and `code --install-extension ./projects/cast_vscode/cast.vsix`
 
 # Get Started
 
