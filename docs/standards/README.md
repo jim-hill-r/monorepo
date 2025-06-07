@@ -10,6 +10,9 @@ For libraries: [thiserror](https://docs.rs/thiserror/latest/thiserror/index.html
 
 For future consideration: [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html)
 
+# Concurrency 
+For functional threading: Rayon
+
 # Gaming
 
 For engine: Bevy
