@@ -17,3 +17,4 @@
 - [Rust Learning](https://github.com/ctjhoa/rust-learning)
 - [Exercism](https://exercism.org/tracks/rust)
 - [Rust Adventure](https://www.rustadventure.dev/)
+- Idiomatic Rust
