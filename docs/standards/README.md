@@ -12,7 +12,7 @@ For future consideration: [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html
 
 # Parallelism
 For compute-bound: Rayon.  
-For IO-bound: async/await
+For IO-bound: async/await (tokio runtime)
 
 # Gaming
 
