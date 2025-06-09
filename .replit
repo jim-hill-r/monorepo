@@ -1,0 +1,16 @@
+modules = ["rust-stable"]
+run = "cd projects/cast_cli && cargo run"
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Run Cast"
+mode = "parallel"
+author = 31343945
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd projects/cast_cli && cargo run"
