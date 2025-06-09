@@ -26,7 +26,7 @@ For OpenAPI: Utopia
 
 # CLIs
 For traditional: Clap.  
-For TUIs: TBD
+For TUIs: Ratatui
 
 # Math
 For linear algebra: nalgebra
