@@ -10,6 +10,9 @@ For libraries: [thiserror](https://docs.rs/thiserror/latest/thiserror/index.html
 
 For future consideration: [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html)
 
+# Logging
+Always use: tracing
+
 # Parallelism
 For compute-bound: Rayon.  
 For IO-bound: async/await (tokio runtime)
