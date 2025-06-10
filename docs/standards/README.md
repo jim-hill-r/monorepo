@@ -33,3 +33,4 @@ For TUIs: Ratatui
 
 # Math
 For linear algebra: nalgebra
+For matrices/arrays: ndarray
