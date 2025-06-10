@@ -3,14 +3,9 @@ run = "cd projects/cast_cli && cargo run"
 
 [nix]
 channel = "stable-24_05"
+packages = ["unzip", "dioxus-cli", "rustup"]
 
-[workflows]
-
-[[workflows.workflow]]
-name = "Run Cast"
-mode = "parallel"
-author = 31343945
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd projects/cast_cli && cargo run"
+[deployment]
+build = ["sh", "-c", "mkdir public && unzip -o artifacts/web/proof_of_concept-dioxus-static_website-4283e2edbc3edfebfa6bf30774a8431b522aa72d-dirty.zip -d public"]
+deploymentTarget = "static"
+publicDir = "public"
