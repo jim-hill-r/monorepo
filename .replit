@@ -6,6 +6,5 @@ channel = "stable-24_05"
 packages = ["unzip", "dioxus-cli", "rustup"]
 
 [deployment]
-build = ["sh", "-c", "mkdir public && unzip -o artifacts/web/proof_of_concept-dioxus-static_website-4283e2edbc3edfebfa6bf30774a8431b522aa72d-dirty.zip -d public"]
-deploymentTarget = "static"
-publicDir = "public"
+deploymentTarget = "cloudrun"
+run = ["sh", "-c", "./projects/cahokia/api/artifacts/x86_64-unknown-linux-gnu/api"]
