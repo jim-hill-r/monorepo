@@ -33,6 +33,15 @@ For framework: Dixous
 For http: Axum
 For OpenAPI: Utopia
 
+# CIAM
+
+Always use: Auth0
+
+# Databases
+
+For general purpose: SurrealDB
+For realtime stateful sync: SpacetimeDB
+
 # CLIs
 
 For traditional: Clap.  
