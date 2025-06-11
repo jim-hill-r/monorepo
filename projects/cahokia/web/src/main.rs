@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use ui::Navbar;
-use views::Home;
+use views::{Home, Login, LoginCahokia, LoginCahokiaCode};
 
 mod views;
 
@@ -10,7 +10,13 @@ mod views;
 enum Route {
     #[layout(WebNavbar)]
     #[route("/")]
-    Home {}
+    Home {},
+    #[route("/login")]
+    Login {},
+    #[route("/login/cahokia")]
+    LoginCahokia {},
+    #[route("/login/cahokia/code")]
+    LoginCahokiaCode {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -35,7 +41,12 @@ fn App() -> Element {
 #[component]
 fn WebNavbar() -> Element {
     rsx! {
-        Navbar {}
+        Navbar {
+            Link {
+                to: Route::Login {},
+                "Login"
+            }
+        }
 
         Outlet::<Route> {}
     }
