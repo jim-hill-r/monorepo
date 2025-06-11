@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 dioxus = { workspace = true }
+oauth2 = "5.0.0"
+thiserror = "2.0.12"
