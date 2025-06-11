@@ -6,6 +6,7 @@ Monorepo for all projects
 
 - Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
 - Cargo: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
+- SurrealDb: Install via [documentation](https://surrealdb.com/docs/surrealdb/installation/macos) instructions.
 - Cargo-binstall: Install via [repo](https://github.com/cargo-bins/cargo-binstall) instructions.
 - Cross: Install via [repo] instructions.
 - Cast (cli for this monorepo): Run `cargo install --path ./projects/cast_cli` and `code --install-extension ./projects/cast_vscode/cast.vsix`
