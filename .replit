@@ -14,6 +14,11 @@ build = [
 ]
 publicDir = "app"
 
+[[deployment.responseHeaders]]
+path = "/*"
+name = "Content-Security-Policy"
+value = "default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self'; img-src 'self'; style-src 'self';base-uri 'self';form-action 'self'"
+
 [[deployment.rewrites]]
 from = "/*"
 to = "/index.html"
