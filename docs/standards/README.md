@@ -3,6 +3,12 @@
 - Rust
 - TypeScript (for vscode extensions only)
 
+# Testing
+For unit: Rust normal testing (cargo test)
+
+# Benchmarking
+For profiling: samply
+
 # Cross compilation
 
 Always use: cross
