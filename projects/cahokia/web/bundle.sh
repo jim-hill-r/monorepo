@@ -5,6 +5,7 @@ year=$(date +%Y)
 month=$(date +%m)
 day=$(date +%d)
 counter=1
+dirty=$([[ -n $(git status -s) ]] && echo '-dirty')
 # TODO: Pull version from Cargo.toml
 # TODO: Increment build counter
-zip -vr "./artifacts/0.1.0+$year.$month.$day.$counter.$sha.zip" ../target/dx/web/release/web/public/ -x "*.DS_Store"
+zip -vr "./artifacts/0.1.0+$year-$month-$day.$counter.$sha$dirty.zip" ../target/dx/web/release/web/public/ -x "*.DS_Store"
