@@ -31,10 +31,10 @@ fn App() -> Element {
     rsx! {
         // TODO: Validate that this content-security-policy is actually doing anything
         // Ensure this policy is also set by headers in the server
-        document::Meta {
-            http_equiv: "Content-Security-Policy",
-            content: "default-src 'none'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self'; style-src 'self';base-uri 'self';form-action 'self'",
-        }
+        // document::Meta {
+        //     http_equiv: "Content-Security-Policy",
+        //     content: "default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self'; style-src 'self';base-uri 'self';form-action 'self'",
+        // }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
 
