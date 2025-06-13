@@ -7,11 +7,7 @@ packages = ["unzip", "dioxus-cli", "rustup"]
 
 [deployment]
 deploymentTarget = "static"
-build = [
-  "sh",
-  "-c",
-  "mkdir app && cp ./projects/cahokia/web/artifacts/latest.zip app.zip && echo \"TODO: Remove all other files\" && unzip -o app.zip -d app",
-]
+build = ["sh", "-c", "mkdir app && unzip -o $(ls -d $PWD/projects/cahokia/web/artifacts/* | tail -1) -d app  && echo \"TODO: Remove all other files\" "]
 publicDir = "app"
 
 [[deployment.responseHeaders]]
