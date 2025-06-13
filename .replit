@@ -6,5 +6,6 @@ channel = "stable-24_05"
 packages = ["unzip", "dioxus-cli", "rustup"]
 
 [deployment]
-deploymentTarget = "cloudrun"
-run = ["sh", "-c", "./projects/cahokia/api/artifacts/x86_64-unknown-linux-gnu/api"]
+deploymentTarget = "static"
+build = ["sh", "-c", "mkdir app && cp ./projects/cahokia/web/artifacts/latest.zip app.zip && echo \"TODO: Remove all other files\" && unzip -o app.zip -d app"]
+publicDir = "app"
