@@ -8,6 +8,7 @@ For unit: Rust normal testing (cargo test)
 
 # Benchmarking
 For profiling: samply
+For reporting/regression: criterion
 
 # Cross compilation
 
