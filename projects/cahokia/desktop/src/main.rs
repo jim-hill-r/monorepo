@@ -31,6 +31,7 @@ fn App() -> Element {
 #[component]
 fn DesktopNavbar() -> Element {
     rsx! {
+        // TODO: Send login link to navbar similar to web
         Navbar {}
 
         Outlet::<Route> {}

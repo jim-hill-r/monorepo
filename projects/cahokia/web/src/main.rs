@@ -29,6 +29,11 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
+        // TODO: Validate that this content-security-policy is actually doing anything
+        document::Meta {
+            http_equiv: "Content-Security-Policy",
+            content: "default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self';base-uri 'self';form-action 'self'",
+        }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
 
@@ -42,10 +47,7 @@ fn App() -> Element {
 fn WebNavbar() -> Element {
     rsx! {
         Navbar {
-            Link {
-                to: Route::Login {},
-                "Login"
-            }
+            Link { to: Route::Login {}, "Login" }
         }
 
         Outlet::<Route> {}
