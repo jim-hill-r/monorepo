@@ -1,6 +1,6 @@
 use oauth2::{
     AuthUrl, ClientId, CsrfToken, EmptyExtraTokenFields, PkceCodeChallenge, PkceCodeVerifier,
-    RedirectUrl, Scope, StandardTokenResponse, TokenUrl,
+    RedirectUrl, RefreshToken, Scope, StandardTokenResponse, TokenUrl,
     basic::{BasicClient, BasicTokenType},
     url::{ParseError, Url},
 };
@@ -8,61 +8,201 @@ use oauth2::{AuthorizationCode, reqwest};
 
 use thiserror::Error;
 
-// Note there is no client secret. This code is for server free authorization code flow.
-const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
-const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
-const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/token";
+pub struct AuthorizationFlowConfig<'a> {
+    client_id: &'a str,
+    auth_url: &'a str,
+    token_url: &'a str,
+    redirect_url: &'a str,
+}
+
+impl AuthorizationFlowConfig<'_> {
+    pub fn new<'a>(
+        client_id: &'a str,
+        auth_url: &'a str,
+        token_url: &'a str,
+        redirect_url: &'a str,
+    ) -> AuthorizationFlowConfig<'a> {
+        AuthorizationFlowConfig {
+            client_id,
+            auth_url,
+            token_url,
+            redirect_url,
+        }
+    }
+}
+
+pub struct CsrfTokenState(String);
+
+pub struct Fingerprint {
+    csrf_token: CsrfToken,
+    pkce_verifier: PkceCodeVerifier,
+}
 
 #[derive(Error, Debug)]
-pub enum AuthorizeError {
-    #[error("parse error")]
-    ParseError(#[from] ParseError),
-    #[error("window not found")]
-    WindowNotFound,
-    #[error("redirect failed")]
-    RedirectFailed,
-    #[error("unknown authorization error")]
+pub enum FingerprintGetError {
+    #[error("unknown error")]
     Unknown,
 }
 
-pub fn authorize() -> Result<(), AuthorizeError> {
-    let redirect_url = RedirectUrl::new("http://localhost:8080/oauth/code".into())?; // TODO: Fetch location from window and use it
-    if let Ok((auth_url, csrf_token, pkce_verifier)) = prepare_authorization_flow(redirect_url) {
-        // TODO: Save the csrf_token and pkce_verifier somewhere so upon return from redirect we can use them.
+#[derive(Error, Debug)]
+pub enum FingerprintSetError {
+    #[error("unknown error")]
+    Unknown,
+}
 
+pub trait FingerprintStore {
+    fn get(&self) -> Result<Fingerprint, FingerprintGetError>;
+    fn set(&self, fingerprint: Fingerprint) -> Result<(), FingerprintSetError>;
+}
+
+pub struct WebSessionStorageFingerprintStore {}
+
+impl WebSessionStorageFingerprintStore {
+    pub fn new() -> WebSessionStorageFingerprintStore {
+        WebSessionStorageFingerprintStore {}
+    }
+}
+
+impl FingerprintStore for WebSessionStorageFingerprintStore {
+    fn get(&self) -> Result<Fingerprint, FingerprintGetError> {
+        // TODO:
+        todo!();
+    }
+    fn set(&self, _fingerprint: Fingerprint) -> Result<(), FingerprintSetError> {
+        // TODO:
+        Ok(())
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum TokenGetError {
+    #[error("unknown error")]
+    Unknown,
+}
+
+#[derive(Error, Debug)]
+pub enum TokenSetError {
+    #[error("unknown error")]
+    Unknown,
+}
+pub trait TokenStore {
+    fn get(&self) -> Result<RefreshToken, FingerprintGetError>;
+    fn set(&self, fingerprint: RefreshToken) -> Result<(), FingerprintSetError>;
+}
+
+#[derive(Error, Debug)]
+pub enum AuthorizationFlowDispatchError {
+    #[error("unknown executor error")]
+    Unknown,
+}
+
+/// The executor should use some mechanism to redirect to url and fetch a code.
+/// In browser, you can redirect and extract from the query params
+/// In native, TODO.
+pub trait AuthorizationFlowDispatcher {
+    fn dispatch(&self, authorization_url: Url) -> Result<(), AuthorizationFlowDispatchError>;
+}
+
+pub struct WebAuthorizationFlowDispatcher {}
+
+impl WebAuthorizationFlowDispatcher {
+    pub fn new() -> WebAuthorizationFlowDispatcher {
+        WebAuthorizationFlowDispatcher {}
+    }
+}
+impl AuthorizationFlowDispatcher for WebAuthorizationFlowDispatcher {
+    fn dispatch(&self, authorization_url: Url) -> Result<(), AuthorizationFlowDispatchError> {
         let window = match web_sys::window() {
             Some(window) => window,
             None => {
-                return Err(AuthorizeError::WindowNotFound);
+                return Err(AuthorizationFlowDispatchError::Unknown); // TODO: Improve these error types
             }
         };
         let w = match window.open_with_url_and_target_and_features(
-            &auth_url.to_string(),
+            &authorization_url.to_string(),
             "_self",
             "",
         ) {
             Ok(Some(w)) => w,
             Ok(None) => {
-                return Err(AuthorizeError::WindowNotFound);
+                return Err(AuthorizationFlowDispatchError::Unknown); // TODO: Improve these error types
             }
             Err(e) => {
-                return Err(AuthorizeError::RedirectFailed);
+                return Err(AuthorizationFlowDispatchError::Unknown); // TODO: Improve these error types
             }
         };
-        return Ok(());
+        Ok(())
     }
-    return Err(AuthorizeError::Unknown);
 }
 
 #[derive(Error, Debug)]
-enum PrepareAuthorizationFlowError {}
-// TODO: Replace ParseError with PrepareAuthorizationFlowError
-fn prepare_authorization_flow(
-    redirect_url: RedirectUrl,
-) -> Result<(Url, CsrfToken, PkceCodeVerifier), ParseError> {
-    let client = BasicClient::new(ClientId::new(CLIENT_ID.into()))
-        .set_auth_uri(AuthUrl::new(AUTH_URL.into())?)
-        .set_redirect_uri(redirect_url);
+pub enum DispatchFlowError {
+    #[error("parse failed")]
+    ParseFailed(#[from] ParseError),
+    #[error("fingerprint set failed")]
+    FingerprintSetFailed(#[from] FingerprintSetError),
+    #[error("executor failed")]
+    DispatchFailed(#[from] AuthorizationFlowDispatchError),
+}
+
+/// Abstract function for executing the first part of the flow to get the code
+/// This leverages a store because depending on the platform you might navigate away from the app
+/// The dispatcher needs to send a request to the auth_url in a platform specific way
+pub fn dispatch_code_request(
+    config: AuthorizationFlowConfig,
+    store: impl FingerprintStore,
+    dispatcher: impl AuthorizationFlowDispatcher,
+) -> Result<(), DispatchFlowError> {
+    let (auth_url, fingerprint) = setup_flow(config)?;
+    store.set(fingerprint)?;
+    dispatcher.dispatch(auth_url);
+    return Ok(());
+}
+
+#[derive(Error, Debug)]
+pub enum TradeCodeForTokenError {
+    #[error("fingerprint get failed")]
+    FingerprintGetFailed(#[from] FingerprintGetError),
+    #[error("code verification failed")]
+    CodeVerificationFaield(#[from] VerifyAuthorizationCodeError),
+    #[error("request for token failed")]
+    RequestForTokenFailed(#[from] AuthorizationFlowTokenError),
+}
+
+pub async fn trade_code_for_token(
+    config: AuthorizationFlowConfig<'_>,
+    store: impl FingerprintStore,
+    code: AuthorizationCode,
+    state: CsrfTokenState,
+) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, TradeCodeForTokenError> {
+    let fingerprint = store.get()?;
+    verify_code_response(&code, state, fingerprint.csrf_token)?;
+    let token = request_token(config, code, fingerprint.pkce_verifier).await?;
+    Ok(token)
+}
+
+#[derive(Error, Debug)]
+enum VerifyAuthorizationCodeError {
+    #[error("state mismatch")]
+    StateMismatch,
+}
+fn verify_code_response(
+    _authorization_code: &AuthorizationCode,
+    state: CsrfTokenState,
+    csrf_token: CsrfToken,
+) -> Result<(), VerifyAuthorizationCodeError> {
+    if &state.0 != csrf_token.secret() {
+        return Err(VerifyAuthorizationCodeError::StateMismatch);
+    }
+    // TODO: Ensure no additional verifications are needed at this point.
+    Ok(())
+}
+
+/// Setup flow by leveraging specific implementation details in dependent crate (ie oauth2)
+fn setup_flow(config: AuthorizationFlowConfig) -> Result<(Url, Fingerprint), ParseError> {
+    let client = BasicClient::new(ClientId::new(config.client_id.into()))
+        .set_auth_uri(AuthUrl::new(config.auth_url.into())?)
+        .set_redirect_uri(RedirectUrl::new(config.redirect_url.into())?);
 
     // Generate a PKCE challenge.
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -77,21 +217,15 @@ fn prepare_authorization_flow(
         .set_pkce_challenge(pkce_challenge)
         .url();
 
-    Ok((auth_url, csrf_token, pkce_verifier))
+    Ok((
+        auth_url,
+        Fingerprint {
+            csrf_token,
+            pkce_verifier,
+        },
+    ))
 }
-#[derive(Error, Debug)]
-enum VerifyAuthorizationCodeError {}
-fn verify_authorization_code(
-    authorization_code: AuthorizationCode,
-    csrf_token: CsrfToken,
-) -> Result<(), VerifyAuthorizationCodeError> {
-    // TODO: Implement this verification
 
-    // Once the user has been redirected to the redirect URL, you'll have access to the
-    // authorization code. For security reasons, your code should verify that the `state`
-    // parameter returned by the server matches `csrf_token`.
-    Ok(())
-}
 #[derive(Error, Debug)]
 enum AuthorizationFlowTokenError {
     #[error("parse error")]
@@ -99,16 +233,27 @@ enum AuthorizationFlowTokenError {
     #[error("token retrieval failed")]
     TokenRetrievalFailed, // TODO: Learn how to use #[from] here
 }
-async fn authorization_flow_token(
+async fn request_token(
+    config: AuthorizationFlowConfig<'_>,
     authorization_code: AuthorizationCode,
     pkce_verifier: PkceCodeVerifier,
 ) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, AuthorizationFlowTokenError>
 {
-    let client = BasicClient::new(ClientId::new(CLIENT_ID.into()))
-        .set_token_uri(TokenUrl::new(TOKEN_URL.into())?);
+    let client = BasicClient::new(ClientId::new(config.client_id.into()))
+        .set_token_uri(TokenUrl::new(config.token_url.into())?);
 
+    // TODO: Audit if this method of getting the correct reqwest implement is the right way to do this
+    #[cfg(not(target_arch = "wasm32"))]
     let http_client = reqwest::ClientBuilder::new()
         // Following redirects opens the client up to SSRF vulnerabilities.
+        .redirect(reqwest::redirect::Policy::none()) // TODO: Use a WASM supported http_client
+        .build()
+        .expect("Client should build");
+
+    #[cfg(all(target_arch = "wasm32"))]
+    let http_client = reqwest::ClientBuilder::new()
+        // Following redirects opens the client up to SSRF vulnerabilities.
+        // TODO: Understand how to ensure this redirect condition still works in WASM land
         //.redirect(reqwest::redirect::Policy::none()) // TODO: Use a WASM supported http_client
         .build()
         .expect("Client should build");
