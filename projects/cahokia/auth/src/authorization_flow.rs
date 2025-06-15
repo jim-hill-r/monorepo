@@ -6,6 +6,7 @@ use oauth2::{
 };
 use oauth2::{AuthorizationCode, reqwest};
 
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub struct AuthorizationFlowConfig<'a> {
@@ -33,6 +34,7 @@ impl AuthorizationFlowConfig<'_> {
 
 pub struct CsrfTokenState(String);
 
+#[derive(Serialize, Deserialize)]
 pub struct Fingerprint {
     csrf_token: CsrfToken,
     pkce_verifier: PkceCodeVerifier,
@@ -53,25 +55,6 @@ pub enum FingerprintSetError {
 pub trait FingerprintStore {
     fn get(&self) -> Result<Fingerprint, FingerprintGetError>;
     fn set(&self, fingerprint: Fingerprint) -> Result<(), FingerprintSetError>;
-}
-
-pub struct WebSessionStorageFingerprintStore {}
-
-impl WebSessionStorageFingerprintStore {
-    pub fn new() -> WebSessionStorageFingerprintStore {
-        WebSessionStorageFingerprintStore {}
-    }
-}
-
-impl FingerprintStore for WebSessionStorageFingerprintStore {
-    fn get(&self) -> Result<Fingerprint, FingerprintGetError> {
-        // TODO:
-        todo!();
-    }
-    fn set(&self, _fingerprint: Fingerprint) -> Result<(), FingerprintSetError> {
-        // TODO:
-        Ok(())
-    }
 }
 
 #[derive(Error, Debug)]
@@ -103,38 +86,6 @@ pub trait AuthorizationFlowDispatcher {
     fn dispatch(&self, authorization_url: Url) -> Result<(), AuthorizationFlowDispatchError>;
 }
 
-pub struct WebAuthorizationFlowDispatcher {}
-
-impl WebAuthorizationFlowDispatcher {
-    pub fn new() -> WebAuthorizationFlowDispatcher {
-        WebAuthorizationFlowDispatcher {}
-    }
-}
-impl AuthorizationFlowDispatcher for WebAuthorizationFlowDispatcher {
-    fn dispatch(&self, authorization_url: Url) -> Result<(), AuthorizationFlowDispatchError> {
-        let window = match web_sys::window() {
-            Some(window) => window,
-            None => {
-                return Err(AuthorizationFlowDispatchError::Unknown); // TODO: Improve these error types
-            }
-        };
-        let w = match window.open_with_url_and_target_and_features(
-            &authorization_url.to_string(),
-            "_self",
-            "",
-        ) {
-            Ok(Some(w)) => w,
-            Ok(None) => {
-                return Err(AuthorizationFlowDispatchError::Unknown); // TODO: Improve these error types
-            }
-            Err(e) => {
-                return Err(AuthorizationFlowDispatchError::Unknown); // TODO: Improve these error types
-            }
-        };
-        Ok(())
-    }
-}
-
 #[derive(Error, Debug)]
 pub enum DispatchFlowError {
     #[error("parse failed")]
@@ -155,7 +106,7 @@ pub fn dispatch_code_request(
 ) -> Result<(), DispatchFlowError> {
     let (auth_url, fingerprint) = setup_flow(config)?;
     store.set(fingerprint)?;
-    dispatcher.dispatch(auth_url);
+    let _ = dispatcher.dispatch(auth_url);
     return Ok(());
 }
 

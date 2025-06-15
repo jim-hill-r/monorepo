@@ -1,7 +1,10 @@
 use dioxus::prelude::*;
 
 use ui::Navbar;
-use views::{Home, Login, LoginCahokia, LoginCahokiaCode};
+use views::home::Home;
+use views::login::Login;
+use views::login_cahokia::LoginCahokia;
+use views::login_cahokia_code::LoginCahokiaCode;
 
 mod views;
 
