@@ -39,6 +39,7 @@ For engine: Bevy
 For framework: Dixous
 For http: Axum
 For OpenAPI: Utopia
+For reverse proxy: Pingora
 
 # CIAM
 
