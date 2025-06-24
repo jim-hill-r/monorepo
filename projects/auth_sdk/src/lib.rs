@@ -1,2 +1,2 @@
-pub mod authorization_flow;
+pub mod provider;
 pub mod web;
