@@ -1,4 +1,4 @@
-use auth::{
+use auth_sdk::{
     authorization_flow::{AuthorizationFlowConfig, exchange_code_for_token},
     web::{WebSessionStorageFingerprintStore, fetch_code_and_state_from_browser},
 };

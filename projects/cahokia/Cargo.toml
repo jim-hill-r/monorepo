@@ -1,17 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["auth", "core", "desktop", "mobile", "ui", "web"]
+members = ["core", "desktop", "mobile", "ui", "web"]
 
 [workspace.dependencies]
 dioxus = { version = "0.6.0" }
 thiserror = "2.0.12"
 tracing = "0.1.41"
-oauth2 = { version = "5.0.0", features = ["reqwest"] }
-reqwest = { version = "0.12.20" }
-web-sys = "0.3.77"
+auth_sdk = { path = "../auth_sdk" }
 
 # workspace
-auth = { path = "auth" }
 core = { path = "core" }
 ui = { path = "ui" }
 

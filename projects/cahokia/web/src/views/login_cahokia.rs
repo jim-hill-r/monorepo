@@ -1,5 +1,5 @@
-use auth::authorization_flow::{AuthorizationFlowConfig, dispatch_code_request};
-use auth::web::{WebAuthorizationFlowDispatcher, WebSessionStorageFingerprintStore};
+use auth_sdk::authorization_flow::{dispatch_code_request, AuthorizationFlowConfig};
+use auth_sdk::web::{WebAuthorizationFlowDispatcher, WebSessionStorageFingerprintStore};
 use dioxus::prelude::*;
 
 // Note there is no client secret. This code is for server free authorization code flow.

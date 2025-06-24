@@ -1,14 +1,14 @@
 [package]
-name = "auth"
+name = "auth_sdk"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tracing = { workspace = true }
-thiserror = { workspace = true }
-reqwest = { workspace = true }
-oauth2 = { workspace = true }
-web-sys = { workspace = true, features = [
+tracing = "0.1.41"
+thiserror = "2.0.12"
+oauth2 = { version = "5.0.0", features = ["reqwest"] }
+reqwest = { version = "0.12.20" }
+web-sys = { version = "0.3.77", features = [
     "Location",
     "Storage",
     "UrlSearchParams",
