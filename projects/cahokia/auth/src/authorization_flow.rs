@@ -34,6 +34,12 @@ impl AuthorizationFlowConfig<'_> {
 
 pub struct CsrfTokenState(String);
 
+impl CsrfTokenState {
+    pub fn new(state: String) -> CsrfTokenState {
+        CsrfTokenState(state)
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Fingerprint {
     csrf_token: CsrfToken,
@@ -193,21 +199,12 @@ async fn request_token(
     let client = BasicClient::new(ClientId::new(config.client_id.into()))
         .set_token_uri(TokenUrl::new(config.token_url.into())?);
 
-    // TODO: Audit if this method of getting the correct reqwest implement is the right way to do this
-    #[cfg(not(target_arch = "wasm32"))]
     let http_client = reqwest::ClientBuilder::new()
         // Following redirects opens the client up to SSRF vulnerabilities.
-        .redirect(reqwest::redirect::Policy::none()) // TODO: Use a WASM supported http_client
+        // TODO: Ensure this policy is none for all situations
+        //.redirect(reqwest::redirect::Policy::none())
         .build()
-        .expect("Client should build");
-
-    #[cfg(all(target_arch = "wasm32"))]
-    let http_client = reqwest::ClientBuilder::new()
-        // Following redirects opens the client up to SSRF vulnerabilities.
-        // TODO: Understand how to ensure this redirect condition still works in WASM land
-        //.redirect(reqwest::redirect::Policy::none()) // TODO: Use a WASM supported http_client
-        .build()
-        .expect("Client should build");
+        .expect("Client should build"); // TODO: Don't panic, return error
 
     // Now you can trade it for an access token.
     let token_result = client
@@ -215,8 +212,8 @@ async fn request_token(
         // Set the PKCE code verifier.
         .set_pkce_verifier(pkce_verifier)
         .request_async(&http_client)
-        .await
         // TODO: Use #[from] to do this mapping to prevent discarding error data
+        .await
         .map_err(|_| AuthorizationFlowTokenError::TokenRetrievalFailed)?;
 
     // Unwrapping token_result will either produce a Token or a RequestTokenError.

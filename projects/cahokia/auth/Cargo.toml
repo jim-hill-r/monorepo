@@ -6,10 +6,12 @@ edition = "2024"
 [dependencies]
 tracing = { workspace = true }
 thiserror = { workspace = true }
-reqwest = { workspace = true, features = ["blocking"] }
-oauth2 = { workspace = true, features = ["reqwest"] }
+reqwest = { workspace = true }
+oauth2 = { workspace = true }
 web-sys = { workspace = true, features = [
+    "Location",
     "Storage",
+    "UrlSearchParams",
     "Window",
 ] } # TODO: This dep should only exist in web
 serde = "1.0.219"

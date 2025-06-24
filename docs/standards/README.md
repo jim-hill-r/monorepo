@@ -4,9 +4,12 @@
 - TypeScript (for vscode extensions only)
 
 # Testing
+
 For unit: Rust normal testing (cargo test)
+For integration: TBD (Leaning toward appium)
 
 # Benchmarking
+
 For profiling: samply
 For reporting/regression: criterion
 
