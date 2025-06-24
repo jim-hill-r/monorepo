@@ -1,11 +1,13 @@
 use oauth2::{AuthorizationCode, url::Url};
 use thiserror::Error;
-use web_sys::{UrlSearchParams, wasm_bindgen::JsValue};
+use web_sys::UrlSearchParams;
 
 use crate::authorization_flow::{
     AuthorizationFlowDispatchError, AuthorizationFlowDispatcher, CsrfTokenState, Fingerprint,
     FingerprintGetError, FingerprintSetError, FingerprintStore,
 };
+
+const DEFAULT_FINGERPRINT_STORAGE_KEY: &str = "oauth_flow_fingerprint";
 
 #[derive(Error, Debug)]
 pub enum FetchError {
@@ -45,23 +47,29 @@ impl FingerprintStore for WebSessionStorageFingerprintStore {
                 return Err(FingerprintGetError::Unknown); // TODO: Improve these error types
             }
         };
+        tracing::debug!("{:?}", window);
         let storage = match window.session_storage() {
             Ok(Some(storage)) => storage,
             _ => {
                 return Err(FingerprintGetError::Unknown); // TODO: Improve these error types
             }
         };
-        let fingerprint: Fingerprint = match storage.get_item("oauth_flow_fingerprint") {
-            Ok(Some(fingerprint)) => match serde_json::from_str(&fingerprint) {
-                Ok(fingerprint) => fingerprint,
-                _ => {
-                    return Err(FingerprintGetError::Unknown);
-                } // TODO: Improve these error types
-            },
+        tracing::debug!("{:?}", storage);
+        let fingerprint: Fingerprint = match storage.get_item(DEFAULT_FINGERPRINT_STORAGE_KEY) {
+            Ok(Some(fingerprint)) => {
+                tracing::debug!("{:?}", fingerprint);
+                match serde_json::from_str(&fingerprint) {
+                    Ok(fingerprint) => fingerprint,
+                    _ => {
+                        return Err(FingerprintGetError::Unknown);
+                    } // TODO: Improve these error types
+                }
+            }
             _ => {
                 return Err(FingerprintGetError::Unknown); // TODO: Improve these error types
             }
         };
+        tracing::debug!("{:?}", fingerprint);
         Ok(fingerprint)
     }
     fn set(&self, fingerprint: Fingerprint) -> Result<(), FingerprintSetError> {
@@ -83,7 +91,7 @@ impl FingerprintStore for WebSessionStorageFingerprintStore {
                 return Err(FingerprintSetError::Unknown); // TODO: Improve these error types
             }
         };
-        match storage.set_item("oauth_flow_fingerprint", &fingerprint_json) {
+        match storage.set_item(DEFAULT_FINGERPRINT_STORAGE_KEY, &fingerprint_json) {
             Ok(_) => return Ok(()),
             _ => {
                 return Err(FingerprintSetError::Unknown); // TODO: Improve these error types

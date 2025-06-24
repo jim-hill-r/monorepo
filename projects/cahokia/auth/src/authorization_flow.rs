@@ -40,7 +40,7 @@ impl CsrfTokenState {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Fingerprint {
     csrf_token: CsrfToken,
     pkce_verifier: PkceCodeVerifier,
@@ -117,7 +117,7 @@ pub fn dispatch_code_request(
 }
 
 #[derive(Error, Debug)]
-pub enum TradeCodeForTokenError {
+pub enum ExchangeCodeForTokenError {
     #[error("fingerprint get failed")]
     FingerprintGetFailed(#[from] FingerprintGetError),
     #[error("code verification failed")]
@@ -126,13 +126,16 @@ pub enum TradeCodeForTokenError {
     RequestForTokenFailed(#[from] AuthorizationFlowTokenError),
 }
 
-pub async fn trade_code_for_token(
+pub async fn exchange_code_for_token(
     config: AuthorizationFlowConfig<'_>,
     store: impl FingerprintStore,
     code: AuthorizationCode,
     state: CsrfTokenState,
-) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, TradeCodeForTokenError> {
+) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, ExchangeCodeForTokenError>
+{
+    tracing::debug!("{:?}", code);
     let fingerprint = store.get()?;
+    tracing::debug!("{:?}", fingerprint);
     verify_code_response(&code, state, fingerprint.csrf_token)?;
     let token = request_token(config, code, fingerprint.pkce_verifier).await?;
     Ok(token)
@@ -149,6 +152,7 @@ fn verify_code_response(
     csrf_token: CsrfToken,
 ) -> Result<(), VerifyAuthorizationCodeError> {
     if &state.0 != csrf_token.secret() {
+        tracing::debug!("Failed checks");
         return Err(VerifyAuthorizationCodeError::StateMismatch);
     }
     // TODO: Ensure no additional verifications are needed at this point.
@@ -170,6 +174,8 @@ fn setup_flow(config: AuthorizationFlowConfig) -> Result<(Url, Fingerprint), Par
         // Set the desired scopes.
         .add_scope(Scope::new("read".to_string()))
         .add_scope(Scope::new("write".to_string()))
+        // Offline access results in refresh token being provided
+        .add_scope(Scope::new("offline_access".to_string()))
         // Set the PKCE code challenge.
         .set_pkce_challenge(pkce_challenge)
         .url();
@@ -197,7 +203,8 @@ async fn request_token(
 ) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, AuthorizationFlowTokenError>
 {
     let client = BasicClient::new(ClientId::new(config.client_id.into()))
-        .set_token_uri(TokenUrl::new(config.token_url.into())?);
+        .set_token_uri(TokenUrl::new(config.token_url.into())?)
+        .set_redirect_uri(RedirectUrl::new(config.redirect_url.into())?);
 
     let http_client = reqwest::ClientBuilder::new()
         // Following redirects opens the client up to SSRF vulnerabilities.
@@ -206,7 +213,7 @@ async fn request_token(
         .build()
         .expect("Client should build"); // TODO: Don't panic, return error
 
-    // Now you can trade it for an access token.
+    // Now you can exchange it for an access token.
     let token_result = client
         .exchange_code(authorization_code)
         // Set the PKCE code verifier.

@@ -1,5 +1,5 @@
 use auth::{
-    authorization_flow::{AuthorizationFlowConfig, trade_code_for_token},
+    authorization_flow::{AuthorizationFlowConfig, exchange_code_for_token},
     web::{WebSessionStorageFingerprintStore, fetch_code_and_state_from_browser},
 };
 use dioxus::{logger::tracing, prelude::*};
@@ -13,8 +13,8 @@ use dioxus::{logger::tracing, prelude::*};
 // Note there is no client secret. This code is for server free authorization code flow.
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
-const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/token";
-const REDIRECT_ENDPOINT: &str = "http://localhost:8080/login/cahokia/code"; // TODO: make this an actual endpoint and use window in library to get host
+const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
+const REDIRECT_ENDPOINT: &str = "http://local.app.cahokia.com:8080/login/cahokia/code"; // TODO: make this an actual endpoint and use window in library to get host
 
 #[component]
 pub fn LoginCahokiaCode() -> Element {
@@ -26,7 +26,7 @@ pub fn LoginCahokiaCode() -> Element {
             }
         };
         tracing::debug!("code success!");
-        let _token = match trade_code_for_token(
+        let _token = match exchange_code_for_token(
             AuthorizationFlowConfig::new(CLIENT_ID, AUTH_URL, TOKEN_URL, REDIRECT_ENDPOINT),
             WebSessionStorageFingerprintStore::new(),
             authorization_code,
@@ -38,7 +38,7 @@ pub fn LoginCahokiaCode() -> Element {
                 return "token fetched!".to_string();
             }
             _ => {
-                return "trade failed.".to_string();
+                return "exchange failed.".to_string();
             }
         };
 
