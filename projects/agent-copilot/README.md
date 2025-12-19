@@ -4,7 +4,7 @@ A Rust binary that calls GitHub Copilot to start an agent task directly using th
 
 ## Description
 
-This tool automates the creation of GitHub Copilot agent tasks using the GitHub API, replacing the previous approach of creating GitHub issues. It reads agent prompt files and creates agent tasks programmatically, providing a more direct integration with GitHub Copilot's agent system.
+This tool automates the creation of GitHub Copilot agent tasks using the GitHub Copilot API. It reads agent prompt files and creates jobs programmatically using the same API endpoint that the `gh agent-task create` command uses.
 
 ## Building
 
@@ -28,20 +28,24 @@ You can run the CLI directly in development mode without building a release bina
 cargo run -- --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file ../../.github/agent-prompts/start-a-new-task.md --token $GITHUB_TOKEN
 ```
 
+Note: The `--title` parameter is kept for backwards compatibility but is not used by the Copilot API. The problem statement from the prompt file is what matters.
+
 This is useful during development and testing as it avoids the longer compile times of release builds.
 
 ## Usage
 
 ```bash
-agent-copilot --repo <OWNER/REPO> --title <TITLE> --prompt-file <PATH> --token <GITHUB_TOKEN>
+agent-copilot --repo <OWNER/REPO> --title <TITLE> --prompt-file <PATH> --token <GITHUB_TOKEN> [--base-branch <BRANCH>] [--custom-agent <AGENT>]
 ```
 
 ### Arguments
 
 - `--repo`: Repository in the format `owner/repo` (e.g., `jim-hill-r/monorepo`)
-- `--title`: Title for the agent task
-- `--prompt-file`: Path to the agent prompt file
+- `--title`: Title for the agent task (kept for backwards compatibility, not used by API - may be removed in future versions)
+- `--prompt-file`: Path to the agent prompt file containing the problem statement
 - `--token`: GitHub personal access token with appropriate permissions
+- `--base-branch`: (Optional) Base branch for the pull request
+- `--custom-agent`: (Optional) Custom agent to use (e.g., 'my-agent' for '.github/agents/my-agent.md')
 
 ### Example
 
@@ -51,6 +55,15 @@ agent-copilot \
   --title "Start a new task" \
   --prompt-file .github/agent-prompts/start-a-new-task.md \
   --token $GITHUB_TOKEN
+
+# With optional parameters
+agent-copilot \
+  --repo jim-hill-r/monorepo \
+  --title "Start a new task" \
+  --prompt-file .github/agent-prompts/start-a-new-task.md \
+  --token $GITHUB_TOKEN \
+  --base-branch main \
+  --custom-agent my-custom-agent
 ```
 
 ## GitHub Token
@@ -66,8 +79,8 @@ To use this tool, you need a GitHub Personal Access Token with the appropriate p
 5. Give your token a descriptive name (e.g., "agent-copilot CLI")
 6. Set an expiration date (or choose "No expiration" for tokens you'll use long-term)
 7. Select the following scopes:
-   - `repo` - Full control of private repositories (includes `repo:status`, `repo_deployment`, `public_repo`, `repo:invite`, `security_events`)
-   - Optionally, `workflow` if you need to trigger workflows
+   - `copilot` - Access to GitHub Copilot (required for creating agent tasks)
+   - `repo` - Full control of private repositories (may also be required depending on your repository visibility)
 8. Click **Generate token**
 9. **Important**: Copy the token immediately - you won't be able to see it again!
 
@@ -96,14 +109,15 @@ agent-copilot \
 
 ## Features
 
-- Creates GitHub Copilot agent tasks directly via the GitHub API
+- Creates GitHub Copilot agent tasks using the Copilot API (same as `gh agent-task create`)
 - Reads agent prompts from markdown files
 - Supports GitHub authentication via token
-- Direct integration with GitHub Copilot's agent system
+- Supports optional base branch and custom agent configuration
+- Direct integration with the GitHub Copilot Jobs API at `api.githubcopilot.com`
 
 ## Important Notes
 
-This tool uses the GitHub Copilot Tasks API endpoint (`/repos/{owner}/{repo}/copilot/tasks`). The exact API response structure may vary based on GitHub's implementation. If you encounter issues with the API response format, please check the error messages and adjust the response structure in `src/main.rs` accordingly.
+This tool uses the GitHub Copilot Jobs API endpoint (`https://api.githubcopilot.com/agents/swe/v1/jobs/{owner}/{repo}`), which is the same endpoint used by the `gh agent-task create` command. The token must have the `copilot` scope to create agent tasks. If you encounter a 401 or 403 error, ensure your token has the correct permissions as described in the "GitHub Token" section.
 
 ## Dependencies
 

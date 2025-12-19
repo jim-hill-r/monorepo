@@ -1,10 +1,10 @@
 # Agent Copilot - Implementation Notes
 
 ## Purpose
-This project was created to automate the creation of GitHub Copilot agent tasks using the GitHub API directly, replacing the previous approach of creating GitHub issues to trigger agents.
+This project was created to automate the creation of GitHub Copilot agent tasks using the GitHub Copilot API directly. It replicates the functionality of the `gh agent-task create` command, using the same Copilot Jobs API at `api.githubcopilot.com`.
 
 ## Key Changes
-The tool has been refactored to use the `/repos/{owner}/{repo}/copilot/tasks` endpoint instead of the `/repos/{owner}/{repo}/issues` endpoint. This provides a more direct integration with GitHub Copilot's agent system.
+The tool uses the GitHub Copilot Jobs API (`https://api.githubcopilot.com/agents/swe/v1/jobs/{owner}/{repo}`) to create agent tasks. This is the same API endpoint that `gh agent-task create` uses under the hood, providing direct integration with GitHub Copilot's agent system.
 
 ## Usage Example
 ```bash
