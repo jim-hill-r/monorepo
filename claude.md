@@ -60,6 +60,11 @@ This is a Rust-based monorepo with multiple projects. Key information:
 - **Project Creation**: Create new projects with `cast project new`
 - **Issue Tracking**: Issues are tracked as TODO comments in the codebase
 
+### GitHub Actions Workflows
+
+- **start-a-new-task.yml**: Automatically triggers a new agent task when a PR from `copilot-swe-agent[bot]` is merged. Uses `gh agent-task create` to directly create agent tasks without creating GitHub issues.
+- **pages.yml**: Deploys documentation from the `docs/` folder to GitHub Pages.
+
 ### Cast Session System
 
 The Cast tooling includes a session tracking system:
