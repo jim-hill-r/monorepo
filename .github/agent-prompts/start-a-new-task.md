@@ -8,6 +8,7 @@ Search the repo for a TODO or FIX comment. Start by looking in ISSUES.md files. 
 2. Choose one.
 3. Complete the TODO or FIX.
 4. Try to update claude.md with any information that you learned that would be useful for this monorepo.
+5. Remove the TODO or FIX comment that you fixed.
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
