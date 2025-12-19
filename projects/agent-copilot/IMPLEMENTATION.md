@@ -1,7 +1,10 @@
 # Agent Copilot - Implementation Notes
 
 ## Purpose
-This project was created to automate the creation of GitHub issues that trigger GitHub Copilot agents, mimicking the behavior of `.github/workflows/start-a-new-task.yml`.
+This project was created to automate the creation of GitHub Copilot agent tasks using the GitHub API directly, replacing the previous approach of creating GitHub issues to trigger agents.
+
+## Key Changes
+The tool has been refactored to use the `/repos/{owner}/{repo}/copilot/tasks` endpoint instead of the `/repos/{owner}/{repo}/issues` endpoint. This provides a more direct integration with GitHub Copilot's agent system.
 
 ## Usage Example
 ```bash
@@ -13,10 +16,10 @@ agent-copilot \
 ```
 
 ## Integration with Workflows
-This tool can be used in GitHub Actions workflows or locally to create issues programmatically. It's particularly useful for:
-- Automating agent task creation
-- Batch creation of issues
-- CI/CD integration for automated issue management
+This tool can be used in GitHub Actions workflows or locally to create agent tasks programmatically. It's particularly useful for:
+- Automating agent task creation without creating issues
+- Direct integration with GitHub Copilot's agent system
+- CI/CD integration for automated agent task management
 
 ## Testing
 The project includes unit tests for:

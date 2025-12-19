@@ -1,10 +1,10 @@
 # Agent Copilot
 
-A Rust binary that calls GitHub Copilot to start an agent task similar to the workflow `start-a-new-task.yml`.
+A Rust binary that calls GitHub Copilot to start an agent task directly using the GitHub API.
 
 ## Description
 
-This tool automates the creation of GitHub issues that trigger GitHub Copilot agents, mimicking the behavior of the `start-a-new-task.yml` workflow. It reads agent prompt files and creates issues programmatically using the GitHub API.
+This tool automates the creation of GitHub Copilot agent tasks using the GitHub API, replacing the previous approach of creating GitHub issues. It reads agent prompt files and creates agent tasks programmatically, providing a more direct integration with GitHub Copilot's agent system.
 
 ## Building
 
@@ -20,6 +20,16 @@ To build in release mode:
 cargo build --release
 ```
 
+## Running in Development Mode
+
+You can run the CLI directly in development mode without building a release binary:
+
+```bash
+cargo run -- --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file .github/agent-prompts/start-a-new-task.md --token $GITHUB_TOKEN
+```
+
+This is useful during development and testing as it avoids the longer compile times of release builds.
+
 ## Usage
 
 ```bash
@@ -29,9 +39,9 @@ agent-copilot --repo <OWNER/REPO> --title <TITLE> --prompt-file <PATH> --token <
 ### Arguments
 
 - `--repo`: Repository in the format `owner/repo` (e.g., `jim-hill-r/monorepo`)
-- `--title`: Title for the GitHub issue
+- `--title`: Title for the agent task
 - `--prompt-file`: Path to the agent prompt file
-- `--token`: GitHub personal access token with `repo` scope
+- `--token`: GitHub personal access token with appropriate permissions
 
 ### Example
 
@@ -86,10 +96,10 @@ agent-copilot \
 
 ## Features
 
-- Creates GitHub issues programmatically via the GitHub API
-- Reads issue body from markdown files
+- Creates GitHub Copilot agent tasks directly via the GitHub API
+- Reads agent prompts from markdown files
 - Supports GitHub authentication via token
-- Mimics the behavior of GitHub Actions workflows
+- Direct integration with GitHub Copilot's agent system
 
 ## Dependencies
 
