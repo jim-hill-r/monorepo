@@ -1,4 +1,5 @@
 
+TODO: When running agent-copilot via instructions on line 28 of README.md, the github api returns a 404. The github token only has the permissions defined in the README.md.
 TODO: Convert the `start-a-new-task.md` workflow to use the agent-copilot binary found in artifacts of that project.   
 TODO: Improve readme of the pane project with directions on how to run the code locally in dev mode.
 TODO: Create a new project called pane-cloudflare. Put it in the projects folder. This project is a deployment project for deployment the build artifacts from project pane onto cloudflare pages.   

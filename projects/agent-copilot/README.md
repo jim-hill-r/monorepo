@@ -25,7 +25,7 @@ cargo build --release
 You can run the CLI directly in development mode without building a release binary:
 
 ```bash
-cargo run -- --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file .github/agent-prompts/start-a-new-task.md --token $GITHUB_TOKEN
+cargo run -- --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file ../../.github/agent-prompts/start-a-new-task.md --token $GITHUB_TOKEN
 ```
 
 This is useful during development and testing as it avoids the longer compile times of release builds.
