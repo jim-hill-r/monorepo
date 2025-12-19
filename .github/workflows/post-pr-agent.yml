@@ -29,9 +29,9 @@ jobs:
             exit 1
           fi
           PROMPT=$(cat .github/agent-prompts/post-pr-review.md)
-          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          echo "prompt<<'EOF_PROMPT_DELIMITER'" >> $GITHUB_OUTPUT
           echo "$PROMPT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "EOF_PROMPT_DELIMITER" >> $GITHUB_OUTPUT
       
       - name: Trigger GitHub Copilot Agent
         uses: actions/github-script@v7
@@ -46,14 +46,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const promptText = process.env.PROMPT_TEXT;
-            const prInfo = `
-            ## PR Information
-            - PR #${process.env.PR_NUMBER}: ${process.env.PR_TITLE}
-            - Merged: ${process.env.PR_MERGED}
-            - Base branch: ${process.env.PR_BASE}
-            - Head branch: ${process.env.PR_HEAD}
-            
-            Please review the changes from this PR and identify any follow-up work.`;
+            const prInfo = [
+              '',
+              '## PR Information',
+              `- PR #${process.env.PR_NUMBER}: ${process.env.PR_TITLE}`,
+              `- Merged: ${process.env.PR_MERGED}`,
+              `- Base branch: ${process.env.PR_BASE}`,
+              `- Head branch: ${process.env.PR_HEAD}`,
+              '',
+              'Please review the changes from this PR and identify any follow-up work.'
+            ].join('\n');
             
             const fullPrompt = promptText + "\n" + prInfo;
             
