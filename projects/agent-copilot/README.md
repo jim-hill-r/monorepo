@@ -63,6 +63,5 @@ agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-fil
 
 - `clap`: Command-line argument parsing
 - `reqwest`: HTTP client for GitHub API calls
-- `tokio`: Async runtime
 - `serde`: Serialization/deserialization
 - `anyhow`: Error handling
