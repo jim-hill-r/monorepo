@@ -62,7 +62,7 @@ This is a Rust-based monorepo with multiple projects. Key information:
 
 ### GitHub Actions Workflows
 
-- **start-a-new-task.yml**: Automatically triggers a new agent task when a PR from the Copilot agent is merged. The workflow checks for PRs created by the user login `Copilot` (user ID: 198982749), not `copilot-swe-agent[bot]`. Uses `gh agent-task create` to directly create agent tasks without creating GitHub issues.
+- **start-a-new-task.yml**: Automatically triggers a new agent task when a PR from `copilot-swe-agent[bot]` is merged. Uses `gh agent-task create` to directly create agent tasks without creating GitHub issues.
 - **pages.yml**: Deploys documentation from the `docs/` folder to GitHub Pages.
 
 ### Cast Session System
