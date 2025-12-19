@@ -60,6 +60,15 @@ This is a Rust-based monorepo with multiple projects. Key information:
 - **Project Creation**: Create new projects with `cast project new`
 - **Issue Tracking**: Issues are tracked as TODO comments in the codebase
 
+### Cast Session System
+
+The Cast tooling includes a session tracking system:
+- Sessions are stored in `.cast/sessions/` directory
+- Each session creates a log file named with UUID v7 (time-based) and optional name: `{uuid}-{name}.log` or `{uuid}.log`
+- UUID v7 ensures sessions are chronologically ordered when sorted alphabetically
+- VSCode extension (`cast_vscode`) displays elapsed time for the most recent session
+- To work with sessions: always read the **last** file in the sessions directory to get the most recent session
+
 ## Resources
 
 - [Repository README](./README.md)

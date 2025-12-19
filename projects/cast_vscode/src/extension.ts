@@ -26,7 +26,7 @@ function updateStatusBarItem(): void {
     const sessionDirectory = `${vscode.workspace.workspaceFolders[0].uri.path}/${SESSIONS_DIRECTORY}`;
     fs.readdir(sessionDirectory, (err, files) => {
       if (!err && files.length > 0) {
-        const sessionLogFilePath = `${sessionDirectory}/${files[0]}`;
+        const sessionLogFilePath = `${sessionDirectory}/${files[files.length - 1]}`;
         const sessionLogContent = fs.readFileSync(sessionLogFilePath, "utf-8");
         const sessionStart = getSessionStart(sessionLogContent);
         if (sessionStart) {
