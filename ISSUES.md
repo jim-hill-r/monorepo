@@ -1,2 +1,2 @@
-TODO: Create a new project called pane. Put it in the projects folder. This should be a dioxus project built with Rust. For now just put placeholder content.
+TODO: Update the post-pr-agent.yml workflow to not use github issues and rather kick it off some other way.    
 TODO: Create a new project called pane-cloudflare. Put it in the projects folder. This project is a deployment project for deployment the build artifacts from project pane onto cloudflare pages.
