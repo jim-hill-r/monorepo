@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auftog Monorepo - Single Pane of Glass</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 8px;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .project-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .project-card h3 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+        
+        .project-card p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .quick-links a {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        
+        .quick-links a:hover {
+            background: #764ba2;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-poc {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .commands {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+        
+        .commands code {
+            color: #a6e22e;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .commands pre {
+            margin: 10px 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Auftog Monorepo</h1>
+            <p>Single Pane of Glass for Repository Operations</p>
+        </header>
+
+        <div class="section">
+            <h2>📋 Quick Links</h2>
+            <div class="quick-links">
+                <a href="https://github.com/jim-hill-r/monorepo" target="_blank">GitHub Repository</a>
+                <a href="https://github.com/jim-hill-r/monorepo/issues" target="_blank">Issues</a>
+                <a href="https://github.com/jim-hill-r/monorepo/pulls" target="_blank">Pull Requests</a>
+                <a href="https://github.com/jim-hill-r/monorepo/actions" target="_blank">CI/CD Actions</a>
+                <a href="https://github.com/jim-hill-r/monorepo/blob/main/docs/README.md" target="_blank">Documentation</a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🛠️ Getting Started</h2>
+            <h3>Dependencies</h3>
+            <ul>
+                <li><strong>Rust & Cargo:</strong> Install via <a href="https://www.rust-lang.org/tools/install">Rustup</a></li>
+                <li><strong>SurrealDB:</strong> Follow <a href="https://surrealdb.com/docs/surrealdb/installation/macos">installation docs</a></li>
+                <li><strong>Cargo-binstall:</strong> See <a href="https://github.com/cargo-bins/cargo-binstall">repo instructions</a></li>
+                <li><strong>Cross:</strong> See <a href="https://github.com/cross-rs/cross">repo instructions</a></li>
+                <li><strong>Cast CLI:</strong> Monorepo management tool</li>
+            </ul>
+            
+            <div class="commands">
+                <h4 style="color: #f8f8f2; margin-bottom: 10px;">Essential Commands</h4>
+                <pre><code># Install Cast CLI (monorepo tool)
+cargo install --path ./projects/cast_cli
+
+# Install Cast VSCode Extension
+code --install-extension ./projects/cast_vscode/cast.vsix
+
+# Start a work session
+cast session start
+
+# Create a new project
+cast project new</code></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📦 Projects</h2>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <h3>Cast <span class="status-badge status-active">Active</span></h3>
+                    <p>Highly opinionated tooling for Rust monorepos. CLI for managing projects, sessions, and workflows.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Auth SDK <span class="status-badge status-active">Active</span></h3>
+                    <p>Generic library for OAuth authentication flows. Currently targeting Auth0 APIs with portable design.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Luggage <span class="status-badge status-active">Active</span></h3>
+                    <p>Portable Data Platform - Private, Personal, Portable. Manage your data with sovereignty.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Cahokia <span class="status-badge status-active">Active</span></h3>
+                    <p>Cross-platform application with web, desktop, and mobile support. Shared UI components.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Bogan <span class="status-badge status-poc">POC</span></h3>
+                    <p>Transparent marketplace focused on supply chain information. Alternative to Amazon with ethical focus.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Starcraft <span class="status-badge status-poc">POC</span></h3>
+                    <p>Game development with isometric maps using bevy_ecs_tilemap.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Sparkhill <span class="status-badge status-active">Active</span></h3>
+                    <p>Static website project with modern CSS and build tooling.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>Profiles <span class="status-badge status-active">Active</span></h3>
+                    <p>Personal profile websites with internationalization support.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3>CIAM <span class="status-badge status-poc">POC</span></h3>
+                    <p>Customer Identity and Access Management solution.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Repository Structure</h2>
+            <div class="commands">
+                <pre><code>auftog/
+├── projects/          # Main projects
+│   ├── cast/         # Monorepo tooling
+│   ├── auth_sdk/     # OAuth/Auth library
+│   ├── luggage/      # Data platform
+│   ├── cahokia/      # Cross-platform app
+│   └── ...
+├── proof_of_concepts/ # Experimental work
+├── templates/         # Project templates
+├── docs/             # Documentation
+└── ISSUES.md         # TODO tracking</code></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 Operations</h2>
+            <h3>Issue Tracking</h3>
+            <p>All issues are tracked as TODO comments in the codebase. Use the TODO Tree VSCode extension to find work items.</p>
+            
+            <h3>Git LFS</h3>
+            <p>Large artifacts (PDFs, binaries) are managed with Git LFS. Ensure you have <code>git-lfs</code> installed.</p>
+            
+            <h3>CI/CD</h3>
+            <p>Automated workflows run on GitHub Actions. Check the Actions tab for build status and deployments.</p>
+        </div>
+
+        <div class="section">
+            <h2>📚 Resources</h2>
+            <ul style="margin-left: 20px;">
+                <li><a href="https://github.com/jim-hill-r/monorepo/blob/main/docs/README.md" target="_blank">Main Documentation</a></li>
+                <li><a href="https://github.com/jim-hill-r/monorepo/blob/main/claude.md">Claude AI Integration Guide</a></li>
+                <li><a href="https://github.com/jim-hill-r/monorepo/blob/main/ISSUES.md">Current TODOs</a></li>
+                <li>Documentation located in: <code>docs/</code></li>
+                <li>Learning resources in: <code>docs/learning/</code></li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>Auftog Monorepo - Managing Multiple Rust Projects with Ease</p>
+            <p>Last Updated: December 2025</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,351 @@
+# Dependabot configuration for monorepo
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Cargo/Rust dependencies for Cast CLI
+  - package-ecosystem: "cargo"
+    directory: "/projects/cast_cli"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cast_cli"
+
+  # Cargo/Rust dependencies for Cast
+  - package-ecosystem: "cargo"
+    directory: "/projects/cast"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cast"
+
+  # Cargo/Rust dependencies for Auth SDK
+  - package-ecosystem: "cargo"
+    directory: "/projects/auth_sdk"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "auth_sdk"
+
+  # Cargo/Rust dependencies for Luggage
+  - package-ecosystem: "cargo"
+    directory: "/projects/luggage"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "luggage"
+
+  # Cargo/Rust dependencies for Cahokia
+  - package-ecosystem: "cargo"
+    directory: "/projects/cahokia"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cahokia"
+
+  # Cargo/Rust dependencies for Cahokia Web
+  - package-ecosystem: "cargo"
+    directory: "/projects/cahokia/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cahokia"
+
+  # Cargo/Rust dependencies for Cahokia Desktop
+  - package-ecosystem: "cargo"
+    directory: "/projects/cahokia/desktop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cahokia"
+
+  # Cargo/Rust dependencies for Cahokia Mobile
+  - package-ecosystem: "cargo"
+    directory: "/projects/cahokia/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cahokia"
+
+  # Cargo/Rust dependencies for Cahokia UI
+  - package-ecosystem: "cargo"
+    directory: "/projects/cahokia/ui"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cahokia"
+
+  # Cargo/Rust dependencies for Cahokia Core
+  - package-ecosystem: "cargo"
+    directory: "/projects/cahokia/core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "cahokia"
+
+  # Cargo/Rust dependencies for Starcraft
+  - package-ecosystem: "cargo"
+    directory: "/projects/starcraft"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "starcraft"
+
+  # Cargo/Rust dependencies for Sparkhill Website
+  - package-ecosystem: "cargo"
+    directory: "/projects/sparkhill/website"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "sparkhill"
+
+  # Cargo/Rust dependencies for CIAM
+  - package-ecosystem: "cargo"
+    directory: "/projects/ciam"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "ciam"
+
+  # Cargo/Rust dependencies for Profiles - jimhillr
+  - package-ecosystem: "cargo"
+    directory: "/projects/profiles/jimhillr"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "profiles"
+
+  # Cargo/Rust dependencies for Profiles - content_provider
+  - package-ecosystem: "cargo"
+    directory: "/projects/profiles/content_provider"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "profiles"
+
+  # Cargo/Rust dependencies for Luggage webapp example
+  - package-ecosystem: "cargo"
+    directory: "/projects/luggage/examples/webapp"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "luggage"
+
+  # Cargo/Rust dependencies for Dioxus SSG proof of concept
+  - package-ecosystem: "cargo"
+    directory: "/proof_of_concepts/dioxus/ssg"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "proof-of-concept"
+
+  # Cargo/Rust dependencies for Dioxus static website proof of concept
+  - package-ecosystem: "cargo"
+    directory: "/proof_of_concepts/dioxus/static_website"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "proof-of-concept"
+
+  # Cargo/Rust dependencies for NeetCode150
+  - package-ecosystem: "cargo"
+    directory: "/docs/learning/computer_science/algorithms/NeetCode150"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "learning"
+
+  # Template - Binary
+  - package-ecosystem: "cargo"
+    directory: "/templates/binary"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "template"
+
+  # Template - Library
+  - package-ecosystem: "cargo"
+    directory: "/templates/library"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "template"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
