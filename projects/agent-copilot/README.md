@@ -43,13 +43,45 @@ agent-copilot \
   --token $GITHUB_TOKEN
 ```
 
-## Environment Variables
+## GitHub Token
 
-Instead of passing the token as a CLI argument, you can set it as an environment variable:
+### How to Obtain a GitHub Token
+
+To use this tool, you need a GitHub Personal Access Token with the appropriate permissions:
+
+1. Go to GitHub Settings: Click your profile photo → **Settings**
+2. Navigate to **Developer settings** (at the bottom of the left sidebar)
+3. Click **Personal access tokens** → **Tokens (classic)**
+4. Click **Generate new token** → **Generate new token (classic)**
+5. Give your token a descriptive name (e.g., "agent-copilot CLI")
+6. Set an expiration date (or choose "No expiration" for tokens you'll use long-term)
+7. Select the following scopes:
+   - `repo` - Full control of private repositories (includes `repo:status`, `repo_deployment`, `public_repo`, `repo:invite`, `security_events`)
+   - Optionally, `workflow` if you need to trigger workflows
+8. Click **Generate token**
+9. **Important**: Copy the token immediately - you won't be able to see it again!
+
+Store the token securely. Never commit it to source code or share it publicly.
+
+### Using the Token
+
+You can provide the token in two ways:
+
+**Option 1: Environment Variable (Recommended)**
 
 ```bash
 export GITHUB_TOKEN=your_token_here
 agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file .github/agent-prompts/start-a-new-task.md
+```
+
+**Option 2: Command-line Argument**
+
+```bash
+agent-copilot \
+  --repo jim-hill-r/monorepo \
+  --title "Start a new task" \
+  --prompt-file .github/agent-prompts/start-a-new-task.md \
+  --token ghp_your_token_here
 ```
 
 ## Features
