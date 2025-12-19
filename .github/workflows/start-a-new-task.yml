@@ -38,7 +38,7 @@ jobs:
       
       - name: Create GitHub Copilot Agent Task
         env:
-          GITHUB_TOKEN: ${{ secrets. START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
+          GITHUB_TOKEN: ${{ secrets.START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
         run: |
           projects/agent-copilot/target/release/agent-copilot \
             --repo "${{ github.repository }}" \
