@@ -41,7 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           projects/agent-copilot/artifacts/agent-copilot \
-            --repo ${{ github.repository }} \
+            --repo "${{ github.repository }}" \
             --title "Start a new task" \
             --prompt-file .github/agent-prompts/start-a-new-task.md \
-            --token $GITHUB_TOKEN
+            --token "$GITHUB_TOKEN"
