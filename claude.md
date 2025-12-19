@@ -1,0 +1,67 @@
+# Claude AI Assistant
+
+This document provides guidance on using Claude AI assistant with this monorepo.
+
+## Overview
+
+Claude is an AI assistant that can help with various development tasks in this repository, including:
+
+- Code review and suggestions
+- Documentation generation
+- Bug investigation and debugging
+- Refactoring assistance
+- Test creation
+- Architecture discussions
+
+## Getting Started
+
+When working with Claude on this monorepo:
+
+1. Provide context about the specific project you're working on (e.g., `projects/cast_cli`, `projects/auth_sdk`)
+2. Share relevant file paths and code snippets
+3. Be specific about what you need help with
+
+## Best Practices
+
+- **Be Specific**: Clearly describe the problem or task you need help with
+- **Provide Context**: Include relevant code, error messages, or documentation
+- **Iterative Approach**: Work incrementally, testing suggestions before moving forward
+- **Review Suggestions**: Always review and understand AI-generated code before applying it
+
+## Common Use Cases
+
+### Code Review
+Ask Claude to review your changes for:
+- Code quality and best practices
+- Potential bugs or edge cases
+- Performance improvements
+- Security considerations
+
+### Documentation
+Claude can help:
+- Write or improve README files
+- Generate inline code documentation
+- Create API documentation
+- Write user guides
+
+### Debugging
+Share error messages and relevant code for help with:
+- Root cause analysis
+- Suggested fixes
+- Test case creation
+
+## Repository-Specific Context
+
+This is a Rust-based monorepo with multiple projects. Key information:
+
+- **Primary Language**: Rust
+- **Project Management**: Uses `cast` CLI tool for project operations
+- **Session Management**: Start work sessions with `cast session start`
+- **Project Creation**: Create new projects with `cast project new`
+- **Issue Tracking**: Issues are tracked as TODO comments in the codebase
+
+## Resources
+
+- [Repository README](./README.md)
+- [Issues](./ISSUES.md)
+- [Documentation](./docs/)
