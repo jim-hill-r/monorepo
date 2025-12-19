@@ -2,32 +2,29 @@
 
 ## start-a-new-task.yml
 
-This workflow automatically triggers a new GitHub Copilot agent task after a PR created by the Copilot agent is merged.
+This workflow automatically creates a GitHub Issue assigned to @copilot after a PR created by the Copilot agent is merged. This triggers a new GitHub Copilot agent task.
+
+### How It Works
+
+1. **Trigger**: The workflow runs when a pull request is closed and merged, but only if it was created by the GitHub Copilot agent (`user.login == 'Copilot'`).
+
+2. **Issue Creation**: The workflow creates a new GitHub Issue with:
+   - Title: "Start a new task"
+   - Body: Content from `.github/agent-prompts/start-a-new-task.md`
+   - Assignee: @copilot (which triggers the Copilot agent to work on it)
+
+3. **Authentication**: Uses the standard `GITHUB_TOKEN` provided by GitHub Actions, which has sufficient permissions for creating issues.
 
 ### Setup Requirements
 
-The `gh agent-task create` command requires OAuth authentication, which the default `GITHUB_TOKEN` does not provide. To use this workflow, you need to:
+No additional setup is required! The workflow uses the default `GITHUB_TOKEN` which has the necessary permissions to create issues and assign them to @copilot.
 
-1. **Create a Personal Access Token (PAT)**:
-   - Go to GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens (or Classic tokens)
-   - Create a new token with the following scopes:
-     - `repo` (Full control of private repositories)
-     - `workflow` (Update GitHub Action workflows)
-   - Set an appropriate expiration date
+### Permissions
 
-2. **Add the PAT as a repository secret**:
-   - Go to your repository → Settings → Secrets and variables → Actions
-   - Create a new repository secret named `GH_PAT`
-   - Paste your Personal Access Token as the value
-
-3. **The workflow will automatically**:
-   - Check if the `GH_PAT` secret is configured
-   - Provide helpful error messages if the token is missing
-   - Trigger a new agent task when a Copilot PR is merged
-
-### Why is a PAT required?
-
-The `gh agent-task` command is a preview feature that requires OAuth authentication. The standard `GITHUB_TOKEN` provided by GitHub Actions is an installation access token that doesn't have the OAuth scopes required by the `gh` CLI for agent task operations.
+The workflow requires the following permissions (already configured):
+- `contents: write` - To checkout the repository
+- `pull-requests: write` - For PR operations
+- `issues: write` - To create issues
 
 ### Testing
 
@@ -40,6 +37,8 @@ bash .github/workflows/test-start-a-new-task.sh
 This test script validates:
 - File existence
 - YAML syntax
-- Correct authentication token usage (PAT instead of GITHUB_TOKEN)
-- Proper error handling for missing tokens
-- Workflow trigger configuration
+- Uses `gh issue create` command
+- Assigns issue to @copilot
+- Has required permissions
+- Correct workflow trigger configuration
+

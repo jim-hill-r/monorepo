@@ -33,18 +33,19 @@ else
     echo "⚠️  SKIP: Python not available to validate YAML syntax"
 fi
 
-# Test 4: Check workflow doesn't reference GitHub issues
-if grep -q "issues.create" "$WORKFLOW_FILE"; then
-    echo "❌ FAIL: Workflow still uses issues.create (should use gh agent-task create)"
+# Test 4: Check workflow uses gh issue create
+if grep -q "gh issue create" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow uses gh issue create"
+else
+    echo "❌ FAIL: Workflow does not use gh issue create"
     exit 1
 fi
-echo "✅ PASS: Workflow does not use issues.create"
 
-# Test 5: Check workflow uses gh agent-task create
-if grep -q "gh agent-task create" "$WORKFLOW_FILE"; then
-    echo "✅ PASS: Workflow uses gh agent-task create"
+# Test 5: Check workflow assigns issue to @copilot
+if grep -q '@copilot' "$WORKFLOW_FILE" || grep -q 'assignee.*copilot' "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow assigns issue to @copilot"
 else
-    echo "❌ FAIL: Workflow does not use gh agent-task create"
+    echo "❌ FAIL: Workflow does not assign issue to @copilot"
     exit 1
 fi
 
@@ -56,11 +57,12 @@ else
     exit 1
 fi
 
-# Test 7: Check that issues permission is removed (no longer needed)
+# Test 7: Check that issues permission is present (required for creating issues)
 if grep -q "issues: write" "$WORKFLOW_FILE"; then
-    echo "⚠️  WARNING: Workflow still has 'issues: write' permission (may not be needed)"
+    echo "✅ PASS: Workflow has 'issues: write' permission"
 else
-    echo "✅ PASS: Workflow does not have unnecessary 'issues: write' permission"
+    echo "❌ FAIL: Workflow missing 'issues: write' permission (required for creating issues)"
+    exit 1
 fi
 
 # Test 8: Check workflow uses correct Copilot user login
@@ -71,27 +73,18 @@ else
     exit 1
 fi
 
-# Test 9: Check workflow uses OAuth-compatible token (not GITHUB_TOKEN)
+# Test 9: Check workflow uses GITHUB_TOKEN (standard for issue creation)
 if grep -q "GH_TOKEN.*GITHUB_TOKEN" "$WORKFLOW_FILE"; then
-    echo "❌ FAIL: Workflow uses GITHUB_TOKEN which doesn't have OAuth scopes for 'gh agent-task'"
-    echo "   The workflow should use a Personal Access Token (PAT) stored as a secret like GH_PAT"
-    exit 1
+    echo "✅ PASS: Workflow uses GITHUB_TOKEN for issue creation"
 else
-    echo "✅ PASS: Workflow does not use GITHUB_TOKEN (avoiding OAuth scope issue)"
+    echo "⚠️  WARNING: Workflow should use GITHUB_TOKEN for issue creation"
 fi
 
-# Test 10: Check workflow uses a PAT secret for authentication
-if grep -q "GH_TOKEN.*secrets\.GH_PAT" "$WORKFLOW_FILE" || grep -q "GH_TOKEN.*secrets\..*PAT" "$WORKFLOW_FILE"; then
-    echo "✅ PASS: Workflow uses a PAT secret for authentication"
+# Test 10: Check workflow uses body-file flag
+if grep -q "body-file" "$WORKFLOW_FILE" || grep -q "--body-file" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow uses --body-file flag to read from agent prompt"
 else
-    echo "⚠️  WARNING: Workflow should use a PAT secret (e.g., secrets.GH_PAT) for gh agent-task authentication"
-fi
-
-# Test 11: Check workflow validates token existence
-if grep -q "Check for required token" "$WORKFLOW_FILE" || grep -q "GH_PAT secret is not configured" "$WORKFLOW_FILE"; then
-    echo "✅ PASS: Workflow validates token existence before use"
-else
-    echo "⚠️  WARNING: Workflow should validate that required PAT token is configured"
+    echo "⚠️  WARNING: Workflow should use --body-file flag to read issue body from file"
 fi
 
 echo ""
