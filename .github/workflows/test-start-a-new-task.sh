@@ -63,5 +63,13 @@ else
     echo "✅ PASS: Workflow does not have unnecessary 'issues: write' permission"
 fi
 
+# Test 8: Check workflow uses correct Copilot user login
+if grep -q "user.login == 'Copilot'" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow uses correct Copilot user login"
+else
+    echo "❌ FAIL: Workflow does not use correct Copilot user login (should be 'Copilot', not 'copilot-swe-agent[bot]')"
+    exit 1
+fi
+
 echo ""
 echo "All tests passed! ✅"
