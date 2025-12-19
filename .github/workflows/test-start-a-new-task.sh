@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test script for start-a-new-task.yml workflow
 
-set -e
+set -euo pipefail
 
 echo "Testing start-a-new-task.yml workflow..."
 
@@ -23,8 +23,7 @@ echo "✅ PASS: Agent prompt file exists"
 
 # Test 3: Validate YAML syntax using Python (available in GitHub Actions)
 if command -v python3 &> /dev/null; then
-    python3 -c "import yaml; yaml.safe_load(open('$WORKFLOW_FILE'))" 2>&1
-    if [ $? -eq 0 ]; then
+    if python3 -c "import yaml; yaml.safe_load(open('$WORKFLOW_FILE'))" 2>&1; then
         echo "✅ PASS: Workflow YAML syntax is valid"
     else
         echo "❌ FAIL: Workflow YAML syntax is invalid"
