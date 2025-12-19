@@ -7,7 +7,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   trigger-agent-review:
@@ -21,32 +20,15 @@ jobs:
           # Checkout the merge commit to access the merged changes
           ref: ${{ github.event.pull_request.merge_commit_sha }}
       
-      - name: Read agent prompt
-        id: read-prompt
+      - name: Validate agent prompt file exists
         run: |
           if [ ! -f .github/agent-prompts/start-a-new-task.md ]; then
             echo "Error: Agent prompt file not found"
             exit 1
           fi
-          PROMPT=$(cat .github/agent-prompts/start-a-new-task.md)
-          echo "prompt<<'EOF_PROMPT_DELIMITER'" >> $GITHUB_OUTPUT
-          echo "$PROMPT" >> $GITHUB_OUTPUT
-          echo "EOF_PROMPT_DELIMITER" >> $GITHUB_OUTPUT
       
       - name: Trigger GitHub Copilot Agent
-        uses: actions/github-script@v7
         env:
-          PROMPT_TEXT: ${{ steps.read-prompt.outputs.prompt }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const promptText = process.env.PROMPT_TEXT;
-            
-            // Create a new issue to trigger the agent
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Start new task`,
-              body: promptText,
-              labels: ['agent-task', 'automated']
-            });
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh agent-task create -F .github/agent-prompts/start-a-new-task.md
