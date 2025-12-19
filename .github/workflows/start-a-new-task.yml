@@ -28,10 +28,20 @@ jobs:
             exit 1
           fi
       
-      - name: Create Issue for GitHub Copilot Agent
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate agent-copilot binary exists
         run: |
-          gh issue create \
+          if [ ! -f projects/agent-copilot/artifacts/agent-copilot ]; then
+            echo "Error: agent-copilot binary not found"
+            exit 1
+          fi
+          chmod +x projects/agent-copilot/artifacts/agent-copilot
+      
+      - name: Create GitHub Copilot Agent Task
+        env:
+          GITHUB_TOKEN: ${{ secrets. START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
+        run: |
+          projects/agent-copilot/artifacts/agent-copilot \
+            --repo "${{ github.repository }}" \
             --title "Start a new task" \
-            --body-file .github/agent-prompts/start-a-new-task.md
+            --prompt-file .github/agent-prompts/start-a-new-task.md \
+            --token "$GITHUB_TOKEN"
