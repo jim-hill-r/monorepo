@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   trigger-agent-review:
-    # Only run if the PR was created by GitHub Copilot agent
-    if: github.event.pull_request.user.login == 'copilot-swe-agent[bot]'
+    # Only run if the PR was created by GitHub Copilot agent and was actually merged
+    if: github.event.pull_request.user.login == 'copilot-swe-agent[bot]' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -35,16 +35,23 @@ jobs:
       
       - name: Trigger GitHub Copilot Agent
         uses: actions/github-script@v7
+        env:
+          PROMPT_TEXT: ${{ steps.read-prompt.outputs.prompt }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const promptText = `${{ steps.read-prompt.outputs.prompt }}`;
+            const promptText = process.env.PROMPT_TEXT;
             const prInfo = `
             ## PR Information
-            - PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
-            - Merged: ${{ github.event.pull_request.merged }}
-            - Base branch: ${{ github.event.pull_request.base.ref }}
-            - Head branch: ${{ github.event.pull_request.head.ref }}
+            - PR #${process.env.PR_NUMBER}: ${process.env.PR_TITLE}
+            - Merged: ${process.env.PR_MERGED}
+            - Base branch: ${process.env.PR_BASE}
+            - Head branch: ${process.env.PR_HEAD}
             
             Please review the changes from this PR and identify any follow-up work.`;
             
@@ -54,7 +61,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Post-PR Review: ${{ github.event.pull_request.title }}`,
+              title: `Post-PR Review: ${process.env.PR_TITLE}`,
               body: fullPrompt,
               labels: ['agent-task', 'automated']
             });
