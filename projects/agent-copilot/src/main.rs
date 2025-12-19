@@ -7,13 +7,13 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(name = "agent-copilot")]
-#[command(about = "A tool to create GitHub Copilot agent tasks directly using the GitHub API", long_about = None)]
+#[command(about = "A tool to create GitHub Copilot agent tasks directly using the Copilot API", long_about = None)]
 struct Args {
     /// Repository in the format "owner/repo"
     #[arg(short, long)]
     repo: String,
 
-    /// Title for the agent task
+    /// Title for the agent task (unused, kept for backwards compatibility - the problem statement is used instead)
     #[arg(short, long)]
     title: String,
 
@@ -24,23 +24,44 @@ struct Args {
     /// GitHub token for authentication (can also use GITHUB_TOKEN env var)
     #[arg(long, env = "GITHUB_TOKEN")]
     token: String,
+
+    /// Base branch for the pull request (optional)
+    #[arg(long)]
+    base_branch: Option<String>,
+
+    /// Custom agent to use (optional)
+    #[arg(long)]
+    custom_agent: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
-struct CreateAgentTaskRequest {
-    title: String,
-    prompt: String,
+struct PullRequestOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    base_ref: Option<String>,
+}
+
+#[derive(Serialize, Debug)]
+struct CreateJobRequest {
+    problem_statement: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    custom_agent: Option<String>,
+    event_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pull_request: Option<PullRequestOptions>,
 }
 
 #[derive(Deserialize, Debug)]
-struct CreateAgentTaskResponse {
-    // Note: The exact response structure from the GitHub Copilot Tasks API
-    // may vary from this definition. Common fields might include:
-    // - id or task_id: unique identifier for the task
-    // - url or html_url: URL to view the task
-    // Adjust these fields based on actual API responses if needed.
-    id: String,
-    url: String,
+struct CreateJobResponse {
+    job_id: String,
+    #[serde(default)]
+    session_id: String,
+    #[serde(default)]
+    pull_request: Option<PullRequestInfo>,
+}
+
+#[derive(Deserialize, Debug)]
+struct PullRequestInfo {
+    number: i64,
 }
 
 fn read_prompt_file(path: &PathBuf) -> Result<String> {
@@ -50,38 +71,66 @@ fn read_prompt_file(path: &PathBuf) -> Result<String> {
 
 fn create_agent_task(
     repo: &str,
-    title: String,
-    prompt: String,
+    problem_statement: String,
     token: &str,
-) -> Result<CreateAgentTaskResponse> {
-    let url = format!("https://api.github.com/repos/{}/copilot/tasks", repo);
+    base_branch: Option<String>,
+    custom_agent: Option<String>,
+) -> Result<CreateJobResponse> {
+    // Parse owner and repo from the repo string
+    let parts: Vec<&str> = repo.split('/').collect();
+    if parts.len() != 2 {
+        anyhow::bail!("Repository must be in format 'owner/repo'");
+    }
+    let owner = parts[0];
+    let repo_name = parts[1];
+    
+    // GitHub Copilot Jobs API endpoint
+    // This is the same endpoint used by `gh agent-task create`
+    let url = format!(
+        "https://api.githubcopilot.com/agents/swe/v1/jobs/{}/{}",
+        urlencoding::encode(owner),
+        urlencoding::encode(repo_name)
+    );
     
     let client = Client::new();
-    let request_body = CreateAgentTaskRequest { title, prompt };
+    
+    let pull_request = if let Some(branch) = base_branch {
+        Some(PullRequestOptions {
+            base_ref: Some(format!("refs/heads/{}", branch)),
+        })
+    } else {
+        Some(PullRequestOptions { base_ref: None })
+    };
+    
+    let request_body = CreateJobRequest {
+        problem_statement,
+        custom_agent,
+        event_type: "gh_cli".to_string(),
+        pull_request,
+    };
     
     let response = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", token))
-        .header("User-Agent", "agent-copilot")
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("Content-Type", "application/json")
+        .header("Copilot-Integration-Id", "copilot-4-cli")
         .json(&request_body)
         .send()
-        .context("Failed to send request to GitHub API")?;
+        .context("Failed to send request to GitHub Copilot API")?;
     
     if !response.status().is_success() {
         let status = response.status();
         let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
         anyhow::bail!(
-            "GitHub API request failed with status {}: {}",
+            "GitHub Copilot API request failed with status {}: {}",
             status,
             error_text
         );
     }
     
     response
-        .json::<CreateAgentTaskResponse>()
-        .context("Failed to parse GitHub API response")
+        .json::<CreateJobResponse>()
+        .context("Failed to parse GitHub Copilot API response")
 }
 
 fn main() -> Result<()> {
@@ -96,18 +145,32 @@ fn main() -> Result<()> {
     }
     
     // Read the prompt file
-    let prompt = read_prompt_file(&args.prompt_file)?;
+    let problem_statement = read_prompt_file(&args.prompt_file)?;
     
     // Create the agent task
     println!("Creating GitHub Copilot agent task in repository: {}", args.repo);
-    println!("Task title: {}", args.title);
     println!("Using prompt file: {}", args.prompt_file.display());
     
-    let response = create_agent_task(&args.repo, args.title, prompt, &args.token)?;
+    let response = create_agent_task(
+        &args.repo,
+        problem_statement,
+        &args.token,
+        args.base_branch,
+        args.custom_agent,
+    )?;
     
-    println!("✓ Successfully created agent task");
-    println!("  ID: {}", response.id);
-    println!("  URL: {}", response.url);
+    println!("✓ Successfully created GitHub Copilot agent task");
+    println!("  Job ID: {}", response.job_id);
+    if !response.session_id.is_empty() {
+        println!("  Session ID: {}", response.session_id);
+    }
+    if let Some(pr) = response.pull_request {
+        println!("  Pull Request: #{}", pr.number);
+        
+        // Construct the PR URL
+        let pr_url = format!("https://github.com/{}/pull/{}", args.repo, pr.number);
+        println!("  URL: {}", pr_url);
+    }
     
     Ok(())
 }
@@ -138,14 +201,16 @@ mod tests {
     }
 
     #[test]
-    fn test_create_agent_task_request_serialization() {
-        let request = CreateAgentTaskRequest {
-            title: "Test Task".to_string(),
-            prompt: "Test prompt".to_string(),
+    fn test_create_job_request_serialization() {
+        let request = CreateJobRequest {
+            problem_statement: "Test problem statement".to_string(),
+            custom_agent: None,
+            event_type: "gh_cli".to_string(),
+            pull_request: Some(PullRequestOptions { base_ref: None }),
         };
         
         let json = serde_json::to_string(&request).unwrap();
-        assert!(json.contains("Test Task"));
-        assert!(json.contains("Test prompt"));
+        assert!(json.contains("Test problem statement"));
+        assert!(json.contains("gh_cli"));
     }
 }
