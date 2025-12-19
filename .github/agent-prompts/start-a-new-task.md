@@ -6,7 +6,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 ## Instructions
 1. Issues are defined as some comment beginning with TODO or FIX.
 2. Complete only one issue.
-3. When searching for issues, be eager. As soon as you find one, work on it.
+3. When searching for issues, be eager. As soon as you find one, work on it. Prioritize issues found first in a file.
 4. Search ISSUES.md in the root of the repo for an issue if an issue hasn't yet been found.
 5. Search other ISSUES.md in the repo for an issue if an issue hasn't yet been found.
 6. Search the entire codebase for an issue if an issue hasn't yet been found.
@@ -16,7 +16,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 7. Update relevant documentation for the changes made.
 8. Add/create any files you may want to improve github agent performance in the future
 9. Remove the TODO or FIX comment that you fixed.
-10. Once you are done, set the PR ready for review.
+10. Set the PR to ready for review. Don't leave it as draft.
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
