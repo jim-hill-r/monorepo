@@ -101,6 +101,10 @@ agent-copilot \
 - Supports GitHub authentication via token
 - Direct integration with GitHub Copilot's agent system
 
+## Important Notes
+
+This tool uses the GitHub Copilot Tasks API endpoint (`/repos/{owner}/{repo}/copilot/tasks`). The exact API response structure may vary based on GitHub's implementation. If you encounter issues with the API response format, please check the error messages and adjust the response structure in `src/main.rs` accordingly.
+
 ## Dependencies
 
 - `clap`: Command-line argument parsing

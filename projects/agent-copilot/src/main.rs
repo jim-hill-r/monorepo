@@ -34,6 +34,11 @@ struct CreateAgentTaskRequest {
 
 #[derive(Deserialize, Debug)]
 struct CreateAgentTaskResponse {
+    // Note: The exact response structure from the GitHub Copilot Tasks API
+    // may vary from this definition. Common fields might include:
+    // - id or task_id: unique identifier for the task
+    // - url or html_url: URL to view the task
+    // Adjust these fields based on actual API responses if needed.
     id: String,
     url: String,
 }
