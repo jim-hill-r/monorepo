@@ -12,6 +12,7 @@ Complete a TODO or FIX that exists in this repo.
 7. Update documentation.
 8. Update claude.md with any information that you learned that would be useful for this monorepo.
 9. Remove the TODO or FIX comment that you fixed.
+10. Once you are done, set the PR ready for review.
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
