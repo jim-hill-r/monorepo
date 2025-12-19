@@ -6,7 +6,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 ## Instructions
 1. Issues are defined as some comment beginning with TODO or FIX.
 2. Complete only one issue.
-3. When searching for issues, be eager. As soon as you find one, work on it.
+3. When searching for issues, be eager. As soon as you find one, work on it. Prioritize issues found first in a file.
 4. Search ISSUES.md in the root of the repo for an issue if an issue hasn't yet been found.
 5. Search other ISSUES.md in the repo for an issue if an issue hasn't yet been found.
 6. Search the entire codebase for an issue if an issue hasn't yet been found.
