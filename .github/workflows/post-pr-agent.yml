@@ -18,11 +18,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          # Checkout the merge commit to access the merged changes
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
       
       - name: Read agent prompt
         id: read-prompt
         run: |
+          if [ ! -f .github/agent-prompts/post-pr-review.md ]; then
+            echo "Error: Agent prompt file not found"
+            exit 1
+          fi
           PROMPT=$(cat .github/agent-prompts/post-pr-review.md)
           echo "prompt<<EOF" >> $GITHUB_OUTPUT
           echo "$PROMPT" >> $GITHUB_OUTPUT
@@ -33,8 +38,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prompt = `${{ steps.read-prompt.outputs.prompt }}
-            
+            const promptText = `${{ steps.read-prompt.outputs.prompt }}`;
+            const prInfo = `
             ## PR Information
             - PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
             - Merged: ${{ github.event.pull_request.merged }}
@@ -43,11 +48,13 @@ jobs:
             
             Please review the changes from this PR and identify any follow-up work.`;
             
+            const fullPrompt = promptText + "\n" + prInfo;
+            
             // Create a new issue to trigger the agent
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Post-PR Review: ${{ github.event.pull_request.title }}`,
-              body: prompt,
+              body: fullPrompt,
               labels: ['agent-task', 'automated']
             });
