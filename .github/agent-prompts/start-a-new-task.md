@@ -1,14 +1,14 @@
 # Start a new task prompt
 
 ## Task
-Search the repo for a TODO or FIX comment. Start by looking in ISSUES.md files. Find a single TODO or FIX to work on and complete the task.
+Complete a TODO or FIX that exists in this repo.
 
 ## Instructions
-1. Search for TODO or FIX comments within the repo. Start by looking in ISSUES.md files.
-2. Choose one.
-3. Complete the TODO or FIX.
-4. Try to update claude.md with any information that you learned that would be useful for this monorepo.
-5. Remove the TODO or FIX comment that you fixed.
+1. Search for TODO or FIX comments within the repo. Start by looking in ISSUES.md files. Prioritize ISSUE.md files based on how close they are to the root of the project. Prioritize tasks based on order in the ISSUES.md file.
+3. Choose one.
+4. Complete the TODO or FIX.
+5. Try to update claude.md with any information that you learned that would be useful for this monorepo.
+6. Remove the TODO or FIX comment that you fixed.
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
