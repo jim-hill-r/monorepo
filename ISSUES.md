@@ -1,5 +1,4 @@
 
-TODO: Refactor agent-copilot to create the agent task with the github api rather than create an issue.
 TODO: Convert the `start-a-new-task.md` workflow to use the agent-copilot binary found in artifacts of that project.   
 TODO: Improve readme of the pane project with directions on how to run the code locally in dev mode.
 TODO: Create a new project called pane-cloudflare. Put it in the projects folder. This project is a deployment project for deployment the build artifacts from project pane onto cloudflare pages.   

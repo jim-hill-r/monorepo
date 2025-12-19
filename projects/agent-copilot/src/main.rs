@@ -7,13 +7,13 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(name = "agent-copilot")]
-#[command(about = "A tool to create GitHub issues that trigger GitHub Copilot agents", long_about = None)]
+#[command(about = "A tool to create GitHub Copilot agent tasks directly using the GitHub API", long_about = None)]
 struct Args {
     /// Repository in the format "owner/repo"
     #[arg(short, long)]
     repo: String,
 
-    /// Title for the GitHub issue
+    /// Title for the agent task
     #[arg(short, long)]
     title: String,
 
@@ -27,15 +27,20 @@ struct Args {
 }
 
 #[derive(Serialize, Debug)]
-struct CreateIssueRequest {
+struct CreateAgentTaskRequest {
     title: String,
-    body: String,
+    prompt: String,
 }
 
 #[derive(Deserialize, Debug)]
-struct CreateIssueResponse {
-    number: u64,
-    html_url: String,
+struct CreateAgentTaskResponse {
+    // Note: The exact response structure from the GitHub Copilot Tasks API
+    // may vary from this definition. Common fields might include:
+    // - id or task_id: unique identifier for the task
+    // - url or html_url: URL to view the task
+    // Adjust these fields based on actual API responses if needed.
+    id: String,
+    url: String,
 }
 
 fn read_prompt_file(path: &PathBuf) -> Result<String> {
@@ -43,16 +48,16 @@ fn read_prompt_file(path: &PathBuf) -> Result<String> {
         .context(format!("Failed to read prompt file: {}", path.display()))
 }
 
-fn create_github_issue(
+fn create_agent_task(
     repo: &str,
     title: String,
-    body: String,
+    prompt: String,
     token: &str,
-) -> Result<CreateIssueResponse> {
-    let url = format!("https://api.github.com/repos/{}/issues", repo);
+) -> Result<CreateAgentTaskResponse> {
+    let url = format!("https://api.github.com/repos/{}/copilot/tasks", repo);
     
     let client = Client::new();
-    let request_body = CreateIssueRequest { title, body };
+    let request_body = CreateAgentTaskRequest { title, prompt };
     
     let response = client
         .post(&url)
@@ -75,7 +80,7 @@ fn create_github_issue(
     }
     
     response
-        .json::<CreateIssueResponse>()
+        .json::<CreateAgentTaskResponse>()
         .context("Failed to parse GitHub API response")
 }
 
@@ -91,17 +96,18 @@ fn main() -> Result<()> {
     }
     
     // Read the prompt file
-    let body = read_prompt_file(&args.prompt_file)?;
+    let prompt = read_prompt_file(&args.prompt_file)?;
     
-    // Create the GitHub issue
-    println!("Creating GitHub issue in repository: {}", args.repo);
-    println!("Issue title: {}", args.title);
+    // Create the agent task
+    println!("Creating GitHub Copilot agent task in repository: {}", args.repo);
+    println!("Task title: {}", args.title);
     println!("Using prompt file: {}", args.prompt_file.display());
     
-    let response = create_github_issue(&args.repo, args.title, body, &args.token)?;
+    let response = create_agent_task(&args.repo, args.title, prompt, &args.token)?;
     
-    println!("✓ Successfully created issue #{}", response.number);
-    println!("  URL: {}", response.html_url);
+    println!("✓ Successfully created agent task");
+    println!("  ID: {}", response.id);
+    println!("  URL: {}", response.url);
     
     Ok(())
 }
@@ -132,14 +138,14 @@ mod tests {
     }
 
     #[test]
-    fn test_create_issue_request_serialization() {
-        let request = CreateIssueRequest {
-            title: "Test Issue".to_string(),
-            body: "Test body".to_string(),
+    fn test_create_agent_task_request_serialization() {
+        let request = CreateAgentTaskRequest {
+            title: "Test Task".to_string(),
+            prompt: "Test prompt".to_string(),
         };
         
         let json = serde_json::to_string(&request).unwrap();
-        assert!(json.contains("Test Issue"));
-        assert!(json.contains("Test body"));
+        assert!(json.contains("Test Task"));
+        assert!(json.contains("Test prompt"));
     }
 }

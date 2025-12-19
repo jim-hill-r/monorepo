@@ -1,1 +1,0 @@
-TODO: Update readme.md with directions on how to run the cli in dev mode without a build
