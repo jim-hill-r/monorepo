@@ -1,1 +1,2 @@
+TODO: The github issue Start a New Task should have started a new agent workflow, but it didn't. I think it needs to have @copilot referenced in the body. This issue was created by workflow `start-a-new-task.yml`. Update the workflow to ensure that a new agent task is created when the issue is created.
 TODO: Create a new project called pane-cloudflare. Put it in the projects folder. This project is a deployment project for deployment the build artifacts from project pane onto cloudflare pages.
