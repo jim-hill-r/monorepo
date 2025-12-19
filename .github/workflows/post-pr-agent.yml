@@ -1,0 +1,53 @@
+name: Post-PR Agent Review
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  trigger-agent-review:
+    # Only run if the PR was created by GitHub Copilot agent
+    if: github.event.pull_request.user.login == 'copilot-swe-agent[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      
+      - name: Read agent prompt
+        id: read-prompt
+        run: |
+          PROMPT=$(cat .github/agent-prompts/post-pr-review.md)
+          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          echo "$PROMPT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Trigger GitHub Copilot Agent
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prompt = `${{ steps.read-prompt.outputs.prompt }}
+            
+            ## PR Information
+            - PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
+            - Merged: ${{ github.event.pull_request.merged }}
+            - Base branch: ${{ github.event.pull_request.base.ref }}
+            - Head branch: ${{ github.event.pull_request.head.ref }}
+            
+            Please review the changes from this PR and identify any follow-up work.`;
+            
+            // Create a new issue to trigger the agent
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Post-PR Review: ${{ github.event.pull_request.title }}`,
+              body: prompt,
+              labels: ['agent-task', 'automated']
+            });

@@ -1,1 +1,1 @@
-TODO: Create a github workflow that runs a new github agent with a prompt defined in this repo whenever a PR is closed that was created by the github agent   
+DONE: Created a github workflow (.github/workflows/post-pr-agent.yml) that runs a new github agent with a prompt defined in .github/agent-prompts/post-pr-review.md whenever a PR is closed that was created by the github agent (copilot-swe-agent[bot])   
