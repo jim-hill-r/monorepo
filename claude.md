@@ -17,7 +17,7 @@ Claude is an AI assistant that can help with various development tasks in this r
 
 When working with Claude on this monorepo:
 
-1. Provide context about the specific project you're working on (e.g., `projects/cast_cli`, `projects/auth_sdk`)
+1. Provide context about the specific project you're working on (e.g., `projects/cast_cli`, `projects/ciam`, `projects/blueeel`)
 2. Share relevant file paths and code snippets
 3. Be specific about what you need help with
 
@@ -55,7 +55,7 @@ Share error messages and relevant code for help with:
 This is a Rust-based monorepo with multiple projects. Key information:
 
 - **Primary Language**: Rust
-- **Project Management**: Uses `cast` CLI tool for project operations
+- **Project Management**: Uses `cast_cli` tool for project operations
 - **Session Management**: Start work sessions with `cast session start`
 - **Project Creation**: Create new projects with `cast project new`
 - **Issue Tracking**: Issues are tracked as TODO comments in the codebase
