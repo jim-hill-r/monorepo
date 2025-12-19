@@ -27,8 +27,18 @@ jobs:
             exit 1
           fi
       
+      - name: Check for required token
+        run: |
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            echo "Error: GH_PAT secret is not configured."
+            echo "The 'gh agent-task' command requires a Personal Access Token (PAT) with OAuth scopes."
+            echo "Please create a PAT with 'repo' and 'workflow' scopes and add it as a repository secret named 'GH_PAT'."
+            echo "See: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token"
+            exit 1
+          fi
+      
       - name: Trigger GitHub Copilot Agent
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh agent-task create -F .github/agent-prompts/start-a-new-task.md
