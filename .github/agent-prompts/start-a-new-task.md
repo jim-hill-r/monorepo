@@ -1,13 +1,17 @@
 # Start a new task prompt
 
 ## Task
-Complete a TODO or FIX that exists in this repo.
+Complete one issue within this repo that are identified with TODO or FIX comments.
 
 ## Instructions
-1. Search for TODO or FIX comments within the repo. Start by looking in ISSUES.md files. Prioritize ISSUE.md files based on how close they are to the root of the project. Prioritize tasks based on order in the ISSUES.md file.
-3. Choose one.
-4. Write tests to verify the problem defined in the TODO or FIX.
-5. Complete the TODO or FIX by getting those tests to pass.
+1. Issues are defined as some comment beginning with TODO or FIX.
+2. Complete only one issue.
+3. When searching for issues, be eager. As soon as you find one, work on it.
+4. Search ISSUES.md in the root of the repo for an issue if an issue hasn't yet been found.
+5. Search other ISSUES.md in the repo for an issue if an issue hasn't yet been found.
+6. Search the entire codebase for an issue if an issue hasn't yet been found.
+4. Write tests to verify the issue.
+5. Complete the issue by getting those tests to pass.
 6. Write more tests you think are necessary to ensure full code coverage.
 7. Update documentation.
 8. Update claude.md with any information that you learned that would be useful for this monorepo.
