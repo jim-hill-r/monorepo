@@ -72,7 +72,7 @@ else
 fi
 
 # Test 9: Check workflow uses OAuth-compatible token (not GITHUB_TOKEN)
-if grep -q "GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}" "$WORKFLOW_FILE"; then
+if grep -q "GH_TOKEN.*GITHUB_TOKEN" "$WORKFLOW_FILE"; then
     echo "❌ FAIL: Workflow uses GITHUB_TOKEN which doesn't have OAuth scopes for 'gh agent-task'"
     echo "   The workflow should use a Personal Access Token (PAT) stored as a secret like GH_PAT"
     exit 1
@@ -81,7 +81,7 @@ else
 fi
 
 # Test 10: Check workflow uses a PAT secret for authentication
-if grep -q "GH_TOKEN: \${{ secrets\\.GH_PAT }}" "$WORKFLOW_FILE" || grep -q "GH_TOKEN: \${{ secrets\\..*PAT.* }}" "$WORKFLOW_FILE"; then
+if grep -q "GH_TOKEN.*secrets\.GH_PAT" "$WORKFLOW_FILE" || grep -q "GH_TOKEN.*secrets\..*PAT" "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow uses a PAT secret for authentication"
 else
     echo "⚠️  WARNING: Workflow should use a PAT secret (e.g., secrets.GH_PAT) for gh agent-task authentication"
