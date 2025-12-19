@@ -16,7 +16,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 7. Update relevant documentation for the changes made.
 8. Add/create any files you may want to improve github agent performance in the future
 9. Remove the TODO or FIX comment that you fixed.
-10. Once you are done, set the PR ready for review.
+10. Set the PR to ready for review. Don't leave it as draft.
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
