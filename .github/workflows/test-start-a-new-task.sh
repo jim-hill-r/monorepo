@@ -42,7 +42,7 @@ else
 fi
 
 # Test 5: Check workflow assigns issue to @copilot
-if grep -q '@copilot' "$WORKFLOW_FILE" || grep -q 'assignee.*copilot' "$WORKFLOW_FILE"; then
+if grep -q 'assignee.*"@copilot"' "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow assigns issue to @copilot"
 else
     echo "❌ FAIL: Workflow does not assign issue to @copilot"
@@ -74,7 +74,7 @@ else
 fi
 
 # Test 9: Check workflow uses GITHUB_TOKEN (standard for issue creation)
-if grep -q "GH_TOKEN.*GITHUB_TOKEN" "$WORKFLOW_FILE"; then
+if grep -q 'GH_TOKEN:.*secrets\.GITHUB_TOKEN' "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow uses GITHUB_TOKEN for issue creation"
 else
     echo "⚠️  WARNING: Workflow should use GITHUB_TOKEN for issue creation"
