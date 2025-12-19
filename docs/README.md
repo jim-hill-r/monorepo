@@ -1,4 +1,4 @@
-# auftog
+# Monorepo
 
 Monorepo for all projects
 
