@@ -41,12 +41,12 @@ else
     exit 1
 fi
 
-# Test 5: Check workflow assigns issue to @copilot
-if grep -q 'assignee.*"@copilot"' "$WORKFLOW_FILE"; then
-    echo "✅ PASS: Workflow assigns issue to @copilot"
-else
-    echo "❌ FAIL: Workflow does not assign issue to @copilot"
+# Test 5: Verify workflow does not use --assignee flag (not needed for @copilot)
+if grep -q 'assignee' "$WORKFLOW_FILE"; then
+    echo "❌ FAIL: Workflow should not use --assignee flag (causes errors with @copilot)"
     exit 1
+else
+    echo "✅ PASS: Workflow does not use --assignee flag"
 fi
 
 # Test 6: Verify workflow trigger is still pull_request closed

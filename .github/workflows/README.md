@@ -2,7 +2,7 @@
 
 ## start-a-new-task.yml
 
-This workflow automatically creates a GitHub Issue assigned to @copilot after a PR created by the Copilot agent is merged. This triggers a new GitHub Copilot agent task.
+This workflow automatically creates a GitHub Issue that triggers GitHub Copilot agent after a PR created by the Copilot agent is merged.
 
 ### How It Works
 
@@ -11,7 +11,7 @@ This workflow automatically creates a GitHub Issue assigned to @copilot after a 
 2. **Issue Creation**: The workflow creates a new GitHub Issue with:
    - Title: "Start a new task"
    - Body: Content from `.github/agent-prompts/start-a-new-task.md`
-   - Assignee: @copilot (which triggers the Copilot agent to work on it)
+   - Note: The issue is not explicitly assigned to anyone. GitHub Copilot will automatically respond to issues created this way.
 
 3. **Authentication**: Uses the standard `GITHUB_TOKEN` provided by GitHub Actions, which has sufficient permissions for creating issues.
 
@@ -38,7 +38,7 @@ This test script validates:
 - File existence
 - YAML syntax
 - Uses `gh issue create` command
-- Assigns issue to @copilot
+- Does not use `--assignee` flag (which can cause errors)
 - Has required permissions
 - Correct workflow trigger configuration
 

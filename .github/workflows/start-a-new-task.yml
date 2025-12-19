@@ -34,5 +34,4 @@ jobs:
         run: |
           gh issue create \
             --title "Start a new task" \
-            --body-file .github/agent-prompts/start-a-new-task.md \
-            --assignee "@copilot"
+            --body-file .github/agent-prompts/start-a-new-task.md
