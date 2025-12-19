@@ -1,0 +1,69 @@
+name: Post-PR Agent Review
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  trigger-agent-review:
+    # Only run if the PR was created by GitHub Copilot agent and was actually merged
+    if: github.event.pull_request.user.login == 'copilot-swe-agent[bot]' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Checkout the merge commit to access the merged changes
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      
+      - name: Read agent prompt
+        id: read-prompt
+        run: |
+          if [ ! -f .github/agent-prompts/post-pr-review.md ]; then
+            echo "Error: Agent prompt file not found"
+            exit 1
+          fi
+          PROMPT=$(cat .github/agent-prompts/post-pr-review.md)
+          echo "prompt<<'EOF_PROMPT_DELIMITER'" >> $GITHUB_OUTPUT
+          echo "$PROMPT" >> $GITHUB_OUTPUT
+          echo "EOF_PROMPT_DELIMITER" >> $GITHUB_OUTPUT
+      
+      - name: Trigger GitHub Copilot Agent
+        uses: actions/github-script@v7
+        env:
+          PROMPT_TEXT: ${{ steps.read-prompt.outputs.prompt }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const promptText = process.env.PROMPT_TEXT;
+            const prInfo = [
+              '',
+              '## PR Information',
+              `- PR #${process.env.PR_NUMBER}: ${process.env.PR_TITLE}`,
+              `- Merged: ${process.env.PR_MERGED}`,
+              `- Base branch: ${process.env.PR_BASE}`,
+              `- Head branch: ${process.env.PR_HEAD}`,
+              '',
+              'Please review the changes from this PR and identify any follow-up work.'
+            ].join('\n');
+            
+            const fullPrompt = promptText + "\n" + prInfo;
+            
+            // Create a new issue to trigger the agent
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Post-PR Review: ${process.env.PR_TITLE}`,
+              body: fullPrompt,
+              labels: ['agent-task', 'automated']
+            });
