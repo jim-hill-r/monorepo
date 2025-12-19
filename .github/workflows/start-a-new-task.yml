@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   start-a-new-task:
@@ -27,8 +28,11 @@ jobs:
             exit 1
           fi
       
-      - name: Trigger GitHub Copilot Agent
+      - name: Create Issue for GitHub Copilot Agent
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh agent-task create -F .github/agent-prompts/start-a-new-task.md
+          gh issue create \
+            --title "Start a new task" \
+            --body-file .github/agent-prompts/start-a-new-task.md \
+            --assignee "@copilot"
