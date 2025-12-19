@@ -13,8 +13,8 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 4. Write tests to verify the issue.
 5. Complete the issue by getting those tests to pass.
 6. Write more tests you think are necessary to ensure full code coverage.
-7. Update documentation.
-8. Update claude.md with any information that you learned that would be useful for this monorepo.
+7. Update relevant documentation for the changes made.
+8. Add/create any files you may want to improve github agent performance in the future
 9. Remove the TODO or FIX comment that you fixed.
 10. Once you are done, set the PR ready for review.
 
