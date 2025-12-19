@@ -54,7 +54,7 @@ struct CreateJobRequest {
 struct CreateJobResponse {
     job_id: String,
     #[serde(default)]
-    session_id: String,
+    session_id: Option<String>,
     #[serde(default)]
     pull_request: Option<PullRequestInfo>,
 }
@@ -94,9 +94,11 @@ fn create_agent_task(
     
     let client = Client::new();
     
-    let pull_request = if let Some(branch) = base_branch {
+    let pull_request = if base_branch.is_some() || custom_agent.is_some() {
+        // The Copilot API expects a pull_request object to be present
+        // even when only specifying custom_agent without base_ref
         Some(PullRequestOptions {
-            base_ref: Some(format!("refs/heads/{}", branch)),
+            base_ref: base_branch.map(|branch| format!("refs/heads/{}", branch)),
         })
     } else {
         Some(PullRequestOptions { base_ref: None })
@@ -161,8 +163,8 @@ fn main() -> Result<()> {
     
     println!("✓ Successfully created GitHub Copilot agent task");
     println!("  Job ID: {}", response.job_id);
-    if !response.session_id.is_empty() {
-        println!("  Session ID: {}", response.session_id);
+    if let Some(session_id) = response.session_id {
+        println!("  Session ID: {}", session_id);
     }
     if let Some(pr) = response.pull_request {
         println!("  Pull Request: #{}", pr.number);
@@ -212,5 +214,48 @@ mod tests {
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("Test problem statement"));
         assert!(json.contains("gh_cli"));
+    }
+
+    #[test]
+    fn test_create_job_request_with_custom_agent() {
+        let request = CreateJobRequest {
+            problem_statement: "Test problem".to_string(),
+            custom_agent: Some("my-agent".to_string()),
+            event_type: "gh_cli".to_string(),
+            pull_request: Some(PullRequestOptions {
+                base_ref: Some("refs/heads/main".to_string()),
+            }),
+        };
+        
+        let json = serde_json::to_string(&request).unwrap();
+        assert!(json.contains("my-agent"));
+        assert!(json.contains("refs/heads/main"));
+    }
+
+    #[test]
+    fn test_create_job_response_deserialization() {
+        let json = r#"{
+            "job_id": "test-job-123",
+            "session_id": "session-456",
+            "pull_request": {
+                "number": 42
+            }
+        }"#;
+        
+        let response: CreateJobResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.job_id, "test-job-123");
+        assert_eq!(response.session_id, Some("session-456".to_string()));
+        assert!(response.pull_request.is_some());
+        assert_eq!(response.pull_request.unwrap().number, 42);
+    }
+
+    #[test]
+    fn test_create_job_response_minimal() {
+        let json = r#"{"job_id": "test-job"}"#;
+        
+        let response: CreateJobResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.job_id, "test-job");
+        assert_eq!(response.session_id, None);
+        assert!(response.pull_request.is_none());
     }
 }

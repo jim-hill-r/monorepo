@@ -41,7 +41,7 @@ agent-copilot --repo <OWNER/REPO> --title <TITLE> --prompt-file <PATH> --token <
 ### Arguments
 
 - `--repo`: Repository in the format `owner/repo` (e.g., `jim-hill-r/monorepo`)
-- `--title`: Title for the agent task (kept for backwards compatibility, not used by API)
+- `--title`: Title for the agent task (kept for backwards compatibility, not used by API - may be removed in future versions)
 - `--prompt-file`: Path to the agent prompt file containing the problem statement
 - `--token`: GitHub personal access token with appropriate permissions
 - `--base-branch`: (Optional) Base branch for the pull request
