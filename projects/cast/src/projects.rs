@@ -33,6 +33,9 @@ pub fn new(working_directory: impl AsRef<Path>, name: &str) -> Result<(), NewPro
     // Delete unnecessary .gitignore files (empty placeholder files)
     delete_empty_gitignores(&destination)?;
     
+    // Remove exemplar flag from the new project's Cast.toml
+    remove_exemplar_flag(&destination)?;
+    
     Ok(())
 }
 
@@ -112,6 +115,19 @@ fn delete_empty_gitignores(dir: impl AsRef<Path>) -> io::Result<()> {
             }
         }
     }
+    Ok(())
+}
+
+/// Remove the exemplar flag from a project's Cast.toml file
+fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
+    let cast_toml_path = project_dir.join("Cast.toml");
+    
+    if cast_toml_path.exists() {
+        let mut config = CastConfig::load(&cast_toml_path)?;
+        config.exemplar = None;
+        config.save(&cast_toml_path)?;
+    }
+    
     Ok(())
 }
 
@@ -362,5 +378,30 @@ mod tests {
         
         let exemplars = result.unwrap();
         assert_eq!(exemplars.len(), 2);
+    }
+
+    #[test]
+    fn test_new_removes_exemplar_flag_from_created_project() {
+        let tmp_dir = TempDir::new("test_exemplar_removal").unwrap();
+        
+        // Create template with exemplar flag
+        let templates_base = tmp_dir.path().join("templates/base");
+        fs::create_dir_all(&templates_base).unwrap();
+        fs::write(templates_base.join("Cast.toml"), "exemplar = true\nproof_of_concept = false").unwrap();
+        fs::write(templates_base.join("README.md"), "# Test").unwrap();
+        
+        // Call new
+        let result = new(tmp_dir.path(), "test_project");
+        assert!(result.is_ok());
+        
+        // Verify the new project was created
+        let project_path = tmp_dir.path().join("test_project");
+        assert!(project_path.exists());
+        
+        // Load the Cast.toml and verify exemplar flag is removed
+        let config = CastConfig::load(&project_path.join("Cast.toml")).unwrap();
+        assert_eq!(config.exemplar, None);
+        // Other flags should be preserved
+        assert_eq!(config.proof_of_concept, Some(false));
     }
 }
