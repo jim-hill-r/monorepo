@@ -28,19 +28,21 @@ jobs:
             exit 1
           fi
       
-      - name: Setup Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-      
-      - name: Build agent-copilot binary
+      - name: Prepare agent-copilot binary
         run: |
-          cd projects/agent-copilot
-          cargo build --release
+          BINARY_PATH="projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: Pre-built binary not found at $BINARY_PATH"
+            exit 1
+          fi
+          chmod +x "$BINARY_PATH"
+          echo "Binary is ready to execute"
       
       - name: Create GitHub Copilot Agent Task
         env:
           GITHUB_TOKEN: ${{ secrets.START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
         run: |
-          projects/agent-copilot/target/release/agent-copilot \
+          projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot \
             --repo "${{ github.repository }}" \
             --title "Start a new task" \
             --prompt-file .github/agent-prompts/start-a-new-task.md \
