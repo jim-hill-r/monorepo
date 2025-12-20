@@ -14,3 +14,28 @@ A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-c
 # Build
 
 - Run `cargo build --release`
+
+# Features
+
+## Project Management
+
+### Creating New Projects
+
+Cast can create new projects from templates located in the `templates/` directory:
+
+```rust
+use cast::projects;
+
+// Create a new project
+projects::new("/path/to/monorepo", "my_project_name").unwrap();
+```
+
+This will:
+1. Copy the `templates/base` directory to create the project structure
+2. Copy the `templates/library` directory, overwriting any files from base
+3. Remove empty `.gitignore` placeholder files used for tracking empty directories in git
+
+The resulting project will have a complete structure ready for development with:
+- `Cargo.toml` for Rust dependencies
+- `Cast.toml` for Cast-specific configuration
+- Standard directories: `src/`, `tests/`, `benches/`, `docs/`, etc.
