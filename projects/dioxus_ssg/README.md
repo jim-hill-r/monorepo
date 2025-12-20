@@ -1,5 +1,3 @@
-
-
 Launch the Dioxus Fullstack app:
 
 ```bash
