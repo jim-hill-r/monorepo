@@ -1,7 +1,6 @@
 
-TODO: Update Start New AI Agent Task to check if agents are already running. The workflow should not start another one if 1 is already running.
 
-TODO: Implement the basic scaffold for project blueeel. Implement in Dioxus the basics of an app that looks and feels like blue.eel.education. 
+TODO: Update Start New AI Agent Task to check if agents are already running. The workflow should not start another one if 1 is already running.
 
 FIX: In the pane-cloudflare project, the README says to run `cargo install wrangler`, but it does not work with the error "error[E0599]: no function or associated item named `new` found for struct `tokio::runtime::Runtime` in the current scope"
 TODO: In the cast project, add an optional configuration called proof_of_concept which is true or false.
