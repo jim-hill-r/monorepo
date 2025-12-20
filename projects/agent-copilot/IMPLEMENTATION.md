@@ -11,7 +11,7 @@ The tool uses the GitHub Copilot Jobs API (`https://api.githubcopilot.com/agents
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file .github/agent-prompts/start-a-new-task.md \
+  --prompt-file prompts/start-a-new-task.md \
   --token $GITHUB_TOKEN
 ```
 

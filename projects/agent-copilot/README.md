@@ -146,7 +146,7 @@ If you encounter issues:
 You can run the CLI directly in development mode without building a release binary:
 
 ```bash
-cargo run -- --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file ../../.github/agent-prompts/start-a-new-task.md --token $GITHUB_TOKEN
+cargo run -- --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file prompts/start-a-new-task.md --token $GITHUB_TOKEN
 ```
 
 Note: The `--title` parameter is kept for backwards compatibility but is not used by the Copilot API. The problem statement from the prompt file is what matters.
@@ -174,14 +174,14 @@ agent-copilot --repo <OWNER/REPO> --title <TITLE> --prompt-file <PATH> --token <
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file .github/agent-prompts/start-a-new-task.md \
+  --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
   --token $GITHUB_TOKEN
 
 # With optional parameters
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file .github/agent-prompts/start-a-new-task.md \
+  --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
   --token $GITHUB_TOKEN \
   --base-branch main \
   --custom-agent my-custom-agent
@@ -215,7 +215,7 @@ You can provide the token in two ways:
 
 ```bash
 export GITHUB_TOKEN=your_token_here
-agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file .github/agent-prompts/start-a-new-task.md
+agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file projects/agent-copilot/prompts/start-a-new-task.md
 ```
 
 **Option 2: Command-line Argument**
@@ -224,7 +224,7 @@ agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-fil
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file .github/agent-prompts/start-a-new-task.md \
+  --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
   --token ghp_your_token_here
 ```
 

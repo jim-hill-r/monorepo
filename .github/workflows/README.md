@@ -76,7 +76,7 @@ This workflow automatically creates a GitHub Copilot agent task after a PR creat
 
 3. **Agent Task Creation**: If no active agent tasks are found, the workflow uses the `agent-copilot` binary to create a new GitHub Copilot agent task with:
    - Title: "Start a new task"
-   - Problem Statement: Content from `.github/agent-prompts/start-a-new-task.md`
+   - Problem Statement: Content from `projects/agent-copilot/prompts/start-a-new-task.md`
    - Repository: The current repository
    - Note: This directly creates an agent task using the GitHub Copilot API, bypassing the need to create an issue first.
 

@@ -42,7 +42,7 @@ jobs:
       - name: Validate agent prompt file exists
         if: steps.check_running_agents.outputs.skip_task != 'true'
         run: |
-          if [ ! -f .github/agent-prompts/start-a-new-task.md ]; then
+          if [ ! -f projects/agent-copilot/prompts/start-a-new-task.md ]; then
             echo "Error: Agent prompt file not found"
             exit 1
           fi
@@ -66,5 +66,5 @@ jobs:
           projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot \
             --repo "${{ github.repository }}" \
             --title "Start a new task" \
-            --prompt-file .github/agent-prompts/start-a-new-task.md \
+            --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
             --token "$GITHUB_TOKEN"

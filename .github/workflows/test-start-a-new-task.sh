@@ -14,7 +14,7 @@ fi
 echo "✅ PASS: Workflow file exists"
 
 # Test 2: Check if agent prompt file exists
-PROMPT_FILE=".github/agent-prompts/start-a-new-task.md"
+PROMPT_FILE="projects/agent-copilot/prompts/start-a-new-task.md"
 if [ ! -f "$PROMPT_FILE" ]; then
     echo "❌ FAIL: Agent prompt file not found: $PROMPT_FILE"
     exit 1
