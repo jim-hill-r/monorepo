@@ -3,5 +3,6 @@
 sandbox
 target
 public
+*.rlib
 
 **/.env

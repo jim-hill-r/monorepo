@@ -95,6 +95,8 @@ jobs:
       - name: Setup Rust toolchain
         if: steps.changed-files.outputs.has_projects == 'true'
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.85.0
 
       - name: Build cast CLI
         if: steps.changed-files.outputs.has_projects == 'true'

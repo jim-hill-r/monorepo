@@ -11,3 +11,4 @@ TODO: Add some context to the repo to let github copilot know that github workfl
 TODO: Refactor cast ci github workflow such that the majority of the logic exists within the cast project and not hardcoded scripts in the workflow yamls.
 TODO: Move .github/agent-prompts to a new directory called prompts inside the agent-copilot project
 TODO: Create a project called macos which provides all of the instructions to install required global dependencies onto a brand new macos machine. The dependencies should be rust and npm.
+TODO: In github workflow start-a-new-task, the check for running agent tasks is not working. Even with an open draft PR from another agent it proceeds to make another task.
