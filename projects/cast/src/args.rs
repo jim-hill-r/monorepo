@@ -118,8 +118,13 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     Ok("Creating project.".into())
                 }
                 ProjectCommands::WithChanges(_) => {
-                    // This case should have been handled earlier
-                    unreachable!("WithChanges should be handled before Cast.toml check")
+                    // This case should never be reached because WithChanges is handled
+                    // at the top of execute() before the Cast.toml check. If we reach
+                    // this point, there's a bug in the control flow logic.
+                    unreachable!(
+                        "WithChanges command should be handled before Cast.toml check. \
+                         This indicates a bug in the execute() function's control flow."
+                    )
                 }
             },
             Commands::Ci => Ok("CI running".into()),

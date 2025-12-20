@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -148,10 +149,10 @@ pub fn with_changes(
     let changed_files = get_changed_files(working_directory, base_ref, head_ref)?;
     
     // Find projects with Cast.toml that contain these changed files
-    let mut changed_projects = std::collections::HashSet::new();
+    let mut changed_projects = HashSet::new();
     
-    for file in changed_files {
-        let file_path = working_directory.join(&file);
+    for relative_path in changed_files {
+        let file_path = working_directory.join(&relative_path);
         
         // Walk up the directory tree to find a Cast.toml
         if let Some(project_dir) = find_project_dir(&file_path, working_directory) {
@@ -172,6 +173,13 @@ fn get_changed_files(
     base_ref: &str,
     head_ref: &str,
 ) -> Result<Vec<String>, WithChangesError> {
+    // Validate refs to prevent command injection
+    if !is_valid_git_ref(base_ref) || !is_valid_git_ref(head_ref) {
+        return Err(WithChangesError::GitError(
+            "Invalid git ref format".to_string()
+        ));
+    }
+    
     let output = Command::new("git")
         .arg("diff")
         .arg("--name-only")
@@ -191,11 +199,25 @@ fn get_changed_files(
     let stdout = String::from_utf8(output.stdout)?;
     let files: Vec<String> = stdout
         .lines()
-        .map(|s| s.to_string())
+        .map(str::trim)
         .filter(|s| !s.is_empty())
+        .map(String::from)
         .collect();
     
     Ok(files)
+}
+
+/// Validate that a string is a valid git ref format
+/// Allows: alphanumeric, /, -, _, ., ^, ~, and SHA hashes
+fn is_valid_git_ref(git_ref: &str) -> bool {
+    if git_ref.is_empty() || git_ref.len() > 256 {
+        return false;
+    }
+    
+    // Allow common git ref patterns: branch names, tags, SHAs, HEAD, etc.
+    git_ref.chars().all(|c| {
+        c.is_alphanumeric() || c == '/' || c == '-' || c == '_' || c == '.' || c == '^' || c == '~'
+    })
 }
 
 /// Find the project directory containing a Cast.toml for a given file path
@@ -578,5 +600,27 @@ mod tests {
         assert!(result.is_some());
         let found_project = result.unwrap();
         assert_eq!(found_project, PathBuf::from("."));
+    }
+
+    #[test]
+    fn test_is_valid_git_ref_accepts_valid_refs() {
+        assert!(is_valid_git_ref("main"));
+        assert!(is_valid_git_ref("feature/my-branch"));
+        assert!(is_valid_git_ref("v1.0.0"));
+        assert!(is_valid_git_ref("HEAD"));
+        assert!(is_valid_git_ref("HEAD~1"));
+        assert!(is_valid_git_ref("abc123def456"));
+        assert!(is_valid_git_ref("origin/main"));
+        assert!(is_valid_git_ref("refs/tags/v1.0.0"));
+    }
+
+    #[test]
+    fn test_is_valid_git_ref_rejects_invalid_refs() {
+        assert!(!is_valid_git_ref(""));
+        assert!(!is_valid_git_ref("branch with spaces"));
+        assert!(!is_valid_git_ref("branch;rm -rf /"));
+        assert!(!is_valid_git_ref("branch&whoami"));
+        assert!(!is_valid_git_ref("branch|cat /etc/passwd"));
+        assert!(!is_valid_git_ref(&"a".repeat(300))); // Too long
     }
 }
