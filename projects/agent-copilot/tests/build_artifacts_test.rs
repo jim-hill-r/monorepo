@@ -1,9 +1,12 @@
+use std::io::Read;
 use std::path::Path;
 use std::process::Command;
 
+const ARTIFACT_PATH: &str = "artifacts/x86_64-unknown-linux-gnu/agent-copilot";
+
 #[test]
 fn test_linux_x86_64_artifact_exists() {
-    let artifact_path = Path::new("artifacts/x86_64-unknown-linux-gnu/agent-copilot");
+    let artifact_path = Path::new(ARTIFACT_PATH);
     assert!(
         artifact_path.exists(),
         "Linux x86_64 artifact should exist at {}",
@@ -13,7 +16,7 @@ fn test_linux_x86_64_artifact_exists() {
 
 #[test]
 fn test_linux_x86_64_artifact_is_executable() {
-    let artifact_path = Path::new("artifacts/x86_64-unknown-linux-gnu/agent-copilot");
+    let artifact_path = Path::new(ARTIFACT_PATH);
     
     #[cfg(unix)]
     {
@@ -33,7 +36,7 @@ fn test_linux_x86_64_artifact_is_executable() {
 
 #[test]
 fn test_linux_x86_64_artifact_shows_help() {
-    let artifact_path = Path::new("artifacts/x86_64-unknown-linux-gnu/agent-copilot");
+    let artifact_path = Path::new(ARTIFACT_PATH);
     
     let output = Command::new(artifact_path)
         .arg("--help")
@@ -62,11 +65,10 @@ fn test_linux_x86_64_artifact_shows_help() {
 
 #[test]
 fn test_artifact_is_elf_binary() {
-    let artifact_path = Path::new("artifacts/x86_64-unknown-linux-gnu/agent-copilot");
+    let artifact_path = Path::new(ARTIFACT_PATH);
     
     // Read the first 4 bytes (ELF magic number)
     let mut file = std::fs::File::open(artifact_path).expect("Failed to open artifact");
-    use std::io::Read;
     let mut magic = [0u8; 4];
     file.read_exact(&mut magic).expect("Failed to read ELF magic");
     
