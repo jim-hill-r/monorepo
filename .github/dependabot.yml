@@ -293,7 +293,7 @@ updates:
 
   # Cargo/Rust dependencies for NeetCode150
   - package-ecosystem: "cargo"
-    directory: "/docs/learning/computer_science/algorithms/NeetCode150"
+    directory: "/projects/docs/learning/computer_science/algorithms/NeetCode150"
     schedule:
       interval: "weekly"
       day: "monday"
