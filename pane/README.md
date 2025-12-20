@@ -73,8 +73,13 @@ pane/
 ├── src/
 │   └── main.rs      # Main application entry point
 ├── Cargo.toml       # Rust dependencies and project metadata
+├── Cast.toml        # Cast project configuration
 └── README.md        # This file
 ```
+
+## Dependencies
+
+This project uses Dioxus 0.7 for building web applications with Rust.
 
 ## Status
 

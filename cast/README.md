@@ -87,6 +87,10 @@ exemplar = true
 # Whether this project is a proof of concept project
 # Optional: defaults to None/false if not specified
 proof_of_concept = true
+
+# The type of project (e.g., "dioxus", "cloudflare-pages", "rust-library")
+# Optional: defaults to None if not specified
+project_type = "dioxus"
 ```
 
 You can load and parse Cast.toml configuration in your code:
@@ -105,5 +109,10 @@ if config.exemplar == Some(true) {
 // Check if project is a proof of concept
 if config.proof_of_concept == Some(true) {
     println!("This is a proof of concept project");
+}
+
+// Check project type
+if let Some(project_type) = config.project_type {
+    println!("Project type: {}", project_type);
 }
 ```
