@@ -6,10 +6,10 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.14.2"
-bevy_ecs_tilemap = "0.14.0"
-thiserror = "2.0.0"
-tiled = "0.12.1"
+bevy = "0.15.3"
+bevy_ecs_tilemap = "0.15.0"
+thiserror = "2.0.17"
+tiled = "0.15.0"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
