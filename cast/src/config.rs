@@ -11,9 +11,9 @@ pub struct CastConfig {
     /// Whether this project is a proof of concept project
     #[serde(default)]
     pub proof_of_concept: Option<bool>,
-    /// The type of project (e.g., "dioxus", "cloudflare-pages", "rust-library")
+    /// The framework used by the project (e.g., "dioxus", "cloudflare-pages", "rust-library")
     #[serde(default)]
-    pub project_type: Option<String>,
+    pub framework: Option<String>,
 }
 
 #[derive(Error, Debug)]
@@ -52,7 +52,7 @@ mod tests {
         let config: CastConfig = toml::from_str("").unwrap();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
-        assert_eq!(config.project_type, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -72,7 +72,7 @@ mod tests {
         let config: CastConfig = toml::from_str("# Just a comment").unwrap();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
-        assert_eq!(config.project_type, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -96,7 +96,7 @@ mod tests {
         let config = CastConfig::load(&config_path).unwrap();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
-        assert_eq!(config.project_type, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -118,7 +118,7 @@ mod tests {
         let config = CastConfig {
             exemplar: Some(true),
             proof_of_concept: None,
-            project_type: None,
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -126,7 +126,7 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, Some(true));
         assert_eq!(loaded_config.proof_of_concept, None);
-        assert_eq!(loaded_config.project_type, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
@@ -137,7 +137,7 @@ mod tests {
         let config = CastConfig {
             exemplar: None,
             proof_of_concept: None,
-            project_type: None,
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -145,7 +145,7 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
-        assert_eq!(loaded_config.project_type, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
@@ -153,7 +153,7 @@ mod tests {
         let config = CastConfig::default();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
-        assert_eq!(config.project_type, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -207,7 +207,7 @@ mod tests {
         let config = CastConfig {
             exemplar: None,
             proof_of_concept: Some(true),
-            project_type: None,
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -215,7 +215,7 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.proof_of_concept, Some(true));
         assert_eq!(loaded_config.exemplar, None);
-        assert_eq!(loaded_config.project_type, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
@@ -226,7 +226,7 @@ mod tests {
         let config = CastConfig {
             exemplar: Some(false),
             proof_of_concept: Some(true),
-            project_type: None,
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -234,13 +234,13 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, Some(false));
         assert_eq!(loaded_config.proof_of_concept, Some(true));
-        assert_eq!(loaded_config.project_type, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
-    fn test_parse_config_with_project_type() {
-        let config: CastConfig = toml::from_str("project_type = \"dioxus\"").unwrap();
-        assert_eq!(config.project_type, Some("dioxus".to_string()));
+    fn test_parse_config_with_framework() {
+        let config: CastConfig = toml::from_str("framework = \"dioxus\"").unwrap();
+        assert_eq!(config.framework, Some("dioxus".to_string()));
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
     }
@@ -248,35 +248,35 @@ mod tests {
     #[test]
     fn test_parse_config_with_all_fields() {
         let config: CastConfig = toml::from_str(
-            "exemplar = true\nproof_of_concept = false\nproject_type = \"dioxus\"",
+            "exemplar = true\nproof_of_concept = false\nframework = \"dioxus\"",
         )
         .unwrap();
         assert_eq!(config.exemplar, Some(true));
         assert_eq!(config.proof_of_concept, Some(false));
-        assert_eq!(config.project_type, Some("dioxus".to_string()));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
     }
 
     #[test]
-    fn test_save_config_with_project_type() {
+    fn test_save_config_with_framework() {
         let tmp_dir = TempDir::new("test_config").unwrap();
         let config_path = tmp_dir.path().join("Cast.toml");
 
         let config = CastConfig {
             exemplar: None,
             proof_of_concept: None,
-            project_type: Some("dioxus".to_string()),
+            framework: Some("dioxus".to_string()),
         };
 
         config.save(&config_path).unwrap();
 
         let loaded_config = CastConfig::load(&config_path).unwrap();
-        assert_eq!(loaded_config.project_type, Some("dioxus".to_string()));
+        assert_eq!(loaded_config.framework, Some("dioxus".to_string()));
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
     }
 
     #[test]
-    fn test_save_and_load_config_with_different_project_types() {
+    fn test_save_and_load_config_with_different_frameworks() {
         let tmp_dir = TempDir::new("test_config").unwrap();
 
         let test_cases = vec![
@@ -286,23 +286,23 @@ mod tests {
             "rust-binary",
         ];
 
-        for project_type in test_cases {
-            let config_path = tmp_dir.path().join(format!("{}.toml", project_type));
+        for framework in test_cases {
+            let config_path = tmp_dir.path().join(format!("{}.toml", framework));
 
             let config = CastConfig {
                 exemplar: None,
                 proof_of_concept: None,
-                project_type: Some(project_type.to_string()),
+                framework: Some(framework.to_string()),
             };
 
             config.save(&config_path).unwrap();
 
             let loaded_config = CastConfig::load(&config_path).unwrap();
             assert_eq!(
-                loaded_config.project_type,
-                Some(project_type.to_string()),
-                "Failed for project type: {}",
-                project_type
+                loaded_config.framework,
+                Some(framework.to_string()),
+                "Failed for framework: {}",
+                framework
             );
         }
     }
