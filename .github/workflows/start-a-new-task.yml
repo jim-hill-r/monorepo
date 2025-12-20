@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   start-a-new-task:
-    # Only run if the PR was created by GitHub Copilot agent and was actually merged
-    if: github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.merged == true
+    # Only run if the PR was created by a GitHub Copilot agent and was actually merged
+    if: (github.event.pull_request.user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent[bot]') && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -26,14 +26,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Check for open PRs created by Copilot
-          echo "Checking for open PRs created by Copilot..."
-          open_prs=$(gh pr list --state open --author Copilot --json number --jq 'length')
-          echo "Found $open_prs open PR(s) created by Copilot"
+          # Check for open PRs (including drafts) created by any Copilot bot
+          echo "Checking for open PRs (including drafts) created by Copilot agents..."
           
-          if [ "$open_prs" -gt 0 ]; then
+          # Check for PRs from both Copilot and copilot-swe-agent[bot]
+          copilot_prs=$(gh pr list --state open --author Copilot --json number --jq 'length')
+          swe_agent_prs=$(gh pr list --state open --author "copilot-swe-agent[bot]" --json number --jq 'length')
+          total_open_prs=$((copilot_prs + swe_agent_prs))
+          
+          echo "Found $copilot_prs open PR(s) from Copilot"
+          echo "Found $swe_agent_prs open PR(s) from copilot-swe-agent[bot]"
+          echo "Total: $total_open_prs open agent PR(s)"
+          
+          if [ "$total_open_prs" -gt 0 ]; then
             echo "skip_task=true" >> $GITHUB_OUTPUT
-            echo "⚠️ Skipping new agent task - found $open_prs active agent task(s)"
+            echo "⚠️ Skipping new agent task - found $total_open_prs active agent task(s)"
+            # List the open PRs for debugging
+            echo "Open PRs from Copilot:"
+            gh pr list --state open --author Copilot --json number,title,isDraft --jq '.[] | "  PR #\(.number): \(.title) (Draft: \(.isDraft))"' || true
+            echo "Open PRs from copilot-swe-agent[bot]:"
+            gh pr list --state open --author "copilot-swe-agent[bot]" --json number,title,isDraft --jq '.[] | "  PR #\(.number): \(.title) (Draft: \(.isDraft))"' || true
           else
             echo "skip_task=false" >> $GITHUB_OUTPUT
             echo "✓ No active agent tasks found - proceeding to create new task"
