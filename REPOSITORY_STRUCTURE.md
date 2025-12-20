@@ -32,6 +32,15 @@ All projects live in this directory. Each project may have:
 - `Cargo.toml` - Rust project configuration
 - Standard Rust project structure: `src/`, `tests/`, `benches/`, etc.
 
+### `/proof_of_concepts/`
+**Proof-of-concept experiments** are gradually being moved here from `/projects/`.
+
+Contains experimental projects marked with `proof_of_concept = true` in their `Cast.toml`:
+- These are exploratory projects to test new technologies or ideas
+- Not intended for production use
+- May be incomplete or unmaintained
+- Can be discovered by Cast CLI commands like `cast project with-changes`
+
 ### `/projects/docs/`
 **Important: As of December 2024, the docs folder was moved from root into projects.**
 
