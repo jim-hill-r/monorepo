@@ -261,7 +261,7 @@ updates:
 
   # Cargo/Rust dependencies for Dioxus SSG proof of concept
   - package-ecosystem: "cargo"
-    directory: "/proof_of_concepts/dioxus/ssg"
+    directory: "/projects/dioxus_ssg"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -277,7 +277,7 @@ updates:
 
   # Cargo/Rust dependencies for Dioxus static website proof of concept
   - package-ecosystem: "cargo"
-    directory: "/proof_of_concepts/dioxus/static_website"
+    directory: "/projects/dioxus_static_website"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -293,7 +293,7 @@ updates:
 
   # Cargo/Rust dependencies for NeetCode150
   - package-ecosystem: "cargo"
-    directory: "/docs/learning/computer_science/algorithms/NeetCode150"
+    directory: "/projects/docs/learning/computer_science/algorithms/NeetCode150"
     schedule:
       interval: "weekly"
       day: "monday"

@@ -1,0 +1,11 @@
+# Cloudflare Workers/Pages
+.dev.vars
+.wrangler/
+wrangler.toml.backup
+
+# Node modules (if using npm for wrangler)
+node_modules/
+
+# Environment files
+.env
+.env.local

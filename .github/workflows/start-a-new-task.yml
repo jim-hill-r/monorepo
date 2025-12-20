@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   start-a-new-task:
-    # Only run if the PR was created by GitHub Copilot agent and was actually merged
-    if: github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.merged == true
+    # Only run if the PR was created by a GitHub Copilot agent and was actually merged
+    if: (github.event.pull_request.user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent[bot]') && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,16 +21,48 @@ jobs:
           # Checkout the merge commit to access the merged changes
           ref: ${{ github.event.pull_request.merge_commit_sha }}
       
-      - name: Validate agent prompt file exists
+      - name: Check for running agent tasks
+        id: check_running_agents
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -f .github/agent-prompts/start-a-new-task.md ]; then
+          # Check for open PRs (including drafts) created by any Copilot bot
+          echo "Checking for open PRs (including drafts) created by Copilot agents..."
+          
+          # Check for PRs from both Copilot and copilot-swe-agent[bot]
+          copilot_prs=$(gh pr list --state open --author Copilot --json number --jq 'length')
+          swe_agent_prs=$(gh pr list --state open --author "copilot-swe-agent[bot]" --json number --jq 'length')
+          total_open_prs=$((copilot_prs + swe_agent_prs))
+          
+          echo "Found $copilot_prs open PR(s) from Copilot"
+          echo "Found $swe_agent_prs open PR(s) from copilot-swe-agent[bot]"
+          echo "Total: $total_open_prs open agent PR(s)"
+          
+          if [ "$total_open_prs" -gt 0 ]; then
+            echo "skip_task=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Skipping new agent task - found $total_open_prs active agent task(s)"
+            # List the open PRs for debugging
+            echo "Open PRs from Copilot:"
+            gh pr list --state open --author Copilot --json number,title,isDraft --jq '.[] | "  PR #\(.number): \(.title) (Draft: \(.isDraft))"' || true
+            echo "Open PRs from copilot-swe-agent[bot]:"
+            gh pr list --state open --author "copilot-swe-agent[bot]" --json number,title,isDraft --jq '.[] | "  PR #\(.number): \(.title) (Draft: \(.isDraft))"' || true
+          else
+            echo "skip_task=false" >> $GITHUB_OUTPUT
+            echo "✓ No active agent tasks found - proceeding to create new task"
+          fi
+      
+      - name: Validate agent prompt file exists
+        if: steps.check_running_agents.outputs.skip_task != 'true'
+        run: |
+          if [ ! -f agent-copilot/prompts/start-a-new-task.md ]; then
             echo "Error: Agent prompt file not found"
             exit 1
           fi
       
       - name: Prepare agent-copilot binary
+        if: steps.check_running_agents.outputs.skip_task != 'true'
         run: |
-          BINARY_PATH="projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
+          BINARY_PATH="agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
           if [ ! -f "$BINARY_PATH" ]; then
             echo "Error: Pre-built binary not found at $BINARY_PATH"
             exit 1
@@ -39,11 +71,12 @@ jobs:
           echo "Binary is ready to execute"
       
       - name: Create GitHub Copilot Agent Task
+        if: steps.check_running_agents.outputs.skip_task != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
         run: |
-          projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot \
+          agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot \
             --repo "${{ github.repository }}" \
             --title "Start a new task" \
-            --prompt-file .github/agent-prompts/start-a-new-task.md \
+            --prompt-file agent-copilot/prompts/start-a-new-task.md \
             --token "$GITHUB_TOKEN"

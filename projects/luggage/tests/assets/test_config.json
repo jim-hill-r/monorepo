@@ -1,8 +1,0 @@
-{
-  "name": "local_surreal_db_test",
-  "closet": {
-    "name": "second_local_db",
-    "execution_type": "Builtin",
-    "builtin_type": "LocalSurrealDb"
-  }
-}

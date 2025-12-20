@@ -14,7 +14,7 @@ fi
 echo "✅ PASS: Workflow file exists"
 
 # Test 2: Check if agent prompt file exists
-PROMPT_FILE=".github/agent-prompts/start-a-new-task.md"
+PROMPT_FILE="agent-copilot/prompts/start-a-new-task.md"
 if [ ! -f "$PROMPT_FILE" ]; then
     echo "❌ FAIL: Agent prompt file not found: $PROMPT_FILE"
     exit 1
@@ -22,7 +22,7 @@ fi
 echo "✅ PASS: Agent prompt file exists"
 
 # Test 3: Check if agent-copilot binary exists
-BINARY_FILE="projects/agent-copilot/artifacts/agent-copilot"
+BINARY_FILE="agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
 if [ ! -f "$BINARY_FILE" ]; then
     echo "❌ FAIL: agent-copilot binary not found: $BINARY_FILE"
     exit 1
@@ -80,6 +80,21 @@ else
     exit 1
 fi
 
+# Test 9b: Check workflow checks for copilot-swe-agent[bot] PRs
+if grep -q "copilot-swe-agent\[bot\]" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow checks for copilot-swe-agent[bot] PRs"
+else
+    echo "❌ FAIL: Workflow should check for both Copilot and copilot-swe-agent[bot] PRs"
+    exit 1
+fi
+
+# Test 9c: Check workflow job condition includes both bot users
+if grep -q "user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent\[bot\]'" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow job condition includes both Copilot bot users"
+else
+    echo "⚠️  WARNING: Workflow job condition should trigger on PRs from both Copilot and copilot-swe-agent[bot]"
+fi
+
 # Test 10: Check workflow uses GITHUB_TOKEN
 if grep -q 'GITHUB_TOKEN:.*secrets\.GITHUB_TOKEN' "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow uses GITHUB_TOKEN"
@@ -100,6 +115,22 @@ if grep -q "agent-copilot binary" "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow validates agent-copilot binary exists"
 else
     echo "⚠️  WARNING: Workflow should validate agent-copilot binary exists"
+fi
+
+# Test 13: Check workflow has concurrency check for running agents
+if grep -q "Check for running agent tasks" "$WORKFLOW_FILE" && grep -q "gh pr list" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow includes concurrency check for running agents"
+else
+    echo "❌ FAIL: Workflow should check for running agents before starting a new task"
+    exit 1
+fi
+
+# Test 14: Check workflow has conditional steps based on running agents
+if grep -q "if: steps.check_running_agents.outputs.skip_task" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow has conditional steps based on running agents check"
+else
+    echo "❌ FAIL: Workflow should conditionally execute steps based on running agents check"
+    exit 1
 fi
 
 echo ""

@@ -45,11 +45,11 @@ else
     exit 1
 fi
 
-# Test 5: Verify workflow uses git diff to detect changes
-if grep -q "git diff" "$WORKFLOW_FILE"; then
-    echo "✅ PASS: Workflow uses git diff to detect changes"
+# Test 5: Verify workflow uses cast CLI to detect changes
+if grep -q 'CAST_BIN.*project' "$WORKFLOW_FILE" && grep -q "with-changes" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow uses cast CLI to detect changes"
 else
-    echo "❌ FAIL: Workflow does not use git diff to detect changes"
+    echo "❌ FAIL: Workflow does not use cast CLI to detect changes"
     exit 1
 fi
 

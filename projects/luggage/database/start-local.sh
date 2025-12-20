@@ -1,1 +1,0 @@
-surreal start memory -A --user root --pass root

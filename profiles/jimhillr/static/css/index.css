@@ -1,0 +1,48 @@
+.splash {
+    background-image: url('../images/better-world.webp');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position-x: center;
+    height: 100svh;
+}
+
+.title {
+    font-size: 7rem;
+    font-weight: 700;
+    color: var(--text-primary-color);
+    text-align: right;
+    padding-top: 6rem;
+    padding-bottom: 2rem;
+    padding-right: min(7rem, 8svw);
+}
+
+.tagline {
+    font-size: 5rem;
+    font-weight: 300;
+    color: var(--text-primary-color);
+    opacity: 0.6;
+    text-align: right;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    padding-right: min(5rem, 8svw);
+}
+
+.content {
+    max-width: 1024px;
+    margin: 0 auto;
+}
+
+.section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.section_header {
+    text-align: center;
+    color: var(--text-primary-color);
+}
+
+.footer {
+    background-color: var(--text-primary-color);
+    min-height: 64px;
+}

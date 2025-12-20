@@ -18,10 +18,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get changed files
-        id: changed-files
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.85.0
+
+      - name: Build cast CLI
         run: |
-          # Get the base branch to compare against
+          cd projects/cast_cli
+          cargo build --release
+
+      - name: Find projects with changes
+        id: changed-projects
+        run: |
+          # Get the base and head commit SHAs
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
 
@@ -32,37 +42,20 @@ jobs:
             exit 1
           fi
 
-          # Get all changed files
-          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
+          # Verify commits are available
+          echo "Verifying commits are available..."
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null || \
+             ! git cat-file -e "$HEAD_SHA" 2>/dev/null; then
+            echo "Error: One or both commits not available after checkout"
+            git log --oneline --all -10
+            exit 1
+          fi
+          echo "Commits verified successfully"
 
-          # Find projects with Cast.toml that have changes
-          CHANGED_PROJECTS=""
-          for file in $CHANGED_FILES; do
-            # Start from the file's directory and walk up to find Cast.toml
-            dir=$(dirname "$file")
-            # Also check the current directory if file is in root
-            if [ "$dir" = "." ] && [ -f "Cast.toml" ]; then
-              if ! echo "$CHANGED_PROJECTS" | grep -q "^.$"; then
-                CHANGED_PROJECTS="$CHANGED_PROJECTS."$'\n'
-              fi
-            else
-              while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
-                if [ -f "$dir/Cast.toml" ]; then
-                  # Add project directory to list if not already present
-                  if ! echo "$CHANGED_PROJECTS" | grep -q "^$dir$"; then
-                    CHANGED_PROJECTS="$CHANGED_PROJECTS$dir"$'\n'
-                  fi
-                  break
-                fi
-                dir=$(dirname "$dir")
-              done
-            fi
-          done
-
-          # Remove empty lines and store
-          CHANGED_PROJECTS=$(echo "$CHANGED_PROJECTS" | grep -v '^$')
+          # Use cast CLI to find projects with changes
+          CAST_BIN="$GITHUB_WORKSPACE/projects/cast_cli/target/release/cast"
+          CHANGED_PROJECTS=$("$CAST_BIN" project with-changes \
+            --base "$BASE_SHA" --head "$HEAD_SHA")
 
           if [ -z "$CHANGED_PROJECTS" ]; then
             echo "No projects with Cast.toml found in changed files"
@@ -77,20 +70,10 @@ jobs:
             echo "has_projects=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Setup Rust toolchain
-        if: steps.changed-files.outputs.has_projects == 'true'
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Build cast CLI
-        if: steps.changed-files.outputs.has_projects == 'true'
-        run: |
-          cd projects/cast_cli
-          cargo build --release
-
       - name: Run cast ci for changed projects
-        if: steps.changed-files.outputs.has_projects == 'true'
+        if: steps.changed-projects.outputs.has_projects == 'true'
         run: |
-          PROJECTS='${{ steps.changed-files.outputs.projects }}'
+          PROJECTS='${{ steps.changed-projects.outputs.projects }}'
           echo "Running cast ci for projects: $PROJECTS"
 
           # Use absolute path to cast binary
@@ -115,5 +98,5 @@ jobs:
           exit $EXIT_CODE
 
       - name: No projects to check
-        if: steps.changed-files.outputs.has_projects != 'true'
+        if: steps.changed-projects.outputs.has_projects != 'true'
         run: echo "No projects with Cast.toml were changed in this PR"

@@ -1,0 +1,17 @@
+:root {
+    --text-primary-color: rgb(29, 79, 216, 0.85);
+}
+
+body {
+    font-family: system-ui, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    line-height: 1;
+}
+
+h1 { font-size: 4.75rem; }
+h2 { font-size: 3.5rem; }
+h3 { font-size: 2.5rem; }
