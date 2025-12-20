@@ -1,4 +1,6 @@
 
+   
+TODO: Add a CI command to the cast project that outputs "CI running"
 TODO: Add documentation on how to use the `cross` rust package to compile the agent-copilot project for Linux x86_64 (comparible with ubuntu latest)
 TODO: Create a new project called pane-cloudflare. Put it in the projects folder. This project is a deployment project for deployment the build artifacts from project pane onto cloudflare pages.   
 TODO: Implement the project blueeel. Go to blue.eel.education and replicate the functionality there using Dioxus. For the initial implementation, just mock out any api requests by hardcoding the values in the project.   
