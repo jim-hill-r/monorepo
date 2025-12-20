@@ -14,3 +14,4 @@ TODO: Instead of having a separate Cast.toml, just extend Cargo.toml. So the cas
 TODO: Remove anything that is using Replit. I see at least one file .replit but there may be more.
 TODO: Add some context to the repo to let github copilot know that github workflows should have as little logic as possible. They should only run cast cli commands. If logic is required, it should be added to cast cli.
 TODO: Refactor cast ci github workflow such that the majority of the logic exists within the cast project and not hardcoded scripts in the workflow yamls.
+TODO: Move .github/agent-prompts to a new directory called prompts inside the agent-copilot project
