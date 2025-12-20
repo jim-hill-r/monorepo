@@ -3,7 +3,7 @@ name: Cast CI
 
 'on':
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
 
 permissions:
   contents: read
@@ -11,12 +11,16 @@ permissions:
 
 jobs:
   detect-and-run-ci:
+    # Skip if PR was closed without merging
+    if: github.event.pull_request.merged == true || github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          # Use merge commit if PR was merged, otherwise use PR head
+          ref: ${{ github.event.pull_request.merged && github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
