@@ -25,30 +25,31 @@ else
     exit 1
 fi
 
-# Test 3: Verify the workflow captures stderr from git diff
-echo "Test 3: Checking if git diff captures stderr..."
-if grep -q "git diff.*2>&1" .github/workflows/cast-ci.yml; then
-    echo "✅ PASS: Workflow captures stderr from git diff"
+# Test 3: Verify the workflow captures stderr from cast command (which includes git diff)
+echo "Test 3: Checking if cast command captures stderr..."
+if grep -Pzo "CAST_BIN.*project.*with-changes.*\n.*2>&1" .github/workflows/cast-ci.yml > /dev/null 2>&1 || \
+   grep "with-changes.*2>&1" .github/workflows/cast-ci.yml > /dev/null 2>&1; then
+    echo "✅ PASS: Workflow captures stderr from cast command"
 else
-    echo "❌ FAIL: Workflow does not capture stderr from git diff"
+    echo "❌ FAIL: Workflow does not capture stderr from cast command"
     exit 1
 fi
 
 # Test 4: Verify the workflow prints error output on failure
 echo "Test 4: Checking for error output printing..."
-if grep -q "echo.*Git diff output.*CHANGED_FILES" .github/workflows/cast-ci.yml; then
+if grep -q "echo.*output.*CHANGED_PROJECTS" .github/workflows/cast-ci.yml; then
     echo "✅ PASS: Workflow prints error output on failure"
 else
     echo "❌ FAIL: Workflow does not print error output"
     exit 1
 fi
 
-# Test 5: Verify the workflow exits with error on git diff failure
+# Test 5: Verify the workflow exits with error on cast command failure
 echo "Test 5: Checking for exit on error..."
 if grep -A 3 "if \[ \$? -ne 0 \]" .github/workflows/cast-ci.yml | grep -q "exit 1"; then
-    echo "✅ PASS: Workflow exits with error on git diff failure"
+    echo "✅ PASS: Workflow exits with error on cast command failure"
 else
-    echo "❌ FAIL: Workflow does not exit with error on git diff failure"
+    echo "❌ FAIL: Workflow does not exit with error on cast command failure"
     exit 1
 fi
 
@@ -66,6 +67,6 @@ echo "All error handling tests passed! ✅"
 echo ""
 echo "Summary:"
 echo "- The workflow now explicitly fetches both BASE_SHA and HEAD_SHA"
-echo "- Git diff errors are caught and reported clearly"
-echo "- The workflow exits with a clear error message when git diff fails"
-echo "- Fetch failures don't prevent the workflow from attempting git diff"
+echo "- Cast command errors (including git diff errors) are caught and reported clearly"
+echo "- The workflow exits with a clear error message when cast command fails"
+echo "- Fetch failures don't prevent the workflow from attempting to find changed projects"
