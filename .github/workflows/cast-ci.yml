@@ -44,7 +44,8 @@ jobs:
 
           # Verify commits are available
           echo "Verifying commits are available..."
-          if ! git cat-file -e "$BASE_SHA" 2>/dev/null || ! git cat-file -e "$HEAD_SHA" 2>/dev/null; then
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null || \
+             ! git cat-file -e "$HEAD_SHA" 2>/dev/null; then
             echo "Error: One or both commits not available after checkout"
             git log --oneline --all -10
             exit 1
@@ -53,7 +54,8 @@ jobs:
 
           # Use cast CLI to find projects with changes
           CAST_BIN="$GITHUB_WORKSPACE/projects/cast_cli/target/release/cast"
-          CHANGED_PROJECTS=$("$CAST_BIN" project with-changes --base "$BASE_SHA" --head "$HEAD_SHA")
+          CHANGED_PROJECTS=$("$CAST_BIN" project with-changes \
+            --base "$BASE_SHA" --head "$HEAD_SHA")
 
           if [ -z "$CHANGED_PROJECTS" ]; then
             echo "No projects with Cast.toml found in changed files"

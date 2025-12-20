@@ -42,6 +42,37 @@ The resulting project will have a complete structure ready for development with:
 
 To create your own exemplar projects, simply add `exemplar = true` to the project's `Cast.toml` file.
 
+### Finding Projects with Changes
+
+Cast can find projects with changes between two git refs. This is useful for CI/CD workflows to determine which projects need to be tested or built.
+
+```rust
+use cast::projects;
+
+// Find projects with changes between two commits
+let changed_projects = projects::with_changes(
+    "/path/to/monorepo",
+    "origin/main",  // base ref
+    "HEAD"          // head ref
+).unwrap();
+
+for project in changed_projects {
+    println!("Changed project: {}", project.display());
+}
+```
+
+This will:
+1. Get all changed files between the two git refs using `git diff`
+2. Walk up the directory tree from each changed file to find the closest `Cast.toml`
+3. Return a sorted, deduplicated list of project directories
+
+The CLI command is available as:
+```bash
+cast project with-changes --base <base-ref> --head <head-ref>
+```
+
+This is used in CI workflows to efficiently run tests only on changed projects.
+
 ## Configuration
 
 Cast uses a `Cast.toml` file to configure project-specific settings.
