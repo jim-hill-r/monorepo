@@ -87,6 +87,10 @@ exemplar = true
 # Whether this project is a proof of concept project
 # Optional: defaults to None/false if not specified
 proof_of_concept = true
+
+# The framework used by the project (e.g., "dioxus", "cloudflare-pages", "rust-library")
+# Optional: defaults to None if not specified
+framework = "dioxus"
 ```
 
 You can load and parse Cast.toml configuration in your code:
@@ -105,5 +109,10 @@ if config.exemplar == Some(true) {
 // Check if project is a proof of concept
 if config.proof_of_concept == Some(true) {
     println!("This is a proof of concept project");
+}
+
+// Check framework
+if let Some(framework) = config.framework {
+    println!("Framework: {}", framework);
 }
 ```

@@ -1,0 +1,4 @@
+# Cast configuration file
+# This is a Dioxus web application
+
+framework = "dioxus"

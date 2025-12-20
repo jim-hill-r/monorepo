@@ -11,6 +11,9 @@ pub struct CastConfig {
     /// Whether this project is a proof of concept project
     #[serde(default)]
     pub proof_of_concept: Option<bool>,
+    /// The framework used by the project (e.g., "dioxus", "cloudflare-pages", "rust-library")
+    #[serde(default)]
+    pub framework: Option<String>,
 }
 
 #[derive(Error, Debug)]
@@ -49,6 +52,7 @@ mod tests {
         let config: CastConfig = toml::from_str("").unwrap();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -68,6 +72,7 @@ mod tests {
         let config: CastConfig = toml::from_str("# Just a comment").unwrap();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -91,6 +96,7 @@ mod tests {
         let config = CastConfig::load(&config_path).unwrap();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -112,6 +118,7 @@ mod tests {
         let config = CastConfig {
             exemplar: Some(true),
             proof_of_concept: None,
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -119,6 +126,7 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, Some(true));
         assert_eq!(loaded_config.proof_of_concept, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
@@ -129,6 +137,7 @@ mod tests {
         let config = CastConfig {
             exemplar: None,
             proof_of_concept: None,
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -136,6 +145,7 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
@@ -143,6 +153,7 @@ mod tests {
         let config = CastConfig::default();
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
     }
 
     #[test]
@@ -196,6 +207,7 @@ mod tests {
         let config = CastConfig {
             exemplar: None,
             proof_of_concept: Some(true),
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -203,6 +215,7 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.proof_of_concept, Some(true));
         assert_eq!(loaded_config.exemplar, None);
+        assert_eq!(loaded_config.framework, None);
     }
 
     #[test]
@@ -213,6 +226,7 @@ mod tests {
         let config = CastConfig {
             exemplar: Some(false),
             proof_of_concept: Some(true),
+            framework: None,
         };
 
         config.save(&config_path).unwrap();
@@ -220,21 +234,91 @@ mod tests {
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, Some(false));
         assert_eq!(loaded_config.proof_of_concept, Some(true));
+        assert_eq!(loaded_config.framework, None);
     }
+
+    #[test]
+    fn test_parse_config_with_framework() {
+        let config: CastConfig = toml::from_str("framework = \"dioxus\"").unwrap();
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+        assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_all_fields() {
+        let config: CastConfig = toml::from_str(
+            "exemplar = true\nproof_of_concept = false\nframework = \"dioxus\"",
+        )
+        .unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.proof_of_concept, Some(false));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+    }
+
+    #[test]
+    fn test_save_config_with_framework() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+        let config_path = tmp_dir.path().join("Cast.toml");
+
+        let config = CastConfig {
+            exemplar: None,
+            proof_of_concept: None,
+            framework: Some("dioxus".to_string()),
+        };
+
+        config.save(&config_path).unwrap();
+
+        let loaded_config = CastConfig::load(&config_path).unwrap();
+        assert_eq!(loaded_config.framework, Some("dioxus".to_string()));
+        assert_eq!(loaded_config.exemplar, None);
+        assert_eq!(loaded_config.proof_of_concept, None);
+    }
+
+    #[test]
+    fn test_save_and_load_config_with_different_frameworks() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+
+        let test_cases = vec![
+            "dioxus",
+            "cloudflare-pages",
+            "rust-library",
+            "rust-binary",
+        ];
+
+        for framework in test_cases {
+            let config_path = tmp_dir.path().join(format!("{}.toml", framework));
+
+            let config = CastConfig {
+                exemplar: None,
+                proof_of_concept: None,
+                framework: Some(framework.to_string()),
+            };
+
+            config.save(&config_path).unwrap();
+
+            let loaded_config = CastConfig::load(&config_path).unwrap();
+            assert_eq!(
+                loaded_config.framework,
+                Some(framework.to_string()),
+                "Failed for framework: {}",
+                framework
+            );
+        }
+    }
+
 
     #[test]
     fn test_moved_poc_projects_have_proof_of_concept_flag() {
         // Test that all moved proof-of-concept projects have Cast.toml with proof_of_concept = true
         let poc_projects = vec![
-            "projects/dioxus_ssg",
-            "projects/dioxus_static_website",
-            "projects/slidev_poc",
-            "projects/marp",
+            "dioxus_ssg",
+            "dioxus_static_website",
+            "slidev_poc",
+            "marp",
         ];
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
             .parent()
             .unwrap();
 

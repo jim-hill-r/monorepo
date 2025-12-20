@@ -1,2 +1,0 @@
-- TODO: Upgrade pane to the latest version of dixous and ensure it builds
-- TODO: Add a project type to cast for dioxus and set that type in Cast.toml in this project
