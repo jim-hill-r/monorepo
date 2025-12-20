@@ -18,6 +18,8 @@ enum Commands {
     Session(SessionCommands),
     #[command(subcommand)]
     Project(ProjectCommands),
+    /// Run CI checks
+    Ci,
 }
 
 #[derive(Subcommand)]
@@ -78,6 +80,9 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     Ok("Creating project.".into())
                 }
             },
+            Commands::Ci => {
+                Ok("CI running".into())
+            }
         };
     } else {
         Err(ExecuteError::CastTomlNotFound)
@@ -184,5 +189,19 @@ mod tests {
         fs::create_dir_all(&child_dir).unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
         assert_eq!(find_cast_toml(child_dir.as_path()).unwrap(), tmp_dir.path())
+    }
+
+    #[test]
+    fn it_runs_ci() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+        let result = execute(
+            Args {
+                cmd: Commands::Ci,
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
+        assert_eq!(result, "CI running");
     }
 }
