@@ -85,7 +85,7 @@ For developers who need to manage multiple Node.js versions:
 
 1. Install nvm:
    ```bash
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
    ```
 2. Restart your terminal or run:
    ```bash

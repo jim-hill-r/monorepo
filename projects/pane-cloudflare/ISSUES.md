@@ -1,3 +1,3 @@
 # Issues for pane-cloudflare
 
-No known issues at this time.
+- TODO: Add cloudflare-pages as a project type to cast project and update Cast.toml in this project to represent that
