@@ -28,6 +28,9 @@ jobs:
             exit 1
           fi
       
+      - name: Make agent-copilot binary executable
+        run: chmod +x projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot
+      
       - name: Create GitHub Copilot Agent Task
         env:
           GITHUB_TOKEN: ${{ secrets.START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
