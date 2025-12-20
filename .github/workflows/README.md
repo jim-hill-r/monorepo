@@ -72,26 +72,38 @@ This workflow automatically creates a GitHub Copilot agent task after a PR creat
 
 1. **Trigger**: The workflow runs when a pull request is closed and merged, but only if it was created by the GitHub Copilot agent (`user.login == 'Copilot'`).
 
-2. **Agent Task Creation**: The workflow uses the `agent-copilot` binary to create a new GitHub Copilot agent task with:
+2. **Concurrency Check**: Before creating a new agent task, the workflow checks if there are any open PRs created by Copilot. If any active agent tasks exist, the workflow skips creating a new task to prevent running multiple agents concurrently.
+
+3. **Agent Task Creation**: If no active agent tasks are found, the workflow uses the `agent-copilot` binary to create a new GitHub Copilot agent task with:
    - Title: "Start a new task"
    - Problem Statement: Content from `.github/agent-prompts/start-a-new-task.md`
    - Repository: The current repository
    - Note: This directly creates an agent task using the GitHub Copilot API, bypassing the need to create an issue first.
 
-3. **Authentication**: Uses the standard `GITHUB_TOKEN` provided by GitHub Actions, which has the necessary permissions for creating agent tasks via the Copilot API.
+4. **Authentication**: Uses the `START_NEW_AI_AGENT_TASK_WORKFLOW_PAT` secret for creating agent tasks, and the standard `GITHUB_TOKEN` for checking open PRs.
 
 ### Setup Requirements
 
 The workflow requires:
-1. The `agent-copilot` binary must be present at `projects/agent-copilot/artifacts/agent-copilot`
-2. The `GITHUB_TOKEN` provided by GitHub Actions (automatically available)
+1. The `agent-copilot` binary must be present at `projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
+2. The `START_NEW_AI_AGENT_TASK_WORKFLOW_PAT` secret with appropriate permissions for creating agent tasks
+3. The `GITHUB_TOKEN` provided by GitHub Actions (automatically available)
 
 ### Permissions
 
 The workflow requires the following permissions (already configured):
 - `contents: write` - To checkout the repository
-- `pull-requests: write` - For PR operations
+- `pull-requests: write` - For PR operations and checking open PRs
 - `issues: write` - For backward compatibility (may not be needed with direct Copilot API calls)
+
+### Concurrency Control
+
+The workflow prevents multiple agent tasks from running concurrently by:
+- Checking for open PRs created by the Copilot user before starting a new task
+- Skipping task creation if any active agent tasks are found
+- Logging the number of active agent tasks when skipping
+
+This ensures that only one agent task runs at a time, preventing conflicts and resource contention.
 
 ### Testing
 

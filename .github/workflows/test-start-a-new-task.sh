@@ -22,7 +22,7 @@ fi
 echo "✅ PASS: Agent prompt file exists"
 
 # Test 3: Check if agent-copilot binary exists
-BINARY_FILE="projects/agent-copilot/artifacts/agent-copilot"
+BINARY_FILE="projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
 if [ ! -f "$BINARY_FILE" ]; then
     echo "❌ FAIL: agent-copilot binary not found: $BINARY_FILE"
     exit 1
@@ -100,6 +100,22 @@ if grep -q "agent-copilot binary" "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow validates agent-copilot binary exists"
 else
     echo "⚠️  WARNING: Workflow should validate agent-copilot binary exists"
+fi
+
+# Test 13: Check workflow has concurrency check for running agents
+if grep -q "Check for running agent tasks" "$WORKFLOW_FILE" && grep -q "gh pr list" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow includes concurrency check for running agents"
+else
+    echo "❌ FAIL: Workflow should check for running agents before starting a new task"
+    exit 1
+fi
+
+# Test 14: Check workflow has conditional steps based on running agents
+if grep -q "if: steps.check_running_agents.outputs.skip_task" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow has conditional steps based on running agents check"
+else
+    echo "❌ FAIL: Workflow should conditionally execute steps based on running agents check"
+    exit 1
 fi
 
 echo ""

@@ -21,7 +21,26 @@ jobs:
           # Checkout the merge commit to access the merged changes
           ref: ${{ github.event.pull_request.merge_commit_sha }}
       
+      - name: Check for running agent tasks
+        id: check_running_agents
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check for open PRs created by Copilot
+          echo "Checking for open PRs created by Copilot..."
+          open_prs=$(gh pr list --state open --author Copilot --json number --jq 'length')
+          echo "Found $open_prs open PR(s) created by Copilot"
+          
+          if [ "$open_prs" -gt 0 ]; then
+            echo "skip_task=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Skipping new agent task - found $open_prs active agent task(s)"
+          else
+            echo "skip_task=false" >> $GITHUB_OUTPUT
+            echo "✓ No active agent tasks found - proceeding to create new task"
+          fi
+      
       - name: Validate agent prompt file exists
+        if: steps.check_running_agents.outputs.skip_task != 'true'
         run: |
           if [ ! -f .github/agent-prompts/start-a-new-task.md ]; then
             echo "Error: Agent prompt file not found"
@@ -29,6 +48,7 @@ jobs:
           fi
       
       - name: Prepare agent-copilot binary
+        if: steps.check_running_agents.outputs.skip_task != 'true'
         run: |
           BINARY_PATH="projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
           if [ ! -f "$BINARY_PATH" ]; then
@@ -39,6 +59,7 @@ jobs:
           echo "Binary is ready to execute"
       
       - name: Create GitHub Copilot Agent Task
+        if: steps.check_running_agents.outputs.skip_task != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
         run: |
