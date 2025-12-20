@@ -20,5 +20,3 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
-
-@copilot do this issue

@@ -42,6 +42,7 @@ jobs:
           echo "Commits verified successfully"
 
           # Get all changed files
+          # Note: fetch-depth: 0 ensures all commits are available
           CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>&1)
           if [ $? -ne 0 ]; then
             echo "Error: Failed to get changed files"
