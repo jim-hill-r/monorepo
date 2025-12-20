@@ -8,13 +8,13 @@ This document describes the organization and structure of this monorepo to help 
 /
 ├── .github/              # GitHub Actions workflows and agent configurations
 │   ├── workflows/        # CI/CD workflows (cast-ci.yml, start-a-new-task.yml)
-│   ├── agent-prompts/    # Prompts for GitHub Copilot agents
 │   └── dependabot.yml    # Dependency update configuration
 ├── projects/             # All projects in the monorepo
 │   ├── docs/            # Documentation and learning resources (moved here from root)
 │   ├── cast/            # Core Cast library for monorepo tooling
 │   ├── cast_cli/        # Cast command-line interface
 │   ├── agent-copilot/   # Binary for creating GitHub Copilot agent tasks
+│   │   └── prompts/     # Prompts for GitHub Copilot agents
 │   ├── base/            # Exemplar project with base configuration
 │   ├── library/         # Exemplar project for libraries
 │   ├── binary/          # Exemplar project for binaries
