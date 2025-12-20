@@ -105,8 +105,8 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 ## Important Notes for Agents
 
 1. **Docs location**: The docs folder is in `projects/docs/`, not at the root level
-2. **Profiles location**: The profiles folder is at the root level `/profiles/`, not in `projects/`
-3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
-4. **Exemplar projects**: Base, library, and binary are templates - don't modify unless necessary
-5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
-6. **Concurrency**: Only one agent task should run at a time (handled by workflows)
+2. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
+3. **Exemplar projects**: Base, library, and binary are templates - don't modify unless necessary
+4. **TODO tracking**: Remove TODOs from ISSUES.md when completed
+5. **Concurrency**: Only one agent task should run at a time (handled by workflows)
+6. **Cast Tooling**: All projects should have a Cast.toml if it is missing.
