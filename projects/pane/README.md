@@ -2,23 +2,66 @@
 
 A Dioxus web application built with Rust.
 
-## Building
+## Prerequisites
 
-To build the project:
+- Rust (latest stable version)
+- Dioxus CLI (`dx`)
+
+To install the Dioxus CLI:
 
 ```bash
-cargo build
+cargo install dioxus-cli
 ```
 
-To check the project:
+## Running Locally in Dev Mode
+
+To run the application in development mode with hot-reloading:
+
+```bash
+dx serve
+```
+
+This will:
+- Build the application
+- Start a local development server (usually at http://localhost:8080)
+- Watch for file changes and automatically rebuild
+- Enable hot-reloading in the browser
+
+### Alternative: Run with cargo
+
+You can also run the application using cargo directly:
+
+```bash
+cargo run
+```
+
+Note: This method won't include hot-reloading capabilities.
+
+## Building
+
+To build the project for production:
+
+```bash
+dx build --release
+```
+
+Or using cargo:
+
+```bash
+cargo build --release
+```
+
+To check the project without building:
 
 ```bash
 cargo check
 ```
 
-## Running
+## Development Tips
 
-This is a Dioxus web application. To run it, you'll need the Dioxus CLI or build it as a WebAssembly target.
+- The dev server will automatically reload when you save changes to Rust files
+- Check the browser console for any errors or warnings
+- Hot-reloading works for both component logic and styling changes
 
 ## Status
 
