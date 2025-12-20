@@ -32,11 +32,14 @@ jobs:
             exit 1
           fi
 
-          # Ensure both commits are available
-          # fetch-depth: 0 should get everything, but let's be explicit
-          echo "Fetching commits if needed..."
-          git fetch origin "$BASE_SHA" || true
-          git fetch origin "$HEAD_SHA" || true
+          # With fetch-depth: 0, all commits should be available
+          echo "Verifying commits are available..."
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null || ! git cat-file -e "$HEAD_SHA" 2>/dev/null; then
+            echo "Error: One or both commits not available after checkout"
+            git log --oneline --all -10
+            exit 1
+          fi
+          echo "Commits verified successfully"
 
           # Get all changed files
           CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>&1)
