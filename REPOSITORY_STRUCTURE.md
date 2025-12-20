@@ -10,6 +10,9 @@ This document describes the organization and structure of this monorepo to help 
 │   ├── workflows/        # CI/CD workflows (cast-ci.yml, start-a-new-task.yml)
 │   └── dependabot.yml    # Dependency update configuration
 ├── macos/               # macOS setup guide and instructions
+├── profiles/            # User profiles and personal content (moved from projects)
+│   ├── jimhillr/        # Personal profile website for jimhillr
+│   └── content_provider/ # Content provider library
 ├── projects/             # All projects in the monorepo
 │   ├── docs/            # Documentation and learning resources (moved here from root)
 │   ├── cast/            # Core Cast library for monorepo tooling
@@ -28,6 +31,14 @@ This document describes the organization and structure of this monorepo to help 
 
 ### `/macos/`
 Contains setup guide and instructions for configuring a new macOS machine with the required global dependencies for this monorepo (Rust, npm, etc.).
+
+### `/profiles/`
+**Important: As of December 2024, the profiles folder was moved from projects into root.**
+
+Contains:
+- User profiles and personal content
+- Personal profile websites (e.g., jimhillr)
+- Content provider library for generating profile content
 
 ### `/projects/`
 All projects live in this directory. Each project may have:
