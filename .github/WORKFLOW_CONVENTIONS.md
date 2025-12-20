@@ -5,7 +5,74 @@ This document describes conventions and best practices for GitHub workflows in t
 ## General Principles
 
 ### Minimal Logic in Workflows
-GitHub workflows should have as little logic as possible. They should primarily run `cast` CLI commands. If complex logic is required, it should be added to the `cast` CLI project, not hardcoded in workflow YAML files.
+
+**IMPORTANT**: GitHub workflows should have as little logic as possible. They should primarily run `cast` CLI commands. If complex logic is required, it should be added to the `cast` CLI project, not hardcoded in workflow YAML files.
+
+#### Why Keep Workflows Minimal?
+
+1. **Testability**: Code in `cast` CLI can be unit tested, whereas workflow YAML logic cannot
+2. **Reusability**: Logic in `cast` CLI can be used locally and in CI, not just in workflows
+3. **Maintainability**: Rust code is easier to maintain and refactor than bash scripts in YAML
+4. **Type Safety**: Rust provides compile-time guarantees that bash scripts don't
+5. **Debugging**: Easier to debug Rust code locally than workflow YAML
+
+#### What Belongs in Workflows vs Cast CLI?
+
+**Workflows should contain:**
+- Workflow triggers and event configuration
+- Environment setup (checkout, toolchain installation)
+- Simple glue code to call `cast` commands
+- Setting environment variables from GitHub context
+- Basic conditionals for workflow control
+
+**Cast CLI should contain:**
+- Business logic (git operations, file parsing, validation)
+- Data transformations (JSON parsing, filtering)
+- Complex conditionals and loops
+- Error handling and validation
+- Any logic that could be reused outside of CI
+
+#### Examples
+
+**❌ Bad - Too much logic in workflow:**
+```yaml
+- name: Find changed projects
+  run: |
+    # SHA validation with regex
+    if ! [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+      echo "Invalid SHA"
+      exit 1
+    fi
+    
+    # Complex git operations
+    git diff --name-only $BASE_SHA $HEAD_SHA | while read file; do
+      # Walk up directory tree
+      dir=$(dirname "$file")
+      while [ "$dir" != "." ]; do
+        if [ -f "$dir/Cast.toml" ]; then
+          echo "$dir"
+          break
+        fi
+        dir=$(dirname "$dir")
+      done
+    done | sort -u
+```
+
+**✅ Good - Minimal workflow, logic in cast CLI:**
+```yaml
+- name: Find changed projects
+  run: |
+    cast project with-changes --base $BASE_SHA --head $HEAD_SHA
+```
+
+#### Migration Strategy
+
+If you find complex logic in a workflow:
+1. Create a new `cast` CLI command or subcommand
+2. Move the logic to the `cast` project in Rust
+3. Add unit tests for the new functionality
+4. Update the workflow to call the new `cast` command
+5. Remove the old bash logic from the workflow
 
 ### Concurrency Control
 Some workflows require concurrency control to prevent multiple instances from running simultaneously:
