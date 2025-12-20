@@ -105,8 +105,9 @@ else
 fi
 
 # Test 12: Verify cast ci command works
-if [ -f "$CAST_CLI_DIR/target/release/cast" ]; then
-    if cd projects/cast && ../cast_cli/target/release/cast ci > /dev/null 2>&1; then
+CAST_PROJECT_DIR="projects/cast"
+if [ -d "$CAST_PROJECT_DIR" ] && [ -f "$CAST_CLI_DIR/target/release/cast" ]; then
+    if cd "$CAST_PROJECT_DIR" && ../cast_cli/target/release/cast ci > /dev/null 2>&1; then
         echo "✅ PASS: cast ci command works"
         cd - > /dev/null
     else
@@ -114,7 +115,11 @@ if [ -f "$CAST_CLI_DIR/target/release/cast" ]; then
         cd - > /dev/null
     fi
 else
-    echo "⚠️  SKIP: cast CLI binary not found (needs to be built first)"
+    if [ ! -d "$CAST_PROJECT_DIR" ]; then
+        echo "⚠️  SKIP: projects/cast directory not found"
+    else
+        echo "⚠️  SKIP: cast CLI binary not found (needs to be built first)"
+    fi
 fi
 
 echo ""

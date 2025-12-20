@@ -56,7 +56,7 @@ jobs:
           else
             echo "Changed projects:"
             echo "$CHANGED_PROJECTS"
-            # Convert to comma-separated for matrix
+            # Convert to JSON array for iteration
             PROJECTS_JSON=$(echo "$CHANGED_PROJECTS" | \
               jq -R -s -c 'split("\n") | map(select(length > 0))')
             echo "projects=$PROJECTS_JSON" >> $GITHUB_OUTPUT
@@ -79,12 +79,15 @@ jobs:
           PROJECTS='${{ steps.changed-files.outputs.projects }}'
           echo "Running cast ci for projects: $PROJECTS"
 
+          # Use absolute path to cast binary
+          CAST_BIN="$GITHUB_WORKSPACE/projects/cast_cli/target/release/cast"
+
           EXIT_CODE=0
           for project in $(echo "$PROJECTS" | jq -r '.[]'); do
             echo "::group::Running cast ci for $project"
             cd "$GITHUB_WORKSPACE/$project"
 
-            if ../cast_cli/target/release/cast ci; then
+            if "$CAST_BIN" ci; then
               echo "✓ cast ci passed for $project"
             else
               echo "✗ cast ci failed for $project"
