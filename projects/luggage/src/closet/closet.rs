@@ -67,11 +67,17 @@ pub trait ClosetReader {
 }
 
 pub trait ClosetUpdater {
-    // TODO
-    // fn update(&self) -> String;
+    fn update<T>(
+        &self,
+        cube: Cube<T>,
+    ) -> impl std::future::Future<Output = Result<CubeHeader, LuggageError>> + Send
+    where
+        T: Serialize + Send + 'static;
 }
 
 pub trait ClosetDeleter {
-    // TODO
-    // fn delete(&self) -> String;
+    fn delete(
+        &self,
+        header: CubeHeader,
+    ) -> impl std::future::Future<Output = Result<(), LuggageError>> + Send;
 }
