@@ -98,3 +98,4 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 3. **Exemplar projects**: Base, library, and binary are templates - don't modify unless necessary
 4. **TODO tracking**: Remove TODOs from ISSUES.md when completed
 5. **Concurrency**: Only one agent task should run at a time (handled by workflows)
+6. **Cast Tooling**: All projects should have a Cast.toml if it is missing.
