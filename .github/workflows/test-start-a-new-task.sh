@@ -14,7 +14,7 @@ fi
 echo "✅ PASS: Workflow file exists"
 
 # Test 2: Check if agent prompt file exists
-PROMPT_FILE="projects/agent-copilot/prompts/start-a-new-task.md"
+PROMPT_FILE="agent-copilot/prompts/start-a-new-task.md"
 if [ ! -f "$PROMPT_FILE" ]; then
     echo "❌ FAIL: Agent prompt file not found: $PROMPT_FILE"
     exit 1
@@ -22,7 +22,7 @@ fi
 echo "✅ PASS: Agent prompt file exists"
 
 # Test 3: Check if agent-copilot binary exists
-BINARY_FILE="projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
+BINARY_FILE="agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
 if [ ! -f "$BINARY_FILE" ]; then
     echo "❌ FAIL: agent-copilot binary not found: $BINARY_FILE"
     exit 1
