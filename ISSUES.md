@@ -1,4 +1,3 @@
-TODO: the GitHub workflow detect and run ci is failing
 
 
 
