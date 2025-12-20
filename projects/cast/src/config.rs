@@ -229,7 +229,7 @@ mod tests {
             "projects/dioxus_ssg",
             "projects/dioxus_static_website",
             "projects/slidev_poc",
-            "projects/marp",
+            "proof_of_concepts/marp",
         ];
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
