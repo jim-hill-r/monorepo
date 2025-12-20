@@ -1,7 +1,6 @@
 
 
 
-TODO: Refactor cast to find "exemplar" projects instead of using the templates.
 TODO: Remove the templates directory
 TODO: Move the docs folder into projects
 TODO: Move all the projects up one level and remove the projects folder
