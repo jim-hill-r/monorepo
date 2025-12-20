@@ -50,6 +50,10 @@ Cast uses a `Cast.toml` file to configure project-specific settings.
 # Whether this project is an exemplar project (example/template)
 # Optional: defaults to None/false if not specified
 exemplar = true
+
+# Whether this project is a proof of concept project
+# Optional: defaults to None/false if not specified
+proof_of_concept = true
 ```
 
 You can load and parse Cast.toml configuration in your code:
@@ -63,5 +67,10 @@ let config = CastConfig::load("path/to/Cast.toml").unwrap();
 // Check if project is an exemplar
 if config.exemplar == Some(true) {
     println!("This is an exemplar project");
+}
+
+// Check if project is a proof of concept
+if config.proof_of_concept == Some(true) {
+    println!("This is a proof of concept project");
 }
 ```
