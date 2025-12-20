@@ -38,6 +38,8 @@ struct StartSessionCommand {
 #[derive(Subcommand)]
 pub enum ProjectCommands {
     New(NewProjectCommand),
+    /// List projects with changes between two git refs
+    WithChanges(WithChangesCommand),
 }
 
 #[derive(Parser)]
@@ -46,13 +48,49 @@ struct NewProjectCommand {
     name: String,
 }
 
+#[derive(Parser)]
+struct WithChangesCommand {
+    /// Base git ref (commit SHA, branch, or tag)
+    #[arg(long)]
+    base: String,
+    
+    /// Head git ref (commit SHA, branch, or tag)
+    #[arg(long)]
+    head: String,
+}
+
 #[derive(Error, Debug)]
 pub enum ExecuteError {
     #[error("cast toml not found")]
     CastTomlNotFound,
+    #[error("with-changes error: {0}")]
+    WithChangesError(String),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
+    // Handle commands that don't require Cast.toml
+    match &args.cmd {
+        Commands::Project(ProjectCommands::WithChanges(cmd)) => {
+            let changed_projects = projects::with_changes(
+                entry_directory,
+                &cmd.base,
+                &cmd.head,
+            )
+            .map_err(|e| ExecuteError::WithChangesError(e.to_string()))?;
+            
+            // Return newline-separated list of project paths
+            let output = changed_projects
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+                .join("\n");
+            
+            return Ok(output);
+        }
+        _ => {}
+    }
+    
+    // Other commands require Cast.toml
     if let Some(working_directory) = find_cast_toml(entry_directory) {
         return match &args.cmd {
             Commands::Session(session_command) => match session_command {
@@ -78,6 +116,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 ProjectCommands::New(new_project_command) => {
                     let _ = projects::new(working_directory, &new_project_command.name);
                     Ok("Creating project.".into())
+                }
+                ProjectCommands::WithChanges(_) => {
+                    // This case should have been handled earlier
+                    unreachable!("WithChanges should be handled before Cast.toml check")
                 }
             },
             Commands::Ci => Ok("CI running".into()),
