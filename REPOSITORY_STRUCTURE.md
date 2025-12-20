@@ -10,6 +10,9 @@ This document describes the organization and structure of this monorepo to help 
 │   ├── workflows/        # CI/CD workflows (cast-ci.yml, start-a-new-task.yml)
 │   └── dependabot.yml    # Dependency update configuration
 ├── macos/               # macOS setup guide and instructions
+├── profiles/            # User profiles and personal content (moved from projects)
+│   ├── jimhillr/        # Personal profile website for jimhillr
+│   └── content_provider/ # Content provider library
 ├── projects/             # All projects in the monorepo
 │   ├── docs/            # Documentation and learning resources (moved here from root)
 │   ├── cast/            # Core Cast library for monorepo tooling
@@ -28,6 +31,14 @@ This document describes the organization and structure of this monorepo to help 
 
 ### `/macos/`
 Contains setup guide and instructions for configuring a new macOS machine with the required global dependencies for this monorepo (Rust, npm, etc.).
+
+### `/profiles/`
+**Important: As of December 2024, the profiles folder was moved from projects into root.**
+
+Contains:
+- User profiles and personal content
+- Personal profile websites (e.g., jimhillr)
+- Content provider library for generating profile content
 
 ### `/projects/`
 All projects live in this directory. Each project may have:
@@ -94,7 +105,8 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 ## Important Notes for Agents
 
 1. **Docs location**: The docs folder is in `projects/docs/`, not at the root level
-2. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
-3. **Exemplar projects**: Base, library, and binary are templates - don't modify unless necessary
-4. **TODO tracking**: Remove TODOs from ISSUES.md when completed
-5. **Concurrency**: Only one agent task should run at a time (handled by workflows)
+2. **Profiles location**: The profiles folder is at the root level `/profiles/`, not in `projects/`
+3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
+4. **Exemplar projects**: Base, library, and binary are templates - don't modify unless necessary
+5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
+6. **Concurrency**: Only one agent task should run at a time (handled by workflows)
