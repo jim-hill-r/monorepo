@@ -84,10 +84,14 @@ fn test_app_contains_educational_content() {
     let main_content = std::fs::read_to_string("src/main.rs")
         .expect("Failed to read src/main.rs");
     // Check for educational theme elements
+    let lower_content = main_content.to_lowercase();
     assert!(
-        main_content.to_lowercase().contains("blue eel") || 
-        main_content.to_lowercase().contains("reading"),
-        "App should contain educational content related to reading or Blue Eel"
+        lower_content.contains("blue eel"),
+        "App should contain 'Blue Eel' branding"
+    );
+    assert!(
+        lower_content.contains("reading"),
+        "App should contain reading-related content"
     );
 }
 
