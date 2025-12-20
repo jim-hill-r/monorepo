@@ -20,6 +20,19 @@ To build in release mode:
 cargo build --release
 ```
 
+### Quick Build for Linux x86_64
+
+If you're on a Linux x86_64 system, you can use the provided build script to build and save the binary to the artifacts directory:
+
+```bash
+./build-linux.sh
+```
+
+This script will:
+1. Build the binary in release mode for Linux x86_64
+2. Copy it to `artifacts/x86_64-unknown-linux-gnu/agent-copilot`
+3. Verify the binary was built correctly
+
 ## Cross-Compiling for Linux x86_64
 
 If you need to compile the project for Linux x86_64 (compatible with Ubuntu latest) from another platform, you can use the `cross` tool. This is particularly useful when building on macOS or Windows for deployment on Linux servers.
