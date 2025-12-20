@@ -34,7 +34,7 @@ fn DesktopNavbar() -> Element {
         Navbar {
             button { 
                 onclick: move |_| {
-                    // TODO: from AI: Implement desktop authentication when auth_sdk supports desktop platforms
+                    // TODO: Implement desktop authentication when auth_sdk supports desktop platforms
                 }, 
                 "Login" 
             }

@@ -34,7 +34,7 @@ fn MobileNavbar() -> Element {
         Navbar {
             button { 
                 onclick: move |_| {
-                    // TODO: from AI: Implement mobile authentication when auth_sdk supports mobile platforms
+                    // TODO: Implement mobile authentication when auth_sdk supports mobile platforms
                 }, 
                 "Login" 
             }
