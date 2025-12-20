@@ -55,7 +55,7 @@ fn find_exemplar_projects(working_directory: &Path) -> Result<Vec<PathBuf>, NewP
         find_exemplars_in_directory(&projects_dir, &mut exemplar_projects)?;
     }
 
-    // Sort to ensure consistent ordering (base before library, etc.)
+    // Sort to ensure consistent ordering (alphabetical by path name)
     exemplar_projects.sort();
 
     Ok(exemplar_projects)
