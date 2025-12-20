@@ -8,6 +8,9 @@ pub struct CastConfig {
     /// Whether this project is an exemplar project (example/template project)
     #[serde(default)]
     pub exemplar: Option<bool>,
+    /// Whether this project is a proof of concept project
+    #[serde(default)]
+    pub proof_of_concept: Option<bool>,
 }
 
 #[derive(Error, Debug)]
@@ -45,6 +48,7 @@ mod tests {
     fn test_parse_empty_config() {
         let config: CastConfig = toml::from_str("").unwrap();
         assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
     }
 
     #[test]
@@ -63,6 +67,7 @@ mod tests {
     fn test_parse_config_without_exemplar() {
         let config: CastConfig = toml::from_str("# Just a comment").unwrap();
         assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
     }
 
     #[test]
@@ -85,6 +90,7 @@ mod tests {
         
         let config = CastConfig::load(&config_path).unwrap();
         assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
     }
 
     #[test]
@@ -105,12 +111,14 @@ mod tests {
         
         let config = CastConfig {
             exemplar: Some(true),
+            proof_of_concept: None,
         };
         
         config.save(&config_path).unwrap();
         
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, Some(true));
+        assert_eq!(loaded_config.proof_of_concept, None);
     }
 
     #[test]
@@ -120,18 +128,21 @@ mod tests {
         
         let config = CastConfig {
             exemplar: None,
+            proof_of_concept: None,
         };
         
         config.save(&config_path).unwrap();
         
         let loaded_config = CastConfig::load(&config_path).unwrap();
         assert_eq!(loaded_config.exemplar, None);
+        assert_eq!(loaded_config.proof_of_concept, None);
     }
 
     #[test]
     fn test_default_config() {
         let config = CastConfig::default();
         assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
     }
 
     #[test]
@@ -141,5 +152,72 @@ mod tests {
         
         let result = CastConfig::load(&config_path);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_config_with_proof_of_concept_true() {
+        let config: CastConfig = toml::from_str("proof_of_concept = true").unwrap();
+        assert_eq!(config.proof_of_concept, Some(true));
+        assert_eq!(config.exemplar, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_proof_of_concept_false() {
+        let config: CastConfig = toml::from_str("proof_of_concept = false").unwrap();
+        assert_eq!(config.proof_of_concept, Some(false));
+        assert_eq!(config.exemplar, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_both_fields() {
+        let config: CastConfig = toml::from_str("exemplar = true\nproof_of_concept = false").unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.proof_of_concept, Some(false));
+    }
+
+    #[test]
+    fn test_load_config_with_proof_of_concept_from_file() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+        let config_path = tmp_dir.path().join("Cast.toml");
+        
+        fs::write(&config_path, "proof_of_concept = true").unwrap();
+        
+        let config = CastConfig::load(&config_path).unwrap();
+        assert_eq!(config.proof_of_concept, Some(true));
+        assert_eq!(config.exemplar, None);
+    }
+
+    #[test]
+    fn test_save_config_with_proof_of_concept() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+        let config_path = tmp_dir.path().join("Cast.toml");
+        
+        let config = CastConfig {
+            exemplar: None,
+            proof_of_concept: Some(true),
+        };
+        
+        config.save(&config_path).unwrap();
+        
+        let loaded_config = CastConfig::load(&config_path).unwrap();
+        assert_eq!(loaded_config.proof_of_concept, Some(true));
+        assert_eq!(loaded_config.exemplar, None);
+    }
+
+    #[test]
+    fn test_save_and_load_config_with_both_fields() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+        let config_path = tmp_dir.path().join("Cast.toml");
+        
+        let config = CastConfig {
+            exemplar: Some(false),
+            proof_of_concept: Some(true),
+        };
+        
+        config.save(&config_path).unwrap();
+        
+        let loaded_config = CastConfig::load(&config_path).unwrap();
+        assert_eq!(loaded_config.exemplar, Some(false));
+        assert_eq!(loaded_config.proof_of_concept, Some(true));
     }
 }
