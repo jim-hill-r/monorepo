@@ -111,5 +111,15 @@ else
     exit 1
 fi
 
+# Test 8: Verify README doesn't recommend cargo install for wrangler
+echo ""
+echo "Test 8: Checking README doesn't recommend cargo install wrangler..."
+if grep -q 'cargo install wrangler' "$PROJECT_DIR/README.md"; then
+    echo "  ❌ FAIL: README mentions 'cargo install wrangler' which is no longer supported"
+    exit 1
+else
+    echo "  ✓ README does not mention deprecated cargo install wrangler"
+fi
+
 echo ""
 echo "=== All tests passed! ✓ ==="

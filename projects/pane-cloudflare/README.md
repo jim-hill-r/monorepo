@@ -17,11 +17,7 @@ Install Wrangler globally using npm:
 npm install -g wrangler
 ```
 
-Or using cargo:
-
-```bash
-cargo install wrangler
-```
+> **Note:** Wrangler must be installed via npm. The cargo-based installation method is no longer supported.
 
 ### Authenticating with Cloudflare
 
