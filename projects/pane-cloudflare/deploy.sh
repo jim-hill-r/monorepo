@@ -30,7 +30,7 @@ if [ ! -d "$DIST_DIR" ]; then
     echo ""
     echo "Building pane project..."
     cd "$PANE_DIR"
-    
+
     if command -v dx &> /dev/null; then
         dx build --release
     else
