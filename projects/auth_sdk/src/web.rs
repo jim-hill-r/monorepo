@@ -158,7 +158,7 @@ async fn handle_redirect(
         // TODO: Ensure this policy is none for all situations
         //.redirect(reqwest::redirect::Policy::none())
         .build()
-        .expect("Client should build"); // TODO: Don't panic, return error
+        .map_err(|_| AuthError::Unknown)?;
 
     // Now you can exchange it for an access token.
     let token_result = client
