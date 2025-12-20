@@ -31,7 +31,7 @@ projects::new("/path/to/monorepo", "my_project_name").unwrap();
 ```
 
 This will:
-1. Search for all exemplar projects in the `templates/` and `projects/` directories
+1. Search for all exemplar projects in the `projects/` directory
 2. Copy each exemplar project to the new project location (later exemplars overwrite earlier ones)
 3. Remove empty `.gitignore` placeholder files used for tracking empty directories in git
 
