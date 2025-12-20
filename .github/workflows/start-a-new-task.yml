@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Checkout the merge commit to access the merged changes
           ref: ${{ github.event.pull_request.merge_commit_sha }}
