@@ -23,7 +23,7 @@ dx serve
 
 This will:
 - Build the application
-- Start a local development server (usually at http://localhost:8080)
+- Start a local development server (default: http://localhost:8080)
 - Watch for file changes and automatically rebuild
 - Enable hot-reloading in the browser
 
