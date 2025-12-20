@@ -819,6 +819,7 @@ dependencies = [
 name = "desktop"
 version = "0.1.0"
 dependencies = [
+ "auth_sdk",
  "dioxus",
  "ui",
 ]
@@ -2786,6 +2787,7 @@ dependencies = [
 name = "mobile"
 version = "0.1.0"
 dependencies = [
+ "auth_sdk",
  "dioxus",
  "ui",
 ]
