@@ -83,8 +83,8 @@ Some workflows require concurrency control to prevent multiple instances from ru
 
 #### Preventing Concurrent Agent Tasks
 The `start-a-new-task.yml` workflow ensures only one agent task runs at a time by:
-1. Checking for open PRs created by the 'Copilot' user using `gh pr list --state open --author Copilot`
-2. Skipping task creation if any active agent tasks exist (open PRs from Copilot)
+1. Checking for open PRs created by Copilot bot users ('Copilot' and 'copilot-swe-agent[bot]') using `gh pr list --state open --author <bot-name>`
+2. Skipping task creation if any active agent tasks exist (open PRs from either bot)
 3. Using conditional step execution based on the check result
 
 This pattern can be applied to other automated task workflows that need to prevent concurrent execution.

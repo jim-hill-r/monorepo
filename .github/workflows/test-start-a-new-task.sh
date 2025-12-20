@@ -80,6 +80,14 @@ else
     exit 1
 fi
 
+# Test 9b: Check workflow checks for copilot-swe-agent[bot] PRs
+if grep -q "copilot-swe-agent\[bot\]" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow checks for copilot-swe-agent[bot] PRs"
+else
+    echo "❌ FAIL: Workflow should check for both Copilot and copilot-swe-agent[bot] PRs"
+    exit 1
+fi
+
 # Test 10: Check workflow uses GITHUB_TOKEN
 if grep -q 'GITHUB_TOKEN:.*secrets\.GITHUB_TOKEN' "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow uses GITHUB_TOKEN"
