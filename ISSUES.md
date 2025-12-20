@@ -1,7 +1,6 @@
 
 
 
-TODO: Move all proof_of_concept projects out of the proof_of_concepts directory and label them using a Cast.toml as proof_of_concept = true.
 TODO: Refactor cast to find "exemplar" projects instead of using the templates.
 TODO: Remove the templates directory
 TODO: Move the docs folder into projects
