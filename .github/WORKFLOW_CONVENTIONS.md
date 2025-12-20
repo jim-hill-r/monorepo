@@ -91,7 +91,7 @@ This pattern can be applied to other automated task workflows that need to preve
 
 #### Using agent-copilot Binary
 The `agent-copilot` binary is used to create GitHub Copilot agent tasks programmatically. It:
-- Lives in `projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
+- Lives in `agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
 - Calls the GitHub Copilot API directly (same as `gh agent-task create`)
 - Requires a GitHub token with `copilot` scope
 

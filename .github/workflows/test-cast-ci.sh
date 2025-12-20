@@ -78,7 +78,7 @@ else
 fi
 
 # Test 9: Verify cast CLI can be built
-CAST_CLI_DIR="projects/cast_cli"
+CAST_CLI_DIR="cast_cli"
 if [ -f "$CAST_CLI_DIR/Cargo.toml" ]; then
     echo "✅ PASS: cast_cli project exists"
 else
@@ -105,9 +105,9 @@ else
 fi
 
 # Test 12: Verify cast ci command works
-CAST_PROJECT_DIR="projects/cast"
+CAST_PROJECT_DIR="cast"
 WORKSPACE_DIR="$(pwd)"
-CAST_BIN="$WORKSPACE_DIR/projects/cast_cli/target/release/cast"
+CAST_BIN="$WORKSPACE_DIR/cast_cli/target/release/cast"
 
 if [ -d "$CAST_PROJECT_DIR" ] && [ -f "$CAST_BIN" ]; then
     if cd "$CAST_PROJECT_DIR" && "$CAST_BIN" ci > /dev/null 2>&1; then
@@ -119,7 +119,7 @@ if [ -d "$CAST_PROJECT_DIR" ] && [ -f "$CAST_BIN" ]; then
     fi
 else
     if [ ! -d "$CAST_PROJECT_DIR" ]; then
-        echo "⚠️  SKIP: projects/cast directory not found"
+        echo "⚠️  SKIP: cast directory not found"
     else
         echo "⚠️  SKIP: cast CLI binary not found (needs to be built first)"
     fi

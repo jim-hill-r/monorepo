@@ -130,7 +130,7 @@ After setting up these dependencies, you can:
 
 1. Clone this repository
 2. Follow the main README.md for repository-specific setup
-3. Install the Cast CLI: `cargo install --path ./projects/cast_cli`
+3. Install the Cast CLI: `cargo install --path ./cast_cli`
 4. Start working on projects
 
 ## Additional Dependencies

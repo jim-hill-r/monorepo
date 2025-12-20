@@ -174,14 +174,14 @@ agent-copilot --repo <OWNER/REPO> --title <TITLE> --prompt-file <PATH> --token <
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
+  --prompt-file agent-copilot/prompts/start-a-new-task.md \
   --token $GITHUB_TOKEN
 
 # With optional parameters
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
+  --prompt-file agent-copilot/prompts/start-a-new-task.md \
   --token $GITHUB_TOKEN \
   --base-branch main \
   --custom-agent my-custom-agent
@@ -215,7 +215,7 @@ You can provide the token in two ways:
 
 ```bash
 export GITHUB_TOKEN=your_token_here
-agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file projects/agent-copilot/prompts/start-a-new-task.md
+agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-file agent-copilot/prompts/start-a-new-task.md
 ```
 
 **Option 2: Command-line Argument**
@@ -224,7 +224,7 @@ agent-copilot --repo jim-hill-r/monorepo --title "Start a new task" --prompt-fil
 agent-copilot \
   --repo jim-hill-r/monorepo \
   --title "Start a new task" \
-  --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
+  --prompt-file agent-copilot/prompts/start-a-new-task.md \
   --token ghp_your_token_here
 ```
 

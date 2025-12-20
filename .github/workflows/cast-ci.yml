@@ -12,7 +12,9 @@ permissions:
 jobs:
   detect-and-run-ci:
     # Skip if PR was closed without merging
-    if: github.event.pull_request.merged == true || github.event.action != 'closed'
+    if: >-
+      github.event.pull_request.merged == true ||
+      github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -20,7 +22,12 @@ jobs:
         with:
           fetch-depth: 0
           # Use merge commit if PR was merged, otherwise use PR head
-          ref: ${{ github.event.pull_request.merged && github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
+          ref: >-
+            ${{
+              github.event.pull_request.merged &&
+              github.event.pull_request.merge_commit_sha ||
+              github.event.pull_request.head.sha
+            }}
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -29,7 +36,7 @@ jobs:
 
       - name: Build cast CLI
         run: |
-          cd projects/cast_cli
+          cd cast_cli
           cargo build --release
 
       - name: Find projects with changes
@@ -46,6 +53,13 @@ jobs:
             exit 1
           fi
 
+          # Explicitly fetch both base and head commits to ensure
+          # they're available
+          echo "Fetching base commit: $BASE_SHA"
+          git fetch origin "$BASE_SHA" || true
+          echo "Fetching head commit: $HEAD_SHA"
+          git fetch origin "$HEAD_SHA" || true
+
           # Verify commits are available
           echo "Verifying commits are available..."
           if ! git cat-file -e "$BASE_SHA" 2>/dev/null || \
@@ -57,9 +71,16 @@ jobs:
           echo "Commits verified successfully"
 
           # Use cast CLI to find projects with changes
-          CAST_BIN="$GITHUB_WORKSPACE/projects/cast_cli/target/release/cast"
+          CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"
           CHANGED_PROJECTS=$("$CAST_BIN" project with-changes \
-            --base "$BASE_SHA" --head "$HEAD_SHA")
+            --base "$BASE_SHA" --head "$HEAD_SHA" 2>&1)
+
+          # Check if the command failed
+          if [ $? -ne 0 ]; then
+            echo "Error: cast project with-changes command failed"
+            echo "Git diff output: $CHANGED_PROJECTS"
+            exit 1
+          fi
 
           if [ -z "$CHANGED_PROJECTS" ]; then
             echo "No projects with Cast.toml found in changed files"
@@ -81,7 +102,7 @@ jobs:
           echo "Running cast ci for projects: $PROJECTS"
 
           # Use absolute path to cast binary
-          CAST_BIN="$GITHUB_WORKSPACE/projects/cast_cli/target/release/cast"
+          CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"
 
           EXIT_CODE=0
           for project in $(echo "$PROJECTS" | jq -r '.[]'); do

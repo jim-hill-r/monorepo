@@ -9,7 +9,7 @@ Monorepo for all projects
 - SurrealDb: Install via [documentation](https://surrealdb.com/docs/surrealdb/installation/macos) instructions.
 - Cargo-binstall: Install via [repo](https://github.com/cargo-bins/cargo-binstall) instructions.
 - Cross: Install via [repo](https://github.com/cross-rs/cross) instructions.
-- Cast (cli for this monorepo): Run `cargo install --path ./projects/cast_cli` and `code --install-extension ./projects/cast_vscode/cast.vsix`
+- Cast (cli for this monorepo): Run `cargo install --path ./cast_cli` and `code --install-extension ./cast_vscode/cast.vsix`
 
 # Get Started
 
