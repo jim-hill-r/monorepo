@@ -603,6 +603,25 @@ mod tests {
     }
 
     #[test]
+    fn test_find_project_dir_finds_proof_of_concepts() {
+        let tmp_dir = TempDir::new("test_poc_project").unwrap();
+        
+        // Create a proof-of-concept project with Cast.toml
+        let poc_dir = tmp_dir.path().join("proof_of_concepts/my_poc");
+        fs::create_dir_all(&poc_dir).unwrap();
+        fs::write(poc_dir.join("Cast.toml"), "proof_of_concept = true").unwrap();
+        fs::write(poc_dir.join("README.md"), "# My POC").unwrap();
+        
+        // Test finding the project from a file inside it
+        let file_path = poc_dir.join("README.md");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+        
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("proof_of_concepts/my_poc"));
+    }
+
+    #[test]
     fn test_is_valid_git_ref_accepts_valid_refs() {
         assert!(is_valid_git_ref("main"));
         assert!(is_valid_git_ref("feature/my-branch"));
