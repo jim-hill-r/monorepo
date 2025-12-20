@@ -14,7 +14,6 @@ echo ""
 if ! command -v wrangler &> /dev/null; then
     echo "Error: wrangler is not installed"
     echo "Install it with: npm install -g wrangler"
-    echo "Or with cargo: cargo install wrangler"
     exit 1
 fi
 

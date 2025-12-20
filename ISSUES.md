@@ -1,6 +1,6 @@
 
 
-FIX: In the pane-cloudflare project, the README says to run `cargo install wrangler`, but it does not work with the error "error[E0599]: no function or associated item named `new` found for struct `tokio::runtime::Runtime` in the current scope"
+
 TODO: In the cast project, add an optional configuration called proof_of_concept which is true or false.
 TODO: Move all proof_of_concept projects out of the proof_of_concepts directory and label them using a Cast.toml as proof_of_concept = true.
 TODO: Refactor cast to find "exemplar" projects instead of using the templates.
