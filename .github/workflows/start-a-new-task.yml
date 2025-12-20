@@ -42,7 +42,7 @@ jobs:
       - name: Validate agent prompt file exists
         if: steps.check_running_agents.outputs.skip_task != 'true'
         run: |
-          if [ ! -f projects/agent-copilot/prompts/start-a-new-task.md ]; then
+          if [ ! -f agent-copilot/prompts/start-a-new-task.md ]; then
             echo "Error: Agent prompt file not found"
             exit 1
           fi
@@ -50,7 +50,7 @@ jobs:
       - name: Prepare agent-copilot binary
         if: steps.check_running_agents.outputs.skip_task != 'true'
         run: |
-          BINARY_PATH="projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
+          BINARY_PATH="agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot"
           if [ ! -f "$BINARY_PATH" ]; then
             echo "Error: Pre-built binary not found at $BINARY_PATH"
             exit 1
@@ -63,8 +63,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.START_NEW_AI_AGENT_TASK_WORKFLOW_PAT }}
         run: |
-          projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot \
+          agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot \
             --repo "${{ github.repository }}" \
             --title "Start a new task" \
-            --prompt-file projects/agent-copilot/prompts/start-a-new-task.md \
+            --prompt-file agent-copilot/prompts/start-a-new-task.md \
             --token "$GITHUB_TOKEN"

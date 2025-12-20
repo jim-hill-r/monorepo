@@ -15,7 +15,7 @@ This workflow automatically runs `cast ci` for any project that has changes in a
 
 3. **Build and Run**: 
    - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `projects/cast_cli`
+   - Builds the `cast` CLI from `cast_cli`
    - Runs `cast ci` for each detected project
 
 4. **Results**: 
@@ -76,7 +76,7 @@ This workflow automatically creates a GitHub Copilot agent task after a PR creat
 
 3. **Agent Task Creation**: If no active agent tasks are found, the workflow uses the `agent-copilot` binary to create a new GitHub Copilot agent task with:
    - Title: "Start a new task"
-   - Problem Statement: Content from `projects/agent-copilot/prompts/start-a-new-task.md`
+   - Problem Statement: Content from `agent-copilot/prompts/start-a-new-task.md`
    - Repository: The current repository
    - Note: This directly creates an agent task using the GitHub Copilot API, bypassing the need to create an issue first.
 
@@ -85,7 +85,7 @@ This workflow automatically creates a GitHub Copilot agent task after a PR creat
 ### Setup Requirements
 
 The workflow requires:
-1. The `agent-copilot` binary must be present at `projects/agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
+1. The `agent-copilot` binary must be present at `agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
 2. The `START_NEW_AI_AGENT_TASK_WORKFLOW_PAT` secret with appropriate permissions for creating agent tasks
 3. The `GITHUB_TOKEN` provided by GitHub Actions (automatically available)
 
