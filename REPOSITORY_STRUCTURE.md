@@ -57,6 +57,7 @@ The `cast` CLI is the primary tool for managing this monorepo:
 - Build with: `cargo build --release`
 - Commands:
   - `cast project new <name>` - Create new project from exemplars
+  - `cast project with-changes --base <ref> --head <ref>` - Find projects with changes between git refs
   - `cast ci` - Run CI checks (lint, build, test)
   - `cast session start` - Start a work session
 

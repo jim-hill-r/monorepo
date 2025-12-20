@@ -4,4 +4,3 @@ TODO: Refactor cast ci github workflow such that the majority of the logic exist
 TODO: Move .github/agent-prompts to a new directory called prompts inside the agent-copilot project
 TODO: Create a project called macos which provides all of the instructions to install required global dependencies onto a brand new macos machine. The dependencies should be rust and npm.
 TODO: In github workflow start-a-new-task, the check for running agent tasks is not working. Even with an open draft PR from another agent it proceeds to make another task.
-TODO: Refactor github workflow cast ci so that all of the logic for finding changes files in contained within the cast cli. The workflow should end up being two steps. Run `cast projects --with-changes` in root which would return any child directories with cast configuration that have source code changes and then run `cast ci` on those projects. 

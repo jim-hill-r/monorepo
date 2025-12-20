@@ -1,4 +1,6 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::{fs, io};
 
 use crate::config::CastConfig;
@@ -12,6 +14,16 @@ pub enum NewProjectError {
     ConfigError(#[from] crate::config::ConfigError),
     #[error("No exemplar projects found")]
     NoExemplarProjects,
+}
+
+#[derive(Error, Debug)]
+pub enum WithChangesError {
+    #[error("IO error: {0}")]
+    IoError(#[from] io::Error),
+    #[error("Git error: {0}")]
+    GitError(String),
+    #[error("UTF-8 error: {0}")]
+    Utf8Error(#[from] std::string::FromUtf8Error),
 }
 
 pub fn new(working_directory: impl AsRef<Path>, name: &str) -> Result<(), NewProjectError> {
@@ -123,6 +135,127 @@ fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
     }
 
     Ok(())
+}
+
+/// Find projects with Cast.toml that have changes between two git refs
+pub fn with_changes(
+    working_directory: impl AsRef<Path>,
+    base_ref: &str,
+    head_ref: &str,
+) -> Result<Vec<PathBuf>, WithChangesError> {
+    let working_directory = working_directory.as_ref();
+    
+    // Get changed files using git diff
+    let changed_files = get_changed_files(working_directory, base_ref, head_ref)?;
+    
+    // Find projects with Cast.toml that contain these changed files
+    let mut changed_projects = HashSet::new();
+    
+    for relative_path in changed_files {
+        let file_path = working_directory.join(&relative_path);
+        
+        // Walk up the directory tree to find a Cast.toml
+        if let Some(project_dir) = find_project_dir(&file_path, working_directory) {
+            changed_projects.insert(project_dir);
+        }
+    }
+    
+    // Convert to sorted vector for consistent output
+    let mut projects: Vec<PathBuf> = changed_projects.into_iter().collect();
+    projects.sort();
+    
+    Ok(projects)
+}
+
+/// Get list of changed files between two git refs
+fn get_changed_files(
+    repo_dir: &Path,
+    base_ref: &str,
+    head_ref: &str,
+) -> Result<Vec<String>, WithChangesError> {
+    // Validate refs to prevent command injection
+    if !is_valid_git_ref(base_ref) || !is_valid_git_ref(head_ref) {
+        return Err(WithChangesError::GitError(
+            "Invalid git ref format".to_string()
+        ));
+    }
+    
+    let output = Command::new("git")
+        .arg("diff")
+        .arg("--name-only")
+        .arg(base_ref)
+        .arg(head_ref)
+        .current_dir(repo_dir)
+        .output()?;
+    
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(WithChangesError::GitError(format!(
+            "git diff failed: {}",
+            stderr
+        )));
+    }
+    
+    let stdout = String::from_utf8(output.stdout)?;
+    let files: Vec<String> = stdout
+        .lines()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
+    
+    Ok(files)
+}
+
+/// Validate that a string is a valid git ref format
+/// Allows: alphanumeric, /, -, _, ., ^, ~, and SHA hashes
+fn is_valid_git_ref(git_ref: &str) -> bool {
+    if git_ref.is_empty() || git_ref.len() > 256 {
+        return false;
+    }
+    
+    // Allow common git ref patterns: branch names, tags, SHAs, HEAD, etc.
+    git_ref.chars().all(|c| {
+        c.is_alphanumeric() || c == '/' || c == '-' || c == '_' || c == '.' || c == '^' || c == '~'
+    })
+}
+
+/// Find the project directory containing a Cast.toml for a given file path
+fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
+    let mut current = file_path;
+    
+    // If the file path doesn't exist (might be deleted), try its parent
+    if !current.exists() {
+        current = file_path.parent()?;
+    }
+    
+    // If it's a file, start from its directory
+    if current.is_file() {
+        current = current.parent()?;
+    }
+    
+    // Walk up the directory tree looking for Cast.toml
+    while current.starts_with(repo_root) {
+        let cast_toml = current.join("Cast.toml");
+        if cast_toml.exists() {
+            // Return relative path from repo_root
+            let relative = current.strip_prefix(repo_root).ok()?;
+            // If relative path is empty, return "."
+            if relative.as_os_str().is_empty() {
+                return Some(PathBuf::from("."));
+            }
+            return Some(relative.to_path_buf());
+        }
+        
+        // Stop if we've reached the repo root
+        if current == repo_root {
+            break;
+        }
+        
+        current = current.parent()?;
+    }
+    
+    None
 }
 
 #[cfg(test)]
@@ -415,5 +548,79 @@ mod tests {
         assert_eq!(config.exemplar, None);
         // Other flags should be preserved
         assert_eq!(config.proof_of_concept, Some(false));
+    }
+
+    #[test]
+    fn test_find_project_dir_finds_cast_toml() {
+        let tmp_dir = TempDir::new("test_find_project").unwrap();
+        
+        // Create a project with Cast.toml
+        let project_dir = tmp_dir.path().join("projects/my_project");
+        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::write(project_dir.join("Cast.toml"), "").unwrap();
+        fs::write(project_dir.join("src/lib.rs"), "// test").unwrap();
+        
+        // Test finding the project from a file inside it
+        let file_path = project_dir.join("src/lib.rs");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+        
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("projects/my_project"));
+    }
+
+    #[test]
+    fn test_find_project_dir_returns_none_for_files_without_cast_toml() {
+        let tmp_dir = TempDir::new("test_no_project").unwrap();
+        
+        // Create a directory structure without Cast.toml
+        let dir = tmp_dir.path().join("some_dir");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("file.txt"), "test").unwrap();
+        
+        // Test finding the project from a file
+        let file_path = dir.join("file.txt");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+        
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_find_project_dir_handles_root_cast_toml() {
+        let tmp_dir = TempDir::new("test_root_project").unwrap();
+        
+        // Create Cast.toml in root
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+        fs::write(tmp_dir.path().join("README.md"), "test").unwrap();
+        
+        // Test finding the project from a file in root
+        let file_path = tmp_dir.path().join("README.md");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+        
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("."));
+    }
+
+    #[test]
+    fn test_is_valid_git_ref_accepts_valid_refs() {
+        assert!(is_valid_git_ref("main"));
+        assert!(is_valid_git_ref("feature/my-branch"));
+        assert!(is_valid_git_ref("v1.0.0"));
+        assert!(is_valid_git_ref("HEAD"));
+        assert!(is_valid_git_ref("HEAD~1"));
+        assert!(is_valid_git_ref("abc123def456"));
+        assert!(is_valid_git_ref("origin/main"));
+        assert!(is_valid_git_ref("refs/tags/v1.0.0"));
+    }
+
+    #[test]
+    fn test_is_valid_git_ref_rejects_invalid_refs() {
+        assert!(!is_valid_git_ref(""));
+        assert!(!is_valid_git_ref("branch with spaces"));
+        assert!(!is_valid_git_ref("branch;rm -rf /"));
+        assert!(!is_valid_git_ref("branch&whoami"));
+        assert!(!is_valid_git_ref("branch|cat /etc/passwd"));
+        assert!(!is_valid_git_ref(&"a".repeat(300))); // Too long
     }
 }
