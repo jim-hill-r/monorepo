@@ -1,0 +1,11 @@
+[package]
+name = "blueeel"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { version = "0.6", features = ["web"] }
+
+[features]
+default = ["web"]
+web = []
