@@ -16,7 +16,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 7. Run `cast projects --with-changes` to find projects with changes and then `cast ci` on each of those projects to ensure that everything meets standards
 8. Update relevant documentation for the changes made.
 9. If you think you have found problems with the codebase that are out of scope to fix, add a comment preceded with `TODO: from AI:` near the relevant problem.
-10. Add/create any files you may want to improve github agent performance in the future
+10. To improve agent performance in the future, create or modify files in the repo to help agents (specifically github copilot agents)
 11. Remove the TODO or FIX comment that you fixed.
 12. Set the PR to ready for review. Don't leave it as draft.
 
