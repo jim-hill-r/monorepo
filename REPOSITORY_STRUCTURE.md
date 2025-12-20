@@ -9,6 +9,7 @@ This document describes the organization and structure of this monorepo to help 
 ├── .github/              # GitHub Actions workflows and agent configurations
 │   ├── workflows/        # CI/CD workflows (cast-ci.yml, start-a-new-task.yml)
 │   └── dependabot.yml    # Dependency update configuration
+├── macos/               # macOS setup guide and instructions
 ├── projects/             # All projects in the monorepo
 │   ├── docs/            # Documentation and learning resources (moved here from root)
 │   ├── cast/            # Core Cast library for monorepo tooling
@@ -24,6 +25,9 @@ This document describes the organization and structure of this monorepo to help 
 ```
 
 ## Key Directories
+
+### `/macos/`
+Contains setup guide and instructions for configuring a new macOS machine with the required global dependencies for this monorepo (Rust, npm, etc.).
 
 ### `/projects/`
 All projects live in this directory. Each project may have:
