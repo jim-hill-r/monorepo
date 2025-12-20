@@ -16,7 +16,7 @@
 /* dark mode user-agent-styles */
 /* improves punctuation in supported browsers */
 html {
-  color-scheme: light; /* TODO: Support dark */
+  color-scheme: light dark;
   hanging-punctuation: first last;
 }
 
