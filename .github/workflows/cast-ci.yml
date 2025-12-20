@@ -1,0 +1,102 @@
+---
+name: Cast CI
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  detect-and-run-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # Get the base branch to compare against
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          # Get all changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Find projects with Cast.toml that have changes
+          CHANGED_PROJECTS=""
+          for file in $CHANGED_FILES; do
+            # Start from the file's directory and walk up to find Cast.toml
+            dir=$(dirname "$file")
+            while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+              if [ -f "$dir/Cast.toml" ]; then
+                # Add project directory to list if not already present
+                if ! echo "$CHANGED_PROJECTS" | grep -q "^$dir$"; then
+                  CHANGED_PROJECTS="$CHANGED_PROJECTS$dir"$'\n'
+                fi
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+
+          # Remove empty lines and store
+          CHANGED_PROJECTS=$(echo "$CHANGED_PROJECTS" | grep -v '^$')
+
+          if [ -z "$CHANGED_PROJECTS" ]; then
+            echo "No projects with Cast.toml found in changed files"
+            echo "has_projects=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed projects:"
+            echo "$CHANGED_PROJECTS"
+            # Convert to comma-separated for matrix
+            PROJECTS_JSON=$(echo "$CHANGED_PROJECTS" | \
+              jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "projects=$PROJECTS_JSON" >> $GITHUB_OUTPUT
+            echo "has_projects=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Rust toolchain
+        if: steps.changed-files.outputs.has_projects == 'true'
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build cast CLI
+        if: steps.changed-files.outputs.has_projects == 'true'
+        run: |
+          cd projects/cast_cli
+          cargo build --release
+
+      - name: Run cast ci for changed projects
+        if: steps.changed-files.outputs.has_projects == 'true'
+        run: |
+          PROJECTS='${{ steps.changed-files.outputs.projects }}'
+          echo "Running cast ci for projects: $PROJECTS"
+
+          EXIT_CODE=0
+          for project in $(echo "$PROJECTS" | jq -r '.[]'); do
+            echo "::group::Running cast ci for $project"
+            cd "$GITHUB_WORKSPACE/$project"
+
+            if ../cast_cli/target/release/cast ci; then
+              echo "✓ cast ci passed for $project"
+            else
+              echo "✗ cast ci failed for $project"
+              EXIT_CODE=1
+            fi
+
+            echo "::endgroup::"
+            cd "$GITHUB_WORKSPACE"
+          done
+
+          exit $EXIT_CODE
+
+      - name: No projects to check
+        if: steps.changed-files.outputs.has_projects != 'true'
+        run: echo "No projects with Cast.toml were changed in this PR"
