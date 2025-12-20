@@ -1,11 +1,4 @@
-
-
-
-
-
-TODO: Move all the projects up one level and remove the projects folder
-TODO: Add a feature to the standards project that checks every directory in the monorepo and ensures they are snake_case. If they are not, it should add a TODO to the ISSUES.md to rename it. It should also output a json file with details on what percentage of directories are not snake_case and details on which ones are needing updating.
-TODO: Instead of having a separate Cast.toml, just extend Cargo.toml. So the cast project should look for either a Cast.toml or a Cargo.toml
+TODO: Move a project from the projects directory up one level into the root directory. Don't remove this TODO until there is nothing left in the projects directory.
 TODO: Add some context to the repo to let github copilot know that github workflows should have as little logic as possible. They should only run cast cli commands. If logic is required, it should be added to cast cli.
 TODO: Refactor cast ci github workflow such that the majority of the logic exists within the cast project and not hardcoded scripts in the workflow yamls.
 TODO: Move .github/agent-prompts to a new directory called prompts inside the agent-copilot project
