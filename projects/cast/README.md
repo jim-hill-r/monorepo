@@ -39,3 +39,29 @@ The resulting project will have a complete structure ready for development with:
 - `Cargo.toml` for Rust dependencies
 - `Cast.toml` for Cast-specific configuration
 - Standard directories: `src/`, `tests/`, `benches/`, `docs/`, etc.
+
+## Configuration
+
+Cast uses a `Cast.toml` file to configure project-specific settings.
+
+### Cast.toml Configuration Options
+
+```toml
+# Whether this project is an exemplar project (example/template)
+# Optional: defaults to None/false if not specified
+exemplar = true
+```
+
+You can load and parse Cast.toml configuration in your code:
+
+```rust
+use cast::config::CastConfig;
+
+// Load configuration from a Cast.toml file
+let config = CastConfig::load("path/to/Cast.toml").unwrap();
+
+// Check if project is an exemplar
+if config.exemplar == Some(true) {
+    println!("This is an exemplar project");
+}
+```
