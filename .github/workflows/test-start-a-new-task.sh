@@ -88,6 +88,13 @@ else
     exit 1
 fi
 
+# Test 9c: Check workflow job condition includes both bot users
+if grep -q "user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent\[bot\]'" "$WORKFLOW_FILE"; then
+    echo "✅ PASS: Workflow job condition includes both Copilot bot users"
+else
+    echo "⚠️  WARNING: Workflow job condition should trigger on PRs from both Copilot and copilot-swe-agent[bot]"
+fi
+
 # Test 10: Check workflow uses GITHUB_TOKEN
 if grep -q 'GITHUB_TOKEN:.*secrets\.GITHUB_TOKEN' "$WORKFLOW_FILE"; then
     echo "✅ PASS: Workflow uses GITHUB_TOKEN"

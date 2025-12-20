@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   start-a-new-task:
-    # Only run if the PR was created by GitHub Copilot agent and was actually merged
-    if: github.event.pull_request.user.login == 'Copilot' && github.event.pull_request.merged == true
+    # Only run if the PR was created by a GitHub Copilot agent and was actually merged
+    if: (github.event.pull_request.user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent[bot]') && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
