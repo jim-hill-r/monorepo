@@ -1,5 +1,56 @@
 # GitHub Actions Workflows
 
+## cast-ci.yml
+
+This workflow automatically runs `cast ci` for any project that has changes in a pull request.
+
+### How It Works
+
+1. **Trigger**: The workflow runs on pull request events (opened, synchronized, reopened).
+
+2. **Changed Project Detection**: 
+   - Gets the list of changed files between the base and head branches
+   - For each changed file, walks up the directory tree to find a `Cast.toml` file
+   - Collects unique project directories that have a `Cast.toml`
+
+3. **Build and Run**: 
+   - Sets up the Rust toolchain
+   - Builds the `cast` CLI from `projects/cast_cli`
+   - Runs `cast ci` for each detected project
+
+4. **Results**: 
+   - Groups output by project for easy reading
+   - Fails the workflow if any project's CI check fails
+
+### Setup Requirements
+
+The workflow requires:
+1. Rust toolchain (automatically installed by the workflow)
+2. Projects must have a `Cast.toml` file in their root directory
+3. The `cast_cli` project must be buildable
+
+### Permissions
+
+The workflow requires the following permissions:
+- `contents: read` - To checkout the repository and read files
+- `pull-requests: read` - To access PR information
+
+### Testing
+
+You can test this workflow configuration by running:
+
+```bash
+bash .github/workflows/test-cast-ci.sh
+```
+
+This test script validates:
+- Workflow file existence and YAML syntax
+- Correct trigger configuration
+- Use of git diff for change detection
+- Cast.toml detection logic
+- Rust toolchain setup
+- Cast CLI build and execution
+
 ## start-a-new-task.yml
 
 This workflow automatically creates a GitHub Copilot agent task after a PR created by the Copilot agent is merged.
