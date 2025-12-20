@@ -43,13 +43,7 @@ pub fn new(working_directory: impl AsRef<Path>, name: &str) -> Result<(), NewPro
 fn find_exemplar_projects(working_directory: &Path) -> Result<Vec<PathBuf>, NewProjectError> {
     let mut exemplar_projects = Vec::new();
 
-    // Search in the templates directory for backwards compatibility
-    let templates_dir = working_directory.join("templates");
-    if templates_dir.exists() {
-        find_exemplars_in_directory(&templates_dir, &mut exemplar_projects)?;
-    }
-
-    // Search in the projects directory for new exemplar projects
+    // Search in the projects directory for exemplar projects
     let projects_dir = working_directory.join("projects");
     if projects_dir.exists() {
         find_exemplars_in_directory(&projects_dir, &mut exemplar_projects)?;
@@ -137,29 +131,29 @@ mod tests {
     use tempdir::TempDir;
 
     #[test]
-    fn test_new_creates_project_from_templates() {
+    fn test_new_creates_project_from_exemplars() {
         let tmp_dir = TempDir::new("test_new_project").unwrap();
 
-        // Create mock templates directory structure
-        let templates_base = tmp_dir.path().join("templates/base");
-        let templates_library = tmp_dir.path().join("templates/library");
+        // Create mock projects directory structure with exemplar projects
+        let projects_base = tmp_dir.path().join("projects/base");
+        let projects_library = tmp_dir.path().join("projects/library");
 
-        // Create base template with some files and directories
-        fs::create_dir_all(&templates_base.join("src")).unwrap();
-        fs::create_dir_all(&templates_base.join("docs")).unwrap();
-        fs::write(templates_base.join("README.md"), "# Base README").unwrap();
-        fs::write(templates_base.join("src/main.rs"), "fn main() {}").unwrap();
-        fs::write(templates_base.join("Cast.toml"), "exemplar = true").unwrap();
+        // Create base exemplar with some files and directories
+        fs::create_dir_all(&projects_base.join("src")).unwrap();
+        fs::create_dir_all(&projects_base.join("docs")).unwrap();
+        fs::write(projects_base.join("README.md"), "# Base README").unwrap();
+        fs::write(projects_base.join("src/main.rs"), "fn main() {}").unwrap();
+        fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
 
-        // Create library template with Cargo.toml
-        fs::create_dir_all(&templates_library.join("src")).unwrap();
+        // Create library exemplar with Cargo.toml
+        fs::create_dir_all(&projects_library.join("src")).unwrap();
         fs::write(
-            templates_library.join("Cargo.toml"),
+            projects_library.join("Cargo.toml"),
             "[package]\nname = \"test\"",
         )
         .unwrap();
-        fs::write(templates_library.join("src/lib.rs"), "// lib").unwrap();
-        fs::write(templates_library.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(projects_library.join("src/lib.rs"), "// lib").unwrap();
+        fs::write(projects_library.join("Cast.toml"), "exemplar = true").unwrap();
 
         // Call the new function
         let result = new(tmp_dir.path(), "my_project");
@@ -172,30 +166,30 @@ mod tests {
         assert!(project_path.join("Cargo.toml").exists());
         assert!(project_path.join("src").exists());
 
-        // Verify content from base template
+        // Verify content from base exemplar
         let readme_content = fs::read_to_string(project_path.join("README.md")).unwrap();
         assert_eq!(readme_content, "# Base README");
 
-        // Verify content from library template (should exist)
+        // Verify content from library exemplar (should exist)
         let cargo_content = fs::read_to_string(project_path.join("Cargo.toml")).unwrap();
         assert_eq!(cargo_content, "[package]\nname = \"test\"");
     }
 
     #[test]
-    fn test_new_overwrites_files_from_library_template() {
+    fn test_new_overwrites_files_from_library_exemplar() {
         let tmp_dir = TempDir::new("test_overwrite").unwrap();
 
-        // Create templates
-        let templates_base = tmp_dir.path().join("templates/base");
-        let templates_library = tmp_dir.path().join("templates/library");
+        // Create exemplar projects
+        let projects_base = tmp_dir.path().join("projects/base");
+        let projects_library = tmp_dir.path().join("projects/library");
 
-        // Create the same file in both templates
-        fs::create_dir_all(&templates_base.join("src")).unwrap();
-        fs::create_dir_all(&templates_library.join("src")).unwrap();
-        fs::write(templates_base.join("src/lib.rs"), "// base version").unwrap();
-        fs::write(templates_base.join("Cast.toml"), "exemplar = true").unwrap();
-        fs::write(templates_library.join("src/lib.rs"), "// library version").unwrap();
-        fs::write(templates_library.join("Cast.toml"), "exemplar = true").unwrap();
+        // Create the same file in both exemplars
+        fs::create_dir_all(&projects_base.join("src")).unwrap();
+        fs::create_dir_all(&projects_library.join("src")).unwrap();
+        fs::write(projects_base.join("src/lib.rs"), "// base version").unwrap();
+        fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(projects_library.join("src/lib.rs"), "// library version").unwrap();
+        fs::write(projects_library.join("Cast.toml"), "exemplar = true").unwrap();
 
         // Call new
         let result = new(tmp_dir.path(), "test_project");
@@ -211,24 +205,24 @@ mod tests {
     fn test_new_deletes_empty_gitignores() {
         let tmp_dir = TempDir::new("test_gitignore").unwrap();
 
-        // Create templates with empty .gitignore files
-        let templates_base = tmp_dir.path().join("templates/base");
-        fs::create_dir_all(&templates_base.join("src")).unwrap();
-        fs::create_dir_all(&templates_base.join("docs")).unwrap();
+        // Create exemplar projects with empty .gitignore files
+        let projects_base = tmp_dir.path().join("projects/base");
+        fs::create_dir_all(&projects_base.join("src")).unwrap();
+        fs::create_dir_all(&projects_base.join("docs")).unwrap();
 
         // Create empty .gitignore files
-        fs::write(templates_base.join("src/.gitignore"), "").unwrap();
-        fs::write(templates_base.join("docs/.gitignore"), "").unwrap();
+        fs::write(projects_base.join("src/.gitignore"), "").unwrap();
+        fs::write(projects_base.join("docs/.gitignore"), "").unwrap();
 
         // Create a non-empty .gitignore
-        fs::write(templates_base.join(".gitignore"), "target/\n").unwrap();
+        fs::write(projects_base.join(".gitignore"), "target/\n").unwrap();
 
         // Create Cast.toml to mark as exemplar
-        fs::write(templates_base.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
 
-        let templates_library = tmp_dir.path().join("templates/library");
-        fs::create_dir_all(&templates_library).unwrap();
-        fs::write(templates_library.join("Cast.toml"), "exemplar = true").unwrap();
+        let projects_library = tmp_dir.path().join("projects/library");
+        fs::create_dir_all(&projects_library).unwrap();
+        fs::write(projects_library.join("Cast.toml"), "exemplar = true").unwrap();
 
         // Call new
         let result = new(tmp_dir.path(), "test_project");
@@ -247,10 +241,10 @@ mod tests {
     }
 
     #[test]
-    fn test_new_returns_error_when_templates_missing() {
+    fn test_new_returns_error_when_exemplars_missing() {
         let tmp_dir = TempDir::new("test_error").unwrap();
 
-        // Don't create templates directories or exemplar projects
+        // Don't create projects directories or exemplar projects
         let result = new(tmp_dir.path(), "test_project");
 
         // Should return an error since no exemplar projects exist
@@ -299,17 +293,17 @@ mod tests {
     }
 
     #[test]
-    fn test_find_exemplar_projects_in_templates_directory() {
+    fn test_find_exemplar_projects_in_projects_directory() {
         let tmp_dir = TempDir::new("test_exemplar").unwrap();
 
-        // Create templates directory with exemplar projects
-        let templates_base = tmp_dir.path().join("templates/base");
-        let templates_library = tmp_dir.path().join("templates/library");
-        fs::create_dir_all(&templates_base).unwrap();
-        fs::create_dir_all(&templates_library).unwrap();
+        // Create projects directory with exemplar projects
+        let projects_base = tmp_dir.path().join("projects/base");
+        let projects_library = tmp_dir.path().join("projects/library");
+        fs::create_dir_all(&projects_base).unwrap();
+        fs::create_dir_all(&projects_library).unwrap();
 
-        fs::write(templates_base.join("Cast.toml"), "exemplar = true").unwrap();
-        fs::write(templates_library.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(projects_library.join("Cast.toml"), "exemplar = true").unwrap();
 
         // Find exemplar projects
         let result = find_exemplar_projects(tmp_dir.path());
@@ -318,13 +312,13 @@ mod tests {
         let exemplars = result.unwrap();
         assert_eq!(exemplars.len(), 2);
 
-        // Verify both templates are found (sorted order)
+        // Verify both exemplars are found (sorted order)
         assert!(exemplars[0].ends_with("base"));
         assert!(exemplars[1].ends_with("library"));
     }
 
     #[test]
-    fn test_find_exemplar_projects_in_projects_directory() {
+    fn test_find_exemplar_projects_filters_non_exemplars() {
         let tmp_dir = TempDir::new("test_exemplar_proj").unwrap();
 
         // Create projects directory with one exemplar
@@ -373,17 +367,17 @@ mod tests {
     }
 
     #[test]
-    fn test_find_exemplar_projects_searches_both_templates_and_projects() {
-        let tmp_dir = TempDir::new("test_both").unwrap();
+    fn test_find_exemplar_projects_with_nested_structure() {
+        let tmp_dir = TempDir::new("test_nested").unwrap();
 
-        // Create both templates and projects with exemplars
-        let templates_base = tmp_dir.path().join("templates/base");
+        // Create projects with nested exemplars
+        let projects_base = tmp_dir.path().join("projects/base");
         let projects_example = tmp_dir.path().join("projects/example");
 
-        fs::create_dir_all(&templates_base).unwrap();
+        fs::create_dir_all(&projects_base).unwrap();
         fs::create_dir_all(&projects_example).unwrap();
 
-        fs::write(templates_base.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
         fs::write(projects_example.join("Cast.toml"), "exemplar = true").unwrap();
 
         // Find exemplar projects
@@ -398,15 +392,15 @@ mod tests {
     fn test_new_removes_exemplar_flag_from_created_project() {
         let tmp_dir = TempDir::new("test_exemplar_removal").unwrap();
 
-        // Create template with exemplar flag
-        let templates_base = tmp_dir.path().join("templates/base");
-        fs::create_dir_all(&templates_base).unwrap();
+        // Create exemplar project with exemplar flag
+        let projects_base = tmp_dir.path().join("projects/base");
+        fs::create_dir_all(&projects_base).unwrap();
         fs::write(
-            templates_base.join("Cast.toml"),
+            projects_base.join("Cast.toml"),
             "exemplar = true\nproof_of_concept = false",
         )
         .unwrap();
-        fs::write(templates_base.join("README.md"), "# Test").unwrap();
+        fs::write(projects_base.join("README.md"), "# Test").unwrap();
 
         // Call new
         let result = new(tmp_dir.path(), "test_project");
