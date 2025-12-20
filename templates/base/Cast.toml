@@ -4,3 +4,5 @@
 #
 # exemplar (optional): Set to true if this is an exemplar project (example/template)
 # Example: exemplar = true
+
+exemplar = true

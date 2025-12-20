@@ -21,7 +21,7 @@ A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-c
 
 ### Creating New Projects
 
-Cast can create new projects from templates located in the `templates/` directory:
+Cast can create new projects from exemplar projects. Exemplar projects are marked with `exemplar = true` in their `Cast.toml` file.
 
 ```rust
 use cast::projects;
@@ -31,14 +31,16 @@ projects::new("/path/to/monorepo", "my_project_name").unwrap();
 ```
 
 This will:
-1. Copy the `templates/base` directory to create the project structure
-2. Copy the `templates/library` directory, overwriting any files from base
+1. Search for all exemplar projects in the `templates/` and `projects/` directories
+2. Copy each exemplar project to the new project location (later exemplars overwrite earlier ones)
 3. Remove empty `.gitignore` placeholder files used for tracking empty directories in git
 
 The resulting project will have a complete structure ready for development with:
 - `Cargo.toml` for Rust dependencies
 - `Cast.toml` for Cast-specific configuration
 - Standard directories: `src/`, `tests/`, `benches/`, `docs/`, etc.
+
+To create your own exemplar projects, simply add `exemplar = true` to the project's `Cast.toml` file.
 
 ## Configuration
 
