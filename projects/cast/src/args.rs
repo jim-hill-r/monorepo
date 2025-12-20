@@ -80,9 +80,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     Ok("Creating project.".into())
                 }
             },
-            Commands::Ci => {
-                Ok("CI running".into())
-            }
+            Commands::Ci => Ok("CI running".into()),
         };
     } else {
         Err(ExecuteError::CastTomlNotFound)
@@ -195,13 +193,7 @@ mod tests {
     fn it_runs_ci() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
-        let result = execute(
-            Args {
-                cmd: Commands::Ci,
-            },
-            tmp_dir.path(),
-        )
-        .unwrap();
+        let result = execute(Args { cmd: Commands::Ci }, tmp_dir.path()).unwrap();
         assert_eq!(result, "CI running");
     }
 }
