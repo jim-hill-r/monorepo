@@ -6,10 +6,10 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 ## Instructions
 1. Issues are defined as some comment beginning with TODO or FIX.
 2. Complete only one issue.
-3. When searching for issues, be eager. As soon as you find one, work on it. Prioritize issues found first in a file.
-4. Search ISSUES.md in the root of the repo for an issue if an issue hasn't yet been found.
-5. Search other ISSUES.md in the repo for an issue if an issue hasn't yet been found.
-6. Search the entire codebase for an issue if an issue hasn't yet been found.
+3. When searching for issues, be eager. As soon as you find one, work on it. Prioritize issues found nearest to the top of a file. If the issue you find is too complex, try to reduce the scope and do a small part of it and whatever work remains add `TODO: from AI:` comments in the file that originated the issue.
+4. Complete issues in ISSUES.md in the root of the repo before searching for other issues.
+5. If step 4 has no available issues, then search for other ISSUES.md in the repo for an issue.
+6. If step 5 has no available issues, then search the entire codebase for an issue.
 4. Write tests to verify the issue.
 5. Complete the issue by getting those tests to pass.
 6. Write more tests you think are necessary to ensure full code coverage.
