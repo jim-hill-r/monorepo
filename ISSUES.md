@@ -1,4 +1,6 @@
 
+TODO: Update Start New AI Agent Task to check if agents are already running. The workflow should not start another one if 1 is already running.
+
 TODO: Implement the basic scaffold for project blueeel. Implement in Dioxus the basics of an app that looks and feels like blue.eel.education. 
 
 TODO: In the cast project, add an optional configuration called proof_of_concept which is true or false.
@@ -11,3 +13,4 @@ TODO: Add a feature to the standards project that checks every directory in the 
 TODO: Instead of having a separate Cast.toml, just extend Cargo.toml. So the cast project should look for either a Cast.toml or a Cargo.toml
 TODO: Remove anything that is using Replit. I see at least one file .replit but there may be more.
 TODO: Add some context to the repo to let github copilot know that github workflows should have as little logic as possible. They should only run cast cli commands. If logic is required, it should be added to cast cli.
+TODO: Refactor cast ci github workflow such that the majority of the logic exists within the cast project and not hardcoded scripts in the workflow yamls.
