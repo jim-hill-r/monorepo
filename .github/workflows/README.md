@@ -41,15 +41,28 @@ You can test this workflow configuration by running:
 
 ```bash
 bash .github/workflows/test-cast-ci.sh
+bash .github/workflows/test-cast-ci-error-handling.sh
 ```
 
-This test script validates:
+These test scripts validate:
 - Workflow file existence and YAML syntax
 - Correct trigger configuration
 - Use of git diff for change detection
 - Cast.toml detection logic
 - Rust toolchain setup
 - Cast CLI build and execution
+- Error handling for git operations
+- Proper fetching of commit SHAs
+
+### Error Handling
+
+The workflow includes robust error handling for git operations:
+- Explicitly fetches both base and head commits to ensure they're available
+- Captures stderr from git diff to provide clear error messages
+- Checks git diff exit code and fails gracefully with diagnostic output
+- Uses `|| true` on fetch operations to prevent unnecessary failures
+
+This ensures that the workflow fails fast with clear error messages when commits are unavailable, rather than continuing with corrupted state.
 
 ## start-a-new-task.yml
 
