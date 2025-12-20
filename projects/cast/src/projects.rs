@@ -61,7 +61,6 @@ fn delete_empty_gitignores(dir: impl AsRef<Path>) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use tempdir::TempDir;
 
     #[test]
