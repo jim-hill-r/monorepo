@@ -106,8 +106,11 @@ fi
 
 # Test 12: Verify cast ci command works
 CAST_PROJECT_DIR="projects/cast"
-if [ -d "$CAST_PROJECT_DIR" ] && [ -f "$CAST_CLI_DIR/target/release/cast" ]; then
-    if cd "$CAST_PROJECT_DIR" && ../cast_cli/target/release/cast ci > /dev/null 2>&1; then
+WORKSPACE_DIR="$(pwd)"
+CAST_BIN="$WORKSPACE_DIR/projects/cast_cli/target/release/cast"
+
+if [ -d "$CAST_PROJECT_DIR" ] && [ -f "$CAST_BIN" ]; then
+    if cd "$CAST_PROJECT_DIR" && "$CAST_BIN" ci > /dev/null 2>&1; then
         echo "✅ PASS: cast ci command works"
         cd - > /dev/null
     else

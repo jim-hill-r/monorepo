@@ -25,8 +25,15 @@ jobs:
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
 
+          # Validate SHA format (40 hex characters)
+          if ! [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || \
+             ! [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Error: Invalid SHA format"
+            exit 1
+          fi
+
           # Get all changed files
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA)
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
@@ -35,16 +42,23 @@ jobs:
           for file in $CHANGED_FILES; do
             # Start from the file's directory and walk up to find Cast.toml
             dir=$(dirname "$file")
-            while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
-              if [ -f "$dir/Cast.toml" ]; then
-                # Add project directory to list if not already present
-                if ! echo "$CHANGED_PROJECTS" | grep -q "^$dir$"; then
-                  CHANGED_PROJECTS="$CHANGED_PROJECTS$dir"$'\n'
-                fi
-                break
+            # Also check the current directory if file is in root
+            if [ "$dir" = "." ] && [ -f "Cast.toml" ]; then
+              if ! echo "$CHANGED_PROJECTS" | grep -q "^.$"; then
+                CHANGED_PROJECTS="$CHANGED_PROJECTS."$'\n'
               fi
-              dir=$(dirname "$dir")
-            done
+            else
+              while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+                if [ -f "$dir/Cast.toml" ]; then
+                  # Add project directory to list if not already present
+                  if ! echo "$CHANGED_PROJECTS" | grep -q "^$dir$"; then
+                    CHANGED_PROJECTS="$CHANGED_PROJECTS$dir"$'\n'
+                  fi
+                  break
+                fi
+                dir=$(dirname "$dir")
+              done
+            fi
           done
 
           # Remove empty lines and store
