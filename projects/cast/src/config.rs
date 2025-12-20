@@ -220,4 +220,34 @@ mod tests {
         assert_eq!(loaded_config.exemplar, Some(false));
         assert_eq!(loaded_config.proof_of_concept, Some(true));
     }
+
+    #[test]
+    fn test_moved_poc_projects_have_proof_of_concept_flag() {
+        // Test that all moved proof-of-concept projects have Cast.toml with proof_of_concept = true
+        let poc_projects = vec![
+            "projects/dioxus_ssg",
+            "projects/dioxus_static_website",
+            "projects/slidev_poc",
+            "projects/marp",
+        ];
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
+
+        for project in poc_projects {
+            let cast_toml = root.join(project).join("Cast.toml");
+            let config = CastConfig::load(&cast_toml)
+                .unwrap_or_else(|e| panic!("Failed to load {} Cast.toml: {}", project, e));
+            
+            assert_eq!(
+                config.proof_of_concept,
+                Some(true),
+                "Expected proof_of_concept to be true for {}",
+                project
+            );
+        }
+    }
 }

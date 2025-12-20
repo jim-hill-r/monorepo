@@ -1,1 +1,0 @@
-- Install Dioxus CLI: `cargo install dioxus-cli`
