@@ -31,8 +31,14 @@ fn App() -> Element {
 #[component]
 fn MobileNavbar() -> Element {
     rsx! {
-        // TODO: Send login link to navbar similar to web
-        Navbar {}
+        Navbar {
+            button { 
+                onclick: move |_| {
+                    // TODO: from AI: Implement mobile authentication when auth_sdk supports mobile platforms
+                }, 
+                "Login" 
+            }
+        }
 
         Outlet::<Route> {}
     }

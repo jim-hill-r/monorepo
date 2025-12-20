@@ -31,8 +31,14 @@ fn App() -> Element {
 #[component]
 fn DesktopNavbar() -> Element {
     rsx! {
-        // TODO: Send login link to navbar similar to web
-        Navbar {}
+        Navbar {
+            button { 
+                onclick: move |_| {
+                    // TODO: from AI: Implement desktop authentication when auth_sdk supports desktop platforms
+                }, 
+                "Login" 
+            }
+        }
 
         Outlet::<Route> {}
     }
