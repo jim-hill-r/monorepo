@@ -121,5 +121,15 @@ else
     echo "  ✓ README does not mention deprecated cargo install wrangler"
 fi
 
+# Test 9: Verify Cast.toml has framework field
+echo ""
+echo "Test 9: Validating Cast.toml has framework field..."
+if grep -q 'framework = "cloudflare-pages"' "$PROJECT_DIR/Cast.toml"; then
+    echo "  ✓ Cast.toml has framework = \"cloudflare-pages\""
+else
+    echo "  ❌ FAIL: Cast.toml missing framework = \"cloudflare-pages\""
+    exit 1
+fi
+
 echo ""
 echo "=== All tests passed! ✓ ==="
