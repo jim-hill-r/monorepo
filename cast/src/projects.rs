@@ -81,10 +81,10 @@ fn find_exemplars_in_directory(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::
             let cast_toml = path.join("Cast.toml");
             if cast_toml.exists() {
                 // Try to load the Cast.toml and check if it's an exemplar
-                if let Ok(config) = CastConfig::load(&cast_toml)
-                    && config.exemplar == Some(true)
-                {
-                    exemplars.push(path);
+                if let Ok(config) = CastConfig::load(&cast_toml) {
+                    if config.exemplar == Some(true) {
+                        exemplars.push(path);
+                    }
                 }
             }
         }

@@ -137,10 +137,10 @@ fn find_cast_toml(working_directory: &Path) -> Option<&Path> {
     while let Some(current_path) = current_directory {
         if let Ok(entries) = fs::read_dir(current_path) {
             for entry in entries {
-                if let Ok(entry) = entry
-                    && entry.file_name() == "Cast.toml"
-                {
-                    return current_directory;
+                if let Ok(entry) = entry {
+                    if entry.file_name() == "Cast.toml" {
+                        return current_directory;
+                    }
                 }
             }
             current_directory = current_path.parent();
