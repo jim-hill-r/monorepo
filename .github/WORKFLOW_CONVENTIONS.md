@@ -101,12 +101,36 @@ The `agent-copilot` binary is used to create GitHub Copilot agent tasks programm
 - **GITHUB_TOKEN**: Use for read operations like checking PR status
 - **Custom PAT (e.g., START_NEW_AI_AGENT_TASK_WORKFLOW_PAT)**: Use for operations requiring elevated permissions like creating agent tasks
 
+## Best Practices
+
+### Quoting GitHub Actions Expressions in Bash
+
+When assigning GitHub Actions expressions to bash variables, always wrap them in double quotes to prevent errors:
+
+**❌ Bad - Unquoted expression:**
+```yaml
+- run: |
+    BASE_SHA=${{ github.event.pull_request.base.sha }}
+```
+
+**✅ Good - Quoted expression:**
+```yaml
+- run: |
+    BASE_SHA="${{ github.event.pull_request.base.sha }}"
+```
+
+Why quote expressions?
+- Prevents bash errors when the expression evaluates to empty string
+- Handles special characters safely
+- Makes variable assignment more robust in edge cases
+
 ## Testing Workflows
 
 All workflows should have corresponding test scripts in `.github/workflows/`:
 - `test-start-a-new-task.sh`: Tests for the agent task workflow
 - `test-cast-ci.sh`: Tests for the cast CI workflow
 - `test-cast-ci-error-handling.sh`: Tests error handling in cast CI workflow
+- `test-cast-ci-quoting.sh`: Tests proper quoting of GitHub Actions expressions
 
 Test scripts validate:
 - File existence
@@ -114,5 +138,6 @@ Test scripts validate:
 - Workflow configuration
 - Required permissions
 - Logic correctness
+- Proper quoting of expressions
 
 Run tests before committing workflow changes.
