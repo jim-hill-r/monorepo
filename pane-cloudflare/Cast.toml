@@ -1,1 +1,3 @@
 # Cast configuration for pane-cloudflare deployment project
+
+framework = "cloudflare-pages"
