@@ -1,7 +1,13 @@
 # Languages
 
-- Rust
+All code in this repository must be written in Rust unless there is a specific exception.
+
+Exceptions:
 - TypeScript (for vscode extensions only)
+- Configuration files (TOML, YAML, JSON, etc.)
+- Documentation (Markdown, etc.)
+
+No shell scripts (bash, sh, etc.) should be used. All scripting and automation must be done in Rust.
 
 # Testing
 

@@ -84,7 +84,7 @@ pane-cloudflare/
 To validate the project configuration:
 
 ```bash
-./tests/validate.sh
+cargo test
 ```
 
 This will verify:
