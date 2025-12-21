@@ -1,1 +1,3 @@
 TODO: Create a GitHub workflow called Cast CD. it should call a new command in Cast for doing CD that just prints "starting CD"
+
+TODO: Cast CI github workflow failed on the last run. Investigate why and fix it.
