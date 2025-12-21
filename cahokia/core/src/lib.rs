@@ -52,11 +52,10 @@ pub enum AncestryEvent {
     },
     /// Census record
     Census { year: u32, location: String },
-    /// Military service
+    /// Military service event (use separate events for start and end)
     MilitaryService {
         branch: Option<String>,
-        start_date: Option<String>,
-        end_date: Option<String>,
+        date: Option<String>,
     },
     /// Education milestone
     Education {
@@ -64,18 +63,16 @@ pub enum AncestryEvent {
         degree: Option<String>,
         date: Option<String>,
     },
-    /// Occupation change or record
+    /// Occupation event (use separate events for starting and ending a job)
     Occupation {
         title: String,
         employer: Option<String>,
-        start_date: Option<String>,
-        end_date: Option<String>,
+        date: Option<String>,
     },
-    /// Residence change or record
+    /// Residence event (use separate events for moving in and moving out)
     Residence {
         location: String,
-        start_date: Option<String>,
-        end_date: Option<String>,
+        date: Option<String>,
     },
 }
 
@@ -112,11 +109,11 @@ impl AncestryEvent {
             | AncestryEvent::Immigration { date, .. }
             | AncestryEvent::Emigration { date, .. }
             | AncestryEvent::Burial { date, .. }
-            | AncestryEvent::Education { date, .. } => date.as_deref(),
+            | AncestryEvent::Education { date, .. }
+            | AncestryEvent::MilitaryService { date, .. }
+            | AncestryEvent::Occupation { date, .. }
+            | AncestryEvent::Residence { date, .. } => date.as_deref(),
             AncestryEvent::Census { .. } => None, // Census year is stored separately
-            AncestryEvent::MilitaryService { start_date, .. }
-            | AncestryEvent::Occupation { start_date, .. }
-            | AncestryEvent::Residence { start_date, .. } => start_date.as_deref(),
         }
     }
 }
@@ -229,8 +226,7 @@ mod tests {
     fn test_military_service_event() {
         let event = AncestryEvent::MilitaryService {
             branch: Some("Army".to_string()),
-            start_date: Some("1942-01-01".to_string()),
-            end_date: Some("1945-12-31".to_string()),
+            date: Some("1942-01-01".to_string()),
         };
         assert_eq!(event.event_type(), "Military Service");
         assert_eq!(event.date(), Some("1942-01-01"));
@@ -252,8 +248,7 @@ mod tests {
         let event = AncestryEvent::Occupation {
             title: "Software Engineer".to_string(),
             employer: Some("Tech Corp".to_string()),
-            start_date: Some("2015-01-01".to_string()),
-            end_date: Some("2020-12-31".to_string()),
+            date: Some("2015-01-01".to_string()),
         };
         assert_eq!(event.event_type(), "Occupation");
         assert_eq!(event.date(), Some("2015-01-01"));
@@ -263,8 +258,7 @@ mod tests {
     fn test_residence_event() {
         let event = AncestryEvent::Residence {
             location: "123 Main St, Boston, MA".to_string(),
-            start_date: Some("2010-06-01".to_string()),
-            end_date: Some("2015-08-31".to_string()),
+            date: Some("2010-06-01".to_string()),
         };
         assert_eq!(event.event_type(), "Residence");
         assert_eq!(event.date(), Some("2010-06-01"));
