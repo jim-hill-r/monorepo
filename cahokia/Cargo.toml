@@ -3,7 +3,7 @@ resolver = "2"
 members = ["core", "desktop", "mobile", "ui", "web"]
 
 [workspace.dependencies]
-dioxus = { version = "0.6.0" }
+dioxus = { version = "0.7.2" }
 thiserror = "2.0.12"
 tracing = "0.1.41"
 auth_sdk = { path = "../auth_sdk" }
