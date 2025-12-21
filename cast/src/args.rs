@@ -20,6 +20,8 @@ enum Commands {
     Project(ProjectCommands),
     /// Run CI checks
     Ci,
+    /// Run CD (Continuous Deployment)
+    Cd,
 }
 
 #[derive(Subcommand)]
@@ -126,6 +128,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 ci::run(working_directory)?;
                 Ok("CI passed".into())
             }
+            Commands::Cd => Ok("starting CD".into()),
         }
     } else {
         Err(ExecuteError::CastTomlNotFound)
@@ -250,5 +253,14 @@ mod tests {
 
         let result = execute(Args { cmd: Commands::Ci }, tmp_dir.path()).unwrap();
         assert_eq!(result, "CI passed");
+    }
+
+    #[test]
+    fn it_runs_cd() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(Args { cmd: Commands::Cd }, tmp_dir.path()).unwrap();
+        assert_eq!(result, "starting CD");
     }
 }

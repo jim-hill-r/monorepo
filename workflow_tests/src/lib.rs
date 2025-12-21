@@ -44,3 +44,8 @@ pub fn get_agent_binary_path() -> PathBuf {
 pub fn get_cast_cli_cargo_path() -> PathBuf {
     get_repo_root().join("cast_cli/Cargo.toml")
 }
+
+/// Get the path to the cast-cd.yml workflow file
+pub fn get_cast_cd_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/cast-cd.yml")
+}

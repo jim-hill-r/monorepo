@@ -44,6 +44,16 @@ use cast::ci;
 ci::run("/path/to/project").unwrap();
 ```
 
+### Running CD (Continuous Deployment)
+
+Cast provides a `cd` command for continuous deployment workflows.
+
+```bash
+cast cd
+```
+
+This command prints "starting CD" and is designed to be called by the Cast CD GitHub workflow when changes are merged.
+
 ## Project Management
 
 ### Creating New Projects

@@ -65,6 +65,41 @@ The workflow includes robust error handling for git operations:
 
 This ensures that the workflow fails fast with clear error messages when commits are unavailable, rather than continuing with corrupted state.
 
+## cast-cd.yml
+
+This workflow automatically runs `cast cd` for any project that has changes when a pull request is merged.
+
+### How It Works
+
+1. **Trigger**: The workflow runs when a pull request is closed and merged.
+
+2. **Changed Project Detection**: 
+   - Gets the list of changed files between the base and head branches
+   - For each changed file, walks up the directory tree to find a `Cast.toml` file
+   - Collects unique project directories that have a `Cast.toml`
+
+3. **Build and Run**: 
+   - Sets up the Rust toolchain
+   - Builds the `cast` CLI from `cast_cli`
+   - Runs `cast cd` for each detected project
+
+4. **Results**: 
+   - Groups output by project for easy reading
+   - Fails the workflow if any project's CD fails
+
+### Setup Requirements
+
+The workflow requires:
+1. Rust toolchain (automatically installed by the workflow)
+2. Projects must have a `Cast.toml` file in their root directory
+3. The `cast_cli` project must be buildable
+
+### Permissions
+
+The workflow requires the following permissions:
+- `contents: read` - To checkout the repository and read files
+- `pull-requests: read` - To access PR information
+
 ## start-a-new-task.yml
 
 This workflow automatically creates a GitHub Copilot agent task after a PR created by the Copilot agent is merged.

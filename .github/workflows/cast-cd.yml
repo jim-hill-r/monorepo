@@ -1,0 +1,119 @@
+---
+name: Cast CD
+
+'on':
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  run-cd:
+    # Only run if the PR was merged
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.85.0
+
+      - name: Build cast CLI
+        run: |
+          cd cast_cli
+          cargo build --release
+
+      - name: Find projects with changes
+        id: changed-projects
+        run: |
+          # Get the base and head commit SHAs
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          # Validate SHA format (40 hex characters)
+          if ! [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || \
+             ! [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Error: Invalid SHA format"
+            exit 1
+          fi
+
+          # Explicitly fetch both base and head commits to ensure
+          # they're available
+          echo "Fetching base commit: $BASE_SHA"
+          git fetch origin "$BASE_SHA" || true
+          echo "Fetching head commit: $HEAD_SHA"
+          git fetch origin "$HEAD_SHA" || true
+
+          # Verify commits are available
+          echo "Verifying commits are available..."
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null || \
+             ! git cat-file -e "$HEAD_SHA" 2>/dev/null; then
+            echo "Error: One or both commits not available after checkout"
+            git log --oneline --all -10
+            exit 1
+          fi
+          echo "Commits verified successfully"
+
+          # Use cast CLI to find projects with changes
+          CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"
+          CHANGED_PROJECTS=$("$CAST_BIN" project with-changes \
+            --base "$BASE_SHA" --head "$HEAD_SHA" 2>&1)
+
+          # Check if the command failed
+          if [ $? -ne 0 ]; then
+            echo "Error: cast project with-changes command failed"
+            echo "Git diff output: $CHANGED_PROJECTS"
+            exit 1
+          fi
+
+          if [ -z "$CHANGED_PROJECTS" ]; then
+            echo "No projects with Cast.toml found in changed files"
+            echo "has_projects=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed projects:"
+            echo "$CHANGED_PROJECTS"
+            # Convert to JSON array for iteration
+            PROJECTS_JSON=$(echo "$CHANGED_PROJECTS" | \
+              jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "projects=$PROJECTS_JSON" >> $GITHUB_OUTPUT
+            echo "has_projects=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run cast cd for changed projects
+        if: steps.changed-projects.outputs.has_projects == 'true'
+        run: |
+          PROJECTS='${{ steps.changed-projects.outputs.projects }}'
+          echo "Running cast cd for projects: $PROJECTS"
+
+          # Use absolute path to cast binary
+          CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"
+
+          EXIT_CODE=0
+          for project in $(echo "$PROJECTS" | jq -r '.[]'); do
+            echo "::group::Running cast cd for $project"
+            cd "$GITHUB_WORKSPACE/$project"
+
+            if "$CAST_BIN" cd; then
+              echo "✓ cast cd completed for $project"
+            else
+              echo "✗ cast cd failed for $project"
+              EXIT_CODE=1
+            fi
+
+            echo "::endgroup::"
+            cd "$GITHUB_WORKSPACE"
+          done
+
+          exit $EXIT_CODE
+
+      - name: No projects to deploy
+        if: steps.changed-projects.outputs.has_projects != 'true'
+        run: echo "No projects with Cast.toml were changed in this PR"
