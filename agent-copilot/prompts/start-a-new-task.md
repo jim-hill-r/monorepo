@@ -14,7 +14,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 8. Write tests to verify the issue.
 9. Complete the issue by getting those tests to pass.
 10. Write more tests you think are necessary to ensure full code coverage.
-11. Run `cast projects --with-changes` to find projects with changes and then `cast ci` on each of those projects to ensure that everything meets standards
+11. Run `cast project with-changes --base <BASE> --head <HEAD>` to find projects with changes and then `cast ci` on each of those projects to ensure that everything meets standards
 12. Update relevant documentation for the changes made.
 13. If you think you have found problems with the codebase that are out of scope to fix, add a comment preceded with `TODO: from AI:` near the relevant problem.
 14. To improve agent performance in the future, create or modify files in the repo to help agents (specifically github copilot agents)

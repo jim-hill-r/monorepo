@@ -65,8 +65,7 @@ struct PullRequestInfo {
 }
 
 fn read_prompt_file(path: &PathBuf) -> Result<String> {
-    fs::read_to_string(path)
-        .context(format!("Failed to read prompt file: {}", path.display()))
+    fs::read_to_string(path).context(format!("Failed to read prompt file: {}", path.display()))
 }
 
 fn create_agent_task(
@@ -83,7 +82,7 @@ fn create_agent_task(
     }
     let owner = parts[0];
     let repo_name = parts[1];
-    
+
     // GitHub Copilot Jobs API endpoint
     // This is the same endpoint used by `gh agent-task create`
     let url = format!(
@@ -91,9 +90,9 @@ fn create_agent_task(
         urlencoding::encode(owner),
         urlencoding::encode(repo_name)
     );
-    
+
     let client = Client::new();
-    
+
     let pull_request = if base_branch.is_some() || custom_agent.is_some() {
         // The Copilot API expects a pull_request object to be present
         // even when only specifying custom_agent without base_ref
@@ -103,14 +102,14 @@ fn create_agent_task(
     } else {
         Some(PullRequestOptions { base_ref: None })
     };
-    
+
     let request_body = CreateJobRequest {
         problem_statement,
         custom_agent,
         event_type: "gh_cli".to_string(),
         pull_request,
     };
-    
+
     let response = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", token))
@@ -119,17 +118,19 @@ fn create_agent_task(
         .json(&request_body)
         .send()
         .context("Failed to send request to GitHub Copilot API")?;
-    
+
     if !response.status().is_success() {
         let status = response.status();
-        let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+        let error_text = response
+            .text()
+            .unwrap_or_else(|_| "Unknown error".to_string());
         anyhow::bail!(
             "GitHub Copilot API request failed with status {}: {}",
             status,
             error_text
         );
     }
-    
+
     response
         .json::<CreateJobResponse>()
         .context("Failed to parse GitHub Copilot API response")
@@ -137,7 +138,7 @@ fn create_agent_task(
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     // Validate that the prompt file exists
     if !args.prompt_file.exists() {
         anyhow::bail!(
@@ -145,14 +146,17 @@ fn main() -> Result<()> {
             args.prompt_file.display()
         );
     }
-    
+
     // Read the prompt file
     let problem_statement = read_prompt_file(&args.prompt_file)?;
-    
+
     // Create the agent task
-    println!("Creating GitHub Copilot agent task in repository: {}", args.repo);
+    println!(
+        "Creating GitHub Copilot agent task in repository: {}",
+        args.repo
+    );
     println!("Using prompt file: {}", args.prompt_file.display());
-    
+
     let response = create_agent_task(
         &args.repo,
         problem_statement,
@@ -160,7 +164,7 @@ fn main() -> Result<()> {
         args.base_branch,
         args.custom_agent,
     )?;
-    
+
     println!("✓ Successfully created GitHub Copilot agent task");
     println!("  Job ID: {}", response.job_id);
     if let Some(session_id) = response.session_id {
@@ -168,12 +172,12 @@ fn main() -> Result<()> {
     }
     if let Some(pr) = response.pull_request {
         println!("  Pull Request: #{}", pr.number);
-        
+
         // Construct the PR URL
         let pr_url = format!("https://github.com/{}/pull/{}", args.repo, pr.number);
         println!("  URL: {}", pr_url);
     }
-    
+
     Ok(())
 }
 
@@ -187,10 +191,10 @@ mod tests {
     fn test_read_prompt_file_success() {
         let mut temp_file = NamedTempFile::new().unwrap();
         writeln!(temp_file, "Test content").unwrap();
-        
+
         let path = temp_file.path().to_path_buf();
         let content = read_prompt_file(&path).unwrap();
-        
+
         assert_eq!(content, "Test content\n");
     }
 
@@ -198,7 +202,7 @@ mod tests {
     fn test_read_prompt_file_not_found() {
         let path = PathBuf::from("/nonexistent/file.md");
         let result = read_prompt_file(&path);
-        
+
         assert!(result.is_err());
     }
 
@@ -210,7 +214,7 @@ mod tests {
             event_type: "gh_cli".to_string(),
             pull_request: Some(PullRequestOptions { base_ref: None }),
         };
-        
+
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("Test problem statement"));
         assert!(json.contains("gh_cli"));
@@ -226,7 +230,7 @@ mod tests {
                 base_ref: Some("refs/heads/main".to_string()),
             }),
         };
-        
+
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("my-agent"));
         assert!(json.contains("refs/heads/main"));
@@ -241,7 +245,7 @@ mod tests {
                 "number": 42
             }
         }"#;
-        
+
         let response: CreateJobResponse = serde_json::from_str(json).unwrap();
         assert_eq!(response.job_id, "test-job-123");
         assert_eq!(response.session_id, Some("session-456".to_string()));
@@ -252,7 +256,7 @@ mod tests {
     #[test]
     fn test_create_job_response_minimal() {
         let json = r#"{"job_id": "test-job"}"#;
-        
+
         let response: CreateJobResponse = serde_json::from_str(json).unwrap();
         assert_eq!(response.job_id, "test-job");
         assert_eq!(response.session_id, None);
