@@ -247,10 +247,9 @@ mod tests {
 
     #[test]
     fn test_parse_config_with_all_fields() {
-        let config: CastConfig = toml::from_str(
-            "exemplar = true\nproof_of_concept = false\nframework = \"dioxus\"",
-        )
-        .unwrap();
+        let config: CastConfig =
+            toml::from_str("exemplar = true\nproof_of_concept = false\nframework = \"dioxus\"")
+                .unwrap();
         assert_eq!(config.exemplar, Some(true));
         assert_eq!(config.proof_of_concept, Some(false));
         assert_eq!(config.framework, Some("dioxus".to_string()));
@@ -279,12 +278,7 @@ mod tests {
     fn test_save_and_load_config_with_different_frameworks() {
         let tmp_dir = TempDir::new("test_config").unwrap();
 
-        let test_cases = vec![
-            "dioxus",
-            "cloudflare-pages",
-            "rust-library",
-            "rust-binary",
-        ];
+        let test_cases = vec!["dioxus", "cloudflare-pages", "rust-library", "rust-binary"];
 
         for framework in test_cases {
             let config_path = tmp_dir.path().join(format!("{}.toml", framework));
@@ -307,20 +301,12 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test_moved_poc_projects_have_proof_of_concept_flag() {
         // Test that all moved proof-of-concept projects have Cast.toml with proof_of_concept = true
-        let poc_projects = vec![
-            "dioxus_ssg",
-            "dioxus_static_website",
-            "slidev_poc",
-            "marp",
-        ];
+        let poc_projects = vec!["dioxus_ssg", "dioxus_static_website", "slidev_poc", "marp"];
 
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
 
         for project in poc_projects {
             let cast_toml = root.join(project).join("Cast.toml");

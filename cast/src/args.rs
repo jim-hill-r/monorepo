@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{projects, sessions};
+use crate::{ci, projects, sessions};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -30,7 +30,7 @@ pub enum SessionCommands {
 }
 
 #[derive(Parser)]
-struct StartSessionCommand {
+pub struct StartSessionCommand {
     #[arg(short, long)]
     name: Option<String>,
 }
@@ -43,17 +43,17 @@ pub enum ProjectCommands {
 }
 
 #[derive(Parser)]
-struct NewProjectCommand {
+pub struct NewProjectCommand {
     #[arg(short, long)]
     name: String,
 }
 
 #[derive(Parser)]
-struct WithChangesCommand {
+pub struct WithChangesCommand {
     /// Base git ref (commit SHA, branch, or tag)
     #[arg(long)]
     base: String,
-    
+
     /// Head git ref (commit SHA, branch, or tag)
     #[arg(long)]
     head: String,
@@ -65,34 +65,29 @@ pub enum ExecuteError {
     CastTomlNotFound,
     #[error("with-changes error: {0}")]
     WithChangesError(String),
+    #[error("ci error: {0}")]
+    CiError(#[from] ci::CiError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
     // Handle commands that don't require Cast.toml
-    match &args.cmd {
-        Commands::Project(ProjectCommands::WithChanges(cmd)) => {
-            let changed_projects = projects::with_changes(
-                entry_directory,
-                &cmd.base,
-                &cmd.head,
-            )
+    if let Commands::Project(ProjectCommands::WithChanges(cmd)) = &args.cmd {
+        let changed_projects = projects::with_changes(entry_directory, &cmd.base, &cmd.head)
             .map_err(|e| ExecuteError::WithChangesError(e.to_string()))?;
-            
-            // Return newline-separated list of project paths
-            let output = changed_projects
-                .iter()
-                .map(|p| p.display().to_string())
-                .collect::<Vec<_>>()
-                .join("\n");
-            
-            return Ok(output);
-        }
-        _ => {}
+
+        // Return newline-separated list of project paths
+        let output = changed_projects
+            .iter()
+            .map(|p| p.display().to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        return Ok(output);
     }
-    
+
     // Other commands require Cast.toml
     if let Some(working_directory) = find_cast_toml(entry_directory) {
-        return match &args.cmd {
+        match &args.cmd {
             Commands::Session(session_command) => match session_command {
                 SessionCommands::Start(start_session_command) => {
                     let _ = sessions::start(
@@ -127,8 +122,11 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     )
                 }
             },
-            Commands::Ci => Ok("CI running".into()),
-        };
+            Commands::Ci => {
+                ci::run(working_directory)?;
+                Ok("CI passed".into())
+            }
+        }
     } else {
         Err(ExecuteError::CastTomlNotFound)
     }
@@ -139,17 +137,17 @@ fn find_cast_toml(working_directory: &Path) -> Option<&Path> {
     while let Some(current_path) = current_directory {
         if let Ok(entries) = fs::read_dir(current_path) {
             for entry in entries {
-                if let Ok(entry) = entry {
-                    if entry.file_name() == "Cast.toml" {
-                        return current_directory;
-                    }
+                if let Ok(entry) = entry
+                    && entry.file_name() == "Cast.toml"
+                {
+                    return current_directory;
                 }
             }
             current_directory = current_path.parent();
         }
     }
 
-    return None;
+    None
 }
 
 #[cfg(test)]
@@ -240,7 +238,17 @@ mod tests {
     fn it_runs_ci() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create a minimal Cargo.toml and src/lib.rs for CI to pass
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
+
         let result = execute(Args { cmd: Commands::Ci }, tmp_dir.path()).unwrap();
-        assert_eq!(result, "CI running");
+        assert_eq!(result, "CI passed");
     }
 }

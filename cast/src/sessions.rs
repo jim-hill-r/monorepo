@@ -1,4 +1,5 @@
 use chrono::prelude::*;
+use std::fmt;
 use std::path::Path;
 use std::{fs, io};
 use thiserror::Error;
@@ -17,26 +18,30 @@ struct SessionEntry {
     name: Option<String>,
 }
 
+impl fmt::Display for SessionEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let postfix = if let Some(name) = &self.name {
+            format!(",{}", name)
+        } else {
+            String::new()
+        };
+        write!(f, "{},{:?}{}", self.timestamp, self.kind, postfix)
+    }
+}
+
 impl SessionEntry {
     fn file_name(&self) -> String {
         let postfix = if let Some(name) = &self.name {
             format!("-{}", name)
         } else {
-            "".into()
+            String::new()
         };
         format!("{}{}.log", self.session_id, postfix)
-    }
-    fn to_string(&self) -> String {
-        let postfix = if let Some(name) = &self.name {
-            format!(",{}", name)
-        } else {
-            "".into()
-        };
-        format!("{},{:?}{}", self.timestamp, self.kind, postfix)
     }
 }
 
 #[derive(Debug)] // TODO: Properly implement display trait
+#[allow(dead_code)] // Pause and Stop variants are not yet implemented
 enum SessionEntryKind {
     Start,
     Pause,
@@ -60,7 +65,7 @@ pub fn start(
         session_id: Uuid::now_v7(),
         timestamp: Utc::now(),
         kind: SessionEntryKind::Start,
-        name: options.or(None).map_or(None, |v| v.name),
+        name: options.and_then(|v| v.name),
     };
     let session_path = sessions_directory.join(entry.file_name());
 
