@@ -128,9 +128,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 ci::run(working_directory)?;
                 Ok("CI passed".into())
             }
-            Commands::Cd => {
-                Ok("starting CD".into())
-            }
+            Commands::Cd => Ok("starting CD".into()),
         }
     } else {
         Err(ExecuteError::CastTomlNotFound)
