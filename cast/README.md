@@ -17,6 +17,33 @@ A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-c
 
 # Features
 
+## CI/CD
+
+### Running CI Checks
+
+Cast provides a `ci` command that runs standard Rust project checks. This is designed to be used in CI workflows.
+
+```bash
+cast ci
+```
+
+This will run the following checks in order:
+1. `cargo fmt --check` - Verify code formatting
+2. `cargo clippy -- -D warnings` - Lint code for common mistakes
+3. `cargo build` - Ensure the project compiles
+4. `cargo test` - Run all tests
+
+If any check fails, the command will exit with an error. This makes it easy to integrate with CI systems like GitHub Actions.
+
+Example usage in library code:
+
+```rust
+use cast::ci;
+
+// Run CI checks on a project
+ci::run("/path/to/project").unwrap();
+```
+
 ## Project Management
 
 ### Creating New Projects
