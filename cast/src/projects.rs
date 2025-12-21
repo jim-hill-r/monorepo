@@ -144,26 +144,26 @@ pub fn with_changes(
     head_ref: &str,
 ) -> Result<Vec<PathBuf>, WithChangesError> {
     let working_directory = working_directory.as_ref();
-    
+
     // Get changed files using git diff
     let changed_files = get_changed_files(working_directory, base_ref, head_ref)?;
-    
+
     // Find projects with Cast.toml that contain these changed files
     let mut changed_projects = HashSet::new();
-    
+
     for relative_path in changed_files {
         let file_path = working_directory.join(&relative_path);
-        
+
         // Walk up the directory tree to find a Cast.toml
         if let Some(project_dir) = find_project_dir(&file_path, working_directory) {
             changed_projects.insert(project_dir);
         }
     }
-    
+
     // Convert to sorted vector for consistent output
     let mut projects: Vec<PathBuf> = changed_projects.into_iter().collect();
     projects.sort();
-    
+
     Ok(projects)
 }
 
@@ -176,10 +176,10 @@ fn get_changed_files(
     // Validate refs to prevent command injection
     if !is_valid_git_ref(base_ref) || !is_valid_git_ref(head_ref) {
         return Err(WithChangesError::GitError(
-            "Invalid git ref format".to_string()
+            "Invalid git ref format".to_string(),
         ));
     }
-    
+
     let output = Command::new("git")
         .arg("diff")
         .arg("--name-only")
@@ -187,7 +187,7 @@ fn get_changed_files(
         .arg(head_ref)
         .current_dir(repo_dir)
         .output()?;
-    
+
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(WithChangesError::GitError(format!(
@@ -195,7 +195,7 @@ fn get_changed_files(
             stderr
         )));
     }
-    
+
     let stdout = String::from_utf8(output.stdout)?;
     let files: Vec<String> = stdout
         .lines()
@@ -203,7 +203,7 @@ fn get_changed_files(
         .filter(|s| !s.is_empty())
         .map(String::from)
         .collect();
-    
+
     Ok(files)
 }
 
@@ -213,7 +213,7 @@ fn is_valid_git_ref(git_ref: &str) -> bool {
     if git_ref.is_empty() || git_ref.len() > 256 {
         return false;
     }
-    
+
     // Allow common git ref patterns: branch names, tags, SHAs, HEAD, etc.
     git_ref.chars().all(|c| {
         c.is_alphanumeric() || c == '/' || c == '-' || c == '_' || c == '.' || c == '^' || c == '~'
@@ -223,17 +223,17 @@ fn is_valid_git_ref(git_ref: &str) -> bool {
 /// Find the project directory containing a Cast.toml for a given file path
 fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
     let mut current = file_path;
-    
+
     // If the file path doesn't exist (might be deleted), try its parent
     if !current.exists() {
         current = file_path.parent()?;
     }
-    
+
     // If it's a file, start from its directory
     if current.is_file() {
         current = current.parent()?;
     }
-    
+
     // Walk up the directory tree looking for Cast.toml
     while current.starts_with(repo_root) {
         let cast_toml = current.join("Cast.toml");
@@ -246,15 +246,15 @@ fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
             }
             return Some(relative.to_path_buf());
         }
-        
+
         // Stop if we've reached the repo root
         if current == repo_root {
             break;
         }
-        
+
         current = current.parent()?;
     }
-    
+
     None
 }
 
@@ -553,17 +553,17 @@ mod tests {
     #[test]
     fn test_find_project_dir_finds_cast_toml() {
         let tmp_dir = TempDir::new("test_find_project").unwrap();
-        
+
         // Create a project with Cast.toml
         let project_dir = tmp_dir.path().join("projects/my_project");
         fs::create_dir_all(&project_dir.join("src")).unwrap();
         fs::write(project_dir.join("Cast.toml"), "").unwrap();
         fs::write(project_dir.join("src/lib.rs"), "// test").unwrap();
-        
+
         // Test finding the project from a file inside it
         let file_path = project_dir.join("src/lib.rs");
         let result = find_project_dir(&file_path, tmp_dir.path());
-        
+
         assert!(result.is_some());
         let found_project = result.unwrap();
         assert_eq!(found_project, PathBuf::from("projects/my_project"));
@@ -572,31 +572,31 @@ mod tests {
     #[test]
     fn test_find_project_dir_returns_none_for_files_without_cast_toml() {
         let tmp_dir = TempDir::new("test_no_project").unwrap();
-        
+
         // Create a directory structure without Cast.toml
         let dir = tmp_dir.path().join("some_dir");
         fs::create_dir_all(&dir).unwrap();
         fs::write(dir.join("file.txt"), "test").unwrap();
-        
+
         // Test finding the project from a file
         let file_path = dir.join("file.txt");
         let result = find_project_dir(&file_path, tmp_dir.path());
-        
+
         assert!(result.is_none());
     }
 
     #[test]
     fn test_find_project_dir_handles_root_cast_toml() {
         let tmp_dir = TempDir::new("test_root_project").unwrap();
-        
+
         // Create Cast.toml in root
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
         fs::write(tmp_dir.path().join("README.md"), "test").unwrap();
-        
+
         // Test finding the project from a file in root
         let file_path = tmp_dir.path().join("README.md");
         let result = find_project_dir(&file_path, tmp_dir.path());
-        
+
         assert!(result.is_some());
         let found_project = result.unwrap();
         assert_eq!(found_project, PathBuf::from("."));
