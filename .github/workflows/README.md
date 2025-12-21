@@ -40,11 +40,11 @@ The workflow requires the following permissions:
 You can test this workflow configuration by running:
 
 ```bash
-bash .github/workflows/test-cast-ci.sh
-bash .github/workflows/test-cast-ci-error-handling.sh
+cd workflow_tests
+cargo test cast_ci_workflow_tests
 ```
 
-These test scripts validate:
+These Rust tests validate:
 - Workflow file existence and YAML syntax
 - Correct trigger configuration
 - Use of git diff for change detection
@@ -53,6 +53,7 @@ These test scripts validate:
 - Cast CLI build and execution
 - Error handling for git operations
 - Proper fetching of commit SHAs
+- Proper quoting of GitHub Actions expressions
 
 ### Error Handling
 
@@ -110,12 +111,14 @@ This ensures that only one agent task runs at a time, preventing conflicts and r
 You can test this workflow configuration by running:
 
 ```bash
-bash .github/workflows/test-start-a-new-task.sh
+cd workflow_tests
+cargo test start_a_new_task_workflow_tests
 ```
 
-This test script should validate:
+This Rust test suite validates:
 - File existence (prompt file and agent-copilot binary)
 - YAML syntax
 - Correct workflow trigger configuration
 - Required permissions
+- Concurrency control logic
 
