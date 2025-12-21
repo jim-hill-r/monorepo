@@ -1,37 +1,9 @@
-use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
-
-fn get_repo_root() -> PathBuf {
-    // Get the current directory and walk up to find the repo root
-    let mut current = env::current_dir().expect("Failed to get current directory");
-
-    // Walk up until we find .github directory
-    loop {
-        if current.join(".github").exists() {
-            return current;
-        }
-        if !current.pop() {
-            panic!("Could not find repository root");
-        }
-    }
-}
-
-fn get_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/start-a-new-task.yml")
-}
-
-fn get_agent_prompt_path() -> PathBuf {
-    get_repo_root().join("agent-copilot/prompts/start-a-new-task.md")
-}
-
-fn get_agent_binary_path() -> PathBuf {
-    get_repo_root().join("agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot")
-}
+use workflow_tests::*;
 
 #[test]
 fn test_workflow_file_exists() {
-    let workflow_path = get_workflow_path();
+    let workflow_path = get_start_a_new_task_workflow_path();
     assert!(
         workflow_path.exists(),
         "Workflow file not found: {}",
@@ -61,7 +33,8 @@ fn test_agent_binary_exists() {
 
 #[test]
 fn test_workflow_yaml_can_be_parsed() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     // Parse YAML to ensure it's valid
     let _parsed: serde_yaml::Value =
@@ -70,7 +43,8 @@ fn test_workflow_yaml_can_be_parsed() {
 
 #[test]
 fn test_workflow_uses_agent_copilot_binary() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("agent-copilot"),
@@ -80,7 +54,8 @@ fn test_workflow_uses_agent_copilot_binary() {
 
 #[test]
 fn test_workflow_does_not_use_gh_issue_create() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         !content.contains("gh issue create"),
@@ -90,7 +65,8 @@ fn test_workflow_does_not_use_gh_issue_create() {
 
 #[test]
 fn test_workflow_trigger_is_pull_request_closed() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("pull_request:") && content.contains("types: [closed]"),
@@ -100,7 +76,8 @@ fn test_workflow_trigger_is_pull_request_closed() {
 
 #[test]
 fn test_workflow_has_issues_write_permission() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     // This is a warning-level test, so we just check if it's there
     // If not present, we'll note it but not fail
@@ -111,7 +88,8 @@ fn test_workflow_has_issues_write_permission() {
 
 #[test]
 fn test_workflow_uses_correct_copilot_user_login() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("user.login == 'Copilot'"),
@@ -121,7 +99,8 @@ fn test_workflow_uses_correct_copilot_user_login() {
 
 #[test]
 fn test_workflow_checks_for_copilot_swe_agent_bot() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("copilot-swe-agent[bot]"),
@@ -131,7 +110,8 @@ fn test_workflow_checks_for_copilot_swe_agent_bot() {
 
 #[test]
 fn test_workflow_uses_github_token() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     if !content.contains("GITHUB_TOKEN") || !content.contains("secrets.GITHUB_TOKEN") {
         eprintln!("WARNING: Workflow should use GITHUB_TOKEN");
@@ -140,7 +120,8 @@ fn test_workflow_uses_github_token() {
 
 #[test]
 fn test_workflow_uses_prompt_file_flag() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("prompt-file") || content.contains("--prompt-file"),
@@ -150,7 +131,8 @@ fn test_workflow_uses_prompt_file_flag() {
 
 #[test]
 fn test_workflow_has_concurrency_check() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("Check for running agent tasks") && content.contains("gh pr list"),
@@ -160,7 +142,8 @@ fn test_workflow_has_concurrency_check() {
 
 #[test]
 fn test_workflow_has_conditional_steps() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("if: steps.check_running_agents.outputs.skip_task"),

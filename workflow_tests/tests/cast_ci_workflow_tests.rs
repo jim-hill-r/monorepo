@@ -1,33 +1,9 @@
-use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
-
-fn get_repo_root() -> PathBuf {
-    // Get the current directory and walk up to find the repo root
-    let mut current = env::current_dir().expect("Failed to get current directory");
-
-    // Walk up until we find .github directory
-    loop {
-        if current.join(".github").exists() {
-            return current;
-        }
-        if !current.pop() {
-            panic!("Could not find repository root");
-        }
-    }
-}
-
-fn get_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/cast-ci.yml")
-}
-
-fn get_cast_cli_path() -> PathBuf {
-    get_repo_root().join("cast_cli/Cargo.toml")
-}
+use workflow_tests::*;
 
 #[test]
 fn test_workflow_file_exists() {
-    let workflow_path = get_workflow_path();
+    let workflow_path = get_cast_ci_workflow_path();
     assert!(
         workflow_path.exists(),
         "Workflow file not found: {}",
@@ -37,7 +13,8 @@ fn test_workflow_file_exists() {
 
 #[test]
 fn test_workflow_yaml_can_be_parsed() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     // Parse YAML to ensure it's valid
     let _parsed: serde_yaml::Value =
@@ -46,7 +23,8 @@ fn test_workflow_yaml_can_be_parsed() {
 
 #[test]
 fn test_workflow_trigger_is_pull_request() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("pull_request:"),
@@ -56,7 +34,8 @@ fn test_workflow_trigger_is_pull_request() {
 
 #[test]
 fn test_workflow_uses_cast_cli_to_detect_changes() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("CAST_BIN")
@@ -68,7 +47,8 @@ fn test_workflow_uses_cast_cli_to_detect_changes() {
 
 #[test]
 fn test_workflow_searches_for_cast_toml() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("Cast.toml"),
@@ -78,7 +58,8 @@ fn test_workflow_searches_for_cast_toml() {
 
 #[test]
 fn test_workflow_builds_cast_cli() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("cast_cli") && content.contains("cargo build"),
@@ -88,7 +69,8 @@ fn test_workflow_builds_cast_cli() {
 
 #[test]
 fn test_workflow_runs_cast_ci_command() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("cast ci"),
@@ -98,13 +80,14 @@ fn test_workflow_runs_cast_ci_command() {
 
 #[test]
 fn test_cast_cli_project_exists() {
-    let cast_cli_cargo = get_cast_cli_path();
+    let cast_cli_cargo = get_cast_cli_cargo_path();
     assert!(cast_cli_cargo.exists(), "cast_cli project not found");
 }
 
 #[test]
 fn test_workflow_sets_up_rust_toolchain() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("setup-rust-toolchain")
@@ -116,7 +99,8 @@ fn test_workflow_sets_up_rust_toolchain() {
 
 #[test]
 fn test_workflow_handles_no_projects_changed() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("No projects") || content.contains("has_projects"),
@@ -127,7 +111,8 @@ fn test_workflow_handles_no_projects_changed() {
 // Error handling tests
 #[test]
 fn test_workflow_contains_explicit_git_fetch_commands() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("git fetch origin")
@@ -139,7 +124,8 @@ fn test_workflow_contains_explicit_git_fetch_commands() {
 
 #[test]
 fn test_workflow_checks_git_diff_exit_code() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("if [ $? -ne 0 ]") || content.contains("if [ $? -eq 0 ]"),
@@ -149,7 +135,8 @@ fn test_workflow_checks_git_diff_exit_code() {
 
 #[test]
 fn test_workflow_captures_stderr_from_cast_command() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("with-changes") && content.contains("2>&1"),
@@ -159,7 +146,8 @@ fn test_workflow_captures_stderr_from_cast_command() {
 
 #[test]
 fn test_workflow_prints_error_output_on_failure() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("echo") && content.contains("CHANGED_PROJECTS"),
@@ -169,7 +157,8 @@ fn test_workflow_prints_error_output_on_failure() {
 
 #[test]
 fn test_workflow_exits_with_error_on_cast_command_failure() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     // Check that after checking exit code, there's an exit 1
     assert!(
@@ -180,7 +169,8 @@ fn test_workflow_exits_with_error_on_cast_command_failure() {
 
 #[test]
 fn test_fetch_commands_use_graceful_failure() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
         content.contains("git fetch") && content.contains("|| true"),
@@ -191,7 +181,8 @@ fn test_fetch_commands_use_graceful_failure() {
 // Quoting tests
 #[test]
 fn test_base_sha_is_properly_quoted() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     // Check for properly quoted BASE_SHA assignment
     assert!(
@@ -202,7 +193,8 @@ fn test_base_sha_is_properly_quoted() {
 
 #[test]
 fn test_head_sha_is_properly_quoted() {
-    let content = fs::read_to_string(get_workflow_path()).expect("Failed to read workflow file");
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     // Check for properly quoted HEAD_SHA assignment
     assert!(
