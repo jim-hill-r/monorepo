@@ -40,6 +40,24 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     Ok(())
 }
 
+/// Format the output from a cargo command failure
+fn format_cargo_output(output: &std::process::Output) -> String {
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    let mut result = String::new();
+    if !stdout.is_empty() {
+        result.push_str(&stdout);
+    }
+    if !stderr.is_empty() {
+        if !result.is_empty() {
+            result.push('\n');
+        }
+        result.push_str(&stderr);
+    }
+    result
+}
+
 fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
     let output = Command::new("cargo")
         .arg("fmt")
@@ -48,9 +66,7 @@ fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
         .output()?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return Err(CiError::FmtError(format!("{}\n{}", stdout, stderr)));
+        return Err(CiError::FmtError(format_cargo_output(&output)));
     }
 
     Ok(())
@@ -66,9 +82,7 @@ fn run_clippy(working_directory: &Path) -> Result<(), CiError> {
         .output()?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return Err(CiError::ClippyError(format!("{}\n{}", stdout, stderr)));
+        return Err(CiError::ClippyError(format_cargo_output(&output)));
     }
 
     Ok(())
@@ -81,9 +95,7 @@ fn run_build(working_directory: &Path) -> Result<(), CiError> {
         .output()?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return Err(CiError::BuildError(format!("{}\n{}", stdout, stderr)));
+        return Err(CiError::BuildError(format_cargo_output(&output)));
     }
 
     Ok(())
@@ -96,9 +108,7 @@ fn run_test(working_directory: &Path) -> Result<(), CiError> {
         .output()?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return Err(CiError::TestError(format!("{}\n{}", stdout, stderr)));
+        return Err(CiError::TestError(format_cargo_output(&output)));
     }
 
     Ok(())
