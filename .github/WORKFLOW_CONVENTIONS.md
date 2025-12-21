@@ -74,6 +74,29 @@ If you find complex logic in a workflow:
 4. Update the workflow to call the new `cast` command
 5. Remove the old bash logic from the workflow
 
+## Best Practices
+
+### Quoting GitHub Actions Expressions in Bash
+
+When assigning GitHub Actions expressions to bash variables, always wrap them in double quotes to prevent errors:
+
+**❌ Bad - Unquoted expression:**
+```yaml
+- run: |
+    BASE_SHA=${{ github.event.pull_request.base.sha }}
+```
+
+**✅ Good - Quoted expression:**
+```yaml
+- run: |
+    BASE_SHA="${{ github.event.pull_request.base.sha }}"
+```
+
+Why quote expressions?
+- Prevents bash errors when the expression evaluates to empty string
+- Handles special characters safely
+- Makes variable assignment more robust in edge cases
+
 ### Concurrency Control
 Some workflows require concurrency control to prevent multiple instances from running simultaneously:
 
@@ -103,16 +126,21 @@ The `agent-copilot` binary is used to create GitHub Copilot agent tasks programm
 
 ## Testing Workflows
 
-All workflows should have corresponding test scripts in `.github/workflows/`:
-- `test-start-a-new-task.sh`: Tests for the agent task workflow
-- `test-cast-ci.sh`: Tests for the cast CI workflow
-- `test-cast-ci-error-handling.sh`: Tests error handling in cast CI workflow
+All workflows should have corresponding Rust tests in the `workflow_tests` project:
+- `cast_ci_workflow_tests.rs`: Tests for the cast CI workflow
+- `start_a_new_task_workflow_tests.rs`: Tests for the agent task workflow
 
-Test scripts validate:
+Test suites validate:
 - File existence
 - YAML syntax
 - Workflow configuration
 - Required permissions
 - Logic correctness
+- Proper quoting of expressions
 
-Run tests before committing workflow changes.
+Run tests before committing workflow changes:
+
+```bash
+cd workflow_tests
+cargo test
+```
