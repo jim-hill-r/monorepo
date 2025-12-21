@@ -113,7 +113,7 @@ impl AncestryEvent {
             | AncestryEvent::Emigration { date, .. }
             | AncestryEvent::Burial { date, .. }
             | AncestryEvent::Education { date, .. } => date.as_deref(),
-            AncestryEvent::Census { year: _, .. } => Some(""), // Census year is stored separately
+            AncestryEvent::Census { .. } => None, // Census year is stored separately
             AncestryEvent::MilitaryService { start_date, .. }
             | AncestryEvent::Occupation { start_date, .. }
             | AncestryEvent::Residence { start_date, .. } => start_date.as_deref(),
@@ -222,6 +222,7 @@ mod tests {
             location: "Brooklyn, New York".to_string(),
         };
         assert_eq!(event.event_type(), "Census");
+        assert_eq!(event.date(), None); // Census year is stored separately, not as a date string
     }
 
     #[test]
