@@ -47,7 +47,7 @@ framework = "rust-library""#,
     // Example 3: Load from directory (checks Cargo.toml first, then Cast.toml)
     println!("Example 3: Loading from directory (automatic detection)");
     let project_dir = TempDir::new("cast_project").unwrap();
-    
+
     // Create Cargo.toml with cast metadata
     fs::write(
         project_dir.path().join("Cargo.toml"),
@@ -66,7 +66,7 @@ framework = "cloudflare-pages""#,
     // Example 4: Fallback to Cast.toml when Cargo.toml has no cast metadata
     println!("Example 4: Fallback to Cast.toml");
     let fallback_dir = TempDir::new("cast_fallback").unwrap();
-    
+
     // Create Cargo.toml without cast metadata
     fs::write(
         fallback_dir.path().join("Cargo.toml"),
@@ -75,16 +75,15 @@ name = "fallback-test"
 version = "0.1.0""#,
     )
     .unwrap();
-    
+
     // Create Cast.toml with config
-    fs::write(
-        fallback_dir.path().join("Cast.toml"),
-        "exemplar = true",
-    )
-    .unwrap();
+    fs::write(fallback_dir.path().join("Cast.toml"), "exemplar = true").unwrap();
 
     let config = CastConfig::load_from_dir(fallback_dir.path()).unwrap();
-    println!("  Exemplar: {:?} (loaded from Cast.toml)\n", config.exemplar);
+    println!(
+        "  Exemplar: {:?} (loaded from Cast.toml)\n",
+        config.exemplar
+    );
 
     println!("All examples completed successfully!");
 }

@@ -47,16 +47,16 @@ pub enum ConfigError {
 impl CastConfig {
     /// Check if this config has any cast metadata set
     fn has_cast_metadata(&self) -> bool {
-        self.exemplar.is_some() 
-            || self.proof_of_concept.is_some() 
-            || self.framework.is_some() 
+        self.exemplar.is_some()
+            || self.proof_of_concept.is_some()
+            || self.framework.is_some()
             || self.deploys.is_some()
     }
 
     /// Load Cast configuration from a directory, checking Cargo.toml first, then Cast.toml
     pub fn load_from_dir(dir: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let dir = dir.as_ref();
-        
+
         // First, try to load from Cargo.toml [package.metadata.cast]
         let cargo_toml_path = dir.join("Cargo.toml");
         if cargo_toml_path.exists() {
@@ -66,29 +66,29 @@ impl CastConfig {
                 return Ok(config);
             }
         }
-        
+
         // Fall back to Cast.toml
         let cast_toml_path = dir.join("Cast.toml");
         if cast_toml_path.exists() {
             return Self::load(&cast_toml_path);
         }
-        
+
         // If neither file exists or has config, return default config
         Ok(Self::default())
     }
-    
+
     /// Load Cast configuration from Cargo.toml [package.metadata.cast] section
     pub fn load_from_cargo_toml(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let contents = fs::read_to_string(path)?;
         let cargo_toml: CargoToml = toml::from_str(&contents)?;
-        
+
         // Extract cast config using chained option methods
         let cast_config = cargo_toml
             .package
             .and_then(|pkg| pkg.metadata)
             .and_then(|meta| meta.cast)
             .unwrap_or_default();
-        
+
         Ok(cast_config)
     }
 
@@ -167,7 +167,11 @@ exemplar = true
 framework = "dioxus"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        fs::write(tmp_dir.path().join("Cast.toml"), "exemplar = false\nframework = \"rust-library\"").unwrap();
+        fs::write(
+            tmp_dir.path().join("Cast.toml"),
+            "exemplar = false\nframework = \"rust-library\"",
+        )
+        .unwrap();
 
         // Should load from Cargo.toml
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
@@ -238,7 +242,10 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(config.exemplar, Some(true));
         assert_eq!(config.proof_of_concept, Some(false));
         assert_eq!(config.framework, Some("dioxus".to_string()));
-        assert_eq!(config.deploys, Some(vec!["deploy1".to_string(), "deploy2".to_string()]));
+        assert_eq!(
+            config.deploys,
+            Some(vec!["deploy1".to_string(), "deploy2".to_string()])
+        );
     }
 
     #[test]

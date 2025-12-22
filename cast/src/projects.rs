@@ -81,7 +81,7 @@ fn find_exemplars_in_directory(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::
             // Check if the directory has either Cast.toml or Cargo.toml with cast metadata
             let has_cast_toml = path.join("Cast.toml").exists();
             let has_cargo_toml = path.join("Cargo.toml").exists();
-            
+
             if has_cast_toml || has_cargo_toml {
                 // Try to load the config from the directory (will check both files)
                 if let Ok(config) = CastConfig::load_from_dir(&path) {
@@ -136,13 +136,13 @@ fn delete_empty_gitignores(dir: impl AsRef<Path>) -> io::Result<()> {
 fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
     // Prioritize Cast.toml for writing (simpler format)
     let cast_toml_path = project_dir.join("Cast.toml");
-    
+
     if cast_toml_path.exists() {
         let mut config = CastConfig::load(&cast_toml_path)?;
         config.exemplar = None;
         config.save(&cast_toml_path)?;
     }
-    
+
     Ok(())
 }
 
@@ -247,7 +247,7 @@ fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
     while current.starts_with(repo_root) {
         let cast_toml = current.join("Cast.toml");
         let cargo_toml = current.join("Cargo.toml");
-        
+
         if cast_toml.exists() || cargo_toml.exists() {
             // Return relative path from repo_root
             let relative = current.strip_prefix(repo_root).ok()?;
@@ -639,10 +639,18 @@ mod tests {
         // Create nested projects with Cargo.toml
         let outer_project = tmp_dir.path().join("outer");
         let inner_project = outer_project.join("inner");
-        
+
         fs::create_dir_all(&inner_project.join("src")).unwrap();
-        fs::write(outer_project.join("Cargo.toml"), "[package]\nname = \"outer\"").unwrap();
-        fs::write(inner_project.join("Cargo.toml"), "[package]\nname = \"inner\"").unwrap();
+        fs::write(
+            outer_project.join("Cargo.toml"),
+            "[package]\nname = \"outer\"",
+        )
+        .unwrap();
+        fs::write(
+            inner_project.join("Cargo.toml"),
+            "[package]\nname = \"inner\"",
+        )
+        .unwrap();
         fs::write(inner_project.join("src/lib.rs"), "// test").unwrap();
 
         // Test finding the project from a file in inner project
