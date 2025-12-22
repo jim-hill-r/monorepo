@@ -78,10 +78,13 @@ fn find_exemplars_in_directory(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::
         let path = entry.path();
 
         if path.is_dir() {
-            let cast_toml = path.join("Cast.toml");
-            if cast_toml.exists() {
-                // Try to load the Cast.toml and check if it's an exemplar
-                if let Ok(config) = CastConfig::load(&cast_toml) {
+            // Check if the directory has either Cast.toml or Cargo.toml with cast metadata
+            let has_cast_toml = path.join("Cast.toml").exists();
+            let has_cargo_toml = path.join("Cargo.toml").exists();
+            
+            if has_cast_toml || has_cargo_toml {
+                // Try to load the config from the directory (will check both files)
+                if let Ok(config) = CastConfig::load_from_dir(&path) {
                     if config.exemplar == Some(true) {
                         exemplars.push(path);
                     }
@@ -124,16 +127,19 @@ fn delete_empty_gitignores(dir: impl AsRef<Path>) -> io::Result<()> {
     Ok(())
 }
 
-/// Remove the exemplar flag from a project's Cast.toml file
+/// Remove the exemplar flag from a project's configuration file
 fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
+    // Prioritize Cast.toml for writing (simpler format)
     let cast_toml_path = project_dir.join("Cast.toml");
-
+    
     if cast_toml_path.exists() {
         let mut config = CastConfig::load(&cast_toml_path)?;
         config.exemplar = None;
         config.save(&cast_toml_path)?;
     }
-
+    // Note: We don't modify Cargo.toml [package.metadata.cast] as it's more complex
+    // and likely contains other important package information
+    
     Ok(())
 }
 
@@ -220,7 +226,7 @@ fn is_valid_git_ref(git_ref: &str) -> bool {
     })
 }
 
-/// Find the project directory containing a Cast.toml for a given file path
+/// Find the project directory containing a Cast.toml or Cargo.toml for a given file path
 fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
     let mut current = file_path;
 
@@ -234,10 +240,12 @@ fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
         current = current.parent()?;
     }
 
-    // Walk up the directory tree looking for Cast.toml
+    // Walk up the directory tree looking for Cast.toml or Cargo.toml
     while current.starts_with(repo_root) {
         let cast_toml = current.join("Cast.toml");
-        if cast_toml.exists() {
+        let cargo_toml = current.join("Cargo.toml");
+        
+        if cast_toml.exists() || cargo_toml.exists() {
             // Return relative path from repo_root
             let relative = current.strip_prefix(repo_root).ok()?;
             // If relative path is empty, return "."
@@ -600,6 +608,47 @@ mod tests {
         assert!(result.is_some());
         let found_project = result.unwrap();
         assert_eq!(found_project, PathBuf::from("."));
+    }
+
+    #[test]
+    fn test_find_project_dir_finds_cargo_toml() {
+        let tmp_dir = TempDir::new("test_find_cargo").unwrap();
+
+        // Create a project with Cargo.toml only
+        let project_dir = tmp_dir.path().join("projects/my_project");
+        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::write(project_dir.join("Cargo.toml"), "[package]\nname = \"test\"").unwrap();
+        fs::write(project_dir.join("src/lib.rs"), "// test").unwrap();
+
+        // Test finding the project from a file inside it
+        let file_path = project_dir.join("src/lib.rs");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("projects/my_project"));
+    }
+
+    #[test]
+    fn test_find_project_dir_prefers_closer_cargo_toml() {
+        let tmp_dir = TempDir::new("test_nested_cargo").unwrap();
+
+        // Create nested projects with Cargo.toml
+        let outer_project = tmp_dir.path().join("outer");
+        let inner_project = outer_project.join("inner");
+        
+        fs::create_dir_all(&inner_project.join("src")).unwrap();
+        fs::write(outer_project.join("Cargo.toml"), "[package]\nname = \"outer\"").unwrap();
+        fs::write(inner_project.join("Cargo.toml"), "[package]\nname = \"inner\"").unwrap();
+        fs::write(inner_project.join("src/lib.rs"), "// test").unwrap();
+
+        // Test finding the project from a file in inner project
+        let file_path = inner_project.join("src/lib.rs");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("outer/inner"));
     }
 
     #[test]

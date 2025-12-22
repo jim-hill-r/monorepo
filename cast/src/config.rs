@@ -19,6 +19,21 @@ pub struct CastConfig {
     pub deploys: Option<Vec<String>>,
 }
 
+#[derive(Debug, Deserialize)]
+struct CargoToml {
+    package: Option<CargoPackage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CargoPackage {
+    metadata: Option<CargoMetadata>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CargoMetadata {
+    cast: Option<CastConfig>,
+}
+
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error("IO error: {0}")]
@@ -30,6 +45,48 @@ pub enum ConfigError {
 }
 
 impl CastConfig {
+    /// Load Cast configuration from a directory, checking Cargo.toml first, then Cast.toml
+    pub fn load_from_dir(dir: impl AsRef<Path>) -> Result<Self, ConfigError> {
+        let dir = dir.as_ref();
+        
+        // First, try to load from Cargo.toml [package.metadata.cast]
+        let cargo_toml_path = dir.join("Cargo.toml");
+        if cargo_toml_path.exists() {
+            let config = Self::load_from_cargo_toml(&cargo_toml_path)?;
+            // Only use Cargo.toml if it actually has cast metadata (not just defaults)
+            if config.exemplar.is_some() || config.proof_of_concept.is_some() 
+                || config.framework.is_some() || config.deploys.is_some() {
+                return Ok(config);
+            }
+        }
+        
+        // Fall back to Cast.toml
+        let cast_toml_path = dir.join("Cast.toml");
+        if cast_toml_path.exists() {
+            return Self::load(&cast_toml_path);
+        }
+        
+        // If neither file exists or has config, return default config
+        Ok(Self::default())
+    }
+    
+    /// Load Cast configuration from Cargo.toml [package.metadata.cast] section
+    pub fn load_from_cargo_toml(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
+        let contents = fs::read_to_string(path)?;
+        let cargo_toml: CargoToml = toml::from_str(&contents)?;
+        
+        if let Some(package) = cargo_toml.package {
+            if let Some(metadata) = package.metadata {
+                if let Some(cast_config) = metadata.cast {
+                    return Ok(cast_config);
+                }
+            }
+        }
+        
+        // No cast metadata found
+        Ok(Self::default())
+    }
+
     /// Load a Cast.toml configuration file from the given path
     pub fn load(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let contents = fs::read_to_string(path)?;
@@ -49,6 +106,135 @@ impl CastConfig {
 mod tests {
     use super::*;
     use tempdir::TempDir;
+
+    #[test]
+    fn test_load_from_cargo_toml_with_cast_metadata() {
+        let tmp_dir = TempDir::new("test_cargo_metadata").unwrap();
+        let cargo_path = tmp_dir.path().join("Cargo.toml");
+
+        let cargo_content = r#"
+[package]
+name = "test"
+version = "0.1.0"
+
+[package.metadata.cast]
+exemplar = true
+framework = "dioxus"
+"#;
+        fs::write(&cargo_path, cargo_content).unwrap();
+
+        let config = CastConfig::load_from_cargo_toml(&cargo_path).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+    }
+
+    #[test]
+    fn test_load_from_cargo_toml_without_cast_metadata() {
+        let tmp_dir = TempDir::new("test_cargo_no_metadata").unwrap();
+        let cargo_path = tmp_dir.path().join("Cargo.toml");
+
+        let cargo_content = r#"
+[package]
+name = "test"
+version = "0.1.0"
+"#;
+        fs::write(&cargo_path, cargo_content).unwrap();
+
+        let config = CastConfig::load_from_cargo_toml(&cargo_path).unwrap();
+        assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
+    }
+
+    #[test]
+    fn test_load_from_dir_prefers_cargo_toml() {
+        let tmp_dir = TempDir::new("test_prefer_cargo").unwrap();
+
+        // Create both Cargo.toml and Cast.toml
+        let cargo_content = r#"
+[package]
+name = "test"
+version = "0.1.0"
+
+[package.metadata.cast]
+exemplar = true
+framework = "dioxus"
+"#;
+        fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "exemplar = false\nframework = \"rust-library\"").unwrap();
+
+        // Should load from Cargo.toml
+        let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+    }
+
+    #[test]
+    fn test_load_from_dir_fallback_to_cast_toml() {
+        let tmp_dir = TempDir::new("test_fallback_cast").unwrap();
+
+        // Create only Cast.toml
+        fs::write(tmp_dir.path().join("Cast.toml"), "exemplar = true").unwrap();
+
+        let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+    }
+
+    #[test]
+    fn test_load_from_dir_cargo_toml_without_metadata_fallback_to_cast() {
+        let tmp_dir = TempDir::new("test_cargo_no_meta_fallback").unwrap();
+
+        // Create Cargo.toml without cast metadata
+        let cargo_content = r#"
+[package]
+name = "test"
+version = "0.1.0"
+"#;
+        fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
+        // Create Cast.toml with config
+        fs::write(tmp_dir.path().join("Cast.toml"), "exemplar = true").unwrap();
+
+        // Should fall back to Cast.toml since Cargo.toml has no cast metadata
+        let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+    }
+
+    #[test]
+    fn test_load_from_dir_returns_default_when_no_files_exist() {
+        let tmp_dir = TempDir::new("test_no_config").unwrap();
+
+        let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
+        assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
+    }
+
+    #[test]
+    fn test_load_from_cargo_toml_with_all_fields() {
+        let tmp_dir = TempDir::new("test_cargo_all_fields").unwrap();
+        let cargo_path = tmp_dir.path().join("Cargo.toml");
+
+        let cargo_content = r#"
+[package]
+name = "test"
+version = "0.1.0"
+
+[package.metadata.cast]
+exemplar = true
+proof_of_concept = false
+framework = "dioxus"
+deploys = ["deploy1", "deploy2"]
+"#;
+        fs::write(&cargo_path, cargo_content).unwrap();
+
+        let config = CastConfig::load_from_cargo_toml(&cargo_path).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.proof_of_concept, Some(false));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+        assert_eq!(config.deploys, Some(vec!["deploy1".to_string(), "deploy2".to_string()]));
+    }
 
     #[test]
     fn test_parse_empty_config() {
