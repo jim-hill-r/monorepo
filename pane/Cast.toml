@@ -2,3 +2,4 @@
 # This is a Dioxus web application
 
 framework = "dioxus"
+deploys = ["pane-cloudflare"]
