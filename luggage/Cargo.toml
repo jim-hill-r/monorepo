@@ -20,4 +20,7 @@ surrealdb = { version = "2.2.8", features = ["kv-mem"] }
 thiserror = "2.0.17"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 urn = { version = "0.7.0", features = ["serde"] }
-uuid = { version = "1.19.0", features = ["v7"] }
+utoipa = { version = "5.4.0", features = ["axum_extras", "uuid"] }
+utoipa-axum = "0.2.0"
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+uuid = { version = "1.19.0", features = ["v7", "serde"] }

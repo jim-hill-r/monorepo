@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 use surrealdb::{
+    Error, // TODO: Convert errors to luggage errors
+    RecordId,
+    Surreal,
     engine::{
         local::{Db, Mem},
         remote::ws::{Client, Ws},
     },
     opt::auth::Root,
-    Error, // TODO: Convert errors to luggage errors
-    RecordId,
-    Surreal,
 };
 
 use crate::{
@@ -24,7 +24,7 @@ struct Record {
 
 impl From<surrealdb::Error> for LuggageError {
     fn from(_value: surrealdb::Error) -> Self {
-        return LuggageError::Unknown;
+        LuggageError::Unknown
     }
 }
 
@@ -50,15 +50,15 @@ impl SurrealDbClosetProvider<Client> {
 
         db.use_ns(namespace).use_db(database).await?;
 
-        return Ok(Self { db });
+        Ok(Self { db })
     }
 }
 
 impl SurrealDbClosetProvider<Db> {
-    pub async fn new<'a>(namespace: &str, database: &'a str) -> Result<Self, Error> {
+    pub async fn new(namespace: &str, database: &str) -> Result<Self, Error> {
         let db = Surreal::new::<Mem>(()).await?;
         db.use_ns(namespace).use_db(database).await?;
-        return Ok(Self { db });
+        Ok(Self { db })
     }
 }
 
@@ -91,10 +91,10 @@ where
         T: for<'a> Deserialize<'a> + Send,
     {
         let saved_content: Option<T> = self.db.select((header.definition, header.id)).await?;
-        return Ok(Cube {
+        Ok(Cube {
             header,
             content: saved_content,
-        });
+        })
     }
 }
 

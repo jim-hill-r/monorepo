@@ -1,4 +1,4 @@
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -41,10 +41,10 @@ impl Default for Closet {
 
 impl CubeRegistration for Closet {
     fn id() -> LuggageId {
-        return Uuid::try_parse("0194f284-68d6-7072-805f-878ac5e94c7e").unwrap_or_default();
+        Uuid::try_parse("0194f284-68d6-7072-805f-878ac5e94c7e").unwrap_or_default()
     }
     fn schema() -> CubeSchema {
-        return serde_json::to_string_pretty(&schema_for!(Closet)).unwrap_or_default();
+        serde_json::to_string_pretty(&schema_for!(Closet)).unwrap_or_default()
     }
 }
 
