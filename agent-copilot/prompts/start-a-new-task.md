@@ -5,7 +5,7 @@ Complete one issue within this repo that are identified with TODO or FIX comment
 
 ## Instructions
 1. Issues are defined as some comment beginning with TODO or FIX.
-2. Skip any TODO or FIX comments that are marked with "(ignore)" - these should not be worked on.
+2. Skip any TODO or FIX comments that are marked with "(agent-ignore)" - these should not be worked on.
 3. Complete only one issue.
 4. When searching for issues, be eager. As soon as you find one, work on it. Prioritize issues found nearest to the top of a file. If the issue you find is too complex, try to reduce the scope and do a small part of it and whatever work remains add `TODO: from AI:` comments in the file that originated the issue.
 5. Complete issues in ISSUES.md in the root of the repo before searching for other issues.
