@@ -54,6 +54,8 @@ dx build --release
 
 The output will be in the `dist/` directory and ready for deployment.
 
+**Note:** The `Dioxus.toml` configuration disables wasm-opt (by setting level to 0) to avoid SIGABRT errors during release builds. This is a known issue where wasm-opt can crash on certain builds.
+
 To build the project using cargo directly:
 
 ```bash
@@ -73,6 +75,7 @@ pane/
 ├── src/
 │   └── main.rs      # Main application entry point
 ├── Cargo.toml       # Rust dependencies and project metadata
+├── Dioxus.toml      # Dioxus build configuration
 ├── Cast.toml        # Cast project configuration
 └── README.md        # This file
 ```

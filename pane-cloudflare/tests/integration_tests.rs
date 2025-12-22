@@ -70,7 +70,11 @@ fn test_wrangler_toml_has_required_fields() {
 fn test_readme_has_required_sections() {
     let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
-    let required_sections = ["Prerequisites", "Building Pane", "Deploying to Cloudflare Pages"];
+    let required_sections = [
+        "Prerequisites",
+        "Building Pane",
+        "Deploying to Cloudflare Pages",
+    ];
 
     for section in &required_sections {
         assert!(
@@ -101,10 +105,7 @@ fn test_pane_project_exists() {
     );
 
     let cargo_toml = pane_dir.join("Cargo.toml");
-    assert!(
-        cargo_toml.exists(),
-        "pane project missing Cargo.toml"
-    );
+    assert!(cargo_toml.exists(), "pane project missing Cargo.toml");
 }
 
 #[test]
