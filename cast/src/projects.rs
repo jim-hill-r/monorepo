@@ -128,6 +128,11 @@ fn delete_empty_gitignores(dir: impl AsRef<Path>) -> io::Result<()> {
 }
 
 /// Remove the exemplar flag from a project's configuration file
+/// Note: We only modify Cast.toml if it exists. If the project uses Cargo.toml
+/// with [package.metadata.cast], the exemplar flag will remain in Cargo.toml.
+/// This is intentional to avoid modifying Cargo.toml, which may contain other
+/// important package information. Users should manually remove the exemplar flag
+/// from Cargo.toml if desired, or create a Cast.toml file in the new project.
 fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
     // Prioritize Cast.toml for writing (simpler format)
     let cast_toml_path = project_dir.join("Cast.toml");
@@ -137,8 +142,6 @@ fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
         config.exemplar = None;
         config.save(&cast_toml_path)?;
     }
-    // Note: We don't modify Cargo.toml [package.metadata.cast] as it's more complex
-    // and likely contains other important package information
     
     Ok(())
 }

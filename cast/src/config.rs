@@ -45,6 +45,14 @@ pub enum ConfigError {
 }
 
 impl CastConfig {
+    /// Check if this config has any cast metadata set
+    fn has_cast_metadata(&self) -> bool {
+        self.exemplar.is_some() 
+            || self.proof_of_concept.is_some() 
+            || self.framework.is_some() 
+            || self.deploys.is_some()
+    }
+
     /// Load Cast configuration from a directory, checking Cargo.toml first, then Cast.toml
     pub fn load_from_dir(dir: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let dir = dir.as_ref();
@@ -54,8 +62,7 @@ impl CastConfig {
         if cargo_toml_path.exists() {
             let config = Self::load_from_cargo_toml(&cargo_toml_path)?;
             // Only use Cargo.toml if it actually has cast metadata (not just defaults)
-            if config.exemplar.is_some() || config.proof_of_concept.is_some() 
-                || config.framework.is_some() || config.deploys.is_some() {
+            if config.has_cast_metadata() {
                 return Ok(config);
             }
         }
@@ -75,16 +82,14 @@ impl CastConfig {
         let contents = fs::read_to_string(path)?;
         let cargo_toml: CargoToml = toml::from_str(&contents)?;
         
-        if let Some(package) = cargo_toml.package {
-            if let Some(metadata) = package.metadata {
-                if let Some(cast_config) = metadata.cast {
-                    return Ok(cast_config);
-                }
-            }
-        }
+        // Extract cast config using chained option methods
+        let cast_config = cargo_toml
+            .package
+            .and_then(|pkg| pkg.metadata)
+            .and_then(|meta| meta.cast)
+            .unwrap_or_default();
         
-        // No cast metadata found
-        Ok(Self::default())
+        Ok(cast_config)
     }
 
     /// Load a Cast.toml configuration file from the given path
