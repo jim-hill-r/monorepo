@@ -26,9 +26,11 @@ pub trait CubeRegistration {
     fn schema() -> CubeSchema;
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, utoipa::ToSchema)]
 pub struct CubeHeader {
+    #[schema(value_type = String, example = "0194f2fe-6f7a-7dd2-8af3-d6d4c9a2f74a")]
     pub id: LuggageId,
+    #[schema(value_type = String, example = "0194f27d-d3d5-7960-b953-e5d3ea1047a6")]
     pub definition: LuggageId,
 }
 
