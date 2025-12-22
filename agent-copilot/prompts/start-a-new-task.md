@@ -1,24 +1,34 @@
 # Start a new task prompt
 
 ## Task
-Complete one issue within this repo that are identified with TODO or FIX comments.
+Complete one issue within this repo.
 
 ## Instructions
-1. Issues are defined as some comment beginning with TODO or FIX.
-2. Skip any TODO or FIX comments that are marked with "(agent-ignore)" - these should not be worked on.
-3. Complete only one issue.
-4. When searching for issues, be eager. As soon as you find one, work on it. Prioritize issues found nearest to the top of a file. If the issue you find is too complex, try to reduce the scope and do a small part of it and whatever work remains add `TODO: from AI:` comments in the file that originated the issue.
-5. Complete issues in ISSUES.md in the root of the repo before searching for other issues.
-6. If step 5 has no available issues, then search for other ISSUES.md in the repo for an issue.
-7. If step 6 has no available issues, then search the entire codebase for an issue.
-8. Write tests to verify the issue.
-9. Complete the issue by getting those tests to pass.
-10. Write more tests you think are necessary to ensure full code coverage.
-11. Run `cast project with-changes --base <BASE> --head <HEAD>` to find projects with changes and then `cast ci` on each of those projects to ensure that everything meets standards
-12. Update relevant documentation for the changes made.
-13. If you think you have found problems with the codebase that are out of scope to fix, add a comment preceded with `TODO: from AI:` near the relevant problem.
-14. To improve agent performance in the future, create or modify files in the repo to help agents (specifically github copilot agents)
-15. Remove the TODO or FIX comment that you fixed.
+1. Find one issue per the Find Issue section below.
+2. Complete just that one issue per the Fix Issue section below.
+
+## Find Issue
+1. Be eager. While following these steps, just work the first issue you find.
+2. Issues are defined as some comment beginning with TODO or FIX.
+3. Skip any TODO or FIX comments that are marked with `(agent-ignore)` - these should not be worked on.
+4. Read ISSUES.md in the root of the repo.
+5. If there are issues in the `# Priority Issues` sections of the root ISSUES.md, prioritize the first issues found in the list.
+6. If there are projects listed in the `# Priority Projects` sections, then prioritize issues found in the associated ISSUES.md for that project. Prioritize the first project found in the list.
+7. If steps 5 and 6 don't have issues, then search for other ISSUES.md in the repo for an issue.
+8. If steps 5, 6, and 7 don't have issues, then search then entire codebase for an issue.
+9. If no issues are found, do any investigation and find some issues and add them to an appropriate ISSUES.md for future consideration.
+
+## Fix Issue
+1. If the issue to be worked is too complex, then just try to break up the issue into several smaller issues and issue a PR with changes to any relevant ISSUES.md. Mark these comments with `TODO (agent-generated)`.
+2. Otherwise do the following:
+3. Use Test Driven Development as much as possible. Start by writing tests for the issue you are trying to fix.
+4. Implement code that will make the tests pass and fix this issue.
+5. Analyze the new code to determine if more tests are needed and add them.
+6. Run `cast ci` against any projects that have been changed.
+7. Update relevant documentation for the changes made.
+8. While do this work, if you find improvements to the codebase that are out of scope for this task, then add a comment preceded with `TODO: (agent-generated)` near the relevant problem.
+9. Add information to `copilot-instructions` or any other relevant file that will help future agents to work in this repo more easily.
+10. Remove the TODO or FIX comment that you fixed.
 
 ## Context
 This agent runs automatically after PRs created by GitHub Copilot are closed/merged.
