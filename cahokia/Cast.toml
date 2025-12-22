@@ -1,0 +1,4 @@
+# Cast configuration file
+# Multi-platform Dioxus application
+
+framework = "dioxus"

@@ -1,0 +1,4 @@
+# Cast configuration file
+# A reading education application built with Dioxus
+
+framework = "dioxus"
