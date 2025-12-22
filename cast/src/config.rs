@@ -14,6 +14,9 @@ pub struct CastConfig {
     /// The framework used by the project (e.g., "dioxus", "cloudflare-pages", "rust-library")
     #[serde(default)]
     pub framework: Option<String>,
+    /// List of projects that are used to deploy this project
+    #[serde(default)]
+    pub deploys: Option<Vec<String>>,
 }
 
 #[derive(Error, Debug)]
@@ -53,6 +56,7 @@ mod tests {
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
     }
 
     #[test]
@@ -73,6 +77,7 @@ mod tests {
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
     }
 
     #[test]
@@ -97,6 +102,7 @@ mod tests {
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
     }
 
     #[test]
@@ -119,6 +125,7 @@ mod tests {
             exemplar: Some(true),
             proof_of_concept: None,
             framework: None,
+            deploys: None,
         };
 
         config.save(&config_path).unwrap();
@@ -127,6 +134,7 @@ mod tests {
         assert_eq!(loaded_config.exemplar, Some(true));
         assert_eq!(loaded_config.proof_of_concept, None);
         assert_eq!(loaded_config.framework, None);
+        assert_eq!(loaded_config.deploys, None);
     }
 
     #[test]
@@ -138,6 +146,7 @@ mod tests {
             exemplar: None,
             proof_of_concept: None,
             framework: None,
+            deploys: None,
         };
 
         config.save(&config_path).unwrap();
@@ -146,6 +155,7 @@ mod tests {
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
         assert_eq!(loaded_config.framework, None);
+        assert_eq!(loaded_config.deploys, None);
     }
 
     #[test]
@@ -154,6 +164,7 @@ mod tests {
         assert_eq!(config.exemplar, None);
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
     }
 
     #[test]
@@ -208,6 +219,7 @@ mod tests {
             exemplar: None,
             proof_of_concept: Some(true),
             framework: None,
+            deploys: None,
         };
 
         config.save(&config_path).unwrap();
@@ -216,6 +228,7 @@ mod tests {
         assert_eq!(loaded_config.proof_of_concept, Some(true));
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.framework, None);
+        assert_eq!(loaded_config.deploys, None);
     }
 
     #[test]
@@ -227,6 +240,7 @@ mod tests {
             exemplar: Some(false),
             proof_of_concept: Some(true),
             framework: None,
+            deploys: None,
         };
 
         config.save(&config_path).unwrap();
@@ -235,6 +249,7 @@ mod tests {
         assert_eq!(loaded_config.exemplar, Some(false));
         assert_eq!(loaded_config.proof_of_concept, Some(true));
         assert_eq!(loaded_config.framework, None);
+        assert_eq!(loaded_config.deploys, None);
     }
 
     #[test]
@@ -264,6 +279,7 @@ mod tests {
             exemplar: None,
             proof_of_concept: None,
             framework: Some("dioxus".to_string()),
+            deploys: None,
         };
 
         config.save(&config_path).unwrap();
@@ -272,6 +288,7 @@ mod tests {
         assert_eq!(loaded_config.framework, Some("dioxus".to_string()));
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
+        assert_eq!(loaded_config.deploys, None);
     }
 
     #[test]
@@ -287,6 +304,7 @@ mod tests {
                 exemplar: None,
                 proof_of_concept: None,
                 framework: Some(framework.to_string()),
+                deploys: None,
             };
 
             config.save(&config_path).unwrap();
@@ -320,5 +338,69 @@ mod tests {
                 project
             );
         }
+    }
+
+    #[test]
+    fn test_parse_config_with_deploys() {
+        let config: CastConfig = toml::from_str("deploys = [\"project-deploy\"]").unwrap();
+        assert_eq!(config.deploys, Some(vec!["project-deploy".to_string()]));
+        assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_multiple_deploys() {
+        let config: CastConfig =
+            toml::from_str("deploys = [\"deploy1\", \"deploy2\", \"deploy3\"]").unwrap();
+        assert_eq!(
+            config.deploys,
+            Some(vec![
+                "deploy1".to_string(),
+                "deploy2".to_string(),
+                "deploy3".to_string()
+            ])
+        );
+    }
+
+    #[test]
+    fn test_parse_config_with_empty_deploys() {
+        let config: CastConfig = toml::from_str("deploys = []").unwrap();
+        assert_eq!(config.deploys, Some(vec![]));
+    }
+
+    #[test]
+    fn test_save_config_with_deploys() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+        let config_path = tmp_dir.path().join("Cast.toml");
+
+        let config = CastConfig {
+            exemplar: None,
+            proof_of_concept: None,
+            framework: None,
+            deploys: Some(vec!["pane-cloudflare".to_string()]),
+        };
+
+        config.save(&config_path).unwrap();
+
+        let loaded_config = CastConfig::load(&config_path).unwrap();
+        assert_eq!(
+            loaded_config.deploys,
+            Some(vec!["pane-cloudflare".to_string()])
+        );
+        assert_eq!(loaded_config.exemplar, None);
+        assert_eq!(loaded_config.proof_of_concept, None);
+        assert_eq!(loaded_config.framework, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_all_fields_including_deploys() {
+        let config: CastConfig = toml::from_str(
+            "exemplar = true\nproof_of_concept = false\nframework = \"dioxus\"\ndeploys = [\"deploy-project\"]"
+        ).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.proof_of_concept, Some(false));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+        assert_eq!(config.deploys, Some(vec!["deploy-project".to_string()]));
     }
 }

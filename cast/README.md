@@ -128,6 +128,10 @@ proof_of_concept = true
 # The framework used by the project (e.g., "dioxus", "cloudflare-pages", "rust-library")
 # Optional: defaults to None if not specified
 framework = "dioxus"
+
+# List of projects that are used to deploy this project
+# Optional: defaults to None if not specified
+deploys = ["deploy-project-1", "deploy-project-2"]
 ```
 
 You can load and parse Cast.toml configuration in your code:
@@ -151,5 +155,10 @@ if config.proof_of_concept == Some(true) {
 // Check framework
 if let Some(framework) = config.framework {
     println!("Framework: {}", framework);
+}
+
+// Check deploy projects
+if let Some(deploys) = config.deploys {
+    println!("Deploy projects: {:?}", deploys);
 }
 ```
