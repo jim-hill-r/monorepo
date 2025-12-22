@@ -98,7 +98,7 @@ async fn router(state: AppState) -> Router {
 }
 
 pub async fn listener() -> tokio::net::TcpListener {
-    return tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap()
 }
 
 #[derive(Serialize, utoipa::ToSchema)]
@@ -152,9 +152,10 @@ async fn create_cube(
     if let Some(provider) = state.closet_providers.get(&state.root_closet_id) {
         let cube = Cube::new(payload.cube_header.clone(), payload.content);
         let _ = provider.create(cube).await;
-        return (StatusCode::CREATED, Json(payload.cube_header));
+        (StatusCode::CREATED, Json(payload.cube_header))
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(payload.cube_header))
     }
-    (StatusCode::INTERNAL_SERVER_ERROR, Json(payload.cube_header))
 }
 
 #[cfg(test)]
@@ -179,10 +180,10 @@ mod tests {
 
     impl CubeRegistration for TestContent {
         fn id() -> LuggageId {
-            return Uuid::try_parse("0194f2fe-6f7a-7dd2-8af3-d6d4c9a2f74a").unwrap_or_default();
+            Uuid::try_parse("0194f2fe-6f7a-7dd2-8af3-d6d4c9a2f74a").unwrap_or_default()
         }
         fn schema() -> CubeSchema {
-            return serde_json::to_string_pretty(&schema_for!(TestContent)).unwrap_or_default();
+            serde_json::to_string_pretty(&schema_for!(TestContent)).unwrap_or_default()
         }
     }
 
