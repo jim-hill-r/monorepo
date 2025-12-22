@@ -128,6 +128,7 @@ The `agent-copilot` binary is used to create GitHub Copilot agent tasks programm
 
 All workflows should have corresponding Rust tests in the `workflow_tests` project:
 - `cast_ci_workflow_tests.rs`: Tests for the cast CI workflow
+- `cast_cd_workflow_tests.rs`: Tests for the cast CD workflow
 - `start_a_new_task_workflow_tests.rs`: Tests for the agent task workflow
 
 Test suites validate:
@@ -137,6 +138,7 @@ Test suites validate:
 - Required permissions
 - Logic correctness
 - Proper quoting of expressions
+- Required component installation
 
 Run tests before committing workflow changes:
 
@@ -144,3 +146,38 @@ Run tests before committing workflow changes:
 cd workflow_tests
 cargo test
 ```
+
+## Rust Toolchain Setup
+
+### Required Components
+
+When using `actions-rust-lang/setup-rust-toolchain@v1`, always explicitly specify the required components. The action does not guarantee installation of optional components like `rustfmt` and `clippy` by default.
+
+**✅ Correct - Explicitly specify components:**
+```yaml
+- name: Setup Rust toolchain
+  uses: actions-rust-lang/setup-rust-toolchain@v1
+  with:
+    toolchain: 1.85.0
+    components: rustfmt, clippy
+```
+
+**❌ Incorrect - Missing components specification:**
+```yaml
+- name: Setup Rust toolchain
+  uses: actions-rust-lang/setup-rust-toolchain@v1
+  with:
+    toolchain: 1.85.0
+```
+
+### Why Specify Components?
+
+The `cast ci` command requires:
+- `rustfmt` - for `cargo fmt --check`
+- `clippy` - for `cargo clippy -- -D warnings`
+
+Without explicitly specifying these components, the workflow may fail with errors like:
+```
+Cargo fmt check failed: error: 'cargo-fmt' is not installed for the toolchain '1.85.0-x86_64-unknown-linux-gnu'
+```
+
