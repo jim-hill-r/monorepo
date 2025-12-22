@@ -112,9 +112,16 @@ This is used in CI workflows to efficiently run tests only on changed projects.
 
 ## Configuration
 
-Cast uses a `Cast.toml` file to configure project-specific settings.
+Cast supports two ways to configure project-specific settings:
 
-### Cast.toml Configuration Options
+1. **Cast.toml** - A dedicated configuration file
+2. **Cargo.toml** - Using the `[package.metadata.cast]` section
+
+Cast will automatically check for configuration in Cargo.toml first, then fall back to Cast.toml if no Cast metadata is found. This allows you to consolidate configuration in your existing Cargo.toml file or use a separate Cast.toml file if you prefer.
+
+### Configuration Options
+
+**Option 1: Cast.toml**
 
 ```toml
 # Whether this project is an exemplar project (example/template)
@@ -134,13 +141,32 @@ framework = "dioxus"
 deploys = ["deploy-project-1", "deploy-project-2"]
 ```
 
-You can load and parse Cast.toml configuration in your code:
+**Option 2: Cargo.toml with [package.metadata.cast] section**
+
+```toml
+[package]
+name = "my-project"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.cast]
+exemplar = true
+proof_of_concept = false
+framework = "dioxus"
+deploys = ["deploy-project-1", "deploy-project-2"]
+```
+
+### Loading Configuration in Code
 
 ```rust
 use cast::config::CastConfig;
 
-// Load configuration from a Cast.toml file
+// Load configuration from a directory (checks Cargo.toml first, then Cast.toml)
+let config = CastConfig::load_from_dir("path/to/project").unwrap();
+
+// Or load directly from a specific file
 let config = CastConfig::load("path/to/Cast.toml").unwrap();
+let config = CastConfig::load_from_cargo_toml("path/to/Cargo.toml").unwrap();
 
 // Check if project is an exemplar
 if config.exemplar == Some(true) {

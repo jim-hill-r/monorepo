@@ -78,10 +78,13 @@ fn find_exemplars_in_directory(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::
         let path = entry.path();
 
         if path.is_dir() {
-            let cast_toml = path.join("Cast.toml");
-            if cast_toml.exists() {
-                // Try to load the Cast.toml and check if it's an exemplar
-                if let Ok(config) = CastConfig::load(&cast_toml) {
+            // Check if the directory has either Cast.toml or Cargo.toml with cast metadata
+            let has_cast_toml = path.join("Cast.toml").exists();
+            let has_cargo_toml = path.join("Cargo.toml").exists();
+
+            if has_cast_toml || has_cargo_toml {
+                // Try to load the config from the directory (will check both files)
+                if let Ok(config) = CastConfig::load_from_dir(&path) {
                     if config.exemplar == Some(true) {
                         exemplars.push(path);
                     }
@@ -124,8 +127,14 @@ fn delete_empty_gitignores(dir: impl AsRef<Path>) -> io::Result<()> {
     Ok(())
 }
 
-/// Remove the exemplar flag from a project's Cast.toml file
+/// Remove the exemplar flag from a project's configuration file
+/// Note: We only modify Cast.toml if it exists. If the project uses Cargo.toml
+/// with [package.metadata.cast], the exemplar flag will remain in Cargo.toml.
+/// This is intentional to avoid modifying Cargo.toml, which may contain other
+/// important package information. Users should manually remove the exemplar flag
+/// from Cargo.toml if desired, or create a Cast.toml file in the new project.
 fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
+    // Prioritize Cast.toml for writing (simpler format)
     let cast_toml_path = project_dir.join("Cast.toml");
 
     if cast_toml_path.exists() {
@@ -220,7 +229,7 @@ fn is_valid_git_ref(git_ref: &str) -> bool {
     })
 }
 
-/// Find the project directory containing a Cast.toml for a given file path
+/// Find the project directory containing a Cast.toml or Cargo.toml for a given file path
 fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
     let mut current = file_path;
 
@@ -234,17 +243,31 @@ fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
         current = current.parent()?;
     }
 
-    // Walk up the directory tree looking for Cast.toml
+    // Walk up the directory tree looking for Cast.toml or Cargo.toml with Cast metadata
     while current.starts_with(repo_root) {
         let cast_toml = current.join("Cast.toml");
+        let cargo_toml = current.join("Cargo.toml");
+
+        // Cast.toml always marks a Cast project
         if cast_toml.exists() {
-            // Return relative path from repo_root
             let relative = current.strip_prefix(repo_root).ok()?;
-            // If relative path is empty, return "."
             if relative.as_os_str().is_empty() {
                 return Some(PathBuf::from("."));
             }
             return Some(relative.to_path_buf());
+        }
+
+        // Cargo.toml only marks a Cast project if it has Cast metadata
+        if cargo_toml.exists() {
+            if let Ok(config) = CastConfig::load_from_cargo_toml(&cargo_toml) {
+                if config.has_cast_metadata() {
+                    let relative = current.strip_prefix(repo_root).ok()?;
+                    if relative.as_os_str().is_empty() {
+                        return Some(PathBuf::from("."));
+                    }
+                    return Some(relative.to_path_buf());
+                }
+            }
         }
 
         // Stop if we've reached the repo root
@@ -600,6 +623,81 @@ mod tests {
         assert!(result.is_some());
         let found_project = result.unwrap();
         assert_eq!(found_project, PathBuf::from("."));
+    }
+
+    #[test]
+    fn test_find_project_dir_finds_cargo_toml() {
+        let tmp_dir = TempDir::new("test_find_cargo").unwrap();
+
+        // Create a project with Cargo.toml that has Cast metadata
+        let project_dir = tmp_dir.path().join("projects/my_project");
+        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::write(
+            project_dir.join("Cargo.toml"),
+            "[package]\nname = \"test\"\n\n[package.metadata.cast]\nexemplar = true",
+        )
+        .unwrap();
+        fs::write(project_dir.join("src/lib.rs"), "// test").unwrap();
+
+        // Test finding the project from a file inside it
+        let file_path = project_dir.join("src/lib.rs");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("projects/my_project"));
+    }
+
+    #[test]
+    fn test_find_project_dir_prefers_closer_cargo_toml() {
+        let tmp_dir = TempDir::new("test_nested_cargo").unwrap();
+
+        // Create nested projects with Cargo.toml that have Cast metadata
+        let outer_project = tmp_dir.path().join("outer");
+        let inner_project = outer_project.join("inner");
+
+        fs::create_dir_all(&inner_project.join("src")).unwrap();
+        fs::write(
+            outer_project.join("Cargo.toml"),
+            "[package]\nname = \"outer\"\n\n[package.metadata.cast]\nexemplar = true",
+        )
+        .unwrap();
+        fs::write(
+            inner_project.join("Cargo.toml"),
+            "[package]\nname = \"inner\"\n\n[package.metadata.cast]\nframework = \"rust-library\"",
+        )
+        .unwrap();
+        fs::write(inner_project.join("src/lib.rs"), "// test").unwrap();
+
+        // Test finding the project from a file in inner project
+        let file_path = inner_project.join("src/lib.rs");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+
+        assert!(result.is_some());
+        let found_project = result.unwrap();
+        assert_eq!(found_project, PathBuf::from("outer/inner"));
+    }
+
+    #[test]
+    fn test_find_project_dir_ignores_cargo_toml_without_cast_metadata() {
+        let tmp_dir = TempDir::new("test_no_cast_metadata").unwrap();
+
+        // Create a regular Rust project without Cast metadata
+        let project_dir = tmp_dir.path().join("regular_rust_project");
+        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::write(
+            project_dir.join("Cargo.toml"),
+            "[package]\nname = \"regular_project\"\nversion = \"0.1.0\"",
+        )
+        .unwrap();
+        fs::write(project_dir.join("src/lib.rs"), "// regular rust code").unwrap();
+
+        // Test finding the project from a file inside it
+        let file_path = project_dir.join("src/lib.rs");
+        let result = find_project_dir(&file_path, tmp_dir.path());
+
+        // Should return None because Cargo.toml has no Cast metadata
+        assert!(result.is_none());
     }
 
     #[test]
