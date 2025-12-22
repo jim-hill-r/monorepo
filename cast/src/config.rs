@@ -46,7 +46,7 @@ pub enum ConfigError {
 
 impl CastConfig {
     /// Check if this config has any cast metadata set
-    fn has_cast_metadata(&self) -> bool {
+    pub(crate) fn has_cast_metadata(&self) -> bool {
         self.exemplar.is_some()
             || self.proof_of_concept.is_some()
             || self.framework.is_some()
