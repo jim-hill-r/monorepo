@@ -202,3 +202,25 @@ fn test_head_sha_is_properly_quoted() {
         "HEAD_SHA is not properly quoted. Expected: HEAD_SHA=\"${{{{ github.event.pull_request.head.sha }}}}\""
     );
 }
+
+#[test]
+fn test_workflow_installs_rustfmt_component() {
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("components:") && content.contains("rustfmt"),
+        "Workflow does not explicitly install rustfmt component"
+    );
+}
+
+#[test]
+fn test_workflow_installs_clippy_component() {
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("components:") && content.contains("clippy"),
+        "Workflow does not explicitly install clippy component"
+    );
+}
