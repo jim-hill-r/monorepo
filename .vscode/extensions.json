@@ -5,6 +5,7 @@
     "tamasfe.even-better-toml",
     "fill-labs.dependi",
     "gruntfuggly.todo-tree",
+    "eamodio.gitlens",
 
     "surrealdb.surrealql",
     "ritwickdey.liveserver",
