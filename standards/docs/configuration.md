@@ -1,0 +1,1 @@
+- All projects MUST include a royalty.toml for use with the royalty project.

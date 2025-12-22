@@ -49,7 +49,7 @@ dx serve --verbose
 To build the project for production:
 
 ```bash
-dx build --release
+dx bundle
 ```
 
 The output will be in the `dist/` directory and ready for deployment.

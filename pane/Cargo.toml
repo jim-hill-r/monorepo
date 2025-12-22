@@ -8,4 +8,4 @@ dioxus = { version = "0.7.2", features = ["web"] }
 
 [features]
 default = ["web"]
-web = []
+web = [] 
