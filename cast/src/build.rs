@@ -1,3 +1,4 @@
+use crate::utils::format_cargo_output;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
@@ -24,24 +25,6 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), BuildError> {
     }
 
     Ok(())
-}
-
-/// Format the output from a cargo command failure
-fn format_cargo_output(output: &std::process::Output) -> String {
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
-    let mut result = String::new();
-    if !stdout.is_empty() {
-        result.push_str(&stdout);
-    }
-    if !stderr.is_empty() {
-        if !result.is_empty() {
-            result.push('\n');
-        }
-        result.push_str(&stderr);
-    }
-    result
 }
 
 #[cfg(test)]
