@@ -1,4 +1,4 @@
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -14,10 +14,10 @@ pub struct CubeDefinition {
 
 impl CubeRegistration for CubeDefinition {
     fn id() -> LuggageId {
-        return Uuid::try_parse("0194f27d-d3d5-7960-b953-e5d3ea1047a6").unwrap_or_default();
+        Uuid::try_parse("0194f27d-d3d5-7960-b953-e5d3ea1047a6").unwrap_or_default()
     }
     fn schema() -> CubeSchema {
-        return serde_json::to_string_pretty(&schema_for!(CubeDefinition)).unwrap_or_default();
+        serde_json::to_string_pretty(&schema_for!(CubeDefinition)).unwrap_or_default()
     }
 }
 
@@ -51,9 +51,9 @@ pub struct Cube<T> {
 
 impl<T> Cube<T> {
     pub fn new(header: CubeHeader, content: T) -> Self {
-        return Cube::<T> {
+        Cube::<T> {
             header,
             content: Some(content),
-        };
+        }
     }
 }

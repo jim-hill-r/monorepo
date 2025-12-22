@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use axum::{
+    Json, Router,
     extract::State,
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
 };
 
 use serde::{Deserialize, Serialize};
@@ -62,41 +62,39 @@ pub async fn app(config: Option<StartupConfiguration>) -> Result<Router, Luggage
     let mut closet_providers: HashMap<Uuid, SurrealDbClosetProvider<Db>> = HashMap::new();
     closet_providers.insert(root_closet_id, root_closet_provider);
 
-    if let Some(c) = config {
-        if let Some(closet) = c.closet {
-            let additional_closet_id = Uuid::now_v7();
-            closet_registry.insert(additional_closet_id, closet.clone());
-            if let Some(t) = closet.builtin_type {
-                let closet_provider = match t {
-                    ClosetBuiltinType::LocalSurrealDb => {
-                        SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?
-                    }
-                    ClosetBuiltinType::RemoteSurrealDb => {
-                        // TODO: Actually connect to a remote db
-                        SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?
-                    }
-                };
-                closet_providers.insert(additional_closet_id, closet_provider);
-            }
+    if let Some(c) = config
+        && let Some(closet) = c.closet
+    {
+        let additional_closet_id = Uuid::now_v7();
+        closet_registry.insert(additional_closet_id, closet.clone());
+        if let Some(t) = closet.builtin_type {
+            let closet_provider = match t {
+                ClosetBuiltinType::LocalSurrealDb => {
+                    SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?
+                }
+                ClosetBuiltinType::RemoteSurrealDb => {
+                    // TODO: Actually connect to a remote db
+                    SurrealDbClosetProvider::<Db>::new("bellhop", "bellhop").await?
+                }
+            };
+            closet_providers.insert(additional_closet_id, closet_provider);
         }
     }
 
-    return Ok(router(AppState {
+    Ok(router(AppState {
         root_closet_id,
         closet_registry,
         closet_providers,
     })
-    .await);
+    .await)
 }
 
 async fn router(state: AppState) -> Router {
-    let router = Router::new()
+    Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/", get(health_check))
         .route("/v1/cube", post(create_cube))
-        .with_state(state);
-
-    return router;
+        .with_state(state)
 }
 
 pub async fn listener() -> tokio::net::TcpListener {
@@ -156,7 +154,7 @@ async fn create_cube(
         let _ = provider.create(cube).await;
         return (StatusCode::CREATED, Json(payload.cube_header));
     }
-    return (StatusCode::INTERNAL_SERVER_ERROR, Json(payload.cube_header));
+    (StatusCode::INTERNAL_SERVER_ERROR, Json(payload.cube_header))
 }
 
 #[cfg(test)]
@@ -167,7 +165,7 @@ mod tests {
         error::Result,
     };
     use axum_test::TestServer;
-    use schemars::{schema_for, JsonSchema};
+    use schemars::{JsonSchema, schema_for};
     use serde_json::json;
     use uuid::Uuid;
 
@@ -283,17 +281,26 @@ mod tests {
         let server = TestServer::new(app(None).await?).unwrap();
         let response = server.get("/api-docs/openapi.json").await;
         response.assert_status(StatusCode::OK);
-        
+
         // Verify it's valid JSON
         let json_text = response.text();
-        let openapi_spec: serde_json::Value = serde_json::from_str(&json_text)
-            .expect("OpenAPI spec should be valid JSON");
-        
+        let openapi_spec: serde_json::Value =
+            serde_json::from_str(&json_text).expect("OpenAPI spec should be valid JSON");
+
         // Verify basic OpenAPI structure
-        assert!(openapi_spec.get("openapi").is_some(), "OpenAPI version should be present");
-        assert!(openapi_spec.get("info").is_some(), "Info section should be present");
-        assert!(openapi_spec.get("paths").is_some(), "Paths section should be present");
-        
+        assert!(
+            openapi_spec.get("openapi").is_some(),
+            "OpenAPI version should be present"
+        );
+        assert!(
+            openapi_spec.get("info").is_some(),
+            "Info section should be present"
+        );
+        assert!(
+            openapi_spec.get("paths").is_some(),
+            "Paths section should be present"
+        );
+
         Ok(())
     }
 }

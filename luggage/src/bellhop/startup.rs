@@ -18,7 +18,7 @@ pub fn get_startup_configuration() -> Result<StartupConfiguration> {
         return Ok(startup_config);
     };
 
-    return Ok(StartupConfiguration::default());
+    Ok(StartupConfiguration::default())
 }
 
 #[cfg(test)]
