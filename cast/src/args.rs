@@ -275,7 +275,13 @@ mod tests {
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
         fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
 
-        let result = execute(Args { cmd: Commands::Build }, tmp_dir.path()).unwrap();
+        let result = execute(
+            Args {
+                cmd: Commands::Build,
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
         assert_eq!(result, "Build passed");
     }
 
