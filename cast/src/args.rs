@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{ci, projects, sessions};
+use crate::{build, ci, projects, sessions};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -18,6 +18,8 @@ enum Commands {
     Session(SessionCommands),
     #[command(subcommand)]
     Project(ProjectCommands),
+    /// Run build
+    Build,
     /// Run CI checks
     Ci,
     /// Run CD (Continuous Deployment)
@@ -69,6 +71,8 @@ pub enum ExecuteError {
     WithChangesError(String),
     #[error("ci error: {0}")]
     CiError(#[from] ci::CiError),
+    #[error("build error: {0}")]
+    BuildError(#[from] build::BuildError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -127,6 +131,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             Commands::Ci => {
                 ci::run(working_directory)?;
                 Ok("CI passed".into())
+            }
+            Commands::Build => {
+                build::run(working_directory)?;
+                Ok("Build passed".into())
             }
             Commands::Cd => Ok("starting CD".into()),
         }
@@ -251,6 +259,24 @@ mod tests {
 
         let result = execute(Args { cmd: Commands::Ci }, tmp_dir.path()).unwrap();
         assert_eq!(result, "CI passed");
+    }
+
+    #[test]
+    fn it_runs_build() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create a minimal Cargo.toml and src/lib.rs for build to pass
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
+
+        let result = execute(Args { cmd: Commands::Build }, tmp_dir.path()).unwrap();
+        assert_eq!(result, "Build passed");
     }
 
     #[test]

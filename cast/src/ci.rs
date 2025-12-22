@@ -1,3 +1,4 @@
+use crate::build;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
@@ -9,7 +10,7 @@ pub enum CiError {
     #[error("Cargo clippy check failed: {0}")]
     ClippyError(String),
     #[error("Cargo build failed: {0}")]
-    BuildError(String),
+    BuildError(#[from] build::BuildError),
     #[error("Cargo test failed: {0}")]
     TestError(String),
     #[error("IO error: {0}")]
@@ -20,7 +21,7 @@ pub enum CiError {
 /// This runs:
 /// 1. cargo fmt --check
 /// 2. cargo clippy -- -D warnings
-/// 3. cargo build
+/// 3. cast build (cargo build)
 /// 4. cargo test
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
@@ -31,8 +32,8 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     // Run cargo clippy
     run_clippy(working_directory)?;
 
-    // Run cargo build
-    run_build(working_directory)?;
+    // Run cast build
+    build::run(working_directory)?;
 
     // Run cargo test
     run_test(working_directory)?;
@@ -88,19 +89,6 @@ fn run_clippy(working_directory: &Path) -> Result<(), CiError> {
     Ok(())
 }
 
-fn run_build(working_directory: &Path) -> Result<(), CiError> {
-    let output = Command::new("cargo")
-        .arg("build")
-        .current_dir(working_directory)
-        .output()?;
-
-    if !output.status.success() {
-        return Err(CiError::BuildError(format_cargo_output(&output)));
-    }
-
-    Ok(())
-}
-
 fn run_test(working_directory: &Path) -> Result<(), CiError> {
     let output = Command::new("cargo")
         .arg("test")
@@ -141,23 +129,6 @@ mod tests {
         fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
 
         let result = run_fmt_check(tmp_dir.path());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_run_build_passes_with_valid_code() {
-        let tmp_dir = TempDir::new("test_build").unwrap();
-
-        // Create a simple Cargo project
-        fs::write(
-            tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
-        )
-        .unwrap();
-        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
-        fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
-
-        let result = run_build(tmp_dir.path());
         assert!(result.is_ok());
     }
 
