@@ -3,6 +3,7 @@ name: Start New AI Agent Task
 on:
   pull_request:
     types: [closed]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,15 +12,18 @@ permissions:
 
 jobs:
   start-a-new-task:
-    # Only run if the PR was created by a GitHub Copilot agent and was actually merged
-    if: (github.event.pull_request.user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent[bot]') && github.event.pull_request.merged == true
+    # Only run if:
+    # - Triggered manually via workflow_dispatch, OR
+    # - The PR was created by a GitHub Copilot agent and was actually merged
+    if: github.event_name == 'workflow_dispatch' || ((github.event.pull_request.user.login == 'Copilot' || github.event.pull_request.user.login == 'copilot-swe-agent[bot]') && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          # Checkout the merge commit to access the merged changes
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          # For workflow_dispatch: checkout default branch
+          # For pull_request: checkout the merge commit to access the merged changes
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.pull_request.merge_commit_sha }}
       
       - name: Check for running agent tasks
         id: check_running_agents

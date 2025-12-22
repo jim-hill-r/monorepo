@@ -70,7 +70,18 @@ fn test_workflow_trigger_is_pull_request_closed() {
 
     assert!(
         content.contains("pull_request:") && content.contains("types: [closed]"),
-        "Workflow trigger is not configured correctly (should be pull_request closed)"
+        "Workflow trigger is not configured correctly (should include pull_request closed)"
+    );
+}
+
+#[test]
+fn test_workflow_trigger_includes_workflow_dispatch() {
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("workflow_dispatch"),
+        "Workflow should include workflow_dispatch trigger for manual execution from GitHub UI"
     );
 }
 
