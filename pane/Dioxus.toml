@@ -1,0 +1,23 @@
+[application]
+
+[web.app]
+# HTML title tag content
+title = "Pane"
+
+[web.watcher]
+
+[web.resource]
+# Additional CSS style files
+style = []
+# Additional JavaScript files
+script = []
+
+[web.resource.dev]
+# Javascript code file
+# serve: [dev-server] only
+script = []
+
+# Disable wasm-opt to avoid SIGABRT errors during release builds
+# wasm-opt can crash with signal 6 (SIGABRT) on certain builds
+[web.wasm-opt]
+level = 0
