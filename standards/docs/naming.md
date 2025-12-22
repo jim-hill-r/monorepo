@@ -1,0 +1,2 @@
+- All projects MUST be snake_case.
+- All deployments MUST be kebab-case.

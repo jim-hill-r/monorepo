@@ -1,0 +1,1 @@
+Standards for this repository are found in the standards project.

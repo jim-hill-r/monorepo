@@ -1,5 +1,7 @@
-# Standards Project Issues
+# Priority Issues
+- TODO: Create a CLI for standards that audits a repo and add's todos to the relevant projects to fix issues found with standards.
 
+# Other Issues
 ## TODO: Implement Linting Standards
 Define and enforce linting standards across all Rust projects in the monorepo. Consider:
 - Clippy configuration (clippy.toml)
