@@ -11,3 +11,7 @@ auth_sdk = { workspace = true }
 [features]
 default = ["web"]
 web = ["dioxus/web"]
+
+[package.metadata.cast]
+framework = "dioxus"
+deploys = ["cahokia_web_cloudflare"]
