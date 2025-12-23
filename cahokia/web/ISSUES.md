@@ -1,4 +1,7 @@
-TODO: Implement a playwright test that can be run against this project when `dx serve` is serving the app.
+TODO (agent-generated): Set up Node.js project structure for playwright tests (package.json, playwright.config.ts)
+TODO (agent-generated): Create helper script to start/stop `dx serve` programmatically for testing
+TODO (agent-generated): Write basic playwright smoke test that verifies the app loads and displays home page
+TODO (agent-generated): Add playwright tests to cast ci workflow for cahokia/web
 TODO: Implement a playwright test fixture that can run existing playwright tests on the static assets built by `dx bundle`
 TODO: Update cast to support bundle.sh functionality. Should be able to just run `cast publish` to get a bundle for deployment.
 

@@ -32,11 +32,11 @@ fn App() -> Element {
 fn DesktopNavbar() -> Element {
     rsx! {
         Navbar {
-            button { 
+            button {
                 onclick: move |_| {
                     // TODO: Implement desktop authentication when auth_sdk supports desktop platforms
-                }, 
-                "Login" 
+                },
+                "Login"
             }
         }
 
