@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{build, ci, projects, sessions};
+use crate::{build, ci, projects, sessions, test};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -24,6 +24,8 @@ enum Commands {
     Ci,
     /// Run CD (Continuous Deployment)
     Cd,
+    /// Run tests
+    Test,
 }
 
 #[derive(Subcommand)]
@@ -73,6 +75,8 @@ pub enum ExecuteError {
     CiError(#[from] ci::CiError),
     #[error("build error: {0}")]
     BuildError(#[from] build::BuildError),
+    #[error("test error: {0}")]
+    TestError(#[from] test::TestError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -135,6 +139,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             Commands::Build => {
                 build::run(working_directory)?;
                 Ok("Build passed".into())
+            }
+            Commands::Test => {
+                test::run(working_directory)?;
+                Ok("Tests passed".into())
             }
             Commands::Cd => Ok("starting CD".into()),
         }
@@ -292,5 +300,33 @@ mod tests {
 
         let result = execute(Args { cmd: Commands::Cd }, tmp_dir.path()).unwrap();
         assert_eq!(result, "starting CD");
+    }
+
+    #[test]
+    fn it_runs_test() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create a minimal Cargo.toml and src/lib.rs for test to pass
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/lib.rs"),
+            "pub fn test() {}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    fn it_works() {\n        assert_eq!(2 + 2, 4);\n    }\n}",
+        )
+        .unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Test,
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
+        assert_eq!(result, "Tests passed");
     }
 }
