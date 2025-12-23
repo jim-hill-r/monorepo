@@ -19,7 +19,7 @@ This document describes the organization and structure of this monorepo to help 
 ├── agent-copilot/       # Binary for creating GitHub Copilot agent tasks
 │   └── prompts/         # Prompts for GitHub Copilot agents
 ├── base/                # Exemplar project with base configuration
-├── library/             # Exemplar project for libraries
+├── example_rust_library/ # Exemplar project for libraries
 ├── binary/              # Exemplar project for binaries
 ├── [other projects]     # Various projects and applications
 ├── ISSUES.md            # Project-wide TODO and issue tracking
@@ -74,7 +74,7 @@ The `cast` CLI is the primary tool for managing this monorepo:
 
 Projects marked with `exemplar = true` in `Cast.toml` serve as templates:
 - `base/` - Basic project structure
-- `library/` - Rust library template
+- `example_rust_library/` - Rust library template
 - `binary/` - Rust binary/CLI template
 
 When creating a new project, Cast copies exemplar projects in alphabetical order, with later ones overwriting files from earlier ones.
@@ -102,7 +102,7 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 1. **Project structure**: All projects are located in the root directory, not under a "projects/" subdirectory
 2. **Docs location**: The docs folder is in the root directory at `/docs/`
 3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
-4. **Exemplar projects**: Base, library, and binary are templates - don't modify unless necessary
+4. **Exemplar projects**: Base, example_rust_library, and binary are templates - don't modify unless necessary
 5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
 6. **Concurrency**: Only one agent task should run at a time (handled by workflows)
 7. **Cast Tooling**: All projects should have a Cast.toml if it is missing.
