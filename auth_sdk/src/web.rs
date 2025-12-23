@@ -73,7 +73,7 @@ impl AuthProvider for WebAuthProvider {
             pkce_verifier: Some(pkce_verifier),
         })?;
 
-        redirect_browser(&auth_url.to_string())
+        redirect_browser(auth_url.as_ref())
     }
 
     fn logout(&self) -> Result<(), AuthError> {
@@ -101,7 +101,7 @@ fn fetch_code_and_state_from_browser() -> Result<(AuthorizationCode, CsrfTokenSt
     let params = UrlSearchParams::new_with_str(&search).map_err(|_| AuthError::Unknown)?;
     let code = params.get("code").ok_or(AuthError::Unknown)?;
     let state = params.get("state").ok_or(AuthError::Unknown)?;
-    return Ok((AuthorizationCode::new(code), CsrfTokenState::new(state)));
+    Ok((AuthorizationCode::new(code), CsrfTokenState::new(state)))
 }
 
 fn redirect_browser(url: &str) -> Result<(), AuthError> {
@@ -119,9 +119,9 @@ fn store_app_state_in_browser(app_state: &AppState) -> Result<(), AuthError> {
         .map_err(|_| AuthError::Unknown)?
         .ok_or(AuthError::Unknown)?;
     let json = serde_json::to_string(app_state).map_err(|_| AuthError::Unknown)?;
-    Ok(storage
+    storage
         .set_item(DEFAULT_APP_STATE_STORAGE_KEY, &json)
-        .map_err(|_| AuthError::Unknown)?)
+        .map_err(|_| AuthError::Unknown)
 }
 
 fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
