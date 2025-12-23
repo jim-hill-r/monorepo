@@ -28,10 +28,7 @@ test.describe('Cahokia Web Application', () => {
     await page.goto('/');
     
     // Check that basic HTML structure exists
-    const html = await page.locator('html');
-    expect(await html.isVisible()).toBe(true);
-    
-    const body = await page.locator('body');
-    expect(await body.isVisible()).toBe(true);
+    await expect(page.locator('html')).toBeVisible();
+    await expect(page.locator('body')).toBeVisible();
   });
 });
