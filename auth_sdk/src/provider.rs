@@ -54,4 +54,9 @@ impl AccessToken {
     pub fn new(value: String) -> AccessToken {
         AccessToken(value)
     }
+
+    /// Returns the secret access token string.
+    pub fn secret(&self) -> &str {
+        &self.0
+    }
 }
