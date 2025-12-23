@@ -21,7 +21,7 @@ test.describe('Cahokia Web Application', () => {
     
     // Basic check that the page loaded
     // TODO: Replace with actual selectors from your app
-    expect(await page.title()).toBeTruthy();
+    await expect(page).toHaveTitle(/.+/);
   });
 
   test('should have a valid HTML structure', async ({ page }) => {
