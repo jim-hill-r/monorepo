@@ -32,11 +32,11 @@ fn App() -> Element {
 fn MobileNavbar() -> Element {
     rsx! {
         Navbar {
-            button { 
+            button {
                 onclick: move |_| {
                     // TODO: Implement mobile authentication when auth_sdk supports mobile platforms
-                }, 
-                "Login" 
+                },
+                "Login"
             }
         }
 
