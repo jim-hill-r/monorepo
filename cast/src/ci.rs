@@ -1,4 +1,5 @@
 use crate::build;
+use crate::test;
 use crate::utils::format_cargo_output;
 use std::path::Path;
 use std::process::Command;
@@ -13,7 +14,7 @@ pub enum CiError {
     #[error("Cargo build failed: {0}")]
     BuildError(#[from] build::BuildError),
     #[error("Cargo test failed: {0}")]
-    TestError(String),
+    TestError(#[from] test::TestError),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 }
@@ -23,7 +24,7 @@ pub enum CiError {
 /// 1. cargo fmt --check
 /// 2. cargo clippy -- -D warnings
 /// 3. cast build (cargo build)
-/// 4. cargo test
+/// 4. cast test (cargo test)
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
 
@@ -36,8 +37,8 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     // Run cast build
     build::run(working_directory)?;
 
-    // Run cargo test
-    run_test(working_directory)?;
+    // Run cast test
+    test::run(working_directory)?;
 
     Ok(())
 }
@@ -72,19 +73,6 @@ fn run_clippy(working_directory: &Path) -> Result<(), CiError> {
     Ok(())
 }
 
-fn run_test(working_directory: &Path) -> Result<(), CiError> {
-    let output = Command::new("cargo")
-        .arg("test")
-        .current_dir(working_directory)
-        .output()?;
-
-    if !output.status.success() {
-        return Err(CiError::TestError(format_cargo_output(&output)));
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,27 +100,6 @@ mod tests {
         fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
 
         let result = run_fmt_check(tmp_dir.path());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_run_test_passes_with_valid_tests() {
-        let tmp_dir = TempDir::new("test_test").unwrap();
-
-        // Create a simple Cargo project with a test
-        fs::write(
-            tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
-        )
-        .unwrap();
-        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
-        fs::write(
-            tmp_dir.path().join("src/lib.rs"),
-            "pub fn add(a: i32, b: i32) -> i32 { a + b }\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    #[test]\n    fn test_add() {\n        assert_eq!(add(1, 2), 3);\n    }\n}",
-        )
-        .unwrap();
-
-        let result = run_test(tmp_dir.path());
         assert!(result.is_ok());
     }
 }
