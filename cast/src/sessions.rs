@@ -25,7 +25,7 @@ impl fmt::Display for SessionEntry {
         } else {
             String::new()
         };
-        write!(f, "{},{:?}{}", self.timestamp, self.kind, postfix)
+        write!(f, "{},{}{}", self.timestamp, self.kind, postfix)
     }
 }
 
@@ -40,12 +40,22 @@ impl SessionEntry {
     }
 }
 
-#[derive(Debug)] // TODO: Properly implement display trait
+#[derive(Debug)]
 #[allow(dead_code)] // Pause and Stop variants are not yet implemented
 enum SessionEntryKind {
     Start,
     Pause,
     Stop,
+}
+
+impl fmt::Display for SessionEntryKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SessionEntryKind::Start => write!(f, "Start"),
+            SessionEntryKind::Pause => write!(f, "Pause"),
+            SessionEntryKind::Stop => write!(f, "Stop"),
+        }
+    }
 }
 
 #[derive(Error, Debug)]
@@ -157,5 +167,23 @@ mod tests {
             entry.to_string(),
             format!("2025-01-01 12:00:00 UTC,Start,{}", TEST_NAME)
         )
+    }
+
+    #[test]
+    fn session_entry_kind_start_displays_correctly() {
+        let kind = SessionEntryKind::Start;
+        assert_eq!(kind.to_string(), "Start");
+    }
+
+    #[test]
+    fn session_entry_kind_pause_displays_correctly() {
+        let kind = SessionEntryKind::Pause;
+        assert_eq!(kind.to_string(), "Pause");
+    }
+
+    #[test]
+    fn session_entry_kind_stop_displays_correctly() {
+        let kind = SessionEntryKind::Stop;
+        assert_eq!(kind.to_string(), "Stop");
     }
 }
