@@ -1,3 +1,4 @@
 - All projects MUST be snake_case.
+- All projects MUST have the same directory name as their Cargo package name.
 - All deployments MUST be kebab-case.
 - All Proof of Concept projects must begin with poc (ie: poc_project_name)
