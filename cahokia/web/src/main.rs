@@ -1,4 +1,4 @@
-use auth_sdk::provider::{AuthProvider, ProviderConfig};
+use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
 use dioxus::prelude::*;
@@ -37,7 +37,6 @@ fn App() -> Element {
             redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
         })
         .await
-        .unwrap() // TODO: Handle this better
     });
     use_context_provider(|| auth);
 
@@ -57,14 +56,26 @@ fn App() -> Element {
 
 #[component]
 fn WebNavbar() -> Element {
-    let auth = use_context::<Resource<WebAuthProvider>>().cloned();
+    let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
+    let auth_state = auth.read();
     rsx! {
         Navbar {
-            match auth {
-                Some(provider) => rsx! {
-                    button { onclick: move |_| provider.login().unwrap(), "Login" }
+            match &*auth_state {
+                Some(Ok(provider)) => {
+                    let provider = provider.clone();
+                    rsx! {
+                        button { onclick: move |_| provider.login().unwrap(), "Login" }
+                    }
                 },
-                None => rsx! {},
+                Some(Err(err)) => rsx! {
+                    div {
+                        class: "error",
+                        "Authentication Error: {err}"
+                    }
+                },
+                None => rsx! {
+                    div { "Loading authentication..." }
+                },
             }
         }
 
