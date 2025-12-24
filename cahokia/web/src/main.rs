@@ -4,10 +4,10 @@ use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 use dioxus::prelude::*;
 
 use ui::Navbar;
-use views::home::Home;
 use views::about::About;
-use views::history::History;
 use views::explore::Explore;
+use views::history::History;
+use views::home::Home;
 
 mod views;
 
