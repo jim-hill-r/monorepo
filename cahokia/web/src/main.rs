@@ -5,6 +5,9 @@ use dioxus::prelude::*;
 
 use ui::Navbar;
 use views::home::Home;
+use views::about::About;
+use views::history::History;
+use views::explore::Explore;
 
 mod views;
 
@@ -18,10 +21,17 @@ enum Route {
     #[layout(WebNavbar)]
     #[route("/")]
     Home {},
+    #[route("/about")]
+    About {},
+    #[route("/history")]
+    History {},
+    #[route("/explore")]
+    Explore {},
 }
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 
 fn main() {
     dioxus::launch(App);
@@ -49,6 +59,7 @@ fn App() -> Element {
         }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
+        document::Link { rel: "stylesheet", href: HEADER_CSS }
 
         Router::<Route> {}
     }
@@ -59,6 +70,22 @@ fn WebNavbar() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
     let auth_state = auth.read();
     rsx! {
+        // Header bar with Cahokia title and navigation links
+        div {
+            id: "header",
+            div {
+                class: "header-title",
+                h1 { "Cahokia" }
+            }
+            nav {
+                class: "header-nav",
+                Link { to: Route::Home {}, "Home" }
+                Link { to: Route::About {}, "About" }
+                Link { to: Route::History {}, "History" }
+                Link { to: Route::Explore {}, "Explore" }
+            }
+        }
+
         Navbar {
             match &*auth_state {
                 Some(Ok(provider)) => {
