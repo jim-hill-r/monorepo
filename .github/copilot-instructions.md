@@ -1,5 +1,10 @@
 Standards for this repository are found in the standards project.
 
+## Branching Requirements
+All branches should have unique names to prevent collisions.
+
+- Include a timestamp in the branch name.
+
 ## Testing Requirements
 
 All code changes require appropriate tests:
