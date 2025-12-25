@@ -4,32 +4,49 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(180deg, #5a4a3a 0%, #3d2f1f 100%);
 }
 
 #links {
   width: 400px;
   text-align: left;
   font-size: x-large;
-  color: white;
+  color: #f5e6d3;
   display: flex;
   flex-direction: column;
 }
 
 #links a {
-  color: white;
+  color: #f5e6d3;
   text-decoration: none;
   margin-top: 20px;
   margin: 10px 0px;
-  border: white 1px solid;
+  border: #d4a574 1px solid;
   border-radius: 5px;
   padding: 10px;
 }
 
 #links a:hover {
-  background-color: #1f1f1f;
+  background-color: #654321;
   cursor: pointer;
 }
 
 #header {
   max-width: 1200px;
+}
+
+/* Hero headings with earthy colors */
+#hero h1 {
+  color: #d4a574;
+  font-size: 3rem;
+  margin: 0.5rem 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#hero h2 {
+  color: #c9b896;
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+  font-weight: 300;
 }
