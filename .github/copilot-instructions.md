@@ -13,6 +13,15 @@ All code changes require appropriate tests:
    - Run tests with `npm test` after starting the dev server (`dx serve --port 8080`)
    - See existing test files for examples of patterns and best practices
 
+## UI Changes Documentation
+
+All UI changes must include visual documentation:
+1. **Screenshots**: Always include screenshots of UI changes in the PR description
+   - Take full-page screenshots showing the before and after states when possible
+   - Capture screenshots that clearly demonstrate the visual changes
+   - Include screenshots in commit messages or PR descriptions
+   - Use the playwright browser tools to take screenshots when the dev server is running
+
 ## Task Completion Requirements
 
 Before finishing any task that involves code changes:
