@@ -70,7 +70,7 @@ To convert an existing test file to use the SSG fixture:
 
 ### SSGServerConfig
 
-- **port** (number, optional): Port for the test server. Default: `8090 + workerIndex` (automatically assigns different ports for parallel workers)
+- **port** (number, optional): Base port for the test server. Each parallel worker will use `port + workerIndex` to avoid conflicts (e.g., if port is 9000, worker 0 uses 9000, worker 1 uses 9001, etc.). Default: `8090`
 - **bundleTimeout** (number, optional): Timeout for bundle creation in milliseconds. Default: `600000` (10 minutes)
 - **skipBundle** (boolean, optional): Whether to skip bundle creation and use existing bundle. Default: `false`
 
@@ -78,7 +78,7 @@ To convert an existing test file to use the SSG fixture:
 
 ```typescript
 const test = createSSGWorkerFixture({
-  port: 9000,
+  port: 9000, // Worker 0 will use 9000, worker 1 will use 9001, etc.
   bundleTimeout: 300000, // 5 minutes
   skipBundle: false,
 });
@@ -114,11 +114,15 @@ The fixture supports parallel test execution:
 # Run tests in parallel (Playwright default)
 npm test -- example-ssg.spec.ts
 
-# Each worker gets its own server on a different port
-# Worker 0: port 8090
-# Worker 1: port 8091
-# Worker 2: port 8092
-# etc.
+# Each worker gets its own server on a different port (port + workerIndex)
+# With default port (8090):
+#   Worker 0: port 8090
+#   Worker 1: port 8091
+#   Worker 2: port 8092
+# With custom port (e.g., 9000):
+#   Worker 0: port 9000
+#   Worker 1: port 9001
+#   Worker 2: port 9002
 ```
 
 ## Prerequisites

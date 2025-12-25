@@ -18,7 +18,11 @@ const DEFAULT_SSG_SERVER_PORT = 8090;
  * Configuration for SSG Bundle Testing
  */
 export interface SSGServerConfig {
-  /** Port for the test server. Defaults to 8090. */
+  /** 
+   * Base port for the test server. 
+   * Each worker will use port + workerIndex (e.g., worker 0 uses port, worker 1 uses port+1).
+   * Defaults to 8090 if not specified.
+   */
   port?: number;
   /** Timeout for bundle creation in milliseconds. Defaults to 600000 (10 minutes). */
   bundleTimeout?: number;
@@ -50,18 +54,12 @@ function isPathSafe(requestedPath: string, baseDirectory: string): boolean {
   const resolvedBase = path.resolve(baseDirectory);
   const resolvedPath = path.resolve(requestedPath);
   
-  // Special case: if the resolved path equals the base directory, it's safe
-  if (resolvedPath === resolvedBase) {
-    return true;
-  }
-  
   // Get the relative path from base to resolved
   const relativePath = path.relative(resolvedBase, resolvedPath);
   
-  // If the relative path starts with '..' or is an absolute path, it's outside the base directory
-  return relativePath !== '' && 
-         !relativePath.startsWith('..') && 
-         !path.isAbsolute(relativePath);
+  // Safe if: relative path is empty (same as base) OR doesn't escape the base directory
+  // Unsafe if: relative path starts with '..' (goes up) or is absolute (completely outside)
+  return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
 }
 
 // Helper function to serve a file with appropriate content type
@@ -210,10 +208,17 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     console.log('Bundle creation completed');
     return bundleOutputDir;
   } catch (error) {
-    const err = error as Error & { stdout?: string; stderr?: string };
+    const err = error as Error;
     console.error('Failed to create SSG bundle:', err.message);
-    if (err.stdout) console.log('stdout:', err.stdout);
-    if (err.stderr) console.log('stderr:', err.stderr);
+    
+    // Check if this is an exec error with stdout/stderr properties
+    if ('stdout' in err && typeof err.stdout === 'string') {
+      console.log('stdout:', err.stdout);
+    }
+    if ('stderr' in err && typeof err.stderr === 'string') {
+      console.log('stderr:', err.stderr);
+    }
+    
     throw err;
   }
 }
