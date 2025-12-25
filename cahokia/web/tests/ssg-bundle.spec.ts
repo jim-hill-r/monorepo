@@ -33,11 +33,15 @@ test.describe('SSG Bundle Functionality', () => {
   function createStaticServer(directory: string, port: number): Promise<http.Server> {
     return new Promise((resolve, reject) => {
       const server = http.createServer((req, res) => {
-        // Default to index.html for directory requests
-        let filePath = path.join(directory, req.url === '/' ? 'index.html' : req.url!);
+        // Decode and normalize the URL to handle encoded characters
+        const requestPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url!);
         
-        // Security: prevent directory traversal
-        if (!filePath.startsWith(directory)) {
+        // Resolve and normalize paths for security
+        const resolvedDirectory = path.resolve(directory);
+        const filePath = path.resolve(path.join(resolvedDirectory, requestPath));
+        
+        // Security: prevent directory traversal with proper path resolution
+        if (!filePath.startsWith(resolvedDirectory + path.sep) && filePath !== resolvedDirectory) {
           res.writeHead(403);
           res.end('Forbidden');
           return;
@@ -48,13 +52,19 @@ test.describe('SSG Bundle Functionality', () => {
           if (err) {
             // If file not found and it's not index.html, try adding .html extension
             if (err.code === 'ENOENT' && !filePath.endsWith('.html') && !filePath.includes('.')) {
-              filePath = filePath + '.html';
-              fs.readFile(filePath, (err2, data2) => {
+              const htmlFilePath = filePath + '.html';
+              // Verify the .html path is still within the directory
+              if (!htmlFilePath.startsWith(resolvedDirectory + path.sep) && htmlFilePath !== resolvedDirectory) {
+                res.writeHead(403);
+                res.end('Forbidden');
+                return;
+              }
+              fs.readFile(htmlFilePath, (err2, data2) => {
                 if (err2) {
                   res.writeHead(404);
                   res.end('Not Found');
                 } else {
-                  serveFile(filePath, data2, res);
+                  serveFile(htmlFilePath, data2, res);
                 }
               });
             } else {
@@ -273,6 +283,13 @@ test.describe('SSG Bundle Functionality', () => {
     // This test verifies that the SSG bundle is truly static and doesn't
     // require server-side rendering or dynamic backend functionality
     
+    // Threshold for acceptable console errors in static mode
+    // Set to 3 to allow for expected errors like:
+    // - Authentication provider failures (expected in static mode)
+    // - Missing environment-specific configuration
+    // - Non-critical resource warnings
+    const MAX_ACCEPTABLE_ERRORS = 3;
+    
     await page.goto(`http://localhost:${testPort}/`);
     await page.waitForLoadState('networkidle');
     
@@ -303,7 +320,7 @@ test.describe('SSG Bundle Functionality', () => {
     );
     
     // Some errors might be expected (like auth provider issues in static mode)
-    // but asset loading errors should not occur
-    expect(criticalErrors.length).toBeLessThan(5);
+    // but asset loading errors should be minimal
+    expect(criticalErrors.length).toBeLessThanOrEqual(MAX_ACCEPTABLE_ERRORS);
   });
 });
