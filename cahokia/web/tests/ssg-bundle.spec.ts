@@ -28,7 +28,7 @@ test.describe('SSG Bundle Functionality', () => {
   const bundleOutputDir = path.join(__dirname, '..', '..', 'target', 'dx', 'web', 'release', 'web', 'public');
   
   // Configuration constants
-  const TEST_SERVER_PORT = 8090; // Port for the test static server. Note: Consider dynamic allocation if running tests in parallel
+  const TEST_SERVER_PORT = 8090; // Static port for test server. TODO: Consider dynamic port allocation if tests need to run in parallel
   const BUNDLE_TIMEOUT_MS = 600000; // 10 minutes - SSG bundle creation is compute-intensive and can take several minutes
   const MAX_ACCEPTABLE_CONSOLE_ERRORS = 3; // Expected errors in static mode: auth failures, missing env config, non-critical warnings
   
@@ -47,9 +47,16 @@ test.describe('SSG Bundle Functionality', () => {
       const server = http.createServer((req, res) => {
         let requestPath: string;
         
+        // Ensure req.url exists
+        if (!req.url) {
+          res.writeHead(400);
+          res.end('Bad Request: Missing URL');
+          return;
+        }
+        
         // Decode the URL, handling potential malformed URIs
         try {
-          requestPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url!);
+          requestPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url);
         } catch (err) {
           // If URL decoding fails, reject the request
           res.writeHead(400);
@@ -73,7 +80,7 @@ test.describe('SSG Bundle Functionality', () => {
           if (err) {
             // If file not found and it's not index.html, try adding .html extension
             if (err.code === 'ENOENT' && !filePath.endsWith('.html') && !filePath.includes('.')) {
-              const htmlFilePath = filePath + '.html';
+              const htmlFilePath = path.join(path.dirname(filePath), path.basename(filePath) + '.html');
               // Verify the .html path is still within the directory
               if (!isPathSafe(htmlFilePath, resolvedDirectory)) {
                 res.writeHead(403);
