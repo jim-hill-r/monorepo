@@ -7,6 +7,13 @@ import * as path from 'path';
 
 const execAsync = promisify(exec);
 
+// Default timeout for SSG bundle creation (10 minutes)
+// Bundle creation is compute-intensive and can take several minutes
+const DEFAULT_BUNDLE_TIMEOUT_MS = 600000;
+
+// Default base port for SSG test servers
+const DEFAULT_SSG_SERVER_PORT = 8090;
+
 /**
  * Configuration for SSG Bundle Testing
  */
@@ -38,10 +45,23 @@ export interface SSGServerConfig {
  */
 
 // Helper function to validate path is within allowed directory
+// Uses path.relative to ensure the resolved path doesn't escape the base directory
 function isPathSafe(requestedPath: string, baseDirectory: string): boolean {
   const resolvedBase = path.resolve(baseDirectory);
   const resolvedPath = path.resolve(requestedPath);
-  return resolvedPath.startsWith(resolvedBase + path.sep) || resolvedPath === resolvedBase;
+  
+  // Special case: if the resolved path equals the base directory, it's safe
+  if (resolvedPath === resolvedBase) {
+    return true;
+  }
+  
+  // Get the relative path from base to resolved
+  const relativePath = path.relative(resolvedBase, resolvedPath);
+  
+  // If the relative path starts with '..' or is an absolute path, it's outside the base directory
+  return relativePath !== '' && 
+         !relativePath.startsWith('..') && 
+         !path.isAbsolute(relativePath);
 }
 
 // Helper function to serve a file with appropriate content type
@@ -144,7 +164,7 @@ function createStaticServer(directory: string, port: number): Promise<http.Serve
  * Build the SSG bundle using `dx bundle --platform web --ssg`
  */
 async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
-  const bundleTimeout = config.bundleTimeout || 600000; // 10 minutes default
+  const bundleTimeout = config.bundleTimeout || DEFAULT_BUNDLE_TIMEOUT_MS;
   const bundleOutputDir = path.join(
     __dirname,
     '..',
@@ -189,11 +209,12 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     
     console.log('Bundle creation completed');
     return bundleOutputDir;
-  } catch (error: any) {
-    console.error('Failed to create SSG bundle:', error.message);
-    if (error.stdout) console.log('stdout:', error.stdout);
-    if (error.stderr) console.log('stderr:', error.stderr);
-    throw error;
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string };
+    console.error('Failed to create SSG bundle:', err.message);
+    if (err.stdout) console.log('stdout:', err.stdout);
+    if (err.stderr) console.log('stderr:', err.stderr);
+    throw err;
   }
 }
 
@@ -206,7 +227,7 @@ export const test = base.extend<{
   /** The base URL for the SSG server */
   ssgBaseURL: string;
 }>({
-  ssgPort: [8090, { option: true }],
+  ssgPort: [DEFAULT_SSG_SERVER_PORT, { option: true }],
   
   ssgBaseURL: async ({ ssgPort }, use) => {
     await use(`http://localhost:${ssgPort}`);
@@ -252,7 +273,11 @@ export function createSSGWorkerFixture(config: SSGServerConfig = {}) {
 
     _ssgServer: [
       async ({ _ssgBundleDir }, use, workerInfo) => {
-        const port = config.port || 8090 + workerInfo.workerIndex;
+        // If a custom port is provided, only the first worker can use it
+        // Other workers must use the base port + worker index to avoid conflicts
+        const port = config.port !== undefined 
+          ? config.port + workerInfo.workerIndex
+          : DEFAULT_SSG_SERVER_PORT + workerInfo.workerIndex;
         console.log(`Worker ${workerInfo.workerIndex}: Starting SSG server on port ${port}...`);
         
         const server = await createStaticServer(_ssgBundleDir, port);
@@ -271,7 +296,9 @@ export function createSSGWorkerFixture(config: SSGServerConfig = {}) {
 
     // Test-scoped fixtures that provide values to each test
     ssgPort: async ({}, use, workerInfo) => {
-      const port = config.port || 8090 + workerInfo.workerIndex;
+      const port = config.port !== undefined
+        ? config.port + workerInfo.workerIndex
+        : DEFAULT_SSG_SERVER_PORT + workerInfo.workerIndex;
       await use(port);
     },
 
