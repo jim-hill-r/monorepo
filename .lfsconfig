@@ -1,0 +1,21 @@
+# Git LFS Configuration
+# 
+# This configuration prevents automatic download of LFS files during clone/pull operations.
+# LFS files are only downloaded when explicitly requested by the user.
+#
+# To download all LFS files:
+#   git lfs fetch --all
+#   git lfs checkout
+#
+# To download specific files:
+#   git lfs fetch --include="path/to/file.pdf"
+#   git lfs checkout "path/to/file.pdf"
+#
+# To download files matching a pattern:
+#   git lfs fetch --include="*.pdf"
+#   git lfs checkout
+
+[lfs]
+	# Exclude all files from automatic fetch during clone/pull
+	# This prevents large binary files from being downloaded unless explicitly requested
+	fetchexclude = *
