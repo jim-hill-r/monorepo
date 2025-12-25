@@ -177,6 +177,10 @@ framework = "dioxus"
 # List of projects that are used to deploy this project
 # Optional: defaults to None if not specified
 deploys = ["deploy-project-1", "deploy-project-2"]
+
+# The type of project (e.g., "static_website", "web_app", "iac", "library", "binary")
+# Optional: defaults to None if not specified
+project_type = "static_website"
 ```
 
 **Option 2: Cargo.toml with [package.metadata.cast] section**
@@ -192,6 +196,7 @@ exemplar = true
 proof_of_concept = false
 framework = "dioxus"
 deploys = ["deploy-project-1", "deploy-project-2"]
+project_type = "static_website"
 ```
 
 ### Loading Configuration in Code
@@ -224,5 +229,10 @@ if let Some(framework) = config.framework {
 // Check deploy projects
 if let Some(deploys) = config.deploys {
     println!("Deploy projects: {:?}", deploys);
+}
+
+// Check project type
+if let Some(project_type) = config.project_type {
+    println!("Project type: {}", project_type);
 }
 ```
