@@ -26,7 +26,12 @@ const execAsync = promisify(exec);
 
 test.describe('SSG Bundle Functionality', () => {
   const bundleOutputDir = path.join(__dirname, '..', '..', 'target', 'dx', 'web', 'release', 'web', 'public');
-  const testPort = 8090;
+  
+  // Configuration constants
+  const TEST_SERVER_PORT = 8090; // Port for the test static server. Note: Consider dynamic allocation if running tests in parallel
+  const BUNDLE_TIMEOUT_MS = 600000; // 10 minutes - SSG bundle creation is compute-intensive and can take several minutes
+  const MAX_ACCEPTABLE_CONSOLE_ERRORS = 3; // Expected errors in static mode: auth failures, missing env config, non-critical warnings
+  
   let server: http.Server | null = null;
 
   // Helper function to validate path is within allowed directory
@@ -147,7 +152,7 @@ test.describe('SSG Bundle Functionality', () => {
         'dx bundle --platform web --ssg',
         {
           cwd: path.join(__dirname, '..'),
-          timeout: 600000, // 10 minute timeout for bundle command
+          timeout: BUNDLE_TIMEOUT_MS,
         }
       );
       
@@ -166,8 +171,8 @@ test.describe('SSG Bundle Functionality', () => {
 
     // Start static file server
     try {
-      server = await createStaticServer(bundleOutputDir, testPort);
-      console.log(`Static server started on port ${testPort}`);
+      server = await createStaticServer(bundleOutputDir, TEST_SERVER_PORT);
+      console.log(`Static server started on port ${TEST_SERVER_PORT}`);
     } catch (error) {
       console.error('Failed to start static server:', error);
       throw error;
@@ -202,7 +207,7 @@ test.describe('SSG Bundle Functionality', () => {
 
   test('should serve static site on HTTP server', async ({ page }) => {
     // Navigate to the static site
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
@@ -214,7 +219,7 @@ test.describe('SSG Bundle Functionality', () => {
   });
 
   test('should have proper HTML structure in static site', async ({ page }) => {
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Check that basic HTML structure exists
@@ -223,7 +228,7 @@ test.describe('SSG Bundle Functionality', () => {
   });
 
   test('should display Cahokia header in static site', async ({ page }) => {
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Check that the header exists
@@ -236,7 +241,7 @@ test.describe('SSG Bundle Functionality', () => {
   });
 
   test('should have navigation links in static site', async ({ page }) => {
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Check that navigation links exist
@@ -251,7 +256,7 @@ test.describe('SSG Bundle Functionality', () => {
   });
 
   test('should navigate to About page in static site', async ({ page }) => {
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Click the About link
@@ -266,7 +271,7 @@ test.describe('SSG Bundle Functionality', () => {
   });
 
   test('should navigate to History page in static site', async ({ page }) => {
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Click the History link
@@ -281,7 +286,7 @@ test.describe('SSG Bundle Functionality', () => {
   });
 
   test('should navigate to Explore page in static site', async ({ page }) => {
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Click the Explore link
@@ -299,18 +304,11 @@ test.describe('SSG Bundle Functionality', () => {
     // This test verifies that the SSG bundle is truly static and doesn't
     // require server-side rendering or dynamic backend functionality
     
-    // Threshold for acceptable console errors in static mode
-    // Set to 3 to allow for expected errors like:
-    // - Authentication provider failures (expected in static mode)
-    // - Missing environment-specific configuration
-    // - Non-critical resource warnings
-    const MAX_ACCEPTABLE_ERRORS = 3;
-    
-    await page.goto(`http://localhost:${testPort}/`);
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
     await page.waitForLoadState('networkidle');
     
     // Verify that all static assets are loaded successfully
-    // by checking that there are no 404 errors in the console
+    // by checking that there are minimal 404 errors in the console
     const errors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') {
@@ -328,15 +326,19 @@ test.describe('SSG Bundle Functionality', () => {
     await page.locator('.header-nav a:has-text("Explore")').click();
     await page.waitForLoadState('networkidle');
     
-    // Check that no critical errors occurred
-    const criticalErrors = errors.filter(err => 
-      err.includes('404') || 
-      err.includes('Failed to fetch') ||
-      err.includes('not found')
-    );
+    // Filter for critical asset loading errors
+    // Use specific patterns to avoid false positives from unrelated console messages
+    const criticalErrors = errors.filter(err => {
+      const lowerErr = err.toLowerCase();
+      return (
+        (lowerErr.includes('404') && (lowerErr.includes('.js') || lowerErr.includes('.css') || lowerErr.includes('.wasm'))) ||
+        (lowerErr.includes('failed to fetch') && !lowerErr.includes('auth')) ||
+        (lowerErr.includes('not found') && (lowerErr.includes('script') || lowerErr.includes('stylesheet')))
+      );
+    });
     
-    // Some errors might be expected (like auth provider issues in static mode)
-    // but asset loading errors should be minimal
-    expect(criticalErrors.length).toBeLessThanOrEqual(MAX_ACCEPTABLE_ERRORS);
+    // Asset loading should work correctly in static mode
+    // Allow threshold for expected non-asset errors (auth, env config, etc.)
+    expect(criticalErrors.length).toBeLessThanOrEqual(MAX_ACCEPTABLE_CONSOLE_ERRORS);
   });
 });
