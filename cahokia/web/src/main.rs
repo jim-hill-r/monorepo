@@ -3,7 +3,7 @@ use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
 use dioxus::prelude::*;
 
-use ui::Navbar;
+use ui::{Navbar, Sidebar};
 use views::about::About;
 use views::explore::Explore;
 use views::history::History;
@@ -69,6 +69,8 @@ fn App() -> Element {
 fn WebNavbar() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
     let auth_state = auth.read();
+    let mut sidebar_open = use_signal(|| false);
+
     rsx! {
         // Header bar with Cahokia title and navigation links
         div {
@@ -83,6 +85,11 @@ fn WebNavbar() -> Element {
                 Link { to: Route::About {}, "About" }
                 Link { to: Route::History {}, "History" }
                 Link { to: Route::Explore {}, "Explore" }
+                button {
+                    class: "sidebar-toggle",
+                    onclick: move |_| sidebar_open.set(!sidebar_open()),
+                    "☰"
+                }
             }
         }
 
@@ -103,6 +110,16 @@ fn WebNavbar() -> Element {
                 None => rsx! {
                     div { "Loading authentication..." }
                 },
+            }
+        }
+
+        Sidebar {
+            is_open: sidebar_open,
+            h2 { "Controls" }
+            p { "Future controls will be added here." }
+            button {
+                onclick: move |_| sidebar_open.set(false),
+                "Close"
             }
         }
 

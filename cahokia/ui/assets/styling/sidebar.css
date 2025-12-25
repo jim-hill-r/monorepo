@@ -1,0 +1,72 @@
+#sidebar {
+  position: fixed;
+  top: 0;
+  right: -300px; /* Start hidden off-screen to the right */
+  width: 300px;
+  height: 100vh;
+  background-color: #654321; /* Dark earthy brown */
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.5);
+  transition: right 0.3s ease-in-out;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+#sidebar.open {
+  right: 0; /* Slide in to visible position */
+}
+
+.sidebar-content {
+  padding: 2rem 1.5rem;
+  color: #f5e6d3; /* Light earthy cream color */
+}
+
+.sidebar-content h2 {
+  color: #f5e6d3;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  border-bottom: 2px solid #8b7355;
+  padding-bottom: 0.5rem;
+}
+
+.sidebar-content ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-content li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #8b7355;
+}
+
+.sidebar-content li:last-child {
+  border-bottom: none;
+}
+
+.sidebar-content a {
+  color: #f5e6d3;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.sidebar-content a:hover {
+  color: #ffffff;
+}
+
+.sidebar-content button {
+  background-color: #8b7355;
+  color: #f5e6d3;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.sidebar-content button:hover {
+  background-color: #a0826d;
+}
