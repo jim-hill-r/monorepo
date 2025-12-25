@@ -29,19 +29,35 @@ test.describe('SSG Bundle Functionality', () => {
   const testPort = 8090;
   let server: http.Server | null = null;
 
+  // Helper function to validate path is within allowed directory
+  function isPathSafe(requestedPath: string, baseDirectory: string): boolean {
+    const resolvedBase = path.resolve(baseDirectory);
+    const resolvedPath = path.resolve(requestedPath);
+    return resolvedPath.startsWith(resolvedBase + path.sep) || resolvedPath === resolvedBase;
+  }
+
   // Helper function to create a simple static file server
   function createStaticServer(directory: string, port: number): Promise<http.Server> {
     return new Promise((resolve, reject) => {
       const server = http.createServer((req, res) => {
-        // Decode and normalize the URL to handle encoded characters
-        const requestPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url!);
+        let requestPath: string;
+        
+        // Decode the URL, handling potential malformed URIs
+        try {
+          requestPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url!);
+        } catch (err) {
+          // If URL decoding fails, reject the request
+          res.writeHead(400);
+          res.end('Bad Request: Malformed URL');
+          return;
+        }
         
         // Resolve and normalize paths for security
         const resolvedDirectory = path.resolve(directory);
         const filePath = path.resolve(path.join(resolvedDirectory, requestPath));
         
         // Security: prevent directory traversal with proper path resolution
-        if (!filePath.startsWith(resolvedDirectory + path.sep) && filePath !== resolvedDirectory) {
+        if (!isPathSafe(filePath, resolvedDirectory)) {
           res.writeHead(403);
           res.end('Forbidden');
           return;
@@ -54,7 +70,7 @@ test.describe('SSG Bundle Functionality', () => {
             if (err.code === 'ENOENT' && !filePath.endsWith('.html') && !filePath.includes('.')) {
               const htmlFilePath = filePath + '.html';
               // Verify the .html path is still within the directory
-              if (!htmlFilePath.startsWith(resolvedDirectory + path.sep) && htmlFilePath !== resolvedDirectory) {
+              if (!isPathSafe(htmlFilePath, resolvedDirectory)) {
                 res.writeHead(403);
                 res.end('Forbidden');
                 return;
