@@ -37,3 +37,19 @@
   color: #ffffff;
   cursor: pointer;
 }
+
+.sidebar-toggle {
+  background-color: #654321;
+  color: #f5e6d3;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 1rem;
+}
+
+.sidebar-toggle:hover {
+  background-color: #8b7355;
+}
