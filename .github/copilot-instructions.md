@@ -12,6 +12,7 @@ All code changes require appropriate tests:
    - Tests should verify user interactions, navigation, and visual elements
    - Run tests with `npm test` after starting the dev server (`dx serve --port 8080`)
    - See existing test files for examples of patterns and best practices
+   - **SSG Bundle Tests**: Tests that validate static site generation (like `ssg-bundle.spec.ts`) do not require a dev server - they create and test their own static site. These tests require the `dx` CLI to be installed (`cargo install dioxus-cli`)
 
 ## UI Changes Documentation
 
