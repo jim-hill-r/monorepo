@@ -6,6 +6,7 @@ This directory contains end-to-end tests for the Cahokia web application using P
 
 - Node.js 18 or higher
 - npm
+- Dioxus CLI (`dx`) - Required for SSG bundle tests: `cargo install dioxus-cli`
 
 ## Setup
 
@@ -23,9 +24,9 @@ npx playwright install --with-deps chromium
 
 ## Running Tests
 
-### Start the Development Server
+### Standard Tests (Require Dev Server)
 
-Before running tests, you need to start the Dioxus development server:
+Before running most tests, you need to start the Dioxus development server:
 
 ```bash
 # From the cahokia/web directory
@@ -49,6 +50,23 @@ npm run test:ui
 
 # Show test report
 npm run test:report
+
+# Run specific test file (e.g., SSG bundle test)
+npm test -- ssg-bundle.spec.ts
+```
+
+### SSG Bundle Test
+
+The `ssg-bundle.spec.ts` test is special - it validates Static Site Generation (SSG) functionality:
+
+- **Does NOT require dev server** - It creates its own static site and server
+- **Requires `dx` CLI** - Must have `dioxus-cli` installed
+- **Takes longer** - Bundle creation can take several minutes on first run
+- **Tests**: Verifies `dx bundle --platform web --ssg` works and produces a functional static site
+
+To run only the SSG test:
+```bash
+npm test -- ssg-bundle.spec.ts
 ```
 
 ## Writing Tests

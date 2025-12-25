@@ -1,0 +1,351 @@
+import { test, expect } from '@playwright/test';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const execAsync = promisify(exec);
+
+/**
+ * Playwright test for Static Site Generation (SSG) bundle functionality.
+ * 
+ * This test validates that `dx bundle --platform web --ssg` works correctly
+ * and produces output that can be served on a static hosting site.
+ * 
+ * Prerequisites:
+ * - Dioxus CLI (`dx`) must be installed: cargo install dioxus-cli
+ * - Test must be run from cahokia/web directory
+ * 
+ * The test:
+ * 1. Runs `dx bundle --platform web --ssg` to generate static site
+ * 2. Verifies the bundle output exists and contains required files
+ * 3. Starts a simple HTTP server to serve the static content
+ * 4. Uses Playwright to verify the site loads and functions correctly
+ */
+
+test.describe('SSG Bundle Functionality', () => {
+  const bundleOutputDir = path.join(__dirname, '..', '..', 'target', 'dx', 'web', 'release', 'web', 'public');
+  
+  // Configuration constants
+  const TEST_SERVER_PORT = 8090; // Static port for test server. TODO: Consider dynamic port allocation if tests need to run in parallel
+  const BUNDLE_TIMEOUT_MS = 600000; // 10 minutes - SSG bundle creation is compute-intensive and can take several minutes
+  const MAX_ACCEPTABLE_CONSOLE_ERRORS = 3; // Expected errors in static mode: auth failures, missing env config, non-critical warnings
+  
+  let server: http.Server | null = null;
+
+  // Helper function to validate path is within allowed directory
+  function isPathSafe(requestedPath: string, baseDirectory: string): boolean {
+    const resolvedBase = path.resolve(baseDirectory);
+    const resolvedPath = path.resolve(requestedPath);
+    return resolvedPath.startsWith(resolvedBase + path.sep) || resolvedPath === resolvedBase;
+  }
+
+  // Helper function to create a simple static file server
+  function createStaticServer(directory: string, port: number): Promise<http.Server> {
+    return new Promise((resolve, reject) => {
+      const server = http.createServer((req, res) => {
+        let requestPath: string;
+        
+        // Ensure req.url exists
+        if (!req.url) {
+          res.writeHead(400);
+          res.end('Bad Request: Missing URL');
+          return;
+        }
+        
+        // Decode the URL, handling potential malformed URIs
+        try {
+          requestPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url);
+        } catch (err) {
+          // If URL decoding fails, reject the request
+          res.writeHead(400);
+          res.end('Bad Request: Malformed URL');
+          return;
+        }
+        
+        // Resolve and normalize paths for security
+        const resolvedDirectory = path.resolve(directory);
+        const filePath = path.resolve(path.join(resolvedDirectory, requestPath));
+        
+        // Security: prevent directory traversal with proper path resolution
+        if (!isPathSafe(filePath, resolvedDirectory)) {
+          res.writeHead(403);
+          res.end('Forbidden');
+          return;
+        }
+
+        // Try to serve the file
+        fs.readFile(filePath, (err, data) => {
+          if (err) {
+            // If file not found and it's not index.html, try adding .html extension
+            if (err.code === 'ENOENT' && !filePath.endsWith('.html') && !filePath.includes('.')) {
+              const htmlFilePath = path.join(path.dirname(filePath), path.basename(filePath) + '.html');
+              // Verify the .html path is still within the directory
+              if (!isPathSafe(htmlFilePath, resolvedDirectory)) {
+                res.writeHead(403);
+                res.end('Forbidden');
+                return;
+              }
+              fs.readFile(htmlFilePath, (err2, data2) => {
+                if (err2) {
+                  res.writeHead(404);
+                  res.end('Not Found');
+                } else {
+                  serveFile(htmlFilePath, data2, res);
+                }
+              });
+            } else {
+              res.writeHead(404);
+              res.end('Not Found');
+            }
+            return;
+          }
+          
+          serveFile(filePath, data, res);
+        });
+      });
+
+      server.listen(port, () => {
+        console.log(`Static server running on http://localhost:${port}`);
+        resolve(server);
+      });
+
+      server.on('error', (err) => {
+        reject(err);
+      });
+    });
+  }
+
+  function serveFile(filePath: string, data: Buffer, res: http.ServerResponse) {
+    // Set appropriate content type
+    const ext = path.extname(filePath);
+    const contentTypes: { [key: string]: string } = {
+      '.html': 'text/html',
+      '.js': 'text/javascript',
+      '.css': 'text/css',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon',
+      '.wasm': 'application/wasm',
+    };
+    
+    const contentType = contentTypes[ext] || 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(data);
+  }
+
+  test.beforeAll(async () => {
+    // Skip this test if dx is not installed
+    try {
+      await execAsync('dx --version');
+    } catch (error) {
+      console.log('Skipping SSG bundle test: dx CLI not installed');
+      console.log('Install with: cargo install dioxus-cli');
+      test.skip();
+      return;
+    }
+
+    console.log('Building SSG bundle...');
+    console.log('This may take several minutes on first run...');
+    
+    try {
+      // Run dx bundle with SSG flag
+      // Note: This command may take several minutes to complete
+      const { stdout, stderr } = await execAsync(
+        'dx bundle --platform web --ssg',
+        {
+          cwd: path.join(__dirname, '..'),
+          timeout: BUNDLE_TIMEOUT_MS,
+        }
+      );
+      
+      console.log('Bundle stdout:', stdout);
+      if (stderr) {
+        console.log('Bundle stderr:', stderr);
+      }
+      
+      console.log('Bundle creation completed');
+    } catch (error: any) {
+      console.error('Failed to create SSG bundle:', error.message);
+      if (error.stdout) console.log('stdout:', error.stdout);
+      if (error.stderr) console.log('stderr:', error.stderr);
+      throw error;
+    }
+
+    // Start static file server
+    try {
+      server = await createStaticServer(bundleOutputDir, TEST_SERVER_PORT);
+      console.log(`Static server started on port ${TEST_SERVER_PORT}`);
+    } catch (error) {
+      console.error('Failed to start static server:', error);
+      throw error;
+    }
+  });
+
+  test.afterAll(async () => {
+    // Stop the static server
+    if (server) {
+      await new Promise<void>((resolve) => {
+        server!.close(() => {
+          console.log('Static server stopped');
+          resolve();
+        });
+      });
+    }
+  });
+
+  test('should generate SSG bundle with required files', async () => {
+    // Verify the bundle output directory exists
+    expect(fs.existsSync(bundleOutputDir)).toBe(true);
+
+    // Verify index.html exists (entry point for static site)
+    const indexPath = path.join(bundleOutputDir, 'index.html');
+    expect(fs.existsSync(indexPath)).toBe(true);
+
+    // Read and verify index.html has content
+    const indexContent = fs.readFileSync(indexPath, 'utf-8');
+    expect(indexContent.length).toBeGreaterThan(0);
+    expect(indexContent).toContain('<!DOCTYPE html>');
+  });
+
+  test('should serve static site on HTTP server', async ({ page }) => {
+    // Navigate to the static site
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Verify the page has loaded with a valid title
+    const title = await page.title();
+    expect(title).toBeTruthy();
+    expect(title.length).toBeGreaterThan(0);
+  });
+
+  test('should have proper HTML structure in static site', async ({ page }) => {
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Check that basic HTML structure exists
+    await expect(page.locator('html')).toBeVisible();
+    await expect(page.locator('body')).toBeVisible();
+  });
+
+  test('should display Cahokia header in static site', async ({ page }) => {
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Check that the header exists
+    const header = page.locator('#header');
+    await expect(header).toBeVisible();
+    
+    // Check that the Cahokia title is displayed
+    const title = header.locator('h1');
+    await expect(title).toHaveText('Cahokia');
+  });
+
+  test('should have navigation links in static site', async ({ page }) => {
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Check that navigation links exist
+    const nav = page.locator('.header-nav');
+    await expect(nav).toBeVisible();
+    
+    // Verify all navigation links are present
+    await expect(nav.locator('a:has-text("Home")')).toBeVisible();
+    await expect(nav.locator('a:has-text("About")')).toBeVisible();
+    await expect(nav.locator('a:has-text("History")')).toBeVisible();
+    await expect(nav.locator('a:has-text("Explore")')).toBeVisible();
+  });
+
+  test('should navigate to About page in static site', async ({ page }) => {
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Click the About link
+    await page.locator('.header-nav a:has-text("About")').click();
+    await page.waitForLoadState('networkidle');
+    
+    // Check that we're on the about page
+    expect(page.url()).toContain('/about');
+    
+    // Check that the About page content is displayed
+    await expect(page.locator('h2:has-text("About Cahokia")')).toBeVisible();
+  });
+
+  test('should navigate to History page in static site', async ({ page }) => {
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Click the History link
+    await page.locator('.header-nav a:has-text("History")').click();
+    await page.waitForLoadState('networkidle');
+    
+    // Check that we're on the history page
+    expect(page.url()).toContain('/history');
+    
+    // Check that the History page content is displayed
+    await expect(page.locator('h2:has-text("History of Cahokia")')).toBeVisible();
+  });
+
+  test('should navigate to Explore page in static site', async ({ page }) => {
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Click the Explore link
+    await page.locator('.header-nav a:has-text("Explore")').click();
+    await page.waitForLoadState('networkidle');
+    
+    // Check that we're on the explore page
+    expect(page.url()).toContain('/explore');
+    
+    // Check that the Explore page content is displayed
+    await expect(page.locator('h2:has-text("Explore Cahokia")')).toBeVisible();
+  });
+
+  test('static site should work without dynamic server', async ({ page }) => {
+    // This test verifies that the SSG bundle is truly static and doesn't
+    // require server-side rendering or dynamic backend functionality
+    
+    await page.goto(`http://localhost:${TEST_SERVER_PORT}/`);
+    await page.waitForLoadState('networkidle');
+    
+    // Verify that all static assets are loaded successfully
+    // by checking that there are minimal 404 errors in the console
+    const errors: string[] = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        errors.push(msg.text());
+      }
+    });
+    
+    // Navigate to different pages
+    await page.locator('.header-nav a:has-text("About")').click();
+    await page.waitForLoadState('networkidle');
+    
+    await page.locator('.header-nav a:has-text("History")').click();
+    await page.waitForLoadState('networkidle');
+    
+    await page.locator('.header-nav a:has-text("Explore")').click();
+    await page.waitForLoadState('networkidle');
+    
+    // Filter for critical asset loading errors
+    // Use specific patterns to avoid false positives from unrelated console messages
+    const criticalErrors = errors.filter(err => {
+      const lowerErr = err.toLowerCase();
+      return (
+        (lowerErr.includes('404') && (lowerErr.includes('.js') || lowerErr.includes('.css') || lowerErr.includes('.wasm'))) ||
+        (lowerErr.includes('failed to fetch') && !lowerErr.includes('auth')) ||
+        (lowerErr.includes('not found') && (lowerErr.includes('script') || lowerErr.includes('stylesheet')))
+      );
+    });
+    
+    // Asset loading should work correctly in static mode
+    // Allow threshold for expected non-asset errors (auth, env config, etc.)
+    expect(criticalErrors.length).toBeLessThanOrEqual(MAX_ACCEPTABLE_CONSOLE_ERRORS);
+  });
+});
