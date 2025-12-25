@@ -10,6 +10,26 @@ Monorepo for all projects
 - Cargo-binstall: Install via [repo](https://github.com/cargo-bins/cargo-binstall) instructions.
 - Cross: Install via [repo](https://github.com/cross-rs/cross) instructions.
 - Cast (cli for this monorepo): Run `cargo install --path ./cast_cli` and `code --install-extension ./cast_vscode/cast.vsix`
+- Git LFS: Required for large binary files. Install via [Git LFS](https://git-lfs.github.com/) instructions.
+
+# Working with Git LFS Files
+
+This repository uses Git LFS for large binary files (PDFs, archives, etc.). By default, LFS files are **not** downloaded automatically during clone to save bandwidth and storage.
+
+To download LFS files when needed:
+```bash
+# Download all LFS files
+git lfs fetch --all
+git lfs checkout
+
+# Download specific files
+git lfs fetch --include="path/to/file.pdf"
+git lfs checkout "path/to/file.pdf"
+
+# Download files matching a pattern
+git lfs fetch --include="*.pdf"
+git lfs checkout
+```
 
 # Get Started
 
