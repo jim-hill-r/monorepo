@@ -17,6 +17,9 @@ pub struct CastConfig {
     /// List of projects that are used to deploy this project
     #[serde(default)]
     pub deploys: Option<Vec<String>>,
+    /// The type of project (e.g., "static_website", "web_app", "iac", "library", "binary")
+    #[serde(default)]
+    pub project_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -51,6 +54,7 @@ impl CastConfig {
             || self.proof_of_concept.is_some()
             || self.framework.is_some()
             || self.deploys.is_some()
+            || self.project_type.is_some()
     }
 
     /// Load Cast configuration from a directory, checking Cargo.toml first, then Cast.toml
@@ -150,6 +154,7 @@ version = "0.1.0"
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
         assert_eq!(config.deploys, None);
+        assert_eq!(config.project_type, None);
     }
 
     #[test]
@@ -218,6 +223,7 @@ version = "0.1.0"
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
         assert_eq!(config.deploys, None);
+        assert_eq!(config.project_type, None);
     }
 
     #[test]
@@ -255,6 +261,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
         assert_eq!(config.deploys, None);
+        assert_eq!(config.project_type, None);
     }
 
     #[test]
@@ -276,6 +283,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
         assert_eq!(config.deploys, None);
+        assert_eq!(config.project_type, None);
     }
 
     #[test]
@@ -301,6 +309,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
         assert_eq!(config.deploys, None);
+        assert_eq!(config.project_type, None);
     }
 
     #[test]
@@ -324,6 +333,7 @@ deploys = ["deploy1", "deploy2"]
             proof_of_concept: None,
             framework: None,
             deploys: None,
+            project_type: None,
         };
 
         config.save(&config_path).unwrap();
@@ -333,6 +343,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(loaded_config.proof_of_concept, None);
         assert_eq!(loaded_config.framework, None);
         assert_eq!(loaded_config.deploys, None);
+        assert_eq!(loaded_config.project_type, None);
     }
 
     #[test]
@@ -345,6 +356,7 @@ deploys = ["deploy1", "deploy2"]
             proof_of_concept: None,
             framework: None,
             deploys: None,
+            project_type: None,
         };
 
         config.save(&config_path).unwrap();
@@ -354,6 +366,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(loaded_config.proof_of_concept, None);
         assert_eq!(loaded_config.framework, None);
         assert_eq!(loaded_config.deploys, None);
+        assert_eq!(loaded_config.project_type, None);
     }
 
     #[test]
@@ -363,6 +376,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(config.proof_of_concept, None);
         assert_eq!(config.framework, None);
         assert_eq!(config.deploys, None);
+        assert_eq!(config.project_type, None);
     }
 
     #[test]
@@ -418,6 +432,7 @@ deploys = ["deploy1", "deploy2"]
             proof_of_concept: Some(true),
             framework: None,
             deploys: None,
+            project_type: None,
         };
 
         config.save(&config_path).unwrap();
@@ -427,6 +442,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.framework, None);
         assert_eq!(loaded_config.deploys, None);
+        assert_eq!(loaded_config.project_type, None);
     }
 
     #[test]
@@ -439,6 +455,7 @@ deploys = ["deploy1", "deploy2"]
             proof_of_concept: Some(true),
             framework: None,
             deploys: None,
+            project_type: None,
         };
 
         config.save(&config_path).unwrap();
@@ -448,6 +465,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(loaded_config.proof_of_concept, Some(true));
         assert_eq!(loaded_config.framework, None);
         assert_eq!(loaded_config.deploys, None);
+        assert_eq!(loaded_config.project_type, None);
     }
 
     #[test]
@@ -478,6 +496,7 @@ deploys = ["deploy1", "deploy2"]
             proof_of_concept: None,
             framework: Some("dioxus".to_string()),
             deploys: None,
+            project_type: None,
         };
 
         config.save(&config_path).unwrap();
@@ -487,6 +506,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
         assert_eq!(loaded_config.deploys, None);
+        assert_eq!(loaded_config.project_type, None);
     }
 
     #[test]
@@ -503,6 +523,7 @@ deploys = ["deploy1", "deploy2"]
                 proof_of_concept: None,
                 framework: Some(framework.to_string()),
                 deploys: None,
+                project_type: None,
             };
 
             config.save(&config_path).unwrap();
@@ -577,6 +598,7 @@ deploys = ["deploy1", "deploy2"]
             proof_of_concept: None,
             framework: None,
             deploys: Some(vec!["pane-cloudflare".to_string()]),
+            project_type: None,
         };
 
         config.save(&config_path).unwrap();
@@ -589,6 +611,7 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(loaded_config.exemplar, None);
         assert_eq!(loaded_config.proof_of_concept, None);
         assert_eq!(loaded_config.framework, None);
+        assert_eq!(loaded_config.project_type, None);
     }
 
     #[test]
@@ -600,5 +623,88 @@ deploys = ["deploy1", "deploy2"]
         assert_eq!(config.proof_of_concept, Some(false));
         assert_eq!(config.framework, Some("dioxus".to_string()));
         assert_eq!(config.deploys, Some(vec!["deploy-project".to_string()]));
+    }
+
+    #[test]
+    fn test_parse_config_with_project_type() {
+        let config: CastConfig = toml::from_str("project_type = \"static_website\"").unwrap();
+        assert_eq!(config.project_type, Some("static_website".to_string()));
+        assert_eq!(config.exemplar, None);
+        assert_eq!(config.proof_of_concept, None);
+        assert_eq!(config.framework, None);
+        assert_eq!(config.deploys, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_all_project_types() {
+        let project_types = vec!["static_website", "web_app", "iac", "library", "binary"];
+
+        for project_type in project_types {
+            let config: CastConfig =
+                toml::from_str(&format!("project_type = \"{}\"", project_type)).unwrap();
+            assert_eq!(
+                config.project_type,
+                Some(project_type.to_string()),
+                "Failed for project_type: {}",
+                project_type
+            );
+        }
+    }
+
+    #[test]
+    fn test_save_config_with_project_type() {
+        let tmp_dir = TempDir::new("test_config").unwrap();
+        let config_path = tmp_dir.path().join("Cast.toml");
+
+        let config = CastConfig {
+            exemplar: None,
+            proof_of_concept: None,
+            framework: None,
+            deploys: None,
+            project_type: Some("static_website".to_string()),
+        };
+
+        config.save(&config_path).unwrap();
+
+        let loaded_config = CastConfig::load(&config_path).unwrap();
+        assert_eq!(
+            loaded_config.project_type,
+            Some("static_website".to_string())
+        );
+        assert_eq!(loaded_config.exemplar, None);
+        assert_eq!(loaded_config.proof_of_concept, None);
+        assert_eq!(loaded_config.framework, None);
+        assert_eq!(loaded_config.deploys, None);
+    }
+
+    #[test]
+    fn test_parse_config_with_all_fields_including_project_type() {
+        let config: CastConfig = toml::from_str(
+            "exemplar = true\nproof_of_concept = false\nframework = \"dioxus\"\ndeploys = [\"deploy-project\"]\nproject_type = \"web_app\""
+        ).unwrap();
+        assert_eq!(config.exemplar, Some(true));
+        assert_eq!(config.proof_of_concept, Some(false));
+        assert_eq!(config.framework, Some("dioxus".to_string()));
+        assert_eq!(config.deploys, Some(vec!["deploy-project".to_string()]));
+        assert_eq!(config.project_type, Some("web_app".to_string()));
+    }
+
+    #[test]
+    fn test_load_from_cargo_toml_with_project_type() {
+        let tmp_dir = TempDir::new("test_cargo_project_type").unwrap();
+        let cargo_path = tmp_dir.path().join("Cargo.toml");
+
+        let cargo_content = r#"
+[package]
+name = "test"
+version = "0.1.0"
+
+[package.metadata.cast]
+project_type = "library"
+"#;
+        fs::write(&cargo_path, cargo_content).unwrap();
+
+        let config = CastConfig::load_from_cargo_toml(&cargo_path).unwrap();
+        assert_eq!(config.project_type, Some("library".to_string()));
     }
 }
