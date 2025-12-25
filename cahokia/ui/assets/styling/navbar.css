@@ -1,10 +1,13 @@
 #navbar {
   display: flex;
   flex-direction: row;
+  padding: 1rem 2rem;
+  background-color: #5a4a3a;
+  border-bottom: 2px solid #d4a574;
 }
 
 #navbar a {
-  color: #ffffff;
+  color: #f5e6d3;
   margin-right: 20px;
   text-decoration: none;
   transition: color 0.2s ease;
@@ -12,5 +15,20 @@
 
 #navbar a:hover {
   cursor: pointer;
-  color: #91a4d2;
+  color: #d4a574;
+}
+
+#navbar button {
+  background-color: #654321;
+  color: #f5e6d3;
+  border: 1px solid #d4a574;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#navbar button:hover {
+  background-color: #8b7355;
 }

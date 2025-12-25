@@ -1,6 +1,6 @@
 body {
-    background-color: #0f1116;
-    color: #ffffff;
+    background-color: #3d2f1f;
+    color: #f5e6d3;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
@@ -13,7 +13,7 @@ body {
 }
 
 .page-content h2 {
-    color: #f5e6d3;
+    color: #d4a574;
     margin-bottom: 1rem;
 }
 
