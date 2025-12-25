@@ -1,6 +1,7 @@
 
 # Priority Issues
 
+- TODO: Audit gitlfs configuration and ensure it is being used for all appropriate files. 
 - TODO: Start a new project called 'cookbook_web' using framework dioxus.
 - TODO: Add a standard to the standards library enforcing strict typescript and ensure tsconfigs throughout the repo exist and adhere to this standard.
 
