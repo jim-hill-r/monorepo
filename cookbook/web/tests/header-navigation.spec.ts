@@ -61,8 +61,8 @@ test.describe('Header Navigation', () => {
     await homeLink.click();
     await page.waitForLoadState('networkidle');
     
-    // Verify we're on home page
-    await expect(page.locator('h1').first()).toHaveText('Cookbook');
+    // Verify we're on home page (check main content title, not header title)
+    await expect(page.locator('div:not(#header) > h1').first()).toHaveText('Cookbook');
     await expect(page.locator('p').first()).toContainText('Welcome to the Cookbook application!');
   });
 
@@ -76,7 +76,7 @@ test.describe('Header Navigation', () => {
     await page.waitForLoadState('networkidle');
     
     // Verify we're on recipe page (should go to recipe 1 as a default)
-    await expect(page.locator('h1')).toHaveText('Recipe for Day 1');
+    await expect(page.locator('div:not(#header) h1')).toHaveText('Recipe for Day 1');
   });
 
   test('should navigate to plans from header', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('Header Navigation', () => {
     await page.waitForLoadState('networkidle');
     
     // Verify we're on plan page (should go to plan 1 as a default)
-    await expect(page.locator('h1')).toHaveText('Meal Plan for Week 1');
+    await expect(page.locator('div:not(#header) h1')).toHaveText('Meal Plan for Week 1');
   });
 
   test('should display header on all pages', async ({ page }) => {
