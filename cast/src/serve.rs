@@ -5,8 +5,6 @@ use tiny_http::{Header, Response, Server};
 
 #[derive(Error, Debug)]
 pub enum ServeError {
-    #[error("Serve command failed: {0}")]
-    ServeFailed(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("Failed to bind server: {0}")]
@@ -28,6 +26,13 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), ServeError> {
     println!("Server running at http://127.0.0.1:8000");
     println!("Press Ctrl+C to stop");
 
+    // Canonicalize working directory once before the request loop
+    let canonical_base = fs::canonicalize(working_directory).map_err(ServeError::IoError)?;
+
+    // Create headers once
+    let html_header = create_content_type_header("text/html; charset=utf-8");
+    let server_error_header = create_content_type_header("text/plain");
+
     // Handle requests
     for request in server.incoming_requests() {
         let url_path = request.url();
@@ -39,14 +44,11 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), ServeError> {
         let mut file_path = working_directory.to_path_buf();
 
         // Handle root path - serve index.html if it exists
-        if path_str.is_empty() || path_str == "/" {
+        if path_str.is_empty() {
             file_path.push("index.html");
         } else {
             file_path.push(path_str);
         }
-
-        // Prevent directory traversal attacks
-        let canonical_base = fs::canonicalize(working_directory).map_err(ServeError::IoError)?;
 
         // Try to canonicalize the file path, but if it doesn't exist yet, that's ok
         let canonical_file = match fs::canonicalize(&file_path) {
@@ -72,15 +74,15 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), ServeError> {
                 Ok(contents) => {
                     // Determine content type based on extension
                     let content_type = get_content_type(&canonical_file);
-                    let header =
-                        Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()).unwrap();
+                    let header = create_content_type_header(&content_type);
 
                     let response = Response::from_data(contents).with_header(header);
                     let _ = request.respond(response);
                 }
                 Err(_) => {
-                    let response =
-                        Response::from_string("500 Internal Server Error").with_status_code(500);
+                    let response = Response::from_string("500 Internal Server Error")
+                        .with_status_code(500)
+                        .with_header(server_error_header.clone());
                     let _ = request.respond(response);
                 }
             }
@@ -90,15 +92,14 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), ServeError> {
             if index_path.is_file() {
                 match fs::read(&index_path) {
                     Ok(contents) => {
-                        let header =
-                            Header::from_bytes(&b"Content-Type"[..], b"text/html; charset=utf-8")
-                                .unwrap();
-                        let response = Response::from_data(contents).with_header(header);
+                        let response =
+                            Response::from_data(contents).with_header(html_header.clone());
                         let _ = request.respond(response);
                     }
                     Err(_) => {
                         let response = Response::from_string("500 Internal Server Error")
-                            .with_status_code(500);
+                            .with_status_code(500)
+                            .with_header(server_error_header.clone());
                         let _ = request.respond(response);
                     }
                 }
@@ -114,6 +115,16 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), ServeError> {
     }
 
     Ok(())
+}
+
+/// Create a Content-Type header safely
+fn create_content_type_header(content_type: &str) -> Header {
+    // Since we control the content type strings, this should never fail
+    // But we handle it gracefully just in case
+    Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()).unwrap_or_else(|_| {
+        // Fallback to a basic header if something goes wrong
+        Header::from_bytes(&b"Content-Type"[..], b"application/octet-stream").unwrap()
+    })
 }
 
 /// Get content type based on file extension
