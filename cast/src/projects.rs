@@ -88,24 +88,20 @@ fn find_exemplars_recursive(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::Res
     }
 
     // Check if this directory is an exemplar project
-    let has_cast_toml = dir.join("Cast.toml").exists();
-    let has_cargo_toml = dir.join("Cargo.toml").exists();
-
-    if has_cast_toml || has_cargo_toml {
-        // Try to load the config from the directory (will check both files)
-        if let Ok(config) = CastConfig::load_from_dir(dir) {
-            if config.exemplar == Some(true) {
-                exemplars.push(dir.to_path_buf());
-            }
+    // CastConfig::load_from_dir already handles checking for both Cast.toml and Cargo.toml
+    if let Ok(config) = CastConfig::load_from_dir(dir) {
+        if config.exemplar == Some(true) {
+            exemplars.push(dir.to_path_buf());
         }
     }
 
-    // Recursively search subdirectories
+    // Recursively search subdirectories (skip build directories)
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
+            // The recursive call will check if this is a build directory
             find_exemplars_recursive(&path, exemplars)?;
         }
     }
