@@ -17,6 +17,19 @@ if ! command -v wrangler &> /dev/null; then
     exit 1
 fi
 
+# Check if user is logged in to Cloudflare
+echo "Checking Cloudflare authentication..."
+if ! wrangler whoami &> /dev/null; then
+    echo "Not authenticated with Cloudflare"
+    echo "Attempting to log in..."
+    if ! wrangler login; then
+        echo "Error: Failed to authenticate with Cloudflare"
+        exit 1
+    fi
+else
+    echo "Already authenticated with Cloudflare"
+fi
+
 # Check if dx is installed
 if ! command -v dx &> /dev/null; then
     echo "Warning: dioxus-cli (dx) is not installed"
