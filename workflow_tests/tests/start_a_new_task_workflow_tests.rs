@@ -93,7 +93,9 @@ fn test_workflow_has_issues_write_permission() {
     // This is a warning-level test, so we just check if it's there
     // If not present, we'll note it but not fail
     if !content.contains("issues: write") {
-        eprintln!("WARNING: Workflow missing 'issues: write' permission (may not be needed with direct Copilot API)");
+        eprintln!(
+            "WARNING: Workflow missing 'issues: write' permission (may not be needed with direct Copilot API)"
+        );
     }
 }
 

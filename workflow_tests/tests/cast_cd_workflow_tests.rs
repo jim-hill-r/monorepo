@@ -214,7 +214,8 @@ fn test_workflow_installs_rustfmt_component() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("components: rustfmt, clippy") || content.contains("components: clippy, rustfmt"),
+        content.contains("components: rustfmt, clippy")
+            || content.contains("components: clippy, rustfmt"),
         "Workflow does not explicitly install rustfmt component. Expected 'components: rustfmt, clippy' or similar."
     );
 }
@@ -225,7 +226,8 @@ fn test_workflow_installs_clippy_component() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("components: rustfmt, clippy") || content.contains("components: clippy, rustfmt"),
+        content.contains("components: rustfmt, clippy")
+            || content.contains("components: clippy, rustfmt"),
         "Workflow does not explicitly install clippy component. Expected 'components: rustfmt, clippy' or similar."
     );
 }
