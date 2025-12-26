@@ -1,0 +1,3 @@
+# Cast configuration for cookbook-cloudflare deployment project
+
+framework = "cloudflare-pages"
