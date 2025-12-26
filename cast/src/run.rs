@@ -4,19 +4,19 @@ use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum DevError {
-    #[error("Dev command failed")]
-    DevFailed,
+pub enum RunError {
+    #[error("Run command failed")]
+    RunFailed,
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("Config error: {0}")]
     ConfigError(#[from] crate::config::ConfigError),
 }
 
-/// Run appropriate dev command for a project
+/// Run appropriate command for a project
 /// - For dioxus projects: runs `dx serve`
 /// - For other projects: runs `cargo run`
-pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DevError> {
+pub fn run(working_directory: impl AsRef<Path>) -> Result<(), RunError> {
     let working_directory = working_directory.as_ref();
 
     // Load config to determine framework
@@ -34,7 +34,7 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DevError> {
         .status()?;
 
     if !status.success() {
-        return Err(DevError::DevFailed);
+        return Err(RunError::RunFailed);
     }
 
     Ok(())
@@ -47,15 +47,15 @@ mod tests {
     use tempdir::TempDir;
 
     #[test]
-    fn test_dev_fails_without_cargo_project() {
-        let tmp_dir = TempDir::new("test_dev_no_project").unwrap();
+    fn test_run_fails_without_cargo_project() {
+        let tmp_dir = TempDir::new("test_run_no_project").unwrap();
         let result = run(tmp_dir.path());
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_dev_runs_cargo_run_by_default() {
-        let tmp_dir = TempDir::new("test_dev_default").unwrap();
+    fn test_run_runs_cargo_run_by_default() {
+        let tmp_dir = TempDir::new("test_run_default").unwrap();
 
         // Create a simple Cargo project with a main.rs
         fs::write(
@@ -75,8 +75,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dev_runs_cargo_run_with_empty_cast_toml() {
-        let tmp_dir = TempDir::new("test_dev_empty_cast").unwrap();
+    fn test_run_runs_cargo_run_with_empty_cast_toml() {
+        let tmp_dir = TempDir::new("test_run_empty_cast").unwrap();
 
         // Create a simple Cargo project with Cast.toml
         fs::write(
@@ -97,8 +97,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dev_runs_dx_serve_for_dioxus_framework() {
-        let tmp_dir = TempDir::new("test_dev_dioxus").unwrap();
+    fn test_run_runs_dx_serve_for_dioxus_framework() {
+        let tmp_dir = TempDir::new("test_run_dioxus").unwrap();
 
         // Create a Cargo project with dioxus framework
         fs::write(
@@ -121,18 +121,18 @@ mod tests {
         // We expect an error because dx is likely not installed
         // but we verify we tried to run the right command
         assert!(result.is_err());
-        if let Err(DevError::DevFailed) = result {
+        if let Err(RunError::RunFailed) = result {
             // Expected error type
-        } else if let Err(DevError::IoError(_)) = result {
+        } else if let Err(RunError::IoError(_)) = result {
             // Also acceptable - dx command not found
         } else {
-            panic!("Expected DevFailed or IoError");
+            panic!("Expected RunFailed or IoError");
         }
     }
 
     #[test]
-    fn test_dev_uses_cargo_toml_metadata() {
-        let tmp_dir = TempDir::new("test_dev_cargo_metadata").unwrap();
+    fn test_run_uses_cargo_toml_metadata() {
+        let tmp_dir = TempDir::new("test_run_cargo_metadata").unwrap();
 
         // Create a Cargo project with dioxus framework in metadata
         fs::write(
@@ -152,12 +152,12 @@ mod tests {
 
         // We expect an error because dx is likely not installed
         assert!(result.is_err());
-        if let Err(DevError::DevFailed) = result {
+        if let Err(RunError::RunFailed) = result {
             // Expected error type
-        } else if let Err(DevError::IoError(_)) = result {
+        } else if let Err(RunError::IoError(_)) = result {
             // Also acceptable - dx command not found
         } else {
-            panic!("Expected DevFailed or IoError");
+            panic!("Expected RunFailed or IoError");
         }
     }
 }

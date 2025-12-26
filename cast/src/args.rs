@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{build, ci, dev, projects, sessions, test};
+use crate::{build, ci, projects, run, sessions, test};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -26,8 +26,8 @@ enum Commands {
     Cd,
     /// Run tests
     Test,
-    /// Run dev server (dx serve for dioxus, cargo run otherwise)
-    Dev,
+    /// Run server (dx serve for dioxus, cargo run otherwise)
+    Run,
 }
 
 #[derive(Subcommand)]
@@ -79,8 +79,8 @@ pub enum ExecuteError {
     BuildError(#[from] build::BuildError),
     #[error("test error: {0}")]
     TestError(#[from] test::TestError),
-    #[error("dev error: {0}")]
-    DevError(#[from] dev::DevError),
+    #[error("run error: {0}")]
+    RunError(#[from] run::RunError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -148,9 +148,9 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 test::run(working_directory)?;
                 Ok("Tests passed".into())
             }
-            Commands::Dev => {
-                dev::run(working_directory)?;
-                Ok("Dev server started".into())
+            Commands::Run => {
+                run::run(working_directory)?;
+                Ok("Server started".into())
             }
             Commands::Cd => Ok("starting CD".into()),
         }
@@ -339,11 +339,11 @@ mod tests {
     }
 
     #[test]
-    fn it_runs_dev() {
+    fn it_runs_run() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
-        // Create a minimal Cargo.toml and src/main.rs for dev to pass
+        // Create a minimal Cargo.toml and src/main.rs for run to pass
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
             "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
@@ -356,7 +356,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = execute(Args { cmd: Commands::Dev }, tmp_dir.path()).unwrap();
-        assert_eq!(result, "Dev server started");
+        let result = execute(Args { cmd: Commands::Run }, tmp_dir.path()).unwrap();
+        assert_eq!(result, "Server started");
     }
 }
