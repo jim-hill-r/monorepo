@@ -160,10 +160,10 @@ fn Home() -> Element {
             class: "home-container",
             h1 { "Cookbook" }
             p { "Welcome to the Cookbook application!" }
-            
+
             div {
                 class: "navigation-cards",
-                
+
                 div {
                     class: "navigation-card recipe-card",
                     span { class: "card-icon", "🍳" }
@@ -171,7 +171,7 @@ fn Home() -> Element {
                     p { "Explore 365 delicious recipes - one for each day of the year. From quick weeknight dinners to special occasion dishes." }
                     Link { to: Route::Recipe { day: 1 }, "Browse Recipes" }
                 }
-                
+
                 div {
                     class: "navigation-card plan-card",
                     span { class: "card-icon", "📅" }
