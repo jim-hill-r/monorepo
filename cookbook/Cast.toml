@@ -1,0 +1,4 @@
+# Cast configuration file
+# Cookbook workspace
+
+framework = "dioxus"
