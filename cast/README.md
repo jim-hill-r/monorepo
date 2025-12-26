@@ -17,6 +17,31 @@ A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-c
 
 # Features
 
+## Development
+
+### Running Dev Server
+
+Cast provides a `dev` command that runs the appropriate development server for a project.
+
+```bash
+cast dev
+```
+
+This command automatically detects the project framework from the Cast configuration and runs:
+- `dx serve` for Dioxus projects (when `framework = "dioxus"` is set in Cast.toml or Cargo.toml)
+- `cargo run` for all other projects (default behavior)
+
+The framework is determined by checking the `framework` field in the project's Cast configuration. Cast will check `Cargo.toml` for a `[package.metadata.cast]` section first, then fall back to `Cast.toml`.
+
+Example usage in library code:
+
+```rust
+use cast::dev;
+
+// Run dev server on a project
+dev::run("/path/to/project").unwrap();
+```
+
 ## CI/CD
 
 ### Building Projects
