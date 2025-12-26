@@ -104,6 +104,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
         match &args.cmd {
             Commands::Session(session_command) => match session_command {
                 SessionCommands::Start(start_session_command) => {
+                    // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
                     let _ = sessions::start(
                         working_directory,
                         Some(SessionStartOptions {
@@ -113,10 +114,12 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     Ok("Starting session.".into())
                 }
                 SessionCommands::Pause => {
+                    // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
                     let _ = sessions::pause(working_directory);
                     Ok("Pausing session.".into())
                 }
                 SessionCommands::Stop => {
+                    // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
                     let _ = sessions::stop(working_directory);
                     Ok("Stopping session.".into())
                 }
