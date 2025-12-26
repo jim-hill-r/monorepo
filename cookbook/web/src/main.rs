@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
+
 fn main() {
     dioxus::launch(App);
 }
@@ -7,12 +9,14 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
+        document::Link { rel: "stylesheet", href: HEADER_CSS }
         Router::<Route> {}
     }
 }
 
 #[derive(Clone, Routable, Debug, PartialEq)]
 enum Route {
+    #[layout(Header)]
     #[route("/")]
     Home {},
 
@@ -24,6 +28,26 @@ enum Route {
 
     #[route("/:..route")]
     PageNotFound { route: Vec<String> },
+}
+
+#[component]
+fn Header() -> Element {
+    rsx! {
+        div {
+            id: "header",
+            div {
+                class: "header-title",
+                h1 { "Cookbook" }
+            }
+            nav {
+                class: "header-nav",
+                Link { to: Route::Home {}, "Home" }
+                Link { to: Route::Recipe { day: 1 }, "Recipes" }
+                Link { to: Route::Plan { week: 1 }, "Plans" }
+            }
+        }
+        Outlet::<Route> {}
+    }
 }
 
 #[component]
