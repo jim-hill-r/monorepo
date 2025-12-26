@@ -1,12 +1,11 @@
-use crate::utils::format_cargo_output;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum TestError {
-    #[error("Cargo test failed: {0}")]
-    TestFailed(String),
+    #[error("Cargo test failed")]
+    TestFailed,
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 }
@@ -15,13 +14,13 @@ pub enum TestError {
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), TestError> {
     let working_directory = working_directory.as_ref();
 
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         .arg("test")
         .current_dir(working_directory)
-        .output()?;
+        .status()?;
 
-    if !output.status.success() {
-        return Err(TestError::TestFailed(format_cargo_output(&output)));
+    if !status.success() {
+        return Err(TestError::TestFailed);
     }
 
     Ok(())
@@ -80,7 +79,7 @@ mod tests {
 
         let result = run(tmp_dir.path());
         assert!(result.is_err());
-        if let Err(TestError::TestFailed(_)) = result {
+        if let Err(TestError::TestFailed) = result {
             // Expected error type
         } else {
             panic!("Expected TestFailed error");

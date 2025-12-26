@@ -1,12 +1,11 @@
-use crate::utils::format_cargo_output;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum BuildError {
-    #[error("Cargo build failed: {0}")]
-    BuildFailed(String),
+    #[error("Cargo build failed")]
+    BuildFailed,
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 }
@@ -15,13 +14,13 @@ pub enum BuildError {
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), BuildError> {
     let working_directory = working_directory.as_ref();
 
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         .arg("build")
         .current_dir(working_directory)
-        .output()?;
+        .status()?;
 
-    if !output.status.success() {
-        return Err(BuildError::BuildFailed(format_cargo_output(&output)));
+    if !status.success() {
+        return Err(BuildError::BuildFailed);
     }
 
     Ok(())
@@ -76,7 +75,7 @@ mod tests {
 
         let result = run(tmp_dir.path());
         assert!(result.is_err());
-        if let Err(BuildError::BuildFailed(_)) = result {
+        if let Err(BuildError::BuildFailed) = result {
             // Expected error type
         } else {
             panic!("Expected BuildFailed error");

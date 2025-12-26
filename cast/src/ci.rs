@@ -1,16 +1,15 @@
 use crate::build;
 use crate::test;
-use crate::utils::format_cargo_output;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CiError {
-    #[error("Cargo fmt check failed: {0}")]
-    FmtError(String),
-    #[error("Cargo clippy check failed: {0}")]
-    ClippyError(String),
+    #[error("Cargo fmt check failed")]
+    FmtError,
+    #[error("Cargo clippy check failed")]
+    ClippyError,
     #[error("Cargo build failed: {0}")]
     BuildError(#[from] build::BuildError),
     #[error("Cargo test failed: {0}")]
@@ -44,30 +43,30 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
 }
 
 fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         .arg("fmt")
         .arg("--check")
         .current_dir(working_directory)
-        .output()?;
+        .status()?;
 
-    if !output.status.success() {
-        return Err(CiError::FmtError(format_cargo_output(&output)));
+    if !status.success() {
+        return Err(CiError::FmtError);
     }
 
     Ok(())
 }
 
 fn run_clippy(working_directory: &Path) -> Result<(), CiError> {
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         .arg("clippy")
         .arg("--")
         .arg("-D")
         .arg("warnings")
         .current_dir(working_directory)
-        .output()?;
+        .status()?;
 
-    if !output.status.success() {
-        return Err(CiError::ClippyError(format_cargo_output(&output)));
+    if !status.success() {
+        return Err(CiError::ClippyError);
     }
 
     Ok(())
