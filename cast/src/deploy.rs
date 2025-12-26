@@ -51,9 +51,13 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DeployError> {
 /// Deploy to Cloudflare Pages
 fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> {
     // Check if wrangler is installed
-    let wrangler_check = Command::new("wrangler").arg("--version").output().ok();
+    let wrangler_installed = Command::new("wrangler")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false);
 
-    if wrangler_check.is_none() || !wrangler_check.unwrap().status.success() {
+    if !wrangler_installed {
         return Err(DeployError::WranglerNotInstalled);
     }
 
@@ -150,11 +154,17 @@ fn load_env_file(env_file: &Path) -> Result<(), DeployError> {
             let key = key.trim();
             let value = value.trim();
 
-            // Remove surrounding quotes if present
-            let value = value
-                .strip_prefix('"')
-                .and_then(|v| v.strip_suffix('"'))
-                .unwrap_or(value);
+            // Remove surrounding quotes if present (both single and double quotes)
+            let value =
+                if let Some(unquoted) = value.strip_prefix('"').and_then(|v| v.strip_suffix('"')) {
+                    unquoted
+                } else if let Some(unquoted) =
+                    value.strip_prefix('\'').and_then(|v| v.strip_suffix('\''))
+                {
+                    unquoted
+                } else {
+                    value
+                };
 
             std::env::set_var(key, value);
         }
@@ -283,7 +293,7 @@ mod tests {
 
         fs::write(
             &env_file,
-            "TEST_VAR=test_value\nANOTHER_VAR=\"quoted value\"\n# Comment\n\nEMPTY_LINE=after",
+            "TEST_VAR=test_value\nANOTHER_VAR=\"quoted value\"\nSINGLE_QUOTED='single value'\n# Comment\n\nEMPTY_LINE=after",
         )
         .unwrap();
 
@@ -291,6 +301,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(std::env::var("TEST_VAR").unwrap(), "test_value");
         assert_eq!(std::env::var("ANOTHER_VAR").unwrap(), "quoted value");
+        assert_eq!(std::env::var("SINGLE_QUOTED").unwrap(), "single value");
         assert_eq!(std::env::var("EMPTY_LINE").unwrap(), "after");
     }
 }
