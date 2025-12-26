@@ -22,8 +22,7 @@ echo "Checking Cloudflare authentication..."
 if ! wrangler whoami &> /dev/null; then
     echo "Not authenticated with Cloudflare"
     echo "Attempting to log in..."
-    wrangler login
-    if [ $? -ne 0 ]; then
+    if ! wrangler login; then
         echo "Error: Failed to authenticate with Cloudflare"
         exit 1
     fi
