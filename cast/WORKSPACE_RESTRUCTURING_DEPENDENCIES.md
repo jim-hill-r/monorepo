@@ -253,7 +253,7 @@ After restructuring, the layout will be:
 ├── Cast.toml                   # Workspace Cast config
 ├── README.md                   # Workspace documentation
 ├── ISSUES.md                   # Workspace issues (moved from current)
-├── core/                       # cast library (renamed from cast)
+├── cast_core/                  # cast library (renamed from cast)
 │   ├── Cargo.toml             # package name: cast_core
 │   └── src/
 ├── cli/                        # cast_cli (moved)
