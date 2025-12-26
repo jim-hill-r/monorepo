@@ -3,4 +3,4 @@
 
 project_type = "static_website"
 framework = "dioxus"
-deploys = []
+deploys = ["cookbook-cloudflare"]

@@ -1,0 +1,21 @@
+# Cloudflare Pages configuration for cookbook deployment
+
+name = "cookbook"
+compatibility_date = "2024-12-20"
+
+# Pages configuration
+[pages]
+# The build output directory from the cookbook/web project
+# This should point to the dist directory created by 'dx build --release'
+# When deploying, use: wrangler pages deploy ../cookbook/web/dist --project-name=cookbook
+
+# Optional: Custom domains can be configured in the Cloudflare dashboard
+# or via wrangler commands
+
+# Optional: Environment variables for production
+# [env.production.vars]
+# API_URL = "https://api.example.com"
+
+# Optional: Environment variables for preview deployments
+# [env.preview.vars]
+# API_URL = "https://api-staging.example.com"
