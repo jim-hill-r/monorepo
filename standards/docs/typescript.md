@@ -84,37 +84,11 @@ A properly configured `tsconfig.json` MUST include:
 }
 ```
 
-### For Slidev Presentations
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
-  },
-  "include": [
-    "snippets/**/*.ts",
-    "components/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
-}
-```
-
 ## Exceptions
 
 - TypeScript is only permitted for:
   - VS Code extensions
   - Playwright test files
-  - Slidev presentation code snippets
   - Configuration files that require TypeScript
 
 All other code MUST be written in Rust as per the general language standards.
