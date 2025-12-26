@@ -1,6 +1,13 @@
 # Cookbook
 
-A Dioxus web application built with Rust.
+A Dioxus web application built with Rust that provides daily recipes and weekly meal plans.
+
+## Features
+
+- **Daily Recipes**: Browse recipes for each day of the year (1-365) at `/recipe/{day}`
+- **Weekly Meal Plans**: Access meal plans for each week of the year (1-52) at `/plan/{week}`
+- **Input Validation**: Automatically validates day and week numbers to ensure they're within valid ranges
+- **Responsive Routing**: Uses Dioxus Router for seamless navigation between pages
 
 ## Prerequisites
 
@@ -44,6 +51,16 @@ dx serve --open
 dx serve --verbose
 ```
 
+## Routes
+
+The application provides the following routes:
+
+- `/` - Home page with navigation information
+- `/recipe/{day}` - Recipe for a specific day (1-365)
+- `/plan/{week}` - Meal plan for a specific week (1-52)
+
+Invalid day or week numbers will display a helpful error message.
+
 ## Building
 
 To build the project for production:
@@ -66,22 +83,34 @@ To check the project without building:
 cargo check
 ```
 
+## Testing
+
+This project includes Playwright end-to-end tests. See the [tests README](tests/README.md) for details on running the tests.
+
 ## Project Structure
 
 ```
 web/
 ├── src/
-│   └── main.rs      # Main application entry point
+│   └── main.rs      # Main application entry point with routing
+├── tests/
+│   ├── routing.spec.ts  # Playwright tests for routes
+│   └── README.md        # Testing documentation
 ├── Cargo.toml       # Rust dependencies and project metadata
 ├── Dioxus.toml      # Dioxus build configuration
 ├── Cast.toml        # Cast project configuration
+├── package.json     # npm package for Playwright tests
+├── playwright.config.ts  # Playwright test configuration
 └── README.md        # This file
 ```
 
 ## Dependencies
 
-This project uses Dioxus 0.7 for building web applications with Rust.
+This project uses:
+- Dioxus 0.7 for building web applications with Rust
+- Dioxus Router for client-side routing
+- Playwright for end-to-end testing
 
 ## Status
 
-This is a placeholder project with basic Dioxus setup.
+This project provides placeholder recipes and meal plans. Future enhancements will include actual recipe content and meal planning features.
