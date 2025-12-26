@@ -120,16 +120,16 @@ This command:
 2. Deploys the project based on its framework:
    - **cloudflare-pages**: Deploys using `wrangler pages deploy`
 3. Automatically loads environment variables from `.env` file if present
-4. Finds and deploys the appropriate build artifacts (typically from a `dist` directory)
 
 #### Cloudflare Pages Deployment
 
 For Cloudflare Pages projects, the deploy command:
 - Checks that `wrangler` is installed
-- Reads `wrangler.toml` to determine the project name
-- Locates the build output directory (searches for `dist`, `public`, or `build` directories)
+- Verifies that `wrangler.toml` exists in the project directory
 - Loads secrets and environment variables from `.env` file if present
-- Runs `wrangler pages deploy <dist> --project-name=<name>`
+- Runs `wrangler pages deploy` (configuration is read from `wrangler.toml`)
+
+The `wrangler.toml` file should contain all deployment configuration including the project name, pages configuration, and build output directory. See [Cloudflare Pages documentation](https://developers.cloudflare.com/pages/configuration/wrangler-configuration/) for details.
 
 Example `.env` file for secrets:
 ```
