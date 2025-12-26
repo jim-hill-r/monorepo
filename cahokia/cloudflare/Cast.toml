@@ -1,4 +1,4 @@
 # Cast configuration for cloudflare deployment project
 
 framework = "cloudflare-pages"
-project_type = "static_website"
+project_type = "iac"
