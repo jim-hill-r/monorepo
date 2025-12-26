@@ -6,6 +6,7 @@ use dioxus::prelude::*;
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
+const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
@@ -32,6 +33,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: HEADER_CSS }
         document::Link { rel: "stylesheet", href: NAVBAR_CSS }
         document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
+        document::Link { rel: "stylesheet", href: HOME_CSS }
         Router::<Route> {}
     }
 }
@@ -155,13 +157,28 @@ fn Sidebar() -> Element {
 fn Home() -> Element {
     rsx! {
         div {
+            class: "home-container",
             h1 { "Cookbook" }
             p { "Welcome to the Cookbook application!" }
-            nav {
-                h2 { "Daily Recipes" }
-                p { "Visit /recipe/1 through /recipe/365 for daily recipes" }
-                h2 { "Weekly Plans" }
-                p { "Visit /plan/1 through /plan/52 for weekly meal plans" }
+
+            div {
+                class: "navigation-cards",
+
+                div {
+                    class: "navigation-card recipe-card",
+                    span { class: "card-icon", "🍳" }
+                    h2 { "Daily Recipes" }
+                    p { "Explore 365 delicious recipes - one for each day of the year. From quick weeknight dinners to special occasion dishes." }
+                    Link { to: Route::Recipe { day: 1 }, "Browse Recipes" }
+                }
+
+                div {
+                    class: "navigation-card plan-card",
+                    span { class: "card-icon", "📅" }
+                    h2 { "Weekly Meal Plans" }
+                    p { "Get organized with 52 complete meal plans - one for every week of the year. Perfect for planning ahead!" }
+                    Link { to: Route::Plan { week: 1 }, "View Meal Plans" }
+                }
             }
         }
     }

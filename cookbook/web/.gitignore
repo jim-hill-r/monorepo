@@ -1,4 +1,6 @@
 /target
 Cargo.lock
+playwright-report
+test-results
 node_modules
 package-lock.json
