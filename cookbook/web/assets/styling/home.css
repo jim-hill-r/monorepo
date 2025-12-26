@@ -6,7 +6,7 @@
 }
 
 .home-container h1 {
-  color: #8b0000;
+  color: #8b4513;
   font-size: 3rem;
   margin-bottom: 1rem;
   text-align: center;
@@ -28,8 +28,8 @@
 }
 
 .navigation-card {
-  background: linear-gradient(135deg, #fee08b 0%, #fc8d59 100%);
-  border: 3px solid #d73027;
+  background: linear-gradient(135deg, #f9e79f 0%, #f39c12 100%);
+  border: 3px solid #e74c3c;
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -40,11 +40,11 @@
 .navigation-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  border-color: #b2182b;
+  border-color: #c0392b;
 }
 
 .navigation-card h2 {
-  color: #8b0000;
+  color: #8b4513;
   font-size: 2rem;
   margin-bottom: 1rem;
   text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
@@ -59,7 +59,7 @@
 
 .navigation-card a {
   display: inline-block;
-  background-color: #d73027;
+  background-color: #e74c3c;
   color: #ffffff;
   padding: 1rem 2rem;
   border-radius: 8px;
@@ -72,8 +72,8 @@
 }
 
 .navigation-card a:hover {
-  background-color: #b2182b;
-  border-color: #fee08b;
+  background-color: #c0392b;
+  border-color: #f9e79f;
   transform: scale(1.05);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   cursor: pointer;
@@ -85,7 +85,7 @@
 }
 
 .navigation-card a:focus-visible {
-  outline: 3px solid #fee08b;
+  outline: 3px solid #f9e79f;
   outline-offset: 3px;
 }
 
