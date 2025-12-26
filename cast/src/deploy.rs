@@ -1,7 +1,7 @@
 use crate::config::CastConfig;
-use std::fs;
+use std::collections::HashMap;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -20,6 +20,8 @@ pub enum DeployError {
     WranglerTomlNotFound,
     #[error("wrangler not installed - install it with: npm install -g wrangler")]
     WranglerNotInstalled,
+    #[error("Failed to parse .env file: {0}")]
+    EnvFileParseError(String),
 }
 
 /// Run deployment for an IAC project
@@ -47,8 +49,10 @@ fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> 
     // Check if wrangler is installed
     let wrangler_installed = Command::new("wrangler")
         .arg("--version")
-        .output()
-        .map(|output| output.status.success())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
         .unwrap_or(false);
 
     if !wrangler_installed {
@@ -62,17 +66,23 @@ fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> 
     }
 
     // Load environment variables from .env if it exists
-    let env_file = working_directory.join(".env");
-    if env_file.exists() {
-        load_env_file(&env_file)?;
-    }
+    let env_vars = load_env_file(working_directory)?;
 
-    // Run wrangler pages deploy - let wrangler.toml handle all configuration
-    let status = Command::new("wrangler")
-        .arg("pages")
+    // Run wrangler pages deploy with inherited stdio and environment variables
+    let mut cmd = Command::new("wrangler");
+    cmd.arg("pages")
         .arg("deploy")
         .current_dir(working_directory)
-        .status()?;
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
+
+    // Add environment variables from .env file to the command
+    for (key, value) in env_vars {
+        cmd.env(key, value);
+    }
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(DeployError::DeployFailed);
@@ -81,40 +91,21 @@ fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> 
     Ok(())
 }
 
-/// Load environment variables from a .env file
-fn load_env_file(env_file: &Path) -> Result<(), DeployError> {
-    let content = fs::read_to_string(env_file)?;
+/// Load environment variables from a .env file using dotenvy
+fn load_env_file(working_directory: &Path) -> Result<HashMap<String, String>, DeployError> {
+    let env_file = working_directory.join(".env");
 
-    for line in content.lines() {
-        let line = line.trim();
-
-        // Skip empty lines and comments
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-
-        // Parse KEY=VALUE format
-        if let Some((key, value)) = line.split_once('=') {
-            let key = key.trim();
-            let value = value.trim();
-
-            // Remove surrounding quotes if present (both single and double quotes)
-            let value =
-                if let Some(unquoted) = value.strip_prefix('"').and_then(|v| v.strip_suffix('"')) {
-                    unquoted
-                } else if let Some(unquoted) =
-                    value.strip_prefix('\'').and_then(|v| v.strip_suffix('\''))
-                {
-                    unquoted
-                } else {
-                    value
-                };
-
-            std::env::set_var(key, value);
-        }
+    if !env_file.exists() {
+        return Ok(HashMap::new());
     }
 
-    Ok(())
+    // Use dotenvy to parse the .env file properly
+    let env_vars = dotenvy::from_path_iter(&env_file)
+        .map_err(|e| DeployError::EnvFileParseError(e.to_string()))?
+        .collect::<Result<HashMap<String, String>, _>>()
+        .map_err(|e| DeployError::EnvFileParseError(e.to_string()))?;
+
+    Ok(env_vars)
 }
 
 #[cfg(test)]
@@ -183,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test_load_env_file() {
+    fn test_load_env_file_with_valid_content() {
         let tmp_dir = TempDir::new("test_env").unwrap();
         let env_file = tmp_dir.path().join(".env");
 
@@ -193,11 +184,59 @@ mod tests {
         )
         .unwrap();
 
-        let result = load_env_file(&env_file);
+        let result = load_env_file(tmp_dir.path());
         assert!(result.is_ok());
-        assert_eq!(std::env::var("TEST_VAR").unwrap(), "test_value");
-        assert_eq!(std::env::var("ANOTHER_VAR").unwrap(), "quoted value");
-        assert_eq!(std::env::var("SINGLE_QUOTED").unwrap(), "single value");
-        assert_eq!(std::env::var("EMPTY_LINE").unwrap(), "after");
+        let env_vars = result.unwrap();
+        assert_eq!(env_vars.get("TEST_VAR").unwrap(), "test_value");
+        assert_eq!(env_vars.get("ANOTHER_VAR").unwrap(), "quoted value");
+        assert_eq!(env_vars.get("SINGLE_QUOTED").unwrap(), "single value");
+        assert_eq!(env_vars.get("EMPTY_LINE").unwrap(), "after");
+    }
+
+    #[test]
+    fn test_load_env_file_with_escaped_characters() {
+        let tmp_dir = TempDir::new("test_env_escaped").unwrap();
+        let env_file = tmp_dir.path().join(".env");
+
+        // Test with properly escaped content that dotenvy can handle
+        fs::write(
+            &env_file,
+            "ESCAPED_VALUE=\"value with spaces\"\nMULTI_WORD='hello world'\n",
+        )
+        .unwrap();
+
+        let result = load_env_file(tmp_dir.path());
+        assert!(result.is_ok());
+        let env_vars = result.unwrap();
+
+        // dotenvy properly handles quoted values
+        assert_eq!(env_vars.get("ESCAPED_VALUE").unwrap(), "value with spaces");
+        assert_eq!(env_vars.get("MULTI_WORD").unwrap(), "hello world");
+    }
+
+    #[test]
+    fn test_load_env_file_returns_empty_when_file_missing() {
+        let tmp_dir = TempDir::new("test_no_env").unwrap();
+
+        let result = load_env_file(tmp_dir.path());
+        assert!(result.is_ok());
+        let env_vars = result.unwrap();
+        assert!(env_vars.is_empty());
+    }
+
+    #[test]
+    fn test_env_vars_not_set_globally() {
+        let tmp_dir = TempDir::new("test_env_isolation").unwrap();
+        let env_file = tmp_dir.path().join(".env");
+
+        let test_key = "CAST_DEPLOY_TEST_VAR_ISOLATION";
+        fs::write(&env_file, format!("{}=test_value", test_key)).unwrap();
+
+        // Load env vars (should not set them globally)
+        let result = load_env_file(tmp_dir.path());
+        assert!(result.is_ok());
+
+        // Verify the variable is NOT set globally
+        assert!(std::env::var(test_key).is_err());
     }
 }

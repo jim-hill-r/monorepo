@@ -119,15 +119,18 @@ This command:
 1. Verifies the project is marked as `project_type = "iac"` in its Cast configuration
 2. Deploys the project based on its framework:
    - **cloudflare-pages**: Deploys using `wrangler pages deploy`
-3. Automatically loads environment variables from `.env` file if present
+3. Automatically loads environment variables from `.env` file if present (using the `dotenvy` library for proper parsing)
+4. Displays deployment progress and output from the deployment tool
 
 #### Cloudflare Pages Deployment
 
 For Cloudflare Pages projects, the deploy command:
 - Checks that `wrangler` is installed
 - Verifies that `wrangler.toml` exists in the project directory
-- Loads secrets and environment variables from `.env` file if present
-- Runs `wrangler pages deploy` (configuration is read from `wrangler.toml`)
+- Parses `.env` file using `dotenvy` library (supports escaped characters, quotes, etc.)
+- Passes environment variables only to the wrangler command (not set globally)
+- Runs `wrangler pages deploy` with inherited stdout/stderr for visibility
+- Configuration is read from `wrangler.toml`
 
 The `wrangler.toml` file should contain all deployment configuration including the project name, pages configuration, and build output directory. See [Cloudflare Pages documentation](https://developers.cloudflare.com/pages/configuration/wrangler-configuration/) for details.
 
@@ -135,6 +138,8 @@ Example `.env` file for secrets:
 ```
 CLOUDFLARE_API_TOKEN=your_token_here
 CLOUDFLARE_ACCOUNT_ID=your_account_id
+# Supports quoted values and special characters
+DATABASE_URL="postgresql://user:pass@localhost/db"
 ```
 
 Example usage in library code:
