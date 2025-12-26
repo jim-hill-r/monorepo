@@ -2,6 +2,8 @@
 
 This project handles the deployment of the `cahokia/web` Dioxus web application build artifacts to Cloudflare Pages.
 
+This project is located at `cahokia/cloudflare` within the cahokia workspace.
+
 ## Prerequisites
 
 Before deploying, you need:
@@ -32,11 +34,11 @@ wrangler login
 Before deploying, you need to build the `cahokia/web` project:
 
 ```bash
-cd ../cahokia/web
+cd ../web
 dx build --release
 ```
 
-This will create build artifacts in `../cahokia/web/dist/` directory.
+This will create build artifacts in `../web/dist/` directory.
 
 ## Deploying to Cloudflare Pages
 
@@ -45,7 +47,7 @@ This will create build artifacts in `../cahokia/web/dist/` directory.
 To deploy the cahokia web build artifacts:
 
 ```bash
-wrangler pages deploy ../cahokia/web/dist --project-name=cahokia-web
+wrangler pages deploy ../web/dist --project-name=cahokia-web
 ```
 
 ### Configuration
@@ -64,13 +66,13 @@ For CI/CD pipelines, you can use:
 export CLOUDFLARE_API_TOKEN=<your-token>
 
 # Deploy
-wrangler pages deploy ../cahokia/web/dist --project-name=cahokia-web
+wrangler pages deploy ../web/dist --project-name=cahokia-web
 ```
 
 ## Project Structure
 
 ```
-cahokia_web_cloudflare/
+cahokia/cloudflare/
 ├── wrangler.toml     # Cloudflare Pages configuration
 ├── Cast.toml         # Cast monorepo metadata
 ├── deploy.sh         # Deployment script
@@ -99,7 +101,7 @@ This will verify:
 
 Make sure you've built the cahokia web project first:
 ```bash
-cd ../cahokia/web && dx build --release
+cd ../web && dx build --release
 ```
 
 ### Authentication issues

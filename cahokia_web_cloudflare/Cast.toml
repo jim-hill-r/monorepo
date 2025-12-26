@@ -1,4 +1,0 @@
-# Cast configuration for cahokia_web_cloudflare deployment project
-
-framework = "cloudflare-pages"
-project_type = "static_website"

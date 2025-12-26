@@ -7,7 +7,7 @@ compatibility_date = "2024-12-20"
 [pages]
 # The build output directory from the cahokia/web project
 # This should point to the dist directory created by 'dx build --release'
-# When deploying, use: wrangler pages deploy ../cahokia/web/dist --project-name=cahokia-web
+# When deploying, use: wrangler pages deploy ../web/dist --project-name=cahokia-web
 
 # Optional: Custom domains can be configured in the Cloudflare dashboard
 # or via wrangler commands

@@ -97,11 +97,11 @@ fn test_gitignore_has_cloudflare_entries() {
 
 #[test]
 fn test_cahokia_web_project_exists() {
-    let cahokia_web_dir = Path::new("../cahokia/web");
+    let cahokia_web_dir = Path::new("../web");
 
     assert!(
         cahokia_web_dir.exists() && cahokia_web_dir.is_dir(),
-        "cahokia/web project not found at ../cahokia/web"
+        "cahokia/web project not found at ../web"
     );
 
     let cargo_toml = cahokia_web_dir.join("Cargo.toml");

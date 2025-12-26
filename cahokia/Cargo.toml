@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "desktop", "mobile", "ui", "web"]
+members = ["cloudflare", "core", "desktop", "mobile", "ui", "web"]
 default-members = ["core", "ui", "web"]
 
 [workspace.dependencies]
