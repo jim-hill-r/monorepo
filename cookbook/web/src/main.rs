@@ -69,7 +69,7 @@ fn Header() -> Element {
                 Link { to: Route::Plan { week: 1 }, "Plans" }
             }
         }
-        
+
         div {
             id: "navbar",
             match &*auth_state {
@@ -90,7 +90,7 @@ fn Header() -> Element {
                 },
             }
         }
-        
+
         Outlet::<Route> {}
     }
 }
