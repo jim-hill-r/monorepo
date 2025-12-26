@@ -112,34 +112,40 @@ fn Sidebar() -> Element {
             div {
                 class: "sidebar-section",
                 h3 { "Daily Recipes" }
-                Link { to: Route::Recipe { day: 1 }, "Days 1-10" }
-                Link { to: Route::Recipe { day: 11 }, "Days 11-20" }
-                Link { to: Route::Recipe { day: 21 }, "Days 21-30" }
-                Link { to: Route::Recipe { day: 31 }, "Days 31-40" }
-                Link { to: Route::Recipe { day: 41 }, "Days 41-50" }
-                Link { to: Route::Recipe { day: 51 }, "Days 51-60" }
-                Link { to: Route::Recipe { day: 61 }, "Days 61-70" }
-                Link { to: Route::Recipe { day: 71 }, "Days 71-80" }
-                Link { to: Route::Recipe { day: 81 }, "Days 81-90" }
-                Link { to: Route::Recipe { day: 91 }, "Days 91-100" }
+                Link { to: Route::Recipe { day: 1 }, "Day 1" }
+                Link { to: Route::Recipe { day: 11 }, "Day 11" }
+                Link { to: Route::Recipe { day: 21 }, "Day 21" }
+                Link { to: Route::Recipe { day: 31 }, "Day 31" }
+                Link { to: Route::Recipe { day: 41 }, "Day 41" }
+                Link { to: Route::Recipe { day: 51 }, "Day 51" }
+                Link { to: Route::Recipe { day: 61 }, "Day 61" }
+                Link { to: Route::Recipe { day: 71 }, "Day 71" }
+                Link { to: Route::Recipe { day: 81 }, "Day 81" }
+                Link { to: Route::Recipe { day: 91 }, "Day 91" }
+                Link { to: Route::Recipe { day: 100 }, "Day 100" }
+                Link { to: Route::Recipe { day: 150 }, "Day 150" }
+                Link { to: Route::Recipe { day: 200 }, "Day 200" }
+                Link { to: Route::Recipe { day: 250 }, "Day 250" }
+                Link { to: Route::Recipe { day: 300 }, "Day 300" }
+                Link { to: Route::Recipe { day: 365 }, "Day 365" }
             }
 
             div {
                 class: "sidebar-section",
                 h3 { "Weekly Plans" }
-                Link { to: Route::Plan { week: 1 }, "Weeks 1-4" }
-                Link { to: Route::Plan { week: 5 }, "Weeks 5-8" }
-                Link { to: Route::Plan { week: 9 }, "Weeks 9-12" }
-                Link { to: Route::Plan { week: 13 }, "Weeks 13-16" }
-                Link { to: Route::Plan { week: 17 }, "Weeks 17-20" }
-                Link { to: Route::Plan { week: 21 }, "Weeks 21-24" }
-                Link { to: Route::Plan { week: 25 }, "Weeks 25-28" }
-                Link { to: Route::Plan { week: 29 }, "Weeks 29-32" }
-                Link { to: Route::Plan { week: 33 }, "Weeks 33-36" }
-                Link { to: Route::Plan { week: 37 }, "Weeks 37-40" }
-                Link { to: Route::Plan { week: 41 }, "Weeks 41-44" }
-                Link { to: Route::Plan { week: 45 }, "Weeks 45-48" }
-                Link { to: Route::Plan { week: 49 }, "Weeks 49-52" }
+                Link { to: Route::Plan { week: 1 }, "Week 1" }
+                Link { to: Route::Plan { week: 5 }, "Week 5" }
+                Link { to: Route::Plan { week: 9 }, "Week 9" }
+                Link { to: Route::Plan { week: 13 }, "Week 13" }
+                Link { to: Route::Plan { week: 17 }, "Week 17" }
+                Link { to: Route::Plan { week: 21 }, "Week 21" }
+                Link { to: Route::Plan { week: 25 }, "Week 25" }
+                Link { to: Route::Plan { week: 29 }, "Week 29" }
+                Link { to: Route::Plan { week: 33 }, "Week 33" }
+                Link { to: Route::Plan { week: 37 }, "Week 37" }
+                Link { to: Route::Plan { week: 41 }, "Week 41" }
+                Link { to: Route::Plan { week: 45 }, "Week 45" }
+                Link { to: Route::Plan { week: 52 }, "Week 52" }
             }
         }
     }

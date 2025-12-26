@@ -38,9 +38,9 @@ test.describe('Sidebar Navigation', () => {
     const recipesSection = page.locator('#sidebar .sidebar-section').first();
     await expect(recipesSection.locator('h3')).toHaveText('Daily Recipes');
     
-    // Check for some recipe range links
-    await expect(recipesSection.locator('a', { hasText: 'Days 1-10' })).toBeVisible();
-    await expect(recipesSection.locator('a', { hasText: 'Days 11-20' })).toBeVisible();
+    // Check for some recipe links
+    await expect(recipesSection.locator('a', { hasText: 'Day 1' })).toBeVisible();
+    await expect(recipesSection.locator('a', { hasText: 'Day 11' })).toBeVisible();
   });
 
   test('should display plan quick links section', async ({ page }) => {
@@ -51,21 +51,21 @@ test.describe('Sidebar Navigation', () => {
     const plansSection = page.locator('#sidebar .sidebar-section').last();
     await expect(plansSection.locator('h3')).toHaveText('Weekly Plans');
     
-    // Check for some plan range links
-    await expect(plansSection.locator('a', { hasText: 'Weeks 1-4' })).toBeVisible();
-    await expect(plansSection.locator('a', { hasText: 'Weeks 5-8' })).toBeVisible();
+    // Check for some plan links
+    await expect(plansSection.locator('a', { hasText: 'Week 1' })).toBeVisible();
+    await expect(plansSection.locator('a', { hasText: 'Week 5' })).toBeVisible();
   });
 
   test('should navigate to recipe from sidebar link', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click on a recipe range link
-    const recipeLink = page.locator('#sidebar a', { hasText: 'Days 1-10' });
+    // Click on a recipe link
+    const recipeLink = page.locator('#sidebar a', { hasText: 'Day 1' });
     await recipeLink.click();
     await page.waitForLoadState('networkidle');
     
-    // Should navigate to first day in range
+    // Should navigate to the recipe
     await expect(page.locator('h1')).toHaveText('Recipe for Day 1');
   });
 
@@ -73,12 +73,12 @@ test.describe('Sidebar Navigation', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click on a plan range link
-    const planLink = page.locator('#sidebar a', { hasText: 'Weeks 1-4' });
+    // Click on a plan link
+    const planLink = page.locator('#sidebar a', { hasText: 'Week 1' });
     await planLink.click();
     await page.waitForLoadState('networkidle');
     
-    // Should navigate to first week in range
+    // Should navigate to the plan
     await expect(page.locator('h1')).toHaveText('Meal Plan for Week 1');
   });
 
@@ -100,32 +100,32 @@ test.describe('Sidebar Navigation', () => {
     await expect(sidebar).toBeVisible();
   });
 
-  test('should allow navigation between multiple recipe ranges', async ({ page }) => {
+  test('should allow navigation between multiple recipe links', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click first range
-    await page.locator('#sidebar a', { hasText: 'Days 1-10' }).click();
+    // Click first link
+    await page.locator('#sidebar a', { hasText: 'Day 1' }).click();
     await page.waitForLoadState('networkidle');
     await expect(page.locator('h1')).toHaveText('Recipe for Day 1');
     
-    // Click another range from sidebar
-    await page.locator('#sidebar a', { hasText: 'Days 11-20' }).click();
+    // Click another link from sidebar
+    await page.locator('#sidebar a', { hasText: 'Day 11' }).click();
     await page.waitForLoadState('networkidle');
     await expect(page.locator('h1')).toHaveText('Recipe for Day 11');
   });
 
-  test('should allow navigation between multiple plan ranges', async ({ page }) => {
+  test('should allow navigation between multiple plan links', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click first range
-    await page.locator('#sidebar a', { hasText: 'Weeks 1-4' }).click();
+    // Click first link
+    await page.locator('#sidebar a', { hasText: 'Week 1' }).click();
     await page.waitForLoadState('networkidle');
     await expect(page.locator('h1')).toHaveText('Meal Plan for Week 1');
     
-    // Click another range from sidebar
-    await page.locator('#sidebar a', { hasText: 'Weeks 5-8' }).click();
+    // Click another link from sidebar
+    await page.locator('#sidebar a', { hasText: 'Week 5' }).click();
     await page.waitForLoadState('networkidle');
     await expect(page.locator('h1')).toHaveText('Meal Plan for Week 5');
   });
