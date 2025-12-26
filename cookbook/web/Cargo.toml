@@ -9,4 +9,9 @@ auth_sdk = { workspace = true }
 
 [features]
 default = ["web"]
-web = [] 
+web = []
+
+[package.metadata.cast]
+project_type = "static_website"
+framework = "dioxus"
+deploys = ["cookbook-cloudflare"]

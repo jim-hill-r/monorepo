@@ -96,9 +96,8 @@ web/
 ├── tests/
 │   ├── routing.spec.ts  # Playwright tests for routes
 │   └── README.md        # Testing documentation
-├── Cargo.toml       # Rust dependencies and project metadata
+├── Cargo.toml       # Rust dependencies, project metadata, and Cast configuration
 ├── Dioxus.toml      # Dioxus build configuration
-├── Cast.toml        # Cast project configuration
 ├── package.json     # npm package for Playwright tests
 ├── playwright.config.ts  # Playwright test configuration
 └── README.md        # This file
