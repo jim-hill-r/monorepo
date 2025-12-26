@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
+const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
@@ -30,6 +31,7 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: HEADER_CSS }
         document::Link { rel: "stylesheet", href: NAVBAR_CSS }
+        document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
         Router::<Route> {}
     }
 }
@@ -91,7 +93,55 @@ fn Header() -> Element {
             }
         }
 
-        Outlet::<Route> {}
+        Sidebar {}
+
+        div {
+            id: "content",
+            Outlet::<Route> {}
+        }
+    }
+}
+
+#[component]
+fn Sidebar() -> Element {
+    rsx! {
+        aside {
+            id: "sidebar",
+            h2 { "Quick Navigation" }
+
+            div {
+                class: "sidebar-section",
+                h3 { "Daily Recipes" }
+                Link { to: Route::Recipe { day: 1 }, "Days 1-10" }
+                Link { to: Route::Recipe { day: 11 }, "Days 11-20" }
+                Link { to: Route::Recipe { day: 21 }, "Days 21-30" }
+                Link { to: Route::Recipe { day: 31 }, "Days 31-40" }
+                Link { to: Route::Recipe { day: 41 }, "Days 41-50" }
+                Link { to: Route::Recipe { day: 51 }, "Days 51-60" }
+                Link { to: Route::Recipe { day: 61 }, "Days 61-70" }
+                Link { to: Route::Recipe { day: 71 }, "Days 71-80" }
+                Link { to: Route::Recipe { day: 81 }, "Days 81-90" }
+                Link { to: Route::Recipe { day: 91 }, "Days 91-100" }
+            }
+
+            div {
+                class: "sidebar-section",
+                h3 { "Weekly Plans" }
+                Link { to: Route::Plan { week: 1 }, "Weeks 1-4" }
+                Link { to: Route::Plan { week: 5 }, "Weeks 5-8" }
+                Link { to: Route::Plan { week: 9 }, "Weeks 9-12" }
+                Link { to: Route::Plan { week: 13 }, "Weeks 13-16" }
+                Link { to: Route::Plan { week: 17 }, "Weeks 17-20" }
+                Link { to: Route::Plan { week: 21 }, "Weeks 21-24" }
+                Link { to: Route::Plan { week: 25 }, "Weeks 25-28" }
+                Link { to: Route::Plan { week: 29 }, "Weeks 29-32" }
+                Link { to: Route::Plan { week: 33 }, "Weeks 33-36" }
+                Link { to: Route::Plan { week: 37 }, "Weeks 37-40" }
+                Link { to: Route::Plan { week: 41 }, "Weeks 41-44" }
+                Link { to: Route::Plan { week: 45 }, "Weeks 45-48" }
+                Link { to: Route::Plan { week: 49 }, "Weeks 49-52" }
+            }
+        }
     }
 }
 
