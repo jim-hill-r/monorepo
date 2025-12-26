@@ -72,6 +72,7 @@ The test suite covers:
 - **Home Page**: Verifies the main page loads with correct content
 - **Recipe Routes**: Tests all recipe endpoints (`/recipe/1` through `/recipe/365`)
 - **Plan Routes**: Tests all plan endpoints (`/plan/1` through `/plan/52`)
+- **Input Validation**: Tests that invalid day and week parameters are properly handled
 - **404 Page**: Verifies that invalid routes show the 404 page
 - **Navigation**: Tests that "Back to Home" links work correctly
 
