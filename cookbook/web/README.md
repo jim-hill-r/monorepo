@@ -69,7 +69,7 @@ cargo check
 ## Project Structure
 
 ```
-cookbook_web/
+web/
 ├── src/
 │   └── main.rs      # Main application entry point
 ├── Cargo.toml       # Rust dependencies and project metadata
