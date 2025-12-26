@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
+const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
@@ -30,6 +31,7 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: HEADER_CSS }
         document::Link { rel: "stylesheet", href: NAVBAR_CSS }
+        document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
         Router::<Route> {}
     }
 }
@@ -91,7 +93,61 @@ fn Header() -> Element {
             }
         }
 
-        Outlet::<Route> {}
+        Sidebar {}
+
+        div {
+            id: "content",
+            Outlet::<Route> {}
+        }
+    }
+}
+
+#[component]
+fn Sidebar() -> Element {
+    rsx! {
+        aside {
+            id: "sidebar",
+            h2 { "Quick Navigation" }
+
+            div {
+                class: "sidebar-section",
+                h3 { "Daily Recipes" }
+                Link { to: Route::Recipe { day: 1 }, "Day 1" }
+                Link { to: Route::Recipe { day: 11 }, "Day 11" }
+                Link { to: Route::Recipe { day: 21 }, "Day 21" }
+                Link { to: Route::Recipe { day: 31 }, "Day 31" }
+                Link { to: Route::Recipe { day: 41 }, "Day 41" }
+                Link { to: Route::Recipe { day: 51 }, "Day 51" }
+                Link { to: Route::Recipe { day: 61 }, "Day 61" }
+                Link { to: Route::Recipe { day: 71 }, "Day 71" }
+                Link { to: Route::Recipe { day: 81 }, "Day 81" }
+                Link { to: Route::Recipe { day: 91 }, "Day 91" }
+                Link { to: Route::Recipe { day: 100 }, "Day 100" }
+                Link { to: Route::Recipe { day: 150 }, "Day 150" }
+                Link { to: Route::Recipe { day: 200 }, "Day 200" }
+                Link { to: Route::Recipe { day: 250 }, "Day 250" }
+                Link { to: Route::Recipe { day: 300 }, "Day 300" }
+                Link { to: Route::Recipe { day: 365 }, "Day 365" }
+            }
+
+            div {
+                class: "sidebar-section",
+                h3 { "Weekly Plans" }
+                Link { to: Route::Plan { week: 1 }, "Week 1" }
+                Link { to: Route::Plan { week: 5 }, "Week 5" }
+                Link { to: Route::Plan { week: 9 }, "Week 9" }
+                Link { to: Route::Plan { week: 13 }, "Week 13" }
+                Link { to: Route::Plan { week: 17 }, "Week 17" }
+                Link { to: Route::Plan { week: 21 }, "Week 21" }
+                Link { to: Route::Plan { week: 25 }, "Week 25" }
+                Link { to: Route::Plan { week: 29 }, "Week 29" }
+                Link { to: Route::Plan { week: 33 }, "Week 33" }
+                Link { to: Route::Plan { week: 37 }, "Week 37" }
+                Link { to: Route::Plan { week: 41 }, "Week 41" }
+                Link { to: Route::Plan { week: 45 }, "Week 45" }
+                Link { to: Route::Plan { week: 52 }, "Week 52" }
+            }
+        }
     }
 }
 
