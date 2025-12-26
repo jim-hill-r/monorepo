@@ -175,3 +175,91 @@ test.describe('404 Page', () => {
     await expect(page.locator('h1')).toHaveText('Cookbook');
   });
 });
+
+test.describe('Input Validation', () => {
+  test('should show error for day 0', async ({ page }) => {
+    await page.goto('/recipe/0');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for invalid day error
+    await expect(page.locator('h1')).toHaveText('Invalid Day');
+    await expect(page.locator('p')).toContainText('Day 0 is not valid');
+    await expect(page.locator('p')).toContainText('between 1 and 365');
+  });
+
+  test('should show error for day 366', async ({ page }) => {
+    await page.goto('/recipe/366');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for invalid day error
+    await expect(page.locator('h1')).toHaveText('Invalid Day');
+    await expect(page.locator('p')).toContainText('Day 366 is not valid');
+    await expect(page.locator('p')).toContainText('between 1 and 365');
+  });
+
+  test('should show error for day 999', async ({ page }) => {
+    await page.goto('/recipe/999');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for invalid day error
+    await expect(page.locator('h1')).toHaveText('Invalid Day');
+    await expect(page.locator('p')).toContainText('Day 999 is not valid');
+  });
+
+  test('should show error for week 0', async ({ page }) => {
+    await page.goto('/plan/0');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for invalid week error
+    await expect(page.locator('h1')).toHaveText('Invalid Week');
+    await expect(page.locator('p')).toContainText('Week 0 is not valid');
+    await expect(page.locator('p')).toContainText('between 1 and 52');
+  });
+
+  test('should show error for week 53', async ({ page }) => {
+    await page.goto('/plan/53');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for invalid week error
+    await expect(page.locator('h1')).toHaveText('Invalid Week');
+    await expect(page.locator('p')).toContainText('Week 53 is not valid');
+    await expect(page.locator('p')).toContainText('between 1 and 52');
+  });
+
+  test('should show error for week 100', async ({ page }) => {
+    await page.goto('/plan/100');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for invalid week error
+    await expect(page.locator('h1')).toHaveText('Invalid Week');
+    await expect(page.locator('p')).toContainText('Week 100 is not valid');
+  });
+
+  test('should have back to home link on invalid day page', async ({ page }) => {
+    await page.goto('/recipe/500');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for back to home link
+    const backLink = page.locator('a', { hasText: 'Back to Home' });
+    await expect(backLink).toBeVisible();
+    
+    // Click the link and verify navigation
+    await backLink.click();
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('h1')).toHaveText('Cookbook');
+  });
+
+  test('should have back to home link on invalid week page', async ({ page }) => {
+    await page.goto('/plan/75');
+    await page.waitForLoadState('networkidle');
+    
+    // Check for back to home link
+    const backLink = page.locator('a', { hasText: 'Back to Home' });
+    await expect(backLink).toBeVisible();
+    
+    // Click the link and verify navigation
+    await backLink.click();
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('h1')).toHaveText('Cookbook');
+  });
+});

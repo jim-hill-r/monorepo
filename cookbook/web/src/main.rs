@@ -44,22 +44,42 @@ fn Home() -> Element {
 
 #[component]
 fn Recipe(day: u32) -> Element {
-    rsx! {
-        div {
-            h1 { "Recipe for Day {day}" }
-            p { "This is a placeholder recipe for day {day} of the year." }
-            Link { to: Route::Home {}, "Back to Home" }
+    if !(1..=365).contains(&day) {
+        rsx! {
+            div {
+                h1 { "Invalid Day" }
+                p { "Day {day} is not valid. Please select a day between 1 and 365." }
+                Link { to: Route::Home {}, "Back to Home" }
+            }
+        }
+    } else {
+        rsx! {
+            div {
+                h1 { "Recipe for Day {day}" }
+                p { "This is a placeholder recipe for day {day} of the year." }
+                Link { to: Route::Home {}, "Back to Home" }
+            }
         }
     }
 }
 
 #[component]
 fn Plan(week: u32) -> Element {
-    rsx! {
-        div {
-            h1 { "Meal Plan for Week {week}" }
-            p { "This is a placeholder meal plan for week {week} of the year." }
-            Link { to: Route::Home {}, "Back to Home" }
+    if !(1..=52).contains(&week) {
+        rsx! {
+            div {
+                h1 { "Invalid Week" }
+                p { "Week {week} is not valid. Please select a week between 1 and 52." }
+                Link { to: Route::Home {}, "Back to Home" }
+            }
+        }
+    } else {
+        rsx! {
+            div {
+                h1 { "Meal Plan for Week {week}" }
+                p { "This is a placeholder meal plan for week {week} of the year." }
+                Link { to: Route::Home {}, "Back to Home" }
+            }
         }
     }
 }
