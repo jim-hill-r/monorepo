@@ -45,6 +45,7 @@ jobs:
           if [ "$total_open_prs" -gt 0 ]; then
             # Race condition: The PR that triggered this workflow might still appear in the results
             # Wait 5 seconds and check again to ensure we're not seeing the just-closed PR
+            # 5 seconds is sufficient for GitHub's API to reflect the closed PR state
             echo "Found agent PR(s), waiting 5 seconds to recheck (handles race condition)..."
             sleep 5
             
