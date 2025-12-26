@@ -76,7 +76,7 @@ fn Header() -> Element {
                 Some(Ok(provider)) => {
                     let provider = provider.clone();
                     rsx! {
-                        button { onclick: move |_| provider.login().unwrap(), "Login" }
+                        button { onclick: move |_| provider.login().unwrap(), "Login" } // TODO (agent-generated): Handle login() errors properly instead of unwrapping
                     }
                 },
                 Some(Err(err)) => rsx! {
