@@ -52,14 +52,13 @@ pub fn new(working_directory: impl AsRef<Path>, name: &str) -> Result<(), NewPro
 }
 
 /// Find all exemplar projects by scanning for Cast.toml files with exemplar = true
+/// Searches recursively through the entire monorepo starting from working_directory.
+/// Any project can be an exemplar - it's not limited to specific directories.
 fn find_exemplar_projects(working_directory: &Path) -> Result<Vec<PathBuf>, NewProjectError> {
     let mut exemplar_projects = Vec::new();
 
-    // Search in the projects directory for exemplar projects
-    let projects_dir = working_directory.join("projects");
-    if projects_dir.exists() {
-        find_exemplars_in_directory(&projects_dir, &mut exemplar_projects)?;
-    }
+    // Recursively search the entire monorepo for exemplar projects
+    find_exemplars_recursive(working_directory, &mut exemplar_projects)?;
 
     // Sort to ensure consistent ordering (alphabetical by path name)
     exemplar_projects.sort();
@@ -67,29 +66,43 @@ fn find_exemplar_projects(working_directory: &Path) -> Result<Vec<PathBuf>, NewP
     Ok(exemplar_projects)
 }
 
-/// Recursively find exemplar projects in a directory
-fn find_exemplars_in_directory(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::Result<()> {
+/// Recursively find exemplar projects in a directory tree
+/// This searches the entire directory tree, not just immediate subdirectories.
+/// Skips common directories that shouldn't contain projects (target, node_modules, .git, etc.)
+fn find_exemplars_recursive(dir: &Path, exemplars: &mut Vec<PathBuf>) -> io::Result<()> {
     if !dir.is_dir() {
         return Ok(());
     }
 
+    // Skip directories that shouldn't be searched
+    if let Some(dir_name) = dir.file_name() {
+        let dir_name = dir_name.to_string_lossy();
+        if dir_name == "target"
+            || dir_name == "node_modules"
+            || dir_name == ".git"
+            || dir_name == "dist"
+            || dir_name == "build"
+        {
+            return Ok(());
+        }
+    }
+
+    // Check if this directory is an exemplar project
+    // CastConfig::load_from_dir already handles checking for both Cast.toml and Cargo.toml
+    if let Ok(config) = CastConfig::load_from_dir(dir) {
+        if config.exemplar == Some(true) {
+            exemplars.push(dir.to_path_buf());
+        }
+    }
+
+    // Recursively search subdirectories (skip build directories)
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
-            // Check if the directory has either Cast.toml or Cargo.toml with cast metadata
-            let has_cast_toml = path.join("Cast.toml").exists();
-            let has_cargo_toml = path.join("Cargo.toml").exists();
-
-            if has_cast_toml || has_cargo_toml {
-                // Try to load the config from the directory (will check both files)
-                if let Ok(config) = CastConfig::load_from_dir(&path) {
-                    if config.exemplar == Some(true) {
-                        exemplars.push(path);
-                    }
-                }
-            }
+            // The recursive call will check if this is a build directory
+            find_exemplars_recursive(&path, exemplars)?;
         }
     }
 
@@ -720,5 +733,154 @@ mod tests {
         assert!(!is_valid_git_ref("branch&whoami"));
         assert!(!is_valid_git_ref("branch|cat /etc/passwd"));
         assert!(!is_valid_git_ref(&"a".repeat(300))); // Too long
+    }
+
+    #[test]
+    fn test_find_exemplars_searches_entire_monorepo_recursively() {
+        let tmp_dir = TempDir::new("test_recursive").unwrap();
+
+        // Create a nested structure with exemplars at various levels
+        // root/workspace1/proj1 (exemplar)
+        // root/workspace2/nested/proj2 (exemplar)
+        // root/standalone_proj (exemplar)
+        // root/workspace3/proj3 (not exemplar)
+
+        let proj1 = tmp_dir.path().join("workspace1/proj1");
+        let proj2 = tmp_dir.path().join("workspace2/nested/proj2");
+        let standalone = tmp_dir.path().join("standalone_proj");
+        let proj3 = tmp_dir.path().join("workspace3/proj3");
+
+        fs::create_dir_all(&proj1).unwrap();
+        fs::create_dir_all(&proj2).unwrap();
+        fs::create_dir_all(&standalone).unwrap();
+        fs::create_dir_all(&proj3).unwrap();
+
+        // Mark first three as exemplars
+        fs::write(proj1.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(proj2.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(standalone.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(proj3.join("Cast.toml"), "").unwrap(); // Not an exemplar
+
+        // Find all exemplar projects
+        let result = find_exemplar_projects(tmp_dir.path());
+        assert!(result.is_ok());
+
+        let exemplars = result.unwrap();
+        assert_eq!(exemplars.len(), 3);
+
+        // Verify all three exemplars are found (sorted alphabetically by full path)
+        // The sorting is by full path: standalone_proj, workspace1/proj1, workspace2/nested/proj2
+        assert!(exemplars[0].ends_with("standalone_proj"));
+        assert!(exemplars[1].ends_with("proj1"));
+        assert!(exemplars[2].ends_with("proj2"));
+    }
+
+    #[test]
+    fn test_find_exemplars_skips_build_directories() {
+        let tmp_dir = TempDir::new("test_skip_dirs").unwrap();
+
+        // Create exemplars in normal directories
+        let proj1 = tmp_dir.path().join("workspace/proj1");
+        fs::create_dir_all(&proj1).unwrap();
+        fs::write(proj1.join("Cast.toml"), "exemplar = true").unwrap();
+
+        // Create exemplars in directories that should be skipped
+        let target_proj = tmp_dir.path().join("workspace/target/proj2");
+        let node_proj = tmp_dir.path().join("workspace/node_modules/proj3");
+        let git_proj = tmp_dir.path().join("workspace/.git/proj4");
+
+        fs::create_dir_all(&target_proj).unwrap();
+        fs::create_dir_all(&node_proj).unwrap();
+        fs::create_dir_all(&git_proj).unwrap();
+
+        fs::write(target_proj.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(node_proj.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(git_proj.join("Cast.toml"), "exemplar = true").unwrap();
+
+        // Find exemplar projects
+        let result = find_exemplar_projects(tmp_dir.path());
+        assert!(result.is_ok());
+
+        let exemplars = result.unwrap();
+        // Should only find proj1, not the ones in target/node_modules/.git
+        assert_eq!(exemplars.len(), 1);
+        assert!(exemplars[0].ends_with("proj1"));
+    }
+
+    #[test]
+    fn test_find_exemplars_works_with_cargo_toml_metadata() {
+        let tmp_dir = TempDir::new("test_cargo_metadata").unwrap();
+
+        // Create a project with exemplar flag in Cargo.toml metadata
+        let proj = tmp_dir.path().join("proj_with_metadata");
+        fs::create_dir_all(&proj).unwrap();
+
+        fs::write(
+            proj.join("Cargo.toml"),
+            "[package]\nname = \"test\"\n\n[package.metadata.cast]\nexemplar = true",
+        )
+        .unwrap();
+
+        // Find exemplar projects
+        let result = find_exemplar_projects(tmp_dir.path());
+        assert!(result.is_ok());
+
+        let exemplars = result.unwrap();
+        assert_eq!(exemplars.len(), 1);
+        assert!(exemplars[0].ends_with("proj_with_metadata"));
+    }
+
+    #[test]
+    fn test_find_exemplars_in_deeply_nested_structure() {
+        let tmp_dir = TempDir::new("test_deep_nest").unwrap();
+
+        // Create a deeply nested exemplar
+        let deep_proj = tmp_dir.path().join("a/b/c/d/e/deep_exemplar");
+        fs::create_dir_all(&deep_proj).unwrap();
+        fs::write(deep_proj.join("Cast.toml"), "exemplar = true").unwrap();
+
+        // Find exemplar projects
+        let result = find_exemplar_projects(tmp_dir.path());
+        assert!(result.is_ok());
+
+        let exemplars = result.unwrap();
+        assert_eq!(exemplars.len(), 1);
+        assert!(exemplars[0].ends_with("deep_exemplar"));
+    }
+
+    #[test]
+    fn test_find_exemplars_handles_mixed_cast_and_cargo_toml() {
+        let tmp_dir = TempDir::new("test_mixed").unwrap();
+
+        // Create three projects:
+        // 1. Only Cast.toml with exemplar = true
+        // 2. Only Cargo.toml with cast metadata exemplar = true
+        // 3. Both Cast.toml and Cargo.toml, only Cast.toml has exemplar = true
+
+        let proj1 = tmp_dir.path().join("proj1_cast_only");
+        let proj2 = tmp_dir.path().join("proj2_cargo_only");
+        let proj3 = tmp_dir.path().join("proj3_both");
+
+        fs::create_dir_all(&proj1).unwrap();
+        fs::create_dir_all(&proj2).unwrap();
+        fs::create_dir_all(&proj3).unwrap();
+
+        fs::write(proj1.join("Cast.toml"), "exemplar = true").unwrap();
+
+        fs::write(
+            proj2.join("Cargo.toml"),
+            "[package]\nname = \"test\"\n\n[package.metadata.cast]\nexemplar = true",
+        )
+        .unwrap();
+
+        fs::write(proj3.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(proj3.join("Cargo.toml"), "[package]\nname = \"test\"").unwrap();
+
+        // Find exemplar projects
+        let result = find_exemplar_projects(tmp_dir.path());
+        assert!(result.is_ok());
+
+        let exemplars = result.unwrap();
+        assert_eq!(exemplars.len(), 3);
     }
 }

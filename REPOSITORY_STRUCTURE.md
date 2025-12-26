@@ -13,14 +13,15 @@ This document describes the organization and structure of this monorepo to help 
 ├── profiles/            # User profiles and personal content
 │   ├── jimhillr/        # Personal profile website for jimhillr
 │   └── content_provider/ # Content provider library
+├── example/             # Exemplar projects and templates
+│   ├── base/            # Exemplar project with base configuration
+│   ├── example_rust_library/ # Exemplar project for libraries
+│   └── binary/          # Exemplar project for binaries
 ├── docs/                # Documentation and learning resources
 ├── cast/                # Core Cast library for monorepo tooling
 ├── cast_cli/            # Cast command-line interface
 ├── agent-copilot/       # Binary for creating GitHub Copilot agent tasks
 │   └── prompts/         # Prompts for GitHub Copilot agents
-├── base/                # Exemplar project with base configuration
-├── example_rust_library/ # Exemplar project for libraries
-├── binary/              # Exemplar project for binaries
 ├── [other projects]     # Various projects and applications
 ├── ISSUES.md            # Project-wide TODO and issue tracking
 └── README.md            # Main README (symlink to docs/README.md)
@@ -30,6 +31,14 @@ This document describes the organization and structure of this monorepo to help 
 
 ### `/macos/`
 Contains setup guide and instructions for configuring a new macOS machine with the required global dependencies for this monorepo (Rust, npm, etc.).
+
+### `/example/`
+Contains exemplar projects that serve as templates for creating new projects:
+- `base/` - Basic project structure with standard directories
+- `example_rust_library/` - Template for Rust libraries
+- `binary/` - Template for Rust binary/CLI applications
+
+These projects are marked with `exemplar = true` in their `Cast.toml` files and are used by the `cast project new` command.
 
 ### `/profiles/`
 Contains:
@@ -72,10 +81,10 @@ The `cast` CLI is the primary tool for managing this monorepo:
 
 ## Exemplar Projects
 
-Projects marked with `exemplar = true` in `Cast.toml` serve as templates:
-- `base/` - Basic project structure
-- `example_rust_library/` - Rust library template
-- `binary/` - Rust binary/CLI template
+The `example/` workspace contains exemplar projects marked with `exemplar = true` in `Cast.toml` that serve as templates:
+- `example/base/` - Basic project structure
+- `example/example_rust_library/` - Rust library template
+- `example/binary/` - Rust binary/CLI template
 
 When creating a new project, Cast copies exemplar projects in alphabetical order, with later ones overwriting files from earlier ones.
 
@@ -102,7 +111,7 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 1. **Project structure**: All projects are located in the root directory, not under a "projects/" subdirectory
 2. **Docs location**: The docs folder is in the root directory at `/docs/`
 3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
-4. **Exemplar projects**: Base, example_rust_library, and binary are templates - don't modify unless necessary
+4. **Exemplar projects**: The `example/` workspace contains template projects (base, example_rust_library, binary) - don't modify unless updating templates
 5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
 6. **Concurrency**: Only one agent task should run at a time (handled by workflows)
 7. **Cast Tooling**: All projects should have a Cast.toml if it is missing.
