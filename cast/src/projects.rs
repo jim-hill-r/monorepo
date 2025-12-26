@@ -55,11 +55,20 @@ pub fn new(working_directory: impl AsRef<Path>, name: &str) -> Result<(), NewPro
 fn find_exemplar_projects(working_directory: &Path) -> Result<Vec<PathBuf>, NewProjectError> {
     let mut exemplar_projects = Vec::new();
 
-    // Search in the projects directory for exemplar projects
+    // Search in the example directory for exemplar projects (primary location)
+    let example_dir = working_directory.join("example");
+    if example_dir.exists() {
+        find_exemplars_in_directory(&example_dir, &mut exemplar_projects)?;
+    }
+
+    // Search in the projects directory for exemplar projects (legacy location)
     let projects_dir = working_directory.join("projects");
     if projects_dir.exists() {
         find_exemplars_in_directory(&projects_dir, &mut exemplar_projects)?;
     }
+
+    // Search in the root directory for exemplar projects (for backwards compatibility)
+    find_exemplars_in_directory(working_directory, &mut exemplar_projects)?;
 
     // Sort to ensure consistent ordering (alphabetical by path name)
     exemplar_projects.sort();
