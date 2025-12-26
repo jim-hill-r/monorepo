@@ -52,11 +52,11 @@ function updateStatusBarItem(): void {
   setTimeout(() => updateStatusBarItem(), 1000);
 }
 
-function getSessionStart(sessionLog: string): Date | undefined {
+export function getSessionStart(sessionLog: string): Date | undefined {
   const lines = sessionLog.split("\n");
   for (let line of lines) {
     const [date, type] = line.split(",");
-    if (type === "start") {
+    if (type === "Start") {
       return new Date(Date.parse(date));
     }
   }
