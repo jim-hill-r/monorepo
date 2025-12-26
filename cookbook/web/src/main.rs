@@ -1,6 +1,14 @@
+use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
+use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
+
 use dioxus::prelude::*;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
+const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
+
+const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
+const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
+const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 fn main() {
     dioxus::launch(App);
@@ -8,8 +16,20 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let auth = use_resource(|| async move {
+        WebAuthProvider::new(ProviderConfig {
+            client_id: CLIENT_ID.into(),
+            auth_url: AUTH_URL.into(),
+            token_url: TOKEN_URL.into(),
+            redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
+        })
+        .await
+    });
+    use_context_provider(|| auth);
+
     rsx! {
         document::Link { rel: "stylesheet", href: HEADER_CSS }
+        document::Link { rel: "stylesheet", href: NAVBAR_CSS }
         Router::<Route> {}
     }
 }
@@ -32,6 +52,9 @@ enum Route {
 
 #[component]
 fn Header() -> Element {
+    let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
+    let auth_state = auth.read();
+
     rsx! {
         header {
             id: "header",
@@ -46,6 +69,28 @@ fn Header() -> Element {
                 Link { to: Route::Plan { week: 1 }, "Plans" }
             }
         }
+        
+        div {
+            id: "navbar",
+            match &*auth_state {
+                Some(Ok(provider)) => {
+                    let provider = provider.clone();
+                    rsx! {
+                        button { onclick: move |_| provider.login().unwrap(), "Login" }
+                    }
+                },
+                Some(Err(err)) => rsx! {
+                    div {
+                        class: "error",
+                        "Authentication Error: {err}"
+                    }
+                },
+                None => rsx! {
+                    div { "Loading authentication..." }
+                },
+            }
+        }
+        
         Outlet::<Route> {}
     }
 }

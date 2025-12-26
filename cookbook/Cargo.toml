@@ -4,6 +4,7 @@ members = ["web"]
 
 [workspace.dependencies]
 dioxus = { version = "0.7.2" }
+auth_sdk = { path = "../auth_sdk" }
 
 [profile]
 

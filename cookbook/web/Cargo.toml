@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 dioxus = { workspace = true, features = ["web", "router"] }
+auth_sdk = { workspace = true }
 
 [features]
 default = ["web"]

@@ -79,9 +79,15 @@ The test suite covers:
   - Header visibility and content on all pages
   - Navigation link functionality (Home, Recipes, Plans)
   - Header persistence during page navigation
+- **Authentication Navbar**: Tests the authentication navbar functionality
+  - Navbar visibility on all pages
+  - Login button or loading/error state display
+  - Navbar positioning below header
+  - Navbar persistence during navigation
+  - Button styling and interactivity
 
 ## Writing Tests
 
-When adding new features or routes, please add corresponding tests following the existing patterns in the `routing.spec.ts` and `header-navigation.spec.ts` files.
+When adding new features or routes, please add corresponding tests following the existing patterns in the `routing.spec.ts`, `header-navigation.spec.ts`, and `auth-navbar.spec.ts` files.
 
 For more information on Playwright, see the [official documentation](https://playwright.dev/).
