@@ -54,8 +54,14 @@ function updateStatusBarItem(): void {
 
 export function getSessionStart(sessionLog: string): Date | undefined {
   const lines = sessionLog.split("\n");
-  for (let line of lines) {
+  for (const line of lines) {
+    if (!line.trim()) {
+      continue;
+    }
     const [date, type] = line.split(",");
+    if (!date || !type) {
+      continue;
+    }
     if (type === "Start") {
       return new Date(Date.parse(date));
     }
