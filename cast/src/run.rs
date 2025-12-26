@@ -13,7 +13,7 @@ pub enum RunError {
     ConfigError(#[from] crate::config::ConfigError),
 }
 
-/// Run appropriate run command for a project
+/// Run appropriate command for a project
 /// - For dioxus projects: runs `dx serve`
 /// - For other projects: runs `cargo run`
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), RunError> {
