@@ -50,8 +50,22 @@ fn find_typescript_projects() -> Vec<PathBuf> {
     projects
 }
 
-/// Recursively check a directory for package.json files
+/// Recursively check a directory for package.json files, with depth limit
 fn check_dir_for_package_json(dir: &Path, projects: &mut Vec<PathBuf>) {
+    check_dir_for_package_json_with_depth(dir, projects, 0, 5);
+}
+
+/// Recursively check a directory for package.json files with depth tracking
+fn check_dir_for_package_json_with_depth(
+    dir: &Path,
+    projects: &mut Vec<PathBuf>,
+    depth: usize,
+    max_depth: usize,
+) {
+    if depth > max_depth {
+        return;
+    }
+
     // Skip common directories that don't need checking
     if let Some(name) = dir.file_name().and_then(|n| n.to_str()) {
         if name == "node_modules" || name == "target" || name == ".git" {
@@ -64,12 +78,12 @@ fn check_dir_for_package_json(dir: &Path, projects: &mut Vec<PathBuf>) {
         projects.push(dir.to_path_buf());
     }
 
-    // Recursively check subdirectories (limit depth to avoid deep traversal)
+    // Recursively check subdirectories
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
-                check_dir_for_package_json(&path, projects);
+                check_dir_for_package_json_with_depth(&path, projects, depth + 1, max_depth);
             }
         }
     }
@@ -80,23 +94,36 @@ fn validate_tsconfig_strict(tsconfig_path: &Path) -> Result<(), String> {
     let content = fs::read_to_string(tsconfig_path)
         .map_err(|e| format!("Failed to read tsconfig.json: {}", e))?;
 
-    // Simple check: look for "strict": true in the file
-    // This is more robust than trying to parse JSONC (JSON with comments)
-    // which TypeScript allows in tsconfig.json files
-    let strict_pattern_true = r#""strict": true"#;
-    let strict_pattern_false = r#""strict": false"#;
+    // Check for "strict" with various whitespace patterns
+    // Handles both "strict": true and "strict" : true (with extra spaces)
+    // This works with JSONC (JSON with comments) that TypeScript allows
 
-    if content.contains(strict_pattern_false) {
-        return Err(
-            "tsconfig.json must have 'compilerOptions.strict' set to true, not false".to_string(),
-        );
+    // First check if strict is explicitly set to false
+    if content.contains("\"strict\"") {
+        // Look for the value after "strict"
+        if let Some(pos) = content.find("\"strict\"") {
+            let after_strict = &content[pos + 8..]; // Skip past "strict"
+                                                    // Skip whitespace and colon
+            let value_start = after_strict
+                .chars()
+                .skip_while(|c| c.is_whitespace() || *c == ':')
+                .take(10)
+                .collect::<String>();
+
+            if value_start.trim_start().starts_with("false") {
+                return Err(
+                    "tsconfig.json must have 'compilerOptions.strict' set to true, not false"
+                        .to_string(),
+                );
+            }
+
+            if value_start.trim_start().starts_with("true") {
+                return Ok(());
+            }
+        }
     }
 
-    if !content.contains(strict_pattern_true) {
-        return Err("tsconfig.json must have '\"strict\": true' in compilerOptions".to_string());
-    }
-
-    Ok(())
+    Err("tsconfig.json must have '\"strict\": true' in compilerOptions".to_string())
 }
 
 #[test]
