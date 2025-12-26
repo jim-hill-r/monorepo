@@ -43,6 +43,23 @@ jobs:
           echo "Total: $total_open_prs open agent PR(s)"
           
           if [ "$total_open_prs" -gt 0 ]; then
+            # Race condition: The PR that triggered this workflow might still appear in the results
+            # Wait 5 seconds and check again to ensure we're not seeing the just-closed PR
+            echo "Found agent PR(s), waiting 5 seconds to recheck (handles race condition)..."
+            sleep 5
+            
+            # Recheck for PRs
+            echo "Rechecking for open PRs..."
+            copilot_prs=$(gh pr list --state open --author Copilot --json number --jq 'length')
+            swe_agent_prs=$(gh pr list --state open --author "copilot-swe-agent[bot]" --json number --jq 'length')
+            total_open_prs=$((copilot_prs + swe_agent_prs))
+            
+            echo "After recheck: Found $copilot_prs open PR(s) from Copilot"
+            echo "After recheck: Found $swe_agent_prs open PR(s) from copilot-swe-agent[bot]"
+            echo "After recheck: Total: $total_open_prs open agent PR(s)"
+          fi
+          
+          if [ "$total_open_prs" -gt 0 ]; then
             echo "skip_task=true" >> $GITHUB_OUTPUT
             echo "⚠️ Skipping new agent task - found $total_open_prs active agent task(s)"
             # List the open PRs for debugging
