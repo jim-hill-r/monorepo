@@ -163,3 +163,14 @@ fn test_workflow_has_conditional_steps() {
         "Workflow should conditionally execute steps based on running agents check"
     );
 }
+
+#[test]
+fn test_workflow_has_retry_logic_for_race_condition() {
+    let content = fs::read_to_string(get_start_a_new_task_workflow_path())
+        .expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("sleep 5") && content.contains("Rechecking for open PRs"),
+        "Workflow should retry checking for agent tasks after a delay to handle race conditions"
+    );
+}
