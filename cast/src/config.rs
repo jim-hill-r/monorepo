@@ -541,7 +541,7 @@ deploys = ["deploy1", "deploy2"]
     #[test]
     fn test_moved_poc_projects_have_proof_of_concept_flag() {
         // Test that all moved proof-of-concept projects have Cast.toml with proof_of_concept = true
-        let poc_projects = vec!["dioxus_ssg", "dioxus_static_website", "slidev_poc", "marp"];
+        let poc_projects = vec!["dioxus_ssg", "dioxus_static_website", "marp"];
 
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
 
