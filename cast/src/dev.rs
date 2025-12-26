@@ -1,13 +1,12 @@
 use crate::config::CastConfig;
-use crate::utils::format_cargo_output;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DevError {
-    #[error("Dev command failed: {0}")]
-    DevFailed(String),
+    #[error("Dev command failed")]
+    DevFailed,
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("Config error: {0}")]
@@ -29,13 +28,13 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DevError> {
         _ => ("cargo", vec!["run"]),
     };
 
-    let output = Command::new(command)
+    let status = Command::new(command)
         .args(&args)
         .current_dir(working_directory)
-        .output()?;
+        .status()?;
 
-    if !output.status.success() {
-        return Err(DevError::DevFailed(format_cargo_output(&output)));
+    if !status.success() {
+        return Err(DevError::DevFailed);
     }
 
     Ok(())
@@ -122,9 +121,8 @@ mod tests {
         // We expect an error because dx is likely not installed
         // but we verify we tried to run the right command
         assert!(result.is_err());
-        if let Err(DevError::DevFailed(msg)) = result {
-            // Error message should indicate dx command was attempted
-            assert!(msg.contains("dx") || msg.contains("No such file"));
+        if let Err(DevError::DevFailed) = result {
+            // Expected error type
         } else if let Err(DevError::IoError(_)) = result {
             // Also acceptable - dx command not found
         } else {
@@ -154,8 +152,8 @@ mod tests {
 
         // We expect an error because dx is likely not installed
         assert!(result.is_err());
-        if let Err(DevError::DevFailed(msg)) = result {
-            assert!(msg.contains("dx") || msg.contains("No such file"));
+        if let Err(DevError::DevFailed) = result {
+            // Expected error type
         } else if let Err(DevError::IoError(_)) = result {
             // Also acceptable - dx command not found
         } else {

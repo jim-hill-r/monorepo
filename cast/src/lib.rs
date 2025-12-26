@@ -6,4 +6,3 @@ pub mod dev;
 pub mod projects;
 pub mod sessions;
 pub mod test;
-pub mod utils;
