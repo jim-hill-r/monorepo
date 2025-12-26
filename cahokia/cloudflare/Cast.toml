@@ -1,0 +1,4 @@
+# Cast configuration for cloudflare deployment project
+
+framework = "cloudflare-pages"
+project_type = "iac"

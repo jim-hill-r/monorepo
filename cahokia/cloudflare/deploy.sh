@@ -4,7 +4,7 @@
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CAHOKIA_WEB_DIR="$PROJECT_DIR/../cahokia/web"
+CAHOKIA_WEB_DIR="$PROJECT_DIR/../web"
 DIST_DIR="$CAHOKIA_WEB_DIR/dist"
 
 echo "=== Cahokia Web Cloudflare Pages Deployment ==="
