@@ -380,7 +380,12 @@ mod tests {
         )
         .unwrap();
 
-        let result = execute(Args { cmd: Commands::Deploy }, tmp_dir.path());
+        let result = execute(
+            Args {
+                cmd: Commands::Deploy,
+            },
+            tmp_dir.path(),
+        );
         // Deploy will fail without wrangler.toml or wrangler installed, but it should
         // at least recognize it as a valid command for an IAC project
         assert!(result.is_err());

@@ -51,10 +51,7 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DeployError> {
 /// Deploy to Cloudflare Pages
 fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> {
     // Check if wrangler is installed
-    let wrangler_check = Command::new("wrangler")
-        .arg("--version")
-        .output()
-        .ok();
+    let wrangler_check = Command::new("wrangler").arg("--version").output().ok();
 
     if wrangler_check.is_none() || !wrangler_check.unwrap().status.success() {
         return Err(DeployError::WranglerNotInstalled);
@@ -139,30 +136,30 @@ fn find_deploy_source(working_directory: &Path) -> Result<PathBuf, DeployError> 
 /// Load environment variables from a .env file
 fn load_env_file(env_file: &Path) -> Result<(), DeployError> {
     let content = fs::read_to_string(env_file)?;
-    
+
     for line in content.lines() {
         let line = line.trim();
-        
+
         // Skip empty lines and comments
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        
+
         // Parse KEY=VALUE format
         if let Some((key, value)) = line.split_once('=') {
             let key = key.trim();
             let value = value.trim();
-            
+
             // Remove surrounding quotes if present
             let value = value
                 .strip_prefix('"')
                 .and_then(|v| v.strip_suffix('"'))
                 .unwrap_or(value);
-            
+
             std::env::set_var(key, value);
         }
     }
-    
+
     Ok(())
 }
 
@@ -175,7 +172,7 @@ mod tests {
     #[test]
     fn test_deploy_fails_without_iac_project_type() {
         let tmp_dir = TempDir::new("test_deploy_not_iac").unwrap();
-        
+
         // Create Cast.toml without project_type = "iac"
         fs::write(
             tmp_dir.path().join("Cast.toml"),
@@ -196,7 +193,7 @@ mod tests {
     #[test]
     fn test_deploy_fails_with_unsupported_framework() {
         let tmp_dir = TempDir::new("test_deploy_unsupported").unwrap();
-        
+
         // Create Cast.toml with unsupported framework
         fs::write(
             tmp_dir.path().join("Cast.toml"),
@@ -217,7 +214,7 @@ mod tests {
     #[test]
     fn test_deploy_cloudflare_fails_without_wrangler_toml() {
         let tmp_dir = TempDir::new("test_deploy_no_wrangler").unwrap();
-        
+
         // Create Cast.toml with cloudflare-pages
         fs::write(
             tmp_dir.path().join("Cast.toml"),
@@ -234,7 +231,7 @@ mod tests {
     #[test]
     fn test_find_deploy_source_finds_dist() {
         let tmp_dir = TempDir::new("test_find_dist").unwrap();
-        
+
         // Create a dist directory
         let dist_dir = tmp_dir.path().join("dist");
         fs::create_dir_all(&dist_dir).unwrap();
@@ -248,7 +245,7 @@ mod tests {
     #[test]
     fn test_find_deploy_source_finds_sibling_dist() {
         let tmp_dir = TempDir::new("test_find_sibling").unwrap();
-        
+
         // Create sibling web project with dist
         let web_dir = tmp_dir.path().join("web");
         fs::create_dir_all(&web_dir).unwrap();
