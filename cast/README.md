@@ -123,6 +123,13 @@ This command prints "starting CD" and is designed to be called by the Cast CD Gi
 
 Cast can create new projects from exemplar projects. Exemplar projects are marked with `exemplar = true` in their `Cast.toml` file.
 
+**Important: Exemplars vs Examples**
+
+- **Exemplar**: Any project in the monorepo marked with `exemplar = true` in its Cast configuration. An exemplar is a good starting point for creating new projects. Exemplars can exist anywhere in the monorepo - they are not limited to a specific directory like "example/".
+- **Example**: A workspace or directory (like `example/`) that may contain exemplar projects or demonstration code. The name "example" is just a conventional directory name and has no special meaning to Cast.
+
+Any project can be an exemplar, regardless of where it lives in the repository structure.
+
 ```rust
 use cast::projects;
 
@@ -131,16 +138,17 @@ projects::new("/path/to/monorepo", "my_project_name").unwrap();
 ```
 
 This will:
-1. Search for all exemplar projects in the `projects/` directory
-2. Copy each exemplar project to the new project location (later exemplars overwrite earlier ones)
+1. Recursively search the entire monorepo for projects marked with `exemplar = true`
+2. Copy each exemplar project to the new project location (later exemplars overwrite earlier ones, based on alphabetical ordering)
 3. Remove empty `.gitignore` placeholder files used for tracking empty directories in git
+4. Remove the `exemplar = true` flag from the new project's Cast.toml
 
 The resulting project will have a complete structure ready for development with:
 - `Cargo.toml` for Rust dependencies
 - `Cast.toml` for Cast-specific configuration
 - Standard directories: `src/`, `tests/`, `benches/`, `docs/`, etc.
 
-To create your own exemplar projects, simply add `exemplar = true` to the project's `Cast.toml` file.
+To create your own exemplar projects, simply add `exemplar = true` to any project's `Cast.toml` file. The Cast tool will find it automatically when creating new projects.
 
 ### Finding Projects with Changes
 
