@@ -2,6 +2,7 @@ pub mod args;
 pub mod build;
 pub mod ci;
 pub mod config;
+pub mod deploy;
 pub mod projects;
 pub mod run;
 pub mod sessions;

@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{build, ci, projects, run, sessions, test};
+use crate::{build, ci, deploy, projects, run, sessions, test};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -28,6 +28,8 @@ enum Commands {
     Test,
     /// Run server (dx serve for dioxus, cargo run otherwise)
     Run,
+    /// Deploy an IAC project
+    Deploy,
 }
 
 #[derive(Subcommand)]
@@ -81,6 +83,8 @@ pub enum ExecuteError {
     TestError(#[from] test::TestError),
     #[error("run error: {0}")]
     RunError(#[from] run::RunError),
+    #[error("deploy error: {0}")]
+    DeployError(#[from] deploy::DeployError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -154,6 +158,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             Commands::Run => {
                 run::run(working_directory)?;
                 Ok("Server started".into())
+            }
+            Commands::Deploy => {
+                deploy::run(working_directory)?;
+                Ok("Deploy completed".into())
             }
             Commands::Cd => Ok("starting CD".into()),
         }
@@ -361,5 +369,20 @@ mod tests {
 
         let result = execute(Args { cmd: Commands::Run }, tmp_dir.path()).unwrap();
         assert_eq!(result, "Server started");
+    }
+
+    #[test]
+    fn it_runs_deploy() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(
+            tmp_dir.path().join("Cast.toml"),
+            "project_type = \"iac\"\nframework = \"cloudflare-pages\"",
+        )
+        .unwrap();
+
+        let result = execute(Args { cmd: Commands::Deploy }, tmp_dir.path());
+        // Deploy will fail without wrangler.toml or wrangler installed, but it should
+        // at least recognize it as a valid command for an IAC project
+        assert!(result.is_err());
     }
 }

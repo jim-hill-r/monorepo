@@ -107,6 +107,45 @@ use cast::ci;
 ci::run("/path/to/project").unwrap();
 ```
 
+### Deploying Projects
+
+Cast provides a `deploy` command for deploying Infrastructure as Code (IAC) projects.
+
+```bash
+cast deploy
+```
+
+This command:
+1. Verifies the project is marked as `project_type = "iac"` in its Cast configuration
+2. Deploys the project based on its framework:
+   - **cloudflare-pages**: Deploys using `wrangler pages deploy`
+3. Automatically loads environment variables from `.env` file if present
+4. Finds and deploys the appropriate build artifacts (typically from a `dist` directory)
+
+#### Cloudflare Pages Deployment
+
+For Cloudflare Pages projects, the deploy command:
+- Checks that `wrangler` is installed
+- Reads `wrangler.toml` to determine the project name
+- Locates the build output directory (searches for `dist`, `public`, or `build` directories)
+- Loads secrets and environment variables from `.env` file if present
+- Runs `wrangler pages deploy <dist> --project-name=<name>`
+
+Example `.env` file for secrets:
+```
+CLOUDFLARE_API_TOKEN=your_token_here
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+```
+
+Example usage in library code:
+
+```rust
+use cast::deploy;
+
+// Run deploy on an IAC project
+deploy::run("/path/to/iac-project").unwrap();
+```
+
 ### Running CD (Continuous Deployment)
 
 Cast provides a `cd` command for continuous deployment workflows.
