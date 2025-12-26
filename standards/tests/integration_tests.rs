@@ -80,9 +80,20 @@ fn validate_tsconfig_strict(tsconfig_path: &Path) -> Result<(), String> {
     let content = fs::read_to_string(tsconfig_path)
         .map_err(|e| format!("Failed to read tsconfig.json: {}", e))?;
 
-    // Parse as JSON to check for strict: true
-    if !content.contains("\"strict\"") || !content.contains("true") {
-        return Err("tsconfig.json must have 'strict': true enabled".to_string());
+    // Simple check: look for "strict": true in the file
+    // This is more robust than trying to parse JSONC (JSON with comments)
+    // which TypeScript allows in tsconfig.json files
+    let strict_pattern_true = r#""strict": true"#;
+    let strict_pattern_false = r#""strict": false"#;
+
+    if content.contains(strict_pattern_false) {
+        return Err(
+            "tsconfig.json must have 'compilerOptions.strict' set to true, not false".to_string(),
+        );
+    }
+
+    if !content.contains(strict_pattern_true) {
+        return Err("tsconfig.json must have '\"strict\": true' in compilerOptions".to_string());
     }
 
     Ok(())
