@@ -19,12 +19,12 @@ A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-c
 
 ## Development
 
-### Running Dev Server
+### Running Server
 
-Cast provides a `dev` command that runs the appropriate development server for a project.
+Cast provides a `run` command that runs the appropriate server for a project.
 
 ```bash
-cast dev
+cast run
 ```
 
 This command automatically detects the project framework from the Cast configuration and runs:
@@ -36,10 +36,10 @@ The framework is determined by checking the `framework` field in the project's C
 Example usage in library code:
 
 ```rust
-use cast::dev;
+use cast::run;
 
-// Run dev server on a project
-dev::run("/path/to/project").unwrap();
+// Run server on a project
+run::run("/path/to/project").unwrap();
 ```
 
 ## CI/CD

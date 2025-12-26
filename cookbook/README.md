@@ -32,7 +32,7 @@ dx serve
 Or use the Cast CLI from the workspace root:
 
 ```bash
-cast dev
+cast run
 ```
 
 ## Building

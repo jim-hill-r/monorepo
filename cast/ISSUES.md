@@ -1,6 +1,5 @@
 # Priority Issues
 
-- TODO: Refactor `cast dev` command to be `cast run`.
 - TODO: Move rename cast project to cast_core.
 - TODO: Create a new cast project that is a workspace to contain the other cast projects.
 - TODO: Move `cast_core`project into the cast project workspace in directory `cast\core`
