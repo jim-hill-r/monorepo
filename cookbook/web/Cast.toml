@@ -1,6 +1,0 @@
-# Cast configuration file
-# This is a Dioxus web application
-
-project_type = "static_website"
-framework = "dioxus"
-deploys = ["cookbook-cloudflare"]
