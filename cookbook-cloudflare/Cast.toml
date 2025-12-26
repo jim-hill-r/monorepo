@@ -1,3 +1,4 @@
 # Cast configuration for cookbook-cloudflare deployment project
 
+project_type = "iac"
 framework = "cloudflare-pages"
