@@ -231,3 +231,28 @@ fn test_workflow_installs_clippy_component() {
         "Workflow does not explicitly install clippy component. Expected 'components: rustfmt, clippy' or similar."
     );
 }
+
+#[test]
+fn test_workflow_sets_cloudflare_api_token_from_secret() {
+    let content =
+        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("CLOUDFLARE_API_TOKEN")
+            && content.contains("GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN"),
+        "Workflow does not set CLOUDFLARE_API_TOKEN environment variable from GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN secret"
+    );
+}
+
+#[test]
+fn test_workflow_masks_cloudflare_api_token() {
+    let content =
+        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
+
+    // Check that the workflow uses secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN
+    // which is automatically masked by GitHub Actions
+    assert!(
+        content.contains("secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN"),
+        "Workflow should use secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN to ensure the token is masked in logs"
+    );
+}
