@@ -42,6 +42,36 @@ use cast::run;
 run::run("/path/to/project").unwrap();
 ```
 
+### Serving Static Files
+
+Cast provides a `serve` command that serves static files from the current directory on a simple HTTP server.
+
+```bash
+cast serve
+```
+
+This command:
+- Starts an HTTP server on `http://127.0.0.1:8000`
+- Serves files from the current directory
+- Automatically serves `index.html` when accessing directories
+- Includes proper Content-Type headers for common file types (HTML, CSS, JS, images, etc.)
+- Prevents directory traversal attacks
+
+This is useful for:
+- Testing static site builds locally
+- Serving documentation
+- Quick file sharing in development environments
+- Testing Dioxus SSG (Static Site Generation) builds
+
+Example usage in library code:
+
+```rust
+use cast::serve;
+
+// Serve static files from a directory
+serve::run("/path/to/static/files").unwrap();
+```
+
 ## CI/CD
 
 ### Building Projects

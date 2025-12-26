@@ -5,5 +5,6 @@ pub mod config;
 pub mod deploy;
 pub mod projects;
 pub mod run;
+pub mod serve;
 pub mod sessions;
 pub mod test;
