@@ -1,2 +1,12 @@
 /target
 Cargo.lock
+
+# Cloudflare / Wrangler
+.wrangler/
+.dev.vars
+wrangler.toml.backup
+
+# Node / environment files
+node_modules/
+.env
+.env.local
