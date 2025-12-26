@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
+
 fn main() {
     dioxus::launch(App);
 }
@@ -7,12 +9,14 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
+        document::Link { rel: "stylesheet", href: HEADER_CSS }
         Router::<Route> {}
     }
 }
 
 #[derive(Clone, Routable, Debug, PartialEq)]
 enum Route {
+    #[layout(Header)]
     #[route("/")]
     Home {},
 
@@ -24,6 +28,26 @@ enum Route {
 
     #[route("/:..route")]
     PageNotFound { route: Vec<String> },
+}
+
+#[component]
+fn Header() -> Element {
+    rsx! {
+        header {
+            id: "header",
+            div {
+                class: "header-title",
+                h1 { "Cookbook" }
+            }
+            nav {
+                class: "header-nav",
+                Link { to: Route::Home {}, "Home" }
+                Link { to: Route::Recipe { day: 1 }, "Recipes" }
+                Link { to: Route::Plan { week: 1 }, "Plans" }
+            }
+        }
+        Outlet::<Route> {}
+    }
 }
 
 #[component]
@@ -158,5 +182,27 @@ mod tests {
         assert!((1..=52).contains(&52), "Week 52 should be valid");
         assert!(!(1..=52).contains(&0), "Week 0 should be invalid");
         assert!(!(1..=52).contains(&53), "Week 53 should be invalid");
+    }
+
+    #[test]
+    fn test_route_home_path() {
+        // Test that Home route is at root path
+        assert_eq!(Route::Home {}.to_string(), "/");
+    }
+
+    #[test]
+    fn test_route_recipe_path() {
+        // Test that Recipe route generates correct path
+        assert_eq!(Route::Recipe { day: 1 }.to_string(), "/recipe/1");
+        assert_eq!(Route::Recipe { day: 100 }.to_string(), "/recipe/100");
+        assert_eq!(Route::Recipe { day: 365 }.to_string(), "/recipe/365");
+    }
+
+    #[test]
+    fn test_route_plan_path() {
+        // Test that Plan route generates correct path
+        assert_eq!(Route::Plan { week: 1 }.to_string(), "/plan/1");
+        assert_eq!(Route::Plan { week: 26 }.to_string(), "/plan/26");
+        assert_eq!(Route::Plan { week: 52 }.to_string(), "/plan/52");
     }
 }
