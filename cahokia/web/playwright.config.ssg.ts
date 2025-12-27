@@ -28,7 +28,8 @@ export default defineConfig({
   
   /* Shared settings for all the projects below. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
+    /* Base URL is typically overridden by individual tests managing their own servers */
+    /* For example, SSG tests override this with their specific port */
     baseURL: 'http://localhost:8080',
     
     /* Collect trace when retrying the failed test. */

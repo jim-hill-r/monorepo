@@ -163,7 +163,9 @@ function createStaticServer(directory: string, port: number): Promise<http.Serve
  */
 async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
   const bundleTimeout = config.bundleTimeout || DEFAULT_BUNDLE_TIMEOUT_MS;
-  const bundleOutputDir = path.join(
+  
+  // When running from workspace root, dx outputs to cahokia/target/dx/web/debug/web/public
+  const workspaceBundleOutputDir = path.join(
     __dirname,
     '..',
     '..',
@@ -171,14 +173,14 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     'target',
     'dx',
     'web',
-    'release',
+    'debug',
     'web',
     'public'
   );
 
   if (config.skipBundle) {
     console.log('Skipping bundle creation (skipBundle=true)');
-    return bundleOutputDir;
+    return workspaceBundleOutputDir;
   }
 
   // Check if dx is installed
@@ -208,29 +210,7 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     }
     
     console.log('Bundle creation completed');
-    
-    // Note: When running from workspace root, dx outputs to cahokia/target/dx/
-    // but the public directory is still in the same relative location
-    const workspaceBundle = path.join(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      'target',
-      'dx',
-      'web',
-      'debug',  // Changed from 'release' to 'debug' as dx defaults to debug when no --release flag
-      'web',
-      'public'
-    );
-    
-    // Check if the bundle exists
-    if (fs.existsSync(workspaceBundle)) {
-      return workspaceBundle;
-    } else {
-      // Fallback to original location if exists
-      return bundleOutputDir;
-    }
+    return workspaceBundleOutputDir;
   } catch (error) {
     const err = error as Error;
     console.error('Failed to create SSG bundle:', err.message);
