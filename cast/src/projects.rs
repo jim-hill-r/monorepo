@@ -308,14 +308,14 @@ mod tests {
         let projects_library = tmp_dir.path().join("projects/library");
 
         // Create base exemplar with some files and directories
-        fs::create_dir_all(&projects_base.join("src")).unwrap();
-        fs::create_dir_all(&projects_base.join("docs")).unwrap();
+        fs::create_dir_all(projects_base.join("src")).unwrap();
+        fs::create_dir_all(projects_base.join("docs")).unwrap();
         fs::write(projects_base.join("README.md"), "# Base README").unwrap();
         fs::write(projects_base.join("src/main.rs"), "fn main() {}").unwrap();
         fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
 
         // Create library exemplar with Cargo.toml
-        fs::create_dir_all(&projects_library.join("src")).unwrap();
+        fs::create_dir_all(projects_library.join("src")).unwrap();
         fs::write(
             projects_library.join("Cargo.toml"),
             "[package]\nname = \"test\"",
@@ -353,8 +353,8 @@ mod tests {
         let projects_library = tmp_dir.path().join("projects/library");
 
         // Create the same file in both exemplars
-        fs::create_dir_all(&projects_base.join("src")).unwrap();
-        fs::create_dir_all(&projects_library.join("src")).unwrap();
+        fs::create_dir_all(projects_base.join("src")).unwrap();
+        fs::create_dir_all(projects_library.join("src")).unwrap();
         fs::write(projects_base.join("src/lib.rs"), "// base version").unwrap();
         fs::write(projects_base.join("Cast.toml"), "exemplar = true").unwrap();
         fs::write(projects_library.join("src/lib.rs"), "// library version").unwrap();
@@ -376,8 +376,8 @@ mod tests {
 
         // Create exemplar projects with empty .gitignore files
         let projects_base = tmp_dir.path().join("projects/base");
-        fs::create_dir_all(&projects_base.join("src")).unwrap();
-        fs::create_dir_all(&projects_base.join("docs")).unwrap();
+        fs::create_dir_all(projects_base.join("src")).unwrap();
+        fs::create_dir_all(projects_base.join("docs")).unwrap();
 
         // Create empty .gitignore files
         fs::write(projects_base.join("src/.gitignore"), "").unwrap();
@@ -432,7 +432,7 @@ mod tests {
         let dst = tmp_dir.path().join("dst");
 
         // Create nested directory structure
-        fs::create_dir_all(&src.join("a/b/c")).unwrap();
+        fs::create_dir_all(src.join("a/b/c")).unwrap();
         fs::write(src.join("a/file1.txt"), "content1").unwrap();
         fs::write(src.join("a/b/file2.txt"), "content2").unwrap();
         fs::write(src.join("a/b/c/file3.txt"), "content3").unwrap();
@@ -580,7 +580,7 @@ mod tests {
         assert!(project_path.exists());
 
         // Load the Cast.toml and verify exemplar flag is removed
-        let config = CastConfig::load(&project_path.join("Cast.toml")).unwrap();
+        let config = CastConfig::load(project_path.join("Cast.toml")).unwrap();
         assert_eq!(config.exemplar, None);
         // Other flags should be preserved
         assert_eq!(config.proof_of_concept, Some(false));
@@ -592,7 +592,7 @@ mod tests {
 
         // Create a project with Cast.toml
         let project_dir = tmp_dir.path().join("projects/my_project");
-        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::create_dir_all(project_dir.join("src")).unwrap();
         fs::write(project_dir.join("Cast.toml"), "").unwrap();
         fs::write(project_dir.join("src/lib.rs"), "// test").unwrap();
 
@@ -644,7 +644,7 @@ mod tests {
 
         // Create a project with Cargo.toml that has Cast metadata
         let project_dir = tmp_dir.path().join("projects/my_project");
-        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::create_dir_all(project_dir.join("src")).unwrap();
         fs::write(
             project_dir.join("Cargo.toml"),
             "[package]\nname = \"test\"\n\n[package.metadata.cast]\nexemplar = true",
@@ -669,7 +669,7 @@ mod tests {
         let outer_project = tmp_dir.path().join("outer");
         let inner_project = outer_project.join("inner");
 
-        fs::create_dir_all(&inner_project.join("src")).unwrap();
+        fs::create_dir_all(inner_project.join("src")).unwrap();
         fs::write(
             outer_project.join("Cargo.toml"),
             "[package]\nname = \"outer\"\n\n[package.metadata.cast]\nexemplar = true",
@@ -697,7 +697,7 @@ mod tests {
 
         // Create a regular Rust project without Cast metadata
         let project_dir = tmp_dir.path().join("regular_rust_project");
-        fs::create_dir_all(&project_dir.join("src")).unwrap();
+        fs::create_dir_all(project_dir.join("src")).unwrap();
         fs::write(
             project_dir.join("Cargo.toml"),
             "[package]\nname = \"regular_project\"\nversion = \"0.1.0\"",

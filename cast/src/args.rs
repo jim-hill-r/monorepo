@@ -119,15 +119,15 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
 
     // Other commands require Cast.toml
     if let Some(working_directory) = find_cast_toml(entry_directory) {
-        match &args.cmd {
+        match args.cmd {
             Commands::Session(session_command) => match session_command {
                 SessionCommands::Start(start_session_command) => {
                     // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
                     let _ = sessions::start(
                         working_directory,
                         Some(SessionStartOptions {
-                            name: start_session_command.name.clone(),
-                        }), // TODO: Refactor to remove this clone
+                            name: start_session_command.name,
+                        }),
                     );
                     Ok("Starting session.".into())
                 }
