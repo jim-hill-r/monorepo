@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum AuthError {
     #[error("parse error")]
     ParseError,
+    #[error("token exchange error: {0}")]
+    TokenExchangeError(String),
     #[error("unknown error")]
     Unknown,
 }
@@ -58,5 +60,39 @@ impl AccessToken {
     /// Returns the secret access token string.
     pub fn secret(&self) -> &str {
         &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_auth_error_parse_error() {
+        let error = AuthError::ParseError;
+        assert_eq!(error.to_string(), "parse error");
+    }
+
+    #[test]
+    fn test_auth_error_token_exchange_error_preserves_message() {
+        let error_msg = "invalid_grant: The provided authorization code is invalid";
+        let error = AuthError::TokenExchangeError(error_msg.to_string());
+        assert_eq!(
+            error.to_string(),
+            format!("token exchange error: {}", error_msg)
+        );
+    }
+
+    #[test]
+    fn test_auth_error_unknown() {
+        let error = AuthError::Unknown;
+        assert_eq!(error.to_string(), "unknown error");
+    }
+
+    #[test]
+    fn test_auth_error_can_be_cloned() {
+        let error = AuthError::TokenExchangeError("test error".to_string());
+        let cloned = error.clone();
+        assert_eq!(error.to_string(), cloned.to_string());
     }
 }
