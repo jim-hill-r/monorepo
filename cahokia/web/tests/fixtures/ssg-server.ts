@@ -192,10 +192,12 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
   console.log('This may take several minutes on first run...');
   
   try {
+    // Run dx from workspace root (cahokia) with -p flag to specify the web package
+    // This avoids the workspace detection issue in dx 0.7.2
     const { stdout, stderr } = await execAsync(
-      'dx bundle --platform web --ssg',
+      'dx bundle --platform web --ssg -p web',
       {
-        cwd: path.join(__dirname, '..', '..'),
+        cwd: path.join(__dirname, '..', '..', '..'),  // Run from cahokia directory (workspace root)
         timeout: bundleTimeout,
       }
     );
@@ -206,7 +208,29 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     }
     
     console.log('Bundle creation completed');
-    return bundleOutputDir;
+    
+    // Note: When running from workspace root, dx outputs to cahokia/target/dx/
+    // but the public directory is still in the same relative location
+    const workspaceBundle = path.join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'target',
+      'dx',
+      'web',
+      'debug',  // Changed from 'release' to 'debug' as dx defaults to debug when no --release flag
+      'web',
+      'public'
+    );
+    
+    // Check if the bundle exists
+    if (fs.existsSync(workspaceBundle)) {
+      return workspaceBundle;
+    } else {
+      // Fallback to original location if exists
+      return bundleOutputDir;
+    }
   } catch (error) {
     const err = error as Error;
     console.error('Failed to create SSG bundle:', err.message);
