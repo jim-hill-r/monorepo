@@ -1,3 +1,18 @@
+# Standards Documentation
+
+This directory contains development standards and guidelines for the monorepo.
+
+## Quick Links
+
+- [Configuration](./configuration.md) - Configuration file standards
+- [Documentation](./documentation.md) - Documentation standards
+- [Naming](./naming.md) - Naming conventions
+- [Rust](./rust.md) - Rust coding standards
+- [Toolchain](./toolchain.md) - Toolchain management and requirements
+- [TypeScript](./typescript.md) - TypeScript coding standards
+
+---
+
 # Languages
 
 All code in this repository must be written in Rust unless there is a specific exception.
@@ -10,14 +25,6 @@ Exceptions:
 No shell scripts (bash, sh, etc.) should be used. All scripting and automation must be done in Rust.
 
 For detailed Rust coding standards, see [rust.md](./rust.md).
-
-# Development Standards
-
-- [Configuration](./configuration.md) - Configuration file standards
-- [Documentation](./documentation.md) - Documentation standards
-- [Naming](./naming.md) - Naming conventions
-- [Toolchain](./toolchain.md) - Toolchain management and requirements
-- [TypeScript](./typescript.md) - TypeScript coding standards
 
 # Testing
 
