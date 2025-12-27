@@ -9,6 +9,8 @@ This document describes the organization and structure of this monorepo to help 
 ├── .github/              # GitHub Actions workflows and agent configurations
 │   ├── workflows/        # CI/CD workflows (cast-ci.yml, start-a-new-task.yml)
 │   └── dependabot.yml    # Dependency update configuration
+├── monorepo/            # High-level monorepo functionality workspace
+│   └── workflow_tests/  # Tests for GitHub Actions workflows
 ├── macos/               # macOS setup guide and instructions
 ├── profiles/            # User profiles and personal content
 │   ├── jimhillr/        # Personal profile website for jimhillr
@@ -28,6 +30,10 @@ This document describes the organization and structure of this monorepo to help 
 ```
 
 ## Key Directories
+
+### `/monorepo/`
+Contains high-level monorepo functionality and tools:
+- `workflow_tests/` - Rust-based tests for GitHub Actions workflows
 
 ### `/macos/`
 Contains setup guide and instructions for configuring a new macOS machine with the required global dependencies for this monorepo (Rust, npm, etc.).
@@ -105,6 +111,7 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 - Each project with `Cast.toml` can be tested with `cast ci`
 - The Cast CI workflow automatically detects and tests changed projects
 - Tests should be run before committing changes
+- Workflow tests are located at `monorepo/workflow_tests/` and validate GitHub Actions configurations
 
 ## Important Notes for Agents
 

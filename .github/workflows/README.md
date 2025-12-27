@@ -40,7 +40,7 @@ The workflow requires the following permissions:
 You can test this workflow configuration by running:
 
 ```bash
-cd workflow_tests
+cd monorepo/workflow_tests
 cargo test cast_ci_workflow_tests
 ```
 
@@ -146,7 +146,7 @@ This ensures that only one agent task runs at a time, preventing conflicts and r
 You can test this workflow configuration by running:
 
 ```bash
-cd workflow_tests
+cd monorepo/workflow_tests
 cargo test start_a_new_task_workflow_tests
 ```
 
