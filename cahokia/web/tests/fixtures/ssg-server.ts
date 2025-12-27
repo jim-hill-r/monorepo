@@ -160,10 +160,21 @@ function createStaticServer(directory: string, port: number): Promise<http.Serve
 
 /**
  * Build the SSG bundle using `dx bundle --platform web --ssg`
+ * 
+ * Note: Currently builds in debug mode (dx default) rather than release mode.
+ * Debug builds are used because:
+ * 1. They compile faster, making tests more efficient
+ * 2. The dx CLI defaults to debug mode when no --release flag is provided
+ * 3. Smoke tests only verify basic functionality, not performance
+ * 
+ * For production validation or performance testing, consider using --release flag
+ * and adjusting the bundleOutputDir path to use 'release' instead of 'debug'.
  */
 async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
   const bundleTimeout = config.bundleTimeout || DEFAULT_BUNDLE_TIMEOUT_MS;
-  const bundleOutputDir = path.join(
+  
+  // When running from workspace root, dx outputs to cahokia/target/dx/web/debug/web/public
+  const workspaceBundleOutputDir = path.join(
     __dirname,
     '..',
     '..',
@@ -171,14 +182,14 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     'target',
     'dx',
     'web',
-    'release',
+    'debug',
     'web',
     'public'
   );
 
   if (config.skipBundle) {
     console.log('Skipping bundle creation (skipBundle=true)');
-    return bundleOutputDir;
+    return workspaceBundleOutputDir;
   }
 
   // Check if dx is installed
@@ -192,10 +203,12 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
   console.log('This may take several minutes on first run...');
   
   try {
+    // Run dx from workspace root (cahokia) with -p flag to specify the web package
+    // This avoids the workspace detection issue in dx 0.7.2
     const { stdout, stderr } = await execAsync(
-      'dx bundle --platform web --ssg',
+      'dx bundle --platform web --ssg -p web',
       {
-        cwd: path.join(__dirname, '..', '..'),
+        cwd: path.join(__dirname, '..', '..', '..'),  // Run from cahokia directory (workspace root)
         timeout: bundleTimeout,
       }
     );
@@ -206,7 +219,7 @@ async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
     }
     
     console.log('Bundle creation completed');
-    return bundleOutputDir;
+    return workspaceBundleOutputDir;
   } catch (error) {
     const err = error as Error;
     console.error('Failed to create SSG bundle:', err.message);
