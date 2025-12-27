@@ -53,7 +53,7 @@ For IO-bound: async/await (tokio runtime)
 
 For engine: Bevy
 
-# Web applicaitons
+# Web applications
 
 For framework: Dioxus
 For http: Axum
