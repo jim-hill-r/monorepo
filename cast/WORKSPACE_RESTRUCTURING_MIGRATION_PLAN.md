@@ -72,7 +72,7 @@ This document.
 
 Based on thorough codebase search, the following files will need updates during the migration:
 
-##### Non-Markdown Code and Configuration Files (11 files)
+##### Non-Markdown Code and Configuration Files (9 files requiring updates, 2 auto-updated)
 
 1. **cast_cli/Cargo.toml** (Phase 3)
    - Update: `cast = { path = "../cast" }` → `cast_core = { path = "../cast_workspace/core" }`
@@ -92,9 +92,11 @@ Based on thorough codebase search, the following files will need updates during 
 
 4. **.github/dependabot.yml** (Phase 6)
    - Lines 6-20: `directory: "/projects/cast_cli"` → `directory: "/cast_workspace"`
-     - Note: Currently incorrect path (should be `/cast_cli` but will become `/cast_workspace`)
+     - Note: Currently has incorrect path "/projects/cast_cli" (appears to be typo, should be "/cast_cli")
+     - This pre-existing error will be fixed during Phase 6 when updating to new workspace structure
    - Lines 22-36: `directory: "/projects/cast"` → Remove (consolidated into workspace)
-     - Note: Currently incorrect path (should be `/cast` but will be removed)
+     - Note: Currently has incorrect path "/projects/cast" (appears to be typo, should be "/cast")
+     - This pre-existing error will be resolved by removing this entry (workspace consolidation)
    - Labels: Update from separate "cast_cli" and "cast" to "cast_workspace"
    - Status: ⏳ Pending
 
@@ -177,17 +179,18 @@ Based on thorough codebase search, the following files will need updates during 
 
 ##### Summary Statistics
 
-- **Total Files Requiring Updates**: 18 files
-  - Code/Config files needing manual updates: 7 files
-  - Auto-updated files (Cargo.lock): 2 files
-  - Documentation files: 5 files
-  - Workspace migration docs: 1 file (cast/ISSUES.md)
-  - No action needed: 2 files (just metadata)
-  - Excludes the workspace restructuring documentation itself
+- **Total Files Analyzed**: 18 files
+  - **Files Requiring Manual Updates**: 13 files
+    - Code/Config files: 7 files
+    - Documentation files: 5 files
+    - Workspace migration docs: 1 file (cast/ISSUES.md)
+  - **Files Auto-Updated by Cargo**: 2 files (Cargo.lock files)
+  - **Files Requiring No Action**: 2 files (metadata only, not dependencies)
+  - Note: Excludes the workspace restructuring documentation itself
   
-- **Files by Phase**:
-  - Phase 3 (cast → cast_core): 2 files + 1 auto-update
-  - Phase 4 (cast_cli → workspace/cli): 5 files + 1 auto-update
+- **Manual Updates by Phase**:
+  - Phase 3 (cast → cast_core): 2 files (+ 1 auto-update)
+  - Phase 4 (cast_cli → workspace/cli): 5 files (+ 1 auto-update)
   - Phase 5 (cast_vscode → workspace/vscode_ext): 2 files
   - Phase 6 (Configuration/Documentation): 4 files
   - Phase 8 (Cleanup): 1 file
