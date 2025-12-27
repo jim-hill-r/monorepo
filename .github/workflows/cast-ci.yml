@@ -47,12 +47,12 @@ jobs:
           # Install playwright browsers for projects that need them
           for package_json in $(find . -name "package.json" -not -path "*/node_modules/*"); do
             project_dir=$(dirname "$package_json")
-            # Check if this project has playwright dependency using jq
-            if jq -e '.devDependencies["@playwright/test"]' "$package_json" > /dev/null 2>&1; then
+            # Check if this project has playwright dependency in devDependencies or dependencies
+            if jq -e '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' "$package_json" > /dev/null 2>&1; then
               echo "Installing Playwright browsers for $project_dir"
               cd "$project_dir"
-              npm install
-              npx playwright install --with-deps chromium
+              # Only install browsers - npm install will be run by cast ci
+              npx --yes playwright@latest install --with-deps chromium
               cd "$GITHUB_WORKSPACE"
             fi
           done
