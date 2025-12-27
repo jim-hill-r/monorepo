@@ -27,7 +27,7 @@ The extension displays a running timer in the VS Code status bar that tracks you
 1. Clone this repository
 2. Run `npm install` to install dependencies
 3. Run `npm run compile` to compile the TypeScript code
-4. Run `npm run package` to create the VSIX file
+4. Run `npm run package` to create the VSIX file (creates `cast.vsix`)
 5. Install the generated `cast.vsix` file
 
 ## Usage
@@ -71,7 +71,7 @@ This creates a `cast.vsix` file that can be installed in VS Code.
 
 The extension monitors the `.cast/sessions/` directory in your workspace for session log files. Each session log contains timestamps and events. The extension:
 
-1. Reads the most recent session log file (files are sorted lexicographically in ascending order, and the last file is selected)
+1. Reads the most recent session log file (files are sorted in ascending lexicographic order, then the last/newest file is selected)
 2. Parses the log to find the session start time (first line with "Start" event)
 3. Calculates elapsed time since the start
 4. Updates the status bar every second
