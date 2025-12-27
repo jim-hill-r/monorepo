@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["web"]
+members = ["cloudflare", "web"]
+default-members = ["web"]
 
 [workspace.dependencies]
 dioxus = { version = "0.7.2" }

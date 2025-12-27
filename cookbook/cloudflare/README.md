@@ -32,11 +32,11 @@ wrangler login
 Before deploying, you need to build the `cookbook/web` project:
 
 ```bash
-cd ../cookbook/web
+cd ../web
 dx build --release
 ```
 
-This will create build artifacts in `../cookbook/web/dist/` directory.
+This will create build artifacts in `../web/dist/` directory.
 
 ## Deploying to Cloudflare Pages
 
@@ -61,7 +61,7 @@ The Cast deploy command reads configuration from `wrangler.toml` and automatical
 Alternatively, you can deploy directly with wrangler:
 
 ```bash
-wrangler pages deploy ../cookbook/web/dist --project-name=cookbook
+wrangler pages deploy ../web/dist --project-name=cookbook
 ```
 
 ### Automated Deployment
@@ -79,7 +79,7 @@ cast deploy
 ## Project Structure
 
 ```
-cookbook-cloudflare/
+cookbook/cloudflare/
 ├── wrangler.toml     # Cloudflare Pages configuration
 ├── Cast.toml         # Cast monorepo metadata
 ├── tests/
@@ -107,7 +107,7 @@ This will verify:
 
 Make sure you've built the cookbook/web project first:
 ```bash
-cd ../cookbook/web && dx build --release
+cd ../web && dx build --release
 ```
 
 ### Authentication issues

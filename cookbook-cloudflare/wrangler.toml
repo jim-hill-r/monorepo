@@ -1,3 +1,0 @@
-name = "jimhillr-cookbook"
-compatibility_date = "2024-12-20"
-pages_build_output_dir = "../cookbook/target/dx/web/release/web/public"

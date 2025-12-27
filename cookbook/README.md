@@ -8,13 +8,15 @@ This workspace contains member crates for different platforms and features:
 
 ```
 cookbook/
+├─ cloudflare/
+│  ├─ ... # Cloudflare Pages deployment configuration
 ├─ web/
 │  ├─ ... # Web specific UI/logic
 ```
 
 ## Deployment
 
-The cookbook web application can be deployed to Cloudflare Pages using the `cookbook-cloudflare` deployment project located at the root of the repository. See the [cookbook-cloudflare README](../cookbook-cloudflare/README.md) for deployment instructions.
+The cookbook web application can be deployed to Cloudflare Pages using the `cloudflare` deployment project in this workspace. See the [cloudflare README](./cloudflare/README.md) for deployment instructions.
 
 ## Platform crates
 
