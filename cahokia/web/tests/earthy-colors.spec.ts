@@ -5,9 +5,8 @@ import { test, expect } from '@playwright/test';
  * 
  * These tests verify that the app uses earthy colors inspired by ancient burial mounds.
  * 
- * Before running these tests, start the Dioxus dev server:
- *   cd cahokia/web
- *   dx serve --port 8080
+ * The dev server is automatically started by Playwright before tests run.
+ * See playwright.config.ts webServer configuration for details.
  * 
  * Run tests with:
  *   npm test -- earthy-colors.spec.ts

@@ -3,9 +3,8 @@ import { test, expect } from '@playwright/test';
 /**
  * Playwright tests for Cahokia sidebar component.
  * 
- * Before running these tests, start the Dioxus dev server:
- *   cd cahokia/web
- *   dx serve --port 8080
+ * The dev server is automatically started by Playwright before tests run.
+ * See playwright.config.ts webServer configuration for details.
  * 
  * Run tests with:
  *   npm test -- sidebar.spec.ts
