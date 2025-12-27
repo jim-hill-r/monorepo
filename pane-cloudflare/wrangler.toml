@@ -2,20 +2,4 @@
 
 name = "pane"
 compatibility_date = "2024-12-20"
-
-# Pages configuration
-[pages]
-# The build output directory from the pane project
-# This should point to the dist directory created by 'dx build --release'
-# When deploying, use: wrangler pages deploy ../pane/dist --project-name=pane
-
-# Optional: Custom domains can be configured in the Cloudflare dashboard
-# or via wrangler commands
-
-# Optional: Environment variables for production
-# [env.production.vars]
-# API_URL = "https://api.example.com"
-
-# Optional: Environment variables for preview deployments
-# [env.preview.vars]
-# API_URL = "https://api-staging.example.com"
+pages_build_output_dir = "../pane/dist"
