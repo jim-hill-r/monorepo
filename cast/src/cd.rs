@@ -27,7 +27,7 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
     let config = CastConfig::load_from_dir(working_directory)?;
 
     // If current project is IAC, deploy it
-    if config.project_type == Some("iac".to_string()) {
+    if config.project_type.as_deref() == Some("iac") {
         deploy::run(working_directory)?;
     }
 
