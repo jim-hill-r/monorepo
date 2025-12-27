@@ -91,10 +91,12 @@ Based on thorough codebase search, the following files will need updates during 
    - Status: ⏳ Pending
 
 4. **.github/dependabot.yml** (Phase 6)
-   - Lines 6-20: `directory: "/projects/cast_cli"` (INCORRECT) → `directory: "/cast_workspace"`
-   - Lines 22-36: `directory: "/projects/cast"` (INCORRECT) → Remove (consolidated into workspace)
+   - Lines 6-20: `directory: "/projects/cast_cli"` → `directory: "/cast_workspace"`
+     - Note: Currently incorrect path (should be `/cast_cli` but will become `/cast_workspace`)
+   - Lines 22-36: `directory: "/projects/cast"` → Remove (consolidated into workspace)
+     - Note: Currently incorrect path (should be `/cast` but will be removed)
    - Labels: Update from separate "cast_cli" and "cast" to "cast_workspace"
-   - Status: ⏳ Pending (Note: Current paths are already incorrect, need fixing)
+   - Status: ⏳ Pending
 
 5. **monorepo/workflow_tests/src/lib.rs** (Phase 4)
    - Function: `get_cast_cli_cargo_path()` 
@@ -130,11 +132,13 @@ Based on thorough codebase search, the following files will need updates during 
     - Will be auto-updated when package name changes
     - Status: 🤖 Auto-updated
 
-11. **cookbook/web/Cargo.toml** (No change needed)
+##### Files Requiring No Changes (2 files)
+
+11. **cookbook/web/Cargo.toml**
     - Contains: `[package.metadata.cast]` - Just metadata, not a dependency
     - Status: ✅ No action needed
 
-12. **cahokia/web/Cargo.toml** (No change needed)
+12. **cahokia/web/Cargo.toml**
     - Contains: `[package.metadata.cast]` - Just metadata, not a dependency
     - Status: ✅ No action needed
 
@@ -199,8 +203,7 @@ Based on thorough codebase search, the following files will need updates during 
 2. **No VSCode settings files** (.vscode/) contain cast references
 3. **No CODEOWNERS or PR templates** contain cast references
 4. **.github/WORKFLOW_CONVENTIONS.md** does not contain cast_cli or cast_vscode references
-5. **.github/copilot-instructions.md** mentions "cast ci" command but as a generic command reference, not a path - no update needed
-6. **dependabot.yml current state**: Already has incorrect paths ("/projects/cast_cli" and "/projects/cast" instead of "/cast_cli" and "/cast")
+5. **dependabot.yml current state**: Already has incorrect paths ("/projects/cast_cli" and "/projects/cast" instead of "/cast_cli" and "/cast")
 
 ---
 
