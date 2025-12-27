@@ -66,6 +66,142 @@ This document.
 
 **Rollback**: N/A (documentation only)
 
+**Search Results Completed**: 2025-12-27
+
+#### Comprehensive File Update Checklist
+
+Based on thorough codebase search, the following files will need updates during the migration:
+
+##### Non-Markdown Code and Configuration Files (11 files)
+
+1. **cast_cli/Cargo.toml** (Phase 3)
+   - Update: `cast = { path = "../cast" }` → `cast_core = { path = "../cast_workspace/core" }`
+   - Status: ⏳ Pending
+
+2. **.github/workflows/cast-ci.yml** (Phase 4)
+   - Line ~38-41: Build step `cd cast_cli` → `cd cast_workspace/cli`
+   - Line ~75: `CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"` → `cast_workspace/cli/target/release/cast`
+   - Line ~106: `CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"` → `cast_workspace/cli/target/release/cast`
+   - Status: ⏳ Pending
+
+3. **.github/workflows/cast-cd.yml** (Phase 4)
+   - Line ~31-33: Build step `cd cast_cli` → `cd cast_workspace/cli`
+   - Line ~67: `CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"` → `cast_workspace/cli/target/release/cast`
+   - Line ~98: `CAST_BIN="$GITHUB_WORKSPACE/cast_cli/target/release/cast"` → `cast_workspace/cli/target/release/cast`
+   - Status: ⏳ Pending
+
+4. **.github/dependabot.yml** (Phase 6)
+   - Lines 6-20: `directory: "/projects/cast_cli"` (INCORRECT) → `directory: "/cast_workspace"`
+   - Lines 22-36: `directory: "/projects/cast"` (INCORRECT) → Remove (consolidated into workspace)
+   - Labels: Update from separate "cast_cli" and "cast" to "cast_workspace"
+   - Status: ⏳ Pending (Note: Current paths are already incorrect, need fixing)
+
+5. **monorepo/workflow_tests/src/lib.rs** (Phase 4)
+   - Function: `get_cast_cli_cargo_path()` 
+   - Update: `get_repo_root().join("cast_cli/Cargo.toml")` → `"cast_workspace/cli/Cargo.toml"`
+   - Status: ⏳ Pending
+
+6. **monorepo/workflow_tests/tests/cast_ci_workflow_tests.rs** (Phase 4)
+   - Test assertions checking for "cast_cli" string in workflow
+   - Update test expectations to look for "cast_workspace/cli"
+   - Functions affected:
+     - `test_workflow_uses_cast_cli_to_detect_changes()`
+     - `test_workflow_builds_cast_cli()`
+     - `test_cast_cli_project_exists()`
+   - Status: ⏳ Pending
+
+7. **monorepo/workflow_tests/tests/cast_cd_workflow_tests.rs** (Phase 4)
+   - Test assertions checking for "cast_cli" string in workflow
+   - Update test expectations to look for "cast_workspace/cli"
+   - Functions affected:
+     - `test_workflow_uses_cast_cli_to_detect_changes()`
+     - `test_workflow_builds_cast_cli()`
+   - Status: ⏳ Pending
+
+8. **cast_cli/Cargo.lock** (Phase 4)
+   - Will be auto-updated when Cargo.toml is changed
+   - Status: 🤖 Auto-updated
+
+9. **cast/Cargo.toml** (Phase 3)
+   - Package name: `name = "cast"` → `name = "cast_core"`
+   - Status: ⏳ Pending
+
+10. **cast/Cargo.lock** (Phase 3)
+    - Will be auto-updated when package name changes
+    - Status: 🤖 Auto-updated
+
+11. **cookbook/web/Cargo.toml** (No change needed)
+    - Contains: `[package.metadata.cast]` - Just metadata, not a dependency
+    - Status: ✅ No action needed
+
+12. **cahokia/web/Cargo.toml** (No change needed)
+    - Contains: `[package.metadata.cast]` - Just metadata, not a dependency
+    - Status: ✅ No action needed
+
+##### Markdown Documentation Files (5 files)
+
+13. **README.md** (Phase 5)
+    - Line ~12: `cargo install --path ./cast_cli` → `./cast_workspace/cli`
+    - Line ~12: `./cast_vscode/cast.vsix` → `./cast_workspace/vscode_ext/cast.vsix`
+    - Status: ⏳ Pending
+
+14. **REPOSITORY_STRUCTURE.md** (Phase 6)
+    - Line ~21: Update structure diagram for cast_workspace
+    - Line ~22: Remove separate cast_cli entry
+    - Lines 71-80: Update Cast CLI section with new paths
+    - Status: ⏳ Pending
+
+15. **.github/workflows/README.md** (Phase 6)
+    - Line ~18: Update description "Builds the `cast` CLI from `cast_cli`"
+    - Line ~30: Update "The `cast_cli` project must be buildable"
+    - Line ~83: Update description (duplicate)
+    - Line ~95: Update requirement (duplicate)
+    - Status: ⏳ Pending
+
+16. **.github/workflows/TROUBLESHOOTING.md** (Phase 6)
+    - Line ~34: Update example path `cast_cli/src/bin/cast.rs` → `cast_workspace/cli/src/bin/cast.rs`
+    - Status: ⏳ Pending
+
+17. **macos/README.md** (Phase 5)
+    - Line ~3: `cargo install --path ./cast_cli` → `./cast_workspace/cli`
+    - Status: ⏳ Pending
+
+18. **cast/ISSUES.md** (Phase 8)
+    - Mark all Phase 1-8 TODOs as complete
+    - Remove completed TODO items
+    - Status: ⏳ Pending
+
+##### Summary Statistics
+
+- **Total Files Requiring Updates**: 18 files
+  - Code/Config files needing manual updates: 7 files
+  - Auto-updated files (Cargo.lock): 2 files
+  - Documentation files: 5 files
+  - Workspace migration docs: 1 file (cast/ISSUES.md)
+  - No action needed: 2 files (just metadata)
+  - Excludes the workspace restructuring documentation itself
+  
+- **Files by Phase**:
+  - Phase 3 (cast → cast_core): 2 files + 1 auto-update
+  - Phase 4 (cast_cli → workspace/cli): 5 files + 1 auto-update
+  - Phase 5 (cast_vscode → workspace/vscode_ext): 2 files
+  - Phase 6 (Configuration/Documentation): 4 files
+  - Phase 8 (Cleanup): 1 file
+
+- **Critical Path Files** (workflows that must work):
+  - .github/workflows/cast-ci.yml
+  - .github/workflows/cast-cd.yml
+  - monorepo/workflow_tests/* (3 files)
+
+##### Additional Notes
+
+1. **No script files found** containing cast_cli or cast_vscode references
+2. **No VSCode settings files** (.vscode/) contain cast references
+3. **No CODEOWNERS or PR templates** contain cast references
+4. **.github/WORKFLOW_CONVENTIONS.md** does not contain cast_cli or cast_vscode references
+5. **.github/copilot-instructions.md** mentions "cast ci" command but as a generic command reference, not a path - no update needed
+6. **dependabot.yml current state**: Already has incorrect paths ("/projects/cast_cli" and "/projects/cast" instead of "/cast_cli" and "/cast")
+
 ---
 
 ## Phase 2: Create Workspace Structure
