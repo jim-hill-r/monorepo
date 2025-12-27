@@ -160,6 +160,15 @@ function createStaticServer(directory: string, port: number): Promise<http.Serve
 
 /**
  * Build the SSG bundle using `dx bundle --platform web --ssg`
+ * 
+ * Note: Currently builds in debug mode (dx default) rather than release mode.
+ * Debug builds are used because:
+ * 1. They compile faster, making tests more efficient
+ * 2. The dx CLI defaults to debug mode when no --release flag is provided
+ * 3. Smoke tests only verify basic functionality, not performance
+ * 
+ * For production validation or performance testing, consider using --release flag
+ * and adjusting the bundleOutputDir path to use 'release' instead of 'debug'.
  */
 async function buildSSGBundle(config: SSGServerConfig): Promise<string> {
   const bundleTimeout = config.bundleTimeout || DEFAULT_BUNDLE_TIMEOUT_MS;

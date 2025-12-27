@@ -15,9 +15,12 @@ import { expect, createSSGWorkerFixture } from './fixtures/ssg-server';
  */
 
 // Create a test instance with SSG server fixture
+// Bundle timeout is set to 10 minutes for the initial bundle creation,
+// which is compute-intensive. Subsequent test runs reuse the cached bundle
+// and complete much faster.
 const test = createSSGWorkerFixture({
   port: 8092, // Use a unique port to avoid conflicts
-  bundleTimeout: 600000, // 10 minutes for bundle creation
+  bundleTimeout: 600000, // 10 minutes for initial bundle creation
 });
 
 test.describe('Cahokia Smoke Test', () => {
