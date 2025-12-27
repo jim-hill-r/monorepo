@@ -10,9 +10,17 @@ This workspace contains member crates for different platforms and features:
 cookbook/
 ├─ cloudflare/
 │  ├─ ... # Cloudflare Pages deployment configuration
+├─ core/
+│  ├─ ... # Core business logic and data models (library)
 ├─ web/
 │  ├─ ... # Web specific UI/logic
 ```
+
+## Core Library
+
+The `core` library contains shared business logic and data models:
+- **Recipe struct**: Data model for recipe information including title, ingredients, instructions, timing, and tags
+- Designed to be consumed by web, cloudflare, and future platform crates
 
 ## Deployment
 
