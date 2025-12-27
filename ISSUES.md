@@ -11,7 +11,8 @@
 # Priority Projects
 - cast
 - cookbook
-- cookbook-cloudflare
+- cookbook/web
+- cookbook/cloudflare
 - cahokia
 - pane
 - pane-cloudflare
