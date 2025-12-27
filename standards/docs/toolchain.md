@@ -18,7 +18,18 @@ All projects require:
 
 ### Dioxus Framework
 
-Projects using Dioxus (`framework = "dioxus"` in Cast.toml or Cargo.toml metadata) require:
+Projects using Dioxus require framework specification in their configuration:
+
+**Cast.toml example:**
+```toml
+framework = "dioxus"
+```
+
+**Cargo.toml metadata example:**
+```toml
+[package.metadata.cast]
+framework = "dioxus"
+```
 
 #### Required Tools
 1. **Dioxus CLI (`dx`)**
@@ -69,18 +80,24 @@ Currently, toolchains are managed manually:
 - **Local development**: Developers install tools as needed based on project README
 - **CI/CD**: GitHub Actions workflows manually install required tools using action steps
 
-Example from `.github/workflows/cast-ci.yml`:
+Example workflow steps from `.github/workflows/cast-ci.yml`:
 ```yaml
 - name: Setup Node.js
   uses: actions/setup-node@v4
   
 - name: Install Playwright browsers
   run: |
-    # Find projects with playwright and install browsers
+    # Shell script to find and install Playwright
+    # (Note: This is GitHub Actions YAML, not a shell script in the repo)
+    find . -name "package.json" ... | while ...; do
+      npx playwright install --with-deps chromium
+    done
     
 - name: Install Dioxus CLI
   run: cargo install dioxus-cli --version 0.7.2
 ```
+
+These installation steps will eventually be replaced by `cast toolchain install`.
 
 ### Future State (Cast Toolchain Command)
 

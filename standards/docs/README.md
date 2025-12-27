@@ -55,7 +55,7 @@ For engine: Bevy
 
 # Web applicaitons
 
-For framework: Dixous
+For framework: Dioxus
 For http: Axum
 For OpenAPI: Utopia
 For reverse proxy: Pingora
