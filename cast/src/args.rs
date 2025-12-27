@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{build, ci, deploy, projects, run, serve, sessions, test};
+use crate::{build, cd, ci, deploy, projects, run, serve, sessions, test};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -79,6 +79,8 @@ pub enum ExecuteError {
     WithChangesError(String),
     #[error("ci error: {0}")]
     CiError(#[from] ci::CiError),
+    #[error("cd error: {0}")]
+    CdError(#[from] cd::CdError),
     #[error("build error: {0}")]
     BuildError(#[from] build::BuildError),
     #[error("test error: {0}")]
@@ -184,7 +186,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 deploy::run(working_directory)?;
                 Ok("Deploy completed".into())
             }
-            Commands::Cd => Ok("starting CD".into()),
+            Commands::Cd => {
+                cd::run(working_directory)?;
+                Ok("CD completed".into())
+            }
         }
     } else {
         Err(ExecuteError::CastTomlNotFound)
@@ -336,10 +341,14 @@ mod tests {
     #[test]
     fn it_runs_cd() {
         let tmp_dir = TempDir::new("test").unwrap();
+
+        // Create a .git directory to mark as monorepo root (needed by cd module)
+        fs::create_dir(tmp_dir.path().join(".git")).unwrap();
+
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(Args { cmd: Commands::Cd }, tmp_dir.path()).unwrap();
-        assert_eq!(result, "starting CD");
+        assert_eq!(result, "CD completed");
     }
 
     #[test]
