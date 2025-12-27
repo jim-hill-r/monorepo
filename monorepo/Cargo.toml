@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = ["workflow_tests"]
+
+[workspace.dependencies]
+serde_yaml = "0.9"

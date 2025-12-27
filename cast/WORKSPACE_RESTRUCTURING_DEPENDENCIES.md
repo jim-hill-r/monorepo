@@ -191,9 +191,9 @@ References:
 
 ### workflow_tests
 **Files**: 
-- `/workflow_tests/tests/cast_ci_workflow_tests.rs`
-- `/workflow_tests/tests/cast_cd_workflow_tests.rs`
-- `/workflow_tests/src/lib.rs`
+- `/monorepo/workflow_tests/tests/cast_ci_workflow_tests.rs`
+- `/monorepo/workflow_tests/tests/cast_cd_workflow_tests.rs`
+- `/monorepo/workflow_tests/src/lib.rs`
 
 References in cast_ci_workflow_tests.rs:
 - **Lines 36-46**: Test checks for cast_cli usage in workflow
@@ -240,9 +240,9 @@ References in lib.rs:
 5. `/cast/ISSUES.md` - Workspace restructuring epic (this work)
 
 ### Test Files
-1. `/workflow_tests/src/lib.rs` - Path helper function
-2. `/workflow_tests/tests/cast_ci_workflow_tests.rs` - Test assertions
-3. `/workflow_tests/tests/cast_cd_workflow_tests.rs` - Test assertions
+1. `/monorepo/workflow_tests/src/lib.rs` - Path helper function
+2. `/monorepo/workflow_tests/tests/cast_ci_workflow_tests.rs` - Test assertions
+3. `/monorepo/workflow_tests/tests/cast_cd_workflow_tests.rs` - Test assertions
 
 ## Proposed Workspace Structure
 
@@ -280,8 +280,8 @@ After restructuring, the layout will be:
 **Phase 4**: Move cast_cli → cast/cli
 - Update: GitHub workflows build paths
 - Update: GitHub workflows CAST_BIN paths
-- Update: workflow_tests helper functions
-- Update: workflow_tests test assertions
+- Update: monorepo/workflow_tests helper functions
+- Update: monorepo/workflow_tests test assertions
 
 **Phase 5**: Move cast_vscode → cast/vscode_ext
 - Update: README.md installation instructions
