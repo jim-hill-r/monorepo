@@ -1,8 +1,6 @@
 
 # Priority Issues
 
-- TODO: Upgrade rust to version 1.89 for all projects
-
 ## Cast Toolchain Command Epic (agent-generated)
 This epic breaks down the complex task of adding a `cast toolchain` command into manageable subtasks.
 

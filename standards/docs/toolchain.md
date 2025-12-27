@@ -11,8 +11,8 @@ Projects in this monorepo use various frameworks that require specific developme
 All projects require:
 - **Rust toolchain** (rustc, cargo, rustfmt, clippy)
 - Managed via `rustup` or GitHub Actions' `actions-rust-lang/setup-rust-toolchain`
-- Current target version: 1.82 (stable)
-- Planned upgrade: 1.89
+- Version strategy: Use latest stable Rust (currently 1.92.0)
+- GitHub workflows use `toolchain: stable` to automatically track latest stable releases
 
 ## Framework-Specific Toolchains
 
