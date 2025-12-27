@@ -13,6 +13,6 @@ style = []
 script = []
 
 [web.resource.dev]
-# Javascript code file
+# JavaScript code file
 # serve: [dev-server] only
 script = []
