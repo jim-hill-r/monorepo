@@ -41,9 +41,10 @@ pub trait RecipeReader {
     fn get_all(&self) -> RecipeResult<Vec<Recipe>>;
 
     /// Check if a recipe exists by ID
-    fn exists(&self, id: &str) -> bool {
-        self.get_by_id(id).is_ok()
-    }
+    ///
+    /// This is a required method to allow implementations to optimize
+    /// existence checks without loading the entire recipe.
+    fn exists(&self, id: &str) -> bool;
 
     /// Get recipes by tag
     fn get_by_tag(&self, tag: &str) -> RecipeResult<Vec<Recipe>> {
@@ -67,13 +68,10 @@ pub trait RecipeWriter {
     fn delete(&mut self, id: &str) -> RecipeResult<()>;
 
     /// Create or update a recipe (upsert)
-    fn save(&mut self, recipe: Recipe) -> RecipeResult<()> {
-        match self.update(recipe.clone()) {
-            Ok(()) => Ok(()),
-            Err(RecipeError::NotFound(_)) => self.create(recipe),
-            Err(e) => Err(e),
-        }
-    }
+    ///
+    /// This is a required method to allow implementations to optimize
+    /// the upsert operation without unnecessary clones or checks.
+    fn save(&mut self, recipe: Recipe) -> RecipeResult<()>;
 }
 
 /// Represents a recipe with all its associated information.
@@ -304,6 +302,10 @@ mod tests {
         fn get_all(&self) -> RecipeResult<Vec<Recipe>> {
             Ok(self.recipes.clone())
         }
+
+        fn exists(&self, id: &str) -> bool {
+            self.recipes.iter().any(|r| r.id == id)
+        }
     }
 
     #[test]
@@ -459,6 +461,16 @@ mod tests {
                     RecipeError::NotFound(format!("Recipe with id '{}' not found", id))
                 })?;
             self.recipes.remove(pos);
+            Ok(())
+        }
+
+        fn save(&mut self, recipe: Recipe) -> RecipeResult<()> {
+            // Efficient implementation that checks existence first
+            if let Some(pos) = self.recipes.iter().position(|r| r.id == recipe.id) {
+                self.recipes[pos] = recipe;
+            } else {
+                self.recipes.push(recipe);
+            }
             Ok(())
         }
     }
