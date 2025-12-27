@@ -14,4 +14,4 @@ web = []
 [package.metadata.cast]
 project_type = "static_website"
 framework = "dioxus"
-deploys = ["cookbook-cloudflare"]
+deploys = ["cloudflare"]

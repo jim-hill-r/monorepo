@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Validation tests for cookbook-cloudflare project
+# Validation tests for cloudflare deployment project
 
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COOKBOOK_WEB_DIR="$PROJECT_DIR/../cookbook/web"
+COOKBOOK_WEB_DIR="$PROJECT_DIR/../web"
 
-echo "=== Validating cookbook-cloudflare project ==="
+echo "=== Validating cloudflare deployment project ==="
 echo ""
 
 # Test 1: Check required files exist
