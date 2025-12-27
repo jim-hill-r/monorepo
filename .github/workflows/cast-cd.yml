@@ -90,6 +90,8 @@ jobs:
 
       - name: Run cast cd for changed projects
         if: steps.changed-projects.outputs.has_projects == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN }}
         run: |
           PROJECTS='${{ steps.changed-projects.outputs.projects }}'
           echo "Running cast cd for projects: $PROJECTS"
