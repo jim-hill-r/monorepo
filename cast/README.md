@@ -189,7 +189,32 @@ Cast provides a `cd` command for continuous deployment workflows.
 cast cd
 ```
 
-This command prints "starting CD" and is designed to be called by the Cast CD GitHub workflow when changes are merged.
+This command is designed to be called by the Cast CD GitHub workflow when changes are merged. It automatically deploys projects based on the Cast configuration:
+
+1. **Current Project Deployment**: If the current project is an IAC (Infrastructure as Code) project (`project_type = "iac"`), it will be deployed using `cast deploy`.
+
+2. **Deploy Projects**: If the project has a `deploys` list in its Cast configuration, each project in the list will be deployed using `cast deploy`.
+
+This allows you to set up deployment chains where building/updating one project automatically triggers deployment of related infrastructure projects.
+
+Example Cast configuration:
+
+```toml
+# A web application that should trigger deployment of its Cloudflare Pages infrastructure
+framework = "dioxus"
+deploys = ["my-app-cloudflare"]
+```
+
+When you run `cast cd` in this project, it will automatically deploy the `my-app-cloudflare` project.
+
+Example usage in library code:
+
+```rust
+use cast::cd;
+
+// Run CD on a project
+cd::run("/path/to/project").unwrap();
+```
 
 ## Project Management
 

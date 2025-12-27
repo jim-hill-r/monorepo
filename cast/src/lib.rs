@@ -1,5 +1,6 @@
 pub mod args;
 pub mod build;
+pub mod cd;
 pub mod ci;
 pub mod config;
 pub mod deploy;
