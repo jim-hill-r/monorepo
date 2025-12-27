@@ -127,7 +127,7 @@ For **Rust projects** (with Cargo.toml), this will run:
 4. `cast test` - Run all tests (via `cargo test`)
 
 For **TypeScript/Node.js projects** (with package.json), this will run:
-1. `npm install` - Install dependencies
+1. `npm ci` - Install dependencies from lockfile (fast, reproducible)
 2. `npm run lint` - Run linting (if script exists)
 3. `npm run compile` - Compile TypeScript (if script exists)
 4. `npm test` - Run tests (if script exists, e.g., Playwright tests)
