@@ -1,6 +1,6 @@
 use crate::config::CastConfig;
 use crate::deploy;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -33,6 +33,7 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
 
     // Deploy any projects listed in the deploys section
     if let Some(deploys) = config.deploys {
+        // Find monorepo root once, outside the loop
         let monorepo_root = find_monorepo_root(working_directory)?;
 
         for deploy_project in deploys {
@@ -49,12 +50,12 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
 }
 
 /// Find the monorepo root by walking up the directory tree looking for a .git directory
-fn find_monorepo_root(working_directory: &Path) -> Result<&Path, CdError> {
+fn find_monorepo_root(working_directory: &Path) -> Result<PathBuf, CdError> {
     let mut current = Some(working_directory);
 
     while let Some(dir) = current {
         if dir.join(".git").exists() {
-            return Ok(dir);
+            return Ok(dir.to_path_buf());
         }
         current = dir.parent();
     }
