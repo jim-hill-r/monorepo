@@ -5,7 +5,7 @@ This is a complex restructuring task that needs to be broken down into sequentia
 
 ### Phase 1: Preparation and Planning (agent-generated)
 - ✓ COMPLETED: Document all current dependencies and references to cast, cast_cli, and cast_vscode projects (See WORKSPACE_RESTRUCTURING_DEPENDENCIES.md)
-- TODO (agent-generated): Create a detailed migration plan with rollback steps
+- ✓ COMPLETED: Create a detailed migration plan with rollback steps (See WORKSPACE_RESTRUCTURING_MIGRATION_PLAN.md)
 - TODO (agent-generated): Identify all files that need updates (workflows, dependabot, tests, docs, etc.)
 
 ### Phase 2: Create Workspace Structure (agent-generated)
