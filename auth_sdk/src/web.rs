@@ -166,9 +166,8 @@ async fn handle_redirect(
         // Set the PKCE code verifier.
         .set_pkce_verifier(pkce_verifier)
         .request_async(&http_client)
-        // TODO: Use #[from] to do this mapping to prevent discarding error data
         .await
-        .map_err(|_| AuthError::Unknown)?;
+        .map_err(|e| AuthError::TokenExchangeError(e.to_string()))?;
 
     // Unwrapping token_result will either produce a Token or a RequestTokenError.
     Ok(AccessToken::new(
