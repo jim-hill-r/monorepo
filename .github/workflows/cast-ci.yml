@@ -35,6 +35,32 @@ jobs:
           toolchain: 1.85.0
           components: rustfmt, clippy
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install Playwright browsers
+        run: |
+          # Install playwright browsers for projects that need them
+          for package_json in $(find . -name "package.json" -not -path "*/node_modules/*"); do
+            project_dir=$(dirname "$package_json")
+            # Check if this project has playwright dependency
+            if grep -q "@playwright/test" "$package_json"; then
+              echo "Installing Playwright browsers for $project_dir"
+              cd "$project_dir"
+              npm install
+              npx playwright install --with-deps chromium
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
+      - name: Install Dioxus CLI
+        run: |
+          cargo install dioxus-cli
+
       - name: Build cast CLI
         run: |
           cd cast_cli

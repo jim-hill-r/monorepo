@@ -28,6 +28,7 @@ pub enum CiError {
 /// This detects the project type and runs appropriate checks:
 /// - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
 /// - For TypeScript projects (has package.json): npm lint, compile, test
+/// - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
 
@@ -35,9 +36,13 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let has_cargo_toml = working_directory.join("Cargo.toml").exists();
     let has_package_json = working_directory.join("package.json").exists();
 
+    // Run Rust CI if Cargo.toml exists
     if has_cargo_toml {
         run_rust_ci(working_directory)?;
-    } else if has_package_json {
+    }
+
+    // Run TypeScript CI if package.json exists (can run in addition to Rust CI)
+    if has_package_json {
         run_typescript_ci(working_directory)?;
     }
     // If neither exists, silently succeed (empty project or unsupported type)
@@ -69,10 +74,14 @@ fn run_rust_ci(working_directory: &Path) -> Result<(), CiError> {
 
 /// Run CI checks for a TypeScript/Node.js project
 /// This runs:
-/// 1. npm run lint (if script exists)
-/// 2. npm run compile (if script exists)
-/// 3. npm test (if script exists)
+/// 1. npm install (to ensure dependencies are installed)
+/// 2. npm run lint (if script exists)
+/// 3. npm run compile (if script exists)
+/// 4. npm test (if script exists)
 fn run_typescript_ci(working_directory: &Path) -> Result<(), CiError> {
+    // Run npm install to ensure dependencies are installed
+    run_npm_install(working_directory)?;
+
     // Run npm run lint if it exists
     if npm_script_exists(working_directory, "lint") {
         run_npm_command(working_directory, "lint").map_err(|_| CiError::NpmLintError)?;
@@ -83,11 +92,10 @@ fn run_typescript_ci(working_directory: &Path) -> Result<(), CiError> {
         run_npm_command(working_directory, "compile").map_err(|_| CiError::NpmCompileError)?;
     }
 
-    // Skip npm test for now as it requires VS Code to be installed
-    // and can't run in CI environment without additional setup
-    // if npm_script_exists(working_directory, "test") {
-    //     run_npm_command(working_directory, "test").map_err(|_| CiError::NpmTestError)?;
-    // }
+    // Run npm test if it exists (e.g., Playwright tests)
+    if npm_script_exists(working_directory, "test") {
+        run_npm_command(working_directory, "test").map_err(|_| CiError::NpmTestError)?;
+    }
 
     Ok(())
 }
@@ -115,6 +123,20 @@ fn run_npm_command(working_directory: &Path, command: &str) -> Result<(), std::i
 
     if !status.success() {
         return Err(std::io::Error::other(format!("npm run {} failed", command)));
+    }
+
+    Ok(())
+}
+
+/// Run npm install to install dependencies
+fn run_npm_install(working_directory: &Path) -> Result<(), std::io::Error> {
+    let status = Command::new("npm")
+        .arg("install")
+        .current_dir(working_directory)
+        .status()?;
+
+    if !status.success() {
+        return Err(std::io::Error::other("npm install failed"));
     }
 
     Ok(())
