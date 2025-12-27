@@ -80,24 +80,21 @@ Currently, toolchains are managed manually:
 - **Local development**: Developers install tools as needed based on project README
 - **CI/CD**: GitHub Actions workflows manually install required tools using action steps
 
-Example workflow steps from `.github/workflows/cast-ci.yml`:
+Example workflow steps from `.github/workflows/cast-ci.yml` (simplified):
 ```yaml
 - name: Setup Node.js
   uses: actions/setup-node@v4
   
 - name: Install Playwright browsers
   run: |
-    # Shell script to find and install Playwright
-    # (Note: This is GitHub Actions YAML, not a shell script in the repo)
-    find . -name "package.json" ... | while ...; do
-      npx playwright install --with-deps chromium
-    done
+    # Bash script that finds projects with Playwright and installs browsers
+    # (This is in GitHub Actions YAML - we follow the "no shell scripts in repo" rule)
     
 - name: Install Dioxus CLI
   run: cargo install dioxus-cli --version 0.7.2
 ```
 
-These installation steps will eventually be replaced by `cast toolchain install`.
+These manual installation steps will be replaced by `cast toolchain install`.
 
 ### Future State (Cast Toolchain Command)
 
