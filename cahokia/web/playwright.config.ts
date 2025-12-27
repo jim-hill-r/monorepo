@@ -3,8 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright configuration for Cahokia web application tests.
  * 
- * Tests expect the Dioxus web app to be running on http://localhost:8080
- * Start the dev server with: dx serve --port 8080 (from cahokia/web directory)
+ * The dev server (dx serve) is automatically started before tests run.
+ * See the webServer configuration below for details.
  * 
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -67,10 +67,10 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'dx serve --port 8080',
-  //   url: 'http://localhost:8080',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120 * 1000,
-  // },
+  webServer: {
+    command: 'dx serve --port 8080',
+    url: 'http://localhost:8080',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+  },
 });

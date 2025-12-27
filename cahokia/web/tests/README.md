@@ -24,16 +24,20 @@ npx playwright install --with-deps chromium
 
 ## Running Tests
 
-### Standard Tests (Require Dev Server)
+### Automatic Dev Server Management
 
-Before running most tests, you need to start the Dioxus development server:
+The Playwright configuration now automatically manages the `dx serve` development server:
 
-```bash
-# From the cahokia/web directory
-dx serve --port 8080
-```
+- **Automatically starts** - The dev server starts automatically when you run tests
+- **Waits for ready** - Tests wait until the server is ready before running
+- **Reuses server** - In development, reuses an existing server if already running
+- **Auto cleanup** - Stops the server automatically after tests complete
 
-### Run Tests
+You no longer need to manually start `dx serve` before running tests!
+
+### Standard Tests (with Auto-Managed Dev Server)
+
+Simply run the tests, and the dev server will start automatically:
 
 ```bash
 # Run all tests
@@ -139,7 +143,7 @@ The Playwright configuration is in `playwright.config.ts`. Key settings:
 
 ## CI Integration
 
-The `webServer` configuration in `playwright.config.ts` is commented out by default. You can uncomment it to automatically start the Dioxus server before running tests in CI.
+The `webServer` configuration in `playwright.config.ts` is now enabled by default. This automatically starts the Dioxus server before running tests:
 
 ```typescript
 webServer: {
@@ -149,3 +153,5 @@ webServer: {
   timeout: 120 * 1000,
 },
 ```
+
+In CI environments, the server is started fresh for each test run. In local development, it will reuse an existing server if one is already running on port 8080.
