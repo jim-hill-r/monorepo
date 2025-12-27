@@ -3,6 +3,13 @@ name = "sparkhill_website"
 version = "0.1.0"
 edition = "2024"
 
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[lints.rust]
+unsafe_code = "forbid"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # Dependencies for the engine and the browser go here
