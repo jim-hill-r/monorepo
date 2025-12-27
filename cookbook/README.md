@@ -20,6 +20,9 @@ cookbook/
 
 The `cookbook-core` library contains shared business logic and data models:
 - **Recipe struct**: Data model for recipe information including title, ingredients, instructions, timing, and tags
+- **RecipeReader trait**: Trait for reading recipes from a data source (by ID, by day, all recipes, by tag)
+- **RecipeWriter trait**: Trait for writing recipes to a data source (create, update, delete, save/upsert)
+- **RecipeError**: Error type for recipe operations with variants for NotFound, StorageError, InvalidData, and AlreadyExists
 - Designed to be consumed by web, cloudflare, and future platform crates
 
 ## Deployment
