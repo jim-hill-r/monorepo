@@ -11,6 +11,14 @@ No shell scripts (bash, sh, etc.) should be used. All scripting and automation m
 
 For detailed Rust coding standards, see [rust.md](./rust.md).
 
+# Development Standards
+
+- [Configuration](./configuration.md) - Configuration file standards
+- [Documentation](./documentation.md) - Documentation standards
+- [Naming](./naming.md) - Naming conventions
+- [Toolchain](./toolchain.md) - Toolchain management and requirements
+- [TypeScript](./typescript.md) - TypeScript coding standards
+
 # Testing
 
 For unit: Rust normal testing (cargo test)
