@@ -8,6 +8,7 @@ members = ["examples/*"]
 resolver = "2"
 
 [dependencies]
+anyhow = "1.0"
 axum = "0.8.7"
 axum-test = "17.3.0"
 convert_case = "0.10.0"
