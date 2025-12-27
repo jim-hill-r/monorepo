@@ -2,5 +2,12 @@
 resolver = "2"
 members = ["workflow_tests"]
 
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
 [workspace.dependencies]
 serde_yaml = "0.9"

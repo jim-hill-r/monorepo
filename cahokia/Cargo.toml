@@ -3,6 +3,13 @@ resolver = "2"
 members = ["cloudflare", "core", "desktop", "mobile", "ui", "web"]
 default-members = ["core", "ui", "web"]
 
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
 [workspace.dependencies]
 dioxus = { version = "0.7.2" }
 thiserror = "2.0.12"

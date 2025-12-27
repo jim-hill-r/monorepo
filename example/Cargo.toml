@@ -1,3 +1,10 @@
 [workspace]
 resolver = "2"
 members = ["binary", "example_rust_library"]
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

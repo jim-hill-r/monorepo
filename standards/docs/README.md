@@ -9,6 +9,8 @@ Exceptions:
 
 No shell scripts (bash, sh, etc.) should be used. All scripting and automation must be done in Rust.
 
+For detailed Rust coding standards, see [rust.md](./rust.md).
+
 # Testing
 
 For unit: Rust normal testing (cargo test)
