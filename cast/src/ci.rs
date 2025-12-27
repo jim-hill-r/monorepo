@@ -76,12 +76,12 @@ fn run_rust_ci(working_directory: &Path) -> Result<(), CiError> {
 
 /// Run CI checks for a TypeScript/Node.js project
 /// This runs:
-/// 1. npm install (to ensure dependencies are installed)
+/// 1. npm ci (to install dependencies from lockfile)
 /// 2. npm run lint (if script exists)
 /// 3. npm run compile (if script exists)
 /// 4. npm test (if script exists)
 fn run_typescript_ci(working_directory: &Path) -> Result<(), CiError> {
-    // Run npm install to ensure dependencies are installed
+    // Run npm ci to ensure dependencies are installed from lockfile
     run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
 
     // Run npm run lint if it exists
@@ -130,15 +130,16 @@ fn run_npm_command(working_directory: &Path, command: &str) -> Result<(), std::i
     Ok(())
 }
 
-/// Run npm install to install dependencies
+/// Run npm ci to install dependencies from lockfile
+/// Uses 'npm ci' for faster, more reliable installs in CI environments
 fn run_npm_install(working_directory: &Path) -> Result<(), std::io::Error> {
     let status = Command::new("npm")
-        .arg("install")
+        .arg("ci")
         .current_dir(working_directory)
         .status()?;
 
     if !status.success() {
-        return Err(std::io::Error::other("npm install failed"));
+        return Err(std::io::Error::other("npm ci failed"));
     }
 
     Ok(())
