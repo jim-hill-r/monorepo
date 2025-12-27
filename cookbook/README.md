@@ -18,7 +18,7 @@ cookbook/
 
 ## Core Library
 
-The `core` library contains shared business logic and data models:
+The `cookbook-core` library contains shared business logic and data models:
 - **Recipe struct**: Data model for recipe information including title, ingredients, instructions, timing, and tags
 - Designed to be consumed by web, cloudflare, and future platform crates
 

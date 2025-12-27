@@ -38,9 +38,10 @@ impl Recipe {
     }
 
     /// Returns the total time in minutes (prep + cook)
+    /// Returns None if either time is not set, or if the sum would overflow
     pub fn total_time_minutes(&self) -> Option<u32> {
         match (self.prep_time_minutes, self.cook_time_minutes) {
-            (Some(prep), Some(cook)) => Some(prep + cook),
+            (Some(prep), Some(cook)) => prep.checked_add(cook),
             (Some(prep), None) => Some(prep),
             (None, Some(cook)) => Some(cook),
             (None, None) => None,
@@ -159,5 +160,14 @@ mod tests {
         let recipe1 = Recipe::new("recipe10".to_string(), "Same Recipe".to_string());
         let recipe2 = Recipe::new("recipe10".to_string(), "Same Recipe".to_string());
         assert_eq!(recipe1, recipe2);
+    }
+
+    #[test]
+    fn test_total_time_minutes_overflow() {
+        let mut recipe = Recipe::new("recipe11".to_string(), "Long Recipe".to_string());
+        recipe.prep_time_minutes = Some(u32::MAX);
+        recipe.cook_time_minutes = Some(1);
+        // Should return None on overflow instead of panicking
+        assert_eq!(recipe.total_time_minutes(), None);
     }
 }
