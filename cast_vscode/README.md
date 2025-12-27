@@ -8,8 +8,6 @@ A Visual Studio Code extension for the Cast CLI tool - highly opinionated toolin
 
 The extension displays a running timer in the VS Code status bar that tracks your current Cast session. The timer shows elapsed time in `HH:MM:SS` format based on session logs stored in `.cast/sessions/`.
 
-![Status Bar Timer](https://via.placeholder.com/300x30/1e1e1e/ffffff?text=00:12:34)
-
 ## Requirements
 
 - Visual Studio Code 1.100.0 or higher
@@ -28,8 +26,9 @@ The extension displays a running timer in the VS Code status bar that tracks you
 
 1. Clone this repository
 2. Run `npm install` to install dependencies
-3. Run `npm run package` to build the extension
-4. Install the generated `cast.vsix` file
+3. Run `npm run compile` to compile the TypeScript code
+4. Run `npm run package` to create the VSIX file
+5. Install the generated `cast.vsix` file
 
 ## Usage
 
@@ -72,8 +71,8 @@ This creates a `cast.vsix` file that can be installed in VS Code.
 
 The extension monitors the `.cast/sessions/` directory in your workspace for session log files. Each session log contains timestamps and events. The extension:
 
-1. Reads the most recent session log file (sorted alphabetically)
-2. Parses the log to find the session start time
+1. Reads the most recent session log file (lexicographically sorted, last file is selected)
+2. Parses the log to find the session start time (first line with "Start" event)
 3. Calculates elapsed time since the start
 4. Updates the status bar every second
 
