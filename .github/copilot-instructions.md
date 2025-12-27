@@ -78,3 +78,28 @@ Before finishing any task that involves code changes:
 - For **TypeScript/Node.js projects** (with package.json): Runs `npm install`, `npm run lint`, `npm run compile`, and `npm test`
 - For **hybrid projects** (both Cargo.toml and package.json, e.g., Dioxus web apps): Runs both Rust and TypeScript CI checks
 - Playwright tests are automatically run via `npm test` when a package.json with test script exists
+
+## Toolchain Requirements by Framework
+
+Different frameworks require different tooling beyond Rust:
+
+### Dioxus Framework
+Projects with `framework = "dioxus"` require:
+- **Rust toolchain**: Always required (rustc, cargo, rustfmt, clippy)
+- **Dioxus CLI (`dx`)**: Required for serving, building, and bundling Dioxus apps
+  - Install via: `cargo install dioxus-cli --version 0.7.2`
+  - Used for: `dx serve`, `dx build`, `dx bundle`
+- **Node.js and npm**: Required for web platform projects
+  - Used for: Installing and running Playwright tests, managing web dependencies
+- **Playwright**: Required for end-to-end testing of web apps
+  - Install via: `npm ci` (installs from package.json), then `npx playwright install --with-deps chromium`
+
+### Cloudflare Pages Framework
+Projects with `framework = "cloudflare-pages"` require:
+- **Rust toolchain**: Always required
+- **Wrangler CLI**: Required for deploying to Cloudflare
+  - Install via: `npm install -g wrangler` or `cargo install wrangler`
+- **Node.js and npm**: Typically required for Wrangler and other tools
+
+### Future: Cast Toolchain Command
+A `cast toolchain` command is planned to automate installation of framework-specific tooling. See `/ISSUES.md` "Cast Toolchain Command Epic" for implementation plan. When implemented, GitHub workflows should only install Rust, and use `cast toolchain install` for all other tools.

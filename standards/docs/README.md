@@ -1,3 +1,18 @@
+# Standards Documentation
+
+This directory contains development standards and guidelines for the monorepo.
+
+## Quick Links
+
+- [Configuration](./configuration.md) - Configuration file standards
+- [Documentation](./documentation.md) - Documentation standards
+- [Naming](./naming.md) - Naming conventions
+- [Rust](./rust.md) - Rust coding standards
+- [Toolchain](./toolchain.md) - Toolchain management and requirements
+- [TypeScript](./typescript.md) - TypeScript coding standards
+
+---
+
 # Languages
 
 All code in this repository must be written in Rust unless there is a specific exception.
@@ -45,9 +60,9 @@ For IO-bound: async/await (tokio runtime)
 
 For engine: Bevy
 
-# Web applicaitons
+# Web applications
 
-For framework: Dixous
+For framework: Dioxus
 For http: Axum
 For OpenAPI: Utopia
 For reverse proxy: Pingora
