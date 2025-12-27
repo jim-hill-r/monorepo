@@ -51,8 +51,10 @@ jobs:
             if jq -e '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' "$package_json" > /dev/null 2>&1; then
               echo "Installing Playwright browsers for $project_dir"
               cd "$project_dir"
-              # Only install browsers - npm install will be run by cast ci
-              npx --yes playwright@latest install --with-deps chromium
+              # Install npm dependencies first (cast ci will run this again, but it's fast if cached)
+              npm ci --prefer-offline --no-audit
+              # Install browsers using the project's playwright version
+              npx playwright install --with-deps chromium
               cd "$GITHUB_WORKSPACE"
             fi
           done

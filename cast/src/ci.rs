@@ -14,6 +14,8 @@ pub enum CiError {
     BuildError(#[from] build::BuildError),
     #[error("Cargo test failed: {0}")]
     TestError(#[from] test::TestError),
+    #[error("npm install failed")]
+    NpmInstallError,
     #[error("npm lint failed")]
     NpmLintError,
     #[error("npm compile failed")]
@@ -80,7 +82,7 @@ fn run_rust_ci(working_directory: &Path) -> Result<(), CiError> {
 /// 4. npm test (if script exists)
 fn run_typescript_ci(working_directory: &Path) -> Result<(), CiError> {
     // Run npm install to ensure dependencies are installed
-    run_npm_install(working_directory)?;
+    run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
 
     // Run npm run lint if it exists
     if npm_script_exists(working_directory, "lint") {
