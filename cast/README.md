@@ -114,17 +114,25 @@ test::run("/path/to/project").unwrap();
 
 ### Running CI Checks
 
-Cast provides a `ci` command that runs standard Rust project checks. This is designed to be used in CI workflows.
+Cast provides a `ci` command that runs standard project checks. This is designed to be used in CI workflows.
 
 ```bash
 cast ci
 ```
 
-This will run the following checks in order:
+For **Rust projects** (with Cargo.toml), this will run:
 1. `cargo fmt --check` - Verify code formatting
 2. `cargo clippy -- -D warnings` - Lint code for common mistakes
 3. `cast build` - Ensure the project compiles (via `cargo build`)
 4. `cast test` - Run all tests (via `cargo test`)
+
+For **TypeScript/Node.js projects** (with package.json), this will run:
+1. `npm install` - Install dependencies
+2. `npm run lint` - Run linting (if script exists)
+3. `npm run compile` - Compile TypeScript (if script exists)
+4. `npm test` - Run tests (if script exists, e.g., Playwright tests)
+
+Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests), and Cast will run both Rust and TypeScript CI checks.
 
 If any check fails, the command will exit with an error. This makes it easy to integrate with CI systems like GitHub Actions.
 
