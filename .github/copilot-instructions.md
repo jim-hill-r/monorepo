@@ -37,3 +37,9 @@ Before finishing any task that involves code changes:
 4. If changes are made to a workspace project, ensure the workspace configuration supports CI builds (e.g., use `default-members` to exclude platform-specific members that require system dependencies)
 5. Verify all unit tests pass with `cargo test`
 6. For UI changes, verify Playwright tests pass with `npm test`
+
+### Cast CI Behavior
+- For **Rust projects** (with Cargo.toml): Runs `cargo fmt`, `clippy`, `build`, and `test`
+- For **TypeScript/Node.js projects** (with package.json): Runs `npm install`, `npm run lint`, `npm run compile`, and `npm test`
+- For **hybrid projects** (both Cargo.toml and package.json, e.g., Dioxus web apps): Runs both Rust and TypeScript CI checks
+- Playwright tests are automatically run via `npm test` when a package.json with test script exists
