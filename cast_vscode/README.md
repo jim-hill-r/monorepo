@@ -71,15 +71,15 @@ This creates a `cast.vsix` file that can be installed in VS Code.
 
 The extension monitors the `.cast/sessions/` directory in your workspace for session log files. Each session log contains timestamps and events. The extension:
 
-1. Reads the most recent session log file (lexicographically sorted, last file is selected)
+1. Reads the most recent session log file (files are sorted lexicographically in ascending order, and the last file is selected)
 2. Parses the log to find the session start time (first line with "Start" event)
 3. Calculates elapsed time since the start
 4. Updates the status bar every second
 
 Session log format:
 ```
-2024-01-01T12:00:00Z,Start
-2024-01-01T12:30:00Z,Event
+2025-01-01 12:00:00 UTC,Start
+2025-01-01 12:30:00 UTC,Event
 ```
 
 ## Contributing
