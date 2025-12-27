@@ -1,6 +1,6 @@
 # Cast Workspace Restructuring - Detailed Migration Plan with Rollback Steps
 
-This document provides detailed step-by-step instructions for migrating the cast, cast_cli, and cast_vscode projects into a unified workspace structure, including rollback procedures for each phase.
+This document provides detailed step-by-step instructions for migrating the cast, cast_cli, and cast_vscode projects into a unified workspace structure (a Cargo workspace containing all Cast-related projects under a single directory with shared configuration and dependencies), including rollback procedures for each phase.
 
 **Created**: 2025-12-27  
 **Status**: Planning Phase  
@@ -698,7 +698,10 @@ git push --force  # Only if not shared with others
 3. Remove old cast directory:
    ```bash
    # Verify workspace/core has all content
-   diff -r cast cast_workspace/core --exclude=.git --exclude=target
+   if ! diff -r cast cast_workspace/core --exclude=.git --exclude=target; then
+     echo "ERROR: Directories differ, aborting deletion"
+     exit 1
+   fi
    
    # Remove
    git rm -r cast
@@ -708,7 +711,10 @@ git push --force  # Only if not shared with others
 4. Remove old cast_cli directory:
    ```bash
    # Verify workspace/cli has all content
-   diff -r cast_cli cast_workspace/cli --exclude=.git --exclude=target
+   if ! diff -r cast_cli cast_workspace/cli --exclude=.git --exclude=target; then
+     echo "ERROR: Directories differ, aborting deletion"
+     exit 1
+   fi
    
    # Remove
    git rm -r cast_cli
@@ -718,7 +724,10 @@ git push --force  # Only if not shared with others
 5. Remove old cast_vscode directory:
    ```bash
    # Verify workspace/vscode_ext has all content
-   diff -r cast_vscode cast_workspace/vscode_ext --exclude=.git --exclude=target --exclude=node_modules
+   if ! diff -r cast_vscode cast_workspace/vscode_ext --exclude=.git --exclude=target --exclude=node_modules; then
+     echo "ERROR: Directories differ, aborting deletion"
+     exit 1
+   fi
    
    # Remove
    git rm -r cast_vscode
@@ -758,20 +767,34 @@ git push --force  # Only if not shared with others
 ```bash
 # EMERGENCY ROLLBACK - Only if critical issues found
 
-# Option 1: Restore from backup branch
+# ⚠️  WARNING: Force push operations are EXTREMELY DANGEROUS
+# They will OVERWRITE any commits made by other team members
+# ALWAYS coordinate with your team before using --force
+# Consider creating a new branch for rollback instead
+
+# Option 1: Restore from backup branch (SAFEST - no force push)
+git checkout -b rollback/restore-old-cast backup/pre-workspace-restructure
+git push origin rollback/restore-old-cast
+# Then create PR to merge this rollback branch
+
+# Option 2: Force reset from backup (DANGEROUS - requires coordination)
+# ONLY use if you have confirmed no one else has pushed commits
 git checkout main
 git reset --hard backup/pre-workspace-restructure
-git push --force origin main  # DANGEROUS - coordinate with team
+# Verify this is what you want before pushing
+git log --oneline -10
+git push --force origin main  # ⚠️  DANGEROUS - COORDINATE WITH TEAM FIRST
 
-# Option 2: Restore from tag
+# Option 3: Restore from tag (DANGEROUS - requires coordination)
 git checkout main
 git reset --hard workspace-migration-complete
-git push --force origin main  # DANGEROUS - coordinate with team
+git push --force origin main  # ⚠️  DANGEROUS - COORDINATE WITH TEAM FIRST
 
-# Option 3: Manually restore directories
+# Option 4: Manually restore directories (SAFEST - no force push)
 git checkout workspace-migration-complete^  # Go back one commit
 git checkout HEAD -- cast cast_cli cast_vscode
 git commit -m "Rollback: Restore old cast directories"
+git push origin main  # Safe push, no force needed
 ```
 
 ---
