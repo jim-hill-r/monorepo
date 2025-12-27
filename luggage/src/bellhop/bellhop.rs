@@ -190,7 +190,7 @@ mod tests {
     #[tokio::test]
     async fn create_cube_definition() -> Result<()> {
         let _test_name = "create_cube_definition";
-        let server = TestServer::new(app(None).await?).unwrap(); //TODO: Remove unwrap (use ?)
+        let server = TestServer::new(app(None).await?)?;
         let cube = CreateCube {
             bellhop_header: BellhopHeader { closet_id: None },
             cube_header: CubeHeader {
@@ -211,7 +211,7 @@ mod tests {
     #[tokio::test]
     async fn create_closet() -> Result<()> {
         let _test_name = "create_closet";
-        let server = TestServer::new(app(None).await?).unwrap(); //TODO: Remove unwrap (use ?)
+        let server = TestServer::new(app(None).await?)?;
         let cube = CreateCube {
             bellhop_header: BellhopHeader { closet_id: None },
             cube_header: CubeHeader {
@@ -232,7 +232,7 @@ mod tests {
     #[tokio::test]
     async fn create_test_content_in_default_provider() -> Result<()> {
         let test_name = "create_test_content_using_default_provider";
-        let server = TestServer::new(app(None).await?).unwrap(); //TODO: Remove unwrap (use ?)
+        let server = TestServer::new(app(None).await?)?;
         let test_cube_definition_id = Uuid::now_v7();
         let test_cube_definition = CreateCube {
             bellhop_header: BellhopHeader { closet_id: None },

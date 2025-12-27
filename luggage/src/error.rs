@@ -34,8 +34,8 @@ impl From<std::io::Error> for LuggageError {
     }
 }
 
-// impl From<anyhow::Error> for LuggageError {
-//     fn from(_value: anyhow::Error) -> Self {
-//         return LuggageError::Unknown;
-//     }
-// }
+impl From<anyhow::Error> for LuggageError {
+    fn from(_value: anyhow::Error) -> Self {
+        LuggageError::Unknown
+    }
+}
