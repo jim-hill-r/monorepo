@@ -10,7 +10,7 @@ const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
-const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
+const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
