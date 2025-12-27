@@ -40,31 +40,40 @@ This will create build artifacts in `../pane/dist/` directory.
 
 ## Deploying to Cloudflare Pages
 
-### Deploy with Wrangler
+### Deploy with Cast
 
-To deploy the pane build artifacts:
+The recommended way to deploy is using the Cast CLI:
+
+```bash
+cast deploy
+```
+
+This command will:
+1. Verify the project is properly configured as an IAC project
+2. Check that wrangler is installed
+3. Load environment variables from `.env` file if present
+4. Deploy using `wrangler pages deploy`
+
+The Cast deploy command reads configuration from `wrangler.toml` and automatically uses the correct build output directory.
+
+### Deploy with Wrangler Directly
+
+Alternatively, you can deploy directly with wrangler:
 
 ```bash
 wrangler pages deploy ../pane/dist --project-name=pane
 ```
 
-### Configuration
-
-The deployment is configured via `wrangler.toml`. Key settings include:
-- Project name: `pane`
-- Build output directory: `../pane/dist`
-- Branch deployments and environment settings
-
 ### Automated Deployment
 
-For CI/CD pipelines, you can use:
+For CI/CD pipelines, you can use Cast deploy with environment variables:
 
 ```bash
-# Set your Cloudflare API token
+# Set your Cloudflare API token in .env file or environment
 export CLOUDFLARE_API_TOKEN=<your-token>
 
-# Deploy
-wrangler pages deploy ../pane/dist --project-name=pane
+# Deploy using Cast
+cast deploy
 ```
 
 ## Project Structure
@@ -73,7 +82,6 @@ wrangler pages deploy ../pane/dist --project-name=pane
 pane-cloudflare/
 ├── wrangler.toml     # Cloudflare Pages configuration
 ├── Cast.toml         # Cast monorepo metadata
-├── deploy.sh         # Deployment script
 ├── tests/
 │   └── validate.sh   # Validation test suite
 └── README.md         # This file

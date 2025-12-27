@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
 #[test]
 fn test_required_files_exist() {
@@ -9,7 +8,6 @@ fn test_required_files_exist() {
         "wrangler.toml",
         "Cast.toml",
         ".gitignore",
-        "deploy.sh",
         "ISSUES.md",
     ];
 
@@ -20,35 +18,6 @@ fn test_required_files_exist() {
             file
         );
     }
-}
-
-#[test]
-fn test_deploy_sh_is_executable() {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let metadata = fs::metadata("deploy.sh").expect("Failed to read deploy.sh metadata");
-        let permissions = metadata.permissions();
-        assert!(
-            permissions.mode() & 0o111 != 0,
-            "deploy.sh is not executable"
-        );
-    }
-}
-
-#[test]
-fn test_deploy_sh_has_valid_syntax() {
-    let output = Command::new("bash")
-        .arg("-n")
-        .arg("deploy.sh")
-        .output()
-        .expect("Failed to run bash syntax check");
-
-    assert!(
-        output.status.success(),
-        "deploy.sh has syntax errors: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
 }
 
 #[test]

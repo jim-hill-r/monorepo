@@ -15,7 +15,6 @@ required_files=(
     "$PROJECT_DIR/Cargo.toml"
     "$PROJECT_DIR/Cast.toml"
     "$PROJECT_DIR/wrangler.toml"
-    "$PROJECT_DIR/deploy.sh"
     "$PROJECT_DIR/README.md"
     "$PROJECT_DIR/ISSUES.md"
 )
@@ -28,17 +27,7 @@ for file in "${required_files[@]}"; do
     echo "  ✓ $(basename "$file")"
 done
 
-# Test 2: Verify deploy.sh is executable
-echo ""
-echo "Checking deploy.sh permissions..."
-if [ ! -x "$PROJECT_DIR/deploy.sh" ]; then
-    echo "Warning: deploy.sh is not executable"
-    echo "  Making it executable..."
-    chmod +x "$PROJECT_DIR/deploy.sh"
-fi
-echo "  ✓ deploy.sh is executable"
-
-# Test 3: Check if cookbook/web project exists
+# Test 2: Check if cookbook/web project exists
 echo ""
 echo "Checking cookbook/web project..."
 if [ ! -d "$COOKBOOK_WEB_DIR" ]; then
@@ -47,16 +36,16 @@ if [ ! -d "$COOKBOOK_WEB_DIR" ]; then
 fi
 echo "  ✓ cookbook/web project exists"
 
-# Test 4: Verify wrangler.toml syntax
+# Test 3: Verify wrangler.toml syntax
 echo ""
 echo "Validating wrangler.toml syntax..."
-if ! grep -q "name = \"cookbook\"" "$PROJECT_DIR/wrangler.toml"; then
+if ! grep -q "name = \"jimhillr-cookbook\"" "$PROJECT_DIR/wrangler.toml"; then
     echo "Error: wrangler.toml missing project name"
     exit 1
 fi
 echo "  ✓ wrangler.toml has valid syntax"
 
-# Test 5: Verify Cast.toml configuration
+# Test 4: Verify Cast.toml configuration
 echo ""
 echo "Validating Cast.toml..."
 if ! grep -q 'framework = "cloudflare-pages"' "$PROJECT_DIR/Cast.toml"; then
