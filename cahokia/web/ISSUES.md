@@ -1,4 +1,3 @@
-TODO (agent-generated): Add playwright tests to cast ci workflow for cahokia/web
 TODO: Update cast to support bundle.sh functionality. Should be able to just run `cast publish` to get a bundle for deployment.
 
 TODO: Implement Content Security Policy to prevent XSS and safeguard tokens in local storage
