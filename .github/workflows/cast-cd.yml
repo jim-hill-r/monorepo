@@ -24,7 +24,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.89
           components: rustfmt, clippy
 
       - name: Build cast CLI

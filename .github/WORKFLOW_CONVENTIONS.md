@@ -158,7 +158,7 @@ When using `actions-rust-lang/setup-rust-toolchain@v1`, always explicitly specif
 - name: Setup Rust toolchain
   uses: actions-rust-lang/setup-rust-toolchain@v1
   with:
-    toolchain: 1.85.0
+    toolchain: 1.89
     components: rustfmt, clippy
 ```
 
@@ -167,7 +167,7 @@ When using `actions-rust-lang/setup-rust-toolchain@v1`, always explicitly specif
 - name: Setup Rust toolchain
   uses: actions-rust-lang/setup-rust-toolchain@v1
   with:
-    toolchain: 1.85.0
+    toolchain: 1.89
 ```
 
 ### Why Specify Components?
@@ -178,6 +178,6 @@ The `cast ci` command requires:
 
 Without explicitly specifying these components, the workflow may fail with errors like:
 ```
-Cargo fmt check failed: error: 'cargo-fmt' is not installed for the toolchain '1.85.0-x86_64-unknown-linux-gnu'
+Cargo fmt check failed: error: 'cargo-fmt' is not installed for the toolchain '1.89-x86_64-unknown-linux-gnu'
 ```
 
