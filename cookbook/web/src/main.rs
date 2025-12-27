@@ -8,6 +8,8 @@ const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 
+const INTRO_MD: &str = include_str!("../../content/intro.md");
+
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
@@ -158,8 +160,12 @@ fn Home() -> Element {
     rsx! {
         div {
             class: "home-container",
-            h1 { "Cookbook" }
-            p { "Welcome to the Cookbook application!" }
+            h1 { "The Engineer's 365 Cookbook" }
+
+            div {
+                class: "intro-description",
+                p { "{INTRO_MD}" }
+            }
 
             div {
                 class: "navigation-cards",
@@ -322,5 +328,32 @@ mod tests {
         assert_eq!(Route::Plan { week: 1 }.to_string(), "/plan/1");
         assert_eq!(Route::Plan { week: 26 }.to_string(), "/plan/26");
         assert_eq!(Route::Plan { week: 52 }.to_string(), "/plan/52");
+    }
+
+    #[test]
+    fn test_intro_md_content_loaded() {
+        // Test that intro.md content is loaded and not empty
+        assert!(!INTRO_MD.is_empty(), "INTRO_MD should not be empty");
+        assert!(
+            INTRO_MD.contains("Engineer's 365 Cookbook"),
+            "INTRO_MD should contain the cookbook title"
+        );
+    }
+
+    #[test]
+    fn test_intro_md_content_quality() {
+        // Test that intro.md has expected content
+        assert!(
+            INTRO_MD.contains("Jim R. Hill"),
+            "INTRO_MD should contain the author name"
+        );
+        assert!(
+            INTRO_MD.contains("year"),
+            "INTRO_MD should mention the year"
+        );
+        assert!(
+            INTRO_MD.len() > 100,
+            "INTRO_MD should have substantial content"
+        );
     }
 }
