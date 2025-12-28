@@ -12,14 +12,14 @@ Complete one issue within this repo.
 2. Issues are defined as some comment beginning with TODO or FIX.
 3. Skip any TODO or FIX comments that are marked with `(agent-ignore)` - these should not be worked on.
 4. Read ISSUES.md in the root of the repo.
-5. If there are issues in the `# Priority Issues` sections of the root ISSUES.md, prioritize the first issues found in the list.
+5. If there are issues in the `# Priority Issues` sections of the root ISSUES.md, prioritize the first issues found in the list. **Note**: Issues may be organized under subsections (using `##` or `###` headers) for complex epics - look for TODO/FIX items within these subsections as well.
 6. If there are projects listed in the `# Priority Projects` sections, then prioritize issues found in the associated ISSUES.md for that project. Prioritize the first project found in the list.
 7. If steps 5 and 6 don't have issues, then search for other ISSUES.md in the repo for an issue.
 8. If steps 5, 6, and 7 don't have issues, then search then entire codebase for an issue.
 9. If no issues are found, do any investigation and find some issues and add them to an appropriate ISSUES.md for future consideration.
 
 ## Fix Issue
-1. If the issue to be worked is too complex, then just try to break up the issue into several smaller issues and issue a PR with changes to any relevant ISSUES.md. Mark these comments with `TODO (agent-generated)`.
+1. If the issue to be worked is too complex, then just try to break up the issue into several smaller issues and issue a PR with changes to any relevant ISSUES.md. Mark these comments with `TODO (agent-generated)`. **Formatting**: Use a flat list of TODO items under `# Priority Issues`. Only use subsections (##, ###) if documenting a multi-phase epic in a project-specific ISSUES.md (like cast/ISSUES.md), not in the root ISSUES.md.
 2. Otherwise do the following:
 3. Use Test Driven Development as much as possible. Start by writing tests for the issue you are trying to fix.
 4. Implement code that will make the tests pass and fix this issue.
