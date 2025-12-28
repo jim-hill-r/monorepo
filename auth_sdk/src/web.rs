@@ -160,14 +160,23 @@ async fn handle_redirect(
         return Err(AuthError::Unknown);
     }
 
+    // Following redirects opens the client up to SSRF vulnerabilities.
+    // OAuth2 RFC 6749 requires that token endpoints MUST NOT redirect.
+    // This policy prevents SSRF attacks where a malicious authorization server
+    // could redirect the client to internal resources.
+    //
+    // Note: On wasm32, reqwest uses the browser's fetch API which has built-in
+    // redirect handling and doesn't support custom redirect policies. The browser's
+    // same-origin policy provides some protection, but developers should ensure
+    // their OAuth2 server endpoints follow the RFC 6749 requirement of not redirecting.
+    #[cfg(not(target_arch = "wasm32"))]
     let http_client = reqwest::ClientBuilder::new()
-        // Following redirects opens the client up to SSRF vulnerabilities.
-        // OAuth2 RFC 6749 requires that token endpoints MUST NOT redirect.
-        // This policy prevents SSRF attacks where a malicious authorization server
-        // could redirect the client to internal resources.
         .redirect(reqwest::redirect::Policy::none())
         .build()
         .map_err(|_| AuthError::Unknown)?;
+
+    #[cfg(target_arch = "wasm32")]
+    let http_client = reqwest::Client::new();
 
     // Now you can exchange it for an access token.
     let token_result = client
