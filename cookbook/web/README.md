@@ -63,10 +63,29 @@ Invalid day or week numbers will display a helpful error message.
 
 ## Building
 
-To build the project for production:
+This project is part of a Cargo workspace. To build for production from within the `web` directory, use the npm scripts:
 
 ```bash
-dx bundle
+# Development bundle
+npm run bundle
+
+# Production bundle (optimized)
+npm run bundle:release
+```
+
+Alternatively, you can use the `dx` command directly with the `--package` flag:
+
+```bash
+# From the web directory
+dx bundle --package web --platform web --release
+```
+
+Or run from the parent cookbook directory without the `--package` flag:
+
+```bash
+# From the cookbook directory
+cd ..
+dx bundle --platform web --release
 ```
 
 The output will be in the `dist/` directory and ready for deployment.
