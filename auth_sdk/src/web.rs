@@ -155,8 +155,10 @@ async fn handle_redirect(
 
     let http_client = reqwest::ClientBuilder::new()
         // Following redirects opens the client up to SSRF vulnerabilities.
-        // TODO: Ensure this policy is none for all situations
-        //.redirect(reqwest::redirect::Policy::none())
+        // OAuth2 RFC 6749 requires that token endpoints MUST NOT redirect.
+        // This policy prevents SSRF attacks where a malicious authorization server
+        // could redirect the client to internal resources.
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .map_err(|_| AuthError::Unknown)?;
 
