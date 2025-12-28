@@ -119,9 +119,7 @@ fn get_git_sha(working_directory: &Path) -> Result<String, PublishError> {
         .output()?;
 
     if !output.status.success() {
-        return Err(PublishError::GitError(
-            "Failed to get git SHA".to_string(),
-        ));
+        return Err(PublishError::GitError("Failed to get git SHA".to_string()));
     }
 
     let sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -149,8 +147,8 @@ fn is_git_dirty(working_directory: &Path) -> Result<bool, PublishError> {
 fn get_version_from_cargo_toml(working_directory: &Path) -> Result<String, PublishError> {
     let cargo_toml_path = working_directory.join("Cargo.toml");
     let contents = fs::read_to_string(cargo_toml_path)?;
-    let cargo_toml: toml::Value = toml::from_str(&contents)
-        .map_err(|e| PublishError::CargoTomlParseError(e.to_string()))?;
+    let cargo_toml: toml::Value =
+        toml::from_str(&contents).map_err(|e| PublishError::CargoTomlParseError(e.to_string()))?;
 
     let version = cargo_toml
         .get("package")
