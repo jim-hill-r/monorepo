@@ -298,13 +298,14 @@ This will:
 2. Copy each exemplar project to the new project location (later exemplars overwrite earlier ones, based on alphabetical ordering)
 3. Remove empty `.gitignore` placeholder files used for tracking empty directories in git
 4. Remove the `exemplar = true` flag from the new project's Cast.toml
+5. Replace `TODO-CHANGE-ME` in `Cargo.toml` package name with the actual project name
 
 The resulting project will have a complete structure ready for development with:
 - `Cargo.toml` for Rust dependencies
 - `Cast.toml` for Cast-specific configuration
 - Standard directories: `src/`, `tests/`, `benches/`, `docs/`, etc.
 
-To create your own exemplar projects, simply add `exemplar = true` to any project's `Cast.toml` file. The Cast tool will find it automatically when creating new projects.
+To create your own exemplar projects, simply add `exemplar = true` to any project's `Cast.toml` file. The Cast tool will find it automatically when creating new projects. You can use `TODO-CHANGE-ME` as a placeholder for the package name in `Cargo.toml`, which will be automatically replaced with the actual project name.
 
 ### Finding Projects with Changes
 
