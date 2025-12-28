@@ -41,7 +41,9 @@ pub struct User {
     pub name: String,
 }
 
-pub struct CsrfTokenState(pub(crate) String);
+pub struct CsrfTokenState(
+    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))] pub(crate) String,
+);
 
 impl CsrfTokenState {
     pub fn new(state: String) -> CsrfTokenState {
