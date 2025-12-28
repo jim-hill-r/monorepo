@@ -1,6 +1,5 @@
 # Priority Issues
 
-- TODO: Add rust traits to the `core` project for reading and writing recipe information.
 - TODO: Add a `data_md` project to this workspace that implements the recipe read/write traits and can read and write from markdown files stored in the content folder. The data is made available at build time.
 - TODO: Move the login button into the top header.
 - TODO: Make the top header shorter.
