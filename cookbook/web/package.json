@@ -8,7 +8,9 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "bundle": "dx bundle --package web --platform web",
+    "bundle:release": "dx bundle --package web --platform web --release"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",
