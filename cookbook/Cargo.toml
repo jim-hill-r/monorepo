@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cloudflare", "core", "web"]
+members = ["cloudflare", "core", "data_md", "web"]
 default-members = ["web"]
 
 [workspace.lints.clippy]
