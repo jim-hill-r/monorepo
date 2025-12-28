@@ -34,7 +34,7 @@ pub trait RecipeReader {
     /// Get a recipe by its unique identifier
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe>;
 
-    /// Get a recipe by day of the year (1-365)
+    /// Get a recipe by day of the year (1-365, or 1-366 in leap years)
     fn get_by_day(&self, day: u32) -> RecipeResult<Recipe>;
 
     /// Get all recipes
