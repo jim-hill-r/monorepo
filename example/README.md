@@ -21,7 +21,7 @@ These projects are marked with `exemplar = true` in their `Cast.toml` files. The
 cast project new <name>
 ```
 
-When creating a new project, Cast copies exemplar projects in alphabetical order, with later ones overwriting files from earlier ones.
+When creating a new project, Cast copies exemplar projects in alphabetical order, with later ones overwriting files from earlier ones. Any `TODO-CHANGE-ME` placeholders in `Cargo.toml` package names are automatically replaced with the new project name.
 
 ## Modifying Exemplar Projects
 
