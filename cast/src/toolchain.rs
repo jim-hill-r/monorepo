@@ -944,6 +944,121 @@ pub fn check_tools(
     })
 }
 
+/// Options for listing tools
+#[derive(Debug, Clone, Default)]
+pub struct ListOptions {
+    /// Only show tools required by the current project
+    pub required_only: bool,
+    /// Show all tools that Cast can manage
+    pub all: bool,
+    /// Output results in JSON format
+    pub json: bool,
+}
+
+/// Result of listing tools
+#[derive(Debug, Clone)]
+pub struct ListResult {
+    pub tool_statuses: Vec<ToolStatus>,
+}
+
+impl ListResult {
+    /// Format list result as text output
+    pub fn format_text(&self) -> String {
+        let mut output = String::new();
+
+        // Show tool status
+        for status in &self.tool_statuses {
+            if status.installed {
+                if let Some(version) = &status.version {
+                    output.push_str(&format!(
+                        "{}: {} (installed)\n",
+                        status.tool.name(),
+                        version
+                    ));
+                } else {
+                    output.push_str(&format!(
+                        "{}: installed (version unknown)\n",
+                        status.tool.name()
+                    ));
+                }
+            } else {
+                output.push_str(&format!("{}: not installed\n", status.tool.name()));
+            }
+        }
+
+        output
+    }
+
+    /// Format list result as JSON
+    pub fn format_json(&self) -> Result<String, ToolchainError> {
+        use serde_json::json;
+
+        let tools_json: Vec<serde_json::Value> = self
+            .tool_statuses
+            .iter()
+            .map(|status| {
+                json!({
+                    "name": status.tool.name(),
+                    "installed": status.installed,
+                    "version": status.version,
+                })
+            })
+            .collect();
+
+        let result = json!({
+            "tools": tools_json,
+        });
+
+        serde_json::to_string_pretty(&result).map_err(|e| {
+            ToolchainError::DetectionError(format!("JSON serialization failed: {}", e))
+        })
+    }
+}
+
+/// Get all tools that Cast can manage
+fn get_all_tools() -> Vec<Tool> {
+    vec![
+        Tool::Rustc,
+        Tool::Cargo,
+        Tool::Rustfmt,
+        Tool::Clippy,
+        Tool::Dx,
+        Tool::Node,
+        Tool::Npm,
+        Tool::Playwright,
+        Tool::Wrangler,
+    ]
+}
+
+/// List tools and their installation status
+pub fn list_tools(
+    working_directory: impl AsRef<Path>,
+    options: ListOptions,
+) -> Result<ListResult, ToolchainError> {
+    let working_directory = working_directory.as_ref();
+
+    // Determine which tools to list
+    let tools_to_list = if options.all {
+        // Show all tools that Cast can manage
+        get_all_tools()
+    } else if options.required_only {
+        // Show only tools required by the current project
+        detect_required_tools(working_directory)?
+    } else {
+        // Default behavior: show required tools only
+        detect_required_tools(working_directory)?
+    };
+
+    // Check each tool
+    let mut tool_statuses = Vec::new();
+    for tool in tools_to_list {
+        let status = check_tool(&tool)?;
+        tool_statuses.push(status);
+    }
+
+    Ok(ListResult { tool_statuses })
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod install_tests {
@@ -1344,5 +1459,191 @@ mod check_tests {
 
         let output = check_result.format_text(false);
         assert!(output.contains("1 tool missing")); // "tool" not "tools"
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod list_tests {
+    use super::*;
+
+    #[test]
+    fn test_list_options_default() {
+        let options = ListOptions::default();
+        assert!(!options.required_only);
+        assert!(!options.all);
+        assert!(!options.json);
+    }
+
+    #[test]
+    fn test_get_all_tools() {
+        let tools = get_all_tools();
+        assert_eq!(tools.len(), 9);
+        assert!(tools.contains(&Tool::Rustc));
+        assert!(tools.contains(&Tool::Cargo));
+        assert!(tools.contains(&Tool::Rustfmt));
+        assert!(tools.contains(&Tool::Clippy));
+        assert!(tools.contains(&Tool::Dx));
+        assert!(tools.contains(&Tool::Node));
+        assert!(tools.contains(&Tool::Npm));
+        assert!(tools.contains(&Tool::Playwright));
+        assert!(tools.contains(&Tool::Wrangler));
+    }
+
+    #[test]
+    fn test_list_tools_required_only() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_list_required").unwrap();
+
+        // Create a Cast.toml with dioxus framework
+        fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+
+        let options = ListOptions {
+            required_only: true,
+            all: false,
+            json: false,
+        };
+
+        let result = list_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let list_result = result.unwrap();
+        // Dioxus requires: rustc, cargo, rustfmt, clippy, dx, node, npm, playwright
+        assert_eq!(list_result.tool_statuses.len(), 8);
+
+        let tool_names: Vec<&str> = list_result
+            .tool_statuses
+            .iter()
+            .map(|s| s.tool.name())
+            .collect();
+        assert!(tool_names.contains(&"rustc"));
+        assert!(tool_names.contains(&"cargo"));
+        assert!(tool_names.contains(&"rustfmt"));
+        assert!(tool_names.contains(&"clippy"));
+        assert!(tool_names.contains(&"dx"));
+        assert!(tool_names.contains(&"node"));
+        assert!(tool_names.contains(&"npm"));
+        assert!(tool_names.contains(&"playwright"));
+    }
+
+    #[test]
+    fn test_list_tools_all() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_list_all").unwrap();
+
+        // Create a Cast.toml (framework doesn't matter for --all)
+        fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true").unwrap();
+
+        let options = ListOptions {
+            required_only: false,
+            all: true,
+            json: false,
+        };
+
+        let result = list_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let list_result = result.unwrap();
+        // Should list all 9 tools
+        assert_eq!(list_result.tool_statuses.len(), 9);
+    }
+
+    #[test]
+    fn test_list_tools_default_shows_required() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_list_default").unwrap();
+
+        // Create a Cast.toml without framework (pure Rust)
+        fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true").unwrap();
+
+        let options = ListOptions {
+            required_only: false,
+            all: false,
+            json: false,
+        };
+
+        let result = list_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let list_result = result.unwrap();
+        // Pure Rust requires: rustc, cargo, rustfmt, clippy
+        assert_eq!(list_result.tool_statuses.len(), 4);
+    }
+
+    #[test]
+    fn test_list_result_format_text() {
+        let list_result = ListResult {
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: true,
+                    version: Some("1.75.0".to_string()),
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+                ToolStatus {
+                    tool: Tool::Node,
+                    installed: true,
+                    version: Some("v20.10.0".to_string()),
+                },
+            ],
+        };
+
+        let output = list_result.format_text();
+        assert!(output.contains("rustc: 1.75.0 (installed)"));
+        assert!(output.contains("dx: not installed"));
+        assert!(output.contains("node: v20.10.0 (installed)"));
+    }
+
+    #[test]
+    fn test_list_result_format_text_unknown_version() {
+        let list_result = ListResult {
+            tool_statuses: vec![ToolStatus {
+                tool: Tool::Rustc,
+                installed: true,
+                version: None,
+            }],
+        };
+
+        let output = list_result.format_text();
+        assert!(output.contains("rustc: installed (version unknown)"));
+    }
+
+    #[test]
+    fn test_list_result_format_json() {
+        let list_result = ListResult {
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: true,
+                    version: Some("1.75.0".to_string()),
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+            ],
+        };
+
+        let result = list_result.format_json();
+        assert!(result.is_ok());
+
+        let json_output = result.unwrap();
+        assert!(json_output.contains("\"name\": \"rustc\""));
+        assert!(json_output.contains("\"installed\": true"));
+        assert!(json_output.contains("\"version\": \"1.75.0\""));
+        assert!(json_output.contains("\"name\": \"dx\""));
+        assert!(json_output.contains("\"installed\": false"));
+        assert!(json_output.contains("\"version\": null"));
     }
 }

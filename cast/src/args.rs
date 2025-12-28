@@ -350,13 +350,19 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     }
                 }
                 ToolchainCommands::List(list_cmd) => {
-                    // Placeholder implementation - will be implemented in future phases
-                    let msg = if list_cmd.all {
-                        "Toolchain list (all) - not yet implemented".to_string()
-                    } else {
-                        "Toolchain list - not yet implemented".to_string()
+                    let options = toolchain::ListOptions {
+                        required_only: list_cmd.required_only,
+                        all: list_cmd.all,
+                        json: false, // TODO: Add --json flag to ListToolchainCommand in future
                     };
-                    Err(ExecuteError::ToolchainError(msg))
+
+                    let list_result = toolchain::list_tools(working_directory, options)
+                        .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
+
+                    // Format output
+                    let output = list_result.format_text();
+
+                    Ok(output)
                 }
             },
         }
@@ -844,12 +850,11 @@ mod tests {
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(matches!(err, ExecuteError::ToolchainError(_)));
-        assert!(err
-            .to_string()
-            .contains("Toolchain list - not yet implemented"));
+        // Should succeed now that list is implemented
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Output should contain tool names
+        assert!(output.contains("rustc") || output.contains("cargo"));
     }
 
     #[test]
@@ -867,9 +872,19 @@ mod tests {
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.to_string().contains("all"));
+        // Should succeed and list all tools
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Should contain all 9 tools
+        assert!(output.contains("rustc"));
+        assert!(output.contains("cargo"));
+        assert!(output.contains("rustfmt"));
+        assert!(output.contains("clippy"));
+        assert!(output.contains("dx"));
+        assert!(output.contains("node"));
+        assert!(output.contains("npm"));
+        assert!(output.contains("playwright"));
+        assert!(output.contains("wrangler"));
     }
 
     #[test]
