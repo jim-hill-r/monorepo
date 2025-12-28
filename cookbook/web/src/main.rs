@@ -74,32 +74,31 @@ fn Header() -> Element {
                 Link { to: Route::Recipe { day: 1 }, "Recipes" }
                 Link { to: Route::Plan { week: 1 }, "Plans" }
             }
-        }
-
-        div {
-            id: "navbar",
-            match &*auth_state {
-                Some(Ok(provider)) => {
-                    let provider = provider.clone();
-                    rsx! {
-                        button {
-                            onclick: move |_| {
-                                // Silently handle login errors - the auth provider handles redirects
-                                let _ = provider.login();
-                            },
-                            "Login"
+            div {
+                class: "header-auth",
+                match &*auth_state {
+                    Some(Ok(provider)) => {
+                        let provider = provider.clone();
+                        rsx! {
+                            button {
+                                onclick: move |_| {
+                                    // Silently handle login errors - the auth provider handles redirects
+                                    let _ = provider.login();
+                                },
+                                "Login"
+                            }
                         }
-                    }
-                },
-                Some(Err(err)) => rsx! {
-                    div {
-                        class: "error",
-                        "Authentication Error: {err}"
-                    }
-                },
-                None => rsx! {
-                    div { "Loading authentication..." }
-                },
+                    },
+                    Some(Err(err)) => rsx! {
+                        div {
+                            class: "error",
+                            "Authentication Error: {err}"
+                        }
+                    },
+                    None => rsx! {
+                        div { "Loading authentication..." }
+                    },
+                }
             }
         }
 
