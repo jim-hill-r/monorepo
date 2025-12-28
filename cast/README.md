@@ -205,15 +205,28 @@ This command is designed to be called by the Cast CD GitHub workflow when change
 
 This allows you to set up deployment chains where building/updating one project automatically triggers deployment of related infrastructure projects.
 
-Example Cast configuration:
+#### Deploy Paths
+
+Deploy paths in the `deploys` list are **relative to the current project directory**. This allows for flexible project layouts:
 
 ```toml
-# A web application that should trigger deployment of its Cloudflare Pages infrastructure
+# Example 1: Deploy a sibling directory
+# Project: myapp/web, Deploy: myapp/cloudflare
 framework = "dioxus"
-deploys = ["my-app-cloudflare"]
+deploys = ["../cloudflare"]
+
+# Example 2: Deploy a subdirectory
+# Project: myapp, Deploy: myapp/deploy
+framework = "dioxus"
+deploys = ["deploy"]
+
+# Example 3: Deploy multiple projects
+# Project: myapp/web, Deploy: myapp/cloudflare and myapp/auth-cloudflare
+framework = "dioxus"
+deploys = ["../cloudflare", "../auth-cloudflare"]
 ```
 
-When you run `cast cd` in this project, it will automatically deploy the `my-app-cloudflare` project.
+When you run `cast cd` in a project, it will resolve each path in the `deploys` list relative to the current project directory and deploy those projects.
 
 Example usage in library code:
 

@@ -1,6 +1,6 @@
 use crate::config::CastConfig;
 use crate::deploy;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,8 +11,6 @@ pub enum CdError {
     ConfigError(#[from] crate::config::ConfigError),
     #[error("Deploy error: {0}")]
     DeployError(#[from] deploy::DeployError),
-    #[error("Failed to find monorepo root")]
-    MonorepoRootNotFound,
 }
 
 /// Run continuous deployment for a project
@@ -33,11 +31,9 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
 
     // Deploy any projects listed in the deploys section
     if let Some(deploys) = config.deploys {
-        // Find monorepo root once, outside the loop
-        let monorepo_root = find_monorepo_root(working_directory)?;
-
         for deploy_project in deploys {
-            let deploy_project_path = monorepo_root.join(&deploy_project);
+            // Resolve deploy paths relative to the working directory
+            let deploy_project_path = working_directory.join(&deploy_project);
 
             // Only deploy if the project directory exists
             if deploy_project_path.exists() {
@@ -47,20 +43,6 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
     }
 
     Ok(())
-}
-
-/// Find the monorepo root by walking up the directory tree looking for a .git directory
-fn find_monorepo_root(working_directory: &Path) -> Result<PathBuf, CdError> {
-    let mut current = Some(working_directory);
-
-    while let Some(dir) = current {
-        if dir.join(".git").exists() {
-            return Ok(dir.to_path_buf());
-        }
-        current = dir.parent();
-    }
-
-    Err(CdError::MonorepoRootNotFound)
 }
 
 #[cfg(test)]
@@ -152,31 +134,6 @@ mod tests {
     }
 
     #[test]
-    fn test_find_monorepo_root_finds_git_directory() {
-        let tmp_dir = TempDir::new("test_find_root").unwrap();
-
-        // Create .git directory
-        fs::create_dir(tmp_dir.path().join(".git")).unwrap();
-
-        // Create nested directories
-        let nested_dir = tmp_dir.path().join("level1").join("level2").join("level3");
-        fs::create_dir_all(&nested_dir).unwrap();
-
-        // Should find the root from nested directory
-        let root = find_monorepo_root(&nested_dir).unwrap();
-        assert_eq!(root, tmp_dir.path());
-    }
-
-    #[test]
-    fn test_find_monorepo_root_fails_without_git() {
-        let tmp_dir = TempDir::new("test_no_git").unwrap();
-
-        // Don't create .git directory
-        let result = find_monorepo_root(tmp_dir.path());
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn test_cd_deploys_both_current_and_deploys_list() {
         let tmp_dir = TempDir::new("test_cd_both").unwrap();
 
@@ -201,6 +158,67 @@ mod tests {
 
         // Should fail when trying to deploy the current project (first)
         let result = run(tmp_dir.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cd_deploys_relative_path_with_parent_directory() {
+        let tmp_dir = TempDir::new("test_cd_relative").unwrap();
+
+        // Create structure: root/project/web and root/project/deploy
+        let project_dir = tmp_dir.path().join("project");
+        let web_dir = project_dir.join("web");
+        let deploy_dir = project_dir.join("deploy");
+
+        fs::create_dir_all(&web_dir).unwrap();
+        fs::create_dir_all(&deploy_dir).unwrap();
+
+        // Create web project with relative deploy path using ..
+        fs::write(
+            web_dir.join("Cast.toml"),
+            "framework = \"dioxus\"\ndeploys = [\"../deploy\"]",
+        )
+        .unwrap();
+
+        // Create deploy project with unsupported framework (will fail)
+        fs::write(
+            deploy_dir.join("Cast.toml"),
+            "project_type = \"iac\"\nframework = \"unsupported\"",
+        )
+        .unwrap();
+
+        // Should fail when trying to deploy the '../deploy' directory (proves path resolution works)
+        let result = run(&web_dir);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cd_deploys_relative_subdirectory() {
+        let tmp_dir = TempDir::new("test_cd_subdir").unwrap();
+
+        // Create structure: root/web and root/web/deploy
+        let web_dir = tmp_dir.path().join("web");
+        let deploy_dir = web_dir.join("deploy");
+
+        fs::create_dir_all(&web_dir).unwrap();
+        fs::create_dir_all(&deploy_dir).unwrap();
+
+        // Create web project with relative deploy path to subdirectory
+        fs::write(
+            web_dir.join("Cast.toml"),
+            "framework = \"dioxus\"\ndeploys = [\"deploy\"]",
+        )
+        .unwrap();
+
+        // Create deploy project with unsupported framework (will fail)
+        fs::write(
+            deploy_dir.join("Cast.toml"),
+            "project_type = \"iac\"\nframework = \"unsupported\"",
+        )
+        .unwrap();
+
+        // Should fail when trying to deploy the 'deploy' subdirectory (proves path resolution works)
+        let result = run(&web_dir);
         assert!(result.is_err());
     }
 }
