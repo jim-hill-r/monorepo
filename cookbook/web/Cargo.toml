@@ -9,6 +9,7 @@ workspace = true
 [dependencies]
 dioxus = { workspace = true, features = ["web", "router"] }
 auth_sdk = { workspace = true }
+js-sys = "0.3"
 
 [features]
 default = ["web"]
