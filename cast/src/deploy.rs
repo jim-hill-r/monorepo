@@ -46,6 +46,8 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DeployError> {
 
 /// Deploy to Cloudflare Pages
 fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> {
+    println!("Deploying to Cloudflare Pages...");
+
     // Check if wrangler is installed
     let wrangler_installed = Command::new("wrangler")
         .arg("--version")
@@ -68,6 +70,7 @@ fn deploy_cloudflare_pages(working_directory: &Path) -> Result<(), DeployError> 
     // Load environment variables from .env if it exists
     let env_vars = load_env_file(working_directory)?;
 
+    println!("Running: wrangler pages deploy");
     // Run wrangler pages deploy with inherited stdio and environment variables
     let mut cmd = Command::new("wrangler");
     cmd.arg("pages")
