@@ -1,6 +1,5 @@
 # Priority Issues
 
-- TODO: Ensure the sorting of sidebar is sorted by numeric value rather than string. (ie Day 1, day 11, ... , day 2 is wrong) (it should be day 1, day 2, ... , day 11)
 - TODO: Only show 10 entries in sidebar for recipes
 - TODO: Only show 4 entries in sidebar for plans
 - TODO: Start showing recipes based on today's date. The first recipe should be for the day of the year it is today and then going up from there.

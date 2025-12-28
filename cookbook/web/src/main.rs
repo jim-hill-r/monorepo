@@ -128,9 +128,31 @@ fn Header() -> Element {
     }
 }
 
+/// Get recipe days to display in sidebar, sorted numerically
+fn get_sidebar_recipe_days() -> Vec<u32> {
+    // Currently returns a static list, but sorted numerically to ensure correct order
+    // Future: This will be dynamically generated from available recipes
+    let mut days = vec![
+        1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 100, 150, 200, 250, 300, 365,
+    ];
+    days.sort_unstable(); // Ensures numeric sorting
+    days
+}
+
+/// Get plan weeks to display in sidebar, sorted numerically
+fn get_sidebar_plan_weeks() -> Vec<u32> {
+    // Currently returns a static list, but sorted numerically to ensure correct order
+    // Future: This will be dynamically generated from available plans
+    let mut weeks = vec![1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 52];
+    weeks.sort_unstable(); // Ensures numeric sorting
+    weeks
+}
+
 #[component]
 fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
+    let recipe_days = get_sidebar_recipe_days();
+    let plan_weeks = get_sidebar_plan_weeks();
 
     rsx! {
         aside {
@@ -141,40 +163,17 @@ fn Sidebar() -> Element {
             div {
                 class: "sidebar-section",
                 h3 { "Daily Recipes" }
-                Link { to: Route::Recipe { day: 1 }, "Day 1" }
-                Link { to: Route::Recipe { day: 11 }, "Day 11" }
-                Link { to: Route::Recipe { day: 21 }, "Day 21" }
-                Link { to: Route::Recipe { day: 31 }, "Day 31" }
-                Link { to: Route::Recipe { day: 41 }, "Day 41" }
-                Link { to: Route::Recipe { day: 51 }, "Day 51" }
-                Link { to: Route::Recipe { day: 61 }, "Day 61" }
-                Link { to: Route::Recipe { day: 71 }, "Day 71" }
-                Link { to: Route::Recipe { day: 81 }, "Day 81" }
-                Link { to: Route::Recipe { day: 91 }, "Day 91" }
-                Link { to: Route::Recipe { day: 100 }, "Day 100" }
-                Link { to: Route::Recipe { day: 150 }, "Day 150" }
-                Link { to: Route::Recipe { day: 200 }, "Day 200" }
-                Link { to: Route::Recipe { day: 250 }, "Day 250" }
-                Link { to: Route::Recipe { day: 300 }, "Day 300" }
-                Link { to: Route::Recipe { day: 365 }, "Day 365" }
+                for day in recipe_days {
+                    Link { to: Route::Recipe { day }, "Day {day}" }
+                }
             }
 
             div {
                 class: "sidebar-section",
                 h3 { "Weekly Plans" }
-                Link { to: Route::Plan { week: 1 }, "Week 1" }
-                Link { to: Route::Plan { week: 5 }, "Week 5" }
-                Link { to: Route::Plan { week: 9 }, "Week 9" }
-                Link { to: Route::Plan { week: 13 }, "Week 13" }
-                Link { to: Route::Plan { week: 17 }, "Week 17" }
-                Link { to: Route::Plan { week: 21 }, "Week 21" }
-                Link { to: Route::Plan { week: 25 }, "Week 25" }
-                Link { to: Route::Plan { week: 29 }, "Week 29" }
-                Link { to: Route::Plan { week: 33 }, "Week 33" }
-                Link { to: Route::Plan { week: 37 }, "Week 37" }
-                Link { to: Route::Plan { week: 41 }, "Week 41" }
-                Link { to: Route::Plan { week: 45 }, "Week 45" }
-                Link { to: Route::Plan { week: 52 }, "Week 52" }
+                for week in plan_weeks {
+                    Link { to: Route::Plan { week }, "Week {week}" }
+                }
             }
         }
     }
@@ -379,6 +378,93 @@ mod tests {
         assert!(
             INTRO_MD.len() > 100,
             "INTRO_MD should have substantial content"
+        );
+    }
+
+    #[test]
+    fn test_sidebar_recipe_days_sorted_numerically() {
+        // Test that recipe days are sorted in ascending numeric order
+        let days = get_sidebar_recipe_days();
+
+        // Should not be empty
+        assert!(!days.is_empty(), "Recipe days should not be empty");
+
+        // Check that days are sorted numerically
+        for i in 0..days.len() - 1 {
+            assert!(
+                days[i] < days[i + 1],
+                "Days should be sorted numerically: day {} ({}) should be less than day {} ({})",
+                i,
+                days[i],
+                i + 1,
+                days[i + 1]
+            );
+        }
+
+        // Verify all days are within valid range (1-365)
+        for day in &days {
+            assert!(
+                (1..=365).contains(day),
+                "Day {} should be in valid range 1-365",
+                day
+            );
+        }
+    }
+
+    #[test]
+    fn test_sidebar_plan_weeks_sorted_numerically() {
+        // Test that plan weeks are sorted in ascending numeric order
+        let weeks = get_sidebar_plan_weeks();
+
+        // Should not be empty
+        assert!(!weeks.is_empty(), "Plan weeks should not be empty");
+
+        // Check that weeks are sorted numerically
+        for i in 0..weeks.len() - 1 {
+            assert!(
+                weeks[i] < weeks[i + 1],
+                "Weeks should be sorted numerically: week {} ({}) should be less than week {} ({})",
+                i,
+                weeks[i],
+                i + 1,
+                weeks[i + 1]
+            );
+        }
+
+        // Verify all weeks are within valid range (1-52)
+        for week in &weeks {
+            assert!(
+                (1..=52).contains(week),
+                "Week {} should be in valid range 1-52",
+                week
+            );
+        }
+    }
+
+    #[test]
+    fn test_numeric_vs_string_sorting() {
+        // Demonstrate that numeric sorting differs from string sorting
+        let mut days = vec![1, 11, 2, 21, 3];
+        days.sort_unstable();
+
+        // Numeric sort: [1, 2, 3, 11, 21]
+        assert_eq!(
+            days,
+            vec![1, 2, 3, 11, 21],
+            "Numeric sorting should give correct order"
+        );
+
+        // String sort would give: ["1", "11", "2", "21", "3"]
+        // which is wrong for our purposes
+        let mut day_strings: Vec<String> = vec!["1", "11", "2", "21", "3"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        day_strings.sort();
+        assert_eq!(
+            day_strings,
+            vec!["1", "11", "2", "21", "3"],
+            "String sorting gives wrong order for numbers"
         );
     }
 }
