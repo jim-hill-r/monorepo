@@ -147,7 +147,14 @@ async fn handle_redirect(
     let app_state = fetch_app_state_from_browser()?;
     let csrf_token = app_state.csrf_token.ok_or(AuthError::Unknown)?;
     let pkce_verifier = app_state.pkce_verifier.ok_or(AuthError::Unknown)?;
-    // TODO: Ensure no additional verifications are needed at this point.
+
+    // Current security validations:
+    // 1. CSRF token validation (state parameter) - protects against CSRF attacks
+    // 2. PKCE verification - protects against authorization code interception
+    // 3. No redirect following in HTTP client - prevents SSRF attacks
+    // TODO (agent-generated): Research if additional OAuth2/OIDC security validations are needed (e.g., nonce validation for OIDC, additional claims validation)
+    // TODO (agent-generated): Add more specific AuthError variants instead of returning AuthError::Unknown for validation failures
+    // TODO (agent-generated): Add logging/tracing for security events (successful/failed validations)
     if &state.0 != csrf_token.secret() {
         tracing::debug!("Failed checks");
         return Err(AuthError::Unknown);
@@ -155,8 +162,10 @@ async fn handle_redirect(
 
     let http_client = reqwest::ClientBuilder::new()
         // Following redirects opens the client up to SSRF vulnerabilities.
-        // TODO: Ensure this policy is none for all situations
-        //.redirect(reqwest::redirect::Policy::none())
+        // OAuth2 RFC 6749 requires that token endpoints MUST NOT redirect.
+        // This policy prevents SSRF attacks where a malicious authorization server
+        // could redirect the client to internal resources.
+        .redirect(reqwest::redirect::Policy::none())
         .build()
         .map_err(|_| AuthError::Unknown)?;
 
