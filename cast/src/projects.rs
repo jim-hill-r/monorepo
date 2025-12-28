@@ -319,6 +319,7 @@ fn find_project_dir(file_path: &Path, repo_root: &Path) -> Option<PathBuf> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use tempdir::TempDir;

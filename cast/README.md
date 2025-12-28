@@ -91,13 +91,38 @@ The `cast toolchain` commands help automate the installation and verification of
 cast toolchain install
 ```
 
-**Status**: Not yet implemented. This command will install all required tools for your project based on its framework configuration.
+Installs all required tools for your project based on its framework configuration.
 
-**Planned Options**:
+**Options**:
 - `--tool <TOOL>` - Install only a specific tool (e.g., nodejs, npm, playwright, dx, wrangler)
 - `--skip <SKIP>` - Skip specific tools during installation (comma-separated list)
 - `--dry-run` - Show what would be installed without actually installing
 - `--force` - Force reinstall even if tools are already installed
+
+**Examples**:
+```bash
+# Install all required tools for the current project
+cast toolchain install
+
+# See what would be installed without installing
+cast toolchain install --dry-run
+
+# Install only the Dioxus CLI
+cast toolchain install --tool dx
+
+# Install all tools except Node.js (already installed via system)
+cast toolchain install --skip node
+
+# Force reinstall all tools
+cast toolchain install --force
+```
+
+**Notes**:
+- Node.js and npm must be installed via your system package manager (apt, brew, winget)
+- The command will provide installation instructions if Node.js/npm are not found
+- Dioxus CLI is installed via `cargo install dioxus-cli --version 0.7.2`
+- Playwright is installed via `npm ci` (if package.json exists) and `npx playwright install --with-deps chromium`
+- Wrangler is installed via `npm install -g wrangler`
 
 ### Check Toolchain Status
 

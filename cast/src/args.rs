@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{build, cd, ci, deploy, projects, publish, run, serve, sessions, test};
+use crate::{build, cd, ci, deploy, projects, publish, run, serve, sessions, test, toolchain};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -258,13 +258,71 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             }
             Commands::Toolchain(toolchain_command) => match toolchain_command {
                 ToolchainCommands::Install(install_cmd) => {
-                    // Placeholder implementation - will be implemented in future phases
-                    let msg = if install_cmd.dry_run {
-                        "Toolchain install (dry run) - not yet implemented".to_string()
+                    // Parse tool names from command line
+                    let specific_tools = if let Some(tool_name) = &install_cmd.tool {
+                        let tool = toolchain::Tool::from_name(tool_name).ok_or_else(|| {
+                            ExecuteError::ToolchainError(format!("Unknown tool: {}", tool_name))
+                        })?;
+                        Some(vec![tool])
                     } else {
-                        "Toolchain install - not yet implemented".to_string()
+                        None
                     };
-                    Err(ExecuteError::ToolchainError(msg))
+
+                    // Parse skip list
+                    let skip_tools = if let Some(skip_str) = &install_cmd.skip {
+                        skip_str
+                            .split(',')
+                            .filter_map(|s| toolchain::Tool::from_name(s.trim()))
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+
+                    let options = toolchain::InstallOptions {
+                        specific_tools,
+                        skip_tools,
+                        dry_run: install_cmd.dry_run,
+                        force: install_cmd.force,
+                    };
+
+                    let results = toolchain::install_tools(working_directory, options)
+                        .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
+
+                    // Format output
+                    let mut output = String::new();
+                    let mut any_failed = false;
+
+                    for result in &results {
+                        if result.skipped {
+                            output.push_str(&format!(
+                                "⊘ {}: {}\n",
+                                result.tool.name(),
+                                result.message
+                            ));
+                        } else if result.success {
+                            output.push_str(&format!(
+                                "✓ {}: {}\n",
+                                result.tool.name(),
+                                result.message
+                            ));
+                        } else {
+                            output.push_str(&format!(
+                                "✗ {}: {}\n",
+                                result.tool.name(),
+                                result.message
+                            ));
+                            any_failed = true;
+                        }
+                    }
+
+                    if any_failed {
+                        output.push_str(
+                            "\nSome tools failed to install. Please address the errors above.",
+                        );
+                        Err(ExecuteError::ToolchainError(output))
+                    } else {
+                        Ok(output)
+                    }
                 }
                 ToolchainCommands::Check(check_cmd) => {
                     // Placeholder implementation - will be implemented in future phases
@@ -308,6 +366,7 @@ fn find_cast_toml(working_directory: &Path) -> Option<&Path> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::fs;
@@ -645,19 +704,18 @@ mod tests {
                 cmd: Commands::Toolchain(ToolchainCommands::Install(InstallToolchainCommand {
                     tool: None,
                     skip: None,
-                    dry_run: false,
+                    dry_run: true, // Use dry run to avoid actual installation
                     force: false,
                 })),
             },
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(matches!(err, ExecuteError::ToolchainError(_)));
-        assert!(err
-            .to_string()
-            .contains("Toolchain install - not yet implemented"));
+        // Should succeed with dry run
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Output should contain information about tools
+        assert!(!output.is_empty());
     }
 
     #[test]
@@ -677,9 +735,11 @@ mod tests {
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.to_string().contains("dry run"));
+        // Should succeed with dry run
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Output should indicate dry run was performed
+        assert!(!output.is_empty());
     }
 
     #[test]
