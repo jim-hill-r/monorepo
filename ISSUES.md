@@ -1,7 +1,6 @@
 
 # Priority Issues
 
-- TODO (agent-generated): Document toolchain requirements for each framework type (dioxus, cloudflare-pages, rust-library, etc.) including versions and installation methods
 - TODO (agent-generated): Design the command interface for `cast toolchain install` including options for installing specific tools vs all tools
 - TODO (agent-generated): Research cross-platform tool installation methods (Linux, macOS, Windows) for Node.js, npm, Playwright, Dioxus CLI, and Wrangler
 
