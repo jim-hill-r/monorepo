@@ -111,6 +111,7 @@ Projects without a framework designation (pure Rust libraries and binaries) requ
 **Project identification:**
 - Libraries: Projects with `src/lib.rs`, or `[lib]` section in Cargo.toml
 - Binaries: Projects with `src/main.rs`, files in `src/bin/` directory, or `[[bin]]` sections in Cargo.toml
+- Note: Projects can have both library and binary targets. Toolchain requirements remain the same regardless.
 
 ### Future: Cast Toolchain Command
 A `cast toolchain` command is planned to automate installation of framework-specific tooling. See `/ISSUES.md` "Cast Toolchain Command Epic" for implementation plan. When implemented, GitHub workflows should only install Rust, and use `cast toolchain install` for all other tools.
