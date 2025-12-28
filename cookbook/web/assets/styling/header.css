@@ -56,3 +56,46 @@
   outline: none;
   cursor: pointer;
 }
+
+.header-auth {
+  display: flex;
+  align-items: center;
+}
+
+.header-auth button {
+  background-color: #ffffff;
+  color: #e74c3c;
+  border: 2px solid #ffffff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.header-auth button:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.header-auth button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.header-auth .error {
+  color: #ffffff;
+  background-color: rgba(192, 57, 43, 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 2px solid #ffffff;
+  font-size: 0.9rem;
+}
+
+.header-auth div {
+  color: #ffffff;
+  font-size: 0.9rem;
+}

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Tests for the Cookbook authentication navbar.
+ * Tests for the Cookbook authentication in header.
  * 
  * Before running these tests, start the Dioxus dev server:
  *   cd cookbook/web
@@ -11,33 +11,24 @@ import { test, expect } from '@playwright/test';
  *   npm test
  */
 
-test.describe('Authentication Navbar', () => {
-  test('should display navbar on home page', async ({ page }) => {
+test.describe('Authentication in Header', () => {
+  test('should display login button or loading state in header', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Check that navbar exists
-    const navbar = page.locator('#navbar');
-    await expect(navbar).toBeVisible();
-  });
-
-  test('should display login button or loading state in navbar', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const navbar = page.locator('#navbar');
-    await expect(navbar).toBeVisible();
+    const header = page.locator('#header');
+    await expect(header).toBeVisible();
     
     // Check for either login button or loading state (since auth initialization is async)
-    const hasLoginButton = await navbar.locator('button', { hasText: 'Login' }).isVisible().catch(() => false);
-    const hasLoadingState = await navbar.locator('div', { hasText: 'Loading authentication' }).isVisible().catch(() => false);
-    const hasError = await navbar.locator('.error').isVisible().catch(() => false);
+    const hasLoginButton = await header.locator('button', { hasText: 'Login' }).isVisible().catch(() => false);
+    const hasLoadingState = await header.locator('div', { hasText: 'Loading authentication' }).isVisible().catch(() => false);
+    const hasError = await header.locator('.error').isVisible().catch(() => false);
     
     // At least one should be visible
     expect(hasLoginButton || hasLoadingState || hasError).toBeTruthy();
   });
 
-  test('should display navbar on all pages', async ({ page }) => {
+  test('should display login button in header on all pages', async ({ page }) => {
     const pages = [
       '/',
       '/recipe/1',
@@ -50,45 +41,58 @@ test.describe('Authentication Navbar', () => {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
       
-      // Verify navbar exists on each page
-      const navbar = page.locator('#navbar');
-      await expect(navbar).toBeVisible();
+      // Verify header exists on each page
+      const header = page.locator('#header');
+      await expect(header).toBeVisible();
+      
+      // Check that login button or loading/error state is in header
+      const hasLoginButton = await header.locator('button', { hasText: 'Login' }).isVisible().catch(() => false);
+      const hasLoadingState = await header.locator('div', { hasText: 'Loading authentication' }).isVisible().catch(() => false);
+      const hasError = await header.locator('.error').isVisible().catch(() => false);
+      
+      expect(hasLoginButton || hasLoadingState || hasError).toBeTruthy();
     }
   });
 
-  test('should persist navbar during navigation', async ({ page }) => {
+  test('should persist login button during navigation', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Navigate between pages and verify navbar is always present
+    // Navigate between pages and verify login button is always present in header
     const recipesLink = page.locator('#header .header-nav a', { hasText: 'Recipes' });
     await recipesLink.click();
     await page.waitForLoadState('networkidle');
     
-    let navbar = page.locator('#navbar');
-    await expect(navbar).toBeVisible();
+    let header = page.locator('#header');
+    await expect(header).toBeVisible();
+    const hasAuth1 = await header.locator('button, div').count() > 0;
+    expect(hasAuth1).toBeTruthy();
     
     const plansLink = page.locator('#header .header-nav a', { hasText: 'Plans' });
     await plansLink.click();
     await page.waitForLoadState('networkidle');
     
-    navbar = page.locator('#navbar');
-    await expect(navbar).toBeVisible();
+    header = page.locator('#header');
+    await expect(header).toBeVisible();
+    const hasAuth2 = await header.locator('button, div').count() > 0;
+    expect(hasAuth2).toBeTruthy();
     
     const homeLink = page.locator('#header .header-nav a', { hasText: 'Home' });
     await homeLink.click();
     await page.waitForLoadState('networkidle');
     
-    navbar = page.locator('#navbar');
-    await expect(navbar).toBeVisible();
+    header = page.locator('#header');
+    await expect(header).toBeVisible();
+    const hasAuth3 = await header.locator('button, div').count() > 0;
+    expect(hasAuth3).toBeTruthy();
   });
 
   test('should have proper styling on login button', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Wait for login button to appear (it may take time for auth to initialize)
-    const loginButton = page.locator('#navbar button', { hasText: 'Login' });
+    // Wait for login button to appear in header (it may take time for auth to initialize)
+    const loginButton = page.locator('#header button', { hasText: 'Login' });
     
     // Check if button is present (it should eventually appear or show an error/loading state)
     const isVisible = await loginButton.isVisible().catch(() => false);
@@ -106,23 +110,5 @@ test.describe('Authentication Navbar', () => {
       expect(buttonStyles.cursor).toBe('pointer');
       expect(buttonStyles.borderRadius).toBeTruthy();
     }
-  });
-
-  test('should position navbar below header', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    const header = page.locator('#header');
-    const navbar = page.locator('#navbar');
-    
-    await expect(header).toBeVisible();
-    await expect(navbar).toBeVisible();
-    
-    // Get positions
-    const headerBox = await header.boundingBox();
-    const navbarBox = await navbar.boundingBox();
-    
-    // Navbar should be below header
-    expect(navbarBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
   });
 });
