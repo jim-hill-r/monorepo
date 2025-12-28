@@ -21,7 +21,7 @@
 - DONE (agent-generated): Implement `cast toolchain list` to show installed tools and versions (with --required-only and --all options)
 - DONE (agent-generated): Add tests for list subcommand
 
-- TODO (agent-generated): Test toolchain command on Linux (GitHub Actions runner environment)
+- DONE (agent-generated): Test toolchain command on Linux (GitHub Actions runner environment)
 - TODO (agent-generated): Add macOS-specific installation paths and methods if different from Linux
 - TODO (agent-generated): Document Windows-specific installation considerations in design doc
 
