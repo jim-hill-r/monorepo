@@ -1,10 +1,8 @@
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
+use chrono::prelude::*;
 use dioxus::prelude::*;
-
-#[cfg(target_arch = "wasm32")]
-use js_sys::Date;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
@@ -134,40 +132,13 @@ fn Header() -> Element {
     }
 }
 
-/// Get the current day of the year (1-366) based on browser's date
-#[cfg(target_arch = "wasm32")]
+/// Get the current day of the year (1-366) using chrono
 fn get_current_day_of_year() -> u32 {
-    let date = Date::new_0();
-    let year = date.get_full_year() as i32;
-    let month = date.get_month() as u32; // 0-11
-    let day = date.get_date() as u32; // 1-31
-
-    // Days in each month
-    let days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-    // Check if leap year
-    let is_leap_year = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-
-    // Calculate day of year
-    let mut day_of_year = day;
-    for i in 0..month {
-        day_of_year += days_in_month[i as usize];
-        if i == 1 && is_leap_year {
-            day_of_year += 1; // Add extra day for February in leap year
-        }
-    }
-
-    day_of_year
+    let now = Local::now();
+    now.ordinal()
 }
 
-/// Get the current day of the year - test version returns a fixed day
-#[cfg(not(target_arch = "wasm32"))]
-fn get_current_day_of_year() -> u32 {
-    // For testing purposes, return a fixed day (day 100 is April 10th in non-leap years)
-    100
-}
-
-/// Get the current week of the year (1-53) based on browser's date
+/// Get the current week of the year (1-53) using chrono
 /// Uses a simple calculation: week = floor((day - 1) / 7) + 1
 fn get_current_week_of_year() -> u32 {
     let day = get_current_day_of_year();
