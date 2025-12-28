@@ -101,19 +101,16 @@ Projects with `framework = "cloudflare-pages"` require:
   - Install via: `npm install -g wrangler` or `cargo install wrangler`
 - **Node.js and npm**: Typically required for Wrangler and other tools
 
-### Rust Library Projects
-Projects without a framework designation that are Rust libraries (have `lib.rs`) require:
+### Rust Library and Binary Projects
+Projects without a framework designation (pure Rust libraries and binaries) require:
 - **Rust toolchain**: Only requirement (rustc, cargo, rustfmt, clippy)
   - Install via: Official rustup installer or GitHub Actions `actions-rust-lang/setup-rust-toolchain`
   - Components needed: rustfmt, clippy
-- **No additional tools required**: Pure Rust libraries only need the Rust toolchain
+- **No additional tools required**: Pure Rust projects only need the Rust toolchain
 
-### Rust Binary/CLI Projects
-Projects without a framework designation that are Rust binaries (have `main.rs` or `bin/`) require:
-- **Rust toolchain**: Only requirement (rustc, cargo, rustfmt, clippy)
-  - Install via: Official rustup installer or GitHub Actions `actions-rust-lang/setup-rust-toolchain`
-  - Components needed: rustfmt, clippy
-- **No additional tools required**: Pure Rust binaries only need the Rust toolchain
+**Project identification:**
+- Libraries: Projects with `src/lib.rs`, or `[lib]` section in Cargo.toml
+- Binaries: Projects with `src/main.rs`, files in `src/bin/` directory, or `[[bin]]` sections in Cargo.toml
 
 ### Future: Cast Toolchain Command
 A `cast toolchain` command is planned to automate installation of framework-specific tooling. See `/ISSUES.md` "Cast Toolchain Command Epic" for implementation plan. When implemented, GitHub workflows should only install Rust, and use `cast toolchain install` for all other tools.
