@@ -187,7 +187,7 @@ mod tests {
         )
         .unwrap();
 
-        // Should fail when trying to deploy ../deploy (proves path resolution works)
+        // Should fail when trying to deploy the '../deploy' directory (proves path resolution works)
         let result = run(&web_dir);
         assert!(result.is_err());
     }
@@ -217,7 +217,7 @@ mod tests {
         )
         .unwrap();
 
-        // Should fail when trying to deploy deploy subdirectory (proves path resolution works)
+        // Should fail when trying to deploy the 'deploy' subdirectory (proves path resolution works)
         let result = run(&web_dir);
         assert!(result.is_err());
     }
