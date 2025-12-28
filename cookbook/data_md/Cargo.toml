@@ -1,0 +1,10 @@
+[package]
+name = "cookbook-data-md"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+cookbook-core = { path = "../core" }

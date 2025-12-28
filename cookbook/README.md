@@ -12,6 +12,8 @@ cookbook/
 │  ├─ ... # Cloudflare Pages deployment configuration
 ├─ core/
 │  ├─ ... # Core business logic and data models (library)
+├─ data_md/
+│  ├─ ... # Markdown-based recipe storage implementation (library)
 ├─ web/
 │  ├─ ... # Web specific UI/logic
 ```
@@ -24,6 +26,15 @@ The `cookbook-core` library contains shared business logic and data models:
 - **RecipeWriter trait**: Trait for writing recipes to a data source (create, update, delete, save/upsert)
 - **RecipeError**: Error type for recipe operations with variants for NotFound, StorageError, InvalidData, and AlreadyExists
 - Designed to be consumed by web, cloudflare, and future platform crates
+
+## Data MD Library
+
+The `cookbook-data-md` library implements the RecipeReader and RecipeWriter traits for markdown-based storage:
+- **MarkdownRecipeStore**: Reads and writes recipes from/to markdown files in a content directory
+- Parses markdown files with a specific format to extract recipe data (title, description, ingredients, instructions, metadata)
+- Supports day-based recipe organization (day-1.md through day-366.md)
+- Data is loaded at build time from the content directory
+- See [data_md/README.md](./data_md/README.md) for detailed markdown format and usage
 
 ## Deployment
 
