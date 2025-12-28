@@ -20,6 +20,8 @@ thiserror = "2.0.12"
 tiny_http = "0.12.0"
 toml = "0.8"
 uuid = { version = "1", features = ["v7"] }
+zip = "2.2"
+walkdir = "2.5"
 
 [dev-dependencies]
 tempdir = "0.3.7"

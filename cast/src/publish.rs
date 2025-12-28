@@ -10,8 +10,8 @@ pub enum PublishError {
     BuildFailed,
     #[error("Dioxus bundle failed")]
     DxBundleFailed,
-    #[error("Zip creation failed")]
-    ZipFailed,
+    #[error("Zip creation failed: {0}")]
+    ZipFailed(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("Failed to determine target triple")]
@@ -26,6 +26,8 @@ pub enum PublishError {
     GitError(String),
     #[error("Bundle output directory not found")]
     BundleOutputNotFound,
+    #[error("Zip error: {0}")]
+    ZipError(#[from] zip::result::ZipError),
 }
 
 /// Get the target triple for the current platform
@@ -177,13 +179,62 @@ fn generate_bundle_filename(working_directory: &Path) -> Result<String, PublishE
     let month = now.format("%m");
     let day = now.format("%d");
 
-    // TODO: Implement build counter increment
+    // TODO (agent-generated): Implement build counter increment - read from a file and increment
     let counter = 1;
+
+    // Truncate SHA to 7 characters for better filename readability
+    let sha_short = &sha[..7.min(sha.len())];
 
     Ok(format!(
         "{}+{}-{}-{}.{}.{}{}.zip",
-        version, year, month, day, counter, sha, dirty
+        version, year, month, day, counter, sha_short, dirty
     ))
+}
+
+/// Create a zip file from a directory
+fn create_zip_from_directory(source_dir: &Path, output_path: &Path) -> Result<(), PublishError> {
+    use walkdir::WalkDir;
+    use zip::write::SimpleFileOptions;
+    use zip::ZipWriter;
+
+    let file = fs::File::create(output_path)?;
+    let mut zip = ZipWriter::new(file);
+
+    // Walk through all files in the source directory
+    let walkdir = WalkDir::new(source_dir);
+    let it = walkdir.into_iter();
+
+    for entry in it.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        let name = path
+            .strip_prefix(source_dir)
+            .map_err(|_| {
+                PublishError::IoError(std::io::Error::other("Failed to strip prefix from path"))
+            })?
+            .to_string_lossy();
+
+        // Skip .DS_Store files
+        if name.contains(".DS_Store") {
+            continue;
+        }
+
+        if path.is_file() {
+            let options = SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated)
+                .unix_permissions(0o755);
+
+            zip.start_file(name.to_string(), options)?;
+            let mut f = fs::File::open(path)?;
+            std::io::copy(&mut f, &mut zip)?;
+        } else if !name.is_empty() {
+            // Add directory entry
+            let options = SimpleFileOptions::default().unix_permissions(0o755);
+            zip.add_directory(name.to_string(), options)?;
+        }
+    }
+
+    zip.finish()?;
+    Ok(())
 }
 
 /// Publish a Dioxus web project
@@ -221,20 +272,9 @@ fn publish_dioxus(working_directory: &Path) -> Result<(), PublishError> {
     let artifacts_dir = working_directory.join("artifacts");
     fs::create_dir_all(&artifacts_dir)?;
 
-    // Create zip file using system zip command
+    // Create zip file using Rust zip crate
     let zip_path = artifacts_dir.join(&filename);
-    let status = Command::new("zip")
-        .arg("-r")
-        .arg(&zip_path)
-        .arg(".")
-        .arg("-x")
-        .arg("*.DS_Store")
-        .current_dir(&bundle_dir)
-        .status()?;
-
-    if !status.success() {
-        return Err(PublishError::ZipFailed);
-    }
+    create_zip_from_directory(&bundle_dir, &zip_path)?;
 
     Ok(())
 }
