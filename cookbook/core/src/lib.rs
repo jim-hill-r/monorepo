@@ -288,9 +288,9 @@ mod tests {
         }
 
         fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
-            if !(1..=365).contains(&day) {
+            if !(1..=366).contains(&day) {
                 return Err(RecipeError::InvalidData(format!(
-                    "Day must be between 1 and 365, got {}",
+                    "Day must be between 1 and 366, got {}",
                     day
                 )));
             }
@@ -354,11 +354,11 @@ mod tests {
             _ => panic!("Expected InvalidData error for day 0"),
         }
 
-        let result = reader.get_by_day(366);
+        let result = reader.get_by_day(367);
         assert!(result.is_err());
         match result {
             Err(RecipeError::InvalidData(_)) => {}
-            _ => panic!("Expected InvalidData error for day 366"),
+            _ => panic!("Expected InvalidData error for day 367"),
         }
     }
 
