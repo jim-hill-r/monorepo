@@ -1,6 +1,6 @@
 use crate::config::CastConfig;
 use crate::deploy;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,8 +11,6 @@ pub enum CdError {
     ConfigError(#[from] crate::config::ConfigError),
     #[error("Deploy error: {0}")]
     DeployError(#[from] deploy::DeployError),
-    #[error("Failed to find monorepo root")]
-    MonorepoRootNotFound,
 }
 
 /// Run continuous deployment for a project
@@ -45,21 +43,6 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
     }
 
     Ok(())
-}
-
-/// Find the monorepo root by walking up the directory tree looking for a .git directory
-#[allow(dead_code)]
-fn find_monorepo_root(working_directory: &Path) -> Result<PathBuf, CdError> {
-    let mut current = Some(working_directory);
-
-    while let Some(dir) = current {
-        if dir.join(".git").exists() {
-            return Ok(dir.to_path_buf());
-        }
-        current = dir.parent();
-    }
-
-    Err(CdError::MonorepoRootNotFound)
 }
 
 #[cfg(test)]
@@ -148,31 +131,6 @@ mod tests {
         // Should succeed by skipping the non-existent project
         let result = run(tmp_dir.path());
         assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_find_monorepo_root_finds_git_directory() {
-        let tmp_dir = TempDir::new("test_find_root").unwrap();
-
-        // Create .git directory
-        fs::create_dir(tmp_dir.path().join(".git")).unwrap();
-
-        // Create nested directories
-        let nested_dir = tmp_dir.path().join("level1").join("level2").join("level3");
-        fs::create_dir_all(&nested_dir).unwrap();
-
-        // Should find the root from nested directory
-        let root = find_monorepo_root(&nested_dir).unwrap();
-        assert_eq!(root, tmp_dir.path());
-    }
-
-    #[test]
-    fn test_find_monorepo_root_fails_without_git() {
-        let tmp_dir = TempDir::new("test_no_git").unwrap();
-
-        // Don't create .git directory
-        let result = find_monorepo_root(tmp_dir.path());
-        assert!(result.is_err());
     }
 
     #[test]
