@@ -72,7 +72,59 @@ use cast::serve;
 serve::run("/path/to/static/files").unwrap();
 ```
 
+## Toolchain Management
+
+Cast provides toolchain management commands to help install and manage framework-specific development tools required by your projects.
+
+### Overview
+
+Different frameworks require different tooling beyond Rust:
+- **Dioxus projects**: Require Dioxus CLI (`dx`), Node.js, npm, and Playwright for testing
+- **Cloudflare Pages projects**: Require Wrangler CLI for deployment
+- **Pure Rust projects**: Only require the Rust toolchain (rustc, cargo, rustfmt, clippy)
+
+The `cast toolchain` commands help automate the installation and verification of these tools.
+
+### Install Toolchain Dependencies
+
+```bash
+cast toolchain install
+```
+
+**Status**: Not yet implemented. This command will install all required tools for your project based on its framework configuration.
+
+**Planned Options**:
+- `--tool <TOOL>` - Install only a specific tool (e.g., nodejs, npm, playwright, dx, wrangler)
+- `--skip <SKIP>` - Skip specific tools during installation (comma-separated list)
+- `--dry-run` - Show what would be installed without actually installing
+- `--force` - Force reinstall even if tools are already installed
+
+### Check Toolchain Status
+
+```bash
+cast toolchain check
+```
+
+**Status**: Not yet implemented. This command will verify that all required tools are installed and display their versions.
+
+**Planned Options**:
+- `--verbose` - Show detailed information about each tool
+- `--json` - Output results in JSON format for scripting
+
+### List Available Tools
+
+```bash
+cast toolchain list
+```
+
+**Status**: Not yet implemented. This command will list all tools and their installation status.
+
+**Planned Options**:
+- `--required-only` - Show only tools required for the current project
+- `--all` - Show all known tools, not just installed ones
+
 ## CI/CD
+
 
 ### Building Projects
 

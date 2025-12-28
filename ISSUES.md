@@ -3,7 +3,6 @@
 
 - TODO (agent-generated): Cast Toolchain Command - See `cast/docs/toolchain-command-design.md` for complete design specification. Implementation broken into sequential phases below.
 
-- TODO (agent-generated): Add new `Toolchain` command variant with subcommands (install, check, list) to the Commands enum in args.rs
 - TODO (agent-generated): Create a new `toolchain.rs` module in cast/src with basic structure, error types, and Tool enum
 - TODO (agent-generated): Implement toolchain detection logic that reads Cast config and determines required tools based on framework
 - TODO (agent-generated): Implement tool detection logic for Node.js, npm, Playwright, dx, wrangler (checking if installed and getting versions)

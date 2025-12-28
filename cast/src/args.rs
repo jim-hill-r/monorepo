@@ -18,6 +18,8 @@ enum Commands {
     Session(SessionCommands),
     #[command(subcommand)]
     Project(ProjectCommands),
+    #[command(subcommand)]
+    Toolchain(ToolchainCommands),
     /// Run build
     Build,
     /// Run CI checks
@@ -73,6 +75,57 @@ pub struct WithChangesCommand {
     head: String,
 }
 
+#[derive(Subcommand)]
+pub enum ToolchainCommands {
+    /// Install required toolchain dependencies
+    Install(InstallToolchainCommand),
+    /// Check if required tools are installed
+    Check(CheckToolchainCommand),
+    /// List installed tools and their versions
+    List(ListToolchainCommand),
+}
+
+#[derive(Parser)]
+pub struct InstallToolchainCommand {
+    /// Install only specific tool (e.g., nodejs, npm, playwright, dx, wrangler)
+    #[arg(long)]
+    tool: Option<String>,
+
+    /// Skip specific tools during installation (comma-separated list)
+    #[arg(long)]
+    skip: Option<String>,
+
+    /// Dry run - show what would be installed without installing
+    #[arg(long)]
+    dry_run: bool,
+
+    /// Force reinstall even if tools are already installed
+    #[arg(long)]
+    force: bool,
+}
+
+#[derive(Parser)]
+pub struct CheckToolchainCommand {
+    /// Show detailed information about each tool
+    #[arg(short, long)]
+    verbose: bool,
+
+    /// Output results in JSON format
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(Parser)]
+pub struct ListToolchainCommand {
+    /// Show only required tools for the current project
+    #[arg(long)]
+    required_only: bool,
+
+    /// Show all known tools, not just installed ones
+    #[arg(long)]
+    all: bool,
+}
+
 #[derive(Error, Debug)]
 pub enum ExecuteError {
     #[error("cast toml not found")]
@@ -101,6 +154,8 @@ pub enum ExecuteError {
     PauseSessionError(#[from] sessions::PauseSessionError),
     #[error("stop session error: {0}")]
     StopSessionError(#[from] sessions::StopSessionError),
+    #[error("toolchain error: {0}")]
+    ToolchainError(String),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -201,6 +256,35 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 publish::run(working_directory)?;
                 Ok("Publish completed".into())
             }
+            Commands::Toolchain(toolchain_command) => match toolchain_command {
+                ToolchainCommands::Install(install_cmd) => {
+                    // Placeholder implementation - will be implemented in future phases
+                    let msg = if install_cmd.dry_run {
+                        "Toolchain install (dry run) - not yet implemented".to_string()
+                    } else {
+                        "Toolchain install - not yet implemented".to_string()
+                    };
+                    Err(ExecuteError::ToolchainError(msg))
+                }
+                ToolchainCommands::Check(check_cmd) => {
+                    // Placeholder implementation - will be implemented in future phases
+                    let msg = if check_cmd.json {
+                        "Toolchain check (JSON) - not yet implemented".to_string()
+                    } else {
+                        "Toolchain check - not yet implemented".to_string()
+                    };
+                    Err(ExecuteError::ToolchainError(msg))
+                }
+                ToolchainCommands::List(list_cmd) => {
+                    // Placeholder implementation - will be implemented in future phases
+                    let msg = if list_cmd.all {
+                        "Toolchain list (all) - not yet implemented".to_string()
+                    } else {
+                        "Toolchain list - not yet implemented".to_string()
+                    };
+                    Err(ExecuteError::ToolchainError(msg))
+                }
+            },
         }
     } else {
         Err(ExecuteError::CastTomlNotFound)
@@ -549,5 +633,158 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result, "Publish completed");
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_install_command() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::Install(InstallToolchainCommand {
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, ExecuteError::ToolchainError(_)));
+        assert!(err
+            .to_string()
+            .contains("Toolchain install - not yet implemented"));
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_install_dry_run() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::Install(InstallToolchainCommand {
+                    tool: None,
+                    skip: None,
+                    dry_run: true,
+                    force: false,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("dry run"));
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_check_command() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::Check(CheckToolchainCommand {
+                    verbose: false,
+                    json: false,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, ExecuteError::ToolchainError(_)));
+        assert!(err
+            .to_string()
+            .contains("Toolchain check - not yet implemented"));
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_check_json() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::Check(CheckToolchainCommand {
+                    verbose: false,
+                    json: true,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("JSON"));
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_list_command() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
+                    required_only: false,
+                    all: false,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, ExecuteError::ToolchainError(_)));
+        assert!(err
+            .to_string()
+            .contains("Toolchain list - not yet implemented"));
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_list_all() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
+                    required_only: false,
+                    all: true,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("all"));
+    }
+
+    #[test]
+    fn it_requires_cast_toml_for_toolchain_commands() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        // No Cast.toml file created
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::Check(CheckToolchainCommand {
+                    verbose: false,
+                    json: false,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(matches!(err, ExecuteError::CastTomlNotFound));
     }
 }
