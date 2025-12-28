@@ -95,6 +95,12 @@ pub enum ExecuteError {
     DeployError(#[from] deploy::DeployError),
     #[error("publish error: {0}")]
     PublishError(#[from] publish::PublishError),
+    #[error("start session error: {0}")]
+    StartSessionError(#[from] sessions::StartSessionError),
+    #[error("pause session error: {0}")]
+    PauseSessionError(#[from] sessions::PauseSessionError),
+    #[error("stop session error: {0}")]
+    StopSessionError(#[from] sessions::StopSessionError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -126,23 +132,20 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
         match args.cmd {
             Commands::Session(session_command) => match session_command {
                 SessionCommands::Start(start_session_command) => {
-                    // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
-                    let _ = sessions::start(
+                    sessions::start(
                         working_directory,
                         Some(SessionStartOptions {
                             name: start_session_command.name,
                         }),
-                    );
+                    )?;
                     Ok("Starting session.".into())
                 }
                 SessionCommands::Pause => {
-                    // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
-                    let _ = sessions::pause(working_directory);
+                    sessions::pause(working_directory)?;
                     Ok("Pausing session.".into())
                 }
                 SessionCommands::Stop => {
-                    // TODO (agent-generated): Propagate errors from session operations instead of ignoring them
-                    let _ = sessions::stop(working_directory);
+                    sessions::stop(working_directory)?;
                     Ok("Stopping session.".into())
                 }
             },
@@ -255,6 +258,17 @@ mod tests {
     fn it_pauses_session() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Start a session first
+        execute(
+            Args {
+                cmd: Commands::Session(SessionCommands::Start(StartSessionCommand { name: None })),
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
+
+        // Then pause it
         let result = execute(
             Args {
                 cmd: Commands::Session(SessionCommands::Pause),
@@ -268,6 +282,17 @@ mod tests {
     fn it_stops_session() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Start a session first
+        execute(
+            Args {
+                cmd: Commands::Session(SessionCommands::Start(StartSessionCommand { name: None })),
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
+
+        // Then stop it
         let result = execute(
             Args {
                 cmd: Commands::Session(SessionCommands::Stop),
@@ -448,6 +473,54 @@ mod tests {
         // Deploy will fail without wrangler.toml or wrangler installed, but it should
         // at least recognize it as a valid command for an IAC project
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn it_returns_error_when_pausing_without_active_session() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Session(SessionCommands::Pause),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(
+            result.is_err(),
+            "Expected error when pausing without active session"
+        );
+        let err = result.unwrap_err();
+        assert!(matches!(err, ExecuteError::PauseSessionError(_)));
+        assert_eq!(
+            err.to_string(),
+            "pause session error: no active session found"
+        );
+    }
+
+    #[test]
+    fn it_returns_error_when_stopping_without_active_session() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Session(SessionCommands::Stop),
+            },
+            tmp_dir.path(),
+        );
+
+        assert!(
+            result.is_err(),
+            "Expected error when stopping without active session"
+        );
+        let err = result.unwrap_err();
+        assert!(matches!(err, ExecuteError::StopSessionError(_)));
+        assert_eq!(
+            err.to_string(),
+            "stop session error: no active session found"
+        );
     }
 
     #[test]
