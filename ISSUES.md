@@ -48,6 +48,7 @@ This epic breaks down the complex task of adding a `cast toolchain` command into
 
 # Priority Projects
 - cast
+- cast_cli
 - cookbook
 - cookbook/web
 - cookbook/cloudflare
