@@ -1,7 +1,5 @@
 # Priority Issues
 
-- TODO: Add a `cast publish` command which completes a release build and copies the build artifact to the `artifacts` directory in the project. Use `cargo build --release` by default. Artifacts should be stored in a directory for the platform in which they are built for. (ie x86_64-unknown-linux-gnu)
-
 ## Cast Workspace Restructuring (Epic)
 This is a complex restructuring task that needs to be broken down into sequential steps. Each step must be completed and tested before moving to the next.
 

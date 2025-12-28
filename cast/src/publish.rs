@@ -13,8 +13,6 @@ pub enum PublishError {
     TargetTripleFailed,
     #[error("Failed to find built artifact in target/release directory")]
     ArtifactNotFound,
-    #[error("Failed to determine package name from Cargo.toml")]
-    PackageNameNotFound,
 }
 
 /// Get the target triple for the current platform
@@ -42,23 +40,60 @@ fn get_target_triple() -> Result<String, PublishError> {
     Err(PublishError::TargetTripleFailed)
 }
 
-/// Get the package name from Cargo.toml
-fn get_package_name(working_directory: &Path) -> Result<String, PublishError> {
-    let cargo_toml_path = working_directory.join("Cargo.toml");
-    let contents = fs::read_to_string(cargo_toml_path)?;
+/// Find the executable binary in the target/release directory
+fn find_binary_artifact(working_directory: &Path) -> Result<String, PublishError> {
+    let release_dir = working_directory.join("target").join("release");
 
-    // Simple TOML parsing to extract package name
-    for line in contents.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("name") && trimmed.contains('=') {
-            if let Some(name_part) = trimmed.split('=').nth(1) {
-                let name = name_part.trim().trim_matches('"').trim_matches('\'');
-                return Ok(name.to_string());
+    if !release_dir.exists() {
+        return Err(PublishError::ArtifactNotFound);
+    }
+
+    // Read the directory and find executable files
+    let entries = fs::read_dir(&release_dir)?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        // Skip directories and non-files
+        if !path.is_file() {
+            continue;
+        }
+
+        // Get the file name
+        let file_name = match path.file_name() {
+            Some(name) => name.to_string_lossy().to_string(),
+            None => continue,
+        };
+
+        // Skip files with extensions (like .d, .rlib, etc.) except .exe on Windows
+        if file_name.contains('.') && !file_name.ends_with(".exe") {
+            continue;
+        }
+
+        // Check if the file is executable (on Unix) or is an .exe (on Windows)
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let metadata = match path.metadata() {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            let permissions = metadata.permissions();
+            // Check if file has execute permission
+            if permissions.mode() & 0o111 != 0 {
+                return Ok(file_name);
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            if file_name.ends_with(".exe") {
+                return Ok(file_name);
             }
         }
     }
 
-    Err(PublishError::PackageNameNotFound)
+    Err(PublishError::ArtifactNotFound)
 }
 
 /// Run release build and copy artifacts to the artifacts directory
@@ -76,38 +111,22 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), PublishError> {
         return Err(PublishError::BuildFailed);
     }
 
-    // Get the package name to find the artifact
-    let package_name = get_package_name(working_directory)?;
+    // Find the built binary artifact
+    let artifact_name = find_binary_artifact(working_directory)?;
 
     // Get target triple
     let target_triple = get_target_triple()?;
 
-    // Find the built artifact in target/release
+    // Get the full path to the artifact
     let release_dir = working_directory.join("target").join("release");
-    let artifact_path = release_dir.join(&package_name);
-
-    // Check if artifact exists (might need .exe extension on Windows)
-    let artifact_path = if artifact_path.exists() {
-        artifact_path
-    } else {
-        let with_exe = release_dir.join(format!("{}.exe", package_name));
-        if with_exe.exists() {
-            with_exe
-        } else {
-            return Err(PublishError::ArtifactNotFound);
-        }
-    };
+    let artifact_path = release_dir.join(&artifact_name);
 
     // Create artifacts directory structure: artifacts/<target-triple>/
     let artifacts_dir = working_directory.join("artifacts").join(&target_triple);
     fs::create_dir_all(&artifacts_dir)?;
 
     // Copy the artifact to the artifacts directory
-    let destination = artifacts_dir.join(
-        artifact_path
-            .file_name()
-            .ok_or(PublishError::ArtifactNotFound)?,
-    );
+    let destination = artifacts_dir.join(&artifact_name);
     fs::copy(&artifact_path, &destination)?;
 
     Ok(())
@@ -124,49 +143,6 @@ mod tests {
         // Should return something like "x86_64-unknown-linux-gnu"
         assert!(triple.contains('-'));
         assert!(!triple.is_empty());
-    }
-
-    #[test]
-    fn test_get_package_name() {
-        let tmp_dir = TempDir::new("test_package_name").unwrap();
-
-        fs::write(
-            tmp_dir.path().join("Cargo.toml"),
-            r#"[package]
-name = "test_project"
-version = "0.1.0"
-edition = "2021"
-"#,
-        )
-        .unwrap();
-
-        let name = get_package_name(tmp_dir.path()).unwrap();
-        assert_eq!(name, "test_project");
-    }
-
-    #[test]
-    fn test_get_package_name_with_quotes() {
-        let tmp_dir = TempDir::new("test_package_name_quotes").unwrap();
-
-        fs::write(
-            tmp_dir.path().join("Cargo.toml"),
-            r#"[package]
-name = "test-quotes"
-version = "0.1.0"
-"#,
-        )
-        .unwrap();
-
-        let name = get_package_name(tmp_dir.path()).unwrap();
-        assert_eq!(name, "test-quotes");
-    }
-
-    #[test]
-    fn test_get_package_name_fails_without_cargo_toml() {
-        let tmp_dir = TempDir::new("test_no_cargo").unwrap();
-
-        let result = get_package_name(tmp_dir.path());
-        assert!(result.is_err());
     }
 
     #[test]
