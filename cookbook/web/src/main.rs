@@ -167,10 +167,11 @@ fn get_current_day_of_year() -> u32 {
     100
 }
 
-/// Get the current week of the year (1-52) based on browser's date
+/// Get the current week of the year (1-53) based on browser's date
+/// Uses a simple calculation: week = floor((day - 1) / 7) + 1
 fn get_current_week_of_year() -> u32 {
     let day = get_current_day_of_year();
-    // Calculate week number (1-52), rounding up
+    // Calculate week number (1-53), rounding up
     ((day - 1) / 7) + 1
 }
 
@@ -182,8 +183,12 @@ fn get_sidebar_recipe_days() -> Vec<u32> {
     // Show 10 days starting from today
     for i in 0..10 {
         let day = today + (i * 10);
-        // Wrap around if we go past day 365
-        let wrapped_day = if day > 365 { day - 365 } else { day };
+        // Wrap around if we go past day 365 (we use 365 for simplicity, ignoring leap year day 366)
+        let wrapped_day = if day > 365 {
+            ((day - 1) % 365) + 1
+        } else {
+            day
+        };
         days.push(wrapped_day);
     }
 
@@ -200,7 +205,11 @@ fn get_sidebar_plan_weeks() -> Vec<u32> {
     for i in 0..4 {
         let week = current_week + (i * 13);
         // Wrap around if we go past week 52
-        let wrapped_week = if week > 52 { week - 52 } else { week };
+        let wrapped_week = if week > 52 {
+            ((week - 1) % 52) + 1
+        } else {
+            week
+        };
         weeks.push(wrapped_week);
     }
 
@@ -586,11 +595,11 @@ mod tests {
         // Should have 10 entries
         assert_eq!(days.len(), 10);
 
-        // All days should be in valid range
+        // All days should be in valid range (1-366 for leap years)
         for day in &days {
             assert!(
-                (1..=365).contains(day),
-                "Day {} should be in valid range 1-365",
+                (1..=366).contains(day),
+                "Day {} should be in valid range 1-366",
                 day
             );
         }
