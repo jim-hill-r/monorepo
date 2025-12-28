@@ -30,6 +30,9 @@ fn App() -> Element {
         .await
     });
     use_context_provider(|| auth);
+    
+    // Initialize sidebar visibility state (visible by default)
+    use_context_provider(|| Signal::new(true));
 
     rsx! {
         document::Link { rel: "stylesheet", href: HEADER_CSS }
@@ -60,10 +63,23 @@ enum Route {
 fn Header() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
     let auth_state = auth.read();
+    
+    let mut sidebar_visible = use_context::<Signal<bool>>();
 
     rsx! {
         header {
             id: "header",
+            button {
+                class: "hamburger-btn",
+                onclick: move |_| {
+                    sidebar_visible.set(!sidebar_visible());
+                },
+                "aria-label": "Toggle sidebar",
+                "aria-expanded": "{sidebar_visible}",
+                span { class: "hamburger-icon" }
+                span { class: "hamburger-icon" }
+                span { class: "hamburger-icon" }
+            }
             div {
                 class: "header-title",
                 h1 { "Cookbook" }
@@ -106,6 +122,7 @@ fn Header() -> Element {
 
         div {
             id: "content",
+            class: if !sidebar_visible() { "sidebar-hidden" } else { "" },
             Outlet::<Route> {}
         }
     }
@@ -113,9 +130,12 @@ fn Header() -> Element {
 
 #[component]
 fn Sidebar() -> Element {
+    let sidebar_visible = use_context::<Signal<bool>>();
+    
     rsx! {
         aside {
             id: "sidebar",
+            class: if !sidebar_visible() { "hidden" } else { "" },
             h2 { "Quick Navigation" }
 
             div {
