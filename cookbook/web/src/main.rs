@@ -30,7 +30,7 @@ fn App() -> Element {
         .await
     });
     use_context_provider(|| auth);
-    
+
     // Initialize sidebar visibility state (visible by default)
     use_context_provider(|| Signal::new(true));
 
@@ -63,7 +63,7 @@ enum Route {
 fn Header() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
     let auth_state = auth.read();
-    
+
     let mut sidebar_visible = use_context::<Signal<bool>>();
 
     rsx! {
@@ -131,7 +131,7 @@ fn Header() -> Element {
 #[component]
 fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
-    
+
     rsx! {
         aside {
             id: "sidebar",
