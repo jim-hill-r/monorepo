@@ -26,7 +26,9 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
 
     // If current project is IAC, deploy it
     if config.project_type.as_deref() == Some("iac") {
+        println!("Deploying current project: {}", working_directory.display());
         deploy::run(working_directory)?;
+        println!("✓ Current project deployed successfully");
     }
 
     // Deploy any projects listed in the deploys section
@@ -37,7 +39,9 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
 
             // Only deploy if the project directory exists
             if deploy_project_path.exists() {
+                println!("Deploying {}", deploy_project_path.display());
                 deploy::run(&deploy_project_path)?;
+                println!("✓ {} deployed successfully", deploy_project_path.display());
             }
         }
     }
