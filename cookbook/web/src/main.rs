@@ -132,9 +132,7 @@ fn Header() -> Element {
 fn get_sidebar_recipe_days() -> Vec<u32> {
     // Currently returns a static list, but sorted numerically to ensure correct order
     // Future: This will be dynamically generated from available recipes
-    let mut days = vec![
-        1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 100, 150, 200, 250, 300, 365,
-    ];
+    let mut days = vec![1, 11, 21, 31, 41, 51, 61, 71, 81, 91];
     days.sort_unstable(); // Ensures numeric sorting
     days
 }
@@ -143,7 +141,7 @@ fn get_sidebar_recipe_days() -> Vec<u32> {
 fn get_sidebar_plan_weeks() -> Vec<u32> {
     // Currently returns a static list, but sorted numerically to ensure correct order
     // Future: This will be dynamically generated from available plans
-    let mut weeks = vec![1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 52];
+    let mut weeks = vec![1, 13, 26, 39];
     weeks.sort_unstable(); // Ensures numeric sorting
     weeks
 }
@@ -465,6 +463,30 @@ mod tests {
             day_strings,
             vec!["1", "11", "2", "21", "3"],
             "String sorting gives wrong order for numbers"
+        );
+    }
+
+    #[test]
+    fn test_sidebar_recipe_days_count() {
+        // Test that sidebar shows exactly 10 recipe entries
+        let days = get_sidebar_recipe_days();
+        assert_eq!(
+            days.len(),
+            10,
+            "Sidebar should show exactly 10 recipe entries, found {}",
+            days.len()
+        );
+    }
+
+    #[test]
+    fn test_sidebar_plan_weeks_count() {
+        // Test that sidebar shows exactly 4 plan entries
+        let weeks = get_sidebar_plan_weeks();
+        assert_eq!(
+            weeks.len(),
+            4,
+            "Sidebar should show exactly 4 plan entries, found {}",
+            weeks.len()
         );
     }
 }
