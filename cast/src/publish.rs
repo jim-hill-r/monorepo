@@ -183,7 +183,16 @@ fn generate_bundle_filename(working_directory: &Path) -> Result<String, PublishE
     let counter = 1;
 
     // Truncate SHA to 7 characters for better filename readability
-    let sha_short = &sha[..7.min(sha.len())];
+    // If SHA is shorter than 7 characters (shouldn't happen with git), use what we have
+    let sha_short = if sha.len() >= 7 {
+        &sha[..7]
+    } else if !sha.is_empty() {
+        &sha
+    } else {
+        return Err(PublishError::GitError(
+            "Git SHA is empty or invalid".to_string(),
+        ));
+    };
 
     Ok(format!(
         "{}+{}-{}-{}.{}.{}{}.zip",
@@ -213,8 +222,11 @@ fn create_zip_from_directory(source_dir: &Path, output_path: &Path) -> Result<()
             })?
             .to_string_lossy();
 
-        // Skip .DS_Store files
-        if name.contains(".DS_Store") {
+        // Skip .DS_Store files (case-insensitive check)
+        if name
+            .split('/')
+            .any(|component| component.eq_ignore_ascii_case(".DS_Store"))
+        {
             continue;
         }
 
