@@ -237,6 +237,42 @@ use cast::cd;
 cd::run("/path/to/project").unwrap();
 ```
 
+### Publishing Artifacts
+
+Cast provides a `publish` command that creates release builds and copies artifacts to a platform-specific directory.
+
+```bash
+cast publish
+```
+
+This command:
+1. Runs `cargo build --release` to create an optimized release build
+2. Automatically detects the target platform (e.g., `x86_64-unknown-linux-gnu`)
+3. Finds the built binary artifact in `target/release`
+4. Copies it to `artifacts/<target-triple>/` directory
+
+This makes it easy to collect build artifacts for distribution or deployment:
+
+```bash
+# After running cast publish, artifacts are organized by platform:
+artifacts/
+├── x86_64-unknown-linux-gnu/
+│   └── my_binary
+├── aarch64-apple-darwin/
+│   └── my_binary
+└── x86_64-pc-windows-msvc/
+    └── my_binary.exe
+```
+
+Example usage in library code:
+
+```rust
+use cast::publish;
+
+// Build and publish artifacts
+publish::run("/path/to/project").unwrap();
+```
+
 ## Project Management
 
 ### Creating New Projects
