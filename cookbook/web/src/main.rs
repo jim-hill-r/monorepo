@@ -1,6 +1,7 @@
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
+use chrono::prelude::*;
 use dioxus::prelude::*;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
@@ -66,6 +67,9 @@ fn Header() -> Element {
 
     let mut sidebar_visible = use_context::<Signal<bool>>();
 
+    let today = get_current_day_of_year();
+    let current_week = get_current_week_of_year();
+
     rsx! {
         header {
             id: "header",
@@ -87,8 +91,8 @@ fn Header() -> Element {
             nav {
                 class: "header-nav",
                 Link { to: Route::Home {}, "Home" }
-                Link { to: Route::Recipe { day: 1 }, "Recipes" }
-                Link { to: Route::Plan { week: 1 }, "Plans" }
+                Link { to: Route::Recipe { day: today }, "Recipes" }
+                Link { to: Route::Plan { week: current_week }, "Plans" }
             }
             div {
                 class: "header-auth",
@@ -128,20 +132,58 @@ fn Header() -> Element {
     }
 }
 
+/// Get the current day of the year (1-366) using chrono
+fn get_current_day_of_year() -> u32 {
+    let now = Local::now();
+    now.ordinal()
+}
+
+/// Get the current week of the year (1-53) using chrono
+/// Uses a simple calculation: week = floor((day - 1) / 7) + 1
+fn get_current_week_of_year() -> u32 {
+    let day = get_current_day_of_year();
+    // Calculate week number (1-53), rounding up
+    ((day - 1) / 7) + 1
+}
+
 /// Get recipe days to display in sidebar, sorted numerically
 fn get_sidebar_recipe_days() -> Vec<u32> {
-    // Currently returns a static list, but sorted numerically to ensure correct order
-    // Future: This will be dynamically generated from available recipes
-    let mut days = vec![1, 11, 21, 31, 41, 51, 61, 71, 81, 91];
+    let today = get_current_day_of_year();
+    let mut days = Vec::new();
+
+    // Show 10 days starting from today
+    for i in 0..10 {
+        let day = today + (i * 10);
+        // Wrap around if we go past day 365 (we use 365 for simplicity, ignoring leap year day 366)
+        let wrapped_day = if day > 365 {
+            ((day - 1) % 365) + 1
+        } else {
+            day
+        };
+        days.push(wrapped_day);
+    }
+
     days.sort_unstable(); // Ensures numeric sorting
     days
 }
 
 /// Get plan weeks to display in sidebar, sorted numerically
 fn get_sidebar_plan_weeks() -> Vec<u32> {
-    // Currently returns a static list, but sorted numerically to ensure correct order
-    // Future: This will be dynamically generated from available plans
-    let mut weeks = vec![1, 13, 26, 39];
+    let current_week = get_current_week_of_year();
+    let mut weeks = Vec::new();
+
+    // Show 4 weeks starting from current week
+    for i in 0..4 {
+        let week = current_week + (i * 13);
+        // Wrap around if we go past week 52
+        let wrapped_week = if week > 52 {
+            ((week - 1) % 52) + 1
+        } else {
+            week
+        };
+        weeks.push(wrapped_week);
+    }
+
     weeks.sort_unstable(); // Ensures numeric sorting
     weeks
 }
@@ -179,6 +221,9 @@ fn Sidebar() -> Element {
 
 #[component]
 fn Home() -> Element {
+    let today = get_current_day_of_year();
+    let current_week = get_current_week_of_year();
+
     rsx! {
         div {
             class: "home-container",
@@ -197,7 +242,7 @@ fn Home() -> Element {
                     span { class: "card-icon", "🍳" }
                     h2 { "Daily Recipes" }
                     p { "Explore 365 delicious recipes - one for each day of the year. From quick weeknight dinners to special occasion dishes." }
-                    Link { to: Route::Recipe { day: 1 }, "Browse Recipes" }
+                    Link { to: Route::Recipe { day: today }, "Browse Recipes" }
                 }
 
                 div {
@@ -205,7 +250,7 @@ fn Home() -> Element {
                     span { class: "card-icon", "📅" }
                     h2 { "Weekly Meal Plans" }
                     p { "Get organized with 52 complete meal plans - one for every week of the year. Perfect for planning ahead!" }
-                    Link { to: Route::Plan { week: 1 }, "View Meal Plans" }
+                    Link { to: Route::Plan { week: current_week }, "View Meal Plans" }
                 }
             }
         }
@@ -488,5 +533,65 @@ mod tests {
             "Sidebar should show exactly 4 plan entries, found {}",
             weeks.len()
         );
+    }
+
+    #[test]
+    fn test_current_day_of_year_in_valid_range() {
+        // Test that current day is in valid range (1-366)
+        let day = get_current_day_of_year();
+        assert!(
+            (1..=366).contains(&day),
+            "Current day {} should be in valid range 1-366",
+            day
+        );
+    }
+
+    #[test]
+    fn test_current_week_of_year_in_valid_range() {
+        // Test that current week is in valid range (1-53)
+        let week = get_current_week_of_year();
+        assert!(
+            (1..=53).contains(&week),
+            "Current week {} should be in valid range 1-53",
+            week
+        );
+    }
+
+    #[test]
+    fn test_sidebar_recipe_days_starts_from_today() {
+        // Test that recipe days start from or near today
+        let _today = get_current_day_of_year();
+        let days = get_sidebar_recipe_days();
+
+        // Should have 10 entries
+        assert_eq!(days.len(), 10);
+
+        // All days should be in valid range (1-366 for leap years)
+        for day in &days {
+            assert!(
+                (1..=366).contains(day),
+                "Day {} should be in valid range 1-366",
+                day
+            );
+        }
+    }
+
+    #[test]
+    fn test_sidebar_plan_weeks_starts_from_current_week() {
+        // Test that plan weeks start from or near current week
+        let _current_week = get_current_week_of_year();
+        let weeks = get_sidebar_plan_weeks();
+
+        // Should have 4 entries
+        assert_eq!(weeks.len(), 4);
+
+        // All weeks should be in valid range
+        for week in &weeks {
+            assert!(
+                (1..=52).contains(week),
+                "Week {} should be in valid range 1-52",
+                week
+            );
+        }
     }
 }
