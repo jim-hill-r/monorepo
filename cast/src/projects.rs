@@ -48,6 +48,9 @@ pub fn new(working_directory: impl AsRef<Path>, name: &str) -> Result<(), NewPro
     // Remove exemplar flag from the new project's Cast.toml
     remove_exemplar_flag(&destination)?;
 
+    // Replace package name in Cargo.toml
+    replace_package_name(&destination, name)?;
+
     Ok(())
 }
 
@@ -154,6 +157,27 @@ fn remove_exemplar_flag(project_dir: &Path) -> Result<(), NewProjectError> {
         let mut config = CastConfig::load(&cast_toml_path)?;
         config.exemplar = None;
         config.save(&cast_toml_path)?;
+    }
+
+    Ok(())
+}
+
+/// Replace "TODO-CHANGE-ME" package name in Cargo.toml with the actual project name
+/// This is used when creating new projects from exemplar templates to ensure the
+/// package name matches the project directory name.
+fn replace_package_name(project_dir: &Path, name: &str) -> Result<(), NewProjectError> {
+    let cargo_toml_path = project_dir.join("Cargo.toml");
+
+    if cargo_toml_path.exists() {
+        let content = fs::read_to_string(&cargo_toml_path)?;
+
+        // Replace TODO-CHANGE-ME with the actual project name
+        let updated_content = content.replace("TODO-CHANGE-ME", name);
+
+        // Only write if changes were made
+        if updated_content != content {
+            fs::write(&cargo_toml_path, updated_content)?;
+        }
     }
 
     Ok(())
@@ -341,6 +365,7 @@ mod tests {
 
         // Verify content from library exemplar (should exist)
         let cargo_content = fs::read_to_string(project_path.join("Cargo.toml")).unwrap();
+        // Name should remain "test" since it's not TODO-CHANGE-ME
         assert_eq!(cargo_content, "[package]\nname = \"test\"");
     }
 
@@ -882,5 +907,33 @@ mod tests {
 
         let exemplars = result.unwrap();
         assert_eq!(exemplars.len(), 3);
+    }
+
+    #[test]
+    fn test_new_replaces_package_name_in_cargo_toml() {
+        let tmp_dir = TempDir::new("test_package_name").unwrap();
+
+        // Create exemplar project with TODO-CHANGE-ME in Cargo.toml
+        let exemplar_proj = tmp_dir.path().join("exemplar");
+        fs::create_dir_all(exemplar_proj.join("src")).unwrap();
+        fs::write(
+            exemplar_proj.join("Cargo.toml"),
+            "[package]\nname = \"TODO-CHANGE-ME\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::write(exemplar_proj.join("Cast.toml"), "exemplar = true").unwrap();
+        fs::write(exemplar_proj.join("src/main.rs"), "fn main() {}").unwrap();
+
+        // Call new with project name
+        let result = new(tmp_dir.path(), "my_awesome_project");
+        assert!(result.is_ok());
+
+        // Verify the package name was replaced
+        let project_path = tmp_dir.path().join("my_awesome_project");
+        let cargo_content = fs::read_to_string(project_path.join("Cargo.toml")).unwrap();
+
+        // Should replace TODO-CHANGE-ME with the actual project name
+        assert!(cargo_content.contains("name = \"my_awesome_project\""));
+        assert!(!cargo_content.contains("TODO-CHANGE-ME"));
     }
 }
