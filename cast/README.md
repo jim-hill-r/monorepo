@@ -130,11 +130,76 @@ cast toolchain install --force
 cast toolchain check
 ```
 
-**Status**: Not yet implemented. This command will verify that all required tools are installed and display their versions.
+Verifies that all required tools are installed and displays their versions.
 
-**Planned Options**:
-- `--verbose` - Show detailed information about each tool
-- `--json` - Output results in JSON format for scripting
+**Options**:
+- `--verbose` / `-v` - Show detailed version information for each tool
+- `--json` - Output results in JSON format for programmatic use
+
+**Examples**:
+```bash
+# Check if all required tools are installed
+cast toolchain check
+
+# Show detailed version information
+cast toolchain check --verbose
+
+# Output in JSON format for CI/CD
+cast toolchain check --json
+```
+
+**Exit Codes**:
+- `0` - All required tools are installed
+- `1` - One or more required tools are missing
+
+**Sample Output (text format)**:
+```
+Checking toolchain for dioxus project...
+✓ cargo
+✓ clippy
+✗ dx (not installed)
+✓ node
+✓ npm
+✗ playwright (not installed)
+✓ rustc
+✓ rustfmt
+
+Status: 2 tools missing
+```
+
+**Sample Output (verbose)**:
+```
+Checking toolchain for dioxus project...
+✓ cargo (1.75.0)
+✓ clippy (0.1.75)
+✗ dx (not installed)
+✓ node (20.10.0)
+✓ npm (10.2.3)
+✗ playwright (not installed)
+✓ rustc (1.75.0)
+✓ rustfmt (1.6.0-stable)
+
+Status: 2 tools missing
+```
+
+**Sample Output (JSON format)**:
+```json
+{
+  "all_installed": false,
+  "framework": "dioxus",
+  "missing_count": 2,
+  "tools": [
+    {"name": "cargo", "required": true, "installed": true, "version": "1.75.0"},
+    {"name": "clippy", "required": true, "installed": true, "version": "0.1.75"},
+    {"name": "dx", "required": true, "installed": false, "version": null},
+    {"name": "node", "required": true, "installed": true, "version": "20.10.0"},
+    {"name": "npm", "required": true, "installed": true, "version": "10.2.3"},
+    {"name": "playwright", "required": true, "installed": false, "version": null},
+    {"name": "rustc", "required": true, "installed": true, "version": "1.75.0"},
+    {"name": "rustfmt", "required": true, "installed": true, "version": "1.6.0-stable"}
+  ]
+}
+```
 
 ### List Available Tools
 

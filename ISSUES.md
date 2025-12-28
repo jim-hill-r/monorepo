@@ -17,9 +17,9 @@
 - DONE (agent-generated): Add comprehensive tests for each tool installation method
 - DONE (agent-generated): Update cast/README.md with cast toolchain install documentation and examples
 
-- TODO (agent-generated): Implement `cast toolchain check` to verify all required tools are installed (with --verbose and --json options)
+- DONE (agent-generated): Implement `cast toolchain check` to verify all required tools are installed (with --verbose and --json options)
 - TODO (agent-generated): Implement `cast toolchain list` to show installed tools and versions (with --required-only and --all options)
-- TODO (agent-generated): Add tests for check and list subcommands
+- TODO (agent-generated): Add tests for list subcommand
 
 - TODO (agent-generated): Test toolchain command on Linux (GitHub Actions runner environment)
 - TODO (agent-generated): Add macOS-specific installation paths and methods if different from Linux

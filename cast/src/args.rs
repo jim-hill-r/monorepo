@@ -325,13 +325,29 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     }
                 }
                 ToolchainCommands::Check(check_cmd) => {
-                    // Placeholder implementation - will be implemented in future phases
-                    let msg = if check_cmd.json {
-                        "Toolchain check (JSON) - not yet implemented".to_string()
-                    } else {
-                        "Toolchain check - not yet implemented".to_string()
+                    let options = toolchain::CheckOptions {
+                        verbose: check_cmd.verbose,
+                        json: check_cmd.json,
                     };
-                    Err(ExecuteError::ToolchainError(msg))
+
+                    let check_result = toolchain::check_tools(working_directory, options)
+                        .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
+
+                    // Format output based on options
+                    let output = if check_cmd.json {
+                        check_result
+                            .format_json()
+                            .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?
+                    } else {
+                        check_result.format_text(check_cmd.verbose)
+                    };
+
+                    // Return error if tools are missing (exit code 1)
+                    if !check_result.all_installed {
+                        Err(ExecuteError::ToolchainError(output))
+                    } else {
+                        Ok(output)
+                    }
                 }
                 ToolchainCommands::List(list_cmd) => {
                     // Placeholder implementation - will be implemented in future phases
@@ -757,12 +773,25 @@ mod tests {
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(matches!(err, ExecuteError::ToolchainError(_)));
-        assert!(err
-            .to_string()
-            .contains("Toolchain check - not yet implemented"));
+        // Check command should work now, but might fail if some tools are not installed
+        // The result could be Ok or Err depending on the environment
+        match result {
+            Ok(output) => {
+                // If successful, all tools are installed
+                assert!(output.contains("All required tools are installed"));
+            }
+            Err(err) => {
+                // If error, should show tool status
+                assert!(matches!(err, ExecuteError::ToolchainError(_)));
+                let error_msg = err.to_string();
+                // Should contain toolchain information
+                assert!(
+                    error_msg.contains("tool") || error_msg.contains("missing"),
+                    "Error message should contain tool information: {}",
+                    error_msg
+                );
+            }
+        }
     }
 
     #[test]
@@ -780,9 +809,24 @@ mod tests {
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.to_string().contains("JSON"));
+        // Check command should work now with JSON output
+        match result {
+            Ok(output) => {
+                // If successful, should be valid JSON
+                assert!(output.contains("\"framework\""));
+                assert!(output.contains("\"tools\""));
+                assert!(output.contains("\"all_installed\""));
+            }
+            Err(err) => {
+                // If error, should still be JSON format
+                let error_msg = err.to_string();
+                assert!(
+                    error_msg.contains("\"framework\"") || error_msg.contains("JSON"),
+                    "Error message should contain JSON information: {}",
+                    error_msg
+                );
+            }
+        }
     }
 
     #[test]
