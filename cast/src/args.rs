@@ -1,5 +1,5 @@
 use crate::sessions::SessionStartOptions;
-use crate::{build, cd, ci, deploy, projects, run, serve, sessions, test};
+use crate::{build, cd, ci, deploy, projects, publish, run, serve, sessions, test};
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -32,6 +32,8 @@ enum Commands {
     Serve,
     /// Deploy an IAC project
     Deploy,
+    /// Build release and copy artifacts to artifacts directory
+    Publish,
 }
 
 #[derive(Subcommand)]
@@ -91,6 +93,8 @@ pub enum ExecuteError {
     ServeError(#[from] serve::ServeError),
     #[error("deploy error: {0}")]
     DeployError(#[from] deploy::DeployError),
+    #[error("publish error: {0}")]
+    PublishError(#[from] publish::PublishError),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
@@ -189,6 +193,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             Commands::Cd => {
                 cd::run(working_directory)?;
                 Ok("CD completed".into())
+            }
+            Commands::Publish => {
+                publish::run(working_directory)?;
+                Ok("Publish completed".into())
             }
         }
     } else {
@@ -440,5 +448,33 @@ mod tests {
         // Deploy will fail without wrangler.toml or wrangler installed, but it should
         // at least recognize it as a valid command for an IAC project
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn it_runs_publish() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create a minimal binary project
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() { println!(\"Hello, world!\"); }\n",
+        )
+        .unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Publish,
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
+        assert_eq!(result, "Publish completed");
     }
 }
