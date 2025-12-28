@@ -815,6 +815,135 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
     }
 }
 
+/// Options for checking tools
+#[derive(Debug, Clone, Default)]
+pub struct CheckOptions {
+    /// Show detailed version information
+    pub verbose: bool,
+    /// Output results in JSON format
+    pub json: bool,
+}
+
+/// Result of checking toolchain
+#[derive(Debug, Clone)]
+pub struct CheckResult {
+    pub framework: Option<String>,
+    pub tool_statuses: Vec<ToolStatus>,
+    pub all_installed: bool,
+    pub missing_count: usize,
+}
+
+impl CheckResult {
+    /// Format check result as text output
+    pub fn format_text(&self, verbose: bool) -> String {
+        let mut output = String::new();
+
+        // Show framework if known
+        if let Some(framework) = &self.framework {
+            output.push_str(&format!(
+                "Checking toolchain for {} project...\n",
+                framework
+            ));
+        } else {
+            output.push_str("Checking toolchain for pure Rust project...\n");
+        }
+
+        // Show tool status
+        for status in &self.tool_statuses {
+            if status.installed {
+                let version_str = if verbose {
+                    if let Some(version) = &status.version {
+                        format!(" ({})", version)
+                    } else {
+                        " (version unknown)".to_string()
+                    }
+                } else {
+                    String::new()
+                };
+                output.push_str(&format!("✓ {}{}\n", status.tool.name(), version_str));
+            } else {
+                output.push_str(&format!("✗ {} (not installed)\n", status.tool.name()));
+            }
+        }
+
+        // Show summary
+        output.push('\n');
+        if self.all_installed {
+            output.push_str("Status: All required tools are installed\n");
+        } else {
+            output.push_str(&format!(
+                "Status: {} tool{} missing\n",
+                self.missing_count,
+                if self.missing_count == 1 { "" } else { "s" }
+            ));
+        }
+
+        output
+    }
+
+    /// Format check result as JSON
+    pub fn format_json(&self) -> Result<String, ToolchainError> {
+        use serde_json::json;
+
+        let tools_json: Vec<serde_json::Value> = self
+            .tool_statuses
+            .iter()
+            .map(|status| {
+                json!({
+                    "name": status.tool.name(),
+                    "required": true,
+                    "installed": status.installed,
+                    "version": status.version,
+                })
+            })
+            .collect();
+
+        let result = json!({
+            "framework": self.framework,
+            "tools": tools_json,
+            "all_installed": self.all_installed,
+            "missing_count": self.missing_count,
+        });
+
+        serde_json::to_string_pretty(&result).map_err(|e| {
+            ToolchainError::DetectionError(format!("JSON serialization failed: {}", e))
+        })
+    }
+}
+
+/// Check if all required tools are installed
+pub fn check_tools(
+    working_directory: impl AsRef<Path>,
+    _options: CheckOptions,
+) -> Result<CheckResult, ToolchainError> {
+    let working_directory = working_directory.as_ref();
+
+    // Get framework from config
+    let config = CastConfig::load_from_dir(working_directory).ok();
+    let framework = config.and_then(|c| c.framework);
+
+    // Detect required tools
+    let required_tools = detect_required_tools(working_directory)?;
+
+    // Check each tool
+    let mut tool_statuses = Vec::new();
+    for tool in required_tools {
+        let status = check_tool(&tool)?;
+        tool_statuses.push(status);
+    }
+
+    // Calculate summary
+    let missing_count = tool_statuses.iter().filter(|s| !s.installed).count();
+    let all_installed = missing_count == 0;
+
+    Ok(CheckResult {
+        framework,
+        tool_statuses,
+        all_installed,
+        missing_count,
+    })
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod install_tests {
@@ -967,5 +1096,253 @@ mod install_tests {
         let install_result = result.unwrap();
         assert!(!install_result.success);
         assert!(install_result.message.contains("rustup"));
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod check_tests {
+    use super::*;
+
+    #[test]
+    fn test_check_options_default() {
+        let options = CheckOptions::default();
+        assert!(!options.verbose);
+        assert!(!options.json);
+    }
+
+    #[test]
+    fn test_check_tools_pure_rust() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_check_pure_rust").unwrap();
+
+        // Create a Cast.toml without framework (pure Rust)
+        fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true").unwrap();
+
+        let options = CheckOptions {
+            verbose: false,
+            json: false,
+        };
+
+        let result = check_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let check_result = result.unwrap();
+        assert!(check_result.framework.is_none());
+        // Pure Rust requires: rustc, cargo, rustfmt, clippy
+        assert_eq!(check_result.tool_statuses.len(), 4);
+
+        // In CI environment, Rust tools should be installed
+        let rustc_status = check_result
+            .tool_statuses
+            .iter()
+            .find(|s| s.tool == Tool::Rustc);
+        assert!(rustc_status.is_some());
+    }
+
+    #[test]
+    fn test_check_tools_dioxus_framework() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_check_dioxus").unwrap();
+
+        // Create a Cast.toml with dioxus framework
+        fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+
+        let options = CheckOptions {
+            verbose: false,
+            json: false,
+        };
+
+        let result = check_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let check_result = result.unwrap();
+        assert_eq!(check_result.framework, Some("dioxus".to_string()));
+        // Dioxus requires: rustc, cargo, rustfmt, clippy, dx, node, npm, playwright
+        assert_eq!(check_result.tool_statuses.len(), 8);
+    }
+
+    #[test]
+    fn test_check_result_format_text_basic() {
+        let check_result = CheckResult {
+            framework: Some("dioxus".to_string()),
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: true,
+                    version: Some("1.75.0".to_string()),
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+            ],
+            all_installed: false,
+            missing_count: 1,
+        };
+
+        let output = check_result.format_text(false);
+        assert!(output.contains("Checking toolchain for dioxus project"));
+        assert!(output.contains("✓ rustc"));
+        assert!(output.contains("✗ dx (not installed)"));
+        assert!(output.contains("1 tool missing"));
+        // In non-verbose mode, version should not be shown
+        assert!(!output.contains("1.75.0"));
+    }
+
+    #[test]
+    fn test_check_result_format_text_verbose() {
+        let check_result = CheckResult {
+            framework: Some("dioxus".to_string()),
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: true,
+                    version: Some("1.75.0".to_string()),
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+            ],
+            all_installed: false,
+            missing_count: 1,
+        };
+
+        let output = check_result.format_text(true);
+        assert!(output.contains("Checking toolchain for dioxus project"));
+        assert!(output.contains("✓ rustc"));
+        assert!(output.contains("1.75.0")); // Version should be shown in verbose mode
+        assert!(output.contains("✗ dx (not installed)"));
+        assert!(output.contains("1 tool missing"));
+    }
+
+    #[test]
+    fn test_check_result_format_text_all_installed() {
+        let check_result = CheckResult {
+            framework: None,
+            tool_statuses: vec![ToolStatus {
+                tool: Tool::Rustc,
+                installed: true,
+                version: Some("1.75.0".to_string()),
+            }],
+            all_installed: true,
+            missing_count: 0,
+        };
+
+        let output = check_result.format_text(false);
+        assert!(output.contains("pure Rust project"));
+        assert!(output.contains("✓ rustc"));
+        assert!(output.contains("All required tools are installed"));
+    }
+
+    #[test]
+    fn test_check_result_format_json() {
+        let check_result = CheckResult {
+            framework: Some("dioxus".to_string()),
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: true,
+                    version: Some("1.75.0".to_string()),
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+            ],
+            all_installed: false,
+            missing_count: 1,
+        };
+
+        let result = check_result.format_json();
+        assert!(result.is_ok());
+
+        let json_output = result.unwrap();
+        assert!(json_output.contains("\"framework\": \"dioxus\""));
+        assert!(json_output.contains("\"name\": \"rustc\""));
+        assert!(json_output.contains("\"installed\": true"));
+        assert!(json_output.contains("\"version\": \"1.75.0\""));
+        assert!(json_output.contains("\"name\": \"dx\""));
+        assert!(json_output.contains("\"installed\": false"));
+        assert!(json_output.contains("\"all_installed\": false"));
+        assert!(json_output.contains("\"missing_count\": 1"));
+    }
+
+    #[test]
+    fn test_check_result_format_json_pure_rust() {
+        let check_result = CheckResult {
+            framework: None,
+            tool_statuses: vec![ToolStatus {
+                tool: Tool::Rustc,
+                installed: true,
+                version: Some("1.75.0".to_string()),
+            }],
+            all_installed: true,
+            missing_count: 0,
+        };
+
+        let result = check_result.format_json();
+        assert!(result.is_ok());
+
+        let json_output = result.unwrap();
+        assert!(json_output.contains("\"framework\": null"));
+        assert!(json_output.contains("\"all_installed\": true"));
+        assert!(json_output.contains("\"missing_count\": 0"));
+    }
+
+    #[test]
+    fn test_check_result_missing_count_plural() {
+        let check_result = CheckResult {
+            framework: Some("dioxus".to_string()),
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: false,
+                    version: None,
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+            ],
+            all_installed: false,
+            missing_count: 2,
+        };
+
+        let output = check_result.format_text(false);
+        assert!(output.contains("2 tools missing")); // "tools" not "tool"
+    }
+
+    #[test]
+    fn test_check_result_missing_count_singular() {
+        let check_result = CheckResult {
+            framework: Some("dioxus".to_string()),
+            tool_statuses: vec![
+                ToolStatus {
+                    tool: Tool::Rustc,
+                    installed: true,
+                    version: Some("1.75.0".to_string()),
+                },
+                ToolStatus {
+                    tool: Tool::Dx,
+                    installed: false,
+                    version: None,
+                },
+            ],
+            all_installed: false,
+            missing_count: 1,
+        };
+
+        let output = check_result.format_text(false);
+        assert!(output.contains("1 tool missing")); // "tool" not "tools"
     }
 }
