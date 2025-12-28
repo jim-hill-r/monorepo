@@ -1,39 +1,45 @@
 
 # Priority Issues
 
-- TODO (agent-generated): Design the command interface for `cast toolchain install` including options for installing specific tools vs all tools
-- TODO (agent-generated): Research cross-platform tool installation methods (Linux, macOS, Windows) for Node.js, npm, Playwright, Dioxus CLI, and Wrangler
+## Cast Toolchain Command Implementation
 
-- TODO (agent-generated): Add new `Toolchain` command variant to the Commands enum in args.rs
-- TODO (agent-generated): Create a new `toolchain.rs` module in cast/src with basic structure and error types
-- TODO (agent-generated): Implement toolchain detection logic that reads Cast config and determines required tools
+See `cast/docs/toolchain-command-design.md` for the complete command design specification.
+
+### Phase 1: Foundation
+- TODO (agent-generated): Add new `Toolchain` command variant with subcommands (install, check, list) to the Commands enum in args.rs
+- TODO (agent-generated): Create a new `toolchain.rs` module in cast/src with basic structure, error types, and Tool enum
+- TODO (agent-generated): Implement toolchain detection logic that reads Cast config and determines required tools based on framework
+- TODO (agent-generated): Implement tool detection logic for Node.js, npm, Playwright, dx, wrangler (checking if installed and getting versions)
 - TODO (agent-generated): Add unit tests for toolchain detection logic
 
-
-- TODO (agent-generated): Implement Node.js installation detection and guidance (Node.js typically installed via system package manager)
-- TODO (agent-generated): Implement npm package installation for Playwright (via `npm ci` or `npm install`)
-- TODO (agent-generated): Implement Dioxus CLI installation (via `cargo install dioxus-cli`)
-- TODO (agent-generated): Implement Wrangler CLI installation (via `npm install -g wrangler` or `cargo install wrangler`)
-- TODO (agent-generated): Add version checking and upgrade logic for installed tools
+### Phase 2: Installation Implementation
+- TODO (agent-generated): Implement `cast toolchain install` subcommand with options: --tool, --skip, --dry-run, --force
+- TODO (agent-generated): Implement Node.js detection and provide installation guidance for user's platform (apt, brew, winget)
+- TODO (agent-generated): Implement Dioxus CLI installation via `cargo install dioxus-cli --version 0.7.2`
+- TODO (agent-generated): Implement Wrangler CLI installation via `npm install -g wrangler` (with cargo fallback)
+- TODO (agent-generated): Implement Playwright installation via `npm ci` and `npx playwright install --with-deps chromium`
+- TODO (agent-generated): Add progress output and proper error handling with helpful messages
 - TODO (agent-generated): Add comprehensive tests for each tool installation method
 
+### Phase 3: Additional Subcommands
+- TODO (agent-generated): Implement `cast toolchain check` to verify all required tools are installed (with --verbose and --json options)
+- TODO (agent-generated): Implement `cast toolchain list` to show installed tools and versions (with --required-only and --all options)
+- TODO (agent-generated): Add tests for check and list subcommands
 
+### Phase 4: Platform Support
 - TODO (agent-generated): Test toolchain command on Linux (GitHub Actions runner environment)
-- TODO (agent-generated): Add macOS-specific installation paths and methods if different
-- TODO (agent-generated): Document Windows-specific installation considerations (may be out of scope)
+- TODO (agent-generated): Add macOS-specific installation paths and methods if different from Linux
+- TODO (agent-generated): Document Windows-specific installation considerations in design doc
 
-- TODO (agent-generated): Add `cast toolchain install` command documentation to cast/README.md
-- TODO (agent-generated): Add toolchain requirements documentation to cast/docs
-- TODO (agent-generated): Create a standards document for toolchain management in standards/docs/
+### Phase 5: Documentation
+- TODO (agent-generated): Add `cast toolchain` command documentation to cast/README.md with examples
+- TODO (agent-generated): Create a standards document for toolchain management in standards/docs/toolchain.md
 
+### Phase 6: CI/CD Integration
 - TODO (agent-generated): Update .github/workflows/cast-ci.yml to use `cast toolchain install` instead of manual tool installation
 - TODO (agent-generated): Update .github/WORKFLOW_CONVENTIONS.md to document that workflows should only install Rust, all other tools via cast
-- TODO (agent-generated): Add guidance to copilot-instructions about using `cast toolchain` in workflows
+- TODO (agent-generated): Add guidance to .github/copilot-instructions.md about using `cast toolchain` in workflows
 - TODO (agent-generated): Test the updated workflow on a test PR to ensure it works correctly
-
-- TODO (agent-generated): Implement `cast toolchain list` to show installed tools and versions
-- TODO (agent-generated): Implement `cast toolchain check` to verify all required tools are installed without installing them
-- TODO (agent-generated): Add tests for list and check commands
 
 # Backlog
 
