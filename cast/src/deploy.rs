@@ -112,6 +112,7 @@ fn load_env_file(working_directory: &Path) -> Result<HashMap<String, String>, De
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::fs;

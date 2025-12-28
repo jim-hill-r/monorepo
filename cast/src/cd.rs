@@ -50,6 +50,7 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use std::fs;

@@ -244,6 +244,7 @@ fn parse_version_string(output: &str) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
@@ -815,6 +816,7 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod install_tests {
     use super::*;
 
@@ -934,7 +936,6 @@ mod install_tests {
 
     #[test]
     fn test_install_playwright_dry_run() {
-        use std::fs;
         use tempdir::TempDir;
 
         let temp_dir = TempDir::new("test_playwright_dry_run").unwrap();
