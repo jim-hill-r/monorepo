@@ -121,8 +121,10 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), ServeError> {
 fn create_content_type_header(content_type: &str) -> Header {
     // Since we control the content type strings, this should never fail
     // But we handle it gracefully just in case
+    #[allow(clippy::unwrap_used)]
     Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes()).unwrap_or_else(|_| {
         // Fallback to a basic header if something goes wrong
+        // This unwrap is allowed because we're using hardcoded bytes that are known to be valid
         Header::from_bytes(&b"Content-Type"[..], b"application/octet-stream").unwrap()
     })
 }

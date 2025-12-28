@@ -17,4 +17,4 @@ web = ["dioxus/web"]
 
 [package.metadata.cast]
 framework = "dioxus"
-deploys = ["cloudflare"]
+deploys = ["../cloudflare"]
