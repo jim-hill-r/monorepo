@@ -1,6 +1,5 @@
 # Priority Issues
 
-- TODO: Make the top header shorter.
 - TODO: Make the sidebar pop in and out based on clicking a "hamburger" icon located in the header bar.
 - TODO: Ensure the sorting of sidebar is sorted by numeric value rather than string. (ie Day 1, day 11, ... , day 2 is wrong) (it should be day 1, day 2, ... , day 11)
 - TODO: Only show 10 entries in sidebar for recipes
