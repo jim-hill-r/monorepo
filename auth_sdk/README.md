@@ -11,3 +11,7 @@ This library is designed to support multiple platforms:
 - **Desktop/Mobile**: Platform-specific implementations (coming soon)
 
 The web-specific dependencies (like `web-sys`) are only included when compiling for WebAssembly targets.
+
+## Documentation
+
+- [OAuth2 vs OpenID Connect Research](docs/oauth2_vs_openidconnect_research.md) - Comprehensive comparison and recommendation for migrating to the `openidconnect` crate
