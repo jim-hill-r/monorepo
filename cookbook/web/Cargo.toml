@@ -10,6 +10,8 @@ workspace = true
 dioxus = { workspace = true, features = ["web", "router"] }
 auth_sdk = { workspace = true }
 chrono = { workspace = true }
+cookbook-core = { path = "../core" }
+cookbook-data-md = { path = "../data_md" }
 
 [features]
 default = ["web"]

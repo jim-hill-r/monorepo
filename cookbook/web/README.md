@@ -5,9 +5,12 @@ A Dioxus web application built with Rust that provides daily recipes and weekly 
 ## Features
 
 - **Daily Recipes**: Browse recipes for each day of the year (1-365) at `/recipe/{day}`
+  - Recipes are loaded from markdown files in the `../content` directory
+  - Each recipe displays title, description, ingredients, instructions, prep/cook time, servings, and tags
 - **Weekly Meal Plans**: Access meal plans for each week of the year (1-52) at `/plan/{week}`
 - **Input Validation**: Automatically validates day and week numbers to ensure they're within valid ranges
 - **Responsive Routing**: Uses Dioxus Router for seamless navigation between pages
+- **Markdown Data Provider**: Uses the `cookbook-data-md` library to read recipes from markdown files
 
 ## Prerequisites
 
@@ -128,7 +131,18 @@ This project uses:
 - Dioxus 0.7 for building web applications with Rust
 - Dioxus Router for client-side routing
 - Playwright for end-to-end testing
+- `cookbook-core` for recipe data models and traits
+- `cookbook-data-md` for reading recipes from markdown files
+
+## Implementation Details
+
+The web application uses the `MarkdownRecipeStore` from `cookbook-data-md` to load recipe data at runtime. Recipes are stored as markdown files in the `../content` directory (relative to the workspace root). Each recipe file follows a specific format with metadata, ingredients, and instructions.
+
+When a user navigates to a recipe page (e.g., `/recipe/1`), the application:
+1. Creates a `MarkdownRecipeStore` instance pointing to the content directory
+2. Fetches the recipe for the requested day using `get_by_day(day)`
+3. Displays the full recipe information including all metadata
 
 ## Status
 
-This project provides placeholder recipes and meal plans. Future enhancements will include actual recipe content and meal planning features.
+This project now displays actual recipe content loaded from markdown files. The recipes are generated using the `cookbook-recipe-gen` tool and stored in the `content` directory.
