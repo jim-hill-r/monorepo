@@ -176,6 +176,8 @@ fn get_and_increment_build_counter(working_directory: &Path) -> Result<u32, Publ
     let counter_file = cast_dir.join(format!("build_counter_{}.txt", date_str));
 
     // Read current counter or start at 0
+    // If the file is corrupted or contains invalid data, we default to 0 and restart counting
+    // This is safe because build counters are per-day and not critical data
     let current_counter = if counter_file.exists() {
         fs::read_to_string(&counter_file)?
             .trim()
