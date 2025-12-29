@@ -1,7 +1,11 @@
+#[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
+#[cfg(target_arch = "wasm32")]
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
 use chrono::prelude::*;
+use cookbook_core::{Recipe as RecipeData, RecipeReader};
+use cookbook_data_md::MarkdownRecipeStore;
 use dioxus::prelude::*;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
@@ -11,8 +15,11 @@ const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
+#[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
+#[cfg(target_arch = "wasm32")]
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
+#[cfg(target_arch = "wasm32")]
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 fn main() {
@@ -21,6 +28,7 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    #[cfg(target_arch = "wasm32")]
     let auth = use_resource(|| async move {
         WebAuthProvider::new(ProviderConfig {
             client_id: CLIENT_ID.into(),
@@ -30,6 +38,7 @@ fn App() -> Element {
         })
         .await
     });
+    #[cfg(target_arch = "wasm32")]
     use_context_provider(|| auth);
 
     // Initialize sidebar visibility state (visible by default)
@@ -62,13 +71,45 @@ enum Route {
 
 #[component]
 fn Header() -> Element {
-    let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
-    let auth_state = auth.read();
-
     let mut sidebar_visible = use_context::<Signal<bool>>();
 
     let today = get_current_day_of_year();
     let current_week = get_current_week_of_year();
+
+    #[cfg(target_arch = "wasm32")]
+    let auth_content = {
+        let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
+        let auth_state = auth.read();
+        
+        match &*auth_state {
+            Some(Ok(provider)) => {
+                let provider = provider.clone();
+                rsx! {
+                    button {
+                        onclick: move |_| {
+                            // Silently handle login errors - the auth provider handles redirects
+                            let _ = provider.login();
+                        },
+                        "Login"
+                    }
+                }
+            },
+            Some(Err(err)) => rsx! {
+                div {
+                    class: "error",
+                    "Authentication Error: {err}"
+                }
+            },
+            None => rsx! {
+                div { "Loading authentication..." }
+            },
+        }
+    };
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let auth_content = rsx! {
+        div { "Authentication not available" }
+    };
 
     rsx! {
         header {
@@ -96,29 +137,7 @@ fn Header() -> Element {
             }
             div {
                 class: "header-auth",
-                match &*auth_state {
-                    Some(Ok(provider)) => {
-                        let provider = provider.clone();
-                        rsx! {
-                            button {
-                                onclick: move |_| {
-                                    // Silently handle login errors - the auth provider handles redirects
-                                    let _ = provider.login();
-                                },
-                                "Login"
-                            }
-                        }
-                    },
-                    Some(Err(err)) => rsx! {
-                        div {
-                            class: "error",
-                            "Authentication Error: {err}"
-                        }
-                    },
-                    None => rsx! {
-                        div { "Loading authentication..." }
-                    },
-                }
+                {auth_content}
             }
         }
 
@@ -268,12 +287,106 @@ fn Recipe(day: u32) -> Element {
             }
         }
     } else {
-        rsx! {
-            div {
-                h1 { "Recipe for Day {day}" }
-                p { "This is a placeholder recipe for day {day} of the year." }
-                Link { to: Route::Home {}, "Back to Home" }
+        // Load recipe from markdown store
+        let recipe_result = use_resource(move || async move {
+            // Get the content directory path (relative to the workspace root)
+            let content_dir = "../content";
+            match MarkdownRecipeStore::new(content_dir) {
+                Ok(store) => store.get_by_day(day),
+                Err(e) => Err(e),
             }
+        });
+
+        match &*recipe_result.read() {
+            Some(Ok(recipe)) => {
+                rsx! {
+                    RecipeView { recipe: recipe.clone() }
+                }
+            }
+            Some(Err(err)) => {
+                rsx! {
+                    div {
+                        h1 { "Recipe Error" }
+                        p { "Failed to load recipe for day {day}: {err}" }
+                        Link { to: Route::Home {}, "Back to Home" }
+                    }
+                }
+            }
+            None => {
+                rsx! {
+                    div {
+                        h1 { "Loading..." }
+                        p { "Loading recipe for day {day}..." }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn RecipeView(recipe: RecipeData) -> Element {
+    rsx! {
+        div {
+            class: "recipe-container",
+            h1 { "{recipe.title}" }
+            
+            if let Some(description) = &recipe.description {
+                p { class: "recipe-description", "{description}" }
+            }
+
+            // Display metadata
+            div {
+                class: "recipe-metadata",
+                if let Some(prep_time) = recipe.prep_time_minutes {
+                    span { "Prep Time: {prep_time} minutes" }
+                }
+                if let Some(cook_time) = recipe.cook_time_minutes {
+                    span { "Cook Time: {cook_time} minutes" }
+                }
+                if let Some(servings) = recipe.servings {
+                    span { "Servings: {servings}" }
+                }
+            }
+
+            // Display tags
+            if !recipe.tags.is_empty() {
+                div {
+                    class: "recipe-tags",
+                    "Tags: "
+                    for tag in &recipe.tags {
+                        span { class: "tag", "{tag}" }
+                    }
+                }
+            }
+
+            // Display ingredients
+            if !recipe.ingredients.is_empty() {
+                div {
+                    class: "recipe-section",
+                    h2 { "Ingredients" }
+                    ul {
+                        for ingredient in &recipe.ingredients {
+                            li { "{ingredient}" }
+                        }
+                    }
+                }
+            }
+
+            // Display instructions
+            if !recipe.instructions.is_empty() {
+                div {
+                    class: "recipe-section",
+                    h2 { "Instructions" }
+                    ol {
+                        for instruction in &recipe.instructions {
+                            li { "{instruction}" }
+                        }
+                    }
+                }
+            }
+
+            Link { to: Route::Home {}, "Back to Home" }
         }
     }
 }
