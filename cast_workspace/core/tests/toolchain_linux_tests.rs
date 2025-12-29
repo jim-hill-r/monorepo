@@ -185,3 +185,40 @@ fn test_toolchain_install_node_guidance_linux() {
         "Output should mention node and either show it's installed or provide guidance"
     );
 }
+
+#[test]
+fn test_toolchain_list_json_output_linux() {
+    let temp_dir = TempDir::new("test_toolchain_list_json").expect("Failed to create temp dir");
+    fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true")
+        .expect("Failed to write Cast.toml");
+
+    let cast_bin = get_cast_binary_path();
+    let output = Command::new(&cast_bin)
+        .args(["toolchain", "list", "--json"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(
+        output.status.success(),
+        "toolchain list --json should succeed"
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        stdout.contains('{') && stdout.contains('}'),
+        "Output should contain JSON"
+    );
+    assert!(
+        stdout.contains("\"tools\""),
+        "JSON output should have tools field"
+    );
+    assert!(
+        stdout.contains("\"name\""),
+        "JSON output should have name field for tools"
+    );
+    assert!(
+        stdout.contains("\"installed\""),
+        "JSON output should have installed field"
+    );
+}

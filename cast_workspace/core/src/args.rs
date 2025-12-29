@@ -124,6 +124,10 @@ pub struct ListToolchainCommand {
     /// Show all known tools, not just installed ones
     #[arg(long)]
     all: bool,
+
+    /// Output results in JSON format
+    #[arg(long)]
+    json: bool,
 }
 
 #[derive(Error, Debug)]
@@ -353,14 +357,20 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     let options = toolchain::ListOptions {
                         required_only: list_cmd.required_only,
                         all: list_cmd.all,
-                        json: false, // TODO: Add --json flag to ListToolchainCommand in future
+                        json: list_cmd.json,
                     };
 
                     let list_result = toolchain::list_tools(working_directory, options)
                         .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
 
-                    // Format output
-                    let output = list_result.format_text();
+                    // Format output based on options
+                    let output = if list_cmd.json {
+                        list_result
+                            .format_json()
+                            .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?
+                    } else {
+                        list_result.format_text()
+                    };
 
                     Ok(output)
                 }
@@ -845,6 +855,7 @@ mod tests {
                 cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
                     required_only: false,
                     all: false,
+                    json: false,
                 })),
             },
             tmp_dir.path(),
@@ -867,6 +878,7 @@ mod tests {
                 cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
                     required_only: false,
                     all: true,
+                    json: false,
                 })),
             },
             tmp_dir.path(),
@@ -885,6 +897,33 @@ mod tests {
         assert!(output.contains("npm"));
         assert!(output.contains("playwright"));
         assert!(output.contains("wrangler"));
+    }
+
+    #[test]
+    fn it_recognizes_toolchain_list_json() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let result = execute(
+            Args {
+                cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
+                    required_only: false,
+                    all: false,
+                    json: true,
+                })),
+            },
+            tmp_dir.path(),
+        );
+
+        // Should succeed and output JSON
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Should be valid JSON with tools array
+        assert!(output.contains("{"));
+        assert!(output.contains("}"));
+        assert!(output.contains("\"tools\""));
+        assert!(output.contains("\"name\""));
+        assert!(output.contains("\"installed\""));
     }
 
     #[test]

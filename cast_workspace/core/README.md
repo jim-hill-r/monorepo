@@ -203,15 +203,51 @@ Status: 2 tools missing
 
 ### List Available Tools
 
+List all tools and their installation status:
+
 ```bash
 cast toolchain list
 ```
 
-**Status**: Not yet implemented. This command will list all tools and their installation status.
-
-**Planned Options**:
+**Options**:
 - `--required-only` - Show only tools required for the current project
 - `--all` - Show all known tools, not just installed ones
+- `--json` - Output results in JSON format
+
+Example output:
+```
+rustc: 1.75.0 (installed)
+cargo: 1.75.0 (installed)
+rustfmt: 1.7.0-stable (installed)
+clippy: 0.1.75 (installed)
+dx: 0.7.2 (installed)
+node: 20.10.0 (installed)
+npm: 10.2.4 (installed)
+playwright: not installed
+```
+
+With JSON output:
+```bash
+cast toolchain list --json
+```
+
+Example JSON output:
+```json
+{
+  "tools": [
+    {
+      "name": "rustc",
+      "installed": true,
+      "version": "1.75.0"
+    },
+    {
+      "name": "playwright",
+      "installed": false,
+      "version": null
+    }
+  ]
+}
+```
 
 ## CI/CD
 
