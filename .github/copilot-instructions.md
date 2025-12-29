@@ -161,7 +161,6 @@ cast_workspace/
 - The **CLI binary** is still named `cast` (the executable name) but the crate is `cast_cli`
 - Build the CLI from the workspace: `cd cast_workspace && cargo build --release -p cast_cli`
 - The workspace uses shared dependencies and version configuration
-- Old directories (`cast/`, `cast_cli/`, `cast_vscode/`) are deprecated and will be removed
 - When referencing Cast in documentation or code, use the workspace paths
 
 ### Building and Testing

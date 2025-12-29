@@ -35,8 +35,7 @@
 # Backlog
 
 # Priority Projects
-- cast
-- cast_cli
+- cast_workspace
 - cookbook
 - cookbook/web
 - cookbook/cloudflare
