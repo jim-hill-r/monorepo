@@ -12,10 +12,8 @@ use tempdir::TempDir;
 fn get_cast_binary_path() -> PathBuf {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
     let mut path = PathBuf::from(manifest_dir);
-    // CARGO_MANIFEST_DIR is now cast_workspace/core, so go up two levels to reach monorepo root
+    // CARGO_MANIFEST_DIR is now cast_workspace/core, so go up one level to reach cast_workspace
     path.pop(); // Go up to cast_workspace
-    path.pop(); // Go up to monorepo root
-    path.push("cast_cli");
     path.push("target");
 
     // Try release first, then debug
@@ -35,7 +33,7 @@ fn get_cast_binary_path() -> PathBuf {
         return debug_path;
     }
 
-    panic!("Cast binary not found. Please build cast_cli first with: cd cast_cli && cargo build");
+    panic!("Cast binary not found. Please build cast_cli first with: cd cast_workspace && cargo build -p cast_cli");
 }
 
 #[test]
