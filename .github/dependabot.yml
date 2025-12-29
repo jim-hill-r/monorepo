@@ -21,7 +21,7 @@ updates:
 
   # Cargo/Rust dependencies for Auth SDK
   - package-ecosystem: "cargo"
-    directory: "/projects/auth_sdk"
+    directory: "/auth_sdk"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -37,7 +37,7 @@ updates:
 
   # Cargo/Rust dependencies for Luggage
   - package-ecosystem: "cargo"
-    directory: "/projects/luggage"
+    directory: "/luggage"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -53,7 +53,7 @@ updates:
 
   # Cargo/Rust dependencies for Cahokia
   - package-ecosystem: "cargo"
-    directory: "/projects/cahokia"
+    directory: "/cahokia"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -69,7 +69,7 @@ updates:
 
   # Cargo/Rust dependencies for Cahokia Web
   - package-ecosystem: "cargo"
-    directory: "/projects/cahokia/web"
+    directory: "/cahokia/web"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -85,7 +85,7 @@ updates:
 
   # Cargo/Rust dependencies for Cahokia Desktop
   - package-ecosystem: "cargo"
-    directory: "/projects/cahokia/desktop"
+    directory: "/cahokia/desktop"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -101,7 +101,7 @@ updates:
 
   # Cargo/Rust dependencies for Cahokia Mobile
   - package-ecosystem: "cargo"
-    directory: "/projects/cahokia/mobile"
+    directory: "/cahokia/mobile"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -117,7 +117,7 @@ updates:
 
   # Cargo/Rust dependencies for Cahokia UI
   - package-ecosystem: "cargo"
-    directory: "/projects/cahokia/ui"
+    directory: "/cahokia/ui"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -133,7 +133,7 @@ updates:
 
   # Cargo/Rust dependencies for Cahokia Core
   - package-ecosystem: "cargo"
-    directory: "/projects/cahokia/core"
+    directory: "/cahokia/core"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -149,7 +149,7 @@ updates:
 
   # Cargo/Rust dependencies for Starcraft
   - package-ecosystem: "cargo"
-    directory: "/projects/starcraft"
+    directory: "/starcraft"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -165,7 +165,7 @@ updates:
 
   # Cargo/Rust dependencies for Sparkhill Website
   - package-ecosystem: "cargo"
-    directory: "/projects/sparkhill/website"
+    directory: "/sparkhill/website"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -181,7 +181,7 @@ updates:
 
   # Cargo/Rust dependencies for CIAM
   - package-ecosystem: "cargo"
-    directory: "/projects/ciam"
+    directory: "/ciam"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -197,7 +197,7 @@ updates:
 
   # Cargo/Rust dependencies for Profiles - jimhillr
   - package-ecosystem: "cargo"
-    directory: "/projects/profiles/jimhillr"
+    directory: "/profiles/jimhillr"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -213,7 +213,7 @@ updates:
 
   # Cargo/Rust dependencies for Profiles - content_provider
   - package-ecosystem: "cargo"
-    directory: "/projects/profiles/content_provider"
+    directory: "/profiles/content_provider"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -229,7 +229,7 @@ updates:
 
   # Cargo/Rust dependencies for Luggage webapp example
   - package-ecosystem: "cargo"
-    directory: "/projects/luggage/examples/webapp"
+    directory: "/luggage/examples/webapp"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -245,7 +245,7 @@ updates:
 
   # Cargo/Rust dependencies for Dioxus SSG proof of concept
   - package-ecosystem: "cargo"
-    directory: "/projects/dioxus_ssg"
+    directory: "/dioxus_ssg"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -261,7 +261,7 @@ updates:
 
   # Cargo/Rust dependencies for Dioxus static website proof of concept
   - package-ecosystem: "cargo"
-    directory: "/projects/dioxus_static_website"
+    directory: "/dioxus_static_website"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -277,7 +277,7 @@ updates:
 
   # Cargo/Rust dependencies for NeetCode150
   - package-ecosystem: "cargo"
-    directory: "/projects/docs/learning/computer_science/algorithms/NeetCode150"
+    directory: "/athenaeum/learning/computer_science/algorithms/NeetCode150"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -291,9 +291,9 @@ updates:
       - "rust"
       - "learning"
 
-  # Template - Binary
+  # Example - Binary
   - package-ecosystem: "cargo"
-    directory: "/templates/binary"
+    directory: "/example/binary"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -305,11 +305,11 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "template"
+      - "example"
 
-  # Template - Library
+  # Example - Rust Library
   - package-ecosystem: "cargo"
-    directory: "/templates/library"
+    directory: "/example/example_rust_library"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -321,7 +321,7 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "template"
+      - "example"
 
   # GitHub Actions workflows
   - package-ecosystem: "github-actions"

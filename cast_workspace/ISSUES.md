@@ -33,7 +33,7 @@ This is a complex restructuring task that needs to be broken down into sequentia
 - ✓ COMPLETED: Update any references in documentation
 
 ### Phase 6: Update Configuration Files (agent-generated)
-- TODO (agent-generated): Update dependabot.yml to reference new workspace structure
+- ✓ COMPLETED: Update dependabot.yml to reference new workspace structure
 - ✓ COMPLETED: Update REPOSITORY_STRUCTURE.md
 - TODO (agent-generated): Update workflow documentation
 - ✓ COMPLETED: Update cast workspace README.md with new structure
