@@ -1,7 +1,7 @@
+use crate::config::CastConfig;
 use crate::sessions::SessionStartOptions;
 use crate::{build, cd, ci, deploy, projects, publish, run, serve, sessions, test, toolchain};
 use clap::{Parser, Subcommand};
-use std::fs;
 use std::path::Path;
 use thiserror::Error;
 
@@ -384,14 +384,22 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
 fn find_cast_toml(working_directory: &Path) -> Option<&Path> {
     let mut current_directory = Some(working_directory);
     while let Some(current_path) = current_directory {
-        if let Ok(entries) = fs::read_dir(current_path) {
-            for entry in entries.flatten() {
-                if entry.file_name() == "Cast.toml" {
+        // Check for Cast.toml
+        if current_path.join("Cast.toml").exists() {
+            return current_directory;
+        }
+
+        // Check for Cargo.toml with Cast metadata
+        let cargo_toml_path = current_path.join("Cargo.toml");
+        if cargo_toml_path.exists() {
+            if let Ok(config) = CastConfig::load_from_cargo_toml(&cargo_toml_path) {
+                if config.has_cast_metadata() {
                     return current_directory;
                 }
             }
-            current_directory = current_path.parent();
         }
+
+        current_directory = current_path.parent();
     }
 
     None
@@ -944,5 +952,85 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(err, ExecuteError::CastTomlNotFound));
+    }
+
+    #[test]
+    fn it_finds_cargo_toml_with_cast_metadata() {
+        let tmp_dir = TempDir::new("test").unwrap();
+
+        // Create Cargo.toml with cast metadata (no Cast.toml)
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"",
+        )
+        .unwrap();
+
+        let found = find_cast_toml(tmp_dir.path());
+        assert_eq!(found, Some(tmp_dir.path()));
+    }
+
+    #[test]
+    fn it_does_not_find_cargo_toml_without_cast_metadata() {
+        let tmp_dir = TempDir::new("test").unwrap();
+
+        // Create Cargo.toml without cast metadata
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+
+        let found = find_cast_toml(tmp_dir.path());
+        assert_eq!(found, None);
+    }
+
+    #[test]
+    fn it_traverses_up_file_tree_to_find_cargo_toml_with_metadata() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        let child_dir = tmp_dir
+            .path()
+            .join("test_level_two/test_level_three/test_level_four");
+        fs::create_dir_all(&child_dir).unwrap();
+
+        // Create Cargo.toml with cast metadata in parent directory
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"",
+        )
+        .unwrap();
+
+        assert_eq!(find_cast_toml(child_dir.as_path()).unwrap(), tmp_dir.path())
+    }
+
+    #[test]
+    fn it_runs_run_with_cargo_metadata() {
+        let tmp_dir = TempDir::new("test").unwrap();
+
+        // Create a Cargo project with dioxus framework in metadata (no Cast.toml)
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"\n\n[dependencies]\ndioxus = \"0.6\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() { println!(\"Hello, world!\"); }\n",
+        )
+        .unwrap();
+
+        let result = execute(Args { cmd: Commands::Run }, tmp_dir.path());
+
+        // Should find the cast metadata and run correctly (will fail if dx is not installed)
+        assert!(result.is_err()); // Will fail because dx is not installed
+        if let Err(ExecuteError::RunError(run_err)) = result {
+            // We expect either RunFailed (dx not found) or IoError
+            assert!(
+                matches!(run_err, run::RunError::RunFailed)
+                    || matches!(run_err, run::RunError::IoError(_))
+            );
+        } else {
+            panic!("Expected RunError");
+        }
     }
 }
