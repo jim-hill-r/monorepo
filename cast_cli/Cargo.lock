@@ -158,7 +158,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "cast"
+name = "cast_cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cast_core",
+ "clap",
+]
+
+[[package]]
+name = "cast_core"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -172,15 +181,6 @@ dependencies = [
  "uuid",
  "walkdir",
  "zip",
-]
-
-[[package]]
-name = "cast_cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cast",
- "clap",
 ]
 
 [[package]]

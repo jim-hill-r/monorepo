@@ -13,4 +13,4 @@ unsafe_code = "forbid"
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4", features = ["derive"] }
-cast = { path = "../cast" }
+cast_core = { path = "../cast_workspace/core" }
