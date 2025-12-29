@@ -204,7 +204,7 @@ Workflows should use the `cast toolchain install` command to manage framework-sp
 
 - name: Build cast CLI
   run: |
-    cd cast_cli
+    cd cast_workspace/cli
     cargo build --release
 
 - name: Install toolchain for project

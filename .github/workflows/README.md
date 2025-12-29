@@ -15,7 +15,7 @@ This workflow automatically runs `cast ci` for any project that has changes in a
 
 3. **Build and Run**: 
    - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `cast_cli`
+   - Builds the `cast` CLI from `cast_workspace/cli`
    - Runs `cast ci` for each detected project
 
 4. **Results**: 
@@ -27,7 +27,7 @@ This workflow automatically runs `cast ci` for any project that has changes in a
 The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
 2. Projects must have a `Cast.toml` file in their root directory
-3. The `cast_cli` project must be buildable
+3. The `cast_workspace/cli` project must be buildable
 
 ### Permissions
 
@@ -80,7 +80,7 @@ This workflow automatically runs `cast cd` for any project that has changes when
 
 3. **Build and Run**: 
    - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `cast_cli`
+   - Builds the `cast` CLI from `cast_workspace/cli`
    - Runs `cast cd` for each detected project
 
 4. **Results**: 
@@ -92,7 +92,7 @@ This workflow automatically runs `cast cd` for any project that has changes when
 The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
 2. Projects must have a `Cast.toml` file in their root directory
-3. The `cast_cli` project must be buildable
+3. The `cast_workspace/cli` project must be buildable
 
 ### Permissions
 
