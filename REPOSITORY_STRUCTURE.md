@@ -78,7 +78,7 @@ See `.github/workflows/README.md` and `.github/WORKFLOW_CONVENTIONS.md` for deta
 The Cast monorepo tooling is organized as a Cargo workspace at `cast_workspace/`:
 - **core** (`cast_core`) - Core Cast library for monorepo operations
 - **cli** (`cast_cli`) - Cast command-line interface
-- **vscode_ext** (`cast_vscode`) - VSCode extension for Cast
+- **vscode_ext** (`cast`) - VSCode extension for Cast
 
 ### Cast CLI
 
