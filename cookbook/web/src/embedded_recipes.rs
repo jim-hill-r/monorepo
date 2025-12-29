@@ -26,6 +26,10 @@ impl EmbeddedRecipeStore {
 
     /// Load all embedded recipes at initialization
     fn load_embedded_recipes(&mut self) {
+        // TODO (agent-generated): Use a build script or macro to generate this list automatically
+        // from the content directory to prevent issues when files are added, removed, or renamed.
+        // For now, this hard-coded approach works since we have exactly 365 days in a year.
+        
         // Include all recipe files at compile time
         let recipe_files: Vec<(u32, &str)> = vec![
             (1, include_str!("../../content/day-1.md")),
@@ -396,10 +400,25 @@ impl EmbeddedRecipeStore {
         ];
 
         for (day, content) in recipe_files {
-            if let Ok(recipe) = Self::parse_recipe_markdown(content, day) {
-                self.recipes.insert(recipe.id.clone(), recipe);
+            match Self::parse_recipe_markdown(content, day) {
+                Ok(recipe) => {
+                    self.recipes.insert(recipe.id.clone(), recipe);
+                }
+                Err(_e) => {
+                    // Note: In a production environment, you might want to log this error
+                    // For now, we skip recipes that fail to parse
+                    // TODO (agent-generated): Consider using a logging framework to report parsing failures
+                }
             }
         }
+        
+        // Verify we loaded all 365 recipes
+        assert_eq!(
+            self.recipes.len(),
+            365,
+            "Expected to load 365 recipes but loaded {}. Check that all recipe files exist and parse correctly.",
+            self.recipes.len()
+        );
     }
 
     /// Parses recipe data from markdown content
@@ -520,6 +539,7 @@ impl EmbeddedRecipeStore {
     }
 
     /// Extracts a time field in minutes
+    /// Expected format: "X minutes" or "X" where X is a positive integer
     fn extract_time_field(content: &str, field: &str) -> Option<u32> {
         for line in content.lines() {
             if let Some(value) = line.strip_prefix(field) {
