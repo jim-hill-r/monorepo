@@ -12,7 +12,7 @@ This workspace is organized into three main components:
 
 The core Cast library provides the foundational functionality for monorepo operations.
 
-**Location**: `cast_workspace/core/`
+**Location**: `cast/core/`
 
 **Key Features**:
 - Project detection and configuration management (Cast.toml, Cargo.toml metadata)
@@ -28,7 +28,7 @@ The core Cast library provides the foundational functionality for monorepo opera
 
 The Cast CLI is the primary tool for developers working with Cast-enabled monorepos.
 
-**Location**: `cast_workspace/cli/`
+**Location**: `cast/cli/`
 
 **Key Commands**:
 - `cast ci` - Run CI checks (format, lint, build, test)
@@ -46,7 +46,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 
 The VSCode extension provides IDE integration for Cast workflows.
 
-**Location**: `cast_workspace/vscode_ext/`
+**Location**: `cast/vscode_ext/`
 
 **Status**: This is a TypeScript/Node.js project, not part of the Cargo workspace. It provides Cast command integration directly in VSCode.
 
@@ -67,7 +67,7 @@ From the workspace root:
 # Build the CLI in release mode
 cargo build --release -p cast_cli
 
-# The binary will be at cast_workspace/cli/target/release/cast
+# The binary will be at cast/cli/target/release/cast
 # You can add it to your PATH or use it directly
 ./cli/target/release/cast --help
 ```
@@ -187,7 +187,7 @@ See [core/README.md](core/README.md) for complete toolchain documentation.
 ## Workspace Structure
 
 ```
-cast_workspace/
+cast/
 ├── Cargo.toml          # Workspace configuration
 ├── Cast.toml           # Cast workspace configuration
 ├── README.md           # This file

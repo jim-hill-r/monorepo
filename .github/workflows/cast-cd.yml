@@ -29,7 +29,7 @@ jobs:
 
       - name: Build cast CLI
         run: |
-          cd cast_workspace/cli
+          cd cast/cli
           cargo build --release
 
       - name: Find projects with changes
@@ -64,7 +64,7 @@ jobs:
           echo "Commits verified successfully"
 
           # Use cast CLI to find projects with changes
-          CAST_BIN="$GITHUB_WORKSPACE/cast_workspace/target/release/cast"
+          CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
           CHANGED_PROJECTS=$("$CAST_BIN" project with-changes \
             --base "$BASE_SHA" --head "$HEAD_SHA" 2>&1)
 
@@ -97,7 +97,7 @@ jobs:
           echo "Running cast cd for projects: $PROJECTS"
 
           # Use absolute path to cast binary
-          CAST_BIN="$GITHUB_WORKSPACE/cast_workspace/target/release/cast"
+          CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
 
           EXIT_CODE=0
           for project in $(echo "$PROJECTS" | jq -r '.[]'); do

@@ -135,11 +135,11 @@ cast toolchain list
 
 ## Cast Workspace Structure
 
-The Cast tooling has been restructured into a Cargo workspace at `cast_workspace/` to better organize the related projects:
+The Cast tooling has been restructured into a Cargo workspace at `cast/` to better organize the related projects:
 
 ### Workspace Layout
 ```
-cast_workspace/
+cast/
 ├── Cargo.toml          # Workspace configuration
 ├── Cast.toml           # Workspace Cast configuration
 ├── README.md           # Workspace documentation
@@ -157,28 +157,28 @@ cast_workspace/
 
 ### Key Points
 - The **core library** was renamed from `cast` to `cast_core` to avoid naming conflicts
-- Use `cast_core` as the crate name in dependencies: `cast_core = { path = "../cast_workspace/core" }`
+- Use `cast_core` as the crate name in dependencies: `cast_core = { path = "../cast/core" }`
 - The **CLI binary** is still named `cast` (the executable name) but the crate is `cast_cli`
-- Build the CLI from the workspace: `cd cast_workspace && cargo build --release -p cast_cli`
+- Build the CLI from the workspace: `cd cast && cargo build --release -p cast_cli`
 - The workspace uses shared dependencies and version configuration
 - When referencing Cast in documentation or code, use the workspace paths
 
 ### Building and Testing
 ```bash
 # Build all workspace members
-cd cast_workspace
+cd cast
 cargo build --workspace
 
 # Run tests on all workspace members
 cargo test --workspace
 
 # Run CI on specific member
-cd cast_workspace/core && cast ci
-cd cast_workspace/cli && cast ci
+cd cast/core && cast ci
+cd cast/cli && cast ci
 ```
 
 ### GitHub Workflows
 Workflows reference the new workspace structure:
-- Build path: `cast_workspace/cli/` instead of `cast_cli/`
-- Binary path: `cast_workspace/target/release/cast` instead of `cast_cli/target/release/cast`
+- Build path: `cast/cli/` instead of `cast_cli/`
+- Binary path: `cast/target/release/cast` instead of `cast_cli/target/release/cast`
 - See `.github/workflows/cast-ci.yml` and `.github/workflows/cast-cd.yml` for examples

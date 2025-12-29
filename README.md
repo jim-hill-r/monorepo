@@ -9,7 +9,7 @@ Monorepo for all projects
 - SurrealDb: Install via [documentation](https://surrealdb.com/docs/surrealdb/installation/macos) instructions.
 - Cargo-binstall: Install via [repo](https://github.com/cargo-bins/cargo-binstall) instructions.
 - Cross: Install via [repo](https://github.com/cross-rs/cross) instructions.
-- Cast (cli for this monorepo): Run `cargo install --path ./cast_workspace/cli` and `code --install-extension ./cast_workspace/vscode_ext/cast.vsix`
+- Cast (cli for this monorepo): Run `cargo install --path ./cast/cli` and `code --install-extension ./cast/vscode_ext/cast.vsix`
 - Git LFS: Required for large binary files. Install via [Git LFS](https://git-lfs.github.com/) instructions.
 
 # Working with Git LFS Files
