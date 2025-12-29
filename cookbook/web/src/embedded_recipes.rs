@@ -29,7 +29,7 @@ impl EmbeddedRecipeStore {
         // TODO (agent-generated): Use a build script or macro to generate this list automatically
         // from the content directory to prevent issues when files are added, removed, or renamed.
         // For now, this hard-coded approach works since we have exactly 365 days in a year.
-        
+
         // Include all recipe files at compile time
         let recipe_files: Vec<(u32, &str)> = vec![
             (1, include_str!("../../content/day-1.md")),
@@ -411,7 +411,7 @@ impl EmbeddedRecipeStore {
                 }
             }
         }
-        
+
         // Verify we loaded all 365 recipes
         assert_eq!(
             self.recipes.len(),
