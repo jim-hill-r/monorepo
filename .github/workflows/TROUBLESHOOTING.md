@@ -31,7 +31,7 @@ To prevent this issue:
 3. Add a pre-commit hook that runs `cargo fmt`
 
 ### Example
-The issue was found in `cast_cli/src/bin/cast.rs` where imports were not alphabetically sorted:
+The issue was found in `cast_workspace/cli/src/bin/cast.rs` where imports were not alphabetically sorted:
 ```rust
 // Before (incorrect):
 use cast::args::{Args, execute};
