@@ -36,13 +36,13 @@ This is a complex restructuring task that needs to be broken down into sequentia
 - ✓ COMPLETED: Update dependabot.yml to reference new workspace structure
 - ✓ COMPLETED: Update REPOSITORY_STRUCTURE.md
 - ✓ COMPLETED: Update workflow documentation
-- TODO (agent-generated): Update cast workspace README.md with new structure
+- ✓ COMPLETED: Update cast workspace README.md with new structure
 
 ### Phase 7: Testing and Validation (agent-generated)
-- TODO (agent-generated): Run `cast ci` on all moved projects
-- TODO (agent-generated): Test GitHub workflows in a test PR
-- TODO (agent-generated): Verify all tests pass
-- TODO (agent-generated): Update copilot-instructions with workspace structure patterns
+- ✓ COMPLETED: Run `cast ci` on all moved projects (cast_workspace/core and cast_workspace/cli both pass)
+- TODO (agent-generated): Test GitHub workflows in a test PR (will be tested when this PR is created)
+- ✓ COMPLETED: Verify all tests pass (all tests passing for cast_core and cast_cli)
+- ✓ COMPLETED: Update copilot-instructions with workspace structure patterns
 
 ### Phase 8: Cleanup (agent-generated)
 - TODO (agent-generated): Remove old cast, cast_cli, cast_vscode directories
