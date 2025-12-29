@@ -1,11 +1,7 @@
-#[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
-#[cfg(target_arch = "wasm32")]
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
 use chrono::prelude::*;
-use cookbook_core::{Recipe as RecipeData, RecipeReader};
-use cookbook_data_md::MarkdownRecipeStore;
 use dioxus::prelude::*;
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
@@ -15,11 +11,8 @@ const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
-#[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
-#[cfg(target_arch = "wasm32")]
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
-#[cfg(target_arch = "wasm32")]
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 fn main() {
@@ -28,7 +21,6 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    #[cfg(target_arch = "wasm32")]
     let auth = use_resource(|| async move {
         WebAuthProvider::new(ProviderConfig {
             client_id: CLIENT_ID.into(),
@@ -38,7 +30,6 @@ fn App() -> Element {
         })
         .await
     });
-    #[cfg(target_arch = "wasm32")]
     use_context_provider(|| auth);
 
     // Initialize sidebar visibility state (visible by default)
@@ -71,45 +62,13 @@ enum Route {
 
 #[component]
 fn Header() -> Element {
+    let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
+    let auth_state = auth.read();
+
     let mut sidebar_visible = use_context::<Signal<bool>>();
 
     let today = get_current_day_of_year();
     let current_week = get_current_week_of_year();
-
-    #[cfg(target_arch = "wasm32")]
-    let auth_content = {
-        let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
-        let auth_state = auth.read();
-
-        match &*auth_state {
-            Some(Ok(provider)) => {
-                let provider = provider.clone();
-                rsx! {
-                    button {
-                        onclick: move |_| {
-                            // Silently handle login errors - the auth provider handles redirects
-                            let _ = provider.login();
-                        },
-                        "Login"
-                    }
-                }
-            }
-            Some(Err(err)) => rsx! {
-                div {
-                    class: "error",
-                    "Authentication Error: {err}"
-                }
-            },
-            None => rsx! {
-                div { "Loading authentication..." }
-            },
-        }
-    };
-
-    #[cfg(not(target_arch = "wasm32"))]
-    let auth_content = rsx! {
-        div { "Authentication not available" }
-    };
 
     rsx! {
         header {
@@ -137,7 +96,29 @@ fn Header() -> Element {
             }
             div {
                 class: "header-auth",
-                {auth_content}
+                match &*auth_state {
+                    Some(Ok(provider)) => {
+                        let provider = provider.clone();
+                        rsx! {
+                            button {
+                                onclick: move |_| {
+                                    // Silently handle login errors - the auth provider handles redirects
+                                    let _ = provider.login();
+                                },
+                                "Login"
+                            }
+                        }
+                    },
+                    Some(Err(err)) => rsx! {
+                        div {
+                            class: "error",
+                            "Authentication Error: {err}"
+                        }
+                    },
+                    None => rsx! {
+                        div { "Loading authentication..." }
+                    },
+                }
             }
         }
 
@@ -276,9 +257,6 @@ fn Home() -> Element {
     }
 }
 
-// Path to the recipe content directory (relative to workspace root)
-const CONTENT_DIR: &str = "../content";
-
 #[component]
 fn Recipe(day: u32) -> Element {
     if !(1..=365).contains(&day) {
@@ -290,101 +268,12 @@ fn Recipe(day: u32) -> Element {
             }
         }
     } else {
-        // Load recipe from markdown store
-        let recipe_result = use_resource(move || async move {
-            MarkdownRecipeStore::new(CONTENT_DIR).and_then(|store| store.get_by_day(day))
-        });
-
-        match &*recipe_result.read() {
-            Some(Ok(recipe)) => {
-                rsx! {
-                    RecipeView { recipe: recipe.clone() }
-                }
-            }
-            Some(Err(err)) => {
-                rsx! {
-                    div {
-                        h1 { "Recipe Error" }
-                        p { "Failed to load recipe for day {day}: {err}" }
-                        Link { to: Route::Home {}, "Back to Home" }
-                    }
-                }
-            }
-            None => {
-                rsx! {
-                    div {
-                        h1 { "Loading..." }
-                        p { "Loading recipe for day {day}..." }
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn RecipeView(recipe: RecipeData) -> Element {
-    rsx! {
-        div {
-            class: "recipe-container",
-            h1 { "{recipe.title}" }
-
-            if let Some(description) = &recipe.description {
-                p { class: "recipe-description", "{description}" }
-            }
-
-            // Display metadata
+        rsx! {
             div {
-                class: "recipe-metadata",
-                if let Some(prep_time) = recipe.prep_time_minutes {
-                    span { "Prep Time: {prep_time} minutes" }
-                }
-                if let Some(cook_time) = recipe.cook_time_minutes {
-                    span { "Cook Time: {cook_time} minutes" }
-                }
-                if let Some(servings) = recipe.servings {
-                    span { "Servings: {servings}" }
-                }
+                h1 { "Recipe for Day {day}" }
+                p { "This is a placeholder recipe for day {day} of the year." }
+                Link { to: Route::Home {}, "Back to Home" }
             }
-
-            // Display tags
-            if !recipe.tags.is_empty() {
-                div {
-                    class: "recipe-tags",
-                    "Tags: "
-                    for tag in &recipe.tags {
-                        span { class: "tag", "{tag}" }
-                    }
-                }
-            }
-
-            // Display ingredients
-            if !recipe.ingredients.is_empty() {
-                div {
-                    class: "recipe-section",
-                    h2 { "Ingredients" }
-                    ul {
-                        for ingredient in &recipe.ingredients {
-                            li { "{ingredient}" }
-                        }
-                    }
-                }
-            }
-
-            // Display instructions
-            if !recipe.instructions.is_empty() {
-                div {
-                    class: "recipe-section",
-                    h2 { "Instructions" }
-                    ol {
-                        for instruction in &recipe.instructions {
-                            li { "{instruction}" }
-                        }
-                    }
-                }
-            }
-
-            Link { to: Route::Home {}, "Back to Home" }
         }
     }
 }
@@ -703,50 +592,6 @@ mod tests {
                 "Week {} should be in valid range 1-52",
                 week
             );
-        }
-    }
-
-    #[test]
-    fn test_markdown_recipe_store_can_be_created() {
-        // Test that we can create a MarkdownRecipeStore with the content directory
-        let store = MarkdownRecipeStore::new(CONTENT_DIR);
-        assert!(
-            store.is_ok(),
-            "MarkdownRecipeStore should be created successfully"
-        );
-    }
-
-    #[test]
-    fn test_markdown_recipe_store_has_recipes() {
-        // Test that the store loads recipes from the content directory
-        if let Ok(store) = MarkdownRecipeStore::new(CONTENT_DIR) {
-            let recipes = store.get_all();
-            assert!(
-                recipes.is_ok(),
-                "Should be able to get all recipes from store"
-            );
-            let recipes = recipes.unwrap();
-            assert!(
-                !recipes.is_empty(),
-                "Store should contain at least some recipes"
-            );
-        }
-    }
-
-    #[test]
-    fn test_markdown_recipe_store_can_get_by_day() {
-        // Test that we can retrieve a recipe by day
-        if let Ok(store) = MarkdownRecipeStore::new(CONTENT_DIR) {
-            // Try to get day 1
-            let recipe = store.get_by_day(1);
-            assert!(
-                recipe.is_ok(),
-                "Should be able to get recipe for day 1, error: {:?}",
-                recipe.err()
-            );
-            if let Ok(recipe) = recipe {
-                assert_eq!(recipe.id, "day-1");
-            }
         }
     }
 }
