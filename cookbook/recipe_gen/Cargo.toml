@@ -1,0 +1,16 @@
+[package]
+name = "cookbook-recipe-gen"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "recipe-gen"
+path = "src/main.rs"
+
+[dependencies]
+cookbook-core = { path = "../core" }
+cookbook-data-md = { path = "../data_md" }
+rand = "0.8"

@@ -14,6 +14,8 @@ cookbook/
 │  ├─ ... # Core business logic and data models (library)
 ├─ data_md/
 │  ├─ ... # Markdown-based recipe storage implementation (library)
+├─ recipe_gen/
+│  ├─ ... # Recipe generation tool for creating 365 recipes
 ├─ web/
 │  ├─ ... # Web specific UI/logic
 ```
@@ -35,6 +37,21 @@ The `cookbook-data-md` library implements the RecipeReader and RecipeWriter trai
 - Supports day-based recipe organization (day-1.md through day-366.md)
 - Data is loaded at build time from the content directory
 - See [data_md/README.md](./data_md/README.md) for detailed markdown format and usage
+
+## Recipe Generation Tool
+
+The `cookbook-recipe-gen` tool generates 365 unique recipe markdown files for the cookbook:
+- **Automated recipe generation**: Creates one recipe for each day of the year (day-1.md through day-365.md)
+- **Category and cuisine diversity**: Includes breakfast, lunch, dinner, dessert, and more across 15 different cuisines
+- **Proper formatting**: All generated recipes follow the cookbook's markdown format specification
+- **Validation**: Includes tests to verify all 365 day files exist and are valid
+- See [recipe_gen/README.md](./recipe_gen/README.md) for usage instructions and details
+
+To generate recipes:
+```bash
+cd recipe_gen
+cargo run
+```
 
 ## Deployment
 
