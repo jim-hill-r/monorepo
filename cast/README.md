@@ -429,9 +429,11 @@ artifacts/
 The versioned filename includes:
 - **version**: From Cargo.toml `[package] version`
 - **date**: Build date in YYYY-MM-DD format
-- **counter**: Build counter (currently always 1, future enhancement planned)
-- **sha**: Git commit SHA
+- **counter**: Incremental build counter for the day (stored in `.cast/build_counter_<date>.txt`)
+- **sha**: Git commit SHA (truncated to 7 characters)
 - **-dirty**: Suffix added if there are uncommitted changes
+
+The build counter is automatically incremented each time `cast publish` is run on the same day, allowing multiple builds per day to have unique filenames.
 
 Example usage in library code:
 

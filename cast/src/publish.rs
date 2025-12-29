@@ -163,6 +163,37 @@ fn get_version_from_cargo_toml(working_directory: &Path) -> Result<String, Publi
     Ok(version.to_string())
 }
 
+/// Get and increment build counter for the current day
+/// Returns the build counter to use for this build
+fn get_and_increment_build_counter(working_directory: &Path) -> Result<u32, PublishError> {
+    // Create .cast directory if it doesn't exist
+    let cast_dir = working_directory.join(".cast");
+    fs::create_dir_all(&cast_dir)?;
+
+    // Get current date for the counter file name
+    let now = chrono::Utc::now();
+    let date_str = now.format("%Y-%m-%d").to_string();
+    let counter_file = cast_dir.join(format!("build_counter_{}.txt", date_str));
+
+    // Read current counter or start at 0
+    let current_counter = if counter_file.exists() {
+        fs::read_to_string(&counter_file)?
+            .trim()
+            .parse::<u32>()
+            .unwrap_or(0)
+    } else {
+        0
+    };
+
+    // Increment counter
+    let new_counter = current_counter + 1;
+
+    // Write new counter back to file
+    fs::write(&counter_file, new_counter.to_string())?;
+
+    Ok(new_counter)
+}
+
 /// Generate versioned filename for bundle
 fn generate_bundle_filename(working_directory: &Path) -> Result<String, PublishError> {
     let version = get_version_from_cargo_toml(working_directory)?;
@@ -179,8 +210,8 @@ fn generate_bundle_filename(working_directory: &Path) -> Result<String, PublishE
     let month = now.format("%m");
     let day = now.format("%d");
 
-    // TODO (agent-generated): Implement build counter increment - read from a file and increment
-    let counter = 1;
+    // Get and increment build counter
+    let counter = get_and_increment_build_counter(working_directory)?;
 
     // Truncate SHA to 7 characters for better filename readability
     // If SHA is shorter than 7 characters (shouldn't happen with git), use what we have
@@ -617,5 +648,100 @@ edition = "2021"
         assert!(filename.ends_with(".zip"));
         // Should contain date components (year-month-day)
         assert!(filename.contains('-'));
+    }
+
+    #[test]
+    fn test_get_and_increment_build_counter() {
+        let tmp_dir = TempDir::new("test_build_counter").unwrap();
+
+        // First call should return 1
+        let counter1 = get_and_increment_build_counter(tmp_dir.path()).unwrap();
+        assert_eq!(counter1, 1);
+
+        // Second call should return 2
+        let counter2 = get_and_increment_build_counter(tmp_dir.path()).unwrap();
+        assert_eq!(counter2, 2);
+
+        // Third call should return 3
+        let counter3 = get_and_increment_build_counter(tmp_dir.path()).unwrap();
+        assert_eq!(counter3, 3);
+
+        // Verify the counter file exists in .cast directory
+        let now = chrono::Utc::now();
+        let date_str = now.format("%Y-%m-%d").to_string();
+        let counter_file = tmp_dir
+            .path()
+            .join(".cast")
+            .join(format!("build_counter_{}.txt", date_str));
+        assert!(counter_file.exists());
+
+        // Verify file contains the correct value
+        let contents = fs::read_to_string(&counter_file).unwrap();
+        assert_eq!(contents, "3");
+    }
+
+    #[test]
+    fn test_generate_bundle_filename_increments_counter() {
+        let tmp_dir = TempDir::new("test_bundle_counter").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Configure git user
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create Cargo.toml
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            r#"[package]
+name = "test"
+version = "0.1.0"
+edition = "2021"
+"#,
+        )
+        .unwrap();
+
+        // Commit to have a SHA
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("test")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Generate first filename - should contain ".1."
+        let filename1 = generate_bundle_filename(tmp_dir.path()).unwrap();
+        assert!(filename1.contains(".1."));
+
+        // Generate second filename - should contain ".2."
+        let filename2 = generate_bundle_filename(tmp_dir.path()).unwrap();
+        assert!(filename2.contains(".2."));
+
+        // Ensure they're different
+        assert_ne!(filename1, filename2);
     }
 }
