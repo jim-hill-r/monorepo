@@ -276,6 +276,9 @@ fn Home() -> Element {
     }
 }
 
+// Path to the recipe content directory (relative to workspace root)
+const CONTENT_DIR: &str = "../content";
+
 #[component]
 fn Recipe(day: u32) -> Element {
     if !(1..=365).contains(&day) {
@@ -289,12 +292,7 @@ fn Recipe(day: u32) -> Element {
     } else {
         // Load recipe from markdown store
         let recipe_result = use_resource(move || async move {
-            // Get the content directory path (relative to the workspace root)
-            let content_dir = "../content";
-            match MarkdownRecipeStore::new(content_dir) {
-                Ok(store) => store.get_by_day(day),
-                Err(e) => Err(e),
-            }
+            MarkdownRecipeStore::new(CONTENT_DIR).and_then(|store| store.get_by_day(day))
         });
 
         match &*recipe_result.read() {
@@ -711,8 +709,7 @@ mod tests {
     #[test]
     fn test_markdown_recipe_store_can_be_created() {
         // Test that we can create a MarkdownRecipeStore with the content directory
-        let content_dir = "../content";
-        let store = MarkdownRecipeStore::new(content_dir);
+        let store = MarkdownRecipeStore::new(CONTENT_DIR);
         assert!(
             store.is_ok(),
             "MarkdownRecipeStore should be created successfully"
@@ -722,8 +719,7 @@ mod tests {
     #[test]
     fn test_markdown_recipe_store_has_recipes() {
         // Test that the store loads recipes from the content directory
-        let content_dir = "../content";
-        if let Ok(store) = MarkdownRecipeStore::new(content_dir) {
+        if let Ok(store) = MarkdownRecipeStore::new(CONTENT_DIR) {
             let recipes = store.get_all();
             assert!(
                 recipes.is_ok(),
@@ -740,8 +736,7 @@ mod tests {
     #[test]
     fn test_markdown_recipe_store_can_get_by_day() {
         // Test that we can retrieve a recipe by day
-        let content_dir = "../content";
-        if let Ok(store) = MarkdownRecipeStore::new(content_dir) {
+        if let Ok(store) = MarkdownRecipeStore::new(CONTENT_DIR) {
             // Try to get day 1
             let recipe = store.get_by_day(1);
             assert!(
