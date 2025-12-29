@@ -257,8 +257,7 @@ fn test_workflow_does_not_manually_install_playwright() {
 
     // Check that workflow doesn't have manual Playwright installation loop
     assert!(
-        !content.contains("npx playwright install --with-deps chromium")
-            || content.contains("toolchain install"),
+        !content.contains("npx playwright install --with-deps chromium"),
         "Workflow should use 'cast toolchain install' instead of manual Playwright installation"
     );
 }
