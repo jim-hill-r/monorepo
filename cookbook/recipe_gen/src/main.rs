@@ -891,11 +891,9 @@ fn generate_additional_recipes(
                 vegetable
             ),
             Category::Snack => format!("Crispy {} Bites", vegetable),
-            Category::Appetizer => format!(
-                "{} {} Skewers",
-                cuisine.as_str().replace('-', " "),
-                protein
-            ),
+            Category::Appetizer => {
+                format!("{} {} Skewers", cuisine.as_str().replace('-', " "), protein)
+            }
             Category::Soup => format!(
                 "{} {} Soup with {}",
                 cuisine.as_str().replace('-', " "),

@@ -4,8 +4,8 @@ use cookbook_data_md::MarkdownRecipeStore;
 #[test]
 fn test_all_365_day_files_exist() {
     let content_dir = "../content";
-    let store =
-        MarkdownRecipeStore::new(content_dir).unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
+    let store = MarkdownRecipeStore::new(content_dir)
+        .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     // Verify all 365 day files exist
     let mut missing_days = Vec::new();
@@ -26,8 +26,8 @@ fn test_all_365_day_files_exist() {
 #[test]
 fn test_all_day_recipes_have_required_fields() {
     let content_dir = "../content";
-    let store =
-        MarkdownRecipeStore::new(content_dir).unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
+    let store = MarkdownRecipeStore::new(content_dir)
+        .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     let mut invalid_recipes = Vec::new();
 
@@ -65,8 +65,8 @@ fn test_all_day_recipes_have_required_fields() {
 #[test]
 fn test_all_day_recipes_have_proper_tags() {
     let content_dir = "../content";
-    let store =
-        MarkdownRecipeStore::new(content_dir).unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
+    let store = MarkdownRecipeStore::new(content_dir)
+        .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     let mut recipes_without_tags = Vec::new();
 
@@ -97,8 +97,8 @@ fn test_all_day_recipes_have_proper_tags() {
 #[test]
 fn test_recipe_variety_across_categories() {
     let content_dir = "../content";
-    let store =
-        MarkdownRecipeStore::new(content_dir).unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
+    let store = MarkdownRecipeStore::new(content_dir)
+        .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     let mut category_counts = std::collections::HashMap::new();
 
@@ -136,8 +136,8 @@ fn test_recipe_variety_across_categories() {
 #[test]
 fn test_recipe_variety_across_cuisines() {
     let content_dir = "../content";
-    let store =
-        MarkdownRecipeStore::new(content_dir).unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
+    let store = MarkdownRecipeStore::new(content_dir)
+        .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     let mut cuisine_counts = std::collections::HashMap::new();
 
@@ -181,8 +181,8 @@ fn test_recipe_variety_across_cuisines() {
 #[test]
 fn test_recipe_ids_match_day_format() {
     let content_dir = "../content";
-    let store =
-        MarkdownRecipeStore::new(content_dir).unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
+    let store = MarkdownRecipeStore::new(content_dir)
+        .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     for day in 1..=365 {
         if let Ok(recipe) = store.get_by_day(day) {
