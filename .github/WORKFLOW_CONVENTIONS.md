@@ -181,3 +181,67 @@ Without explicitly specifying these components, the workflow may fail with error
 Cargo fmt check failed: error: 'cargo-fmt' is not installed for the toolchain 'stable-x86_64-unknown-linux-gnu'
 ```
 
+## Tool Installation
+
+### Framework-Specific Tools via Cast Toolchain
+
+Workflows should use the `cast toolchain install` command to manage framework-specific tools (Node.js, npm, Playwright, Dioxus CLI, Wrangler, etc.) instead of manually installing them.
+
+**✅ Correct - Use cast toolchain install:**
+```yaml
+- name: Setup Rust toolchain
+  uses: actions-rust-lang/setup-rust-toolchain@v1
+  with:
+    toolchain: stable
+    components: rustfmt, clippy
+
+- name: Setup Node.js
+  uses: actions/setup-node@v4
+  with:
+    node-version: '20'
+    cache: 'npm'
+    cache-dependency-path: '**/package-lock.json'
+
+- name: Build cast CLI
+  run: |
+    cd cast_cli
+    cargo build --release
+
+- name: Install toolchain for project
+  run: |
+    cd $PROJECT_DIR
+    cast toolchain install
+```
+
+**❌ Incorrect - Manually install tools:**
+```yaml
+- name: Install Playwright browsers
+  run: |
+    find . -name "package.json" ... # Complex bash script
+
+- name: Cache Dioxus CLI
+  uses: actions/cache@v4
+  ...
+
+- name: Install Dioxus CLI
+  run: cargo install dioxus-cli --version 0.7.2
+```
+
+### Why Use Cast Toolchain Install?
+
+1. **Automatic Detection**: Detects required tools based on project configuration
+2. **Built-in Caching**: Checks if tools are already installed before attempting installation
+3. **Consistency**: Same tooling logic used locally and in CI
+4. **Maintainability**: Tool versions and logic centralized in cast project
+5. **Testability**: Installation logic can be unit tested
+
+### Standard Workflow Pattern
+
+The standard pattern for CI workflows is:
+1. **Setup Rust** via `actions-rust-lang/setup-rust-toolchain@v1` (base requirement)
+2. **Setup Node.js** via `actions/setup-node@v4` (cast toolchain install requires Node.js for certain tools)
+3. **Build cast CLI** to make it available
+4. **Use cast commands** for all other logic including tool installation
+
+See `.github/workflows/cast-ci.yml` for a complete example.
+

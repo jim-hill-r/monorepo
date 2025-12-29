@@ -226,3 +226,39 @@ fn test_workflow_installs_clippy_component() {
         "Workflow does not explicitly install clippy component. Expected 'components: rustfmt, clippy' or similar."
     );
 }
+
+#[test]
+fn test_workflow_uses_cast_toolchain_install() {
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("toolchain install"),
+        "Workflow does not use 'cast toolchain install' command"
+    );
+}
+
+#[test]
+fn test_workflow_does_not_manually_install_dioxus_cli() {
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
+
+    // Check that workflow doesn't have manual dx installation steps
+    assert!(
+        !content.contains("cargo install dioxus-cli"),
+        "Workflow should not manually install dioxus-cli; should use 'cast toolchain install'"
+    );
+}
+
+#[test]
+fn test_workflow_does_not_manually_install_playwright() {
+    let content =
+        fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
+
+    // Check that workflow doesn't have manual Playwright installation loop
+    assert!(
+        !content.contains("npx playwright install --with-deps chromium")
+            || content.contains("toolchain install"),
+        "Workflow should use 'cast toolchain install' instead of manual Playwright installation"
+    );
+}
