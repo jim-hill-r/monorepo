@@ -353,6 +353,92 @@ Potential future additions (not in initial scope):
 - **Supported platforms**: Linux, macOS, Windows (WSL)
 - **Requires**: Rust toolchain must be installed before using this command
 
+## Platform-Specific Considerations
+
+### Windows Support
+
+The `cast toolchain` command supports Windows environments, with the following considerations:
+
+#### Recommended Environment: WSL2
+
+**Windows Subsystem for Linux (WSL2)** is the recommended environment for running Cast projects on Windows:
+
+- **Best compatibility**: WSL2 provides a full Linux environment, ensuring compatibility with all tools
+- **Native Linux tools**: All installation commands work as documented for Linux
+- **Performance**: Better file system performance for Rust builds compared to native Windows
+- **Testing**: Primary Windows testing environment for GitHub Actions and CI/CD
+
+**Setup WSL2:**
+```bash
+# Install WSL2 with Ubuntu (PowerShell as Administrator)
+wsl --install
+
+# Once in WSL2, install Rust and other dependencies
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### Native Windows Support
+
+Cast toolchain also supports native Windows environments with these considerations:
+
+**Tool Installation Methods:**
+
+1. **Node.js and npm**
+   - **Recommended**: Use `winget` (Windows Package Manager)
+     ```powershell
+     winget install OpenJS.NodeJS
+     ```
+   - **Alternative**: Download installer from [nodejs.org](https://nodejs.org/)
+   - **Note**: Requires restart or new terminal after installation to update PATH
+
+2. **Cargo-based tools** (dx, wrangler)
+   - Work identically to Linux/macOS
+   - Installed via `cargo install` command
+   - Example: `cargo install dioxus-cli --version 0.7.2`
+
+3. **Playwright**
+   - Installation via `npm ci` and `npx playwright install` works on native Windows
+   - **Important**: May require administrator privileges for browser dependencies
+   - **Browser installation path**: `%USERPROFILE%\AppData\Local\ms-playwright`
+   - **Known limitation**: `--with-deps` flag for system dependencies only works on Linux; on Windows, browsers are downloaded without system dependencies
+
+**Path Considerations:**
+
+- Windows uses different path separators (`\` vs `/`)
+- Cast commands handle path normalization automatically
+- Environment variables use Windows format (e.g., `%USERPROFILE%` instead of `$HOME`)
+
+**Permission Issues:**
+
+Native Windows may require different permissions for certain operations:
+- Some npm global installs may need administrator privileges
+- Playwright browser installation may require administrator access
+- Consider using `--skip node` if Node.js is already installed via system installer
+
+**Known Limitations on Native Windows:**
+
+1. **Shell differences**: PowerShell syntax differs from bash (commands in docs assume bash/WSL)
+2. **Line endings**: Git may need configuration for CRLF vs LF line endings:
+   ```bash
+   git config --global core.autocrlf input
+   ```
+3. **Symlinks**: Some tools may have issues with symbolic links on Windows filesystems
+4. **Case sensitivity**: Windows filesystem is case-insensitive by default (unlike Linux/macOS)
+
+**Testing Recommendations:**
+
+- **CI/CD**: Use WSL2-based environments for GitHub Actions (runs on Linux runners)
+- **Local development**: WSL2 provides best compatibility and performance
+- **Native Windows**: Supported but may encounter platform-specific issues with certain tools
+
+**Troubleshooting:**
+
+If encountering issues on native Windows:
+1. Try running in WSL2 to verify it's a Windows-specific issue
+2. Check that all tools are in PATH: `where node`, `where cargo`, `where dx`
+3. Ensure PowerShell execution policy allows scripts: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+4. For npm permission errors, avoid using `sudo` on Windows; instead run as administrator or fix npm permissions
+
 ## References
 
 - Similar commands: `rustup toolchain`, `npm install`, `cargo install`
