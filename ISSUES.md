@@ -30,7 +30,7 @@
 - DONE (agent-generated): Update .github/workflows/cast-ci.yml to use `cast toolchain install` instead of manual tool installation
 - DONE (agent-generated): Update .github/WORKFLOW_CONVENTIONS.md to document that workflows should only install Rust, all other tools via cast
 - DONE (agent-generated): Add guidance to .github/copilot-instructions.md about using `cast toolchain` in workflows
-- TODO (agent-generated): Test the updated workflow on a test PR to ensure it works correctly
+- DONE (agent-generated): Test the updated workflow on a test PR to ensure it works correctly
 
 # Backlog
 
