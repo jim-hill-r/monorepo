@@ -80,7 +80,7 @@ fn Header() -> Element {
     let auth_content = {
         let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
         let auth_state = auth.read();
-        
+
         match &*auth_state {
             Some(Ok(provider)) => {
                 let provider = provider.clone();
@@ -93,7 +93,7 @@ fn Header() -> Element {
                         "Login"
                     }
                 }
-            },
+            }
             Some(Err(err)) => rsx! {
                 div {
                     class: "error",
@@ -330,7 +330,7 @@ fn RecipeView(recipe: RecipeData) -> Element {
         div {
             class: "recipe-container",
             h1 { "{recipe.title}" }
-            
+
             if let Some(description) = &recipe.description {
                 p { class: "recipe-description", "{description}" }
             }
@@ -705,6 +705,53 @@ mod tests {
                 "Week {} should be in valid range 1-52",
                 week
             );
+        }
+    }
+
+    #[test]
+    fn test_markdown_recipe_store_can_be_created() {
+        // Test that we can create a MarkdownRecipeStore with the content directory
+        let content_dir = "../content";
+        let store = MarkdownRecipeStore::new(content_dir);
+        assert!(
+            store.is_ok(),
+            "MarkdownRecipeStore should be created successfully"
+        );
+    }
+
+    #[test]
+    fn test_markdown_recipe_store_has_recipes() {
+        // Test that the store loads recipes from the content directory
+        let content_dir = "../content";
+        if let Ok(store) = MarkdownRecipeStore::new(content_dir) {
+            let recipes = store.get_all();
+            assert!(
+                recipes.is_ok(),
+                "Should be able to get all recipes from store"
+            );
+            let recipes = recipes.unwrap();
+            assert!(
+                !recipes.is_empty(),
+                "Store should contain at least some recipes"
+            );
+        }
+    }
+
+    #[test]
+    fn test_markdown_recipe_store_can_get_by_day() {
+        // Test that we can retrieve a recipe by day
+        let content_dir = "../content";
+        if let Ok(store) = MarkdownRecipeStore::new(content_dir) {
+            // Try to get day 1
+            let recipe = store.get_by_day(1);
+            assert!(
+                recipe.is_ok(),
+                "Should be able to get recipe for day 1, error: {:?}",
+                recipe.err()
+            );
+            if let Ok(recipe) = recipe {
+                assert_eq!(recipe.id, "day-1");
+            }
         }
     }
 }
