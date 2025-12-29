@@ -1,2 +1,6 @@
-TODO: Research openidconnect crate to see if it is a better choice compared with oauth2 crate we currently use
-TODO: Remove dependent crate (ie oauth2) structs from public api
+# Priority Issues
+
+TODO (agent-generated): Migrate from oauth2 crate to openidconnect crate - See docs/oauth2_vs_openidconnect_research.md for research findings and migration path
+TODO: Remove dependent crate (ie oauth2/openidconnect) structs from public api
+
+# Backlog
