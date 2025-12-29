@@ -1,5 +1,7 @@
 # GitHub Workflows Conventions
 
+- TODO: Consolidate this into the standards project.
+
 This document describes conventions and best practices for GitHub workflows in this repository.
 
 ## General Principles
