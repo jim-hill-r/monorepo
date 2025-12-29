@@ -28,9 +28,9 @@ This is a complex restructuring task that needs to be broken down into sequentia
 - TODO (agent-generated): Test that workflows can still build the CLI
 
 ### Phase 5: Move cast_vscode to Workspace (agent-generated)
-- TODO (agent-generated): Create cast/vscode_ext directory structure
-- TODO (agent-generated): Move cast_vscode files to cast/vscode_ext directory
-- TODO (agent-generated): Update any references in documentation
+- ✓ COMPLETED: Create cast/vscode_ext directory structure
+- ✓ COMPLETED: Move cast_vscode files to cast/vscode_ext directory
+- ✓ COMPLETED: Update any references in documentation
 
 ### Phase 6: Update Configuration Files (agent-generated)
 - TODO (agent-generated): Update dependabot.yml to reference new workspace structure
