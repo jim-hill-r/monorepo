@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["cloudflare", "core", "data_md", "web", "recipe_gen"]
-default-members = ["core", "data_md", "recipe_gen"]
+default-members = ["web", "core", "data_md", "recipe_gen"]
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
