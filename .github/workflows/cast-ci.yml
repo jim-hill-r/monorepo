@@ -42,35 +42,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
-      - name: Install Playwright browsers
-        run: |
-          # Install playwright browsers for projects that need them
-          find . -name "package.json" -not -path "*/node_modules/*" -print0 | while IFS= read -r -d '' package_json; do
-            project_dir=$(dirname "$package_json")
-            # Check if this project has playwright dependency in devDependencies or dependencies
-            if jq -e '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"]' "$package_json" > /dev/null 2>&1; then
-              echo "Installing Playwright browsers for $project_dir"
-              cd "$project_dir"
-              # Install npm dependencies (npm caching makes this fast, needed for npx)
-              npm ci --prefer-offline --no-audit
-              # Install browsers using the project's playwright version
-              npx playwright install --with-deps chromium
-              cd "$GITHUB_WORKSPACE"
-            fi
-          done
-
-      - name: Cache Dioxus CLI
-        id: cache-dx
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/bin/dx
-          key: ${{ runner.os }}-dioxus-cli-0.7.2
-
-      - name: Install Dioxus CLI
-        if: steps.cache-dx.outputs.cache-hit != 'true'
-        run: |
-          cargo install dioxus-cli --version 0.7.2
-
       - name: Build cast CLI
         run: |
           cd cast_cli
@@ -143,9 +114,22 @@ jobs:
 
           EXIT_CODE=0
           for project in $(echo "$PROJECTS" | jq -r '.[]'); do
-            echo "::group::Running cast ci for $project"
+            echo "::group::Installing toolchain for $project"
             cd "$GITHUB_WORKSPACE/$project"
+            
+            # Install required tools for this project
+            if "$CAST_BIN" toolchain install; then
+              echo "✓ Toolchain installed for $project"
+            else
+              echo "✗ Toolchain installation failed for $project"
+              EXIT_CODE=1
+              echo "::endgroup::"
+              cd "$GITHUB_WORKSPACE"
+              continue
+            fi
+            echo "::endgroup::"
 
+            echo "::group::Running cast ci for $project"
             if "$CAST_BIN" ci; then
               echo "✓ cast ci passed for $project"
             else

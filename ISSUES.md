@@ -25,9 +25,9 @@
 - TODO (agent-generated): Add macOS-specific installation paths and methods if different from Linux
 - TODO (agent-generated): Document Windows-specific installation considerations in design doc
 
-- TODO (agent-generated): Create a standards document for toolchain management in standards/docs/toolchain.md
+- DONE (agent-generated): Create a standards document for toolchain management in standards/docs/toolchain.md
 
-- TODO (agent-generated): Update .github/workflows/cast-ci.yml to use `cast toolchain install` instead of manual tool installation
+- DONE (agent-generated): Update .github/workflows/cast-ci.yml to use `cast toolchain install` instead of manual tool installation
 - TODO (agent-generated): Update .github/WORKFLOW_CONVENTIONS.md to document that workflows should only install Rust, all other tools via cast
 - TODO (agent-generated): Add guidance to .github/copilot-instructions.md about using `cast toolchain` in workflows
 - TODO (agent-generated): Test the updated workflow on a test PR to ensure it works correctly
