@@ -4,12 +4,14 @@ use std::sync::OnceLock;
 
 /// Embedded recipe store that includes all recipe markdown files at compile time.
 /// This is suitable for WASM/web targets where filesystem access is not available.
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub struct EmbeddedRecipeStore {
     recipes: HashMap<String, Recipe>,
 }
 
 static EMBEDDED_STORE: OnceLock<EmbeddedRecipeStore> = OnceLock::new();
 
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 impl EmbeddedRecipeStore {
     /// Get the global embedded recipe store instance
     pub fn global() -> &'static EmbeddedRecipeStore {
@@ -557,6 +559,7 @@ impl EmbeddedRecipeStore {
     }
 }
 
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 impl RecipeReader for EmbeddedRecipeStore {
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe> {
         self.recipes

@@ -10,16 +10,25 @@ use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 mod embedded_recipes;
 use embedded_recipes::EmbeddedRecipeStore;
 
+#[cfg(target_arch = "wasm32")]
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
+#[cfg(target_arch = "wasm32")]
 const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
+#[cfg(target_arch = "wasm32")]
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
+#[cfg(target_arch = "wasm32")]
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
+#[cfg(target_arch = "wasm32")]
 const RECIPE_CSS: Asset = asset!("/assets/styling/recipe.css");
 
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
+#[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
+#[cfg(target_arch = "wasm32")]
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
+#[cfg(target_arch = "wasm32")]
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 #[cfg(target_arch = "wasm32")]
@@ -67,6 +76,7 @@ fn App() -> Element {
     rsx! {}
 }
 
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 #[derive(Clone, Routable, Debug, PartialEq)]
 enum Route {
     #[layout(Header)]
@@ -167,6 +177,7 @@ fn Header() -> Element {
 }
 
 /// Get the current day of the year (1-366) using chrono
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_current_day_of_year() -> u32 {
     let now = Local::now();
     now.ordinal()
@@ -174,6 +185,7 @@ fn get_current_day_of_year() -> u32 {
 
 /// Get the current week of the year (1-53) using chrono
 /// Uses a simple calculation: week = floor((day - 1) / 7) + 1
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_current_week_of_year() -> u32 {
     let day = get_current_day_of_year();
     // Calculate week number (1-53), rounding up
@@ -181,6 +193,7 @@ fn get_current_week_of_year() -> u32 {
 }
 
 /// Get recipe days to display in sidebar, sorted numerically
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_sidebar_recipe_days() -> Vec<u32> {
     let today = get_current_day_of_year();
     let mut days = Vec::new();
@@ -202,6 +215,7 @@ fn get_sidebar_recipe_days() -> Vec<u32> {
 }
 
 /// Get plan weeks to display in sidebar, sorted numerically
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_sidebar_plan_weeks() -> Vec<u32> {
     let current_week = get_current_week_of_year();
     let mut weeks = Vec::new();
@@ -222,6 +236,7 @@ fn get_sidebar_plan_weeks() -> Vec<u32> {
     weeks
 }
 
+#[cfg(target_arch = "wasm32")]
 #[component]
 fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
@@ -253,6 +268,13 @@ fn Sidebar() -> Element {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[component]
+fn Sidebar() -> Element {
+    rsx! { div { "Sidebar" } }
+}
+
+#[cfg(target_arch = "wasm32")]
 #[component]
 fn Home() -> Element {
     let today = get_current_day_of_year();
@@ -291,6 +313,12 @@ fn Home() -> Element {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[component]
+fn Home() -> Element {
+    rsx! { div { "Home" } }
+}
+
 #[component]
 fn Recipe(day: u32) -> Element {
     if !(1..=365).contains(&day) {
@@ -304,18 +332,18 @@ fn Recipe(day: u32) -> Element {
         }
     } else {
         let store = EmbeddedRecipeStore::global();
-        
+
         match store.get_by_day(day) {
             Ok(recipe) => {
                 rsx! {
                     div {
                         class: "recipe-container",
                         h1 { "{recipe.title}" }
-                        
+
                         if let Some(description) = &recipe.description {
                             p { class: "recipe-description", "{description}" }
                         }
-                        
+
                         div {
                             class: "recipe-metadata",
                             if let Some(prep_time) = recipe.prep_time_minutes {
@@ -328,7 +356,7 @@ fn Recipe(day: u32) -> Element {
                                 span { class: "metadata-item", "🍽️ Servings: {servings}" }
                             }
                         }
-                        
+
                         if !recipe.ingredients.is_empty() {
                             div {
                                 class: "recipe-section",
@@ -341,7 +369,7 @@ fn Recipe(day: u32) -> Element {
                                 }
                             }
                         }
-                        
+
                         if !recipe.instructions.is_empty() {
                             div {
                                 class: "recipe-section",
@@ -354,7 +382,7 @@ fn Recipe(day: u32) -> Element {
                                 }
                             }
                         }
-                        
+
                         if !recipe.tags.is_empty() {
                             div {
                                 class: "recipe-tags",
@@ -363,7 +391,7 @@ fn Recipe(day: u32) -> Element {
                                 }
                             }
                         }
-                        
+
                         Link { to: Route::Home {}, class: "back-link", "← Back to Home" }
                     }
                 }
@@ -704,7 +732,7 @@ mod tests {
         // Test that the embedded recipe store can be initialized
         let store = EmbeddedRecipeStore::global();
         let recipes = store.get_all().unwrap();
-        
+
         // Should have exactly 365 recipes
         assert_eq!(
             recipes.len(),
@@ -716,19 +744,19 @@ mod tests {
     #[test]
     fn test_embedded_recipe_store_get_by_day() {
         use cookbook_core::RecipeReader;
-        
+
         let store = EmbeddedRecipeStore::global();
-        
+
         // Test first day
         let recipe1 = store.get_by_day(1).unwrap();
         assert_eq!(recipe1.id, "day-1");
         assert!(!recipe1.title.is_empty());
-        
+
         // Test middle day
         let recipe100 = store.get_by_day(100).unwrap();
         assert_eq!(recipe100.id, "day-100");
         assert!(!recipe100.title.is_empty());
-        
+
         // Test last day
         let recipe365 = store.get_by_day(365).unwrap();
         assert_eq!(recipe365.id, "day-365");
@@ -738,29 +766,44 @@ mod tests {
     #[test]
     fn test_embedded_recipe_has_content() {
         use cookbook_core::RecipeReader;
-        
+
         let store = EmbeddedRecipeStore::global();
         let recipe = store.get_by_day(1).unwrap();
-        
+
         // Verify recipe has all expected content
         assert!(!recipe.title.is_empty(), "Recipe should have a title");
-        assert!(recipe.description.is_some(), "Recipe should have a description");
-        assert!(!recipe.ingredients.is_empty(), "Recipe should have ingredients");
-        assert!(!recipe.instructions.is_empty(), "Recipe should have instructions");
-        assert!(recipe.prep_time_minutes.is_some(), "Recipe should have prep time");
-        assert!(recipe.cook_time_minutes.is_some(), "Recipe should have cook time");
+        assert!(
+            recipe.description.is_some(),
+            "Recipe should have a description"
+        );
+        assert!(
+            !recipe.ingredients.is_empty(),
+            "Recipe should have ingredients"
+        );
+        assert!(
+            !recipe.instructions.is_empty(),
+            "Recipe should have instructions"
+        );
+        assert!(
+            recipe.prep_time_minutes.is_some(),
+            "Recipe should have prep time"
+        );
+        assert!(
+            recipe.cook_time_minutes.is_some(),
+            "Recipe should have cook time"
+        );
         assert!(recipe.servings.is_some(), "Recipe should have servings");
     }
 
     #[test]
     fn test_embedded_recipe_invalid_days() {
         use cookbook_core::RecipeReader;
-        
+
         let store = EmbeddedRecipeStore::global();
-        
+
         // Day 0 should fail
         assert!(store.get_by_day(0).is_err(), "Day 0 should be invalid");
-        
+
         // Day 366 should fail
         assert!(store.get_by_day(366).is_err(), "Day 366 should be invalid");
     }
