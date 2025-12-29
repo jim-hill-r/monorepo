@@ -5,7 +5,7 @@ version: 2
 updates:
   # Cargo/Rust dependencies for Cast Workspace
   - package-ecosystem: "cargo"
-    directory: "/cast_workspace"
+    directory: "/cast"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -17,7 +17,7 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cast_workspace"
+      - "cast"
 
   # Cargo/Rust dependencies for Auth SDK
   - package-ecosystem: "cargo"
