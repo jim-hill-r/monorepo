@@ -1,0 +1,4 @@
+[project]
+name = "cast"
+type = "workspace"
+description = "Cast monorepo tooling workspace"
