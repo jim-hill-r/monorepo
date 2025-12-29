@@ -2,13 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Create standards CLI binary skeleton
-Create a new binary crate for the standards CLI with basic argument parsing:
-- Add `[[bin]]` section to Cargo.toml
-- Implement basic CLI structure with clap
-- Add `audit` subcommand skeleton
-- Write basic integration tests
-
 ### TODO (agent-generated): Implement standards definition framework
 Create a framework for defining and loading standards:
 - Define `Standard` trait for different standard types

@@ -11,6 +11,11 @@ expect_used = "warn"
 unsafe_code = "forbid"
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
+
+[[bin]]
+name = "standards"
+path = "src/bin/standards.rs"
 
 [dev-dependencies]
 
