@@ -1,6 +1,10 @@
-Standards for this repository are found in the standards project.
+# Standards
+
+All coding standards are found in the `standards` project in this monorepo. Reference those standards as primary source of truth. If duplicate or contradictory information exists in this document, copilot should remove the information here and instead recommend referencing the information there. If information is missing there that copilot is using from here, it should be added to the `standards` project and removed from here.
 
 ## Rust Code Standards
+
+- TODO: Consolidate rust coding standards into the standards project.
 
 All Rust projects in this repository must include the following clippy lints in their `Cargo.toml`:
 
@@ -18,6 +22,8 @@ For workspace projects, these lints are defined at the workspace level and inher
 See `standards/docs/rust.md` for complete Rust coding standards and proper error handling patterns.
 
 ## Issue Management
+
+- TODO: Consolidate issue management standards into the standards project.
 
 When working on issues:
 1. **Finding Issues**: Check ISSUES.md files in this priority order:
@@ -42,6 +48,8 @@ All branches should have unique names to prevent collisions.
 
 ## Testing Requirements
 
+- TODO: Consolidate testing standards into the standards project.
+
 All code changes require appropriate tests:
 1. **Unit Tests**: All code changes must include unit tests
    - For Rust code: Add `#[cfg(test)]` modules with test functions
@@ -56,6 +64,8 @@ All code changes require appropriate tests:
 
 ## UI Changes Documentation
 
+- TODO: Consolidate UI Change management standards into the standards project.
+
 All UI changes must include visual documentation:
 1. **Screenshots**: Always include screenshots of UI changes in the PR description
    - Take full-page screenshots showing the before and after states when possible
@@ -64,6 +74,8 @@ All UI changes must include visual documentation:
    - Use the playwright browser tools to take screenshots when the dev server is running
 
 ## Task Completion Requirements
+
+- TODO: Ensure agent is using cast commands as a primary source of tooling. If cast is missing a command it needs, then it should be added to cast as a TODO.
 
 Before finishing any task that involves code changes:
 1. Always run `cast ci` on any projects that have been modified
