@@ -42,7 +42,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 
 **Installation**: See the Installation section below.
 
-### VSCode Extension (`cast_vscode`)
+### VSCode Extension (`cast`)
 
 The VSCode extension provides IDE integration for Cast workflows.
 
@@ -201,7 +201,7 @@ cast_workspace/
 ├── cli/                # Cast CLI (cast_cli)
 │   ├── src/            # CLI implementation
 │   └── examples/       # CLI usage examples
-└── vscode_ext/         # VSCode extension (cast_vscode)
+└── vscode_ext/         # VSCode extension (cast)
     ├── src/            # Extension TypeScript code
     └── package.json    # Node.js dependencies
 ```
