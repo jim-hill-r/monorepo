@@ -132,3 +132,54 @@ cast toolchain list
 - Use `cast toolchain install` for all other framework-specific tools (Dioxus CLI, Playwright, etc.)
 - See `.github/WORKFLOW_CONVENTIONS.md` for workflow patterns and best practices
 - See `standards/docs/toolchain.md` for complete toolchain management documentation
+
+## Cast Workspace Structure
+
+The Cast tooling has been restructured into a Cargo workspace at `cast_workspace/` to better organize the related projects:
+
+### Workspace Layout
+```
+cast_workspace/
+├── Cargo.toml          # Workspace configuration
+├── Cast.toml           # Workspace Cast configuration
+├── README.md           # Workspace documentation
+├── ISSUES.md           # Workspace development tasks
+├── core/               # cast_core library (previously "cast")
+│   ├── src/            # Core functionality
+│   ├── tests/          # Integration tests
+│   ├── benches/        # Performance benchmarks
+│   └── examples/       # Usage examples
+├── cli/                # cast_cli binary (previously "cast_cli")
+│   └── src/            # CLI implementation
+└── vscode_ext/         # VSCode extension (previously "cast_vscode")
+    └── src/            # Extension TypeScript code
+```
+
+### Key Points
+- The **core library** was renamed from `cast` to `cast_core` to avoid naming conflicts
+- Use `cast_core` as the crate name in dependencies: `cast_core = { path = "../cast_workspace/core" }`
+- The **CLI binary** is still named `cast` (the executable name) but the crate is `cast_cli`
+- Build the CLI from the workspace: `cd cast_workspace && cargo build --release -p cast_cli`
+- The workspace uses shared dependencies and version configuration
+- Old directories (`cast/`, `cast_cli/`, `cast_vscode/`) are deprecated and will be removed
+- When referencing Cast in documentation or code, use the workspace paths
+
+### Building and Testing
+```bash
+# Build all workspace members
+cd cast_workspace
+cargo build --workspace
+
+# Run tests on all workspace members
+cargo test --workspace
+
+# Run CI on specific member
+cd cast_workspace/core && cast ci
+cd cast_workspace/cli && cast ci
+```
+
+### GitHub Workflows
+Workflows reference the new workspace structure:
+- Build path: `cast_workspace/cli/` instead of `cast_cli/`
+- Binary path: `cast_workspace/target/release/cast` instead of `cast_cli/target/release/cast`
+- See `.github/workflows/cast-ci.yml` and `.github/workflows/cast-cd.yml` for examples
