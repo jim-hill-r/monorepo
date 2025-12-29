@@ -1,16 +1,88 @@
 # Cast Workspace
 
-This workspace contains the Cast monorepo tooling projects.
+This workspace contains the Cast monorepo tooling projects. Cast provides highly opinionated tooling for Rust monorepos, making it simple to manage, build, test, and deploy projects locally, on CI, and in cloud environments.
 
-## Projects
+A cast is a [group of crabs](https://www.originaldiving.com/blog/our-favourite-collective-nouns-for-sea-creatures#:~:text=A%20group%20of%20crabs%20is,crabs%20dominating%20access%20to%20food.).
 
-- **core** (`cast_core`) - Core Cast library for monorepo operations
-- **cli** (`cast_cli`) - Cast command-line interface
-- **vscode_ext** (`cast_vscode`) - VSCode extension for Cast (to be migrated)
+## Workspace Members
+
+This workspace is organized into three main components:
+
+### Core Library (`cast_core`)
+
+The core Cast library provides the foundational functionality for monorepo operations.
+
+**Location**: `cast_workspace/core/`
+
+**Key Features**:
+- Project detection and configuration management (Cast.toml, Cargo.toml metadata)
+- CI/CD operations (build, test, format, lint)
+- Development server management (run, serve)
+- Toolchain management (install, check, list development tools)
+- Deployment operations (Cloudflare Pages, SSG bundles)
+- Project dependency analysis
+
+**Documentation**: See [core/README.md](core/README.md) for complete API documentation and usage examples.
+
+### Command-Line Interface (`cast_cli`)
+
+The Cast CLI is the primary tool for developers working with Cast-enabled monorepos.
+
+**Location**: `cast_workspace/cli/`
+
+**Key Commands**:
+- `cast ci` - Run CI checks (format, lint, build, test)
+- `cast dev` - Start development server (auto-detects framework)
+- `cast serve` - Serve static files for testing
+- `cast build` - Build projects
+- `cast test` - Run tests
+- `cast toolchain` - Manage framework-specific development tools
+- `cast cd` - Deploy to production environments
+- `cast project` - Analyze project dependencies and changes
+
+**Installation**: See the Installation section below.
+
+### VSCode Extension (`cast_vscode`)
+
+The VSCode extension provides IDE integration for Cast workflows.
+
+**Location**: `cast_workspace/vscode_ext/`
+
+**Status**: This is a TypeScript/Node.js project, not part of the Cargo workspace. It provides Cast command integration directly in VSCode.
+
+**Documentation**: See [vscode_ext/README.md](vscode_ext/README.md) for extension details.
+
+## Installation
+
+### Prerequisites
+
+- Rust toolchain (rustc, cargo, rustfmt, clippy)
+- For framework-specific projects, additional tools may be required (see Toolchain Management)
+
+### Installing Cast CLI
+
+From the workspace root:
+
+```bash
+# Build the CLI in release mode
+cargo build --release -p cast_cli
+
+# The binary will be at cast_workspace/cli/target/release/cast
+# You can add it to your PATH or use it directly
+./cli/target/release/cast --help
+```
+
+Or install it to your Cargo bin directory:
+
+```bash
+cd cli
+cargo install --path .
+cast --help
+```
 
 ## Building
 
-Build all workspace members:
+Build all Rust workspace members:
 ```bash
 cargo build --workspace
 ```
@@ -21,18 +93,133 @@ cargo build -p cast_core
 cargo build -p cast_cli
 ```
 
+Build with optimizations:
+```bash
+cargo build --workspace --release
+```
+
 ## Testing
 
-Test all workspace members:
+Run all tests in the workspace:
 ```bash
 cargo test --workspace
 ```
 
+Test specific member:
+```bash
+cargo test -p cast_core
+cargo test -p cast_cli
+```
+
+Run tests with output:
+```bash
+cargo test --workspace -- --nocapture
+```
+
 ## Development
 
-The Cast CLI is the primary development tool:
+### Using Cast CLI
+
+The Cast CLI is the primary interface for monorepo operations:
+
 ```bash
+# Run CI checks on current project
 cd cli
 cargo build --release
-./target/release/cast --help
+./target/release/cast ci
+
+# Start development server (auto-detects framework)
+./target/release/cast dev
+
+# Install required development tools
+./target/release/cast toolchain install
+
+# Check which tools are installed
+./target/release/cast toolchain check
 ```
+
+### Working on Cast Core
+
+The core library is used by the CLI and can also be used programmatically:
+
+```rust
+use cast_core::ci;
+
+// Run CI checks on a project
+ci::run("/path/to/project").unwrap();
+```
+
+See [core/README.md](core/README.md) for comprehensive API documentation and examples.
+
+### Working on VSCode Extension
+
+The VSCode extension is a separate Node.js project:
+
+```bash
+cd vscode_ext
+npm install
+npm run compile
+# See vscode_ext/README.md for development instructions
+```
+
+## Toolchain Management
+
+Cast provides toolchain management to help install framework-specific tools:
+
+```bash
+# Install all required tools for a project
+cast toolchain install
+
+# Check if tools are installed
+cast toolchain check
+
+# See what would be installed
+cast toolchain install --dry-run
+```
+
+Different frameworks require different tools:
+- **Dioxus**: Requires `dx` CLI, Node.js, npm, and Playwright
+- **Cloudflare Pages**: Requires Wrangler CLI
+- **Pure Rust**: Only requires Rust toolchain
+
+See [core/README.md](core/README.md) for complete toolchain documentation.
+
+## Workspace Structure
+
+```
+cast_workspace/
+├── Cargo.toml          # Workspace configuration
+├── Cast.toml           # Cast workspace configuration
+├── README.md           # This file
+├── ISSUES.md           # Tracked issues and development tasks
+├── core/               # Cast core library (cast_core)
+│   ├── src/            # Core functionality
+│   ├── tests/          # Integration tests
+│   ├── benches/        # Performance benchmarks
+│   ├── examples/       # Usage examples
+│   └── docs/           # Design documents
+├── cli/                # Cast CLI (cast_cli)
+│   ├── src/            # CLI implementation
+│   └── examples/       # CLI usage examples
+└── vscode_ext/         # VSCode extension (cast_vscode)
+    ├── src/            # Extension TypeScript code
+    └── package.json    # Node.js dependencies
+```
+
+## Documentation
+
+- **Core Library**: [core/README.md](core/README.md) - Complete API documentation
+- **Toolchain Design**: [core/docs/toolchain-command-design.md](core/docs/toolchain-command-design.md) - Toolchain management specification
+- **Workspace Issues**: [ISSUES.md](ISSUES.md) - Development roadmap and tracked tasks
+
+## Contributing
+
+When working on Cast:
+
+1. Make changes to the appropriate workspace member
+2. Run tests: `cargo test --workspace`
+3. Run formatting: `cargo fmt --workspace`
+4. Run lints: `cargo clippy --workspace`
+5. Build in release mode to test: `cargo build --workspace --release`
+
+The Cast workspace follows the repository's [Rust coding standards](../standards/docs/rust.md).
