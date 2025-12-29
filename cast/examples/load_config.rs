@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use cast::config::CastConfig;
 use std::fs;
 use tempdir::TempDir;

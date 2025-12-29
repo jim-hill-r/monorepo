@@ -381,19 +381,21 @@ cd::run("/path/to/project").unwrap();
 
 ### Publishing Artifacts
 
-Cast provides a `publish` command that creates release builds and copies artifacts to a platform-specific directory.
+Cast provides a `publish` command that creates release builds and copies artifacts to a platform-specific directory. The command automatically detects the project type based on the Cast configuration and uses the appropriate build tool.
 
 ```bash
 cast publish
 ```
 
-This command:
+#### For Rust Binary Projects
+
+For standard Rust binaries (projects without a framework configuration or with non-Dioxus frameworks), the command:
 1. Runs `cargo build --release` to create an optimized release build
 2. Automatically detects the target platform (e.g., `x86_64-unknown-linux-gnu`)
 3. Finds the built binary artifact in `target/release`
 4. Copies it to `artifacts/<target-triple>/` directory
 
-This makes it easy to collect build artifacts for distribution or deployment:
+Example artifact structure:
 
 ```bash
 # After running cast publish, artifacts are organized by platform:
@@ -405,6 +407,31 @@ artifacts/
 └── x86_64-pc-windows-msvc/
     └── my_binary.exe
 ```
+
+#### For Dioxus Web Projects
+
+For Dioxus web projects (projects with `framework = "dioxus"` in Cast.toml or Cargo.toml), the command:
+1. Runs `dx bundle --platform web --release` to create an optimized web bundle
+2. Reads the version from `Cargo.toml`
+3. Gets the current git commit SHA and checks if the working directory is dirty
+4. Generates a timestamped filename: `<version>+<year>-<month>-<day>.<counter>.<sha>[-dirty].zip`
+5. Creates a zip file of the bundled assets (excluding `.DS_Store` files)
+6. Places the zip in the `artifacts/` directory
+
+Example artifact structure:
+
+```bash
+# After running cast publish on a Dioxus project:
+artifacts/
+└── 0.1.0+2025-01-15.1.a3f4b2c.zip
+```
+
+The versioned filename includes:
+- **version**: From Cargo.toml `[package] version`
+- **date**: Build date in YYYY-MM-DD format
+- **counter**: Build counter (currently always 1, future enhancement planned)
+- **sha**: Git commit SHA
+- **-dirty**: Suffix added if there are uncommitted changes
 
 Example usage in library code:
 

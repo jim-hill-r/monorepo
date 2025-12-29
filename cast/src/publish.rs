@@ -1,3 +1,4 @@
+use crate::config::CastConfig;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -7,12 +8,26 @@ use thiserror::Error;
 pub enum PublishError {
     #[error("Cargo build --release failed")]
     BuildFailed,
+    #[error("Dioxus bundle failed")]
+    DxBundleFailed,
+    #[error("Zip creation failed: {0}")]
+    ZipFailed(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("Failed to determine target triple")]
     TargetTripleFailed,
     #[error("Failed to find built artifact in target/release directory")]
     ArtifactNotFound,
+    #[error("Failed to parse Cargo.toml: {0}")]
+    CargoTomlParseError(String),
+    #[error("Config error: {0}")]
+    ConfigError(#[from] crate::config::ConfigError),
+    #[error("Git command failed: {0}")]
+    GitError(String),
+    #[error("Bundle output directory not found")]
+    BundleOutputNotFound,
+    #[error("Zip error: {0}")]
+    ZipError(#[from] zip::result::ZipError),
 }
 
 /// Get the target triple for the current platform
@@ -96,10 +111,188 @@ fn find_binary_artifact(working_directory: &Path) -> Result<String, PublishError
     Err(PublishError::ArtifactNotFound)
 }
 
-/// Run release build and copy artifacts to the artifacts directory
-pub fn run(working_directory: impl AsRef<Path>) -> Result<(), PublishError> {
-    let working_directory = working_directory.as_ref();
+/// Get the current git SHA
+fn get_git_sha(working_directory: &Path) -> Result<String, PublishError> {
+    let output = Command::new("git")
+        .arg("rev-parse")
+        .arg("--verify")
+        .arg("HEAD")
+        .current_dir(working_directory)
+        .output()?;
 
+    if !output.status.success() {
+        return Err(PublishError::GitError("Failed to get git SHA".to_string()));
+    }
+
+    let sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(sha)
+}
+
+/// Check if git working directory is dirty
+fn is_git_dirty(working_directory: &Path) -> Result<bool, PublishError> {
+    let output = Command::new("git")
+        .arg("status")
+        .arg("-s")
+        .current_dir(working_directory)
+        .output()?;
+
+    if !output.status.success() {
+        return Err(PublishError::GitError(
+            "Failed to check git status".to_string(),
+        ));
+    }
+
+    Ok(!output.stdout.is_empty())
+}
+
+/// Get version from Cargo.toml
+fn get_version_from_cargo_toml(working_directory: &Path) -> Result<String, PublishError> {
+    let cargo_toml_path = working_directory.join("Cargo.toml");
+    let contents = fs::read_to_string(cargo_toml_path)?;
+    let cargo_toml: toml::Value =
+        toml::from_str(&contents).map_err(|e| PublishError::CargoTomlParseError(e.to_string()))?;
+
+    let version = cargo_toml
+        .get("package")
+        .and_then(|p| p.get("version"))
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            PublishError::CargoTomlParseError("version not found in Cargo.toml".to_string())
+        })?;
+
+    Ok(version.to_string())
+}
+
+/// Generate versioned filename for bundle
+fn generate_bundle_filename(working_directory: &Path) -> Result<String, PublishError> {
+    let version = get_version_from_cargo_toml(working_directory)?;
+    let sha = get_git_sha(working_directory)?;
+    let dirty = if is_git_dirty(working_directory)? {
+        "-dirty"
+    } else {
+        ""
+    };
+
+    // Get current date
+    let now = chrono::Utc::now();
+    let year = now.format("%Y");
+    let month = now.format("%m");
+    let day = now.format("%d");
+
+    // TODO (agent-generated): Implement build counter increment - read from a file and increment
+    let counter = 1;
+
+    // Truncate SHA to 7 characters for better filename readability
+    // If SHA is shorter than 7 characters (shouldn't happen with git), use what we have
+    let sha_short = if sha.len() >= 7 {
+        &sha[..7]
+    } else if !sha.is_empty() {
+        &sha
+    } else {
+        return Err(PublishError::GitError(
+            "Git SHA is empty or invalid".to_string(),
+        ));
+    };
+
+    Ok(format!(
+        "{}+{}-{}-{}.{}.{}{}.zip",
+        version, year, month, day, counter, sha_short, dirty
+    ))
+}
+
+/// Create a zip file from a directory
+fn create_zip_from_directory(source_dir: &Path, output_path: &Path) -> Result<(), PublishError> {
+    use walkdir::WalkDir;
+    use zip::write::SimpleFileOptions;
+    use zip::ZipWriter;
+
+    let file = fs::File::create(output_path)?;
+    let mut zip = ZipWriter::new(file);
+
+    // Walk through all files in the source directory
+    let walkdir = WalkDir::new(source_dir);
+    let it = walkdir.into_iter();
+
+    for entry in it.filter_map(|e| e.ok()) {
+        let path = entry.path();
+        let name = path
+            .strip_prefix(source_dir)
+            .map_err(|_| {
+                PublishError::IoError(std::io::Error::other("Failed to strip prefix from path"))
+            })?
+            .to_string_lossy();
+
+        // Skip .DS_Store files (case-insensitive check)
+        if name
+            .split('/')
+            .any(|component| component.eq_ignore_ascii_case(".DS_Store"))
+        {
+            continue;
+        }
+
+        if path.is_file() {
+            let options = SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated)
+                .unix_permissions(0o755);
+
+            zip.start_file(name.to_string(), options)?;
+            let mut f = fs::File::open(path)?;
+            std::io::copy(&mut f, &mut zip)?;
+        } else if !name.is_empty() {
+            // Add directory entry
+            let options = SimpleFileOptions::default().unix_permissions(0o755);
+            zip.add_directory(name.to_string(), options)?;
+        }
+    }
+
+    zip.finish()?;
+    Ok(())
+}
+
+/// Publish a Dioxus web project
+fn publish_dioxus(working_directory: &Path) -> Result<(), PublishError> {
+    // Run dx bundle --platform web --release
+    let status = Command::new("dx")
+        .arg("bundle")
+        .arg("--platform")
+        .arg("web")
+        .arg("--release")
+        .current_dir(working_directory)
+        .status()?;
+
+    if !status.success() {
+        return Err(PublishError::DxBundleFailed);
+    }
+
+    // The bundle output is in target/dx/web/release/web/public
+    let bundle_dir = working_directory
+        .join("target")
+        .join("dx")
+        .join("web")
+        .join("release")
+        .join("web")
+        .join("public");
+
+    if !bundle_dir.exists() {
+        return Err(PublishError::BundleOutputNotFound);
+    }
+
+    // Generate versioned filename
+    let filename = generate_bundle_filename(working_directory)?;
+
+    // Create artifacts directory
+    let artifacts_dir = working_directory.join("artifacts");
+    fs::create_dir_all(&artifacts_dir)?;
+
+    // Create zip file using Rust zip crate
+    let zip_path = artifacts_dir.join(&filename);
+    create_zip_from_directory(&bundle_dir, &zip_path)?;
+
+    Ok(())
+}
+
+/// Publish a Rust binary project
+fn publish_binary(working_directory: &Path) -> Result<(), PublishError> {
     // Run cargo build --release
     let status = Command::new("cargo")
         .arg("build")
@@ -130,6 +323,25 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), PublishError> {
     fs::copy(&artifact_path, &destination)?;
 
     Ok(())
+}
+
+/// Run release build and copy artifacts to the artifacts directory
+/// Supports both Rust binaries and Dioxus web projects
+pub fn run(working_directory: impl AsRef<Path>) -> Result<(), PublishError> {
+    let working_directory = working_directory.as_ref();
+
+    // Load Cast configuration to determine project type
+    let config = CastConfig::load_from_dir(working_directory)?;
+
+    // Check if this is a Dioxus project
+    if let Some(framework) = &config.framework {
+        if framework == "dioxus" {
+            return publish_dioxus(working_directory);
+        }
+    }
+
+    // Default to binary publish for non-Dioxus projects
+    publish_binary(working_directory)
 }
 
 #[cfg(test)]
@@ -222,5 +434,188 @@ edition = "2021"
         } else {
             panic!("Expected BuildFailed error");
         }
+    }
+
+    #[test]
+    fn test_get_version_from_cargo_toml() {
+        let tmp_dir = TempDir::new("test_version").unwrap();
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            r#"[package]
+name = "test"
+version = "1.2.3"
+edition = "2021"
+"#,
+        )
+        .unwrap();
+
+        let version = get_version_from_cargo_toml(tmp_dir.path()).unwrap();
+        assert_eq!(version, "1.2.3");
+    }
+
+    #[test]
+    fn test_get_git_sha() {
+        // This test requires a git repository
+        let tmp_dir = TempDir::new("test_git_sha").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Configure git user for the test
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a file and commit
+        fs::write(tmp_dir.path().join("test.txt"), "test").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("test")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        let sha = get_git_sha(tmp_dir.path()).unwrap();
+        assert!(!sha.is_empty());
+        assert_eq!(sha.len(), 40); // Git SHA is 40 characters
+    }
+
+    #[test]
+    fn test_is_git_dirty() {
+        let tmp_dir = TempDir::new("test_git_dirty").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Configure git user
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Should be clean initially (no files)
+        let dirty = is_git_dirty(tmp_dir.path()).unwrap();
+        assert!(!dirty);
+
+        // Add a file - should be dirty
+        fs::write(tmp_dir.path().join("test.txt"), "test").unwrap();
+        let dirty = is_git_dirty(tmp_dir.path()).unwrap();
+        assert!(dirty);
+
+        // Commit - should be clean again
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("test")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        let dirty = is_git_dirty(tmp_dir.path()).unwrap();
+        assert!(!dirty);
+    }
+
+    #[test]
+    fn test_generate_bundle_filename() {
+        let tmp_dir = TempDir::new("test_bundle_filename").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Configure git user
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create Cargo.toml
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            r#"[package]
+name = "test"
+version = "0.1.0"
+edition = "2021"
+"#,
+        )
+        .unwrap();
+
+        // Commit to have a SHA
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("test")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        let filename = generate_bundle_filename(tmp_dir.path()).unwrap();
+
+        // Should start with version
+        assert!(filename.starts_with("0.1.0+"));
+        // Should end with .zip
+        assert!(filename.ends_with(".zip"));
+        // Should contain date components (year-month-day)
+        assert!(filename.contains('-'));
     }
 }
