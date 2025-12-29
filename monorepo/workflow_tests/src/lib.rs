@@ -7,7 +7,8 @@ use std::path::PathBuf;
 /// Get the repository root directory by walking up from current directory
 /// until we find the .github directory
 pub fn get_repo_root() -> PathBuf {
-    let mut current = env::current_dir().expect("Failed to get current directory");
+    let mut current =
+        env::current_dir().unwrap_or_else(|e| panic!("Failed to get current directory: {}", e));
 
     // Walk up until we find .github directory
     loop {
