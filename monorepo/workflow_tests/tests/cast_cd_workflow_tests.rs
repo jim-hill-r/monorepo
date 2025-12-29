@@ -73,7 +73,7 @@ fn test_workflow_builds_cast_cli() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("cast_cli") && content.contains("cargo build"),
+        content.contains("cast_workspace/cli") && content.contains("cargo build"),
         "Workflow does not build cast CLI"
     );
 }

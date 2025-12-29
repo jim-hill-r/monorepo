@@ -21,11 +21,11 @@ This is a complex restructuring task that needs to be broken down into sequentia
 - ✓ COMPLETED: Test that cast_cli still builds with cast_core
 
 ### Phase 4: Move cast_cli to Workspace (agent-generated)
-- TODO (agent-generated): Create cast/cli directory structure
-- TODO (agent-generated): Move cast_cli files to cast/cli directory
-- TODO (agent-generated): Update GitHub workflows to build from new location (cast/cli)
-- TODO (agent-generated): Update workflow tests to use new paths
-- TODO (agent-generated): Test that workflows can still build the CLI
+- ✓ COMPLETED: Create cast/cli directory structure
+- ✓ COMPLETED: Move cast_cli files to cast/cli directory
+- ✓ COMPLETED: Update GitHub workflows to build from new location (cast/cli)
+- ✓ COMPLETED: Update workflow tests to use new paths
+- ✓ COMPLETED: Test that workflows can still build the CLI
 
 ### Phase 5: Move cast_vscode to Workspace (agent-generated)
 - TODO (agent-generated): Create cast/vscode_ext directory structure

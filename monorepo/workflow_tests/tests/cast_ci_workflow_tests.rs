@@ -62,7 +62,7 @@ fn test_workflow_builds_cast_cli() {
         fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("cast_cli") && content.contains("cargo build"),
+        content.contains("cast_workspace/cli") && content.contains("cargo build"),
         "Workflow does not build cast CLI"
     );
 }
@@ -270,13 +270,13 @@ fn test_cast_toolchain_check_works_on_rust_library() {
     use workflow_tests::get_repo_root;
 
     let repo_root = get_repo_root();
-    let cast_cli = repo_root.join("cast_cli/target/release/cast");
+    let cast_cli = repo_root.join("cast_workspace/target/release/cast");
 
     // Build cast CLI if not already built
     if !cast_cli.exists() {
         let build_output = Command::new("cargo")
-            .args(["build", "--release"])
-            .current_dir(repo_root.join("cast_cli"))
+            .args(["build", "--release", "-p", "cast_cli"])
+            .current_dir(repo_root.join("cast_workspace"))
             .output()
             .expect("Failed to build cast CLI");
 
@@ -314,13 +314,13 @@ fn test_cast_toolchain_check_detects_framework() {
     use workflow_tests::get_repo_root;
 
     let repo_root = get_repo_root();
-    let cast_cli = repo_root.join("cast_cli/target/release/cast");
+    let cast_cli = repo_root.join("cast_workspace/target/release/cast");
 
     // Build cast CLI if not already built
     if !cast_cli.exists() {
         let build_output = Command::new("cargo")
-            .args(["build", "--release"])
-            .current_dir(repo_root.join("cast_cli"))
+            .args(["build", "--release", "-p", "cast_cli"])
+            .current_dir(repo_root.join("cast_workspace"))
             .output()
             .expect("Failed to build cast CLI");
 
@@ -355,13 +355,13 @@ fn test_cast_toolchain_list_command() {
     use workflow_tests::get_repo_root;
 
     let repo_root = get_repo_root();
-    let cast_cli = repo_root.join("cast_cli/target/release/cast");
+    let cast_cli = repo_root.join("cast_workspace/target/release/cast");
 
     // Build cast CLI if not already built
     if !cast_cli.exists() {
         let build_output = Command::new("cargo")
-            .args(["build", "--release"])
-            .current_dir(repo_root.join("cast_cli"))
+            .args(["build", "--release", "-p", "cast_cli"])
+            .current_dir(repo_root.join("cast_workspace"))
             .output()
             .expect("Failed to build cast CLI");
 
@@ -399,13 +399,13 @@ fn test_cast_toolchain_install_dry_run() {
     use workflow_tests::get_repo_root;
 
     let repo_root = get_repo_root();
-    let cast_cli = repo_root.join("cast_cli/target/release/cast");
+    let cast_cli = repo_root.join("cast_workspace/target/release/cast");
 
     // Build cast CLI if not already built
     if !cast_cli.exists() {
         let build_output = Command::new("cargo")
-            .args(["build", "--release"])
-            .current_dir(repo_root.join("cast_cli"))
+            .args(["build", "--release", "-p", "cast_cli"])
+            .current_dir(repo_root.join("cast_workspace"))
             .output()
             .expect("Failed to build cast CLI");
 
