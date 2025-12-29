@@ -1,0 +1,28 @@
+# vietnamese beef Wrap with mushrooms
+
+A delicious vietnamese dish combining beef with fresh mushrooms served with pasta
+
+Prep Time: 20 minutes
+Cook Time: 30 minutes
+Servings: 4
+Tags: lunch, vietnamese, day-65
+
+## Ingredients
+
+- 1 lb beef
+- 2 cups mushrooms
+- 1 cup pasta
+- 2 tablespoons olive oil
+- Salt and pepper to taste
+- 2 cloves garlic, minced
+
+## Instructions
+
+1. Prepare beef by cutting into bite-sized pieces
+2. Heat olive oil in a large pan
+3. Cook beef until golden
+4. Add mushrooms and garlic, sauté until tender
+5. Meanwhile, cook pasta according to package directions
+6. Combine everything and season with salt and pepper
+7. Serve hot and enjoy
+
