@@ -36,7 +36,7 @@ The framework is determined by checking the `framework` field in the project's C
 Example usage in library code:
 
 ```rust
-use cast::run;
+use cast_core::run;
 
 // Run server on a project
 run::run("/path/to/project").unwrap();
@@ -66,7 +66,7 @@ This is useful for:
 Example usage in library code:
 
 ```rust
-use cast::serve;
+use cast_core::serve;
 
 // Serve static files from a directory
 serve::run("/path/to/static/files").unwrap();
@@ -229,7 +229,7 @@ This will run `cargo build` in the current project directory. The command is des
 Example usage in library code:
 
 ```rust
-use cast::build;
+use cast_core::build;
 
 // Run build on a project
 build::run("/path/to/project").unwrap();
@@ -248,7 +248,7 @@ This will run `cargo test` in the current project directory. The command is desi
 Example usage in library code:
 
 ```rust
-use cast::test;
+use cast_core::test;
 
 // Run tests on a project
 test::run("/path/to/project").unwrap();
@@ -281,7 +281,7 @@ If any check fails, the command will exit with an error. This makes it easy to i
 Example usage in library code:
 
 ```rust
-use cast::ci;
+use cast_core::ci;
 
 // Run CI checks on a project
 ci::run("/path/to/project").unwrap();
@@ -325,7 +325,7 @@ DATABASE_URL="postgresql://user:pass@localhost/db"
 Example usage in library code:
 
 ```rust
-use cast::deploy;
+use cast_core::deploy;
 
 // Run deploy on an IAC project
 deploy::run("/path/to/iac-project").unwrap();
@@ -373,7 +373,7 @@ When you run `cast cd` in a project, it will resolve each path in the `deploys` 
 Example usage in library code:
 
 ```rust
-use cast::cd;
+use cast_core::cd;
 
 // Run CD on a project
 cd::run("/path/to/project").unwrap();
@@ -438,7 +438,7 @@ The build counter is automatically incremented each time `cast publish` is run o
 Example usage in library code:
 
 ```rust
-use cast::publish;
+use cast_core::publish;
 
 // Build and publish artifacts
 publish::run("/path/to/project").unwrap();
@@ -458,7 +458,7 @@ Cast can create new projects from exemplar projects. Exemplar projects are marke
 Any project can be an exemplar, regardless of where it lives in the repository structure.
 
 ```rust
-use cast::projects;
+use cast_core::projects;
 
 // Create a new project
 projects::new("/path/to/monorepo", "my_project_name").unwrap();
@@ -483,7 +483,7 @@ To create your own exemplar projects, simply add `exemplar = true` to any projec
 Cast can find projects with changes between two git refs. This is useful for CI/CD workflows to determine which projects need to be tested or built.
 
 ```rust
-use cast::projects;
+use cast_core::projects;
 
 // Find projects with changes between two commits
 let changed_projects = projects::with_changes(
@@ -563,7 +563,7 @@ project_type = "static_website"
 ### Loading Configuration in Code
 
 ```rust
-use cast::config::CastConfig;
+use cast_core::config::CastConfig;
 
 // Load configuration from a directory (checks Cargo.toml first, then Cast.toml)
 let config = CastConfig::load_from_dir("path/to/project").unwrap();
