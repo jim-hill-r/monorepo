@@ -1,0 +1,16 @@
+[package]
+name = "cast_cli"
+version = "0.1.0"
+edition = "2021"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+anyhow = "1.0.98"
+clap = { version = "4", features = ["derive"] }
+cast_core = { path = "../core" }
