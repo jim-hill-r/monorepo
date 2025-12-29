@@ -1,5 +1,5 @@
 use anyhow::Result;
-use cast::args::{execute, Args};
+use cast_core::args::{execute, Args};
 use clap::Parser;
 use std::env;
 

@@ -14,11 +14,11 @@ This is a complex restructuring task that needs to be broken down into sequentia
 - ✓ COMPLETED: Add workspace ISSUES.md (move current issues to workspace root)
 
 ### Phase 3: Rename and Move cast to cast_core (agent-generated)
-- TODO (agent-generated): Rename cast package to cast_core in its Cargo.toml
-- TODO (agent-generated): Create cast/core directory structure
-- TODO (agent-generated): Move cast_core files to cast/core directory
-- TODO (agent-generated): Update cast_cli dependency to point to cast_core at new path
-- TODO (agent-generated): Test that cast_cli still builds with cast_core
+- ✓ COMPLETED: Rename cast package to cast_core in its Cargo.toml
+- ✓ COMPLETED: Create cast_workspace/core directory structure
+- ✓ COMPLETED: Move cast_core files to cast_workspace/core directory
+- ✓ COMPLETED: Update cast_cli dependency to point to cast_core at new path
+- ✓ COMPLETED: Test that cast_cli still builds with cast_core
 
 ### Phase 4: Move cast_cli to Workspace (agent-generated)
 - TODO (agent-generated): Create cast/cli directory structure
