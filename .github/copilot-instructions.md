@@ -4,21 +4,6 @@ All coding standards are found in the `standards` project in this monorepo. Refe
 
 ## Rust Code Standards
 
-- TODO: Consolidate rust coding standards into the standards project.
-
-All Rust projects in this repository must include the following clippy lints in their `Cargo.toml`:
-
-```toml
-[lints.clippy]
-unwrap_used = "warn"
-expect_used = "warn"
-
-[lints.rust]
-unsafe_code = "forbid"
-```
-
-For workspace projects, these lints are defined at the workspace level and inherited by member crates using `lints.workspace = true`.
-
 See `standards/docs/rust.md` for complete Rust coding standards and proper error handling patterns.
 
 ## Issue Management
