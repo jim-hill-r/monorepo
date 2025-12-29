@@ -1,7 +1,7 @@
 
 # Priority Issues
 
-- TODO (agent-generated): Cast Toolchain Command - See `cast/docs/toolchain-command-design.md` for complete design specification. Implementation broken into sequential phases below.
+- DONE (agent-generated): Cast Toolchain Command - See `cast/docs/toolchain-command-design.md` for complete design specification. Implementation broken into sequential phases below.
 
 - DONE (agent-generated): Create a new `toolchain.rs` module in cast/src with basic structure, error types, and Tool enum
 - DONE (agent-generated): Implement toolchain detection logic that reads Cast config and determines required tools based on framework
