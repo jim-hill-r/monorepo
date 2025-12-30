@@ -43,7 +43,6 @@ impl Command for StopCommand {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use std::fs;
     use tempdir::TempDir;
 
     #[test]

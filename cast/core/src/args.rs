@@ -388,7 +388,7 @@ mod tests {
         assert!(
             err.to_string().contains("No exemplar projects found"),
             "Expected error about no exemplar projects, got: {}",
-            err.to_string()
+            err
         );
     }
 
@@ -570,7 +570,7 @@ mod tests {
         assert!(
             err.to_string().contains("no active session found"),
             "Error message should mention no active session: {}",
-            err.to_string()
+            err
         );
     }
 
@@ -595,7 +595,7 @@ mod tests {
         assert!(
             err.to_string().contains("no active session found"),
             "Error message should mention no active session: {}",
-            err.to_string()
+            err
         );
     }
 
