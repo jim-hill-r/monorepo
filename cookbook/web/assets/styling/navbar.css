@@ -2,38 +2,38 @@
   display: flex;
   flex-direction: row;
   padding: 1rem 2rem;
-  background-color: #f39c12;
-  border-bottom: 2px solid #e74c3c;
+  background-color: #d4a574;
+  border-bottom: 1px solid #8b4513;
 }
 
 #navbar button {
-  background-color: #e74c3c;
-  color: #ffffff;
-  border: 1px solid #f9e79f;
+  background-color: #8b4513;
+  color: #f5e6d3;
+  border: 1px solid #8b4513;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   font-size: 1rem;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 #navbar button:hover {
-  background-color: #c0392b;
+  background-color: #5a3a1a;
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 #navbar button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 #navbar .error {
-  color: #8b4513;
+  color: #5a3a1a;
   background-color: #ffe6e6;
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  border: 1px solid #e74c3c;
+  border: 1px solid #c0392b;
 }
