@@ -31,7 +31,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 **Location**: `cast/cli/`
 
 **Key Commands**:
-- `cast ci` - Run CI checks (format, lint, build, test, publish)
+- `cast ci` - Run CI checks (format, lint, build, test, publish, commit artifacts)
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
