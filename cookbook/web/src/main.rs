@@ -1,14 +1,12 @@
 use chrono::prelude::*;
 use cookbook_core::RecipeReader;
+use cookbook_data_md::embedded::EmbeddedRecipeStore;
 use dioxus::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
-
-mod embedded_recipes;
-use embedded_recipes::EmbeddedRecipeStore;
 
 #[cfg(target_arch = "wasm32")]
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");

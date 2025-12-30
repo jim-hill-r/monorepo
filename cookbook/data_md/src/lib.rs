@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+// Export the embedded module for WASM/web targets
+pub mod embedded;
+
 /// A markdown-based implementation of RecipeReader and RecipeWriter
 /// that reads and writes recipe data from/to markdown files.
 pub struct MarkdownRecipeStore {
