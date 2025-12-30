@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+// Tolerance values for sub-pixel rendering and browser differences
+const PIXEL_TOLERANCE = 1;
+const SCROLLBAR_TOLERANCE = 5;
+
 /**
  * Tests for the gap between sidebar and header.
- * 
+ *
  * This test verifies that the sidebar starts exactly where the header ends,
  * with no visible gap between them.
  */
@@ -32,9 +36,9 @@ test.describe('Sidebar and Header Alignment', () => {
       const headerBottom = headerBox.y + headerBox.height;
       const sidebarTop = sidebarBox.y;
       
-      // Allow 1px tolerance for sub-pixel rendering differences
+      // Allow small tolerance for sub-pixel rendering differences
       const gap = Math.abs(sidebarTop - headerBottom);
-      expect(gap).toBeLessThanOrEqual(1);
+      expect(gap).toBeLessThanOrEqual(PIXEL_TOLERANCE);
     }
   });
   
@@ -57,8 +61,8 @@ test.describe('Sidebar and Header Alignment', () => {
       // The sidebar should extend from header bottom to viewport bottom
       const sidebarBottom = sidebarBox.y + sidebarBox.height;
       
-      // Allow some tolerance for scrollbars and rounding
-      expect(sidebarBottom).toBeGreaterThanOrEqual(viewportSize.height - 5);
+      // Allow tolerance for scrollbars and rounding
+      expect(sidebarBottom).toBeGreaterThanOrEqual(viewportSize.height - SCROLLBAR_TOLERANCE);
     }
   });
   
