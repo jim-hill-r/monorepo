@@ -212,14 +212,16 @@ The command determines required tools based on the Cast configuration:
 
 | Framework | Required Tools |
 |-----------|---------------|
-| `dioxus` | rustc, cargo, rustfmt, clippy, dx, node, npm, playwright |
-| `cloudflare-pages` | rustc, cargo, rustfmt, clippy, wrangler, node, npm |
-| None (pure Rust) | rustc, cargo, rustfmt, clippy |
+| `dioxus` | rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright |
+| `cloudflare-pages` | rustc, cargo, rustfmt, clippy, git-lfs, wrangler, node, npm |
+| None (pure Rust) | rustc, cargo, rustfmt, clippy, git-lfs |
+
+**Note**: Git LFS (git-lfs) is always required for all projects to handle large files in the repository.
 
 ### Additional Considerations
 
 1. **Node.js detection**: If a `package.json` exists, Node.js and npm are required regardless of framework
-2. **Playwright detection**: If a `playwright.config.ts` or `playwright.config.js` exists, Playwright is required
+2. **Playwright detection**: If a `playwright.config.ts` or `playwright.config.js` exists, Playwright is required. The installation automatically includes chromium browser and headless shell with system dependencies.
 3. **Wrangler detection**: If a `wrangler.toml` exists, Wrangler is required
 
 ## Installation Methods
@@ -241,6 +243,8 @@ Tools installed via npm:
 
 - `wrangler` (primary method): `npm install -g wrangler`
 - `playwright`: `npm ci` (from package.json) then `npx playwright install --with-deps chromium`
+  - **Important**: The toolchain check verifies that chromium browser is actually installed, not just the npm package
+  - Uses `npx playwright install --list` to verify chromium installation
 
 ### System Package Manager Tools
 
@@ -250,6 +254,11 @@ Tools that should be installed via system package manager:
   - Linux: `sudo apt install nodejs npm` or equivalent
   - macOS: `brew install node`
   - Windows: `winget install OpenJS.NodeJS`
+
+- `git-lfs`: Provide guidance to user
+  - Linux: `sudo apt install git-lfs && git lfs install`
+  - macOS: `brew install git-lfs && git lfs install`
+  - Windows: `winget install GitHub.GitLFS`
 
 **Guidance approach**: Instead of attempting to install Node.js, the command should:
 1. Detect if Node.js is already installed
