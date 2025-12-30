@@ -31,11 +31,12 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 **Location**: `cast/cli/`
 
 **Key Commands**:
-- `cast ci` - Run CI checks (format, lint, build, test)
+- `cast ci` - Run CI checks (format, lint, build, test, publish)
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
 - `cast test` - Run tests
+- `cast publish` - Build release artifacts and copy to artifacts directory
 - `cast toolchain` - Manage framework-specific development tools
 - `cast cd` - Deploy to production environments
 - `cast project` - Analyze project dependencies and changes
@@ -123,7 +124,7 @@ cargo test --workspace -- --nocapture
 The Cast CLI is the primary interface for monorepo operations:
 
 ```bash
-# Run CI checks on current project
+# Run CI checks on current project (includes format, lint, build, test, and publish)
 cd cli
 cargo build --release
 ./target/release/cast ci
@@ -136,6 +137,9 @@ cargo build --release
 
 # Check which tools are installed
 ./target/release/cast toolchain check
+
+# Build release artifacts
+./target/release/cast publish
 ```
 
 ### Working on Cast Core
