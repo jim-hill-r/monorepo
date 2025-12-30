@@ -398,14 +398,53 @@ fn is_workspace_root(working_directory: &Path) -> Result<bool, PublishError> {
     Ok(cargo_toml.get("workspace").is_some())
 }
 
+/// Check if a Cargo.toml represents a library-only crate (no binary targets)
+fn is_library_only(working_directory: &Path) -> Result<bool, PublishError> {
+    let cargo_toml_path = working_directory.join("Cargo.toml");
+    if !cargo_toml_path.exists() {
+        return Ok(false);
+    }
+
+    let contents = fs::read_to_string(cargo_toml_path)?;
+    let cargo_toml: toml::Value =
+        toml::from_str(&contents).map_err(|e| PublishError::CargoTomlParseError(e.to_string()))?;
+
+    // Check for explicit [[bin]] sections
+    if let Some(bins) = cargo_toml.get("bin") {
+        if bins.as_array().is_some() {
+            // Has explicit bin targets
+            return Ok(false);
+        }
+    }
+
+    // Check if src/main.rs exists (implicit binary)
+    if working_directory.join("src").join("main.rs").exists() {
+        return Ok(false);
+    }
+
+    // Check if src/bin directory exists (implicit binaries)
+    let bin_dir = working_directory.join("src").join("bin");
+    if bin_dir.exists() && bin_dir.is_dir() {
+        return Ok(false);
+    }
+
+    // If we have src/lib.rs but no binary indicators, it's library-only
+    Ok(working_directory.join("src").join("lib.rs").exists())
+}
+
 /// Run release build and copy artifacts to the artifacts directory
 /// Supports both Rust binaries and Dioxus web projects
-/// Skips workspace roots (directories with [workspace] in Cargo.toml)
+/// Skips workspace roots and library-only crates (no publishable artifacts)
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), PublishError> {
     let working_directory = working_directory.as_ref();
 
     // Skip workspace roots - they don't have publishable artifacts
     if is_workspace_root(working_directory)? {
+        return Ok(());
+    }
+
+    // Skip library-only crates - they don't have binary artifacts to publish
+    if is_library_only(working_directory)? {
         return Ok(());
     }
 
