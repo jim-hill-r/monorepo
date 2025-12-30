@@ -97,8 +97,8 @@ async fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
-pub async fn listener() -> tokio::net::TcpListener {
-    tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap()
+pub async fn listener() -> Result<tokio::net::TcpListener, std::io::Error> {
+    tokio::net::TcpListener::bind("0.0.0.0:3000").await
 }
 
 #[derive(Serialize, utoipa::ToSchema)]
@@ -263,7 +263,7 @@ mod tests {
             content: serde_json::to_string(&test_content)
                 .expect("test_content should serialize to json."),
         };
-        let test_response = server.post("/v1/cube").json(&test_cube_definition).await;
+        let test_response = server.post("/v1/cube").json(&test_cube).await;
         test_response.assert_status(StatusCode::CREATED);
 
         Ok(())
