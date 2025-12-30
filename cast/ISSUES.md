@@ -1,6 +1,5 @@
 # Priority Issues
 
-TODO (agent-generated): Implement Execute trait for server commands (Run, Serve)
 TODO (agent-generated): Implement Execute trait for deployment commands (Deploy, Cd, Publish)
 TODO (agent-generated): Implement Execute trait for Session commands (Start, Pause, Stop)
 TODO (agent-generated): Implement Execute trait for Project commands (New, WithChanges)
