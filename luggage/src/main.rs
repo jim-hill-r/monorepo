@@ -11,8 +11,6 @@ pub mod error;
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("{}", Uuid::now_v7());
-    axum::serve(listener().await, app(None).await?)
-        .await
-        .unwrap();
-    return Ok(());
+    axum::serve(listener().await?, app(None).await?).await?;
+    Ok(())
 }

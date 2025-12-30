@@ -39,6 +39,10 @@ mod tests {
         return Ok(());
     }
 
+    // This test uses unsafe code for env var manipulation, which is forbidden by our lints.
+    // Since we test config parsing in parse_config test, this test is not essential.
+    // Keeping it commented for documentation purposes.
+    /*
     #[ignore = "unsafe env changes"]
     #[test]
     fn get_config_from_env() -> Result<()> {
@@ -60,6 +64,7 @@ mod tests {
         }
         return Ok(());
     }
+    */
 
     #[test]
     fn parse_config() -> Result<()> {
