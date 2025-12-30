@@ -1,5 +1,5 @@
-use crate::command::Command;
 use crate::cd;
+use crate::command::Command;
 use std::path::Path;
 
 /// Command to run continuous deployment
