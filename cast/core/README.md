@@ -633,3 +633,44 @@ if let Some(project_type) = config.project_type {
     println!("Project type: {}", project_type);
 }
 ```
+
+## Architecture
+
+### Command Pattern
+
+Cast uses the Command/Executor pattern for its CLI commands. This pattern provides a consistent interface for all commands and makes them more testable and maintainable.
+
+#### Command Trait
+
+The `Command` trait defines a common interface that all commands implement:
+
+```rust
+use cast_core::command::Command;
+use std::path::Path;
+
+pub trait Command {
+    fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>>;
+}
+```
+
+#### Implementing Commands
+
+Commands are implemented in the `commands` module:
+
+```rust
+use cast_core::commands::build::BuildCommand;
+use cast_core::command::Command;
+
+let cmd = BuildCommand;
+let result = cmd.execute(Path::new("/path/to/project"))?;
+println!("{}", result);  // "Build passed"
+```
+
+#### Available Command Implementations
+
+Currently implemented:
+- `BuildCommand` - Runs cargo build
+- `TestCommand` - Runs cargo test
+- `CiCommand` - Runs full CI checks (format, lint, build, test)
+
+**In Progress**: Additional commands (Run, Serve, Deploy, Cd, Publish, Session, Project, Toolchain) are being migrated to this pattern. See `cast/ISSUES.md` for the migration roadmap.

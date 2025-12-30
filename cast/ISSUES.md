@@ -1,5 +1,12 @@
 # Priority Issues
 
+TODO (agent-generated): Implement Execute trait for server commands (Run, Serve)
+TODO (agent-generated): Implement Execute trait for deployment commands (Deploy, Cd, Publish)
+TODO (agent-generated): Implement Execute trait for Session commands (Start, Pause, Stop)
+TODO (agent-generated): Implement Execute trait for Project commands (New, WithChanges)
+TODO (agent-generated): Implement Execute trait for Toolchain commands (Install, Check, List)
+TODO (agent-generated): Refactor args.rs execute() function to use Command trait for all commands
+TODO (agent-generated): Update all command modules to use executor pattern directly
+
 # Backlog
-TODO: Refactor commands to using executor command pattern per [blog post.](https://medium.com/@robjsliwa_71070/crafting-cli-with-oauth-2-0-authentication-multi-tenant-todo-server-in-rust-series-eaa0af452a56)
 
