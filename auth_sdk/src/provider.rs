@@ -34,7 +34,7 @@ pub struct ProviderConfig {
 pub struct CsrfTokenWrapper(pub(crate) String);
 
 impl CsrfTokenWrapper {
-    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+    #[allow(dead_code)]
     pub(crate) fn new(value: String) -> Self {
         CsrfTokenWrapper(value)
     }
@@ -45,7 +45,7 @@ impl CsrfTokenWrapper {
 pub struct PkceVerifierWrapper(pub(crate) String);
 
 impl PkceVerifierWrapper {
-    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+    #[allow(dead_code)]
     pub(crate) fn new(value: String) -> Self {
         PkceVerifierWrapper(value)
     }
