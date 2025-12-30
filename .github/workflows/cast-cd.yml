@@ -27,6 +27,13 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
       - name: Build cast CLI
         run: |
           cd cast/cli
@@ -101,9 +108,22 @@ jobs:
 
           EXIT_CODE=0
           for project in $(echo "$PROJECTS" | jq -r '.[]'); do
-            echo "::group::Running cast cd for $project"
+            echo "::group::Installing toolchain for $project"
             cd "$GITHUB_WORKSPACE/$project"
+            
+            # Install required tools for this project
+            if "$CAST_BIN" toolchain install; then
+              echo "✓ Toolchain installed for $project"
+            else
+              echo "✗ Toolchain installation failed for $project"
+              EXIT_CODE=1
+              echo "::endgroup::"
+              cd "$GITHUB_WORKSPACE"
+              continue
+            fi
+            echo "::endgroup::"
 
+            echo "::group::Running cast cd for $project"
             if "$CAST_BIN" cd; then
               echo "✓ cast cd completed for $project"
             else
