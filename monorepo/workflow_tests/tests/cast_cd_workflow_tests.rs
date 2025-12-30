@@ -73,7 +73,7 @@ fn test_workflow_builds_cast_cli() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("cast_workspace/cli") && content.contains("cargo build"),
+        content.contains("cast/cli") && content.contains("cargo build"),
         "Workflow does not build cast CLI"
     );
 }
@@ -84,7 +84,7 @@ fn test_workflow_runs_cast_cd_command() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("cast cd"),
+        content.contains(r#"CAST_BIN" cd"#) || content.contains("cast cd"),
         "Workflow does not run cast cd command"
     );
 }
@@ -256,3 +256,46 @@ fn test_workflow_masks_cloudflare_api_token() {
         "Workflow should use secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN to ensure the token is masked in logs"
     );
 }
+
+#[test]
+fn test_workflow_sets_up_nodejs() {
+    let content =
+        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("setup-node") || content.contains("actions/setup-node"),
+        "Workflow does not set up Node.js (required for cast toolchain install)"
+    );
+}
+
+#[test]
+fn test_workflow_runs_cast_toolchain_install() {
+    let content =
+        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("toolchain install"),
+        "Workflow does not run cast toolchain install command"
+    );
+}
+
+#[test]
+fn test_workflow_installs_toolchain_before_cd() {
+    let content =
+        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
+
+    // Find positions of toolchain install and cast cd
+    let toolchain_pos = content
+        .find("toolchain install")
+        .expect("Workflow missing toolchain install");
+    // Look for the pattern where CAST_BIN is used to run cd command
+    let cd_pos = content
+        .find(r#"CAST_BIN" cd"#)
+        .expect("Workflow missing cast cd command (looking for CAST_BIN cd)");
+
+    assert!(
+        toolchain_pos < cd_pos,
+        "Workflow must run toolchain install before cast cd"
+    );
+}
+
