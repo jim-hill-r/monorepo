@@ -2,19 +2,19 @@
 
 Monorepo for all projects
 
-# Prerequisites
+# Getting Started
 
-- Rust: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
-- Cargo: Recommend using [Rustup](https://www.rust-lang.org/tools/install) and the Rust vscode extension.
-- Cast (cli for this monorepo): Run `cargo install --path ./cast/cli` and `code --install-extension ./cast/vscode_ext/cast.vsix`
-- Additional Tooling: Run `cast toolchain install` inside the project directory
+Cast is the CLI tool for this monorepo. All developer commands use Cast.
 
-# Get Started
+- To install Cast, run `source cast/cli/artifacts/{target-architecture}/cast install`
 
+Once Cast is installed, you can use it for all other work in this monorepo.
 - To start a work session, use `cast session start`.
 - To create a new project, use `cast project new`.
-- To install tooling, use `cast toolchain install`.
-- To execute ci checks, use `cast ci`.
+- To install dependencies, use `cast install`.
+- To execute ci checks, use `cast ci --check`.
+- To fix ci issues, use `cast ci --fix`.
+- To execute a ci release, use `cast ci --release`.
 - To deploy a project, use `cast cd`.
 
 # Contribute
