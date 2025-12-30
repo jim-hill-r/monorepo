@@ -261,7 +261,7 @@ mod tests {
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
         let output = result.unwrap();
-        // Should contain all 9 tools
+        // Should contain all 10 tools
         assert!(output.contains("rustc"));
         assert!(output.contains("cargo"));
         assert!(output.contains("rustfmt"));
@@ -271,6 +271,7 @@ mod tests {
         assert!(output.contains("npm"));
         assert!(output.contains("playwright"));
         assert!(output.contains("wrangler"));
+        assert!(output.contains("git-lfs"));
     }
 
     #[test]
