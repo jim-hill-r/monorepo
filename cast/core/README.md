@@ -303,6 +303,8 @@ For **Rust projects** (with Cargo.toml), this will run:
 2. `cargo clippy -- -D warnings` - Lint code for common mistakes
 3. `cast build` - Ensure the project compiles (via `cargo build`)
 4. `cast test` - Run all tests (via `cargo test`)
+5. `cast publish` - Build release artifacts (binaries or web bundles)
+6. Commit artifacts to git using git-lfs (if in a git repository)
 
 For **TypeScript/Node.js projects** (with package.json), this will run:
 1. `npm ci` - Install dependencies from lockfile (fast, reproducible)
@@ -311,6 +313,12 @@ For **TypeScript/Node.js projects** (with package.json), this will run:
 4. `npm test` - Run tests (if script exists, e.g., Playwright tests)
 
 Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests), and Cast will run both Rust and TypeScript CI checks.
+
+**Artifact Committing**: After successful CI checks and publish, artifacts are automatically committed to git with git-lfs. This requires:
+- Being in a git repository
+- Having git-lfs installed
+- Having changes in the `artifacts/` directory
+- The repository's `.gitattributes` should already configure git-lfs for artifact files (e.g., `*.zip filter=lfs diff=lfs merge=lfs -text`)
 
 If any check fails, the command will exit with an error. This makes it easy to integrate with CI systems like GitHub Actions.
 
