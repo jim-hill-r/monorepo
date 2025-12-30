@@ -298,4 +298,3 @@ fn test_workflow_installs_toolchain_before_cd() {
         "Workflow must run toolchain install before cast cd"
     );
 }
-
