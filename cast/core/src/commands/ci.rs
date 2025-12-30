@@ -92,7 +92,7 @@ mod tests {
         // Write properly formatted but semantically invalid Rust code to cause CI failure
         fs::write(
             tmp_dir.path().join("src/lib.rs"),
-            "pub fn test() {\n    this is not valid rust code\n}\n",
+            "pub fn test() {\n    undefined_function();\n}\n",
         )
         .unwrap();
 

@@ -326,7 +326,7 @@ mod tests {
         // Write properly formatted but semantically invalid code
         fs::write(
             tmp_dir.path().join("src/main.rs"),
-            "fn main() {\n    this_does_not_compile\n}\n",
+            "fn main() {\n    undefined_function();\n}\n",
         )
         .unwrap();
 
