@@ -1,6 +1,6 @@
+use crate::command::Command;
+use crate::commands;
 use crate::config::CastConfig;
-use crate::sessions::SessionStartOptions;
-use crate::{build, cd, ci, deploy, projects, publish, run, serve, sessions, test, toolchain};
 use clap::{Parser, Subcommand};
 use std::path::Path;
 use thiserror::Error;
@@ -134,84 +134,56 @@ pub struct ListToolchainCommand {
 pub enum ExecuteError {
     #[error("cast toml not found")]
     CastTomlNotFound,
-    #[error("with-changes error: {0}")]
-    WithChangesError(String),
-    #[error("ci error: {0}")]
-    CiError(#[from] ci::CiError),
-    #[error("cd error: {0}")]
-    CdError(#[from] cd::CdError),
-    #[error("build error: {0}")]
-    BuildError(#[from] build::BuildError),
-    #[error("test error: {0}")]
-    TestError(#[from] test::TestError),
-    #[error("run error: {0}")]
-    RunError(#[from] run::RunError),
-    #[error("serve error: {0}")]
-    ServeError(#[from] serve::ServeError),
-    #[error("deploy error: {0}")]
-    DeployError(#[from] deploy::DeployError),
-    #[error("publish error: {0}")]
-    PublishError(#[from] publish::PublishError),
-    #[error("start session error: {0}")]
-    StartSessionError(#[from] sessions::StartSessionError),
-    #[error("pause session error: {0}")]
-    PauseSessionError(#[from] sessions::PauseSessionError),
-    #[error("stop session error: {0}")]
-    StopSessionError(#[from] sessions::StopSessionError),
-    #[error("toolchain error: {0}")]
-    ToolchainError(String),
+    #[error("command error: {0}")]
+    CommandError(String),
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
     // Handle commands that don't require Cast.toml
     match &args.cmd {
         Commands::Project(ProjectCommands::WithChanges(cmd)) => {
-            let changed_projects = projects::with_changes(entry_directory, &cmd.base, &cmd.head)
-                .map_err(|e| ExecuteError::WithChangesError(e.to_string()))?;
-
-            // Return newline-separated list of project paths
-            let output = changed_projects
-                .iter()
-                .map(|p| p.display().to_string())
-                .collect::<Vec<_>>()
-                .join("\n");
-
-            return Ok(output);
+            let command = commands::project::WithChangesCommand {
+                base: cmd.base.clone(),
+                head: cmd.head.clone(),
+            };
+            return command
+                .execute(entry_directory)
+                .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
         Commands::Serve => {
-            // Serve command doesn't require Cast.toml - it can serve any directory
-            serve::run(entry_directory)?;
-            return Ok("Static file server started".into());
+            let command = commands::serve::ServeCommand;
+            return command
+                .execute(entry_directory)
+                .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
         _ => {} // Other commands require Cast.toml
     }
 
     // Other commands require Cast.toml
     if let Some(working_directory) = find_cast_toml(entry_directory) {
-        match args.cmd {
+        let result: Result<String, Box<dyn std::error::Error>> = match args.cmd {
             Commands::Session(session_command) => match session_command {
                 SessionCommands::Start(start_session_command) => {
-                    sessions::start(
-                        working_directory,
-                        Some(SessionStartOptions {
-                            name: start_session_command.name,
-                        }),
-                    )?;
-                    Ok("Starting session.".into())
+                    let command = commands::session::StartCommand {
+                        name: start_session_command.name,
+                    };
+                    command.execute(working_directory)
                 }
                 SessionCommands::Pause => {
-                    sessions::pause(working_directory)?;
-                    Ok("Pausing session.".into())
+                    let command = commands::session::PauseCommand;
+                    command.execute(working_directory)
                 }
                 SessionCommands::Stop => {
-                    sessions::stop(working_directory)?;
-                    Ok("Stopping session.".into())
+                    let command = commands::session::StopCommand;
+                    command.execute(working_directory)
                 }
             },
             Commands::Project(project_command) => match project_command {
                 ProjectCommands::New(new_project_command) => {
-                    let _ = projects::new(working_directory, &new_project_command.name);
-                    Ok("Creating project.".into())
+                    let command = commands::project::NewCommand {
+                        name: new_project_command.name,
+                    };
+                    command.execute(working_directory)
                 }
                 ProjectCommands::WithChanges(_) => {
                     // This case should never be reached because WithChanges is handled
@@ -224,20 +196,20 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 }
             },
             Commands::Ci => {
-                ci::run(working_directory)?;
-                Ok("CI passed".into())
+                let command = commands::ci::CiCommand;
+                command.execute(working_directory)
             }
             Commands::Build => {
-                build::run(working_directory)?;
-                Ok("Build passed".into())
+                let command = commands::build::BuildCommand;
+                command.execute(working_directory)
             }
             Commands::Test => {
-                test::run(working_directory)?;
-                Ok("Tests passed".into())
+                let command = commands::test::TestCommand;
+                command.execute(working_directory)
             }
             Commands::Run => {
-                run::run(working_directory)?;
-                Ok("Server started".into())
+                let command = commands::run::RunCommand;
+                command.execute(working_directory)
             }
             Commands::Serve => {
                 // This case should never be reached because Serve is handled
@@ -249,133 +221,46 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 )
             }
             Commands::Deploy => {
-                deploy::run(working_directory)?;
-                Ok("Deploy completed".into())
+                let command = commands::deploy::DeployCommand;
+                command.execute(working_directory)
             }
             Commands::Cd => {
-                cd::run(working_directory)?;
-                Ok("CD completed".into())
+                let command = commands::cd::CdCommand;
+                command.execute(working_directory)
             }
             Commands::Publish => {
-                publish::run(working_directory)?;
-                Ok("Publish completed".into())
+                let command = commands::publish::PublishCommand;
+                command.execute(working_directory)
             }
             Commands::Toolchain(toolchain_command) => match toolchain_command {
                 ToolchainCommands::Install(install_cmd) => {
-                    // Parse tool names from command line
-                    let specific_tools = if let Some(tool_name) = &install_cmd.tool {
-                        let tool = toolchain::Tool::from_name(tool_name).ok_or_else(|| {
-                            ExecuteError::ToolchainError(format!("Unknown tool: {}", tool_name))
-                        })?;
-                        Some(vec![tool])
-                    } else {
-                        None
-                    };
-
-                    // Parse skip list
-                    let skip_tools = if let Some(skip_str) = &install_cmd.skip {
-                        skip_str
-                            .split(',')
-                            .filter_map(|s| toolchain::Tool::from_name(s.trim()))
-                            .collect()
-                    } else {
-                        Vec::new()
-                    };
-
-                    let options = toolchain::InstallOptions {
-                        specific_tools,
-                        skip_tools,
+                    let command = commands::toolchain::InstallCommand {
+                        tool: install_cmd.tool,
+                        skip: install_cmd.skip,
                         dry_run: install_cmd.dry_run,
                         force: install_cmd.force,
                     };
-
-                    let results = toolchain::install_tools(working_directory, options)
-                        .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
-
-                    // Format output
-                    let mut output = String::new();
-                    let mut any_failed = false;
-
-                    for result in &results {
-                        if result.skipped {
-                            output.push_str(&format!(
-                                "⊘ {}: {}\n",
-                                result.tool.name(),
-                                result.message
-                            ));
-                        } else if result.success {
-                            output.push_str(&format!(
-                                "✓ {}: {}\n",
-                                result.tool.name(),
-                                result.message
-                            ));
-                        } else {
-                            output.push_str(&format!(
-                                "✗ {}: {}\n",
-                                result.tool.name(),
-                                result.message
-                            ));
-                            any_failed = true;
-                        }
-                    }
-
-                    if any_failed {
-                        output.push_str(
-                            "\nSome tools failed to install. Please address the errors above.",
-                        );
-                        Err(ExecuteError::ToolchainError(output))
-                    } else {
-                        Ok(output)
-                    }
+                    command.execute(working_directory)
                 }
                 ToolchainCommands::Check(check_cmd) => {
-                    let options = toolchain::CheckOptions {
+                    let command = commands::toolchain::CheckCommand {
                         verbose: check_cmd.verbose,
                         json: check_cmd.json,
                     };
-
-                    let check_result = toolchain::check_tools(working_directory, options)
-                        .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
-
-                    // Format output based on options
-                    let output = if check_cmd.json {
-                        check_result
-                            .format_json()
-                            .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?
-                    } else {
-                        check_result.format_text(check_cmd.verbose)
-                    };
-
-                    // Return error if tools are missing (exit code 1)
-                    if !check_result.all_installed {
-                        Err(ExecuteError::ToolchainError(output))
-                    } else {
-                        Ok(output)
-                    }
+                    command.execute(working_directory)
                 }
                 ToolchainCommands::List(list_cmd) => {
-                    let options = toolchain::ListOptions {
+                    let command = commands::toolchain::ListCommand {
                         required_only: list_cmd.required_only,
                         all: list_cmd.all,
                         json: list_cmd.json,
                     };
-
-                    let list_result = toolchain::list_tools(working_directory, options)
-                        .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?;
-
-                    // Format output based on options
-                    let output = if list_cmd.json {
-                        list_result
-                            .format_json()
-                            .map_err(|e| ExecuteError::ToolchainError(e.to_string()))?
-                    } else {
-                        list_result.format_text()
-                    };
-
-                    Ok(output)
+                    command.execute(working_directory)
                 }
             },
-        }
+        };
+
+        result.map_err(|e| ExecuteError::CommandError(e.to_string()))
     } else {
         Err(ExecuteError::CastTomlNotFound)
     }
@@ -496,9 +381,15 @@ mod tests {
                 })),
             },
             tmp_dir.path(),
-        )
-        .unwrap();
-        assert_eq!(result, "Creating project.");
+        );
+        // Should fail because no exemplar projects exist
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("No exemplar projects found"),
+            "Expected error about no exemplar projects, got: {}",
+            err
+        );
     }
 
     #[test]
@@ -675,10 +566,11 @@ mod tests {
             "Expected error when pausing without active session"
         );
         let err = result.unwrap_err();
-        assert!(matches!(err, ExecuteError::PauseSessionError(_)));
-        assert_eq!(
-            err.to_string(),
-            "pause session error: no active session found"
+        assert!(matches!(err, ExecuteError::CommandError(_)));
+        assert!(
+            err.to_string().contains("no active session found"),
+            "Error message should mention no active session: {}",
+            err
         );
     }
 
@@ -699,10 +591,11 @@ mod tests {
             "Expected error when stopping without active session"
         );
         let err = result.unwrap_err();
-        assert!(matches!(err, ExecuteError::StopSessionError(_)));
-        assert_eq!(
-            err.to_string(),
-            "stop session error: no active session found"
+        assert!(matches!(err, ExecuteError::CommandError(_)));
+        assert!(
+            err.to_string().contains("no active session found"),
+            "Error message should mention no active session: {}",
+            err
         );
     }
 
@@ -806,7 +699,7 @@ mod tests {
             }
             Err(err) => {
                 // If error, should show tool status
-                assert!(matches!(err, ExecuteError::ToolchainError(_)));
+                assert!(matches!(err, ExecuteError::CommandError(_)));
                 let error_msg = err.to_string();
                 // Should contain toolchain information
                 assert!(
@@ -1023,14 +916,18 @@ mod tests {
 
         // Should find the cast metadata and run correctly (will fail if dx is not installed)
         assert!(result.is_err()); // Will fail because dx is not installed
-        if let Err(ExecuteError::RunError(run_err)) = result {
-            // We expect either RunFailed (dx not found) or IoError
+        if let Err(ExecuteError::CommandError(err_msg)) = result {
+            // We expect error related to dx not being found, run failing, or IO error
             assert!(
-                matches!(run_err, run::RunError::RunFailed)
-                    || matches!(run_err, run::RunError::IoError(_))
+                err_msg.contains("dx")
+                    || err_msg.contains("run")
+                    || err_msg.contains("failed")
+                    || err_msg.contains("No such file"),
+                "Expected error related to dx or run, got: {}",
+                err_msg
             );
         } else {
-            panic!("Expected RunError");
+            panic!("Expected CommandError");
         }
     }
 }
