@@ -14,9 +14,8 @@ impl Command for InstallCommand {
     fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
         // Parse tool names from command line
         let specific_tools = if let Some(tool_name) = &self.tool {
-            let tool = Tool::from_name(tool_name).ok_or_else(|| {
-                format!("Unknown tool: {}", tool_name)
-            })?;
+            let tool =
+                Tool::from_name(tool_name).ok_or_else(|| format!("Unknown tool: {}", tool_name))?;
             Some(vec![tool])
         } else {
             None
@@ -47,31 +46,17 @@ impl Command for InstallCommand {
 
         for result in &results {
             if result.skipped {
-                output.push_str(&format!(
-                    "⊘ {}: {}\n",
-                    result.tool.name(),
-                    result.message
-                ));
+                output.push_str(&format!("⊘ {}: {}\n", result.tool.name(), result.message));
             } else if result.success {
-                output.push_str(&format!(
-                    "✓ {}: {}\n",
-                    result.tool.name(),
-                    result.message
-                ));
+                output.push_str(&format!("✓ {}: {}\n", result.tool.name(), result.message));
             } else {
-                output.push_str(&format!(
-                    "✗ {}: {}\n",
-                    result.tool.name(),
-                    result.message
-                ));
+                output.push_str(&format!("✗ {}: {}\n", result.tool.name(), result.message));
                 any_failed = true;
             }
         }
 
         if any_failed {
-            output.push_str(
-                "\nSome tools failed to install. Please address the errors above.",
-            );
+            output.push_str("\nSome tools failed to install. Please address the errors above.");
             Err(output.into())
         } else {
             Ok(output)

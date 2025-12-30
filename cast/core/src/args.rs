@@ -1,7 +1,6 @@
 use crate::command::Command;
 use crate::commands;
 use crate::config::CastConfig;
-use crate::{projects, serve};
 use clap::{Parser, Subcommand};
 use std::path::Path;
 use thiserror::Error;
@@ -920,7 +919,10 @@ mod tests {
         if let Err(ExecuteError::CommandError(err_msg)) = result {
             // We expect error related to dx not being found, run failing, or IO error
             assert!(
-                err_msg.contains("dx") || err_msg.contains("run") || err_msg.contains("failed") || err_msg.contains("No such file"),
+                err_msg.contains("dx")
+                    || err_msg.contains("run")
+                    || err_msg.contains("failed")
+                    || err_msg.contains("No such file"),
                 "Expected error related to dx or run, got: {}",
                 err_msg
             );
