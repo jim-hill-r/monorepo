@@ -199,9 +199,11 @@ fn run_clippy(working_directory: &Path) -> Result<(), CiError> {
 /// Commit artifacts to git with git LFS
 /// This function:
 /// 1. Checks if git LFS is installed
-/// 2. Ensures artifacts directory is tracked by git LFS (via .gitattributes)
-/// 3. Stages the artifacts directory
-/// 4. Commits the artifacts with a descriptive message
+/// 2. Stages the artifacts directory (git LFS tracking should be configured via .gitattributes)
+/// 3. Commits the artifacts with a descriptive message
+///
+/// Note: This assumes the repository's .gitattributes is already configured to track
+/// artifact files (e.g., *.zip) with git LFS. It does not modify .gitattributes.
 ///
 /// If there are no new artifacts or artifacts haven't changed, this is a no-op.
 /// If we're not in a git repository, this silently succeeds.
