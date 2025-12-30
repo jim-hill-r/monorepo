@@ -151,6 +151,11 @@ pub fn detect_required_tools(
 pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
     use std::process::Command;
 
+    // Playwright needs special handling to verify chromium browsers are installed
+    if matches!(tool, Tool::Playwright) {
+        return check_playwright_with_browsers();
+    }
+
     let (command, args) = match tool {
         Tool::Rustc => ("rustc", vec!["--version"]),
         Tool::Cargo => ("cargo", vec!["--version"]),
@@ -196,6 +201,67 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
                 tool: tool.clone(),
                 installed: false,
                 version: None,
+            })
+        }
+    }
+}
+
+/// Check if Playwright is installed with chromium browsers
+fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
+    use std::process::Command;
+
+    // First check if playwright npm package is available
+    let version_check = Command::new("npx")
+        .args(["playwright", "--version"])
+        .output();
+
+    let version = match version_check {
+        Ok(output) if output.status.success() => {
+            let version_output = String::from_utf8_lossy(&output.stdout);
+            Some(parse_version_string(version_output.trim()))
+        }
+        _ => {
+            // Playwright npm package not installed
+            return Ok(ToolStatus {
+                tool: Tool::Playwright,
+                installed: false,
+                version: None,
+            });
+        }
+    };
+
+    // Now check if chromium browsers are installed
+    let browser_check = Command::new("npx")
+        .args(["playwright", "install", "--list"])
+        .output();
+
+    match browser_check {
+        Ok(output) if output.status.success() => {
+            // Parse the output to check if chromium is installed
+            let list_output = String::from_utf8_lossy(&output.stdout);
+            let has_chromium = list_output.contains("chromium");
+
+            if has_chromium {
+                Ok(ToolStatus {
+                    tool: Tool::Playwright,
+                    installed: true,
+                    version,
+                })
+            } else {
+                // Playwright installed but chromium browser not installed
+                Ok(ToolStatus {
+                    tool: Tool::Playwright,
+                    installed: false,
+                    version,
+                })
+            }
+        }
+        _ => {
+            // Failed to check browser list - treat as not installed
+            Ok(ToolStatus {
+                tool: Tool::Playwright,
+                installed: false,
+                version,
             })
         }
     }
