@@ -7,6 +7,8 @@ use thiserror::Error;
 pub enum RunError {
     #[error("Run command failed")]
     RunFailed,
+    #[error("Command '{0}' not found. Please install it using 'cast toolchain install' or install it manually.")]
+    CommandNotFound(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
     #[error("Config error: {0}")]
@@ -31,7 +33,14 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), RunError> {
     let status = Command::new(command)
         .args(&args)
         .current_dir(working_directory)
-        .status()?;
+        .status()
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                RunError::CommandNotFound(command.to_string())
+            } else {
+                RunError::IoError(e)
+            }
+        })?;
 
     if !status.success() {
         return Err(RunError::RunFailed);
@@ -122,12 +131,15 @@ mod tests {
         // We expect an error because dx is likely not installed
         // but we verify we tried to run the right command
         assert!(result.is_err());
-        if let Err(RunError::RunFailed) = result {
-            // Expected error type
+        if let Err(RunError::CommandNotFound(cmd)) = result {
+            // Expected error type - command not found
+            assert_eq!(cmd, "dx");
+        } else if let Err(RunError::RunFailed) = result {
+            // Also acceptable - dx was found but failed to run
         } else if let Err(RunError::IoError(_)) = result {
-            // Also acceptable - dx command not found
+            // Also acceptable - other IO error
         } else {
-            panic!("Expected RunFailed or IoError");
+            panic!("Expected CommandNotFound, RunFailed, or IoError");
         }
     }
 
@@ -153,12 +165,50 @@ mod tests {
 
         // We expect an error because dx is likely not installed
         assert!(result.is_err());
-        if let Err(RunError::RunFailed) = result {
-            // Expected error type
+        if let Err(RunError::CommandNotFound(cmd)) = result {
+            // Expected error type - command not found
+            assert_eq!(cmd, "dx");
+        } else if let Err(RunError::RunFailed) = result {
+            // Also acceptable - dx was found but failed to run
         } else if let Err(RunError::IoError(_)) = result {
-            // Also acceptable - dx command not found
+            // Also acceptable - other IO error
         } else {
-            panic!("Expected RunFailed or IoError");
+            panic!("Expected CommandNotFound, RunFailed, or IoError");
         }
+    }
+
+    #[test]
+    fn test_run_command_not_found_error_message() {
+        let tmp_dir = TempDir::new("test_run_command_not_found").unwrap();
+
+        // Create a Cargo project with a non-existent framework command
+        // This will cause the command to not be found
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() { println!(\"Hello, world!\"); }\n",
+        )
+        .unwrap();
+
+        let result = run(tmp_dir.path());
+
+        // Verify we get a helpful error message
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        let err_msg = err.to_string();
+
+        // The error message should mention the command and suggest using cast toolchain install
+        assert!(
+            err_msg.contains("dx")
+                || err_msg.contains("not found")
+                || err_msg.contains("toolchain"),
+            "Error message should mention the missing command or toolchain: {}",
+            err_msg
+        );
     }
 }
