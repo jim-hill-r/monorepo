@@ -30,7 +30,30 @@ mod tests {
 
     #[test]
     fn test_publish_command_creates_artifacts_directory() {
+        use std::process::Command as StdCommand;
+
         let tmp_dir = TempDir::new("test_publish_command_artifacts").unwrap();
+
+        // Initialize git repository (required for generate_bundle_filename)
+        StdCommand::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
 
         // Create a minimal binary project
         fs::write(
@@ -50,6 +73,21 @@ edition = "2021"
         )
         .unwrap();
 
+        // Commit to have a valid git SHA
+        StdCommand::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("Initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
         let cmd = PublishCommand;
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok(), "Publish failed: {:?}", result.err());
@@ -58,6 +96,25 @@ edition = "2021"
         // Check that artifacts directory was created
         let artifacts_dir = tmp_dir.path().join("artifacts");
         assert!(artifacts_dir.exists());
+
+        // Check that a zip file was created
+        let entries = fs::read_dir(&artifacts_dir).unwrap();
+        let zip_files: Vec<_> = entries
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s == "zip")
+                    .unwrap_or(false)
+            })
+            .collect();
+
+        assert_eq!(
+            zip_files.len(),
+            1,
+            "Expected exactly one zip file in artifacts directory"
+        );
     }
 
     #[test]

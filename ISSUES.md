@@ -1,7 +1,6 @@
 
 # Priority Issues
 
-- TODO: In the cast project, `cast publish` should be zipping up the files from the release build to store as a single artifact if there is more than one file for the project_type. For example, dixous needs all the files zipped up.
 - TODO: In the cast project, `cast ci` should commit the published artifact to the artifacts directory and ensure its using gitlfs for commiting large files.
 - TODO: In the cast project, `cast toolchain install` improperly determined playwright as installed. The chromium drivers were not installed. Ensure chromium headless is installed when this command is run.
 - TODO: In the cast project, `cast toolchain install` should always install gitlfs.

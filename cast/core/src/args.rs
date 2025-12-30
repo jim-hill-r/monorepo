@@ -642,7 +642,31 @@ mod tests {
 
     #[test]
     fn it_runs_publish() {
+        use std::process::Command;
+
         let tmp_dir = TempDir::new("test").unwrap();
+
+        // Initialize git repository (required for generate_bundle_filename)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         // Create a minimal binary project
@@ -657,6 +681,21 @@ mod tests {
             "fn main() { println!(\"Hello, world!\"); }\n",
         )
         .unwrap();
+
+        // Commit to have a valid git SHA
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("Initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
 
         let result = execute(
             Args {
