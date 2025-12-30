@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use surrealdb::{
-    Error, // TODO: Convert errors to luggage errors
-    RecordId,
-    Surreal,
+    RecordId, Surreal,
     engine::{
         local::{Db, Mem},
         remote::ws::{Client, Ws},
@@ -22,12 +20,6 @@ struct Record {
     id: RecordId,
 }
 
-impl From<surrealdb::Error> for LuggageError {
-    fn from(_value: surrealdb::Error) -> Self {
-        LuggageError::Unknown
-    }
-}
-
 #[derive(Clone)]
 pub struct SurrealDbClosetProvider<T>
 where
@@ -43,7 +35,7 @@ impl SurrealDbClosetProvider<Client> {
         password: &'a str,
         namespace: &'a str,
         database: &'a str,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, surrealdb::Error> {
         let db = Surreal::new::<Ws>(url).await?;
 
         db.signin(Root { username, password }).await?;
@@ -55,7 +47,7 @@ impl SurrealDbClosetProvider<Client> {
 }
 
 impl SurrealDbClosetProvider<Db> {
-    pub async fn new(namespace: &str, database: &str) -> Result<Self, Error> {
+    pub async fn new(namespace: &str, database: &str) -> Result<Self, surrealdb::Error> {
         let db = Surreal::new::<Mem>(()).await?;
         db.use_ns(namespace).use_db(database).await?;
         Ok(Self { db })

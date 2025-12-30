@@ -39,3 +39,9 @@ impl From<anyhow::Error> for LuggageError {
         LuggageError::Unknown
     }
 }
+
+impl From<surrealdb::Error> for LuggageError {
+    fn from(_value: surrealdb::Error) -> Self {
+        LuggageError::Unknown
+    }
+}
