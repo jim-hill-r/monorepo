@@ -326,6 +326,9 @@ fn publish_dioxus(working_directory: &Path) -> Result<(), PublishError> {
 
 /// Publish a Rust binary project
 fn publish_binary(working_directory: &Path) -> Result<(), PublishError> {
+    use zip::write::SimpleFileOptions;
+    use zip::ZipWriter;
+
     // Run cargo build --release
     let status = Command::new("cargo")
         .arg("build")
@@ -347,21 +350,64 @@ fn publish_binary(working_directory: &Path) -> Result<(), PublishError> {
     let release_dir = working_directory.join("target").join("release");
     let artifact_path = release_dir.join(&artifact_name);
 
-    // Create artifacts directory structure: artifacts/<target-triple>/
-    let artifacts_dir = working_directory.join("artifacts").join(&target_triple);
+    // Generate versioned filename
+    let filename = generate_bundle_filename(working_directory)?;
+
+    // Create artifacts directory
+    let artifacts_dir = working_directory.join("artifacts");
     fs::create_dir_all(&artifacts_dir)?;
 
-    // Copy the artifact to the artifacts directory
-    let destination = artifacts_dir.join(&artifact_name);
-    fs::copy(&artifact_path, &destination)?;
+    // Create zip file with target triple in the structure
+    let zip_path = artifacts_dir.join(&filename);
+    let file = fs::File::create(&zip_path)?;
+    let mut zip = ZipWriter::new(file);
+
+    // Add target triple directory in the zip
+    let target_dir_in_zip = format!("{}/", target_triple);
+    let options = SimpleFileOptions::default().unix_permissions(0o755);
+    zip.add_directory(&target_dir_in_zip, options)?;
+
+    // Add the binary to the zip under the target triple directory
+    let file_in_zip = format!("{}/{}", target_triple, artifact_name);
+    let options = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o755);
+    zip.start_file(file_in_zip, options)?;
+
+    // Copy binary content to zip
+    let mut binary_file = fs::File::open(&artifact_path)?;
+    std::io::copy(&mut binary_file, &mut zip)?;
+
+    zip.finish()?;
 
     Ok(())
 }
 
+/// Check if a Cargo.toml is a workspace root (has [workspace] section)
+fn is_workspace_root(working_directory: &Path) -> Result<bool, PublishError> {
+    let cargo_toml_path = working_directory.join("Cargo.toml");
+    if !cargo_toml_path.exists() {
+        return Ok(false);
+    }
+
+    let contents = fs::read_to_string(cargo_toml_path)?;
+    let cargo_toml: toml::Value =
+        toml::from_str(&contents).map_err(|e| PublishError::CargoTomlParseError(e.to_string()))?;
+
+    // Check if there's a [workspace] section
+    Ok(cargo_toml.get("workspace").is_some())
+}
+
 /// Run release build and copy artifacts to the artifacts directory
 /// Supports both Rust binaries and Dioxus web projects
+/// Skips workspace roots (directories with [workspace] in Cargo.toml)
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), PublishError> {
     let working_directory = working_directory.as_ref();
+
+    // Skip workspace roots - they don't have publishable artifacts
+    if is_workspace_root(working_directory)? {
+        return Ok(());
+    }
 
     // Load Cast configuration to determine project type
     let config = CastConfig::load_from_dir(working_directory)?;
@@ -402,6 +448,27 @@ mod tests {
     fn test_publish_creates_artifacts_directory() {
         let tmp_dir = TempDir::new("test_publish_artifacts").unwrap();
 
+        // Initialize git repository (required for generate_bundle_filename)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
         // Create a minimal binary project
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
@@ -420,22 +487,71 @@ edition = "2021"
         )
         .unwrap();
 
+        // Commit to have a valid git SHA
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("Initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
         // Run publish
         let result = run(tmp_dir.path());
         assert!(result.is_ok(), "Publish failed: {:?}", result.err());
 
         // Check that artifacts directory was created
-        let target_triple = get_target_triple().unwrap();
-        let artifacts_dir = tmp_dir.path().join("artifacts").join(target_triple);
+        let artifacts_dir = tmp_dir.path().join("artifacts");
         assert!(artifacts_dir.exists());
 
-        // Check that the artifact was copied
+        // Check that a zip file was created (not the raw binary)
+        let entries = fs::read_dir(&artifacts_dir).unwrap();
+        let zip_files: Vec<_> = entries
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s == "zip")
+                    .unwrap_or(false)
+            })
+            .collect();
+
+        assert_eq!(
+            zip_files.len(),
+            1,
+            "Expected exactly one zip file in artifacts directory"
+        );
+
+        // Verify the zip file contains the binary in the target triple directory
+        let zip_path = zip_files[0].path();
+        let file = fs::File::open(&zip_path).unwrap();
+        let mut archive = zip::ZipArchive::new(file).unwrap();
+
+        // Check that the zip contains files
+        assert!(archive.len() > 0, "Zip file should not be empty");
+
+        // Find the binary in the zip
+        let target_triple = get_target_triple().unwrap();
         let artifact_name = if cfg!(windows) {
             "test_binary.exe"
         } else {
             "test_binary"
         };
-        assert!(artifacts_dir.join(artifact_name).exists());
+        let expected_path = format!("{}/{}", target_triple, artifact_name);
+
+        let found = (0..archive.len()).any(|i| {
+            let file = archive.by_index(i).unwrap();
+            file.name() == expected_path
+        });
+
+        assert!(found, "Expected to find {} in zip file", expected_path);
     }
 
     #[test]
@@ -745,5 +861,72 @@ edition = "2021"
 
         // Ensure they're different
         assert_ne!(filename1, filename2);
+    }
+
+    #[test]
+    fn test_is_workspace_root_detects_workspace() {
+        let tmp_dir = TempDir::new("test_workspace").unwrap();
+
+        // Create a workspace Cargo.toml
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            r#"[workspace]
+members = ["member1", "member2"]
+"#,
+        )
+        .unwrap();
+
+        let is_workspace = is_workspace_root(tmp_dir.path()).unwrap();
+        assert!(is_workspace, "Should detect workspace root");
+    }
+
+    #[test]
+    fn test_is_workspace_root_detects_non_workspace() {
+        let tmp_dir = TempDir::new("test_non_workspace").unwrap();
+
+        // Create a regular package Cargo.toml
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            r#"[package]
+name = "test"
+version = "0.1.0"
+edition = "2021"
+"#,
+        )
+        .unwrap();
+
+        let is_workspace = is_workspace_root(tmp_dir.path()).unwrap();
+        assert!(
+            !is_workspace,
+            "Should not detect non-workspace as workspace"
+        );
+    }
+
+    #[test]
+    fn test_publish_skips_workspace_root() {
+        let tmp_dir = TempDir::new("test_workspace_publish").unwrap();
+
+        // Create a workspace Cargo.toml
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            r#"[workspace]
+members = ["member1"]
+
+[workspace.package]
+version = "0.1.0"
+"#,
+        )
+        .unwrap();
+
+        // Publish should succeed but do nothing for workspace roots
+        let result = run(tmp_dir.path());
+        assert!(result.is_ok(), "Publish should succeed for workspace roots");
+
+        // Verify no artifacts directory was created
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            !artifacts_dir.exists(),
+            "No artifacts should be created for workspace roots"
+        );
     }
 }
