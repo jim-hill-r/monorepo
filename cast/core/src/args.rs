@@ -295,6 +295,7 @@ fn find_cast_toml(working_directory: &Path) -> Option<&Path> {
 mod tests {
     use super::*;
     use std::fs;
+    use std::process::Command;
     use tempdir::TempDir;
 
     #[test]
@@ -408,14 +409,54 @@ mod tests {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
-        // Create a minimal Cargo.toml and src/lib.rs for CI to pass
+        // Initialize git repo (required by publish which CI now runs)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal binary project for CI to pass (publish requires a binary)
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
             "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
         )
         .unwrap();
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
-        fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit the project (required by publish)
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
 
         let result = execute(Args { cmd: Commands::Ci }, tmp_dir.path()).unwrap();
         assert_eq!(result, "CI passed");

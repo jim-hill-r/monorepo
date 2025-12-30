@@ -1,4 +1,5 @@
 use crate::build;
+use crate::publish;
 use crate::test;
 use std::path::Path;
 use std::process::Command;
@@ -22,6 +23,8 @@ pub enum CiError {
     NpmCompileError,
     #[error("npm test failed")]
     NpmTestError,
+    #[error("Publish failed: {0}")]
+    PublishError(#[from] publish::PublishError),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 }
@@ -31,6 +34,7 @@ pub enum CiError {
 /// - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
 /// - For TypeScript projects (has package.json): npm lint, compile, test
 /// - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
+/// - If all checks pass, runs publish to create release artifacts
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
 
@@ -38,16 +42,26 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let has_cargo_toml = working_directory.join("Cargo.toml").exists();
     let has_package_json = working_directory.join("package.json").exists();
 
+    // Track if we ran any CI checks
+    let mut ran_ci_checks = false;
+
     // Run Rust CI if Cargo.toml exists
     if has_cargo_toml {
         run_rust_ci(working_directory)?;
+        ran_ci_checks = true;
     }
 
     // Run TypeScript CI if package.json exists (can run in addition to Rust CI)
     if has_package_json {
         run_typescript_ci(working_directory)?;
+        ran_ci_checks = true;
     }
-    // If neither exists, silently succeed (empty project or unsupported type)
+
+    // If we ran CI checks and they all passed, run publish to create release artifacts
+    if ran_ci_checks {
+        publish::run(working_directory)?;
+    }
+    // If no CI checks were run, silently succeed (empty project or unsupported type)
 
     Ok(())
 }
@@ -185,8 +199,10 @@ mod tests {
     #[test]
     fn test_run_ci_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_ci").unwrap();
+
         let result = run(tmp_dir.path());
         // Should succeed silently for directories without Cargo.toml or package.json
+        // Publish should not run since no CI checks were performed
         assert!(result.is_ok());
     }
 
@@ -205,5 +221,123 @@ mod tests {
 
         let result = run_fmt_check(tmp_dir.path());
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_ci_runs_publish_after_successful_checks() {
+        let tmp_dir = TempDir::new("test_ci_publish").unwrap();
+
+        // Initialize git repo (required by publish)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal binary project with properly formatted code
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        let result = run(tmp_dir.path());
+        assert!(
+            result.is_ok(),
+            "CI should succeed and run publish: {:?}",
+            result.err()
+        );
+
+        // Verify that artifacts directory was created by publish
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            artifacts_dir.exists(),
+            "Artifacts directory should exist after CI runs publish"
+        );
+    }
+
+    #[test]
+    fn test_ci_does_not_run_publish_when_build_fails() {
+        let tmp_dir = TempDir::new("test_ci_no_publish").unwrap();
+
+        // Initialize git repo (required by publish)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a project with invalid code (will fail build)
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        // Write properly formatted but semantically invalid code
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    undefined_function();\n}\n",
+        )
+        .unwrap();
+
+        let result = run(tmp_dir.path());
+        assert!(result.is_err(), "CI should fail when build fails");
+
+        // Verify that artifacts directory was NOT created
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            !artifacts_dir.exists(),
+            "Artifacts directory should not exist when CI fails"
+        );
     }
 }

@@ -23,18 +23,58 @@ mod tests {
     fn test_ci_command_success() {
         let tmp_dir = TempDir::new("test_ci_command").unwrap();
 
-        // Create a minimal Cargo.toml and src/lib.rs for CI to pass
+        // Initialize git repo (required by publish which CI now runs)
+        std::process::Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal binary project for CI to pass (publish requires a binary)
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
             "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
         )
         .unwrap();
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
-        fs::write(tmp_dir.path().join("src/lib.rs"), "pub fn test() {}\n").unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit the project (required by publish)
+        std::process::Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        std::process::Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
 
         let cmd = CiCommand;
         let result = cmd.execute(tmp_dir.path());
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "CI failed: {:?}", result.err());
         assert_eq!(result.unwrap(), "CI passed");
     }
 
@@ -49,10 +89,10 @@ mod tests {
         )
         .unwrap();
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
-        // Write invalid Rust code to cause CI failure
+        // Write properly formatted but semantically invalid Rust code to cause CI failure
         fs::write(
             tmp_dir.path().join("src/lib.rs"),
-            "pub fn test() { this is not valid rust code }",
+            "pub fn test() {\n    undefined_function();\n}\n",
         )
         .unwrap();
 
