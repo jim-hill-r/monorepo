@@ -42,19 +42,26 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
     let has_cargo_toml = working_directory.join("Cargo.toml").exists();
     let has_package_json = working_directory.join("package.json").exists();
 
+    // Track if we ran any CI checks
+    let mut ran_ci_checks = false;
+
     // Run Rust CI if Cargo.toml exists
     if has_cargo_toml {
         run_rust_ci(working_directory)?;
+        ran_ci_checks = true;
     }
 
     // Run TypeScript CI if package.json exists (can run in addition to Rust CI)
     if has_package_json {
         run_typescript_ci(working_directory)?;
+        ran_ci_checks = true;
     }
-    // If neither exists, silently succeed (empty project or unsupported type)
 
-    // If all CI checks passed, run publish to create release artifacts
-    publish::run(working_directory)?;
+    // If we ran CI checks and they all passed, run publish to create release artifacts
+    if ran_ci_checks {
+        publish::run(working_directory)?;
+    }
+    // If no CI checks were run, silently succeed (empty project or unsupported type)
 
     Ok(())
 }
@@ -193,32 +200,10 @@ mod tests {
     fn test_run_ci_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_ci").unwrap();
 
-        // Initialize git repository (required by publish)
-        Command::new("git")
-            .arg("init")
-            .current_dir(tmp_dir.path())
-            .output()
-            .unwrap();
-
-        // Configure git user
-        Command::new("git")
-            .arg("config")
-            .arg("user.email")
-            .arg("test@example.com")
-            .current_dir(tmp_dir.path())
-            .output()
-            .unwrap();
-        Command::new("git")
-            .arg("config")
-            .arg("user.name")
-            .arg("Test User")
-            .current_dir(tmp_dir.path())
-            .output()
-            .unwrap();
-
         let result = run(tmp_dir.path());
-        // Should fail because publish requires Cargo.toml
-        assert!(result.is_err());
+        // Should succeed silently for directories without Cargo.toml or package.json
+        // Publish should not run since no CI checks were performed
+        assert!(result.is_ok());
     }
 
     #[test]
