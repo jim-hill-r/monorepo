@@ -1,5 +1,71 @@
 # GitHub Actions Workflows
 
+## codeql.yml
+
+This workflow runs CodeQL security scanning on projects with TypeScript/JavaScript code that have changes in a pull request, and on a weekly schedule for all such projects.
+
+### How It Works
+
+1. **Triggers**: 
+   - Pull request events (opened, synchronized, reopened)
+   - Weekly schedule (Mondays at 6:00 UTC) for comprehensive scanning
+
+2. **Changed Project Detection**: 
+   - For PR events: Uses `cast project with-changes` to find projects with changes between base and head commits
+   - For scheduled runs: Scans all projects in the repository
+   - Filters projects to only those with `package.json` (TypeScript/JavaScript projects)
+
+3. **CodeQL Analysis**: 
+   - Initializes CodeQL for JavaScript/TypeScript languages
+   - Analyzes each project with TypeScript/JavaScript files (*.ts, *.js, *.tsx, *.jsx)
+   - Uploads results to GitHub Security tab
+
+4. **Results**: 
+   - Groups output by project for easy reading
+   - Security findings appear in the GitHub Security tab
+   - Fails the workflow if CodeQL analysis encounters errors
+
+### Setup Requirements
+
+The workflow requires:
+1. Rust toolchain (automatically installed by the workflow)
+2. The `cast` CLI must be buildable from `cast/cli`
+3. Projects with TypeScript/JavaScript code should have a `package.json` file
+
+### Permissions
+
+The workflow requires the following permissions:
+- `contents: read` - To checkout the repository and read files
+- `pull-requests: read` - To access PR information
+- `security-events: write` - To upload CodeQL analysis results
+- `actions: read` - For CodeQL to access workflow information
+
+### Testing
+
+You can test this workflow configuration by running:
+
+```bash
+cd monorepo/workflow_tests
+cargo test codeql_workflow_tests
+```
+
+These Rust tests validate:
+- Workflow file existence and YAML syntax
+- Correct trigger configuration (pull_request and schedule)
+- Use of cast CLI to detect changes
+- Filtering for TypeScript/JavaScript projects
+- CodeQL action usage
+- Proper permissions configuration
+- Error handling for git operations
+- Proper quoting of GitHub Actions expressions
+
+### Languages Scanned
+
+Currently, this workflow scans:
+- **JavaScript/TypeScript**: All projects with `package.json` files
+
+Note: CodeQL does not currently support Rust natively, so Rust projects are not scanned by this workflow.
+
 ## cast-ci.yml
 
 This workflow automatically runs `cast ci` for any project that has changes in a pull request.
