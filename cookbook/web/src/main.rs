@@ -8,18 +8,12 @@ use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
-#[cfg(target_arch = "wasm32")]
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
-#[cfg(target_arch = "wasm32")]
 const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
-#[cfg(target_arch = "wasm32")]
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
-#[cfg(target_arch = "wasm32")]
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
-#[cfg(target_arch = "wasm32")]
 const RECIPE_CSS: Asset = asset!("/assets/styling/recipe.css");
 
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
 #[cfg(target_arch = "wasm32")]
@@ -29,29 +23,25 @@ const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
 #[cfg(target_arch = "wasm32")]
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
-#[cfg(target_arch = "wasm32")]
 fn main() {
     dioxus::launch(App);
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-fn main() {
-    // For non-wasm targets (like tests), do nothing
-}
-
-#[cfg(target_arch = "wasm32")]
 #[component]
 fn App() -> Element {
-    let auth = use_resource(|| async move {
-        WebAuthProvider::new(ProviderConfig {
-            client_id: CLIENT_ID.into(),
-            auth_url: AUTH_URL.into(),
-            token_url: TOKEN_URL.into(),
-            redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
-        })
-        .await
-    });
-    use_context_provider(|| auth);
+    #[cfg(target_arch = "wasm32")]
+    {
+        let auth = use_resource(|| async move {
+            WebAuthProvider::new(ProviderConfig {
+                client_id: CLIENT_ID.into(),
+                auth_url: AUTH_URL.into(),
+                token_url: TOKEN_URL.into(),
+                redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
+            })
+            .await
+        });
+        use_context_provider(|| auth);
+    }
 
     // Initialize sidebar visibility state (visible by default)
     use_context_provider(|| Signal::new(true));
@@ -66,15 +56,6 @@ fn App() -> Element {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-#[component]
-fn App() -> Element {
-    // For non-wasm targets (like tests), provide minimal app
-    use_context_provider(|| Signal::new(true));
-    rsx! {}
-}
-
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 #[derive(Clone, Routable, Debug, PartialEq)]
 enum Route {
     #[layout(Header)]
@@ -91,12 +72,8 @@ enum Route {
     PageNotFound { route: Vec<String> },
 }
 
-#[cfg(target_arch = "wasm32")]
 #[component]
 fn Header() -> Element {
-    let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
-    let auth_state = auth.read();
-
     let mut sidebar_visible = use_context::<Signal<bool>>();
 
     let today = get_current_day_of_year();
@@ -128,29 +105,7 @@ fn Header() -> Element {
             }
             div {
                 class: "header-auth",
-                match &*auth_state {
-                    Some(Ok(provider)) => {
-                        let provider = provider.clone();
-                        rsx! {
-                            button {
-                                onclick: move |_| {
-                                    // Silently handle login errors - the auth provider handles redirects
-                                    let _ = provider.login();
-                                },
-                                "Login"
-                            }
-                        }
-                    },
-                    Some(Err(err)) => rsx! {
-                        div {
-                            class: "error",
-                            "Authentication Error: {err}"
-                        }
-                    },
-                    None => rsx! {
-                        div { "Loading authentication..." }
-                    },
-                }
+                { render_auth_section() }
             }
         }
 
@@ -164,18 +119,42 @@ fn Header() -> Element {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-#[component]
-fn Header() -> Element {
-    // For non-wasm targets (like tests), provide minimal header
-    rsx! {
-        div { "Header" }
-        Outlet::<Route> {}
+#[cfg(target_arch = "wasm32")]
+fn render_auth_section() -> Element {
+    let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
+    let auth_state = auth.read();
+
+    match &*auth_state {
+        Some(Ok(provider)) => {
+            let provider = provider.clone();
+            rsx! {
+                button {
+                    onclick: move |_| {
+                        // Silently handle login errors - the auth provider handles redirects
+                        let _ = provider.login();
+                    },
+                    "Login"
+                }
+            }
+        }
+        Some(Err(err)) => rsx! {
+            div {
+                class: "error",
+                "Authentication Error: {err}"
+            }
+        },
+        None => rsx! {
+            div { "Loading authentication..." }
+        },
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn render_auth_section() -> Element {
+    rsx! { div { "Login (test mode)" } }
+}
+
 /// Get the current day of the year (1-366) using chrono
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_current_day_of_year() -> u32 {
     let now = Local::now();
     now.ordinal()
@@ -183,7 +162,6 @@ fn get_current_day_of_year() -> u32 {
 
 /// Get the current week of the year (1-53) using chrono
 /// Uses a simple calculation: week = floor((day - 1) / 7) + 1
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_current_week_of_year() -> u32 {
     let day = get_current_day_of_year();
     // Calculate week number (1-53), rounding up
@@ -191,7 +169,6 @@ fn get_current_week_of_year() -> u32 {
 }
 
 /// Get recipe days to display in sidebar, sorted numerically
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_sidebar_recipe_days() -> Vec<u32> {
     let today = get_current_day_of_year();
     let mut days = Vec::new();
@@ -213,7 +190,6 @@ fn get_sidebar_recipe_days() -> Vec<u32> {
 }
 
 /// Get plan weeks to display in sidebar, sorted numerically
-#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn get_sidebar_plan_weeks() -> Vec<u32> {
     let current_week = get_current_week_of_year();
     let mut weeks = Vec::new();
@@ -234,7 +210,6 @@ fn get_sidebar_plan_weeks() -> Vec<u32> {
     weeks
 }
 
-#[cfg(target_arch = "wasm32")]
 #[component]
 fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
@@ -266,13 +241,6 @@ fn Sidebar() -> Element {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-#[component]
-fn Sidebar() -> Element {
-    rsx! { div { "Sidebar" } }
-}
-
-#[cfg(target_arch = "wasm32")]
 #[component]
 fn Home() -> Element {
     let today = get_current_day_of_year();
@@ -309,12 +277,6 @@ fn Home() -> Element {
             }
         }
     }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-#[component]
-fn Home() -> Element {
-    rsx! { div { "Home" } }
 }
 
 #[component]
