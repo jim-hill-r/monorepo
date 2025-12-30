@@ -1,11 +1,13 @@
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, CsrfToken, EndpointNotSet, EndpointSet,
-    PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    basic::BasicClient,
 };
 use web_sys::UrlSearchParams;
 
 use crate::provider::{
-    AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, ProviderConfig,
+    AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, CsrfTokenWrapper,
+    PkceVerifierWrapper, ProviderConfig,
 };
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
@@ -69,8 +71,8 @@ impl AuthProvider for WebAuthProvider {
 
         store_app_state_in_browser(&AppState {
             return_to: fetch_current_location_from_browser(),
-            csrf_token: Some(csrf_token),
-            pkce_verifier: Some(pkce_verifier),
+            csrf_token: Some(CsrfTokenWrapper::new(csrf_token.secret().to_string())),
+            pkce_verifier: Some(PkceVerifierWrapper::new(pkce_verifier.secret().to_string())),
         })?;
 
         redirect_browser(auth_url.as_ref())
@@ -145,8 +147,8 @@ async fn handle_redirect(
     state: CsrfTokenState,
 ) -> Result<AccessToken, AuthError> {
     let app_state = fetch_app_state_from_browser()?;
-    let csrf_token = app_state.csrf_token.ok_or(AuthError::Unknown)?;
-    let pkce_verifier = app_state.pkce_verifier.ok_or(AuthError::Unknown)?;
+    let csrf_token_wrapper = app_state.csrf_token.ok_or(AuthError::Unknown)?;
+    let pkce_verifier_wrapper = app_state.pkce_verifier.ok_or(AuthError::Unknown)?;
 
     // Current security validations:
     // 1. CSRF token validation (state parameter) - protects against CSRF attacks
@@ -155,7 +157,7 @@ async fn handle_redirect(
     // TODO (agent-generated): Research if additional OAuth2/OIDC security validations are needed (e.g., nonce validation for OIDC, additional claims validation)
     // TODO (agent-generated): Add more specific AuthError variants instead of returning AuthError::Unknown for validation failures
     // TODO (agent-generated): Add logging/tracing for security events (successful/failed validations)
-    if &state.0 != csrf_token.secret() {
+    if state.0 != csrf_token_wrapper.0 {
         tracing::debug!("Failed checks");
         return Err(AuthError::Unknown);
     }
@@ -177,6 +179,9 @@ async fn handle_redirect(
 
     #[cfg(target_arch = "wasm32")]
     let http_client = reqwest::Client::new();
+
+    // Convert wrapper type back to oauth2 type for token exchange
+    let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_wrapper.0);
 
     // Now you can exchange it for an access token.
     let token_result = client

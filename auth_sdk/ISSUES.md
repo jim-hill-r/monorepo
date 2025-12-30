@@ -11,6 +11,5 @@ TODO (agent-generated): Extract user information from ID token claims instead of
 TODO (agent-generated): Update tests to cover ID token validation and nonce handling
 TODO (agent-generated): Remove oauth2 dependency once migration is complete (it becomes transitive through openidconnect)
 TODO (agent-generated): Update documentation to reflect OIDC usage patterns
-TODO: Remove dependent crate (ie oauth2/openidconnect) structs from public api
 
 # Backlog

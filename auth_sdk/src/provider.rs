@@ -1,4 +1,3 @@
-use oauth2::{CsrfToken, PkceCodeVerifier};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -30,11 +29,33 @@ pub struct ProviderConfig {
     pub redirect_url: String,
 }
 
+/// Internal wrapper for CSRF token that doesn't expose oauth2 types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CsrfTokenWrapper(pub(crate) String);
+
+impl CsrfTokenWrapper {
+    #[allow(dead_code)]
+    pub(crate) fn new(value: String) -> Self {
+        CsrfTokenWrapper(value)
+    }
+}
+
+/// Internal wrapper for PKCE code verifier that doesn't expose oauth2 types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PkceVerifierWrapper(pub(crate) String);
+
+impl PkceVerifierWrapper {
+    #[allow(dead_code)]
+    pub(crate) fn new(value: String) -> Self {
+        PkceVerifierWrapper(value)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppState {
     pub return_to: Option<String>,
-    pub csrf_token: Option<CsrfToken>,
-    pub pkce_verifier: Option<PkceCodeVerifier>,
+    pub csrf_token: Option<CsrfTokenWrapper>,
+    pub pkce_verifier: Option<PkceVerifierWrapper>,
 }
 
 pub struct User {
@@ -96,5 +117,36 @@ mod tests {
         let error = AuthError::TokenExchangeError("test error".to_string());
         let cloned = error.clone();
         assert_eq!(error.to_string(), cloned.to_string());
+    }
+
+    #[test]
+    fn test_app_state_serialization() {
+        let app_state = AppState {
+            return_to: Some("https://example.com".to_string()),
+            csrf_token: None,
+            pkce_verifier: None,
+        };
+        let serialized = serde_json::to_string(&app_state).unwrap();
+        let deserialized: AppState = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(app_state.return_to, deserialized.return_to);
+    }
+
+    #[test]
+    fn test_csrf_token_state_new() {
+        let state = CsrfTokenState::new("test_state_value".to_string());
+        assert_eq!(state.0, "test_state_value");
+    }
+
+    #[test]
+    fn test_access_token_secret() {
+        let token = AccessToken::new("secret_token_value".to_string());
+        assert_eq!(token.secret(), "secret_token_value");
+    }
+
+    #[test]
+    fn test_access_token_can_be_cloned() {
+        let token = AccessToken::new("test_token".to_string());
+        let cloned = token.clone();
+        assert_eq!(token.secret(), cloned.secret());
     }
 }
