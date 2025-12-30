@@ -132,17 +132,29 @@ This project uses:
 - Dioxus Router for client-side routing
 - Playwright for end-to-end testing
 - `cookbook-core` for recipe data models and traits
-- `cookbook-data-md` for reading recipes from markdown files
+- `cookbook-data-md` for reading recipes from markdown files (not directly used in web, but provides parsing logic)
 
 ## Implementation Details
 
-The web application uses the `MarkdownRecipeStore` from `cookbook-data-md` to load recipe data at runtime. Recipes are stored as markdown files in the `../content` directory (relative to the workspace root). Each recipe file follows a specific format with metadata, ingredients, and instructions.
+The web application uses an embedded recipe store that includes all recipe markdown files at compile time. This is necessary because the application runs in the browser (WebAssembly) where filesystem access is not available.
+
+The `EmbeddedRecipeStore` implementation:
+1. Uses Rust's `include_str!` macro to embed all 365 recipe files at compile time
+2. Parses the markdown content using the same parsing logic as `MarkdownRecipeStore`
+3. Stores all parsed recipes in a `HashMap` for fast lookup
+4. Implements the `RecipeReader` trait from `cookbook-core`
 
 When a user navigates to a recipe page (e.g., `/recipe/1`), the application:
-1. Creates a `MarkdownRecipeStore` instance pointing to the content directory
+1. Gets the global singleton `EmbeddedRecipeStore` instance
 2. Fetches the recipe for the requested day using `get_by_day(day)`
-3. Displays the full recipe information including all metadata
+3. Displays the full recipe information including title, description, metadata, ingredients, instructions, and tags
+
+The embedded approach has several advantages:
+- No runtime file I/O needed
+- Works in WASM/browser environment
+- Instant recipe access (no network requests)
+- All recipes are guaranteed to be available
 
 ## Status
 
-This project now displays actual recipe content loaded from markdown files. The recipes are generated using the `cookbook-recipe-gen` tool and stored in the `content` directory.
+This project now displays actual recipe content loaded from embedded markdown files. The recipes are generated using the `cookbook-recipe-gen` tool and stored in the `content` directory, then embedded into the binary at compile time.
