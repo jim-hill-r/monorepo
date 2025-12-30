@@ -13,6 +13,10 @@ All projects require:
 - Managed via `rustup` or GitHub Actions' `actions-rust-lang/setup-rust-toolchain`
 - Version strategy: Use latest stable Rust (currently 1.92.0)
 - GitHub workflows use `toolchain: stable` to automatically track latest stable releases
+- **Git LFS** (git-lfs)
+- Required for handling large files in the repository
+- Installation: System package manager (e.g., `apt install git-lfs`, `brew install git-lfs`)
+- Must be initialized with `git lfs install` after installation
 
 ## Framework-Specific Toolchains
 

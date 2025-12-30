@@ -37,6 +37,8 @@ pub enum Tool {
     Playwright,
     /// Cloudflare Wrangler CLI
     Wrangler,
+    /// Git Large File Storage
+    GitLfs,
 }
 
 impl Tool {
@@ -52,6 +54,7 @@ impl Tool {
             Tool::Npm => "npm",
             Tool::Playwright => "playwright",
             Tool::Wrangler => "wrangler",
+            Tool::GitLfs => "git-lfs",
         }
     }
 
@@ -67,6 +70,7 @@ impl Tool {
             "npm" => Some(Tool::Npm),
             "playwright" => Some(Tool::Playwright),
             "wrangler" => Some(Tool::Wrangler),
+            "git-lfs" | "gitlfs" | "lfs" => Some(Tool::GitLfs),
             _ => None,
         }
     }
@@ -99,6 +103,9 @@ pub fn detect_required_tools(
     tools.insert(Tool::Cargo);
     tools.insert(Tool::Rustfmt);
     tools.insert(Tool::Clippy);
+
+    // Always include git-lfs (required for repository operations with large files)
+    tools.insert(Tool::GitLfs);
 
     // Add framework-specific tools
     if let Some(framework) = &config.framework {
@@ -151,6 +158,11 @@ pub fn detect_required_tools(
 pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
     use std::process::Command;
 
+    // Playwright needs special handling to verify chromium browsers are installed
+    if matches!(tool, Tool::Playwright) {
+        return check_playwright_with_browsers();
+    }
+
     let (command, args) = match tool {
         Tool::Rustc => ("rustc", vec!["--version"]),
         Tool::Cargo => ("cargo", vec!["--version"]),
@@ -161,6 +173,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
         Tool::Npm => ("npm", vec!["--version"]),
         Tool::Playwright => ("npx", vec!["playwright", "--version"]),
         Tool::Wrangler => ("wrangler", vec!["--version"]),
+        Tool::GitLfs => ("git", vec!["lfs", "version"]),
     };
 
     // Try to run the command
@@ -196,6 +209,67 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
                 tool: tool.clone(),
                 installed: false,
                 version: None,
+            })
+        }
+    }
+}
+
+/// Check if Playwright is installed with chromium browsers
+fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
+    use std::process::Command;
+
+    // First check if playwright npm package is available
+    let version_check = Command::new("npx")
+        .args(["playwright", "--version"])
+        .output();
+
+    let version = match version_check {
+        Ok(output) if output.status.success() => {
+            let version_output = String::from_utf8_lossy(&output.stdout);
+            Some(parse_version_string(version_output.trim()))
+        }
+        _ => {
+            // Playwright npm package not installed
+            return Ok(ToolStatus {
+                tool: Tool::Playwright,
+                installed: false,
+                version: None,
+            });
+        }
+    };
+
+    // Now check if chromium browsers are installed
+    let browser_check = Command::new("npx")
+        .args(["playwright", "install", "--list"])
+        .output();
+
+    match browser_check {
+        Ok(output) if output.status.success() => {
+            // Parse the output to check if chromium is installed
+            let list_output = String::from_utf8_lossy(&output.stdout);
+            let has_chromium = list_output.contains("chromium");
+
+            if has_chromium {
+                Ok(ToolStatus {
+                    tool: Tool::Playwright,
+                    installed: true,
+                    version,
+                })
+            } else {
+                // Playwright installed but chromium browser not installed
+                Ok(ToolStatus {
+                    tool: Tool::Playwright,
+                    installed: false,
+                    version,
+                })
+            }
+        }
+        _ => {
+            // Failed to check browser list - treat as not installed
+            Ok(ToolStatus {
+                tool: Tool::Playwright,
+                installed: false,
+                version,
             })
         }
     }
@@ -259,6 +333,7 @@ mod tests {
         assert_eq!(Tool::Npm.name(), "npm");
         assert_eq!(Tool::Playwright.name(), "playwright");
         assert_eq!(Tool::Wrangler.name(), "wrangler");
+        assert_eq!(Tool::GitLfs.name(), "git-lfs");
     }
 
     #[test]
@@ -274,6 +349,9 @@ mod tests {
         assert_eq!(Tool::from_name("npm"), Some(Tool::Npm));
         assert_eq!(Tool::from_name("playwright"), Some(Tool::Playwright));
         assert_eq!(Tool::from_name("wrangler"), Some(Tool::Wrangler));
+        assert_eq!(Tool::from_name("git-lfs"), Some(Tool::GitLfs));
+        assert_eq!(Tool::from_name("gitlfs"), Some(Tool::GitLfs));
+        assert_eq!(Tool::from_name("lfs"), Some(Tool::GitLfs));
         assert_eq!(Tool::from_name("unknown"), None);
     }
 
@@ -283,6 +361,7 @@ mod tests {
         assert_eq!(Tool::from_name("Cargo"), Some(Tool::Cargo));
         assert_eq!(Tool::from_name("DX"), Some(Tool::Dx));
         assert_eq!(Tool::from_name("NODE"), Some(Tool::Node));
+        assert_eq!(Tool::from_name("GIT-LFS"), Some(Tool::GitLfs));
     }
 
     #[test]
@@ -299,16 +378,17 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Dioxus requires: rustc, cargo, rustfmt, clippy, dx, node, npm, playwright
+        // Dioxus requires: rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
+        assert!(tools.contains(&Tool::GitLfs));
         assert!(tools.contains(&Tool::Dx));
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
         assert!(tools.contains(&Tool::Playwright));
-        assert_eq!(tools.len(), 8);
+        assert_eq!(tools.len(), 9);
     }
 
     #[test]
@@ -329,15 +409,16 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Cloudflare Pages requires: rustc, cargo, rustfmt, clippy, wrangler, node, npm
+        // Cloudflare Pages requires: rustc, cargo, rustfmt, clippy, git-lfs, wrangler, node, npm
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
+        assert!(tools.contains(&Tool::GitLfs));
         assert!(tools.contains(&Tool::Wrangler));
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
-        assert_eq!(tools.len(), 7);
+        assert_eq!(tools.len(), 8);
     }
 
     #[test]
@@ -354,12 +435,13 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Pure Rust requires: rustc, cargo, rustfmt, clippy
+        // Pure Rust requires: rustc, cargo, rustfmt, clippy, git-lfs
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
-        assert_eq!(tools.len(), 4);
+        assert!(tools.contains(&Tool::GitLfs));
+        assert_eq!(tools.len(), 5);
     }
 
     #[test]
@@ -378,7 +460,8 @@ mod tests {
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
-        assert_eq!(tools.len(), 4);
+        assert!(tools.contains(&Tool::GitLfs));
+        assert_eq!(tools.len(), 5);
     }
 
     #[test]
@@ -629,6 +712,7 @@ fn install_single_tool(
         Tool::Node | Tool::Npm => install_node(tool, dry_run),
         Tool::Playwright => install_playwright(working_directory, dry_run),
         Tool::Wrangler => install_wrangler(dry_run),
+        Tool::GitLfs => install_git_lfs(dry_run),
     }
 }
 
@@ -813,6 +897,44 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
             stderr
         )))
     }
+}
+
+/// Provide guidance for Git LFS installation
+fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
+    // Git LFS should be installed via system package manager
+    // We provide guidance instead of trying to install
+
+    let (os_name, install_cmd) = if cfg!(target_os = "linux") {
+        ("Linux", "sudo apt install git-lfs && git lfs install")
+    } else if cfg!(target_os = "macos") {
+        ("macOS", "brew install git-lfs && git lfs install")
+    } else if cfg!(target_os = "windows") {
+        ("Windows", "winget install GitHub.GitLFS")
+    } else {
+        ("your OS", "your system package manager")
+    };
+
+    let message = format!(
+        "git-lfs must be installed via your system package manager.\n\
+         For {}, use: {}",
+        os_name, install_cmd
+    );
+
+    if dry_run {
+        return Ok(InstallResult {
+            tool: Tool::GitLfs,
+            success: false,
+            message: format!("Would provide guidance: {}", message),
+            skipped: false,
+        });
+    }
+
+    Ok(InstallResult {
+        tool: Tool::GitLfs,
+        success: false,
+        message,
+        skipped: false,
+    })
 }
 
 /// Options for checking tools
@@ -1027,6 +1149,7 @@ fn get_all_tools() -> Vec<Tool> {
         Tool::Npm,
         Tool::Playwright,
         Tool::Wrangler,
+        Tool::GitLfs,
     ]
 }
 
@@ -1246,8 +1369,8 @@ mod check_tests {
 
         let check_result = result.unwrap();
         assert!(check_result.framework.is_none());
-        // Pure Rust requires: rustc, cargo, rustfmt, clippy
-        assert_eq!(check_result.tool_statuses.len(), 4);
+        // Pure Rust requires: rustc, cargo, rustfmt, clippy, git-lfs
+        assert_eq!(check_result.tool_statuses.len(), 5);
 
         // In CI environment, Rust tools should be installed
         let rustc_status = check_result
@@ -1277,8 +1400,8 @@ mod check_tests {
 
         let check_result = result.unwrap();
         assert_eq!(check_result.framework, Some("dioxus".to_string()));
-        // Dioxus requires: rustc, cargo, rustfmt, clippy, dx, node, npm, playwright
-        assert_eq!(check_result.tool_statuses.len(), 8);
+        // Dioxus requires: rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        assert_eq!(check_result.tool_statuses.len(), 9);
     }
 
     #[test]
@@ -1478,7 +1601,7 @@ mod list_tests {
     #[test]
     fn test_get_all_tools() {
         let tools = get_all_tools();
-        assert_eq!(tools.len(), 9);
+        assert_eq!(tools.len(), 10);
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
@@ -1488,6 +1611,7 @@ mod list_tests {
         assert!(tools.contains(&Tool::Npm));
         assert!(tools.contains(&Tool::Playwright));
         assert!(tools.contains(&Tool::Wrangler));
+        assert!(tools.contains(&Tool::GitLfs));
     }
 
     #[test]
@@ -1510,8 +1634,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Dioxus requires: rustc, cargo, rustfmt, clippy, dx, node, npm, playwright
-        assert_eq!(list_result.tool_statuses.len(), 8);
+        // Dioxus requires: rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        assert_eq!(list_result.tool_statuses.len(), 9);
 
         let tool_names: Vec<&str> = list_result
             .tool_statuses
@@ -1522,6 +1646,7 @@ mod list_tests {
         assert!(tool_names.contains(&"cargo"));
         assert!(tool_names.contains(&"rustfmt"));
         assert!(tool_names.contains(&"clippy"));
+        assert!(tool_names.contains(&"git-lfs"));
         assert!(tool_names.contains(&"dx"));
         assert!(tool_names.contains(&"node"));
         assert!(tool_names.contains(&"npm"));
@@ -1548,8 +1673,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Should list all 9 tools
-        assert_eq!(list_result.tool_statuses.len(), 9);
+        // Should list all 10 tools
+        assert_eq!(list_result.tool_statuses.len(), 10);
     }
 
     #[test]
@@ -1572,8 +1697,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Pure Rust requires: rustc, cargo, rustfmt, clippy
-        assert_eq!(list_result.tool_statuses.len(), 4);
+        // Pure Rust requires: rustc, cargo, rustfmt, clippy, git-lfs
+        assert_eq!(list_result.tool_statuses.len(), 5);
     }
 
     #[test]
