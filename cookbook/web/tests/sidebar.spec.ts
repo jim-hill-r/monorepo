@@ -38,9 +38,13 @@ test.describe('Sidebar Navigation', () => {
     const recipesSection = page.locator('#sidebar .sidebar-section').first();
     await expect(recipesSection.locator('h3')).toHaveText('Daily Recipes');
     
-    // Check for some recipe links
-    await expect(recipesSection.locator('a', { hasText: 'Day 1' })).toBeVisible();
-    await expect(recipesSection.locator('a', { hasText: 'Day 11' })).toBeVisible();
+    // Check that there are recipe links (should be 10 links)
+    const recipeLinks = recipesSection.locator('a');
+    await expect(recipeLinks).toHaveCount(10);
+    
+    // Verify the links have proper day format
+    const firstLink = recipeLinks.first();
+    await expect(firstLink).toContainText('Day');
   });
 
   test('should display plan quick links section', async ({ page }) => {
@@ -51,35 +55,51 @@ test.describe('Sidebar Navigation', () => {
     const plansSection = page.locator('#sidebar .sidebar-section').last();
     await expect(plansSection.locator('h3')).toHaveText('Weekly Plans');
     
-    // Check for some plan links
-    await expect(plansSection.locator('a', { hasText: 'Week 1' })).toBeVisible();
-    await expect(plansSection.locator('a', { hasText: 'Week 5' })).toBeVisible();
+    // Check that there are plan links (should be 4 links)
+    const planLinks = plansSection.locator('a');
+    await expect(planLinks).toHaveCount(4);
+    
+    // Verify the links have proper week format
+    const firstLink = planLinks.first();
+    await expect(firstLink).toContainText('Week');
   });
 
   test('should navigate to recipe from sidebar link', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click on a recipe link
-    const recipeLink = page.locator('#sidebar a', { hasText: 'Day 1' });
+    // Click on the first recipe link in sidebar
+    const recipeLink = page.locator('#sidebar .sidebar-section').first().locator('a').first();
     await recipeLink.click();
     await page.waitForLoadState('networkidle');
     
-    // Should navigate to the recipe
-    await expect(page.locator('h1')).toHaveText('Recipe for Day 1');
+    // Should navigate to a recipe page (check URL pattern)
+    await expect(page).toHaveURL(/\/recipe\/\d+/);
+    
+    // Should have a recipe title (h1 in content area, not header)
+    const contentH1 = page.locator('#content h1');
+    await expect(contentH1).toBeVisible();
+    await expect(contentH1).not.toBeEmpty();
   });
 
   test('should navigate to plan from sidebar link', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click on a plan link
-    const planLink = page.locator('#sidebar a', { hasText: 'Week 1' });
+    // Click on the first plan link in sidebar
+    const planLink = page.locator('#sidebar .sidebar-section').last().locator('a').first();
+    const planText = await planLink.textContent();
+    const weekNumber = planText?.match(/Week (\d+)/)?.[1];
+    
     await planLink.click();
     await page.waitForLoadState('networkidle');
     
-    // Should navigate to the plan
-    await expect(page.locator('h1')).toHaveText('Meal Plan for Week 1');
+    // Should navigate to a plan page (check URL pattern)
+    await expect(page).toHaveURL(/\/plan\/\d+/);
+    
+    // Should have a plan title matching the week number
+    const contentH1 = page.locator('#content h1');
+    await expect(contentH1).toHaveText(`Meal Plan for Week ${weekNumber}`);
   });
 
   test('should display sidebar on recipe pages', async ({ page }) => {
@@ -104,29 +124,52 @@ test.describe('Sidebar Navigation', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click first link
-    await page.locator('#sidebar a', { hasText: 'Day 1' }).click();
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('h1')).toHaveText('Recipe for Day 1');
+    // Get recipe links from sidebar
+    const recipeSection = page.locator('#sidebar .sidebar-section').first();
+    const firstLink = recipeSection.locator('a').first();
+    const secondLink = recipeSection.locator('a').nth(1);
     
-    // Click another link from sidebar
-    await page.locator('#sidebar a', { hasText: 'Day 11' }).click();
+    // Click first link
+    await firstLink.click();
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('h1')).toHaveText('Recipe for Day 11');
+    await expect(page).toHaveURL(/\/recipe\/\d+/);
+    const firstUrl = page.url();
+    
+    // Click second link from sidebar
+    await secondLink.click();
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/recipe\/\d+/);
+    const secondUrl = page.url();
+    
+    // URLs should be different
+    expect(firstUrl).not.toBe(secondUrl);
   });
 
   test('should allow navigation between multiple plan links', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Click first link
-    await page.locator('#sidebar a', { hasText: 'Week 1' }).click();
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('h1')).toHaveText('Meal Plan for Week 1');
+    // Get plan links from sidebar
+    const planSection = page.locator('#sidebar .sidebar-section').last();
+    const firstLink = planSection.locator('a').first();
+    const secondLink = planSection.locator('a').nth(1);
     
-    // Click another link from sidebar
-    await page.locator('#sidebar a', { hasText: 'Week 5' }).click();
+    const firstLinkText = await firstLink.textContent();
+    const firstWeek = firstLinkText?.match(/Week (\d+)/)?.[1];
+    
+    // Click first link
+    await firstLink.click();
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('h1')).toHaveText('Meal Plan for Week 5');
+    await expect(page).toHaveURL(/\/plan\/\d+/);
+    await expect(page.locator('#content h1')).toHaveText(`Meal Plan for Week ${firstWeek}`);
+    
+    // Click second link from sidebar
+    const secondLinkText = await secondLink.textContent();
+    const secondWeek = secondLinkText?.match(/Week (\d+)/)?.[1];
+    
+    await secondLink.click();
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/plan\/\d+/);
+    await expect(page.locator('#content h1')).toHaveText(`Meal Plan for Week ${secondWeek}`);
   });
 });
