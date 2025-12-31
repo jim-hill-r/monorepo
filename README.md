@@ -6,7 +6,7 @@ Monorepo for all projects
 
 Cast is the CLI tool for this monorepo. All developer commands use Cast.
 
-- To install Cast, run `source cast/cli/artifacts/{target-architecture}/cast install`
+- To install Cast, run `./cast/cli/artifacts/{target-architecture}/cast install`
 
 Once Cast is installed, you can use it for all other work in this monorepo.
 - To start a work session, use `cast session start`.
