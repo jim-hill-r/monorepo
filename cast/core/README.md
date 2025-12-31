@@ -340,11 +340,14 @@ cast deploy
 ```
 
 This command:
-1. Verifies the project is marked as `project_type = "iac"` in its Cast configuration
-2. Deploys the project based on its framework:
+1. If the current project has a `deploys` field in its Cast configuration, it will deploy each project listed in that field
+2. Otherwise, verifies the project is marked as `project_type = "iac"` in its Cast configuration
+3. Deploys the project based on its framework:
    - **cloudflare-pages**: Deploys using `wrangler pages deploy`
-3. Automatically loads environment variables from `.env` file if present (using the `dotenvy` library for proper parsing)
-4. Displays deployment progress and output from the deployment tool
+4. Automatically loads environment variables from `.env` file if present (using the `dotenvy` library for proper parsing)
+5. Displays deployment progress and output from the deployment tool
+
+**Note**: When deploying from a project with a `deploys` field, the paths are resolved relative to the current project directory. For example, running `cast deploy` from `cookbook/web` with `deploys = ["../cloudflare"]` will deploy the `cookbook/cloudflare` project.
 
 #### Cloudflare Pages Deployment
 

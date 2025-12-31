@@ -24,14 +24,27 @@ pub enum DeployError {
     EnvFileParseError(String),
 }
 
-/// Run deployment for an IAC project
+/// Run deployment for an IAC project or a project with deploy dependencies
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), DeployError> {
     let working_directory = working_directory.as_ref();
 
     // Load config to determine project type and framework
     let config = CastConfig::load_from_dir(working_directory)?;
 
-    // Verify this is an IAC project
+    // Check if this project has deploys configured
+    if let Some(deploys) = &config.deploys {
+        // Deploy all listed deploy projects
+        for deploy_path in deploys {
+            let deploy_dir = working_directory.join(deploy_path);
+            println!("Deploying: {}", deploy_dir.display());
+
+            // Recursively call run on each deploy project
+            run(&deploy_dir)?;
+        }
+        return Ok(());
+    }
+
+    // If no deploys field, verify this is an IAC project
     if config.project_type != Some("iac".to_string()) {
         return Err(DeployError::NotIacProject);
     }
@@ -242,5 +255,107 @@ mod tests {
 
         // Verify the variable is NOT set globally
         assert!(std::env::var(test_key).is_err());
+    }
+
+    #[test]
+    fn test_deploy_succeeds_with_deploys_field_single_project() {
+        let tmp_dir = TempDir::new("test_deploy_with_deploys").unwrap();
+
+        // Create a non-IAC project with deploys field
+        fs::write(
+            tmp_dir.path().join("Cast.toml"),
+            "project_type = \"static_website\"\nframework = \"dioxus\"\ndeploys = [\"../iac\"]",
+        )
+        .unwrap();
+
+        // Create the IAC project directory
+        let iac_dir = tmp_dir.path().join("../iac");
+        fs::create_dir_all(&iac_dir).unwrap();
+        fs::write(
+            iac_dir.join("Cast.toml"),
+            "project_type = \"iac\"\nframework = \"cloudflare-pages\"",
+        )
+        .unwrap();
+        fs::write(iac_dir.join("wrangler.toml"), "name = \"test\"\n").unwrap();
+
+        // This should succeed if wrangler is installed, or fail with WranglerNotInstalled
+        let result = run(tmp_dir.path());
+        // We can't guarantee wrangler is installed in test environment,
+        // so we just verify it attempts to deploy the IAC project
+        // by checking it doesn't error with NotIacProject
+        if let Err(e) = result {
+            // These are acceptable errors in test environment
+            assert!(
+                matches!(e, DeployError::WranglerNotInstalled)
+                    || matches!(e, DeployError::DeployFailed),
+                "Expected WranglerNotInstalled or DeployFailed, got: {:?}",
+                e
+            );
+        }
+    }
+
+    #[test]
+    fn test_deploy_succeeds_with_deploys_field_multiple_projects() {
+        let tmp_dir = TempDir::new("test_deploy_multiple").unwrap();
+
+        // Create a non-IAC project with multiple deploys
+        fs::write(
+            tmp_dir.path().join("Cast.toml"),
+            "project_type = \"static_website\"\nframework = \"dioxus\"\ndeploys = [\"../iac1\", \"../iac2\"]",
+        )
+        .unwrap();
+
+        // Create the first IAC project directory
+        let iac1_dir = tmp_dir.path().join("../iac1");
+        fs::create_dir_all(&iac1_dir).unwrap();
+        fs::write(
+            iac1_dir.join("Cast.toml"),
+            "project_type = \"iac\"\nframework = \"cloudflare-pages\"",
+        )
+        .unwrap();
+        fs::write(iac1_dir.join("wrangler.toml"), "name = \"test1\"\n").unwrap();
+
+        // Create the second IAC project directory
+        let iac2_dir = tmp_dir.path().join("../iac2");
+        fs::create_dir_all(&iac2_dir).unwrap();
+        fs::write(
+            iac2_dir.join("Cast.toml"),
+            "project_type = \"iac\"\nframework = \"cloudflare-pages\"",
+        )
+        .unwrap();
+        fs::write(iac2_dir.join("wrangler.toml"), "name = \"test2\"\n").unwrap();
+
+        // This should attempt to deploy both IAC projects
+        let result = run(tmp_dir.path());
+        // Similar to above, verify it doesn't fail with NotIacProject
+        if let Err(e) = result {
+            assert!(
+                matches!(e, DeployError::WranglerNotInstalled)
+                    || matches!(e, DeployError::DeployFailed),
+                "Expected WranglerNotInstalled or DeployFailed, got: {:?}",
+                e
+            );
+        }
+    }
+
+    #[test]
+    fn test_deploy_without_iac_project_and_without_deploys_fails() {
+        let tmp_dir = TempDir::new("test_deploy_no_deploys").unwrap();
+
+        // Create a non-IAC project without deploys field
+        fs::write(
+            tmp_dir.path().join("Cast.toml"),
+            "project_type = \"static_website\"\nframework = \"dioxus\"",
+        )
+        .unwrap();
+
+        let result = run(tmp_dir.path());
+        assert!(result.is_err());
+        match result {
+            Err(DeployError::NotIacProject) => {
+                // Expected error
+            }
+            _ => panic!("Expected NotIacProject error"),
+        }
     }
 }
