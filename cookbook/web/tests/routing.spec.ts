@@ -37,11 +37,9 @@ test.describe('Cookbook Web Application', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Check for daily recipes section
-    await expect(page.locator('h2').first()).toContainText('Daily Recipes');
-    
-    // Check for weekly plans section
-    await expect(page.locator('h2').last()).toContainText('Weekly Plans');
+    // Check for navigation cards with Daily Recipes and Weekly Plans
+    await expect(page.locator('#content h2').first()).toContainText('Daily Recipes');
+    await expect(page.locator('#content h2').last()).toContainText('Weekly Plans');
   });
 });
 
