@@ -24,6 +24,7 @@ Complete one issue within this repo.
 1. Run `./cast/cli/artifacts/x86_64-unknown-linux-gnu/cast install` in root directory.
 2. Run `cast install` in root directory.
 3. Anytime you are working within a project, run `cast install` in that directory before beginning work.
+4. When working in this repo, most common needs such as `build`, `test`, and `ci` have `cast` commands. Use `cast -h` to explore the cli to find commands you might need.
 
 ## Fix Issue
 1. If the issue to be worked is too complex, then just try to break up the issue into several smaller issues and issue a PR with changes to any relevant ISSUES.md. Mark these comments with `TODO (agent-generated)`. **Formatting**: Use a flat list of TODO items under `# Priority Issues`. Only use subsections (##, ###) if documenting a multi-phase epic in a project-specific ISSUES.md (like cast/ISSUES.md), not in the root ISSUES.md.
