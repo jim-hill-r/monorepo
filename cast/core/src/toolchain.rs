@@ -255,6 +255,8 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
     };
 
     // Now check if chromium browsers are installed
+    // Note: `npx playwright install --list` returns exit code 0 when browsers are installed
+    // and exit code 1 when browsers are not installed or the .links directory is missing
     let browser_check = Command::new("npx")
         .args(["playwright", "install", "--list"])
         .output();
@@ -262,8 +264,16 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
     match browser_check {
         Ok(output) if output.status.success() => {
             // Parse the output to check if chromium is installed
+            // Expected output format includes lines like:
+            //   /home/user/.cache/ms-playwright/chromium-1200
+            //   /home/user/.cache/ms-playwright/chromium_headless_shell-1200
             let list_output = String::from_utf8_lossy(&output.stdout);
-            let has_chromium = list_output.contains("chromium");
+
+            // Check for chromium browser installation
+            // Look for "chromium-" to avoid matching just "chromium_headless_shell"
+            // Both chromium and chromium_headless_shell should be present for full installation
+            let has_chromium = list_output.contains("chromium-")
+                || list_output.contains("chromium_headless_shell-");
 
             if has_chromium {
                 Ok(ToolStatus {
@@ -272,7 +282,8 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
                     version,
                 })
             } else {
-                // Playwright installed but chromium browser not installed
+                // Playwright npm package installed but chromium browser not installed
+                // This can happen if `npm ci` was run but `npx playwright install` was not
                 Ok(ToolStatus {
                     tool: Tool::Playwright,
                     installed: false,
@@ -280,8 +291,18 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
                 })
             }
         }
-        _ => {
-            // Failed to check browser list - treat as not installed
+        Ok(_output) => {
+            // Command executed but returned non-zero exit code
+            // This typically means browsers are not installed yet
+            // The error message usually indicates: "ENOENT: no such file or directory, scandir '.../.links'"
+            Ok(ToolStatus {
+                tool: Tool::Playwright,
+                installed: false,
+                version,
+            })
+        }
+        Err(_) => {
+            // Command failed to execute (npx not found, etc.)
             Ok(ToolStatus {
                 tool: Tool::Playwright,
                 installed: false,
@@ -799,17 +820,15 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
     use std::process::Command;
 
     // Find the monorepo root by looking for cast/cli directory using ancestors
-    let cast_cli_path = working_directory
-        .ancestors()
-        .find_map(|ancestor| {
-            let potential_path = ancestor.join("cast/cli");
-            if potential_path.exists() && potential_path.is_dir() {
-                Some(potential_path)
-            } else {
-                None
-            }
-        });
-    
+    let cast_cli_path = working_directory.ancestors().find_map(|ancestor| {
+        let potential_path = ancestor.join("cast/cli");
+        if potential_path.exists() && potential_path.is_dir() {
+            Some(potential_path)
+        } else {
+            None
+        }
+    });
+
     let cast_cli_path = match cast_cli_path {
         Some(path) => path,
         None => {
@@ -817,7 +836,9 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
             return Ok(InstallResult {
                 tool: Tool::Cast,
                 success: false,
-                message: "Skipped: Could not find cast/cli directory. Run from within the monorepo.".to_string(),
+                message:
+                    "Skipped: Could not find cast/cli directory. Run from within the monorepo."
+                        .to_string(),
                 skipped: true,
             });
         }
@@ -837,10 +858,11 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
 
     println!("Installing Cast CLI from {}...", cast_cli_path.display());
 
-    let path_str = cast_cli_path.to_str()
-        .ok_or_else(|| ToolchainError::InstallationError(
-            "Cast CLI path contains invalid UTF-8 characters".to_string()
-        ))?;
+    let path_str = cast_cli_path.to_str().ok_or_else(|| {
+        ToolchainError::InstallationError(
+            "Cast CLI path contains invalid UTF-8 characters".to_string(),
+        )
+    })?;
 
     let output = Command::new("cargo")
         .args(["install", "--path", path_str])
