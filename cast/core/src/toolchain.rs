@@ -979,8 +979,7 @@ fn install_playwright(
         return Ok(InstallResult {
             tool: Tool::Playwright,
             success: true,
-            message: "Would install: npm ci && npx playwright install --with-deps"
-                .to_string(),
+            message: "Would install: npm ci && npx playwright install --with-deps".to_string(),
             skipped: false,
         });
     }
