@@ -147,7 +147,7 @@ The `webServer` configuration in `playwright.config.ts` is now enabled by defaul
 
 ```typescript
 webServer: {
-  command: 'dx serve --port 8080',
+  command: 'cast run',
   url: 'http://localhost:8080',
   reuseExistingServer: !process.env.CI,
   timeout: 120 * 1000,
