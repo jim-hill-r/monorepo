@@ -133,7 +133,7 @@ cargo build --release
 ./target/release/cast dev
 
 # Install required development tools
-./target/release/cast toolchain install
+./target/release/cast install
 
 # Check which tools are installed
 ./target/release/cast toolchain check
@@ -172,13 +172,13 @@ Cast provides toolchain management to help install framework-specific tools:
 
 ```bash
 # Install all required tools for a project
-cast toolchain install
+cast install
 
 # Check if tools are installed
 cast toolchain check
 
 # See what would be installed
-cast toolchain install --dry-run
+cast install --dry-run
 ```
 
 Different frameworks require different tools:

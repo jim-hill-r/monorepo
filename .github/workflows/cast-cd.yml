@@ -112,7 +112,7 @@ jobs:
             cd "$GITHUB_WORKSPACE/$project"
             
             # Install required tools for this project
-            if "$CAST_BIN" toolchain install; then
+            if "$CAST_BIN" install; then
               echo "✓ Toolchain installed for $project"
             else
               echo "✗ Toolchain installation failed for $project"
