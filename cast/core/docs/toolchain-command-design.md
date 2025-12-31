@@ -64,8 +64,10 @@ Installs all tools required by the current project based on its Cast configurati
 
 **Behavior:**
 
-1. Reads Cast configuration from `Cargo.toml` or `Cast.toml`
-2. Determines required tools based on `framework` field
+1. Attempts to read Cast configuration from `Cargo.toml` or `Cast.toml` (if available)
+2. Determines required tools based on:
+   - `framework` field (if Cast configuration is found)
+   - Default tools (rustc, cargo, rustfmt, clippy, git-lfs) if no configuration is found
 3. Checks if tools are already installed
 4. Installs missing tools using appropriate methods:
    - **Dioxus CLI**: `cargo install dioxus-cli --version X.Y.Z`
@@ -78,7 +80,6 @@ Installs all tools required by the current project based on its Cast configurati
 
 - `0` - All required tools installed successfully
 - `1` - One or more tools failed to install
-- `2` - Cast configuration not found or invalid
 
 **Examples:**
 
@@ -277,7 +278,7 @@ Tools that should be installed via system package manager:
 
 The command should handle common error scenarios:
 
-1. **No Cast configuration found**: Provide helpful error message
+1. **No Cast configuration found**: Install default tools (Rust toolchain and git-lfs)
 2. **Tool installation fails**: Show clear error with suggestions (e.g., network issues, permissions)
 3. **Unsupported platform**: Detect platform and show appropriate error if tool isn't available
 4. **Conflicting versions**: Warn if an incompatible version is installed

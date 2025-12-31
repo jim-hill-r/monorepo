@@ -91,7 +91,7 @@ The `cast install` and `cast toolchain` commands help automate the installation 
 cast install
 ```
 
-Installs all required tools for your project based on its framework configuration.
+Installs all required tools for your project based on its framework configuration. If no Cast configuration is found, installs default tools (rustc, cargo, rustfmt, clippy, git-lfs).
 
 **Options**:
 - `--tool <TOOL>` - Install only a specific tool (e.g., nodejs, npm, playwright, dx, wrangler)
