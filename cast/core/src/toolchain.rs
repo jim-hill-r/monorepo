@@ -798,23 +798,17 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult, ToolchainError> {
     use std::process::Command;
 
-    // Find the monorepo root by looking for cast/cli directory
-    let mut current_dir = working_directory;
-    let mut cast_cli_path = None;
-    
-    // Walk up the directory tree to find cast/cli
-    loop {
-        let potential_path = current_dir.join("cast/cli");
-        if potential_path.exists() && potential_path.is_dir() {
-            cast_cli_path = Some(potential_path);
-            break;
-        }
-        
-        match current_dir.parent() {
-            Some(parent) => current_dir = parent,
-            None => break,
-        }
-    }
+    // Find the monorepo root by looking for cast/cli directory using ancestors
+    let cast_cli_path = working_directory
+        .ancestors()
+        .find_map(|ancestor| {
+            let potential_path = ancestor.join("cast/cli");
+            if potential_path.exists() && potential_path.is_dir() {
+                Some(potential_path)
+            } else {
+                None
+            }
+        });
     
     let cast_cli_path = match cast_cli_path {
         Some(path) => path,
@@ -843,8 +837,13 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
 
     println!("Installing Cast CLI from {}...", cast_cli_path.display());
 
+    let path_str = cast_cli_path.to_str()
+        .ok_or_else(|| ToolchainError::InstallationError(
+            "Cast CLI path contains invalid UTF-8 characters".to_string()
+        ))?;
+
     let output = Command::new("cargo")
-        .args(["install", "--path", cast_cli_path.to_str().unwrap()])
+        .args(["install", "--path", path_str])
         .output()
         .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
