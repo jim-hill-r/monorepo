@@ -171,6 +171,41 @@ When installing tools, verify installation with:
 - Some tools may require different installation methods
 - Document when implementing cross-platform support
 
+## Command Abstraction
+
+**IMPORTANT**: Always use `cast` commands instead of directly invoking underlying tools. The Cast CLI provides a consistent abstraction layer that:
+- Handles framework detection automatically
+- Ensures proper configuration is used
+- Maintains consistency across projects
+- Simplifies CI/CD workflows
+
+### Examples
+
+✅ **Correct**: Use cast commands
+```bash
+cast run          # Starts dev server (dx serve for Dioxus, cargo run otherwise)
+cast build        # Builds project with framework-specific commands
+cast test         # Runs tests with appropriate test runner
+cast install      # Installs all required tools including cast itself
+```
+
+❌ **Incorrect**: Direct tool invocation in scripts/configs
+```bash
+dx serve --port 8080              # Don't hardcode dx commands
+cargo run                          # Use cast run instead
+npm test                           # Use cast test for consistency
+cargo install --path cast/cli      # Use cast install instead
+```
+
+### When to Use Direct Commands
+
+Direct tool commands are acceptable only in:
+1. **Interactive development**: Running `dx serve` manually during development
+2. **Tool-specific features**: Using `dx bundle` flags not exposed by cast
+3. **Debugging**: Directly invoking tools to diagnose issues
+
+In configuration files (Playwright, CI workflows, etc.), **always use cast commands**.
+
 ## Best Practices
 
 1. **Document tool requirements** in project README files
@@ -179,6 +214,7 @@ When installing tools, verify installation with:
 4. **Verify installations** before use
 5. **Keep toolchain management centralized** in the Cast tool
 6. **Update tools deliberately** with testing, not automatically
+7. **Use cast commands** instead of underlying tools in scripts and configuration
 
 ## Related Documentation
 
