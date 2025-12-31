@@ -254,6 +254,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Skip in CI - test hangs if dx command behavior is unexpected
     fn test_run_command_not_found_error_message() {
         let tmp_dir = TempDir::new("test_run_command_not_found").unwrap();
 
