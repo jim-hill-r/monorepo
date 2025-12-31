@@ -5,7 +5,8 @@ Complete one issue within this repo.
 
 ## Instructions
 1. Find one issue per the Find Issue section below.
-2. Complete just that one issue per the Fix Issue section below.
+2. Setup the dev environment per Setup Environment section below.
+3. Complete just that one issue per the Fix Issue section below.
 
 ## Find Issue
 1. Be eager. While following these steps, just work the first issue you find.
@@ -19,6 +20,10 @@ Complete one issue within this repo.
 9. If steps 5, 6, and 7 don't have issues, then search then entire codebase for an issue.
 10. If no issues are found, do any investigation and find some issues and add them to an appropriate ISSUES.md for future consideration.
 
+## Setup Environment
+1. Run `./cast/cli/artifacts/x86_64-unknown-linux-gnu/cast install` in root directory.
+2. Run `cast install` in root directory.
+3. Anytime you are working within a project, run `cast install` in that directory before beginning work.
 
 ## Fix Issue
 1. If the issue to be worked is too complex, then just try to break up the issue into several smaller issues and issue a PR with changes to any relevant ISSUES.md. Mark these comments with `TODO (agent-generated)`. **Formatting**: Use a flat list of TODO items under `# Priority Issues`. Only use subsections (##, ###) if documenting a multi-phase epic in a project-specific ISSUES.md (like cast/ISSUES.md), not in the root ISSUES.md.
