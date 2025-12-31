@@ -14,8 +14,10 @@ pub struct Args {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Manage work sessions (start, pause, stop)
     #[command(subcommand)]
     Session(SessionCommands),
+    /// Project management commands (new, with-changes)
     #[command(subcommand)]
     Project(ProjectCommands),
     #[command(subcommand)]
