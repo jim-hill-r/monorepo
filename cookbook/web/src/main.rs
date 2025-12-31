@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use chrono::prelude::*;
 use cookbook_core::RecipeReader;
 use cookbook_data_md::embedded::EmbeddedRecipeStore;
@@ -168,24 +169,33 @@ fn get_current_week_of_year() -> u32 {
     ((day - 1) / 7) + 1
 }
 
-/// Get recipe days to display in sidebar, sorted numerically
-fn get_sidebar_recipe_days() -> Vec<u32> {
-    let today = get_current_day_of_year();
+/// Format a date as "DayName, DD-Mon" (e.g., "Sun, 28-Dec")
+fn format_recipe_day(date: NaiveDate) -> String {
+    date.format("%a, %-d-%b").to_string()
+}
+
+/// Get the start of the current week (Sunday)
+fn get_week_start_date() -> NaiveDate {
+    let now = Local::now().date_naive();
+    let weekday = now.weekday();
+    let days_since_sunday = weekday.num_days_from_sunday();
+    now - chrono::Duration::days(days_since_sunday as i64)
+}
+
+/// Get recipe day information for sidebar display
+/// Returns a vector of (day_of_year, formatted_date) tuples for the current week (7 days)
+fn get_sidebar_recipe_days() -> Vec<(u32, String)> {
+    let week_start = get_week_start_date();
     let mut days = Vec::new();
 
-    // Show 10 days starting from today
-    for i in 0..10 {
-        let day = today + (i * 10);
-        // Wrap around if we go past day 365 (we use 365 for simplicity, ignoring leap year day 366)
-        let wrapped_day = if day > 365 {
-            ((day - 1) % 365) + 1
-        } else {
-            day
-        };
-        days.push(wrapped_day);
+    // Show 7 days of the current week (Sunday through Saturday)
+    for i in 0..7 {
+        let date = week_start + chrono::Duration::days(i);
+        let day_of_year = date.ordinal();
+        let formatted = format_recipe_day(date);
+        days.push((day_of_year, formatted));
     }
 
-    days.sort_unstable(); // Ensures numeric sorting
     days
 }
 
@@ -225,8 +235,8 @@ fn Sidebar() -> Element {
             div {
                 class: "sidebar-section",
                 h3 { "Daily Recipes" }
-                for day in recipe_days {
-                    Link { to: Route::Recipe { day }, "Day {day}" }
+                for (day, formatted_date) in recipe_days {
+                    Link { to: Route::Recipe { day }, "{formatted_date}" }
                 }
             }
 
@@ -518,32 +528,26 @@ mod tests {
 
     #[test]
     fn test_sidebar_recipe_days_sorted_numerically() {
-        // Test that recipe days are sorted in ascending numeric order
+        // Test that recipe days are in chronological order for the current week
         let days = get_sidebar_recipe_days();
 
         // Should not be empty
         assert!(!days.is_empty(), "Recipe days should not be empty");
 
-        // Check that days are sorted numerically
-        for i in 0..days.len() - 1 {
-            assert!(
-                days[i] < days[i + 1],
-                "Days should be sorted numerically: day {} ({}) should be less than day {} ({})",
-                i,
-                days[i],
-                i + 1,
-                days[i + 1]
-            );
-        }
+        // Should have exactly 7 entries (one week)
+        assert_eq!(days.len(), 7, "Should show 7 days of the week");
 
-        // Verify all days are within valid range (1-365)
-        for day in &days {
+        // Verify all days are within valid range (1-366 for leap years)
+        for (day, _) in &days {
             assert!(
-                (1..=365).contains(day),
-                "Day {} should be in valid range 1-365",
+                (1..=366).contains(day),
+                "Day {} should be in valid range 1-366",
                 day
             );
         }
+
+        // Note: Days may wrap around year boundary, so we don't enforce strict ascending order
+        // The dates are generated in chronological order from week start (Sunday)
     }
 
     #[test]
@@ -605,12 +609,12 @@ mod tests {
 
     #[test]
     fn test_sidebar_recipe_days_count() {
-        // Test that sidebar shows exactly 10 recipe entries
+        // Test that sidebar shows exactly 7 recipe entries (one week)
         let days = get_sidebar_recipe_days();
         assert_eq!(
             days.len(),
-            10,
-            "Sidebar should show exactly 10 recipe entries, found {}",
+            7,
+            "Sidebar should show exactly 7 recipe entries (one week), found {}",
             days.len()
         );
     }
@@ -651,15 +655,29 @@ mod tests {
 
     #[test]
     fn test_sidebar_recipe_days_starts_from_today() {
-        // Test that recipe days start from or near today
-        let _today = get_current_day_of_year();
+        // Test that recipe days represent the current week starting from Sunday
+        let week_start = get_week_start_date();
         let days = get_sidebar_recipe_days();
 
-        // Should have 10 entries
-        assert_eq!(days.len(), 10);
+        // Should have 7 entries
+        assert_eq!(days.len(), 7);
+
+        // First day should be the week start (Sunday)
+        assert_eq!(days[0].0, week_start.ordinal());
+
+        // Verify each day corresponds to consecutive dates
+        for i in 0..7 {
+            let expected_date = week_start + chrono::Duration::days(i);
+            assert_eq!(
+                days[i as usize].0,
+                expected_date.ordinal(),
+                "Day {} should match expected date",
+                i
+            );
+        }
 
         // All days should be in valid range (1-366 for leap years)
-        for day in &days {
+        for (day, _) in &days {
             assert!(
                 (1..=366).contains(day),
                 "Day {} should be in valid range 1-366",
@@ -683,6 +701,69 @@ mod tests {
                 (1..=52).contains(week),
                 "Week {} should be in valid range 1-52",
                 week
+            );
+        }
+    }
+
+    #[test]
+    fn test_format_recipe_day() {
+        // Test date formatting
+        let date = NaiveDate::from_ymd_opt(2025, 12, 28).unwrap(); // Sunday, Dec 28, 2025
+        let formatted = format_recipe_day(date);
+        assert_eq!(formatted, "Sun, 28-Dec");
+
+        let date2 = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap(); // Tuesday, Dec 30, 2025
+        let formatted2 = format_recipe_day(date2);
+        assert_eq!(formatted2, "Tue, 30-Dec");
+
+        let date3 = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(); // Thursday, Jan 1, 2026
+        let formatted3 = format_recipe_day(date3);
+        assert_eq!(formatted3, "Thu, 1-Jan");
+    }
+
+    #[test]
+    fn test_get_week_start_date() {
+        // This test depends on the current date, so we just verify it returns a Sunday
+        let week_start = get_week_start_date();
+        assert_eq!(
+            week_start.weekday(),
+            chrono::Weekday::Sun,
+            "Week should start on Sunday"
+        );
+
+        // Verify it's not in the future
+        let now = Local::now().date_naive();
+        assert!(week_start <= now, "Week start should not be in the future");
+
+        // Verify it's within 6 days in the past
+        let diff = now.signed_duration_since(week_start).num_days();
+        assert!(
+            diff >= 0 && diff <= 6,
+            "Week start should be within the last 7 days"
+        );
+    }
+
+    #[test]
+    fn test_sidebar_recipe_days_includes_formatted_dates() {
+        // Test that recipe days include formatted date strings
+        let days = get_sidebar_recipe_days();
+
+        assert_eq!(days.len(), 7, "Should have 7 days");
+
+        // Check that all entries have formatted dates
+        for (day_num, formatted) in &days {
+            assert!(
+                *day_num >= 1 && *day_num <= 366,
+                "Day number should be valid"
+            );
+            assert!(!formatted.is_empty(), "Formatted date should not be empty");
+            assert!(
+                formatted.contains("-"),
+                "Formatted date should contain a dash"
+            );
+            assert!(
+                formatted.contains(","),
+                "Formatted date should contain a comma"
             );
         }
     }
