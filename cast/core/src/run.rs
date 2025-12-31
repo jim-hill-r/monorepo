@@ -189,7 +189,8 @@ mod tests {
         // Create a Cargo project with dioxus framework
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\ndioxus = \"0.6\"",
+            // TODO: Have this test toml be an external file versus a hardcoded string
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\ndioxus = \"0.7\"",
         )
         .unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
