@@ -903,7 +903,8 @@ mod tests {
         // Should succeed and list all tools
         assert!(result.is_ok());
         let output = result.unwrap();
-        // Should contain all 9 tools
+        // Should contain all 11 tools
+        assert!(output.contains("rustup"));
         assert!(output.contains("rustc"));
         assert!(output.contains("cargo"));
         assert!(output.contains("rustfmt"));
@@ -913,6 +914,7 @@ mod tests {
         assert!(output.contains("npm"));
         assert!(output.contains("playwright"));
         assert!(output.contains("wrangler"));
+        assert!(output.contains("git-lfs"));
     }
 
     #[test]

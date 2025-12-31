@@ -19,6 +19,8 @@ pub enum ToolchainError {
 /// Represents a tool that can be managed by the toolchain command
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Tool {
+    /// Rustup toolchain installer
+    Rustup,
     /// Rust compiler
     Rustc,
     /// Cargo package manager
@@ -45,6 +47,7 @@ impl Tool {
     /// Get the display name for a tool
     pub fn name(&self) -> &'static str {
         match self {
+            Tool::Rustup => "rustup",
             Tool::Rustc => "rustc",
             Tool::Cargo => "cargo",
             Tool::Rustfmt => "rustfmt",
@@ -61,6 +64,7 @@ impl Tool {
     /// Parse a tool name from a string
     pub fn from_name(name: &str) -> Option<Tool> {
         match name.to_lowercase().as_str() {
+            "rustup" => Some(Tool::Rustup),
             "rustc" => Some(Tool::Rustc),
             "cargo" => Some(Tool::Cargo),
             "rustfmt" => Some(Tool::Rustfmt),
@@ -97,6 +101,9 @@ pub fn detect_required_tools(
 
     // Use a HashSet to ensure tools are unique
     let mut tools = HashSet::new();
+
+    // Always include rustup (required to install other Rust tools)
+    tools.insert(Tool::Rustup);
 
     // Always include base Rust tools
     tools.insert(Tool::Rustc);
@@ -164,6 +171,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
     }
 
     let (command, args) = match tool {
+        Tool::Rustup => ("rustup", vec!["--version"]),
         Tool::Rustc => ("rustc", vec!["--version"]),
         Tool::Cargo => ("cargo", vec!["--version"]),
         Tool::Rustfmt => ("rustfmt", vec!["--version"]),
@@ -324,6 +332,7 @@ mod tests {
 
     #[test]
     fn test_tool_name() {
+        assert_eq!(Tool::Rustup.name(), "rustup");
         assert_eq!(Tool::Rustc.name(), "rustc");
         assert_eq!(Tool::Cargo.name(), "cargo");
         assert_eq!(Tool::Rustfmt.name(), "rustfmt");
@@ -338,6 +347,7 @@ mod tests {
 
     #[test]
     fn test_tool_from_name() {
+        assert_eq!(Tool::from_name("rustup"), Some(Tool::Rustup));
         assert_eq!(Tool::from_name("rustc"), Some(Tool::Rustc));
         assert_eq!(Tool::from_name("cargo"), Some(Tool::Cargo));
         assert_eq!(Tool::from_name("rustfmt"), Some(Tool::Rustfmt));
@@ -357,6 +367,7 @@ mod tests {
 
     #[test]
     fn test_tool_from_name_case_insensitive() {
+        assert_eq!(Tool::from_name("RUSTUP"), Some(Tool::Rustup));
         assert_eq!(Tool::from_name("RUSTC"), Some(Tool::Rustc));
         assert_eq!(Tool::from_name("Cargo"), Some(Tool::Cargo));
         assert_eq!(Tool::from_name("DX"), Some(Tool::Dx));
@@ -378,7 +389,8 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Dioxus requires: rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
@@ -388,7 +400,7 @@ mod tests {
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
         assert!(tools.contains(&Tool::Playwright));
-        assert_eq!(tools.len(), 9);
+        assert_eq!(tools.len(), 10);
     }
 
     #[test]
@@ -409,7 +421,8 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Cloudflare Pages requires: rustc, cargo, rustfmt, clippy, git-lfs, wrangler, node, npm
+        // Cloudflare Pages requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, wrangler, node, npm
+        assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
@@ -418,7 +431,7 @@ mod tests {
         assert!(tools.contains(&Tool::Wrangler));
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
-        assert_eq!(tools.len(), 8);
+        assert_eq!(tools.len(), 9);
     }
 
     #[test]
@@ -435,13 +448,14 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Pure Rust requires: rustc, cargo, rustfmt, clippy, git-lfs
+        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs
+        assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
         assert!(tools.contains(&Tool::GitLfs));
-        assert_eq!(tools.len(), 5);
+        assert_eq!(tools.len(), 6);
     }
 
     #[test]
@@ -456,12 +470,13 @@ mod tests {
 
         let tools = result.unwrap();
         // Should default to pure Rust requirements
+        assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
         assert!(tools.contains(&Tool::GitLfs));
-        assert_eq!(tools.len(), 5);
+        assert_eq!(tools.len(), 6);
     }
 
     #[test]
@@ -699,6 +714,7 @@ fn install_single_tool(
     dry_run: bool,
 ) -> Result<InstallResult, ToolchainError> {
     match tool {
+        Tool::Rustup => install_rustup(dry_run),
         Tool::Rustc | Tool::Cargo | Tool::Rustfmt | Tool::Clippy => {
             // Rust tools should be installed via rustup, not via this command
             Ok(InstallResult {
@@ -713,6 +729,52 @@ fn install_single_tool(
         Tool::Playwright => install_playwright(working_directory, dry_run),
         Tool::Wrangler => install_wrangler(dry_run),
         Tool::GitLfs => install_git_lfs(dry_run),
+    }
+}
+
+/// Install Rustup toolchain installer
+fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
+    use std::process::Command;
+
+    let install_cmd = "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y";
+
+    if dry_run {
+        return Ok(InstallResult {
+            tool: Tool::Rustup,
+            success: true,
+            message: format!("Would install: {}", install_cmd),
+            skipped: false,
+        });
+    }
+
+    println!("Installing Rustup...");
+    println!("This will download and install the Rust toolchain installer.");
+
+    // Execute the rustup installation script
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(install_cmd)
+        .output()
+        .map_err(|e| {
+            ToolchainError::InstallationError(format!("Failed to run rustup installer: {}", e))
+        })?;
+
+    if output.status.success() {
+        println!("Rustup installed successfully!");
+        println!("Note: You may need to restart your shell or run 'source $HOME/.cargo/env' to use Rust tools.");
+        Ok(InstallResult {
+            tool: Tool::Rustup,
+            success: true,
+            message: "Installed successfully. Restart your shell or run 'source $HOME/.cargo/env'"
+                .to_string(),
+            skipped: false,
+        })
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(ToolchainError::InstallationError(format!(
+            "Failed to install rustup: {}",
+            stderr
+        )))
     }
 }
 
@@ -1140,6 +1202,7 @@ impl ListResult {
 /// Get all tools that Cast can manage
 fn get_all_tools() -> Vec<Tool> {
     vec![
+        Tool::Rustup,
         Tool::Rustc,
         Tool::Cargo,
         Tool::Rustfmt,
@@ -1328,6 +1391,18 @@ mod install_tests {
     }
 
     #[test]
+    fn test_install_rustup_dry_run() {
+        let result = install_rustup(true);
+        assert!(result.is_ok());
+        let install_result = result.unwrap();
+        assert_eq!(install_result.tool, Tool::Rustup);
+        assert!(install_result.success);
+        assert!(install_result.message.contains("Would install"));
+        assert!(install_result.message.contains("curl"));
+        assert!(install_result.message.contains("https://sh.rustup.rs"));
+    }
+
+    #[test]
     fn test_install_rust_tools_returns_error() {
         let result = install_single_tool(&Tool::Rustc, std::path::Path::new("."), true);
         assert!(result.is_ok());
@@ -1369,8 +1444,8 @@ mod check_tests {
 
         let check_result = result.unwrap();
         assert!(check_result.framework.is_none());
-        // Pure Rust requires: rustc, cargo, rustfmt, clippy, git-lfs
-        assert_eq!(check_result.tool_statuses.len(), 5);
+        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs
+        assert_eq!(check_result.tool_statuses.len(), 6);
 
         // In CI environment, Rust tools should be installed
         let rustc_status = check_result
@@ -1400,8 +1475,8 @@ mod check_tests {
 
         let check_result = result.unwrap();
         assert_eq!(check_result.framework, Some("dioxus".to_string()));
-        // Dioxus requires: rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
-        assert_eq!(check_result.tool_statuses.len(), 9);
+        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        assert_eq!(check_result.tool_statuses.len(), 10);
     }
 
     #[test]
@@ -1601,7 +1676,8 @@ mod list_tests {
     #[test]
     fn test_get_all_tools() {
         let tools = get_all_tools();
-        assert_eq!(tools.len(), 10);
+        assert_eq!(tools.len(), 11);
+        assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
@@ -1634,14 +1710,15 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Dioxus requires: rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
-        assert_eq!(list_result.tool_statuses.len(), 9);
+        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        assert_eq!(list_result.tool_statuses.len(), 10);
 
         let tool_names: Vec<&str> = list_result
             .tool_statuses
             .iter()
             .map(|s| s.tool.name())
             .collect();
+        assert!(tool_names.contains(&"rustup"));
         assert!(tool_names.contains(&"rustc"));
         assert!(tool_names.contains(&"cargo"));
         assert!(tool_names.contains(&"rustfmt"));
@@ -1673,8 +1750,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Should list all 10 tools
-        assert_eq!(list_result.tool_statuses.len(), 10);
+        // Should list all 11 tools
+        assert_eq!(list_result.tool_statuses.len(), 11);
     }
 
     #[test]
@@ -1697,8 +1774,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Pure Rust requires: rustc, cargo, rustfmt, clippy, git-lfs
-        assert_eq!(list_result.tool_statuses.len(), 5);
+        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs
+        assert_eq!(list_result.tool_statuses.len(), 6);
     }
 
     #[test]
