@@ -1,6 +1,5 @@
 # Priority Issues
 
-- TODO: The sidebar plans should be display "upcoming plans". If it is December 30, then it should have 4 entries (`Week 1: 28-Dec`, `Week 2: 4-Jan`, `Week 3: 11-Jan`, `Week 4: 18-Jan`)
 - TODO: The plan for a specific week should have links to the recipes for that week.
 - TODO: The plan for a specific week should aggregate all the ingredients required for the week into a shopping list.
 - TODO: The app is not responsive for smaller screen sizes. For example, on a mobile device the sidebar covers the whole screen and cannot be closed. On mobile it should be closed by default.

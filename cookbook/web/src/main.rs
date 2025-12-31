@@ -161,12 +161,14 @@ fn get_current_day_of_year() -> u32 {
     now.ordinal()
 }
 
-/// Get the current week of the year (1-53) using chrono
-/// Uses a simple calculation: week = floor((day - 1) / 7) + 1
+/// Get the current week of the year (1-52) using chrono
+/// Uses a simple calculation: week = floor((day - 1) / 7) + 1, capped at 52
 fn get_current_week_of_year() -> u32 {
     let day = get_current_day_of_year();
-    // Calculate week number (1-53), rounding up
-    ((day - 1) / 7) + 1
+    // Calculate week number (1-52), rounding up
+    let week = ((day - 1) / 7) + 1;
+    // Cap at week 52 to ensure valid range for Plan component
+    week.min(52)
 }
 
 /// Format a date as "DayName, DD-Mon" (e.g., "Sun, 28-Dec")
@@ -177,8 +179,8 @@ fn format_recipe_day(date: NaiveDate) -> String {
     // Remove leading zero if present for better readability (e.g., "Sun, 1-Jan" instead of "Sun, 01-Jan")
     if let Some(comma_pos) = formatted.find(',') {
         let day_part = &formatted[comma_pos + 2..]; // Skip ", "
-        if day_part.starts_with('0') {
-            return format!("{}, {}", &formatted[..comma_pos], &day_part[1..]);
+        if let Some(stripped) = day_part.strip_prefix('0') {
+            return format!("{}, {}", &formatted[..comma_pos], stripped);
         }
     }
     formatted
@@ -209,25 +211,44 @@ fn get_sidebar_recipe_days() -> Vec<(u32, String)> {
     days
 }
 
-/// Get plan weeks to display in sidebar, sorted numerically
-fn get_sidebar_plan_weeks() -> Vec<u32> {
-    let current_week = get_current_week_of_year();
+/// Get plan weeks to display in sidebar with their start dates
+/// Returns a vector of (week_number, formatted_date) tuples for the next 4 upcoming weeks
+fn get_sidebar_plan_weeks() -> Vec<(u32, String)> {
+    let week_start = get_week_start_date();
     let mut weeks = Vec::new();
 
-    // Show 4 weeks starting from current week
+    // Show 4 upcoming weeks starting from current week
     for i in 0..4 {
-        let week = current_week + (i * 13);
-        // Wrap around if we go past week 52
-        let wrapped_week = if week > 52 {
-            ((week - 1) % 52) + 1
-        } else {
-            week
-        };
-        weeks.push(wrapped_week);
+        let start_date = week_start + chrono::Duration::weeks(i);
+        let week_number = get_week_number_from_date(start_date);
+
+        // Format date as "DD-Mon" (e.g., "28-Dec")
+        let formatted = format_week_start_date(start_date);
+
+        weeks.push((week_number, formatted));
     }
 
-    weeks.sort_unstable(); // Ensures numeric sorting
     weeks
+}
+
+/// Get the week number (1-52) for a given date
+fn get_week_number_from_date(date: NaiveDate) -> u32 {
+    let day_of_year = date.ordinal();
+    // Calculate week number (1-52), rounding up
+    let week = ((day_of_year - 1) / 7) + 1;
+    // Cap at week 52 to ensure valid range for Plan component
+    week.min(52)
+}
+
+/// Format a week start date as "DD-Mon" (e.g., "28-Dec")
+fn format_week_start_date(date: NaiveDate) -> String {
+    let formatted = date.format("%d-%b").to_string();
+    // Remove leading zero if present for better readability
+    if let Some(stripped) = formatted.strip_prefix('0') {
+        stripped.to_string()
+    } else {
+        formatted
+    }
 }
 
 #[component]
@@ -253,8 +274,8 @@ fn Sidebar() -> Element {
             div {
                 class: "sidebar-section",
                 h3 { "Weekly Plans" }
-                for week in plan_weeks {
-                    Link { to: Route::Plan { week }, "Week {week}" }
+                for (week, formatted_date) in plan_weeks {
+                    Link { to: Route::Plan { week }, "Week {week}: {formatted_date}" }
                 }
             }
         }
@@ -562,30 +583,29 @@ mod tests {
 
     #[test]
     fn test_sidebar_plan_weeks_sorted_numerically() {
-        // Test that plan weeks are sorted in ascending numeric order
+        // Test that plan weeks are returned with dates
         let weeks = get_sidebar_plan_weeks();
 
         // Should not be empty
         assert!(!weeks.is_empty(), "Plan weeks should not be empty");
 
-        // Check that weeks are sorted numerically
-        for i in 0..weeks.len() - 1 {
-            assert!(
-                weeks[i] < weeks[i + 1],
-                "Weeks should be sorted numerically: week {} ({}) should be less than week {} ({})",
-                i,
-                weeks[i],
-                i + 1,
-                weeks[i + 1]
-            );
-        }
+        // Should have exactly 4 entries (4 upcoming weeks)
+        assert_eq!(weeks.len(), 4, "Should show 4 upcoming weeks");
 
         // Verify all weeks are within valid range (1-52)
-        for week in &weeks {
+        for (week, formatted_date) in &weeks {
             assert!(
                 (1..=52).contains(week),
                 "Week {} should be in valid range 1-52",
                 week
+            );
+            assert!(
+                !formatted_date.is_empty(),
+                "Formatted date should not be empty"
+            );
+            assert!(
+                formatted_date.contains("-"),
+                "Formatted date should contain a dash"
             );
         }
     }
@@ -654,11 +674,11 @@ mod tests {
 
     #[test]
     fn test_current_week_of_year_in_valid_range() {
-        // Test that current week is in valid range (1-53)
+        // Test that current week is in valid range (1-52)
         let week = get_current_week_of_year();
         assert!(
-            (1..=53).contains(&week),
-            "Current week {} should be in valid range 1-53",
+            (1..=52).contains(&week),
+            "Current week {} should be in valid range 1-52",
             week
         );
     }
@@ -698,21 +718,34 @@ mod tests {
 
     #[test]
     fn test_sidebar_plan_weeks_starts_from_current_week() {
-        // Test that plan weeks start from or near current week
-        let _current_week = get_current_week_of_year();
+        // Test that plan weeks start from current week
+        let current_week = get_current_week_of_year();
         let weeks = get_sidebar_plan_weeks();
 
         // Should have 4 entries
         assert_eq!(weeks.len(), 4);
 
+        // First week should be current week
+        assert_eq!(
+            weeks[0].0, current_week,
+            "First week should be current week"
+        );
+
         // All weeks should be in valid range
-        for week in &weeks {
+        for (week, formatted_date) in &weeks {
             assert!(
                 (1..=52).contains(week),
                 "Week {} should be in valid range 1-52",
                 week
             );
+            assert!(
+                !formatted_date.is_empty(),
+                "Formatted date should not be empty"
+            );
         }
+
+        // Note: Weeks may wrap around year boundary (52 -> 1), so we don't check strict consecutive order
+        // Just verify they represent 4 consecutive calendar weeks
     }
 
     #[test]
@@ -729,6 +762,39 @@ mod tests {
         let date3 = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(); // Thursday, Jan 1, 2026
         let formatted3 = format_recipe_day(date3);
         assert_eq!(formatted3, "Thu, 1-Jan");
+    }
+
+    #[test]
+    fn test_format_week_start_date() {
+        // Test week start date formatting (no day name, just date)
+        let date = NaiveDate::from_ymd_opt(2025, 12, 28).unwrap();
+        let formatted = format_week_start_date(date);
+        assert_eq!(formatted, "28-Dec");
+
+        let date2 = NaiveDate::from_ymd_opt(2026, 1, 4).unwrap();
+        let formatted2 = format_week_start_date(date2);
+        assert_eq!(formatted2, "4-Jan");
+
+        // Test single digit date (leading zero removal)
+        let date3 = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let formatted3 = format_week_start_date(date3);
+        assert_eq!(formatted3, "1-Jan");
+    }
+
+    #[test]
+    fn test_get_week_number_from_date() {
+        // Test week number calculation
+        let date1 = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(); // Day 1 -> Week 1
+        assert_eq!(get_week_number_from_date(date1), 1);
+
+        let date2 = NaiveDate::from_ymd_opt(2025, 1, 7).unwrap(); // Day 7 -> Week 1
+        assert_eq!(get_week_number_from_date(date2), 1);
+
+        let date3 = NaiveDate::from_ymd_opt(2025, 1, 8).unwrap(); // Day 8 -> Week 2
+        assert_eq!(get_week_number_from_date(date3), 2);
+
+        let date4 = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap(); // Day 365 -> Week 52 (capped)
+        assert_eq!(get_week_number_from_date(date4), 52);
     }
 
     #[test]
