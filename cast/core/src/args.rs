@@ -20,10 +20,27 @@ enum Commands {
     /// Project management commands (new, with-changes)
     #[command(subcommand)]
     Project(ProjectCommands),
-    #[command(subcommand)]
-    Toolchain(ToolchainCommands),
-    /// Install required toolchain dependencies
-    Install(InstallToolchainCommand),
+    /// Install tools, check installation status, or list available tools
+    Install {
+        #[command(subcommand)]
+        subcommand: Option<InstallSubcommands>,
+
+        /// Install only specific tool (e.g., nodejs, npm, playwright, dx, wrangler)
+        #[arg(long)]
+        tool: Option<String>,
+
+        /// Skip specific tools during installation (comma-separated list)
+        #[arg(long)]
+        skip: Option<String>,
+
+        /// Dry run - show what would be installed without installing
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Force reinstall even if tools are already installed
+        #[arg(long)]
+        force: bool,
+    },
     /// Run build
     Build,
     /// Run CI checks
@@ -80,57 +97,35 @@ pub struct WithChangesCommand {
 }
 
 #[derive(Subcommand)]
-pub enum ToolchainCommands {
+pub enum InstallSubcommands {
     /// Check if required tools are installed
-    Check(CheckToolchainCommand),
+    Check {
+        /// Show detailed information about each tool
+        #[arg(short, long)]
+        verbose: bool,
+
+        /// Output results in JSON format
+        #[arg(long)]
+        json: bool,
+    },
     /// List installed tools and their versions
-    List(ListToolchainCommand),
+    List {
+        /// Show only required tools for the current project
+        #[arg(long)]
+        required_only: bool,
+
+        /// Show all known tools, not just installed ones
+        #[arg(long)]
+        all: bool,
+
+        /// Output results in JSON format
+        #[arg(long)]
+        json: bool,
+    },
 }
 
-#[derive(Parser)]
-pub struct InstallToolchainCommand {
-    /// Install only specific tool (e.g., nodejs, npm, playwright, dx, wrangler)
-    #[arg(long)]
-    tool: Option<String>,
-
-    /// Skip specific tools during installation (comma-separated list)
-    #[arg(long)]
-    skip: Option<String>,
-
-    /// Dry run - show what would be installed without installing
-    #[arg(long)]
-    dry_run: bool,
-
-    /// Force reinstall even if tools are already installed
-    #[arg(long)]
-    force: bool,
-}
-
-#[derive(Parser)]
-pub struct CheckToolchainCommand {
-    /// Show detailed information about each tool
-    #[arg(short, long)]
-    verbose: bool,
-
-    /// Output results in JSON format
-    #[arg(long)]
-    json: bool,
-}
-
-#[derive(Parser)]
-pub struct ListToolchainCommand {
-    /// Show only required tools for the current project
-    #[arg(long)]
-    required_only: bool,
-
-    /// Show all known tools, not just installed ones
-    #[arg(long)]
-    all: bool,
-
-    /// Output results in JSON format
-    #[arg(long)]
-    json: bool,
-}
+// Remove the old types that are no longer needed
+// InstallCommands, InstallToolchainCommand, CheckToolchainCommand, ListToolchainCommand
 
 #[derive(Error, Debug)]
 pub enum ExecuteError {
@@ -158,16 +153,50 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 .execute(entry_directory)
                 .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
-        Commands::Install(install_cmd) => {
-            let command = commands::toolchain::InstallCommand {
-                tool: install_cmd.tool.clone(),
-                skip: install_cmd.skip.clone(),
-                dry_run: install_cmd.dry_run,
-                force: install_cmd.force,
-            };
-            return command
-                .execute(entry_directory)
-                .map_err(|e| ExecuteError::CommandError(e.to_string()));
+        Commands::Install {
+            subcommand,
+            tool,
+            skip,
+            dry_run,
+            force,
+        } => {
+            match subcommand {
+                Some(InstallSubcommands::Check { verbose, json }) => {
+                    let command = commands::toolchain::CheckCommand {
+                        verbose: *verbose,
+                        json: *json,
+                    };
+                    return command
+                        .execute(entry_directory)
+                        .map_err(|e| ExecuteError::CommandError(e.to_string()));
+                }
+                Some(InstallSubcommands::List {
+                    required_only,
+                    all,
+                    json,
+                }) => {
+                    let command = commands::toolchain::ListCommand {
+                        required_only: *required_only,
+                        all: *all,
+                        json: *json,
+                    };
+                    return command
+                        .execute(entry_directory)
+                        .map_err(|e| ExecuteError::CommandError(e.to_string()));
+                }
+                None => {
+                    // Default action: install tools
+                    let command = commands::toolchain::InstallCommand {
+                        tool: tool.clone(),
+                        skip: skip.clone(),
+                        dry_run: *dry_run,
+                        force: *force,
+                    };
+                    return command
+                        .execute(entry_directory)
+                        .map_err(|e| ExecuteError::CommandError(e.to_string()));
+                }
+            }
         }
         _ => {} // Other commands require Cast.toml
     }
@@ -245,7 +274,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 let command = commands::publish::PublishCommand;
                 command.execute(working_directory)
             }
-            Commands::Install(_) => {
+            Commands::Install { .. } => {
                 // This case should never be reached because Install is handled
                 // at the top of execute() before the Cast.toml check. If we reach
                 // this point, there's a bug in the control flow logic.
@@ -254,23 +283,6 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                      This indicates a bug in the execute() function's control flow."
                 )
             }
-            Commands::Toolchain(toolchain_command) => match toolchain_command {
-                ToolchainCommands::Check(check_cmd) => {
-                    let command = commands::toolchain::CheckCommand {
-                        verbose: check_cmd.verbose,
-                        json: check_cmd.json,
-                    };
-                    command.execute(working_directory)
-                }
-                ToolchainCommands::List(list_cmd) => {
-                    let command = commands::toolchain::ListCommand {
-                        required_only: list_cmd.required_only,
-                        all: list_cmd.all,
-                        json: list_cmd.json,
-                    };
-                    command.execute(working_directory)
-                }
-            },
         };
 
         result.map_err(|e| ExecuteError::CommandError(e.to_string()))
@@ -727,12 +739,13 @@ mod tests {
 
         let result = execute(
             Args {
-                cmd: Commands::Install(InstallToolchainCommand {
+                cmd: Commands::Install {
+                    subcommand: None,
                     tool: None,
                     skip: None,
-                    dry_run: true, // Use dry run to avoid actual installation
+                    dry_run: true,
                     force: false,
-                }),
+                },
             },
             tmp_dir.path(),
         );
@@ -751,12 +764,13 @@ mod tests {
 
         let result = execute(
             Args {
-                cmd: Commands::Install(InstallToolchainCommand {
+                cmd: Commands::Install {
+                    subcommand: None,
                     tool: None,
                     skip: None,
                     dry_run: true,
                     force: false,
-                }),
+                },
             },
             tmp_dir.path(),
         );
@@ -775,12 +789,13 @@ mod tests {
 
         let result = execute(
             Args {
-                cmd: Commands::Install(InstallToolchainCommand {
+                cmd: Commands::Install {
+                    subcommand: None,
                     tool: None,
                     skip: None,
-                    dry_run: true, // Use dry run to avoid actual installation
+                    dry_run: true,
                     force: false,
-                }),
+                },
             },
             tmp_dir.path(),
         );
@@ -793,16 +808,22 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_check_command() {
+    fn it_recognizes_install_check_command() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::Check(CheckToolchainCommand {
-                    verbose: false,
-                    json: false,
-                })),
+                cmd: Commands::Install {
+                    subcommand: Some(InstallSubcommands::Check {
+                        verbose: false,
+                        json: false,
+                    }),
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                },
             },
             tmp_dir.path(),
         );
@@ -829,16 +850,22 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_check_json() {
+    fn it_recognizes_install_check_json() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::Check(CheckToolchainCommand {
-                    verbose: false,
-                    json: true,
-                })),
+                cmd: Commands::Install {
+                    subcommand: Some(InstallSubcommands::Check {
+                        verbose: false,
+                        json: true,
+                    }),
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                },
             },
             tmp_dir.path(),
         );
@@ -864,17 +891,23 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_list_command() {
+    fn it_recognizes_install_list_command() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
-                    required_only: false,
-                    all: false,
-                    json: false,
-                })),
+                cmd: Commands::Install {
+                    subcommand: Some(InstallSubcommands::List {
+                        required_only: false,
+                        all: false,
+                        json: false,
+                    }),
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                },
             },
             tmp_dir.path(),
         );
@@ -887,17 +920,23 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_list_all() {
+    fn it_recognizes_install_list_all() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
-                    required_only: false,
-                    all: true,
-                    json: false,
-                })),
+                cmd: Commands::Install {
+                    subcommand: Some(InstallSubcommands::List {
+                        required_only: false,
+                        all: true,
+                        json: false,
+                    }),
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                },
             },
             tmp_dir.path(),
         );
@@ -920,17 +959,23 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_list_json() {
+    fn it_recognizes_install_list_json() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::List(ListToolchainCommand {
-                    required_only: false,
-                    all: false,
-                    json: true,
-                })),
+                cmd: Commands::Install {
+                    subcommand: Some(InstallSubcommands::List {
+                        required_only: false,
+                        all: false,
+                        json: true,
+                    }),
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                },
             },
             tmp_dir.path(),
         );
@@ -947,23 +992,37 @@ mod tests {
     }
 
     #[test]
-    fn it_requires_cast_toml_for_toolchain_commands() {
+    fn it_does_not_require_cast_toml_for_install_commands() {
         let tmp_dir = TempDir::new("test").unwrap();
         // No Cast.toml file created
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::Check(CheckToolchainCommand {
-                    verbose: false,
-                    json: false,
-                })),
+                cmd: Commands::Install {
+                    subcommand: Some(InstallSubcommands::Check {
+                        verbose: false,
+                        json: false,
+                    }),
+                    tool: None,
+                    skip: None,
+                    dry_run: false,
+                    force: false,
+                },
             },
             tmp_dir.path(),
         );
 
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(matches!(err, ExecuteError::CastTomlNotFound));
+        // Install commands should work without Cast.toml (will use default tools)
+        // The result could be Ok or Err depending on the environment
+        match result {
+            Ok(_) => {
+                // All default tools are installed
+            }
+            Err(err) => {
+                // Some tools are missing, but command ran successfully
+                assert!(matches!(err, ExecuteError::CommandError(_)));
+            }
+        }
     }
 
     #[test]
