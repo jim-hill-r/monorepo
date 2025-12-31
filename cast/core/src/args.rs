@@ -20,6 +20,8 @@ enum Commands {
     Project(ProjectCommands),
     #[command(subcommand)]
     Toolchain(ToolchainCommands),
+    /// Install required toolchain dependencies
+    Install(InstallToolchainCommand),
     /// Run build
     Build,
     /// Run CI checks
@@ -77,8 +79,6 @@ pub struct WithChangesCommand {
 
 #[derive(Subcommand)]
 pub enum ToolchainCommands {
-    /// Install required toolchain dependencies
-    Install(InstallToolchainCommand),
     /// Check if required tools are installed
     Check(CheckToolchainCommand),
     /// List installed tools and their versions
@@ -232,16 +232,16 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 let command = commands::publish::PublishCommand;
                 command.execute(working_directory)
             }
+            Commands::Install(install_cmd) => {
+                let command = commands::toolchain::InstallCommand {
+                    tool: install_cmd.tool,
+                    skip: install_cmd.skip,
+                    dry_run: install_cmd.dry_run,
+                    force: install_cmd.force,
+                };
+                command.execute(working_directory)
+            }
             Commands::Toolchain(toolchain_command) => match toolchain_command {
-                ToolchainCommands::Install(install_cmd) => {
-                    let command = commands::toolchain::InstallCommand {
-                        tool: install_cmd.tool,
-                        skip: install_cmd.skip,
-                        dry_run: install_cmd.dry_run,
-                        force: install_cmd.force,
-                    };
-                    command.execute(working_directory)
-                }
                 ToolchainCommands::Check(check_cmd) => {
                     let command = commands::toolchain::CheckCommand {
                         verbose: check_cmd.verbose,
@@ -708,18 +708,18 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_install_command() {
+    fn it_recognizes_install_command() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::Install(InstallToolchainCommand {
+                cmd: Commands::Install(InstallToolchainCommand {
                     tool: None,
                     skip: None,
                     dry_run: true, // Use dry run to avoid actual installation
                     force: false,
-                })),
+                }),
             },
             tmp_dir.path(),
         );
@@ -732,18 +732,18 @@ mod tests {
     }
 
     #[test]
-    fn it_recognizes_toolchain_install_dry_run() {
+    fn it_recognizes_install_dry_run() {
         let tmp_dir = TempDir::new("test").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let result = execute(
             Args {
-                cmd: Commands::Toolchain(ToolchainCommands::Install(InstallToolchainCommand {
+                cmd: Commands::Install(InstallToolchainCommand {
                     tool: None,
                     skip: None,
                     dry_run: true,
                     force: false,
-                })),
+                }),
             },
             tmp_dir.path(),
         );

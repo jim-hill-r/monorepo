@@ -1,8 +1,8 @@
-# Cast Toolchain Command Design
+# Cast Toolchain Management Design
 
 ## Overview
 
-The `cast toolchain` command provides a unified interface for managing development tools required by different Cast project types. This design document outlines the command structure, subcommands, and implementation considerations.
+Cast provides commands for managing development tools required by different project types. The `cast install` command installs required tools, while the `cast toolchain` command provides utilities for checking and listing installed tools. This design document outlines the command structure and implementation considerations.
 
 ## Motivation
 
@@ -12,24 +12,32 @@ Different project frameworks require different tooling beyond the Rust toolchain
 - **Cloudflare Pages projects**: Require Rust toolchain, Wrangler CLI, Node.js/npm
 - **Pure Rust projects**: Only require Rust toolchain (rustc, cargo, rustfmt, clippy)
 
-Currently, developers and CI workflows must manually install these tools. The `cast toolchain` command will automate this process by reading the Cast configuration and installing the appropriate tools.
+Currently, developers and CI workflows must manually install these tools. The `cast install` and `cast toolchain` commands automate this process by reading the Cast configuration and managing the appropriate tools.
 
 ## Command Structure
 
-### Main Command
+### Install Command (Top-Level)
+
+```bash
+cast install [OPTIONS]
+```
+
+The `install` command is a top-level command for installing required development tools.
+
+### Toolchain Subcommands
 
 ```bash
 cast toolchain <SUBCOMMAND>
 ```
 
-The `toolchain` command is a subcommand container, following the pattern of `rustup toolchain` and similar CLI tools.
+The `toolchain` command provides utilities for checking and listing tools, following the pattern of `rustup toolchain` and similar CLI tools.
 
-### Subcommands
+## Commands
 
-#### 1. `install` - Install Required Tools
+### 1. `install` - Install Required Tools
 
 ```bash
-cast toolchain install [OPTIONS]
+cast install [OPTIONS]
 ```
 
 Installs all tools required by the current project based on its Cast configuration.
@@ -39,20 +47,20 @@ Installs all tools required by the current project based on its Cast configurati
 - `--tool <TOOL>` - Install a specific tool instead of all tools
   - Possible values: `node`, `npm`, `playwright`, `dx`, `wrangler`
   - Can be specified multiple times to install multiple specific tools
-  - Example: `cast toolchain install --tool dx --tool playwright`
+  - Example: `cast install --tool dx --tool playwright`
 
 - `--skip <TOOL>` - Skip installation of a specific tool
   - Possible values: Same as `--tool`
   - Useful when some tools are already installed via system package managers
-  - Example: `cast toolchain install --skip node`
+  - Example: `cast install --skip node`
 
 - `--dry-run` - Show what would be installed without actually installing
   - Useful for CI/CD pipelines to understand requirements
-  - Example: `cast toolchain install --dry-run`
+  - Example: `cast install --dry-run`
 
 - `--force` - Force reinstallation even if tools are already installed
   - Useful for upgrading or fixing corrupted installations
-  - Example: `cast toolchain install --force`
+  - Example: `cast install --force`
 
 **Behavior:**
 
@@ -76,22 +84,22 @@ Installs all tools required by the current project based on its Cast configurati
 
 ```bash
 # Install all required tools for the current project
-cast toolchain install
+cast install
 
 # Install only the Dioxus CLI
-cast toolchain install --tool dx
+cast install --tool dx
 
 # Install all tools except Node.js (already installed via system)
-cast toolchain install --skip node
+cast install --skip node
 
 # See what would be installed without installing
-cast toolchain install --dry-run
+cast install --dry-run
 
 # Force reinstall all tools
-cast toolchain install --force
+cast install --force
 ```
 
-#### 2. `check` - Verify Tools Are Installed
+### 2. `toolchain check` - Verify Tools Are Installed
 
 ```bash
 cast toolchain check [OPTIONS]
@@ -166,7 +174,7 @@ Status: 1 tool missing
 }
 ```
 
-#### 3. `list` - List Installed Tools
+### 3. `toolchain list` - List Installed Tools
 
 ```bash
 cast toolchain list [OPTIONS]
@@ -297,7 +305,7 @@ The command is designed for use in CI/CD pipelines:
 
 1. **GitHub Actions integration**: 
    - Workflows should install Rust via `actions-rust-lang/setup-rust-toolchain`
-   - Then use `cast toolchain install` for all other tools
+   - Then use `cast install` for all other tools
    
 2. **Fast execution**: 
    - Check before installing to avoid unnecessary work
@@ -312,31 +320,31 @@ The command is designed for use in CI/CD pipelines:
 Based on the root ISSUES.md, implementation will be broken into phases:
 
 ### Phase 1: Foundation (Issues 7-10)
-- Add `Toolchain` command variant to args.rs
-- Create toolchain.rs module with basic structure
-- Implement toolchain detection logic
-- Add unit tests
+- Add `Install` command variant to args.rs (now complete - moved to top-level)
+- Create toolchain.rs module with basic structure (complete)
+- Implement toolchain detection logic (complete)
+- Add unit tests (complete)
 
 ### Phase 2: Installation (Issues 13-18)
-- Implement Node.js detection and guidance
-- Implement npm package installation
-- Implement Dioxus CLI installation
-- Implement Wrangler CLI installation
-- Add version checking and upgrade logic
-- Add comprehensive tests
+- Implement Node.js detection and guidance (complete)
+- Implement npm package installation (complete)
+- Implement Dioxus CLI installation (complete)
+- Implement Wrangler CLI installation (complete)
+- Add version checking and upgrade logic (complete)
+- Add comprehensive tests (complete)
 
 ### Phase 3: Platform Support (Issues 21-23)
-- Test on Linux (GitHub Actions)
-- Add macOS support if different
-- Document Windows considerations
+- Test on Linux (GitHub Actions) (complete)
+- Add macOS support if different (complete)
+- Document Windows considerations (complete)
 
 ### Phase 4: Documentation (Issues 25-27)
-- Update cast/README.md
-- Create additional docs in cast/docs/
-- Update standards documents
+- Update cast/README.md (complete)
+- Create additional docs in cast/docs/ (complete)
+- Update standards documents (complete)
 
 ### Phase 5: Integration (Issues 29-32)
-- Update GitHub workflows to use `cast toolchain install`
+- Update GitHub workflows to use `cast install`
 - Update workflow conventions documentation
 - Add copilot-instructions guidance
 - Test in real PRs

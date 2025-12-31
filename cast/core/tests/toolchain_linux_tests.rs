@@ -146,7 +146,7 @@ fn test_toolchain_install_dry_run_linux() {
 
     let cast_bin = get_cast_binary_path();
     let output = Command::new(&cast_bin)
-        .args(["toolchain", "install", "--dry-run"])
+        .args(["install", "--dry-run"])
         .current_dir(temp_dir.path())
         .output()
         .expect("Failed to execute command");
@@ -166,7 +166,7 @@ fn test_toolchain_install_node_guidance_linux() {
 
     let cast_bin = get_cast_binary_path();
     let output = Command::new(&cast_bin)
-        .args(["toolchain", "install", "--tool", "node", "--dry-run"])
+        .args(["install", "--tool", "node", "--dry-run"])
         .current_dir(temp_dir.path())
         .output()
         .expect("Failed to execute command");

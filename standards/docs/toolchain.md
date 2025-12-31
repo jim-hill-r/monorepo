@@ -98,15 +98,15 @@ Example workflow steps from `.github/workflows/cast-ci.yml` (simplified):
   run: cargo install dioxus-cli --version 0.7.2
 ```
 
-These manual installation steps will be replaced by `cast toolchain install`.
+These manual installation steps will be replaced by `cast install`.
 
 ### Future State (Cast Toolchain Command)
 
-A `cast toolchain` command is planned to automate toolchain management:
+Cast provides commands to automate toolchain management:
 
 ```bash
 # Install all required tools for a project
-cast toolchain install
+cast install
 
 # Check which tools are installed
 cast toolchain check
@@ -122,11 +122,11 @@ The command will:
 4. Install missing tools or suggest installation for system-managed tools
 5. Verify tool versions match requirements
 
-### GitHub Workflow Standard (Future)
+### GitHub Workflow Standard
 
-Once `cast toolchain` is implemented, workflows should:
+Workflows should:
 1. **Only install Rust** via `actions-rust-lang/setup-rust-toolchain`
-2. **Use `cast toolchain install`** for all framework-specific tools
+2. **Use `cast install`** for all framework-specific tools
 3. Keep workflow files simple and declarative
 4. Delegate tool installation logic to the Cast tool
 

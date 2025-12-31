@@ -83,12 +83,12 @@ Different frameworks require different tooling beyond Rust:
 - **Cloudflare Pages projects**: Require Wrangler CLI for deployment
 - **Pure Rust projects**: Only require the Rust toolchain (rustc, cargo, rustfmt, clippy)
 
-The `cast toolchain` commands help automate the installation and verification of these tools.
+The `cast install` and `cast toolchain` commands help automate the installation and verification of these tools.
 
 ### Install Toolchain Dependencies
 
 ```bash
-cast toolchain install
+cast install
 ```
 
 Installs all required tools for your project based on its framework configuration.
@@ -102,19 +102,19 @@ Installs all required tools for your project based on its framework configuratio
 **Examples**:
 ```bash
 # Install all required tools for the current project
-cast toolchain install
+cast install
 
 # See what would be installed without installing
-cast toolchain install --dry-run
+cast install --dry-run
 
 # Install only the Dioxus CLI
-cast toolchain install --tool dx
+cast install --tool dx
 
 # Install all tools except Node.js (already installed via system)
-cast toolchain install --skip node
+cast install --skip node
 
 # Force reinstall all tools
-cast toolchain install --force
+cast install --force
 ```
 
 **Notes**:
