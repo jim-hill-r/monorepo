@@ -29,6 +29,8 @@ pub enum Tool {
     Rustfmt,
     /// Rust linter
     Clippy,
+    /// Cast CLI tool
+    Cast,
     /// Dioxus CLI tool
     Dx,
     /// Node.js runtime
@@ -52,6 +54,7 @@ impl Tool {
             Tool::Cargo => "cargo",
             Tool::Rustfmt => "rustfmt",
             Tool::Clippy => "clippy",
+            Tool::Cast => "cast",
             Tool::Dx => "dx",
             Tool::Node => "node",
             Tool::Npm => "npm",
@@ -69,6 +72,7 @@ impl Tool {
             "cargo" => Some(Tool::Cargo),
             "rustfmt" => Some(Tool::Rustfmt),
             "clippy" => Some(Tool::Clippy),
+            "cast" => Some(Tool::Cast),
             "dx" | "dioxus" => Some(Tool::Dx),
             "node" | "nodejs" => Some(Tool::Node),
             "npm" => Some(Tool::Npm),
@@ -113,6 +117,9 @@ pub fn detect_required_tools(
 
     // Always include git-lfs (required for repository operations with large files)
     tools.insert(Tool::GitLfs);
+
+    // Always include cast (required for running dev servers and builds)
+    tools.insert(Tool::Cast);
 
     // Add framework-specific tools
     if let Some(framework) = &config.framework {
@@ -176,6 +183,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
         Tool::Cargo => ("cargo", vec!["--version"]),
         Tool::Rustfmt => ("rustfmt", vec!["--version"]),
         Tool::Clippy => ("cargo", vec!["clippy", "--version"]),
+        Tool::Cast => ("cast", vec!["--version"]),
         Tool::Dx => ("dx", vec!["--version"]),
         Tool::Node => ("node", vec!["--version"]),
         Tool::Npm => ("npm", vec!["--version"]),
@@ -337,6 +345,7 @@ mod tests {
         assert_eq!(Tool::Cargo.name(), "cargo");
         assert_eq!(Tool::Rustfmt.name(), "rustfmt");
         assert_eq!(Tool::Clippy.name(), "clippy");
+        assert_eq!(Tool::Cast.name(), "cast");
         assert_eq!(Tool::Dx.name(), "dx");
         assert_eq!(Tool::Node.name(), "node");
         assert_eq!(Tool::Npm.name(), "npm");
@@ -352,6 +361,7 @@ mod tests {
         assert_eq!(Tool::from_name("cargo"), Some(Tool::Cargo));
         assert_eq!(Tool::from_name("rustfmt"), Some(Tool::Rustfmt));
         assert_eq!(Tool::from_name("clippy"), Some(Tool::Clippy));
+        assert_eq!(Tool::from_name("cast"), Some(Tool::Cast));
         assert_eq!(Tool::from_name("dx"), Some(Tool::Dx));
         assert_eq!(Tool::from_name("dioxus"), Some(Tool::Dx));
         assert_eq!(Tool::from_name("node"), Some(Tool::Node));
@@ -370,6 +380,7 @@ mod tests {
         assert_eq!(Tool::from_name("RUSTUP"), Some(Tool::Rustup));
         assert_eq!(Tool::from_name("RUSTC"), Some(Tool::Rustc));
         assert_eq!(Tool::from_name("Cargo"), Some(Tool::Cargo));
+        assert_eq!(Tool::from_name("CAST"), Some(Tool::Cast));
         assert_eq!(Tool::from_name("DX"), Some(Tool::Dx));
         assert_eq!(Tool::from_name("NODE"), Some(Tool::Node));
         assert_eq!(Tool::from_name("GIT-LFS"), Some(Tool::GitLfs));
@@ -389,18 +400,19 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
+        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast, dx, node, npm, playwright
         assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
         assert!(tools.contains(&Tool::GitLfs));
+        assert!(tools.contains(&Tool::Cast));
         assert!(tools.contains(&Tool::Dx));
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
         assert!(tools.contains(&Tool::Playwright));
-        assert_eq!(tools.len(), 10);
+        assert_eq!(tools.len(), 11);
     }
 
     #[test]
@@ -421,17 +433,18 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Cloudflare Pages requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, wrangler, node, npm
+        // Cloudflare Pages requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast, wrangler, node, npm
         assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
         assert!(tools.contains(&Tool::GitLfs));
+        assert!(tools.contains(&Tool::Cast));
         assert!(tools.contains(&Tool::Wrangler));
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
-        assert_eq!(tools.len(), 9);
+        assert_eq!(tools.len(), 10);
     }
 
     #[test]
@@ -448,14 +461,15 @@ mod tests {
         assert!(result.is_ok());
 
         let tools = result.unwrap();
-        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs
+        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast
         assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
         assert!(tools.contains(&Tool::GitLfs));
-        assert_eq!(tools.len(), 6);
+        assert!(tools.contains(&Tool::Cast));
+        assert_eq!(tools.len(), 7);
     }
 
     #[test]
@@ -476,7 +490,8 @@ mod tests {
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
         assert!(tools.contains(&Tool::GitLfs));
-        assert_eq!(tools.len(), 6);
+        assert!(tools.contains(&Tool::Cast));
+        assert_eq!(tools.len(), 7);
     }
 
     #[test]
@@ -724,6 +739,7 @@ fn install_single_tool(
                 skipped: false,
             })
         }
+        Tool::Cast => install_cast(working_directory, dry_run),
         Tool::Dx => install_dx(dry_run),
         Tool::Node | Tool::Npm => install_node(tool, dry_run),
         Tool::Playwright => install_playwright(working_directory, dry_run),
@@ -773,6 +789,75 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(ToolchainError::InstallationError(format!(
             "Failed to install rustup: {}",
+            stderr
+        )))
+    }
+}
+
+/// Install Cast CLI
+fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult, ToolchainError> {
+    use std::process::Command;
+
+    // Find the monorepo root by looking for cast/cli directory using ancestors
+    let cast_cli_path = working_directory
+        .ancestors()
+        .find_map(|ancestor| {
+            let potential_path = ancestor.join("cast/cli");
+            if potential_path.exists() && potential_path.is_dir() {
+                Some(potential_path)
+            } else {
+                None
+            }
+        });
+    
+    let cast_cli_path = match cast_cli_path {
+        Some(path) => path,
+        None => {
+            // In test environments or when not in the monorepo, skip installation
+            return Ok(InstallResult {
+                tool: Tool::Cast,
+                success: false,
+                message: "Skipped: Could not find cast/cli directory. Run from within the monorepo.".to_string(),
+                skipped: true,
+            });
+        }
+    };
+
+    if dry_run {
+        return Ok(InstallResult {
+            tool: Tool::Cast,
+            success: true,
+            message: format!(
+                "Would install: cargo install --path {}",
+                cast_cli_path.display()
+            ),
+            skipped: false,
+        });
+    }
+
+    println!("Installing Cast CLI from {}...", cast_cli_path.display());
+
+    let path_str = cast_cli_path.to_str()
+        .ok_or_else(|| ToolchainError::InstallationError(
+            "Cast CLI path contains invalid UTF-8 characters".to_string()
+        ))?;
+
+    let output = Command::new("cargo")
+        .args(["install", "--path", path_str])
+        .output()
+        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+
+    if output.status.success() {
+        Ok(InstallResult {
+            tool: Tool::Cast,
+            success: true,
+            message: "Installed successfully".to_string(),
+            skipped: false,
+        })
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(ToolchainError::InstallationError(format!(
+            "Failed to install cast: {}",
             stderr
         )))
     }
@@ -1207,6 +1292,7 @@ fn get_all_tools() -> Vec<Tool> {
         Tool::Cargo,
         Tool::Rustfmt,
         Tool::Clippy,
+        Tool::Cast,
         Tool::Dx,
         Tool::Node,
         Tool::Npm,
@@ -1444,8 +1530,8 @@ mod check_tests {
 
         let check_result = result.unwrap();
         assert!(check_result.framework.is_none());
-        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs
-        assert_eq!(check_result.tool_statuses.len(), 6);
+        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast
+        assert_eq!(check_result.tool_statuses.len(), 7);
 
         // In CI environment, Rust tools should be installed
         let rustc_status = check_result
@@ -1475,8 +1561,8 @@ mod check_tests {
 
         let check_result = result.unwrap();
         assert_eq!(check_result.framework, Some("dioxus".to_string()));
-        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
-        assert_eq!(check_result.tool_statuses.len(), 10);
+        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast, dx, node, npm, playwright
+        assert_eq!(check_result.tool_statuses.len(), 11);
     }
 
     #[test]
@@ -1676,12 +1762,13 @@ mod list_tests {
     #[test]
     fn test_get_all_tools() {
         let tools = get_all_tools();
-        assert_eq!(tools.len(), 11);
+        assert_eq!(tools.len(), 12);
         assert!(tools.contains(&Tool::Rustup));
         assert!(tools.contains(&Tool::Rustc));
         assert!(tools.contains(&Tool::Cargo));
         assert!(tools.contains(&Tool::Rustfmt));
         assert!(tools.contains(&Tool::Clippy));
+        assert!(tools.contains(&Tool::Cast));
         assert!(tools.contains(&Tool::Dx));
         assert!(tools.contains(&Tool::Node));
         assert!(tools.contains(&Tool::Npm));
@@ -1710,8 +1797,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, dx, node, npm, playwright
-        assert_eq!(list_result.tool_statuses.len(), 10);
+        // Dioxus requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast, dx, node, npm, playwright
+        assert_eq!(list_result.tool_statuses.len(), 11);
 
         let tool_names: Vec<&str> = list_result
             .tool_statuses
@@ -1750,8 +1837,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Should list all 11 tools
-        assert_eq!(list_result.tool_statuses.len(), 11);
+        // Should list all 12 tools
+        assert_eq!(list_result.tool_statuses.len(), 12);
     }
 
     #[test]
@@ -1774,8 +1861,8 @@ mod list_tests {
         assert!(result.is_ok());
 
         let list_result = result.unwrap();
-        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs
-        assert_eq!(list_result.tool_statuses.len(), 6);
+        // Pure Rust requires: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast
+        assert_eq!(list_result.tool_statuses.len(), 7);
     }
 
     #[test]
