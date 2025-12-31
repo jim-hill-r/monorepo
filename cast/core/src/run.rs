@@ -183,6 +183,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Skip in CI - test hangs if dx command behavior is unexpected
     fn test_run_runs_dx_serve_for_dioxus_framework() {
         let tmp_dir = TempDir::new("test_run_dioxus").unwrap();
 
@@ -221,6 +222,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Skip in CI - test hangs if dx command behavior is unexpected
     fn test_run_uses_cargo_toml_metadata() {
         let tmp_dir = TempDir::new("test_run_cargo_metadata").unwrap();
 
@@ -345,6 +347,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Skip in CI - test hangs if dx command behavior is unexpected
     fn test_run_dioxus_in_workspace_uses_package_flag() {
         let tmp_dir = TempDir::new("test_workspace_run").unwrap();
 
