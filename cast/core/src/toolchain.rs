@@ -230,7 +230,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
     }
 }
 
-/// Check if Playwright is installed with chromium browsers
+/// Check if Playwright is installed with required browsers
 fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
     use std::process::Command;
 
@@ -254,7 +254,7 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
         }
     };
 
-    // Now check if chromium browsers are installed
+    // Now check if required browsers are installed
     // Note: `npx playwright install --list` returns exit code 0 when browsers are installed
     // and exit code 1 when browsers are not installed or the .links directory is missing
     let browser_check = Command::new("npx")
@@ -263,26 +263,28 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
 
     match browser_check {
         Ok(output) if output.status.success() => {
-            // Parse the output to check if chromium is installed
+            // Parse the output to check if browsers are installed
             // Expected output format includes lines like:
             //   /home/user/.cache/ms-playwright/chromium-1200
-            //   /home/user/.cache/ms-playwright/chromium_headless_shell-1200
+            //   /home/user/.cache/ms-playwright/firefox-1400
+            //   /home/user/.cache/ms-playwright/webkit-1900
             let list_output = String::from_utf8_lossy(&output.stdout);
 
-            // Check for chromium browser installation
-            // Look for "chromium-" to avoid matching just "chromium_headless_shell"
-            // Both chromium and chromium_headless_shell should be present for full installation
-            let has_chromium = list_output.contains("chromium-")
-                || list_output.contains("chromium_headless_shell-");
+            // Check for major browser installations
+            // We check for chromium, firefox, and webkit to ensure comprehensive test coverage
+            let has_chromium = list_output.contains("chromium-");
+            let has_firefox = list_output.contains("firefox-");
+            let has_webkit = list_output.contains("webkit-");
 
-            if has_chromium {
+            // Consider Playwright installed if all three major browsers are present
+            if has_chromium && has_firefox && has_webkit {
                 Ok(ToolStatus {
                     tool: Tool::Playwright,
                     installed: true,
                     version,
                 })
             } else {
-                // Playwright npm package installed but chromium browser not installed
+                // Playwright npm package installed but not all browsers are installed
                 // This can happen if `npm ci` was run but `npx playwright install` was not
                 Ok(ToolStatus {
                     tool: Tool::Playwright,
@@ -977,7 +979,7 @@ fn install_playwright(
         return Ok(InstallResult {
             tool: Tool::Playwright,
             success: true,
-            message: "Would install: npm ci && npx playwright install --with-deps chromium"
+            message: "Would install: npm ci && npx playwright install --with-deps"
                 .to_string(),
             skipped: false,
         });
@@ -1005,10 +1007,10 @@ fn install_playwright(
         }
     }
 
-    // Then install Playwright browsers
+    // Then install Playwright browsers (all browsers for comprehensive testing)
     println!("Installing Playwright browsers...");
     let output = Command::new("npx")
-        .args(["playwright", "install", "--with-deps", "chromium"])
+        .args(["playwright", "install", "--with-deps"])
         .current_dir(working_directory)
         .output()
         .map_err(|e| {
