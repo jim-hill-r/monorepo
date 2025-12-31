@@ -1,9 +1,9 @@
 #sidebar {
   position: fixed;
   left: 0;
-  top: 73px; /* Below header - calculated from header height */
+  top: var(--header-height);
   width: 250px;
-  height: calc(100vh - 73px);
+  height: calc(100vh - var(--header-height));
   background: #f5e6d3;
   border-right: 2px solid #8b4513;
   padding: 1.5rem 1rem;
@@ -83,7 +83,7 @@ body {
 #content {
   margin-left: 250px;
   padding: 2rem 3rem 2rem 2rem;
-  min-height: calc(100vh - 73px);
+  min-height: calc(100vh - var(--header-height));
   transition: margin-left 0.3s ease-in-out;
 }
 
