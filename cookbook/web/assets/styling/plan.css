@@ -1,0 +1,77 @@
+/* Plan page styles */
+.plan-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    line-height: 1.6;
+    color: #333;
+}
+
+.plan-container h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: #5a3a1a;
+}
+
+.plan-recipes {
+    margin-bottom: 2rem;
+}
+
+.plan-recipes h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: #5a3a1a;
+    border-bottom: 2px solid #8b4513;
+    padding-bottom: 0.5rem;
+}
+
+.plan-recipes .recipe-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.plan-recipes .recipe-item {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f5e6d3;
+    border-radius: 4px;
+    border: 1px solid #d4a574;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.plan-recipes .recipe-item:hover {
+    background-color: #e8d5c0;
+    transform: translateX(5px);
+}
+
+.plan-recipes .recipe-item a {
+    color: #5a3a1a;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.plan-recipes .recipe-item a:hover {
+    color: #8b4513;
+}
+
+.plan-recipes .recipe-day {
+    color: #777;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.5rem 1rem;
+    background-color: #8b4513;
+    color: #f5e6d3;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.back-link:hover {
+    background-color: #d4a574;
+}

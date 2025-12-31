@@ -14,8 +14,12 @@ const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 const RECIPE_CSS: Asset = asset!("/assets/styling/recipe.css");
+const PLAN_CSS: Asset = asset!("/assets/styling/plan.css");
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
+
+/// Maximum day of the year (non-leap year)
+const MAX_DAY_OF_YEAR: u32 = 365;
 
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
@@ -53,6 +57,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
         document::Link { rel: "stylesheet", href: HOME_CSS }
         document::Link { rel: "stylesheet", href: RECIPE_CSS }
+        document::Link { rel: "stylesheet", href: PLAN_CSS }
         Router::<Route> {}
     }
 }
@@ -251,6 +256,37 @@ fn format_week_start_date(date: NaiveDate) -> String {
     }
 }
 
+/// Get recipes for a specific week (1-52)
+/// Returns a vector of (day_of_year, recipe_title) tuples for the 7 days of that week
+fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
+    let store = EmbeddedRecipeStore::global();
+    let mut recipes = Vec::new();
+
+    // Calculate the starting day for this week
+    // Week 1 starts at day 1, week 2 at day 8, etc.
+    let start_day = (week - 1) * 7 + 1;
+
+    // Get 7 recipes for this week (or fewer if we reach MAX_DAY_OF_YEAR)
+    for i in 0..7 {
+        let day = start_day + i;
+        if day > MAX_DAY_OF_YEAR {
+            break; // Don't go beyond MAX_DAY_OF_YEAR
+        }
+
+        match store.get_by_day(day) {
+            Ok(recipe) => {
+                recipes.push((day, recipe.title));
+            }
+            Err(_) => {
+                // If recipe not found, use a placeholder
+                recipes.push((day, format!("Recipe for Day {}", day)));
+            }
+        }
+    }
+
+    recipes
+}
+
 #[component]
 fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
@@ -416,17 +452,41 @@ fn Plan(week: u32) -> Element {
     if !(1..=52).contains(&week) {
         rsx! {
             div {
+                class: "plan-container",
                 h1 { "Invalid Week" }
                 p { "Week {week} is not valid. Please select a week between 1 and 52." }
                 Link { to: Route::Home {}, "Back to Home" }
             }
         }
     } else {
+        let recipes = get_week_recipes(week);
+
         rsx! {
             div {
+                class: "plan-container",
                 h1 { "Meal Plan for Week {week}" }
-                p { "This is a placeholder meal plan for week {week} of the year." }
-                Link { to: Route::Home {}, "Back to Home" }
+
+                div {
+                    class: "plan-recipes",
+                    h2 { "Recipes This Week" }
+
+                    if recipes.is_empty() {
+                        p { "No recipes available for this week." }
+                    } else {
+                        ul {
+                            class: "recipe-list",
+                            for (day, title) in recipes {
+                                li {
+                                    class: "recipe-item",
+                                    Link { to: Route::Recipe { day }, "{title}" }
+                                    span { class: "recipe-day", " (Day {day})" }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Link { to: Route::Home {}, class: "back-link", "← Back to Home" }
             }
         }
     }
@@ -923,5 +983,45 @@ mod tests {
 
         // Day 366 should fail
         assert!(store.get_by_day(366).is_err(), "Day 366 should be invalid");
+    }
+
+    #[test]
+    fn test_get_week_recipes() {
+        // Test that we can get 7 recipes for a week
+        let recipes = get_week_recipes(1);
+        assert_eq!(recipes.len(), 7, "Week should have 7 recipes");
+
+        // Days should be 1-7 for week 1
+        for (i, (day, _)) in recipes.iter().enumerate() {
+            assert_eq!(*day, (i + 1) as u32, "Day {} should match expected", i + 1);
+        }
+
+        // Test week 2 (days 8-14)
+        let recipes_week2 = get_week_recipes(2);
+        assert_eq!(recipes_week2.len(), 7);
+        assert_eq!(recipes_week2[0].0, 8);
+        assert_eq!(recipes_week2[6].0, 14);
+
+        // Test last week (week 52)
+        let recipes_week52 = get_week_recipes(52);
+        assert_eq!(recipes_week52.len(), 7);
+        // Week 52 starts at day (52-1)*7 + 1 = 358
+        assert_eq!(recipes_week52[0].0, 358);
+        // Last day should be 358 + 6 = 364
+        assert_eq!(recipes_week52[6].0, 364);
+    }
+
+    #[test]
+    fn test_get_week_recipes_titles_loaded() {
+        // Test that recipe titles are loaded correctly
+        let recipes = get_week_recipes(1);
+
+        for (day, title) in &recipes {
+            assert!(
+                !title.is_empty(),
+                "Recipe title for day {} should not be empty",
+                day
+            );
+        }
     }
 }
