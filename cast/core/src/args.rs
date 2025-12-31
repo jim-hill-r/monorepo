@@ -156,6 +156,17 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 .execute(entry_directory)
                 .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
+        Commands::Install(install_cmd) => {
+            let command = commands::toolchain::InstallCommand {
+                tool: install_cmd.tool.clone(),
+                skip: install_cmd.skip.clone(),
+                dry_run: install_cmd.dry_run,
+                force: install_cmd.force,
+            };
+            return command
+                .execute(entry_directory)
+                .map_err(|e| ExecuteError::CommandError(e.to_string()));
+        }
         _ => {} // Other commands require Cast.toml
     }
 
@@ -232,14 +243,14 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 let command = commands::publish::PublishCommand;
                 command.execute(working_directory)
             }
-            Commands::Install(install_cmd) => {
-                let command = commands::toolchain::InstallCommand {
-                    tool: install_cmd.tool,
-                    skip: install_cmd.skip,
-                    dry_run: install_cmd.dry_run,
-                    force: install_cmd.force,
-                };
-                command.execute(working_directory)
+            Commands::Install(_) => {
+                // This case should never be reached because Install is handled
+                // at the top of execute() before the Cast.toml check. If we reach
+                // this point, there's a bug in the control flow logic.
+                unreachable!(
+                    "Install command should be handled before Cast.toml check. \
+                     This indicates a bug in the execute() function's control flow."
+                )
             }
             Commands::Toolchain(toolchain_command) => match toolchain_command {
                 ToolchainCommands::Check(check_cmd) => {
@@ -753,6 +764,30 @@ mod tests {
         let output = result.unwrap();
         // Output should indicate dry run was performed
         assert!(!output.is_empty());
+    }
+
+    #[test]
+    fn it_runs_install_without_cast_toml() {
+        let tmp_dir = TempDir::new("test").unwrap();
+        // No Cast.toml file created - should still work with default tools
+
+        let result = execute(
+            Args {
+                cmd: Commands::Install(InstallToolchainCommand {
+                    tool: None,
+                    skip: None,
+                    dry_run: true, // Use dry run to avoid actual installation
+                    force: false,
+                }),
+            },
+            tmp_dir.path(),
+        );
+
+        // Should succeed even without Cast.toml, installing default tools
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Output should contain information about default Rust tools
+        assert!(output.contains("rustc") || output.contains("cargo"));
     }
 
     #[test]
