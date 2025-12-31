@@ -170,8 +170,18 @@ fn get_current_week_of_year() -> u32 {
 }
 
 /// Format a date as "DayName, DD-Mon" (e.g., "Sun, 28-Dec")
+/// Note: Uses %d which adds leading zeros for single-digit days for cross-platform compatibility
 fn format_recipe_day(date: NaiveDate) -> String {
-    date.format("%a, %-d-%b").to_string()
+    // Format with leading zero for cross-platform compatibility
+    let formatted = date.format("%a, %d-%b").to_string();
+    // Remove leading zero if present for better readability (e.g., "Sun, 1-Jan" instead of "Sun, 01-Jan")
+    if let Some(comma_pos) = formatted.find(',') {
+        let day_part = &formatted[comma_pos + 2..]; // Skip ", "
+        if day_part.starts_with('0') {
+            return format!("{}, {}", &formatted[..comma_pos], &day_part[1..]);
+        }
+    }
+    formatted
 }
 
 /// Get the start of the current week (Sunday)
@@ -179,7 +189,7 @@ fn get_week_start_date() -> NaiveDate {
     let now = Local::now().date_naive();
     let weekday = now.weekday();
     let days_since_sunday = weekday.num_days_from_sunday();
-    now - chrono::Duration::days(days_since_sunday as i64)
+    now - chrono::Duration::days(days_since_sunday.into())
 }
 
 /// Get recipe day information for sidebar display
