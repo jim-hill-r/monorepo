@@ -14,8 +14,12 @@ const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 const RECIPE_CSS: Asset = asset!("/assets/styling/recipe.css");
+const PLAN_CSS: Asset = asset!("/assets/styling/plan.css");
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
+
+/// Maximum day of the year (non-leap year)
+const MAX_DAY_OF_YEAR: u32 = 365;
 
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
@@ -53,6 +57,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
         document::Link { rel: "stylesheet", href: HOME_CSS }
         document::Link { rel: "stylesheet", href: RECIPE_CSS }
+        document::Link { rel: "stylesheet", href: PLAN_CSS }
         Router::<Route> {}
     }
 }
@@ -261,11 +266,11 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
     // Week 1 starts at day 1, week 2 at day 8, etc.
     let start_day = (week - 1) * 7 + 1;
 
-    // Get 7 recipes for this week (or fewer if we reach day 365)
+    // Get 7 recipes for this week (or fewer if we reach MAX_DAY_OF_YEAR)
     for i in 0..7 {
         let day = start_day + i;
-        if day > 365 {
-            break; // Don't go beyond day 365
+        if day > MAX_DAY_OF_YEAR {
+            break; // Don't go beyond MAX_DAY_OF_YEAR
         }
 
         match store.get_by_day(day) {
@@ -1000,9 +1005,9 @@ mod tests {
         // Test last week (week 52)
         let recipes_week52 = get_week_recipes(52);
         assert_eq!(recipes_week52.len(), 7);
-        // Week 52 starts at day 358 (52-1)*7 + 1 = 358
+        // Week 52 starts at day (52-1)*7 + 1 = 358
         assert_eq!(recipes_week52[0].0, 358);
-        // Last day should be 364 (358 + 6)
+        // Last day should be 358 + 6 = 364
         assert_eq!(recipes_week52[6].0, 364);
     }
 
