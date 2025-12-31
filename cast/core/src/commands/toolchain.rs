@@ -261,11 +261,12 @@ mod tests {
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
         let output = result.unwrap();
-        // Should contain all 10 tools
+        // Should contain all 11 tools
         assert!(output.contains("rustc"));
         assert!(output.contains("cargo"));
         assert!(output.contains("rustfmt"));
         assert!(output.contains("clippy"));
+        assert!(output.contains("cast"));
         assert!(output.contains("dx"));
         assert!(output.contains("node"));
         assert!(output.contains("npm"));
