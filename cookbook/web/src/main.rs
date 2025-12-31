@@ -82,20 +82,20 @@ fn Header() -> Element {
     rsx! {
         header {
             id: "header",
-            button {
-                class: "hamburger-btn",
-                onclick: move |_| {
-                    sidebar_visible.set(!sidebar_visible());
-                },
-                "aria-label": "Toggle sidebar",
-                "aria-expanded": "{sidebar_visible}",
-                span { class: "hamburger-icon" }
-                span { class: "hamburger-icon" }
-                span { class: "hamburger-icon" }
-            }
             div {
-                class: "header-title",
-                h1 { "Cookbook" }
+                class: "header-left",
+                button {
+                    class: "hamburger-btn",
+                    onclick: move |_| {
+                        sidebar_visible.set(!sidebar_visible());
+                    },
+                    "aria-label": "Toggle sidebar",
+                    "aria-expanded": "{sidebar_visible}",
+                    span { class: "hamburger-icon" }
+                    span { class: "hamburger-icon" }
+                    span { class: "hamburger-icon" }
+                }
+                h1 { class: "header-title", "Cookbook" }
             }
             nav {
                 class: "header-nav",
