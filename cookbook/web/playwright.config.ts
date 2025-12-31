@@ -68,7 +68,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'cd .. && dx serve -p web --port 8080', /* TODO: Make this `cast run` once that command is working properly */
+    command: 'dx serve --port 8080',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
