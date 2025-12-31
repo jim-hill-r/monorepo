@@ -17,13 +17,30 @@ A Dioxus web application built with Rust that provides daily recipes and weekly 
 Before running this project, you need to have:
 - Rust toolchain installed (visit [rustup.rs](https://rustup.rs))
 - Dioxus CLI (`dx`) installed
+- Cast CLI for toolchain management (included in this monorepo)
 
-### Installing Dioxus CLI
+### Installing Required Tools
 
-Install the Dioxus CLI tool:
+#### Automated Installation (Recommended)
+
+Use the Cast toolchain manager to install all required dependencies:
 
 ```bash
-cargo install dioxus-cli
+cd cookbook/web
+cast toolchain install
+```
+
+This will automatically install:
+- Dioxus CLI (`dx`) version 0.7.2
+- Playwright (for end-to-end testing)
+- All npm dependencies
+
+#### Manual Installation (Alternative)
+
+Install the Dioxus CLI tool manually:
+
+```bash
+cargo install dioxus-cli --version 0.7.2
 ```
 
 ## Running in Development Mode
@@ -107,7 +124,13 @@ cargo check
 
 ## Testing
 
-This project includes Playwright end-to-end tests. See the [tests README](tests/README.md) for details on running the tests.
+This project includes Playwright end-to-end tests. The tests automatically start and stop the development server, so you can simply run:
+
+```bash
+npm test
+```
+
+For more details on testing, including other test modes and manual setup options, see the [tests README](tests/README.md).
 
 ## Project Structure
 
