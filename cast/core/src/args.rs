@@ -44,7 +44,19 @@ enum Commands {
     /// Run build
     Build,
     /// Run CI checks
-    Ci,
+    Ci {
+        /// Run checks only (default mode for PR validation)
+        #[arg(long)]
+        check: bool,
+
+        /// Auto-fix issues that can be fixed automatically (e.g., formatting)
+        #[arg(long)]
+        fix: bool,
+
+        /// Build in release mode and publish artifacts (for post-merge to master)
+        #[arg(long)]
+        release: bool,
+    },
     /// Run CD (Continuous Deployment)
     Cd,
     /// Run tests
@@ -237,8 +249,19 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     )
                 }
             },
-            Commands::Ci => {
-                let command = commands::ci::CiCommand;
+            Commands::Ci { check: _, fix, release } => {
+                // Determine the mode based on flags
+                // If no flags are set, default to Check mode
+                // If multiple flags are set, prioritize: release > fix > check
+                let mode = if release {
+                    crate::ci::CiMode::Release
+                } else if fix {
+                    crate::ci::CiMode::Fix
+                } else {
+                    crate::ci::CiMode::Check
+                };
+
+                let command = commands::ci::CiCommand { mode };
                 command.execute(working_directory)
             }
             Commands::Build => {
@@ -483,7 +506,17 @@ mod tests {
             .output()
             .unwrap();
 
-        let result = execute(Args { cmd: Commands::Ci }, tmp_dir.path()).unwrap();
+        let result = execute(
+            Args {
+                cmd: Commands::Ci {
+                    check: false,
+                    fix: false,
+                    release: false,
+                },
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
         assert_eq!(result, "CI passed");
     }
 
