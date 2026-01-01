@@ -70,7 +70,7 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Create migration tool to rename recipe files from `day-X.md` to `{uuid}.md`
 - ✅ Create migration tool to update plan files to reference UUIDs
 - ✅ Create validation tool to verify migration completed successfully
-- TODO (agent-generated): Document migration process in README
+- ✅ Document migration process in README
 
 #### Sub-task 4.4: Content Migration Execution
 - TODO (agent-generated): Run migration on all 365 recipe files
