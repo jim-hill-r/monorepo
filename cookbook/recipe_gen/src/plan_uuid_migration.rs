@@ -1,4 +1,4 @@
-use cookbook_core::{RecipeReader, RecipeResult};
+use cookbook_core::RecipeReader;
 use cookbook_data_md::MarkdownRecipeStore;
 use std::fs;
 use std::path::{Path, PathBuf};

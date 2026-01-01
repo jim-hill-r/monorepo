@@ -308,7 +308,23 @@ impl MarkdownRecipeStore {
 
     /// Parses plan data from markdown content
     fn parse_plan_markdown(&self, content: &str, week: u32) -> PlanResult<Plan> {
-        // Extract recipe days from the markdown content
+        // First try to extract recipe UUIDs directly (new format)
+        if let Ok(recipe_uuids) = self.extract_plan_recipe_uuids(content) {
+            // Validate we have exactly 7 UUIDs
+            if recipe_uuids.len() != 7 {
+                return Err(PlanError::InvalidData(format!(
+                    "Plan for week {} must have exactly 7 recipe UUIDs, found {}",
+                    week,
+                    recipe_uuids.len()
+                )));
+            }
+
+            return Plan::new_checked(week, recipe_uuids).map_err(|e| {
+                PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
+            });
+        }
+
+        // Fall back to day-based format (legacy format)
         let recipe_days = self.extract_plan_recipe_days(content)?;
 
         // Validate we have exactly 7 days
@@ -336,6 +352,29 @@ impl MarkdownRecipeStore {
         Plan::new_checked(week, recipe_uuids).map_err(|e| {
             PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
         })
+    }
+
+    /// Extracts recipe UUIDs from the markdown content (new format)
+    fn extract_plan_recipe_uuids(&self, content: &str) -> PlanResult<Vec<Uuid>> {
+        // Look for the "Recipe UUIDs: X, Y, Z" line
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if let Some(uuids_str) = trimmed.strip_prefix("Recipe UUIDs:") {
+                let uuids: Result<Vec<Uuid>, _> = uuids_str
+                    .split(',')
+                    .map(|s| {
+                        Uuid::parse_str(s.trim())
+                            .map_err(|e| PlanError::InvalidData(format!("Invalid UUID: {}", e)))
+                    })
+                    .collect();
+
+                return uuids;
+            }
+        }
+
+        Err(PlanError::InvalidData(
+            "Could not find 'Recipe UUIDs:' line in plan markdown".to_string(),
+        ))
     }
 
     /// Extracts recipe days from the markdown content
@@ -1000,6 +1039,107 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
         // Plan should not be loaded
         assert!(!PlanReader::exists(&store, 1));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_plan_with_uuids() {
+        let temp_dir = create_temp_dir();
+
+        // Create recipe files with known UUIDs
+        let uuid1 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap();
+        let uuid2 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap();
+        let uuid3 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440003").unwrap();
+        let uuid4 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440004").unwrap();
+        let uuid5 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440005").unwrap();
+        let uuid6 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440006").unwrap();
+        let uuid7 = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440007").unwrap();
+
+        for (i, uuid) in [uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]
+            .iter()
+            .enumerate()
+        {
+            let recipe_content = format!(
+                "# Recipe {}\n\nUUID: {}\n\nA test recipe\n",
+                i + 1,
+                uuid
+            );
+            fs::write(temp_dir.join(format!("day-{}.md", i + 1)), recipe_content).unwrap();
+        }
+
+        // Create a plan with UUID references
+        let plan_content = format!(
+            "# Week 1 Plan\n\nWeek: 1\nYear: 2024\nDays: 1, 2, 3, 4, 5, 6, 7\nRecipe UUIDs: {}, {}, {}, {}, {}, {}, {}\n",
+            uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7
+        );
+        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Plan should be loaded with correct UUIDs
+        assert!(PlanReader::exists(&store, 1));
+        let plan = PlanReader::get_by_week(&store, 1).unwrap();
+        assert_eq!(plan.week, 1);
+        assert_eq!(plan.recipe_uuids.len(), 7);
+        assert_eq!(plan.recipe_uuids[0], uuid1);
+        assert_eq!(plan.recipe_uuids[1], uuid2);
+        assert_eq!(plan.recipe_uuids[6], uuid7);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_plan_with_uuids_invalid_count() {
+        let temp_dir = create_temp_dir();
+
+        // Create recipe files
+        for i in 1..=3 {
+            let uuid = Uuid::new_v4();
+            let recipe_content = format!("# Recipe {}\n\nUUID: {}\n\nA test recipe\n", i, uuid);
+            fs::write(temp_dir.join(format!("day-{}.md", i)), recipe_content).unwrap();
+        }
+
+        // Create a plan with wrong number of UUIDs (only 3 instead of 7)
+        let uuid1 = Uuid::new_v4();
+        let uuid2 = Uuid::new_v4();
+        let uuid3 = Uuid::new_v4();
+        let plan_content = format!(
+            "# Week 1 Plan\n\nWeek: 1\nRecipe UUIDs: {}, {}, {}\n",
+            uuid1, uuid2, uuid3
+        );
+        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Plan should not be loaded due to invalid UUID count
+        assert!(!PlanReader::exists(&store, 1));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_plan_falls_back_to_days() {
+        let temp_dir = create_temp_dir();
+
+        // Create recipe files
+        for i in 1..=7 {
+            let uuid = Uuid::new_v4();
+            let recipe_content = format!("# Recipe {}\n\nUUID: {}\n\nA test recipe\n", i, uuid);
+            fs::write(temp_dir.join(format!("day-{}.md", i)), recipe_content).unwrap();
+        }
+
+        // Create a plan with only Days (no Recipe UUIDs) - legacy format
+        let plan_content = "# Week 1 Plan\n\nWeek: 1\nYear: 2024\nDays: 1, 2, 3, 4, 5, 6, 7\n";
+        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Plan should be loaded and UUIDs should be looked up from days
+        assert!(PlanReader::exists(&store, 1));
+        let plan = PlanReader::get_by_week(&store, 1).unwrap();
+        assert_eq!(plan.week, 1);
+        assert_eq!(plan.recipe_uuids.len(), 7);
 
         cleanup_temp_dir(&temp_dir);
     }
