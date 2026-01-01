@@ -2,6 +2,7 @@ use cookbook_core::RecipeReader;
 use cookbook_data_md::MarkdownRecipeStore;
 
 #[test]
+#[allow(deprecated)]
 fn test_all_365_day_files_exist() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
@@ -24,6 +25,7 @@ fn test_all_365_day_files_exist() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_all_day_recipes_have_required_fields() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
@@ -63,6 +65,7 @@ fn test_all_day_recipes_have_required_fields() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_all_day_recipes_have_proper_tags() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
@@ -95,6 +98,7 @@ fn test_all_day_recipes_have_proper_tags() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_recipe_variety_across_categories() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
@@ -134,6 +138,7 @@ fn test_recipe_variety_across_categories() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_recipe_variety_across_cuisines() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
@@ -179,6 +184,7 @@ fn test_recipe_variety_across_cuisines() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_recipe_ids_are_valid_uuids() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
