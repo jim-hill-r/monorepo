@@ -38,13 +38,16 @@ test.describe('Sidebar Navigation', () => {
     const recipesSection = page.locator('#sidebar .sidebar-section').first();
     await expect(recipesSection.locator('h3')).toHaveText('Daily Recipes');
     
-    // Check that there are recipe links (should be 10 links)
+    // Check that there are recipe links (should be 7 links for current week, or fewer near year end)
     const recipeLinks = recipesSection.locator('a');
-    await expect(recipeLinks).toHaveCount(10);
+    const linkCount = await recipeLinks.count();
+    expect(linkCount).toBeGreaterThanOrEqual(1);
+    expect(linkCount).toBeLessThanOrEqual(7);
     
-    // Verify the links have proper day format
+    // Verify the links have proper date format (e.g., "Thu, 1-Jan")
     const firstLink = recipeLinks.first();
-    await expect(firstLink).toContainText('Day');
+    const firstLinkText = await firstLink.textContent();
+    expect(firstLinkText).toMatch(/\w{3}, \d{1,2}-\w{3}/); // Format: "Day, DD-Mon"
   });
 
   test('should display plan quick links section', async ({ page }) => {
