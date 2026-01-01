@@ -22,6 +22,7 @@ Recipe markdown files follow this structure:
 
 Optional description text goes here.
 
+UUID: 550e8400-e29b-41d4-a716-446655440000
 Prep Time: 10 minutes
 Cook Time: 20 minutes
 Servings: 4
@@ -45,6 +46,7 @@ Tags: tag1, tag2, tag3
 - **ID**: Derived from the filename (without `.md` extension)
 
 ### Optional Fields
+- **UUID**: `UUID: <uuid-string>` format (RFC 4122 compliant UUID). If not provided, a new UUID is automatically generated when the recipe is loaded.
 - **Description**: Text between title and first section heading
 - **Prep Time**: `Prep Time: X minutes` format
 - **Cook Time**: `Cook Time: X minutes` format
@@ -53,11 +55,20 @@ Tags: tag1, tag2, tag3
 - **Ingredients**: List items under `## Ingredients` section
 - **Instructions**: Numbered list under `## Instructions` section
 
+### UUID Support
+
+Recipes support UUIDs as unique identifiers:
+- If a recipe file contains a valid `UUID:` field in the frontmatter, that UUID will be used
+- If no UUID is present or the UUID is invalid, a new UUID is automatically generated
+- This provides backward compatibility with existing recipes while enabling UUID-based features
+- UUIDs allow recipes to be renamed and moved without breaking references
+
 ## Usage
 
 ```rust
-use cookbook_core::{RecipeReader, RecipeWriter};
+use cookbook_core::{RecipeReader, RecipeWriter, Recipe};
 use cookbook_data_md::MarkdownRecipeStore;
+use uuid::Uuid;
 
 // Create a store from a content directory
 let mut store = MarkdownRecipeStore::new("./content")?;
@@ -66,6 +77,10 @@ let mut store = MarkdownRecipeStore::new("./content")?;
 let recipe = store.get_by_id("carbonara")?;
 let day_recipe = store.get_by_day(1)?;
 let all_recipes = store.get_all()?;
+
+// Read recipe by UUID
+let uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000")?;
+let recipe = store.get_by_uuid(&uuid)?;
 
 // Write recipes
 let new_recipe = Recipe::new("new-recipe".to_string(), "New Recipe".to_string());
