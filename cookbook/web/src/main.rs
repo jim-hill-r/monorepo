@@ -48,8 +48,29 @@ fn App() -> Element {
         use_context_provider(|| auth);
     }
 
-    // Initialize sidebar visibility state (visible by default)
-    use_context_provider(|| Signal::new(true));
+    // Initialize sidebar visibility state
+    // Start with desktop default (visible), will be updated on mount for mobile
+    let sidebar_visible = use_signal(|| true);
+    
+    // Detect mobile viewport and update sidebar state accordingly
+    #[cfg(target_arch = "wasm32")]
+    {
+        use_effect(move || {
+            // Check if we're on a mobile viewport (width <= 768px)
+            if let Some(window) = web_sys::window() {
+                if let Ok(width) = window.inner_width() {
+                    if let Some(width_value) = width.as_f64() {
+                        // Hide sidebar on mobile (width <= 768px)
+                        if width_value <= 768.0 {
+                            sidebar_visible.set(false);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    use_context_provider(|| sidebar_visible);
 
     rsx! {
         document::Link { rel: "stylesheet", href: HEADER_CSS }

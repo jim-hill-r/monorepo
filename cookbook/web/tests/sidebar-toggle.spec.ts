@@ -12,6 +12,11 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Sidebar Toggle', () => {
+  // Configure viewport for consistent desktop testing
+  test.use({ 
+    viewport: { width: 1280, height: 720 }
+  });
+
   test('should display hamburger button in header', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -21,11 +26,11 @@ test.describe('Sidebar Toggle', () => {
     await expect(hamburger).toBeVisible();
   });
 
-  test('should display sidebar by default', async ({ page }) => {
+  test('should display sidebar by default on desktop', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Check that sidebar is visible initially
+    // Check that sidebar is visible initially on desktop
     const sidebar = page.locator('#sidebar');
     await expect(sidebar).toBeVisible();
     await expect(sidebar).not.toHaveClass(/hidden/);
