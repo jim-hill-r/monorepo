@@ -73,10 +73,10 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Document migration process in README
 
 #### Sub-task 4.4: Content Migration Execution
-- TODO (agent-generated): Run migration on all 365 recipe files
-- TODO (agent-generated): Run migration on all 53 plan files
-- TODO (agent-generated): Validate all recipes and plans load correctly
-- TODO (agent-generated): Update any hardcoded references to day-based file names
+- ✅ Run migration on all 365 recipe files
+- ✅ Run migration on all 53 plan files
+- ✅ Validate all recipes and plans load correctly
+- ✅ Update any hardcoded references to day-based file names (updated build.rs and get_by_day method)
 
 #### Sub-task 4.5: Reader/Writer Trait Updates
 - TODO (agent-generated): Update `RecipeReader::get_by_id()` to work with UUIDs

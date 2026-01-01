@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::io::Write;
@@ -9,6 +10,7 @@ fn main() {
     println!("cargo:rerun-if-changed=../content");
 
     let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR environment variable not set");
+    let content_dir = Path::new("../content");
 
     // Generate embedded_recipes.rs
     let dest_path = Path::new(&out_dir).join("embedded_recipes.rs");
@@ -19,14 +21,46 @@ fn main() {
         .expect("Failed to write to embedded_recipes.rs");
     writeln!(f, "vec![").expect("Failed to write to embedded_recipes.rs");
 
-    // Generate entries for day-1 through day-365
+    // Scan content directory for UUID-based recipe files
+    // Build a map of day -> (uuid, content) by reading each file
+    let mut recipes = BTreeMap::new();
+
+    if let Ok(entries) = fs::read_dir(content_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+
+            // Skip non-markdown files and plan files
+            if !file_name.ends_with(".md")
+                || file_name.starts_with("week-")
+                || file_name == "intro.md"
+            {
+                continue;
+            }
+
+            // Read the file to extract the day number from the content
+            if let Ok(content) = fs::read_to_string(&path) {
+                // Look for "day-X" tag in the tags line
+                if let Some(day) = extract_day_from_content(&content) {
+                    let uuid = file_name.trim_end_matches(".md");
+                    recipes.insert(day, uuid.to_string());
+                }
+            }
+        }
+    }
+
+    // Generate entries for day 1 through 365 based on discovered recipes
     for day in 1..=365 {
-        writeln!(
-            f,
-            "    ({}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/../content/day-{}.md\"))),",
-            day, day
-        )
-        .expect("Failed to write to embedded_recipes.rs");
+        if let Some(uuid) = recipes.get(&day) {
+            writeln!(
+                f,
+                "    ({}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/../content/{}.md\"))),",
+                day, uuid
+            )
+            .expect("Failed to write to embedded_recipes.rs");
+        } else {
+            eprintln!("Warning: No recipe found for day {}", day);
+        }
     }
 
     writeln!(f, "]").expect("Failed to write to embedded_recipes.rs");
@@ -51,4 +85,22 @@ fn main() {
     }
 
     writeln!(f, "]").expect("Failed to write to embedded_plans.rs");
+}
+
+/// Extract the day number from recipe content by looking for "day-X" tag
+fn extract_day_from_content(content: &str) -> Option<u32> {
+    for line in content.lines() {
+        if line.starts_with("Tags:") {
+            // Look for "day-X" in the tags
+            for part in line.split(',') {
+                let tag = part.trim();
+                if let Some(day_str) = tag.strip_prefix("day-")
+                    && let Ok(day) = day_str.parse::<u32>()
+                {
+                    return Some(day);
+                }
+            }
+        }
+    }
+    None
 }
