@@ -40,8 +40,8 @@ All Phase 2 items have been completed:
 - ✅ Add `PlanWriter` trait to `cookbook/core` with methods: `create(plan: Plan)`, `update(plan: Plan)`, `delete(week: u32)`, `save(plan: Plan)`.
 - ✅ Add comprehensive tests for `Plan` struct, `PlanError`, `PlanReader`, and `PlanWriter` traits in `cookbook/core/src/lib.rs`.
 - ✅ Create plan content files in `cookbook/content/` directory with format `week-1.md`, `week-2.md`, etc. containing week metadata and 7 day references.
-- TODO (agent-generated): Update `cookbook/data_md` to parse plan markdown files and implement `PlanReader` trait for reading plans from embedded content.
-- TODO (agent-generated): Add tests to `cookbook/data_md` for plan parsing and `PlanReader` implementation.
+- ✅ Update `cookbook/data_md` to parse plan markdown files and implement `PlanReader` trait for reading plans from embedded content.
+- ✅ Add tests to `cookbook/data_md` for plan parsing and `PlanReader` implementation.
 - TODO (agent-generated): Update `cookbook/web` to use `PlanReader` trait to load plans instead of dynamically calculating week recipes.
 - TODO (agent-generated): Add tests to `cookbook/web` to verify plan-based recipe retrieval.
 

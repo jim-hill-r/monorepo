@@ -1,4 +1,7 @@
-use cookbook_core::{Recipe, RecipeError, RecipeReader, RecipeResult, RecipeWriter};
+use cookbook_core::{
+    Plan, PlanError, PlanReader, PlanResult, Recipe, RecipeError, RecipeReader, RecipeResult,
+    RecipeWriter,
+};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -11,6 +14,7 @@ pub mod embedded;
 pub struct MarkdownRecipeStore {
     content_dir: PathBuf,
     recipes: HashMap<String, Recipe>,
+    plans: HashMap<u32, Plan>,
 }
 
 impl MarkdownRecipeStore {
@@ -28,10 +32,14 @@ impl MarkdownRecipeStore {
         let mut store = Self {
             content_dir,
             recipes: HashMap::new(),
+            plans: HashMap::new(),
         };
 
         // Load all recipes from the content directory
         store.load_recipes()?;
+
+        // Load all plans from the content directory
+        store.load_plans()?;
 
         Ok(store)
     }
@@ -237,6 +245,84 @@ impl MarkdownRecipeStore {
         Vec::new()
     }
 
+    /// Loads all plan markdown files from the content directory
+    fn load_plans(&mut self) -> RecipeResult<()> {
+        let entries = fs::read_dir(&self.content_dir).map_err(|e| {
+            RecipeError::StorageError(format!("Failed to read content directory: {}", e))
+        })?;
+
+        for entry in entries {
+            let entry = entry.map_err(|e| {
+                RecipeError::StorageError(format!("Failed to read directory entry: {}", e))
+            })?;
+
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                let file_name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+
+                // Only parse week-*.md files
+                if let Some(week_str) = file_name.strip_prefix("week-")
+                    && let Ok(week) = week_str.parse::<u32>()
+                {
+                    // Try to parse the plan
+                    if let Ok(plan) = self.parse_plan_file(&path, week) {
+                        self.plans.insert(plan.week, plan);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Parses a plan from a markdown file
+    fn parse_plan_file(&self, path: &Path, week: u32) -> PlanResult<Plan> {
+        let content = fs::read_to_string(path).map_err(|e| {
+            PlanError::StorageError(format!("Failed to read file {}: {}", path.display(), e))
+        })?;
+
+        self.parse_plan_markdown(&content, week)
+    }
+
+    /// Parses plan data from markdown content
+    fn parse_plan_markdown(&self, content: &str, week: u32) -> PlanResult<Plan> {
+        // Extract recipe days from the markdown content
+        let recipe_days = self.extract_plan_recipe_days(content)?;
+
+        // Validate we have exactly 7 days
+        if recipe_days.len() != 7 {
+            return Err(PlanError::InvalidData(format!(
+                "Plan for week {} must have exactly 7 recipe days, found {}",
+                week,
+                recipe_days.len()
+            )));
+        }
+
+        Plan::new_checked(week, recipe_days)
+    }
+
+    /// Extracts recipe days from the markdown content
+    fn extract_plan_recipe_days(&self, content: &str) -> PlanResult<Vec<u32>> {
+        // Look for the "Days: X, Y, Z" line
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if let Some(days_str) = trimmed.strip_prefix("Days:") {
+                let days: Result<Vec<u32>, _> = days_str
+                    .split(',')
+                    .map(|s| s.trim().parse::<u32>())
+                    .collect();
+
+                return days.map_err(|e| {
+                    PlanError::InvalidData(format!("Failed to parse recipe days: {}", e))
+                });
+            }
+        }
+
+        Err(PlanError::InvalidData(
+            "Could not find 'Days:' line in plan markdown".to_string(),
+        ))
+    }
+
     /// Writes a recipe to a markdown file
     fn write_recipe_file(&self, recipe: &Recipe) -> RecipeResult<()> {
         let file_path = self.content_dir.join(format!("{}.md", recipe.id));
@@ -373,6 +459,26 @@ impl RecipeWriter for MarkdownRecipeStore {
     }
 }
 
+impl PlanReader for MarkdownRecipeStore {
+    fn get_by_week(&self, week: u32) -> PlanResult<Plan> {
+        self.plans
+            .get(&week)
+            .cloned()
+            .ok_or_else(|| PlanError::NotFound(format!("Plan for week {} not found", week)))
+    }
+
+    fn get_all(&self) -> PlanResult<Vec<Plan>> {
+        let mut plans: Vec<Plan> = self.plans.values().cloned().collect();
+        // Sort by week number for consistent ordering
+        plans.sort_by_key(|p| p.week);
+        Ok(plans)
+    }
+
+    fn exists(&self, week: u32) -> bool {
+        self.plans.contains_key(&week)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -415,7 +521,7 @@ mod tests {
 
         // Fresh empty directory should have no recipes loaded
         let store = result.unwrap();
-        let all_recipes = store.get_all().unwrap();
+        let all_recipes = RecipeReader::get_all(&store).unwrap();
         // Just verify we can successfully create a store and call get_all
         // The actual count doesn't matter as temp dir may have leftover files
         let _ = all_recipes.len();
@@ -497,7 +603,7 @@ Tags: italian, pasta, quick
         assert!(result.is_ok());
 
         // Verify recipe was added to store
-        assert!(store.exists("test-recipe"));
+        assert!(RecipeReader::exists(&store, "test-recipe"));
 
         // Verify file was created
         let file_path = temp_dir.join("test-recipe.md");
@@ -555,12 +661,12 @@ Tags: italian, pasta, quick
         let recipe = Recipe::new("delete-test".to_string(), "To Delete".to_string());
         store.create(recipe).unwrap();
 
-        assert!(store.exists("delete-test"));
+        assert!(RecipeReader::exists(&store, "delete-test"));
 
         let result = store.delete("delete-test");
         assert!(result.is_ok());
 
-        assert!(!store.exists("delete-test"));
+        assert!(!RecipeReader::exists(&store, "delete-test"));
 
         // Verify file was deleted
         let file_path = temp_dir.join("delete-test.md");
@@ -582,7 +688,7 @@ Tags: italian, pasta, quick
         let recipe = Recipe::new("save-test".to_string(), "Save Test".to_string());
         let result = store.save(recipe.clone());
         assert!(result.is_ok());
-        assert!(store.exists("save-test"));
+        assert!(RecipeReader::exists(&store, "save-test"));
 
         // Save updated recipe
         let mut updated = recipe;
@@ -639,7 +745,7 @@ Tags: italian, pasta, quick
             .create(Recipe::new("recipe3".to_string(), "Recipe 3".to_string()))
             .unwrap();
 
-        let all_recipes = store.get_all().unwrap();
+        let all_recipes = RecipeReader::get_all(&store).unwrap();
         assert_eq!(all_recipes.len(), initial_count + 3);
 
         cleanup_temp_dir(&temp_dir);
@@ -686,9 +792,126 @@ Tags: italian, pasta, quick
         let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
 
         // intro should not be loaded as a recipe
-        assert!(!store.exists("intro"));
+        assert!(!RecipeReader::exists(&store, "intro"));
         // but recipe should be loaded
-        assert!(store.exists("recipe"));
+        assert!(RecipeReader::exists(&store, "recipe"));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_reader_get_by_week() {
+        let temp_dir = create_temp_dir();
+
+        // Create a plan file
+        let plan_content = r#"# Week 1 Plan
+
+Meal plan for ISO 8601 week 1.
+
+Week: 1
+Year: 2024
+Days: 1, 2, 3, 4, 5, 6, 7
+
+## Recipe Days
+
+This week's meal plan uses the following day-of-year recipes (Monday through Sunday):
+
+- Monday: Day 1
+- Tuesday: Day 2
+"#;
+
+        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let plan = store.get_by_week(1).unwrap();
+        assert_eq!(plan.week, 1);
+        assert_eq!(plan.recipe_days, vec![1, 2, 3, 4, 5, 6, 7]);
+
+        // Test nonexistent week
+        assert!(store.get_by_week(99).is_err());
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_reader_get_all() {
+        let temp_dir = create_temp_dir();
+
+        // Create multiple plan files
+        for week in 1..=3 {
+            let plan_content = format!(
+                "# Week {} Plan\n\nWeek: {}\nDays: {}, {}, {}, {}, {}, {}, {}\n",
+                week,
+                week,
+                week * 7 - 6,
+                week * 7 - 5,
+                week * 7 - 4,
+                week * 7 - 3,
+                week * 7 - 2,
+                week * 7 - 1,
+                week * 7
+            );
+            fs::write(temp_dir.join(format!("week-{}.md", week)), plan_content).unwrap();
+        }
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let plans = PlanReader::get_all(&store).unwrap();
+        assert_eq!(plans.len(), 3);
+
+        // Verify sorted by week
+        assert_eq!(plans[0].week, 1);
+        assert_eq!(plans[1].week, 2);
+        assert_eq!(plans[2].week, 3);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_reader_exists() {
+        let temp_dir = create_temp_dir();
+
+        let plan_content = "# Week 5 Plan\n\nWeek: 5\nDays: 29, 30, 31, 32, 33, 34, 35\n";
+        fs::write(temp_dir.join("week-5.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        assert!(PlanReader::exists(&store, 5));
+        assert!(!PlanReader::exists(&store, 1));
+        assert!(!PlanReader::exists(&store, 99));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_plan_invalid_days_count() {
+        let temp_dir = create_temp_dir();
+
+        // Create a plan with wrong number of days
+        let plan_content = "# Week 1 Plan\n\nWeek: 1\nDays: 1, 2, 3\n";
+        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Plan should not be loaded due to invalid data
+        assert!(!PlanReader::exists(&store, 1));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_plan_missing_days() {
+        let temp_dir = create_temp_dir();
+
+        // Create a plan without Days field
+        let plan_content = "# Week 1 Plan\n\nWeek: 1\nNo days here\n";
+        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Plan should not be loaded
+        assert!(!PlanReader::exists(&store, 1));
 
         cleanup_temp_dir(&temp_dir);
     }
