@@ -50,7 +50,7 @@ fn App() -> Element {
 
     // Initialize sidebar visibility state
     // Start with desktop default (visible), will be updated on mount for mobile
-    let mut sidebar_visible = use_signal(|| true);
+    let sidebar_visible = use_signal(|| true);
 
     // Detect mobile viewport and update sidebar state accordingly
     #[cfg(target_arch = "wasm32")]
@@ -187,14 +187,14 @@ fn get_current_day_of_year() -> u32 {
     now.ordinal()
 }
 
-/// Get the current week of the year (1-52) using chrono
-/// Uses a simple calculation: week = floor((day - 1) / 7) + 1, capped at 52
+/// Get the current ISO 8601 week of the year (1-53)
+/// Uses ISO 8601 week numbering where:
+/// - Week 1 is the first week with a Thursday (or the week containing January 4)
+/// - Weeks start on Monday
+/// - A year can have 53 weeks (when it starts on Thursday or is a leap year starting on Wednesday)
 fn get_current_week_of_year() -> u32 {
-    let day = get_current_day_of_year();
-    // Calculate week number (1-52), rounding up
-    let week = ((day - 1) / 7) + 1;
-    // Cap at week 52 to ensure valid range for Plan component
-    week.min(52)
+    let now = Local::now();
+    now.iso_week().week()
 }
 
 /// Format a date as "DayName, DD-Mon" (e.g., "Sun, 28-Dec")
@@ -1257,5 +1257,56 @@ mod tests {
             shopping_list_week_100.is_empty(),
             "Week 100 should return empty list"
         );
+    }
+
+    #[test]
+    fn test_iso_week_calculation_2026() {
+        // 2026 starts on Thursday (Jan 1, 2026), so week 1 starts on Dec 29, 2025
+        // Jan 1, 2026 is in ISO week 1
+        let date = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        assert_eq!(date.iso_week().week(), 1);
+
+        // Last day of 2026 (Dec 31, 2026 is Thursday) is in week 53
+        let date = NaiveDate::from_ymd_opt(2026, 12, 31).unwrap();
+        assert_eq!(date.iso_week().week(), 53);
+    }
+
+    #[test]
+    fn test_iso_week_calculation_2020() {
+        // 2020 is a leap year starting on Wednesday
+        // 2020 has 53 ISO weeks
+        // Jan 1, 2020 (Wednesday) is in week 1
+        let date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        assert_eq!(date.iso_week().week(), 1);
+
+        // Dec 31, 2020 (Thursday) is in week 53
+        let date = NaiveDate::from_ymd_opt(2020, 12, 31).unwrap();
+        assert_eq!(date.iso_week().week(), 53);
+    }
+
+    #[test]
+    fn test_iso_week_calculation_2025() {
+        // 2025 starts on Wednesday (Jan 1, 2025)
+        // Week 1 starts on Dec 30, 2024 (Monday)
+        let date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
+        assert_eq!(date.iso_week().week(), 1);
+
+        // Dec 31, 2025 is Wednesday, in week 1 of 2026
+        let date = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap();
+        // This should be week 1 of 2026, not week 53 of 2025
+        assert_eq!(date.iso_week().week(), 1);
+    }
+
+    #[test]
+    fn test_iso_week_monday_start() {
+        // ISO weeks always start on Monday
+        // Test a few random Mondays to verify they're the first day of their week
+        let monday = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(); // Monday
+        assert_eq!(monday.weekday(), chrono::Weekday::Mon);
+
+        let tuesday = NaiveDate::from_ymd_opt(2026, 1, 6).unwrap(); // Tuesday
+        assert_eq!(tuesday.weekday(), chrono::Weekday::Tue);
+        // Both Monday and Tuesday should be in the same week
+        assert_eq!(monday.iso_week().week(), tuesday.iso_week().week());
     }
 }
