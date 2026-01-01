@@ -24,17 +24,20 @@ fn main() {
     // Scan content directory for UUID-based recipe files
     // Build a map of day -> (uuid, content) by reading each file
     let mut recipes = BTreeMap::new();
-    
+
     if let Ok(entries) = fs::read_dir(content_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-            
+
             // Skip non-markdown files and plan files
-            if !file_name.ends_with(".md") || file_name.starts_with("week-") || file_name == "intro.md" {
+            if !file_name.ends_with(".md")
+                || file_name.starts_with("week-")
+                || file_name == "intro.md"
+            {
                 continue;
             }
-            
+
             // Read the file to extract the day number from the content
             if let Ok(content) = fs::read_to_string(&path) {
                 // Look for "day-X" tag in the tags line
@@ -91,10 +94,10 @@ fn extract_day_from_content(content: &str) -> Option<u32> {
             // Look for "day-X" in the tags
             for part in line.split(',') {
                 let tag = part.trim();
-                if let Some(day_str) = tag.strip_prefix("day-") {
-                    if let Ok(day) = day_str.parse::<u32>() {
-                        return Some(day);
-                    }
+                if let Some(day_str) = tag.strip_prefix("day-")
+                    && let Ok(day) = day_str.parse::<u32>()
+                {
+                    return Some(day);
                 }
             }
         }

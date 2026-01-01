@@ -179,18 +179,29 @@ fn test_recipe_variety_across_cuisines() {
 }
 
 #[test]
-fn test_recipe_ids_match_day_format() {
+fn test_recipe_ids_are_valid_uuids() {
     let content_dir = "../content";
     let store = MarkdownRecipeStore::new(content_dir)
         .unwrap_or_else(|e| panic!("Failed to create recipe store: {}", e));
 
     for day in 1..=365 {
         if let Ok(recipe) = store.get_by_day(day) {
-            let expected_id = format!("day-{}", day);
-            assert_eq!(
-                recipe.id, expected_id,
-                "Recipe for day {} has incorrect id: {}",
-                day, recipe.id
+            // After migration, recipe IDs should be valid UUIDs
+            assert!(
+                uuid::Uuid::parse_str(&recipe.id).is_ok(),
+                "Recipe for day {} has invalid UUID id: {}",
+                day,
+                recipe.id
+            );
+
+            // But the recipe should still have the day tag
+            let expected_tag = format!("day-{}", day);
+            assert!(
+                recipe.tags.contains(&expected_tag),
+                "Recipe for day {} should have tag '{}' in tags: {:?}",
+                day,
+                expected_tag,
+                recipe.tags
             );
         }
     }

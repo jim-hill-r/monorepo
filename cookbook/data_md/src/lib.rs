@@ -480,14 +480,14 @@ impl RecipeReader for MarkdownRecipeStore {
 
         // Look for recipe with "day-{day}" tag
         let day_tag = format!("day-{}", day);
-        
+
         // Search through all recipes for one with matching day tag
         for recipe in self.recipes.values() {
             if recipe.tags.contains(&day_tag) {
                 return Ok(recipe.clone());
             }
         }
-        
+
         // If not found by tag, try old ID format for backward compatibility
         let id = format!("day-{}", day);
         self.get_by_id(&id)
