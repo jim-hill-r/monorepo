@@ -2,12 +2,13 @@ use cookbook_core::{PlanReader, RecipeReader};
 use cookbook_data_md::MarkdownRecipeStore;
 
 #[test]
+#[allow(deprecated)]
 fn test_load_example_recipes() {
     let content_dir = "../content";
 
     let store = MarkdownRecipeStore::new(content_dir).expect("Should load content directory");
 
-    // Test day-1 recipe via get_by_day
+    // Test day-1 recipe via get_by_day (deprecated but still functional)
     let day_1 = store.get_by_day(1).expect("Should find day-1 recipe");
     // After migration, IDs are UUIDs, not day-based
     assert!(

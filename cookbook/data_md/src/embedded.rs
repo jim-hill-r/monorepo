@@ -258,6 +258,7 @@ impl RecipeReader for EmbeddedRecipeStore {
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
     }
 
+    #[allow(deprecated)]
     fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
         if !(1..=365).contains(&day) {
             return Err(RecipeError::InvalidData(format!(
@@ -292,6 +293,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_get_by_day() {
         let store = EmbeddedRecipeStore::global();
 
@@ -416,6 +418,7 @@ impl EmbeddedPlanStore {
         let mut recipe_uuids = Vec::with_capacity(7);
 
         for day in recipe_days {
+            #[allow(deprecated)]
             let recipe = recipe_store.get_by_day(day).map_err(|e| {
                 PlanError::InvalidData(format!(
                     "Failed to find recipe for day {} in week {}: {}",
@@ -491,6 +494,7 @@ mod plan_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_get_by_week() {
         let store = EmbeddedPlanStore::global();
         let recipe_store = EmbeddedRecipeStore::global();
@@ -575,6 +579,7 @@ mod plan_tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_parse_plan_markdown() {
         let content = r#"# Week 1 Plan
 

@@ -98,6 +98,7 @@ impl PlanUuidMigrator {
         // Look up recipe UUIDs for each day
         let mut recipe_uuids = Vec::new();
         for day in &days {
+            #[allow(deprecated)]
             let recipe = recipe_store
                 .get_by_day(*day)
                 .map_err(|e| format!("Failed to find recipe for day {}: {}", day, e))?;

@@ -450,6 +450,7 @@ fn Recipe(day: u32) -> Element {
     } else {
         let store = EmbeddedRecipeStore::global();
 
+        #[allow(deprecated)]
         match store.get_by_day(day) {
             Ok(recipe) => {
                 rsx! {
@@ -1060,6 +1061,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_embedded_recipe_store_get_by_day() {
         use cookbook_core::RecipeReader;
 
@@ -1082,6 +1084,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_embedded_recipe_has_content() {
         use cookbook_core::RecipeReader;
 
@@ -1114,6 +1117,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_embedded_recipe_invalid_days() {
         use cookbook_core::RecipeReader;
 
