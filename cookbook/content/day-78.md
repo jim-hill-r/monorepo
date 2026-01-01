@@ -1,5 +1,8 @@
 # middle eastern fish Soup with zucchini
 
+UUID: c700beca-40c0-4d60-b66e-a0564a42e88f
+
+
 A delicious middle-eastern dish combining fish with fresh zucchini served with pasta
 
 Prep Time: 15 minutes
@@ -25,4 +28,3 @@ Tags: soup, middle-eastern, day-78, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

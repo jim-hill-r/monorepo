@@ -1,5 +1,8 @@
 # thai Style bell peppers Smoothie
 
+UUID: 7b07f2db-9525-4fa1-8e60-b2a3aa26902a
+
+
 A delicious thai dish combining pork with fresh bell peppers served with couscous
 
 Prep Time: 25 minutes
@@ -25,4 +28,3 @@ Tags: beverage, thai, day-76
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

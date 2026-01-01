@@ -1,5 +1,8 @@
 # Crispy zucchini Bites
 
+UUID: 285fb2b3-4ad3-4eaf-9b0e-6813a6325c30
+
+
 A delicious japanese dish combining shrimp with fresh zucchini served with rice
 
 Prep Time: 30 minutes
@@ -25,4 +28,3 @@ Tags: snack, japanese, day-91, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

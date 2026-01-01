@@ -1,5 +1,8 @@
 # French Toast
 
+UUID: c41afece-dbba-4616-844a-9e8e1c3ac8ad
+
+
 Crispy golden French toast with cinnamon
 
 Prep Time: 10 minutes
@@ -23,4 +26,3 @@ Tags: breakfast, french, day-67, quick, vegetarian
 3. Melt butter in pan over medium heat
 4. Cook bread for 2-3 minutes per side until golden
 5. Serve with powdered sugar and syrup
-

@@ -1,5 +1,8 @@
 # french Style broccoli Smoothie
 
+UUID: b3f01fef-e0a2-49eb-9e22-1090d2429389
+
+
 A delicious french dish combining pork with fresh broccoli served with pasta
 
 Prep Time: 5 minutes
@@ -25,4 +28,3 @@ Tags: beverage, french, day-64, quick
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # mexican shrimp Breakfast Bowl
 
+UUID: fe1d7e7a-086f-452a-aa1e-6f608fb7e34d
+
+
 A delicious mexican dish combining shrimp with fresh carrots served with rice
 
 Prep Time: 22 minutes
@@ -25,4 +28,3 @@ Tags: breakfast, mexican, day-10, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

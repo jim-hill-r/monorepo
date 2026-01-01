@@ -1,5 +1,8 @@
 # Crispy carrots Bites
 
+UUID: fed7ff63-28b1-40cb-b10a-16064f0b9ae4
+
+
 A delicious chinese dish combining fish with fresh carrots served with couscous
 
 Prep Time: 24 minutes
@@ -25,4 +28,3 @@ Tags: snack, chinese, day-46, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

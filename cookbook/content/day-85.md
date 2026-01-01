@@ -1,5 +1,8 @@
 # french fish Skewers
 
+UUID: a4574ce2-593f-4aa3-810b-accc51962d9f
+
+
 A delicious french dish combining fish with fresh broccoli served with noodles
 
 Prep Time: 19 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, french, day-85, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

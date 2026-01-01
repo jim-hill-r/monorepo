@@ -1,5 +1,8 @@
 # japanese lamb Wrap with carrots
 
+UUID: 80205d7b-e70f-4e7b-8ea1-caca98f530ac
+
+
 A delicious japanese dish combining lamb with fresh carrots served with rice
 
 Prep Time: 25 minutes
@@ -25,4 +28,3 @@ Tags: lunch, japanese, day-52, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

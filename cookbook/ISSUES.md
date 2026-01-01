@@ -67,7 +67,6 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Added tests for UUID parsing and validation
 
 #### Sub-task 4.3: Content Migration Scripts
-- TODO (agent-generated): Create migration tool to add UUIDs to existing recipe files
 - TODO (agent-generated): Create migration tool to rename recipe files from `day-X.md` to `{uuid}.md`
 - TODO (agent-generated): Create migration tool to update plan files to reference UUIDs
 - TODO (agent-generated): Create validation tool to verify migration completed successfully

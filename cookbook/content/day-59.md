@@ -1,5 +1,8 @@
 # Fresh carrots Salad with chicken
 
+UUID: fba58d5c-8fd9-4a0f-820f-eab0cc181a67
+
+
 A delicious mediterranean dish combining chicken with fresh carrots served with rice
 
 Prep Time: 20 minutes
@@ -25,4 +28,3 @@ Tags: salad, mediterranean, day-59
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

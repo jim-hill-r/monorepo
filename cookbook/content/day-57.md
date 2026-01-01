@@ -1,5 +1,8 @@
 # mediterranean Style carrots Smoothie
 
+UUID: 01e26fe9-3cb3-498d-bba6-d88f6878a655
+
+
 A delicious mediterranean dish combining chicken with fresh carrots served with noodles
 
 Prep Time: 27 minutes
@@ -25,4 +28,3 @@ Tags: beverage, mediterranean, day-57
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

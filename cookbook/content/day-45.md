@@ -1,5 +1,8 @@
 # japanese fish Soup with carrots
 
+UUID: 0bce2f74-1655-41be-85c0-d89ae5049dec
+
+
 A delicious japanese dish combining fish with fresh carrots served with rice
 
 Prep Time: 21 minutes
@@ -25,4 +28,3 @@ Tags: soup, japanese, day-45, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # caribbean beef Wrap with bell peppers
 
+UUID: f6d0ae81-d111-47fe-8139-bd41fff4b0c3
+
+
 A delicious caribbean dish combining beef with fresh bell peppers served with couscous
 
 Prep Time: 16 minutes
@@ -25,4 +28,3 @@ Tags: lunch, caribbean, day-25
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

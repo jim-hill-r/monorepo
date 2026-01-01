@@ -1,5 +1,8 @@
 # thai chicken Breakfast Bowl
 
+UUID: 918ad3ed-a942-4cbd-bd2a-e2bb40ce1c93
+
+
 A delicious thai dish combining chicken with fresh bell peppers served with couscous
 
 Prep Time: 29 minutes
@@ -25,4 +28,3 @@ Tags: breakfast, thai, day-42
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

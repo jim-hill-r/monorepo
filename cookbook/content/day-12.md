@@ -1,5 +1,8 @@
 # Fresh mushrooms Salad with tofu
 
+UUID: 10e2dc42-bde5-4153-843d-814f464b6963
+
+
 A delicious chinese dish combining tofu with fresh mushrooms served with noodles
 
 Prep Time: 30 minutes
@@ -25,4 +28,3 @@ Tags: salad, chinese, day-12, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

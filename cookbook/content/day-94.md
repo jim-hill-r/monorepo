@@ -1,5 +1,8 @@
 # Caesar Salad
 
+UUID: bf916d1e-3373-4de6-80dc-8458691407b5
+
+
 Classic Caesar salad with homemade dressing
 
 Prep Time: 15 minutes
@@ -25,4 +28,3 @@ Tags: salad, italian, day-94, quick, vegetarian
 3. Slowly add olive oil while blending
 4. Toss lettuce with dressing
 5. Top with Parmesan and croutons
-

@@ -1,5 +1,8 @@
 # american shrimp Soup with bell peppers
 
+UUID: 831d4d89-2ee8-46cf-a44d-f9b3e90b9ec6
+
+
 A delicious american dish combining shrimp with fresh bell peppers served with pasta
 
 Prep Time: 12 minutes
@@ -25,4 +28,3 @@ Tags: soup, american, day-36, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

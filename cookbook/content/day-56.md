@@ -1,5 +1,8 @@
 # thai Style Cake with mushrooms Filling
 
+UUID: e8097c93-7fa3-4ea5-9cd3-75984d7fcc13
+
+
 A delicious thai dish combining shrimp with fresh mushrooms served with pasta
 
 Prep Time: 17 minutes
@@ -25,4 +28,3 @@ Tags: dessert, thai, day-56, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

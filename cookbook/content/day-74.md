@@ -1,5 +1,8 @@
 # mediterranean beef with bell peppers and pasta
 
+UUID: f16d4589-05a6-48de-8508-efe8cd750aa6
+
+
 A delicious mediterranean dish combining beef with fresh bell peppers served with pasta
 
 Prep Time: 12 minutes
@@ -25,4 +28,3 @@ Tags: dinner, mediterranean, day-74, quick
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

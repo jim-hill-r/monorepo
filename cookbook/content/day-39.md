@@ -1,5 +1,8 @@
 # thai fish with mushrooms and quinoa
 
+UUID: 6a756ac5-1688-4dc7-82bc-e39964a30b66
+
+
 A delicious thai dish combining fish with fresh mushrooms served with quinoa
 
 Prep Time: 17 minutes
@@ -25,4 +28,3 @@ Tags: dinner, thai, day-39, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # mexican chicken Wrap with bell peppers
 
+UUID: c10a280a-84f9-49b4-a8b5-5851d6d5bbe9
+
+
 A delicious mexican dish combining chicken with fresh bell peppers served with pasta
 
 Prep Time: 8 minutes
@@ -25,4 +28,3 @@ Tags: lunch, mexican, day-63
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

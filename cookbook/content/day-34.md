@@ -1,5 +1,8 @@
 # Crispy carrots Bites
 
+UUID: 9cbf5c80-b48d-4b2d-8b83-da93dcfb3a47
+
+
 A delicious mexican dish combining shrimp with fresh carrots served with pasta
 
 Prep Time: 28 minutes
@@ -25,4 +28,3 @@ Tags: snack, mexican, day-34, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

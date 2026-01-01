@@ -1,5 +1,8 @@
 # french beef Wrap with carrots
 
+UUID: 2c14da93-84fd-4044-abf4-8dd83babec4c
+
+
 A delicious french dish combining beef with fresh carrots served with couscous
 
 Prep Time: 29 minutes
@@ -25,4 +28,3 @@ Tags: lunch, french, day-7
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # korean Style broccoli Smoothie
 
+UUID: 9fe561b1-949f-442e-822f-aaed1315f348
+
+
 A delicious korean dish combining pork with fresh broccoli served with rice
 
 Prep Time: 17 minutes
@@ -25,4 +28,3 @@ Tags: beverage, korean, day-66
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

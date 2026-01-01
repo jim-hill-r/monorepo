@@ -1,5 +1,8 @@
 # greek lamb with spinach and couscous
 
+UUID: b243772d-64b0-47bd-9d4b-40efa485eb4c
+
+
 A delicious greek dish combining lamb with fresh spinach served with couscous
 
 Prep Time: 6 minutes
@@ -25,4 +28,3 @@ Tags: dinner, greek, day-22, quick, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

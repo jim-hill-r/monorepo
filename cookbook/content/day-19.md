@@ -1,5 +1,8 @@
 # chinese tofu Skewers
 
+UUID: 6f35928b-dca8-447d-9f95-8174c3268d5e
+
+
 A delicious chinese dish combining tofu with fresh spinach served with couscous
 
 Prep Time: 16 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, chinese, day-19, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

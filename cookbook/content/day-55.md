@@ -1,5 +1,8 @@
 # Fresh zucchini Salad with beef
 
+UUID: e6f4a454-e135-4091-96c4-e6defe8a5b5e
+
+
 A delicious mexican dish combining beef with fresh zucchini served with couscous
 
 Prep Time: 30 minutes
@@ -25,4 +28,3 @@ Tags: salad, mexican, day-55
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # korean lamb Soup with mushrooms
 
+UUID: e8881feb-0482-486f-83d2-f06187d4fd01
+
+
 A delicious korean dish combining lamb with fresh mushrooms served with rice
 
 Prep Time: 27 minutes
@@ -25,4 +28,3 @@ Tags: soup, korean, day-88, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

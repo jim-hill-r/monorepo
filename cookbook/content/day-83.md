@@ -1,5 +1,8 @@
 # vietnamese beef with mushrooms and couscous
 
+UUID: f13f4ccf-528b-4f0d-9506-179cce84755b
+
+
 A delicious vietnamese dish combining beef with fresh mushrooms served with couscous
 
 Prep Time: 13 minutes
@@ -25,4 +28,3 @@ Tags: dinner, vietnamese, day-83
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

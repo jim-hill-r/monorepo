@@ -1,5 +1,8 @@
 # thai tofu with mushrooms and couscous
 
+UUID: 583a75bf-19c4-40bd-9db7-59690b40b785
+
+
 A delicious thai dish combining tofu with fresh mushrooms served with couscous
 
 Prep Time: 28 minutes
@@ -25,4 +28,3 @@ Tags: dinner, thai, day-48, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

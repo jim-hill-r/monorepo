@@ -1,5 +1,8 @@
 # mediterranean Style bell peppers Smoothie
 
+UUID: f3227c46-ccb3-4135-af69-d0da901b8036
+
+
 A delicious mediterranean dish combining tofu with fresh bell peppers served with rice
 
 Prep Time: 17 minutes
@@ -25,4 +28,3 @@ Tags: beverage, mediterranean, day-84, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

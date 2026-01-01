@@ -1,5 +1,8 @@
 # New Year's Day Celebration Pancakes
 
+UUID: 9811d359-25fb-4cff-baf1-c78cd3243033
+
+
 Start the new year with fluffy, golden pancakes topped with your favorite berries and maple syrup.
 
 Prep Time: 10 minutes

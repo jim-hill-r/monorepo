@@ -1,5 +1,8 @@
 # Greek Yogurt Parfait
 
+UUID: 5e7062ea-06aa-4269-ba05-63af5558e311
+
+
 Layered parfait with Greek yogurt, granola, and berries
 
 Prep Time: 5 minutes
@@ -21,4 +24,3 @@ Tags: breakfast, greek, day-32, quick, vegetarian
 3. Top with mixed berries
 4. Drizzle with honey
 5. Repeat layers and serve immediately
-

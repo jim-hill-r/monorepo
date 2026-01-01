@@ -1,5 +1,8 @@
 # caribbean Style zucchini Smoothie
 
+UUID: 23a3ff05-9207-4351-8e0b-e3e62313c28b
+
+
 A delicious caribbean dish combining tofu with fresh zucchini served with couscous
 
 Prep Time: 22 minutes
@@ -25,4 +28,3 @@ Tags: beverage, caribbean, day-14, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

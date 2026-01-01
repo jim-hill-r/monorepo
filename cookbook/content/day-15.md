@@ -1,5 +1,8 @@
 # american lamb Wrap with carrots
 
+UUID: 6b9cfef0-9e24-4aec-9a21-ec1277b26c2f
+
+
 A delicious american dish combining lamb with fresh carrots served with pasta
 
 Prep Time: 30 minutes
@@ -25,4 +28,3 @@ Tags: lunch, american, day-15, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

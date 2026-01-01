@@ -1,5 +1,8 @@
 # chinese beef with mushrooms and couscous
 
+UUID: fd4e3781-1e4c-4e91-bb06-616245d5ec92
+
+
 A delicious chinese dish combining beef with fresh mushrooms served with couscous
 
 Prep Time: 10 minutes
@@ -25,4 +28,3 @@ Tags: dinner, chinese, day-50
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

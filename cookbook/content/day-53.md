@@ -1,5 +1,8 @@
 # vietnamese shrimp with zucchini and quinoa
 
+UUID: 251a6b9e-6a8f-462f-ae87-6ca746226185
+
+
 A delicious vietnamese dish combining shrimp with fresh zucchini served with quinoa
 
 Prep Time: 17 minutes
@@ -25,4 +28,3 @@ Tags: dinner, vietnamese, day-53, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

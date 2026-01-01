@@ -1,5 +1,8 @@
 # korean Style carrots Smoothie
 
+UUID: 07a5d7ce-6e98-42d8-8034-d03ba3d538ee
+
+
 A delicious korean dish combining chicken with fresh carrots served with pasta
 
 Prep Time: 8 minutes
@@ -25,4 +28,3 @@ Tags: beverage, korean, day-21
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

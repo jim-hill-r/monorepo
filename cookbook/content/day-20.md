@@ -1,5 +1,8 @@
 # Crispy mushrooms Bites
 
+UUID: 4b317c29-93cb-4741-98b0-75976cc09135
+
+
 A delicious italian dish combining tofu with fresh mushrooms served with couscous
 
 Prep Time: 25 minutes
@@ -25,4 +28,3 @@ Tags: snack, italian, day-20, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

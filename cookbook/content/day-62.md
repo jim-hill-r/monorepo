@@ -1,5 +1,8 @@
 # korean chicken with bell peppers and rice
 
+UUID: ac610958-e32e-417e-9e04-1de83ab13e44
+
+
 A delicious korean dish combining chicken with fresh bell peppers served with rice
 
 Prep Time: 11 minutes
@@ -25,4 +28,3 @@ Tags: dinner, korean, day-62
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

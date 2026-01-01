@@ -1,5 +1,8 @@
 # american shrimp Skewers
 
+UUID: 4a604773-ec4d-47b1-b622-486bf61a878a
+
+
 A delicious american dish combining shrimp with fresh bell peppers served with quinoa
 
 Prep Time: 8 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, american, day-2, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-
