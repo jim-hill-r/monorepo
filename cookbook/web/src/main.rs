@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use chrono::prelude::*;
-use cookbook_core::RecipeReader;
-use cookbook_data_md::embedded::EmbeddedRecipeStore;
+use cookbook_core::{PlanReader, RecipeReader};
+use cookbook_data_md::embedded::{EmbeddedPlanStore, EmbeddedRecipeStore};
 use dioxus::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -291,86 +291,28 @@ fn format_week_start_date(date: NaiveDate) -> String {
     }
 }
 
-/// Convert an ISO 8601 week number to day-of-year values for the current year.
-/// Returns a vector of day-of-year values (1-365/366) for all days in that ISO week
-/// that fall within the current calendar year.
-///
-/// # Arguments
-/// * `week` - ISO 8601 week number (1-53)
-///
-/// # Returns
-/// Vector of day-of-year values for days in the specified ISO week.
-/// May return fewer than 7 days if the week spans year boundaries.
-fn get_day_of_year_for_iso_week(week: u32) -> Vec<u32> {
-    let year = Local::now().year();
-    let mut days = Vec::new();
-
-    // Find the first day of the year
-    // Jan 1 is always valid for any year, so unwrap_or with a fallback is safe
-    let Some(jan1) = NaiveDate::from_ymd_opt(year, 1, 1) else {
-        return days; // Should never happen, but return empty if it does
-    };
-
-    // Find the Monday of week 1 (ISO 8601: week 1 is the first week with Thursday)
-    // Start by finding what ISO week Jan 1 belongs to
-    let jan1_week = jan1.iso_week().week();
-
-    let week1_monday = if jan1_week == 1 {
-        // Jan 1 is in week 1, find the Monday of that week
-        let weekday = jan1.weekday().num_days_from_monday();
-        jan1 - chrono::Duration::days(weekday.into())
-    } else {
-        // Jan 1 is in week 52/53 of previous year, week 1 starts after Jan 1
-        // Find the first Monday of January
-        let mut date = jan1;
-        while date.weekday() != chrono::Weekday::Mon {
-            date += chrono::Duration::days(1);
-        }
-        // Check if this Monday belongs to week 1
-        if date.iso_week().week() == 1 {
-            date
-        } else {
-            // Find the next Monday
-            date + chrono::Duration::days(7)
-        }
-    };
-
-    // Calculate the Monday of the requested week
-    let target_monday = week1_monday + chrono::Duration::weeks((week - 1).into());
-
-    // Get all 7 days of this week and convert to day-of-year if they're in the current year
-    for i in 0..7 {
-        let date = target_monday + chrono::Duration::days(i);
-        // Only include days that are in the current year
-        if date.year() == year {
-            days.push(date.ordinal());
-        }
-    }
-
-    days
-}
-
 /// Get recipes for a specific ISO 8601 week (1-53).
-/// Returns a vector of (day_of_year, recipe_title) tuples for the days of that week
-/// that fall within the current calendar year.
+/// Returns a vector of (day_of_year, recipe_title) tuples for the days of that week.
 ///
-/// Uses ISO 8601 week numbering where weeks start on Monday and week 1 is the first
-/// week containing a Thursday. The function maps the ISO week number to the actual
-/// calendar dates, then retrieves recipes for those day-of-year values.
+/// Uses the PlanReader to load the pre-defined plan for the week, which contains
+/// the day-of-year values for each day (Monday-Sunday) of the plan.
 fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
-    let store = EmbeddedRecipeStore::global();
+    let recipe_store = EmbeddedRecipeStore::global();
+    let plan_store = EmbeddedPlanStore::global();
     let mut recipes = Vec::new();
 
-    // Get day-of-year values for this ISO week
-    let days = get_day_of_year_for_iso_week(week);
+    // Get the plan for this week
+    let Ok(plan) = plan_store.get_by_week(week) else {
+        return recipes; // Return empty if plan not found
+    };
 
-    // Get recipes for each day
-    for day in days {
+    // Get recipes for each day in the plan
+    for day in plan.recipe_days {
         if day > MAX_DAY_OF_YEAR {
             continue; // Skip invalid days
         }
 
-        match store.get_by_day(day) {
+        match recipe_store.get_by_day(day) {
             Ok(recipe) => {
                 recipes.push((day, recipe.title));
             }
@@ -386,30 +328,27 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
 
 /// Aggregate all ingredients from recipes in an ISO 8601 week into a shopping list.
 /// Returns a sorted vector of unique ingredients from all recipes in the week.
-/// Returns an empty vector if the week is invalid (not in range 1-53).
+/// Returns an empty vector if the week is invalid or plan not found.
 ///
-/// Uses ISO 8601 week numbering where weeks start on Monday and week 1 is the first
-/// week containing a Thursday. The function maps the ISO week number to the actual
-/// calendar dates, then retrieves ingredients for those day-of-year values.
+/// Uses the PlanReader to load the pre-defined plan for the week, which contains
+/// the day-of-year values for the recipes in that week's plan.
 fn get_week_shopping_list(week: u32) -> Vec<String> {
-    // Validate week parameter to ensure consistent behavior
-    if !(1..=53).contains(&week) {
-        return Vec::new();
-    }
-
-    let store = EmbeddedRecipeStore::global();
+    let recipe_store = EmbeddedRecipeStore::global();
+    let plan_store = EmbeddedPlanStore::global();
     let mut all_ingredients = Vec::new();
 
-    // Get day-of-year values for this ISO week
-    let days = get_day_of_year_for_iso_week(week);
+    // Get the plan for this week
+    let Ok(plan) = plan_store.get_by_week(week) else {
+        return all_ingredients; // Return empty if plan not found
+    };
 
-    // Collect ingredients from all recipes in this week
-    for day in days {
+    // Collect ingredients from all recipes in this week's plan
+    for day in plan.recipe_days {
         if day > MAX_DAY_OF_YEAR {
             continue;
         }
 
-        if let Ok(recipe) = store.get_by_day(day) {
+        if let Ok(recipe) = recipe_store.get_by_day(day) {
             all_ingredients.extend(recipe.ingredients);
         }
     }
@@ -1182,18 +1121,12 @@ mod tests {
 
     #[test]
     fn test_get_week_recipes() {
-        // Test that we can get recipes for ISO week 1
-        // The exact days depend on the current year, but we should get 7 days (or fewer if
-        // some days of the ISO week fall in the previous year)
+        // Test that we can get recipes for ISO week 1 using PlanReader
         let recipes = get_week_recipes(1);
-        assert!(
-            !recipes.is_empty(),
-            "Week 1 should have at least some recipes"
-        );
-        assert!(
-            recipes.len() <= 7,
-            "Week should have at most 7 recipes, got {}",
-            recipes.len()
+        assert_eq!(
+            recipes.len(),
+            7,
+            "Week 1 should have exactly 7 recipes from the plan"
         );
 
         // Days should be in ascending order
@@ -1206,10 +1139,10 @@ mod tests {
 
         // Test week 2
         let recipes_week2 = get_week_recipes(2);
-        assert!(!recipes_week2.is_empty(), "Week 2 should have recipes");
-        assert!(
-            recipes_week2.len() <= 7,
-            "Week should have at most 7 recipes"
+        assert_eq!(
+            recipes_week2.len(),
+            7,
+            "Week 2 should have exactly 7 recipes from the plan"
         );
 
         // All days should be valid (1-365)
@@ -1223,46 +1156,93 @@ mod tests {
     }
 
     #[test]
-    fn test_get_week_recipes_iso_week_mapping() {
-        // Test that ISO week numbers map to correct dates
-        // For 2025: Week 1 is Dec 30, 2024 - Jan 5, 2025
-        // So in 2025, week 1 should include days 1-5 (Jan 1-5)
+    fn test_get_week_recipes_uses_plan_reader() {
+        // Test that get_week_recipes uses PlanReader to load plans
+        let plan_store = EmbeddedPlanStore::global();
 
-        // Test that we get the correct day-of-year values for week 1
-        let days_week1 = get_day_of_year_for_iso_week(1);
-        assert!(
-            !days_week1.is_empty(),
-            "Week 1 should have days in the current year"
+        // Test a few different weeks
+        for week in [1, 2, 10, 26, 52] {
+            let plan = plan_store.get_by_week(week);
+            let recipes = get_week_recipes(week);
+
+            if let Ok(plan) = plan {
+                // If plan exists, recipes should match the plan's recipe_days
+                assert_eq!(
+                    recipes.len(),
+                    plan.recipe_days.len(),
+                    "Week {} should have {} recipes matching the plan",
+                    week,
+                    plan.recipe_days.len()
+                );
+
+                // Verify the days match
+                for (i, (day, _)) in recipes.iter().enumerate() {
+                    assert_eq!(
+                        *day, plan.recipe_days[i],
+                        "Recipe day should match plan day at position {} for week {}",
+                        i, week
+                    );
+                }
+            } else {
+                // If plan doesn't exist, recipes should be empty
+                assert!(
+                    recipes.is_empty(),
+                    "Week {} should have no recipes when plan doesn't exist",
+                    week
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_week_recipes_plan_consistency() {
+        // Test that plans have consistent structure (7 days, consecutive)
+        let plan_store = EmbeddedPlanStore::global();
+
+        // Test week 1 plan
+        let plan1 = plan_store.get_by_week(1).expect("Week 1 plan should exist");
+        assert_eq!(plan1.recipe_days.len(), 7, "Week 1 should have 7 days");
+        assert_eq!(
+            plan1.recipe_days,
+            vec![1, 2, 3, 4, 5, 6, 7],
+            "Week 1 should have days 1-7"
         );
 
-        // Verify the days are consecutive (within the current year)
-        for i in 1..days_week1.len() {
+        // Test week 2 plan
+        let plan2 = plan_store.get_by_week(2).expect("Week 2 plan should exist");
+        assert_eq!(plan2.recipe_days.len(), 7, "Week 2 should have 7 days");
+        assert_eq!(
+            plan2.recipe_days,
+            vec![8, 9, 10, 11, 12, 13, 14],
+            "Week 2 should have days 8-14"
+        );
+
+        // Test a mid-year week (week 26) should have 7 consecutive days
+        let plan26 = plan_store
+            .get_by_week(26)
+            .expect("Week 26 plan should exist");
+        assert_eq!(plan26.recipe_days.len(), 7, "Week 26 should have 7 days");
+
+        // Verify days are consecutive
+        for i in 1..plan26.recipe_days.len() {
             assert_eq!(
-                days_week1[i],
-                days_week1[i - 1] + 1,
+                plan26.recipe_days[i],
+                plan26.recipe_days[i - 1] + 1,
                 "Days within a week should be consecutive"
             );
         }
-
-        // Test a mid-year week (week 26) should have 7 days
-        let days_week26 = get_day_of_year_for_iso_week(26);
-        assert_eq!(
-            days_week26.len(),
-            7,
-            "Mid-year week should have all 7 days in the current year"
-        );
 
         // Test that recipes are retrieved for the correct days
         let recipes = get_week_recipes(26);
         assert_eq!(
             recipes.len(),
-            days_week26.len(),
+            plan26.recipe_days.len(),
             "Should have recipes for all days in the week"
         );
         for (i, (day, _)) in recipes.iter().enumerate() {
             assert_eq!(
-                *day, days_week26[i],
-                "Recipe day should match calculated day-of-year"
+                *day, plan26.recipe_days[i],
+                "Recipe day should match plan day"
             );
         }
     }
@@ -1306,40 +1286,43 @@ mod tests {
     }
 
     #[test]
-    fn test_sidebar_recipes_use_week_logic() {
-        // Test that sidebar uses the same ISO week calculation as get_week_recipes
+    fn test_sidebar_recipes_use_plan_reader() {
+        // Test that sidebar uses PlanReader via get_week_recipes
         let sidebar_days = get_sidebar_recipe_days();
         let current_week = get_current_week_of_year();
 
-        // Get expected days for the current ISO week
-        let expected_days = get_day_of_year_for_iso_week(current_week);
+        // Get the plan for the current week
+        let plan_store = EmbeddedPlanStore::global();
+        let plan = plan_store.get_by_week(current_week);
 
-        // Sidebar should have the same number of days as the ISO week calculation
-        assert_eq!(
-            sidebar_days.len(),
-            expected_days.len(),
-            "Sidebar should have {} days for ISO week {} but has {}",
-            expected_days.len(),
-            current_week,
-            sidebar_days.len()
-        );
-
-        // First sidebar day should match the first day of the ISO week
-        if !expected_days.is_empty() {
+        if let Ok(plan) = plan {
+            // Sidebar should have the same number of days as the plan
             assert_eq!(
-                sidebar_days[0].0, expected_days[0],
-                "Sidebar should start at day {} for ISO week {}",
-                expected_days[0], current_week
+                sidebar_days.len(),
+                plan.recipe_days.len(),
+                "Sidebar should have {} days from the plan for ISO week {} but has {}",
+                plan.recipe_days.len(),
+                current_week,
+                sidebar_days.len()
             );
-        }
 
-        // Verify all days match the ISO week calculation
-        for (i, (day, _)) in sidebar_days.iter().enumerate() {
-            assert_eq!(
-                *day, expected_days[i],
-                "Sidebar day at position {} should be {} but got {}",
-                i, expected_days[i], day
-            );
+            // First sidebar day should match the first day of the plan
+            if !plan.recipe_days.is_empty() {
+                assert_eq!(
+                    sidebar_days[0].0, plan.recipe_days[0],
+                    "Sidebar should start at day {} for ISO week {}",
+                    plan.recipe_days[0], current_week
+                );
+            }
+
+            // Verify all days match the plan's recipe days
+            for (i, (day, _)) in sidebar_days.iter().enumerate() {
+                assert_eq!(
+                    *day, plan.recipe_days[i],
+                    "Sidebar day at position {} should be {} but got {}",
+                    i, plan.recipe_days[i], day
+                );
+            }
         }
     }
 
@@ -1419,6 +1402,35 @@ mod tests {
         assert!(
             shopping_list_week_100.is_empty(),
             "Week 100 should return empty list"
+        );
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_uses_plan_reader() {
+        // Test that get_week_shopping_list uses PlanReader to load plans
+        let plan_store = EmbeddedPlanStore::global();
+        let recipe_store = EmbeddedRecipeStore::global();
+
+        // Test week 1
+        let plan = plan_store.get_by_week(1).expect("Week 1 plan should exist");
+        let shopping_list = get_week_shopping_list(1);
+
+        // Collect all ingredients from the plan's recipe days manually
+        let mut expected_ingredients = Vec::new();
+        for day in &plan.recipe_days {
+            if *day <= MAX_DAY_OF_YEAR {
+                if let Ok(recipe) = recipe_store.get_by_day(*day) {
+                    expected_ingredients.extend(recipe.ingredients);
+                }
+            }
+        }
+        expected_ingredients.sort();
+        expected_ingredients.dedup();
+
+        // Shopping list should match the manually collected ingredients
+        assert_eq!(
+            shopping_list, expected_ingredients,
+            "Shopping list should match ingredients from plan's recipe days"
         );
     }
 
