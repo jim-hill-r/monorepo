@@ -13,12 +13,14 @@ chrono = { workspace = true }
 cookbook-core = { path = "../core" }
 cookbook-data-md = { path = "../data_md" }
 web-sys = "0.3.83"
+uuid = { version = "1.19", features = ["v4", "js"] }
 
 [features]
 default = ["web"]
 web = []
 
 [package.metadata.cast]
+exemplar = true
 project_type = "static_website"
 framework = "dioxus"
 deploys = ["../cloudflare"]

@@ -18,13 +18,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
   
   /* Use a limited number of workers on CI to balance speed and stability. */
-  workers: process.env.CI ? 2 : undefined,
+  workers: process.env.CI ? 2 : 8,
   
   /* Reporter to use. */
-  reporter: 'html',
+  reporter: 'list',
   
   /* Shared settings for all the projects below. */
   use: {
@@ -33,9 +33,10 @@ export default defineConfig({
     
     /* Collect trace when retrying the failed test. */
     trace: 'on-first-retry',
-    
-    /* Screenshot on failure */
-    screenshot: 'only-on-failure',
+
+    screenshot: 'off',
+
+    video: 'off',
   },
 
   /* Configure projects for major browsers */
@@ -76,5 +77,9 @@ export default defineConfig({
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+
+    stdout: 'pipe',
+
+    stderr: 'pipe',
   },
 });
