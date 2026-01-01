@@ -1,10 +1,11 @@
-/* Plan page styles */
 .plan-container {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
     line-height: 1.6;
     color: #333;
+    display: flex;
+    flex-direction: column;
 }
 
 .plan-container h1 {
@@ -17,6 +18,8 @@
     margin-bottom: 2rem;
     position: relative;
     z-index: 1;
+    overflow: visible;
+    isolation: isolate;
 }
 
 .plan-shopping-list {
@@ -69,6 +72,7 @@
 .plan-recipes .recipe-list {
     list-style: none;
     padding-left: 0;
+    margin-bottom: 2rem;
 }
 
 .plan-recipes .recipe-item {
@@ -79,7 +83,7 @@
     border: 1px solid #d4a574;
     transition: background-color 0.3s, transform 0.2s;
     position: relative;
-    z-index: 1;
+    z-index: auto;
 }
 
 .plan-recipes .recipe-item:hover {
@@ -93,7 +97,7 @@
     font-size: 1.2rem;
     font-weight: 500;
     position: relative;
-    z-index: 2;
+    z-index: auto;
 }
 
 .plan-recipes .recipe-item a:hover {
@@ -116,9 +120,33 @@
     border-radius: 4px;
     transition: background-color 0.3s;
     position: relative;
-    z-index: 10;
+    z-index: 100;
+    clear: both;
+    isolation: isolate;
 }
 
 .back-link:hover {
     background-color: #d4a574;
+}
+
+/* Mobile specific fixes to prevent element overlap */
+@media (max-width: 768px) {
+    .plan-recipes {
+        margin-bottom: 3rem;
+        contain: layout;
+    }
+    
+    .plan-recipes .recipe-item {
+        margin-bottom: 1rem;
+    }
+    
+    .plan-recipes .recipe-item:hover {
+        transform: none;
+    }
+    
+    .back-link {
+        display: block;
+        margin-top: 3rem;
+        width: fit-content;
+    }
 }
