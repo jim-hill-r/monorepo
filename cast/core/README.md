@@ -563,7 +563,14 @@ Cast supports two ways to configure project-specific settings:
 1. **Cast.toml** - A dedicated configuration file
 2. **Cargo.toml** - Using the `[package.metadata.cast]` section
 
-Cast will automatically check for configuration in Cargo.toml first, then fall back to Cast.toml if no Cast metadata is found. This allows you to consolidate configuration in your existing Cargo.toml file or use a separate Cast.toml file if you prefer.
+Cast will automatically check for configuration in Cargo.toml first, then fall back to Cast.toml if no Cast metadata is found. 
+
+**Automatic Defaults for Cargo.toml Projects**: If a project has a Cargo.toml file but no Cast metadata or Cast.toml, Cast will automatically detect it as a Cast project with the following defaults:
+- `project_type`: "library" or "binary" (auto-detected based on project structure)
+- `language`: "rust"
+- `framework`: "cargo"
+
+This means any Rust project with a Cargo.toml is automatically recognized as a Cast project without requiring any additional configuration files.
 
 ### Configuration Options
 
@@ -578,8 +585,8 @@ exemplar = true
 # Optional: defaults to None/false if not specified
 proof_of_concept = true
 
-# The framework used by the project (e.g., "dioxus", "cloudflare-pages", "rust-library")
-# Optional: defaults to None if not specified
+# The framework used by the project (e.g., "dioxus", "cloudflare-pages", "cargo")
+# Optional: defaults to "cargo" for projects with Cargo.toml but no metadata
 framework = "dioxus"
 
 # List of projects that are used to deploy this project
@@ -587,8 +594,12 @@ framework = "dioxus"
 deploys = ["deploy-project-1", "deploy-project-2"]
 
 # The type of project (e.g., "static_website", "web_app", "iac", "library", "binary")
-# Optional: defaults to None if not specified
+# Optional: defaults to "library" or "binary" (auto-detected) for projects with Cargo.toml but no metadata
 project_type = "static_website"
+
+# The language of the project (e.g., "rust", "typescript")
+# Optional: defaults to "rust" for projects with Cargo.toml but no metadata
+language = "rust"
 ```
 
 **Option 2: Cargo.toml with [package.metadata.cast] section**
@@ -605,14 +616,22 @@ proof_of_concept = false
 framework = "dioxus"
 deploys = ["deploy-project-1", "deploy-project-2"]
 project_type = "static_website"
+language = "rust"
 ```
+
+**Option 3: No configuration (auto-detected)**
+
+For any Rust project with a Cargo.toml file, Cast will automatically apply sensible defaults:
+- Detects `project_type` as "library" (if `src/lib.rs` exists or `[lib]` section in Cargo.toml) or "binary" (if `src/main.rs` exists or `[[bin]]` section in Cargo.toml)
+- Sets `language` to "rust"
+- Sets `framework` to "cargo"
 
 ### Loading Configuration in Code
 
 ```rust
 use cast_core::config::CastConfig;
 
-// Load configuration from a directory (checks Cargo.toml first, then Cast.toml)
+// Load configuration from a directory (checks Cargo.toml first, then Cast.toml, applies defaults if needed)
 let config = CastConfig::load_from_dir("path/to/project").unwrap();
 
 // Or load directly from a specific file
@@ -642,6 +661,11 @@ if let Some(deploys) = config.deploys {
 // Check project type
 if let Some(project_type) = config.project_type {
     println!("Project type: {}", project_type);
+}
+
+// Check language
+if let Some(language) = config.language {
+    println!("Language: {}", language);
 }
 ```
 
