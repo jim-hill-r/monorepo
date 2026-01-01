@@ -185,23 +185,32 @@ npm run compile
 
 ## Toolchain Management
 
-Cast provides toolchain management to help install framework-specific tools:
+Cast provides toolchain management to help install and uninstall framework-specific tools:
 
 ```bash
 # Install all required tools for a project
 cast install
 
-# Check if tools are installed
-cast toolchain check
+# Uninstall cast-managed tools
+cast uninstall --all
 
-# See what would be installed
+# Uninstall a specific tool
+cast uninstall --tool dx
+
+# Check if tools are installed
+cast install check
+
+# See what would be installed/uninstalled
 cast install --dry-run
+cast uninstall --dry-run --all
 ```
 
 Different frameworks require different tools:
 - **Dioxus**: Requires `dx` CLI, Node.js, npm, and Playwright
 - **Cloudflare Pages**: Requires Wrangler CLI
 - **Pure Rust**: Only requires Rust toolchain
+
+**Note**: Cast can only uninstall tools that it installed via cargo or npm (e.g., dx, playwright, wrangler). System-level tools like Node.js, rustc, and git-lfs must be managed separately.
 
 See [core/README.md](core/README.md) for complete toolchain documentation.
 

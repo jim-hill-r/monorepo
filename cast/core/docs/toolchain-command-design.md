@@ -355,6 +355,72 @@ Based on the root ISSUES.md, implementation will be broken into phases:
 - Implement `check` subcommand
 - Add tests for all subcommands
 
+### Phase 7: Uninstall Command (Completed)
+- Add `uninstall` top-level command to remove cast-managed tools
+- Support uninstalling specific tools with `--tool` flag
+- Support uninstalling all tools with `--all` flag
+- Add dry-run mode with `--dry-run` flag
+- Only uninstall tools that cast can safely remove (dx, playwright, wrangler, cast)
+- System tools (node, npm, rustc, git-lfs) provide guidance messages
+
+## Uninstall Command
+
+The `cast uninstall` command provides a way to remove tools that were installed by cast.
+
+```bash
+cast uninstall [OPTIONS]
+```
+
+**Options:**
+
+- `--tool <TOOL>` - Uninstall a specific tool instead of all tools
+  - Possible values: `dx`, `playwright`, `wrangler`, `cast`
+  - Example: `cast uninstall --tool dx`
+
+- `--skip <TOOL>` - Skip uninstallation of specific tools (comma-separated)
+  - Example: `cast uninstall --all --skip dx`
+
+- `--dry-run` - Show what would be uninstalled without actually uninstalling
+  - Example: `cast uninstall --dry-run --all`
+
+- `--all` - Uninstall all cast-managed tools
+  - Example: `cast uninstall --all`
+
+**Behavior:**
+
+1. Without `--all` or `--tool` flags: Uninstalls tools required by the current project (based on Cast.toml)
+2. With `--all`: Uninstalls all tools that cast can manage (dx, playwright, wrangler, cast)
+3. With `--tool`: Uninstalls only the specified tool
+4. System tools (node, npm, rustc, cargo, rustfmt, clippy, git-lfs, rustup) cannot be uninstalled by cast
+
+**Uninstall Methods:**
+
+- **Dioxus CLI (`dx`)**: `cargo uninstall dioxus-cli`
+- **Cast CLI**: `cargo uninstall cast_cli`
+- **Wrangler**: `npm uninstall -g wrangler` or `cargo uninstall wrangler`
+- **Playwright**: `npx playwright uninstall --all` (removes browsers only, npm package remains)
+
+**Exit Codes:**
+
+- `0` - All specified tools uninstalled successfully (or were not installed)
+- `1` - One or more tools failed to uninstall
+
+**Examples:**
+
+```bash
+# Uninstall all cast-managed tools (dry run)
+cast uninstall --dry-run --all
+
+# Uninstall all cast-managed tools
+cast uninstall --all
+
+# Uninstall only the Dioxus CLI
+cast uninstall --tool dx
+
+# Uninstall all tools except playwright
+cast uninstall --all --skip playwright
+```
+
 ## Future Enhancements
 
 Potential future additions (not in initial scope):
@@ -363,7 +429,6 @@ Potential future additions (not in initial scope):
 2. **Tool aliases**: Support alternative installation methods
 3. **Offline mode**: Support air-gapped environments with pre-downloaded tools
 4. **Auto-update**: Automatically check for and update outdated tools
-5. **Uninstall**: Remove tools that are no longer needed
 
 ## Compatibility
 

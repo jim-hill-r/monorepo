@@ -41,6 +41,24 @@ enum Commands {
         #[arg(long)]
         force: bool,
     },
+    /// Uninstall cast-managed tools
+    Uninstall {
+        /// Uninstall only specific tool (e.g., dx, playwright, wrangler)
+        #[arg(long)]
+        tool: Option<String>,
+
+        /// Skip specific tools during uninstallation (comma-separated list)
+        #[arg(long)]
+        skip: Option<String>,
+
+        /// Dry run - show what would be uninstalled without uninstalling
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Uninstall all tools that were installed by cast
+        #[arg(long)]
+        all: bool,
+    },
     /// Run build
     Build,
     /// Run CI checks
@@ -210,6 +228,22 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 }
             }
         }
+        Commands::Uninstall {
+            tool,
+            skip,
+            dry_run,
+            all,
+        } => {
+            let command = commands::toolchain::UninstallCommand {
+                tool: tool.clone(),
+                skip: skip.clone(),
+                dry_run: *dry_run,
+                all: *all,
+            };
+            return command
+                .execute(entry_directory)
+                .map_err(|e| ExecuteError::CommandError(e.to_string()));
+        }
         _ => {} // Other commands require Cast.toml
     }
 
@@ -307,6 +341,15 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 // this point, there's a bug in the control flow logic.
                 unreachable!(
                     "Install command should be handled before Cast.toml check. \
+                     This indicates a bug in the execute() function's control flow."
+                )
+            }
+            Commands::Uninstall { .. } => {
+                // This case should never be reached because Uninstall is handled
+                // at the top of execute() before the Cast.toml check. If we reach
+                // this point, there's a bug in the control flow logic.
+                unreachable!(
+                    "Uninstall command should be handled before Cast.toml check. \
                      This indicates a bug in the execute() function's control flow."
                 )
             }
