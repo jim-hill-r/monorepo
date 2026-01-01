@@ -33,6 +33,13 @@ pub type RecipeResult<T> = Result<T, RecipeError>;
 /// Trait for reading recipe information from a data source
 pub trait RecipeReader {
     /// Get a recipe by its unique identifier
+    ///
+    /// The id parameter can be either:
+    /// - A legacy string ID (e.g., "recipe1", "day-5")
+    /// - A UUID string (e.g., "550e8400-e29b-41d4-a716-446655440000")
+    ///
+    /// Implementations should attempt to parse the id as a UUID first,
+    /// and fall back to legacy ID lookup if parsing fails.
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe>;
 
     /// Get a recipe by its UUID
@@ -312,6 +319,12 @@ mod tests {
 
     impl RecipeReader for MockRecipeReader {
         fn get_by_id(&self, id: &str) -> RecipeResult<Recipe> {
+            // Try to parse as UUID first
+            if let Ok(uuid) = Uuid::parse_str(id) {
+                return self.get_by_uuid(&uuid);
+            }
+
+            // Fall back to legacy ID lookup
             self.recipes
                 .iter()
                 .find(|r| r.id == id)
@@ -395,6 +408,31 @@ mod tests {
             }
             _ => panic!("Expected NotFound error"),
         }
+    }
+
+    #[test]
+    fn test_recipe_reader_get_by_id_with_uuid_string() {
+        let recipe1 = Recipe::new("recipe1".to_string(), "Test Recipe 1".to_string());
+        let recipe2 = Recipe::new("recipe2".to_string(), "Test Recipe 2".to_string());
+        let uuid1 = recipe1.uuid;
+        let reader = MockRecipeReader {
+            recipes: vec![recipe1.clone(), recipe2],
+        };
+
+        // Test that get_by_id works with UUID string
+        let result = reader.get_by_id(&uuid1.to_string());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), recipe1);
+
+        // Test that get_by_id still works with legacy ID
+        let result = reader.get_by_id("recipe1");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().id, "recipe1");
+
+        // Test with nonexistent UUID string
+        let nonexistent_uuid = Uuid::new_v4();
+        let result = reader.get_by_id(&nonexistent_uuid.to_string());
+        assert!(result.is_err());
     }
 
     #[test]

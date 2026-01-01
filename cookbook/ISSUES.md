@@ -79,8 +79,6 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Update any hardcoded references to day-based file names (updated build.rs and get_by_day method)
 
 #### Sub-task 4.5: Reader/Writer Trait Updates
-- TODO (agent-generated): Update `RecipeReader::get_by_id()` to work with UUIDs
-- TODO (agent-generated): Add `RecipeReader::get_by_uuid()` method
 - TODO (agent-generated): Remove or deprecate `RecipeReader::get_by_day()` method
 - TODO (agent-generated): Update `RecipeWriter` implementations to use UUIDs
 - TODO (agent-generated): Update all trait tests
