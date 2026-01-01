@@ -60,11 +60,11 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Update `cookbook/web` to use UUID-based Plan API
 - ✅ Update `cookbook/data_md` plan loading to convert day numbers to UUIDs
 
-#### Sub-task 4.2: Recipe Markdown Format Update
-- TODO (agent-generated): Update `cookbook/data_md` parser to extract UUID from recipe frontmatter
-- TODO (agent-generated): Update `cookbook/data_md` parser to generate/validate UUIDs if missing
-- TODO (agent-generated): Add fallback logic to support both old (day-based) and new (UUID-based) formats during migration
-- TODO (agent-generated): Add tests for UUID parsing and validation
+#### Sub-task 4.2: Recipe Markdown Format Update ✅ COMPLETED
+- ✅ Updated `cookbook/data_md` parser to extract UUID from recipe frontmatter
+- ✅ Updated `cookbook/data_md` parser to generate/validate UUIDs if missing
+- ✅ Added fallback logic to support both old (day-based) and new (UUID-based) formats during migration
+- ✅ Added tests for UUID parsing and validation
 
 #### Sub-task 4.3: Content Migration Scripts
 - TODO (agent-generated): Create migration tool to add UUIDs to existing recipe files

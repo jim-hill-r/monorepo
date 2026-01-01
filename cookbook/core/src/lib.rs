@@ -377,7 +377,7 @@ mod tests {
         let recipe1 = Recipe::new("recipe1".to_string(), "Test Recipe 1".to_string());
         let recipe2 = Recipe::new("recipe2".to_string(), "Test Recipe 2".to_string());
         let uuid1 = recipe1.uuid;
-        let uuid2 = recipe2.uuid;
+        let _uuid2 = recipe2.uuid;
         let reader = MockRecipeReader {
             recipes: vec![recipe1.clone(), recipe2],
         };

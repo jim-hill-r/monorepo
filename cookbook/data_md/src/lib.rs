@@ -97,7 +97,11 @@ impl MarkdownRecipeStore {
         // Parse title from first heading or use file name
         let title = self.extract_title(content).unwrap_or_else(|| id.clone());
 
-        let mut recipe = Recipe::new(id, title);
+        // Try to extract UUID from frontmatter, generate a new one if not found or invalid
+        let uuid = self.extract_uuid(content).unwrap_or_else(Uuid::new_v4);
+
+        // Create recipe with extracted or generated UUID
+        let mut recipe = Recipe::new_with_uuid(id, uuid, title);
 
         // Parse optional fields from markdown
         recipe.description = self.extract_description(content);
@@ -246,6 +250,23 @@ impl MarkdownRecipeStore {
         Vec::new()
     }
 
+    /// Extracts UUID from metadata
+    /// Returns None if no UUID field is found or if the UUID is invalid
+    fn extract_uuid(&self, content: &str) -> Option<Uuid> {
+        for line in content.lines() {
+            if let Some(value) = line.strip_prefix("UUID:") {
+                let uuid_str = value.trim();
+                // Try to parse the UUID
+                if let Ok(uuid) = Uuid::parse_str(uuid_str) {
+                    return Some(uuid);
+                }
+                // If parsing fails, return None (caller will generate a new UUID)
+                return None;
+            }
+        }
+        None
+    }
+
     /// Loads all plan markdown files from the content directory
     fn load_plans(&mut self) -> RecipeResult<()> {
         let entries = fs::read_dir(&self.content_dir).map_err(|e| {
@@ -301,21 +322,20 @@ impl MarkdownRecipeStore {
 
         // Convert day numbers to UUIDs by looking up recipes
         let mut recipe_uuids = Vec::with_capacity(7);
-        
+
         for day in recipe_days {
-            let recipe = self.get_by_day(day)
-                .map_err(|e| PlanError::InvalidData(format!(
+            let recipe = self.get_by_day(day).map_err(|e| {
+                PlanError::InvalidData(format!(
                     "Failed to find recipe for day {} in week {}: {}",
                     day, week, e
-                )))?;
+                ))
+            })?;
             recipe_uuids.push(recipe.uuid);
         }
 
-        Plan::new_checked(week, recipe_uuids)
-            .map_err(|e| PlanError::InvalidData(format!(
-                "Failed to create plan for week {}: {}",
-                week, e
-            )))
+        Plan::new_checked(week, recipe_uuids).map_err(|e| {
+            PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
+        })
     }
 
     /// Extracts recipe days from the markdown content
@@ -861,12 +881,14 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
         let plan = store.get_by_week(1).unwrap();
         assert_eq!(plan.week, 1);
         assert_eq!(plan.recipe_uuids.len(), 7);
-        
+
         // Verify the UUIDs correspond to recipes for days 1-7
         for (i, uuid) in plan.recipe_uuids.iter().enumerate() {
             let recipe = RecipeReader::get_by_uuid(&store, uuid).expect("Recipe should exist");
             let expected_day = i + 1;
-            let day_from_id = recipe.id.strip_prefix("day-")
+            let day_from_id = recipe
+                .id
+                .strip_prefix("day-")
                 .and_then(|s| s.parse::<u32>().ok())
                 .unwrap();
             assert_eq!(
@@ -978,6 +1000,153 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
         // Plan should not be loaded
         assert!(!PlanReader::exists(&store, 1));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_recipe_with_uuid_in_frontmatter() {
+        let temp_dir = create_temp_dir();
+
+        // Create a recipe file with UUID in frontmatter
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let recipe_content = format!(
+            r#"# Recipe with UUID
+
+A recipe that has a UUID in the frontmatter.
+
+UUID: {}
+Prep Time: 10 minutes
+Cook Time: 15 minutes
+Servings: 4
+Tags: test
+
+## Ingredients
+
+- 1 cup flour
+- 2 eggs
+
+## Instructions
+
+1. Mix ingredients
+2. Cook
+"#,
+            uuid_str
+        );
+
+        let recipe_path = temp_dir.join("uuid-recipe.md");
+        fs::write(&recipe_path, recipe_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = store.get_by_id("uuid-recipe").unwrap();
+        assert_eq!(recipe.id, "uuid-recipe");
+        assert_eq!(recipe.title, "Recipe with UUID");
+        // Verify the UUID was parsed from frontmatter
+        assert_eq!(recipe.uuid.to_string(), uuid_str);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_recipe_without_uuid_generates_one() {
+        let temp_dir = create_temp_dir();
+
+        // Create a recipe file without UUID
+        let recipe_content = r#"# Recipe without UUID
+
+A recipe that doesn't have a UUID in the frontmatter.
+
+Prep Time: 10 minutes
+Cook Time: 15 minutes
+Servings: 4
+Tags: test
+
+## Ingredients
+
+- 1 cup flour
+- 2 eggs
+
+## Instructions
+
+1. Mix ingredients
+2. Cook
+"#;
+
+        let recipe_path = temp_dir.join("no-uuid-recipe.md");
+        fs::write(&recipe_path, recipe_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = store.get_by_id("no-uuid-recipe").unwrap();
+        assert_eq!(recipe.id, "no-uuid-recipe");
+        assert_eq!(recipe.title, "Recipe without UUID");
+        // Verify a UUID was generated (not nil UUID)
+        assert_ne!(recipe.uuid, Uuid::nil());
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_recipe_with_invalid_uuid_generates_new_one() {
+        let temp_dir = create_temp_dir();
+
+        // Create a recipe file with invalid UUID
+        let recipe_content = r#"# Recipe with Invalid UUID
+
+A recipe that has an invalid UUID in the frontmatter.
+
+UUID: not-a-valid-uuid
+Prep Time: 10 minutes
+Cook Time: 15 minutes
+Servings: 4
+Tags: test
+
+## Ingredients
+
+- 1 cup flour
+- 2 eggs
+
+## Instructions
+
+1. Mix ingredients
+2. Cook
+"#;
+
+        let recipe_path = temp_dir.join("invalid-uuid-recipe.md");
+        fs::write(&recipe_path, recipe_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = store.get_by_id("invalid-uuid-recipe").unwrap();
+        assert_eq!(recipe.id, "invalid-uuid-recipe");
+        assert_eq!(recipe.title, "Recipe with Invalid UUID");
+        // Verify a new UUID was generated (not nil UUID)
+        assert_ne!(recipe.uuid, Uuid::nil());
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_multiple_recipes_have_different_uuids() {
+        let temp_dir = create_temp_dir();
+
+        // Create two recipes without UUIDs
+        let recipe1_content = "# Recipe 1\n\nFirst recipe.\n";
+        let recipe2_content = "# Recipe 2\n\nSecond recipe.\n";
+
+        fs::write(temp_dir.join("recipe1.md"), recipe1_content).unwrap();
+        fs::write(temp_dir.join("recipe2.md"), recipe2_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe1 = store.get_by_id("recipe1").unwrap();
+        let recipe2 = store.get_by_id("recipe2").unwrap();
+
+        // Verify both recipes have different UUIDs
+        assert_ne!(recipe1.uuid, recipe2.uuid);
+        assert_ne!(recipe1.uuid, Uuid::nil());
+        assert_ne!(recipe2.uuid, Uuid::nil());
 
         cleanup_temp_dir(&temp_dir);
     }

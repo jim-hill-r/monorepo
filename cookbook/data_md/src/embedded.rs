@@ -387,21 +387,20 @@ impl EmbeddedPlanStore {
         // Convert day numbers to UUIDs by looking up recipes
         let recipe_store = EmbeddedRecipeStore::global();
         let mut recipe_uuids = Vec::with_capacity(7);
-        
+
         for day in recipe_days {
-            let recipe = recipe_store.get_by_day(day)
-                .map_err(|e| PlanError::InvalidData(format!(
+            let recipe = recipe_store.get_by_day(day).map_err(|e| {
+                PlanError::InvalidData(format!(
                     "Failed to find recipe for day {} in week {}: {}",
                     day, week, e
-                )))?;
+                ))
+            })?;
             recipe_uuids.push(recipe.uuid);
         }
 
-        Plan::new_checked(week, recipe_uuids)
-            .map_err(|e| PlanError::InvalidData(format!(
-                "Failed to create plan for week {}: {}",
-                week, e
-            )))
+        Plan::new_checked(week, recipe_uuids).map_err(|e| {
+            PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
+        })
     }
 
     /// Extracts recipe days from the markdown content
@@ -473,7 +472,7 @@ mod plan_tests {
         let plan = store.get_by_week(1).unwrap();
         assert_eq!(plan.week, 1);
         assert_eq!(plan.recipe_uuids.len(), 7);
-        
+
         // Verify UUIDs match recipes for days 1-7
         for (i, day) in (1..=7).enumerate() {
             let recipe = recipe_store.get_by_day(day).unwrap();
@@ -484,7 +483,7 @@ mod plan_tests {
         let plan = store.get_by_week(2).unwrap();
         assert_eq!(plan.week, 2);
         assert_eq!(plan.recipe_uuids.len(), 7);
-        
+
         // Verify UUIDs match recipes for days 8-14
         for (i, day) in (8..=14).enumerate() {
             let recipe = recipe_store.get_by_day(day).unwrap();
@@ -569,10 +568,10 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
         let plan = EmbeddedPlanStore::parse_plan_markdown(content, 1).unwrap();
         let recipe_store = EmbeddedRecipeStore::global();
-        
+
         assert_eq!(plan.week, 1);
         assert_eq!(plan.recipe_uuids.len(), 7);
-        
+
         // Verify UUIDs match the recipes for days 1-7
         for (i, day) in (1..=7).enumerate() {
             let recipe = recipe_store.get_by_day(day).unwrap();
