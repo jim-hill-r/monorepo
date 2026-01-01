@@ -19,7 +19,8 @@ test.describe('Sidebar Mobile Responsiveness', () => {
     
     // On mobile, sidebar should be hidden by default
     const sidebar = page.locator('#sidebar');
-    await expect(sidebar).toHaveClass(/hidden/);
+    // Accept either hidden class or simply not visible via CSS
+    await expect(sidebar).not.toBeVisible();
   });
 
   test('should show sidebar when hamburger is clicked on mobile', async ({ page }) => {
@@ -28,7 +29,7 @@ test.describe('Sidebar Mobile Responsiveness', () => {
     
     // Sidebar should be hidden initially
     const sidebar = page.locator('#sidebar');
-    await expect(sidebar).toHaveClass(/hidden/);
+    await expect(sidebar).not.toBeVisible();
     
     // Click hamburger button to show sidebar
     const hamburger = page.locator('#header .hamburger-btn');
@@ -36,7 +37,7 @@ test.describe('Sidebar Mobile Responsiveness', () => {
     await page.waitForTimeout(400); // Wait for animation
     
     // Sidebar should now be visible
-    await expect(sidebar).not.toHaveClass(/hidden/);
+    await expect(sidebar).toBeVisible();
   });
 
   test('should hide sidebar when hamburger is clicked again on mobile', async ({ page }) => {
@@ -47,17 +48,17 @@ test.describe('Sidebar Mobile Responsiveness', () => {
     const hamburger = page.locator('#header .hamburger-btn');
     
     // Initially hidden on mobile
-    await expect(sidebar).toHaveClass(/hidden/);
+    await expect(sidebar).not.toBeVisible();
     
     // Click to show
     await hamburger.click();
     await page.waitForTimeout(400);
-    await expect(sidebar).not.toHaveClass(/hidden/);
+    await expect(sidebar).toBeVisible();
     
     // Click to hide again
     await hamburger.click();
     await page.waitForTimeout(400);
-    await expect(sidebar).toHaveClass(/hidden/);
+    await expect(sidebar).not.toBeVisible();
   });
 
   test('hamburger button aria-expanded should be false initially on mobile', async ({ page }) => {

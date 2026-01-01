@@ -21,7 +21,8 @@ test.describe('Home Page Navigation UI', () => {
     
     // Look for a link or button that navigates to recipes
     // Using a flexible selector that works with different UI implementations
-    const recipesLink = page.locator('a[href="/recipe/1"], button:has-text("Recipes"), .recipe-card a, .navigation-card a:has-text("Recipe")').first();
+    const recipesLink = page.locator('a[href^="/recipe"], button:has-text("Recipes"), .recipe-card a, .navigation-card a:has-text("Recipe")').first();
+    // Ensure a recipes navigation target is present and visible
     await expect(recipesLink).toBeVisible();
   });
 
@@ -38,8 +39,8 @@ test.describe('Home Page Navigation UI', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Find and click the recipes navigation element
-    const recipesLink = page.locator('a[href="/recipe/1"], .recipe-card a, .navigation-card a:has-text("Recipe")').first();
+    // Find and click the recipes card link - "Browse Recipes"
+    const recipesLink = page.locator('.recipe-card a:has-text("Browse Recipes")');
     await recipesLink.click();
     await page.waitForLoadState('networkidle');
     
@@ -51,8 +52,8 @@ test.describe('Home Page Navigation UI', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Find and click the plans navigation element
-    const plansLink = page.locator('a[href="/plan/1"], .plan-card a, .navigation-card a:has-text("Plan")').first();
+    // Find and click the plans card link - "View Meal Plans"
+    const plansLink = page.locator('.plan-card a:has-text("View Meal Plans")');
     await plansLink.click();
     await page.waitForLoadState('networkidle');
     

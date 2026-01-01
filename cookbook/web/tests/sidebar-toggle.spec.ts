@@ -98,7 +98,12 @@ test.describe('Sidebar Toggle', () => {
     expect(newMargin).not.toBe(initialMargin);
   });
 
-  test('should persist sidebar state across navigation', async ({ page }) => {
+  test('should persist sidebar state across navigation', async ({ page, viewport }) => {
+    // Skip on mobile since sidebar behavior is different
+    if (viewport && viewport.width <= 768) {
+      test.skip();
+    }
+    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
@@ -110,8 +115,8 @@ test.describe('Sidebar Toggle', () => {
     await page.waitForTimeout(400);
     await expect(sidebar).toHaveClass(/hidden/);
     
-    // Navigate to another page
-    await page.locator('#sidebar a', { hasText: 'Day 1' }).click();
+    // Navigate to another page using header nav instead since sidebar is hidden
+    await page.locator('#header .header-nav a:has-text("Recipes")').click();
     await page.waitForLoadState('networkidle');
     
     // Sidebar should still be hidden

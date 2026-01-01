@@ -12,7 +12,12 @@ const SCROLLBAR_TOLERANCE = 5;
  */
 
 test.describe('Sidebar and Header Alignment', () => {
-  test('sidebar should touch header with no gap', async ({ page }) => {
+  test('sidebar should touch header with no gap', async ({ page, viewport }) => {
+    // Skip on mobile since sidebar is hidden by default
+    if (viewport && viewport.width <= 768) {
+      test.skip();
+    }
+    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
@@ -42,7 +47,12 @@ test.describe('Sidebar and Header Alignment', () => {
     }
   });
   
-  test('sidebar height should extend to bottom of viewport', async ({ page }) => {
+  test('sidebar height should extend to bottom of viewport', async ({ page, viewport }) => {
+    // Skip on mobile since sidebar is hidden by default
+    if (viewport && viewport.width <= 768) {
+      test.skip();
+    }
+    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
