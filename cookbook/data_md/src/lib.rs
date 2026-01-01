@@ -286,7 +286,6 @@ impl MarkdownRecipeStore {
     }
 
     /// Parses plan data from markdown content
-    #[allow(deprecated)] // Using legacy API during migration
     fn parse_plan_markdown(&self, content: &str, week: u32) -> PlanResult<Plan> {
         // Extract recipe days from the markdown content
         let recipe_days = self.extract_plan_recipe_days(content)?;
@@ -300,7 +299,23 @@ impl MarkdownRecipeStore {
             )));
         }
 
-        Ok(Plan::new_with_days(week, recipe_days))
+        // Convert day numbers to UUIDs by looking up recipes
+        let mut recipe_uuids = Vec::with_capacity(7);
+        
+        for day in recipe_days {
+            let recipe = self.get_by_day(day)
+                .map_err(|e| PlanError::InvalidData(format!(
+                    "Failed to find recipe for day {} in week {}: {}",
+                    day, week, e
+                )))?;
+            recipe_uuids.push(recipe.uuid);
+        }
+
+        Plan::new_checked(week, recipe_uuids)
+            .map_err(|e| PlanError::InvalidData(format!(
+                "Failed to create plan for week {}: {}",
+                week, e
+            )))
     }
 
     /// Extracts recipe days from the markdown content
@@ -813,6 +828,15 @@ Tags: italian, pasta, quick
     fn test_plan_reader_get_by_week() {
         let temp_dir = create_temp_dir();
 
+        // Create recipe files that will be referenced by the plan
+        for day in 1..=7 {
+            let recipe_content = format!(
+                "# Day {} Recipe\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                day, day, day
+            );
+            fs::write(temp_dir.join(format!("day-{}.md", day)), recipe_content).unwrap();
+        }
+
         // Create a plan file
         let plan_content = r#"# Week 1 Plan
 
@@ -836,7 +860,21 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
         let plan = store.get_by_week(1).unwrap();
         assert_eq!(plan.week, 1);
-        assert_eq!(plan.recipe_days, vec![1, 2, 3, 4, 5, 6, 7]);
+        assert_eq!(plan.recipe_uuids.len(), 7);
+        
+        // Verify the UUIDs correspond to recipes for days 1-7
+        for (i, uuid) in plan.recipe_uuids.iter().enumerate() {
+            let recipe = RecipeReader::get_by_uuid(&store, uuid).expect("Recipe should exist");
+            let expected_day = i + 1;
+            let day_from_id = recipe.id.strip_prefix("day-")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap();
+            assert_eq!(
+                day_from_id, expected_day as u32,
+                "Plan week 1 UUID at position {} should be for day {}",
+                i, expected_day
+            );
+        }
 
         // Test nonexistent week
         assert!(store.get_by_week(99).is_err());
@@ -847,6 +885,15 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
     #[test]
     fn test_plan_reader_get_all() {
         let temp_dir = create_temp_dir();
+
+        // Create recipe files for weeks 1-3 (days 1-21)
+        for day in 1..=21 {
+            let recipe_content = format!(
+                "# Day {} Recipe\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                day, day, day
+            );
+            fs::write(temp_dir.join(format!("day-{}.md", day)), recipe_content).unwrap();
+        }
 
         // Create multiple plan files
         for week in 1..=3 {
@@ -881,6 +928,15 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
     #[test]
     fn test_plan_reader_exists() {
         let temp_dir = create_temp_dir();
+
+        // Create recipe files for days 29-35 (week 5)
+        for day in 29..=35 {
+            let recipe_content = format!(
+                "# Day {} Recipe\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                day, day, day
+            );
+            fs::write(temp_dir.join(format!("day-{}.md", day)), recipe_content).unwrap();
+        }
 
         let plan_content = "# Week 5 Plan\n\nWeek: 5\nDays: 29, 30, 31, 32, 33, 34, 35\n";
         fs::write(temp_dir.join("week-5.md"), plan_content).unwrap();
