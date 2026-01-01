@@ -1413,6 +1413,335 @@ pub fn list_tools(
     Ok(ListResult { tool_statuses })
 }
 
+/// Options for uninstalling tools
+#[derive(Debug, Clone, Default)]
+pub struct UninstallOptions {
+    /// Uninstall only specific tools (None means uninstall based on --all flag)
+    pub specific_tools: Option<Vec<Tool>>,
+    /// Skip these tools during uninstallation
+    pub skip_tools: Vec<Tool>,
+    /// Don't actually uninstall, just show what would be done
+    pub dry_run: bool,
+    /// Uninstall all cast-managed tools
+    pub all: bool,
+}
+
+/// Result of an uninstallation attempt
+#[derive(Debug, Clone)]
+pub struct UninstallResult {
+    pub tool: Tool,
+    pub success: bool,
+    pub message: String,
+    pub skipped: bool,
+}
+
+/// Uninstall tools
+pub fn uninstall_tools(
+    working_directory: impl AsRef<Path>,
+    options: UninstallOptions,
+) -> Result<Vec<UninstallResult>, ToolchainError> {
+    let working_directory = working_directory.as_ref();
+
+    // Determine which tools to uninstall
+    let tools_to_uninstall = if let Some(specific) = options.specific_tools {
+        specific
+    } else if options.all {
+        // Get all cast-managed tools (excluding system tools)
+        get_uninstallable_tools()
+    } else {
+        // Default: uninstall required tools for the current project (excluding system tools)
+        let required = detect_required_tools(working_directory)?;
+        required.into_iter().filter(is_uninstallable).collect()
+    };
+
+    let mut results = Vec::new();
+
+    for tool in tools_to_uninstall {
+        // Check if tool should be skipped
+        if options.skip_tools.contains(&tool) {
+            results.push(UninstallResult {
+                tool: tool.clone(),
+                success: true,
+                message: "Skipped".to_string(),
+                skipped: true,
+            });
+            continue;
+        }
+
+        // Check if tool can be uninstalled by cast
+        if !is_uninstallable(&tool) {
+            results.push(UninstallResult {
+                tool: tool.clone(),
+                success: false,
+                message: "Cannot be uninstalled by cast. Please use your system package manager."
+                    .to_string(),
+                skipped: true,
+            });
+            continue;
+        }
+
+        // Check if tool is installed
+        let status = check_tool(&tool)?;
+        if !status.installed {
+            results.push(UninstallResult {
+                tool: tool.clone(),
+                success: true,
+                message: "Not installed".to_string(),
+                skipped: false,
+            });
+            continue;
+        }
+
+        // Uninstall the tool
+        let result = uninstall_single_tool(&tool, working_directory, options.dry_run)?;
+        results.push(result);
+    }
+
+    Ok(results)
+}
+
+/// Check if a tool can be uninstalled by cast
+fn is_uninstallable(tool: &Tool) -> bool {
+    matches!(
+        tool,
+        Tool::Cast | Tool::Dx | Tool::Playwright | Tool::Wrangler
+    )
+}
+
+/// Get list of tools that can be uninstalled by cast
+fn get_uninstallable_tools() -> Vec<Tool> {
+    vec![Tool::Cast, Tool::Dx, Tool::Playwright, Tool::Wrangler]
+}
+
+/// Uninstall a single tool
+fn uninstall_single_tool(
+    tool: &Tool,
+    working_directory: &Path,
+    dry_run: bool,
+) -> Result<UninstallResult, ToolchainError> {
+    match tool {
+        Tool::Cast => uninstall_cast(dry_run),
+        Tool::Dx => uninstall_dx(dry_run),
+        Tool::Playwright => uninstall_playwright(working_directory, dry_run),
+        Tool::Wrangler => uninstall_wrangler(dry_run),
+        _ => Ok(UninstallResult {
+            tool: tool.clone(),
+            success: false,
+            message: "Cannot be uninstalled by cast".to_string(),
+            skipped: true,
+        }),
+    }
+}
+
+/// Uninstall Cast CLI
+fn uninstall_cast(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
+    use std::process::Command;
+
+    if dry_run {
+        return Ok(UninstallResult {
+            tool: Tool::Cast,
+            success: true,
+            message: "Would uninstall: cargo uninstall cast_cli".to_string(),
+            skipped: false,
+        });
+    }
+
+    println!("Uninstalling Cast CLI...");
+
+    let output = Command::new("cargo")
+        .args(["uninstall", "cast_cli"])
+        .output()
+        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+
+    if output.status.success() {
+        Ok(UninstallResult {
+            tool: Tool::Cast,
+            success: true,
+            message: "Uninstalled successfully".to_string(),
+            skipped: false,
+        })
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // Check if the error is because cast_cli is not installed
+        if stderr.contains("package 'cast_cli") || stderr.contains("not installed") {
+            Ok(UninstallResult {
+                tool: Tool::Cast,
+                success: true,
+                message: "Not installed via cargo".to_string(),
+                skipped: false,
+            })
+        } else {
+            Err(ToolchainError::InstallationError(format!(
+                "Failed to uninstall cast: {}",
+                stderr
+            )))
+        }
+    }
+}
+
+/// Uninstall Dioxus CLI
+fn uninstall_dx(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
+    use std::process::Command;
+
+    if dry_run {
+        return Ok(UninstallResult {
+            tool: Tool::Dx,
+            success: true,
+            message: "Would uninstall: cargo uninstall dioxus-cli".to_string(),
+            skipped: false,
+        });
+    }
+
+    println!("Uninstalling Dioxus CLI (dx)...");
+
+    let output = Command::new("cargo")
+        .args(["uninstall", "dioxus-cli"])
+        .output()
+        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+
+    if output.status.success() {
+        Ok(UninstallResult {
+            tool: Tool::Dx,
+            success: true,
+            message: "Uninstalled successfully".to_string(),
+            skipped: false,
+        })
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // Check if the error is because dioxus-cli is not installed
+        if stderr.contains("package 'dioxus-cli") || stderr.contains("not installed") {
+            Ok(UninstallResult {
+                tool: Tool::Dx,
+                success: true,
+                message: "Not installed via cargo".to_string(),
+                skipped: false,
+            })
+        } else {
+            Err(ToolchainError::InstallationError(format!(
+                "Failed to uninstall dx: {}",
+                stderr
+            )))
+        }
+    }
+}
+
+/// Uninstall Playwright
+fn uninstall_playwright(
+    working_directory: &Path,
+    dry_run: bool,
+) -> Result<UninstallResult, ToolchainError> {
+    use std::process::Command;
+
+    if dry_run {
+        return Ok(UninstallResult {
+            tool: Tool::Playwright,
+            success: true,
+            message: "Would uninstall: npx playwright uninstall --all".to_string(),
+            skipped: false,
+        });
+    }
+
+    println!("Uninstalling Playwright browsers...");
+
+    // Uninstall Playwright browsers
+    let output = Command::new("npx")
+        .args(["playwright", "uninstall", "--all"])
+        .current_dir(working_directory)
+        .output()
+        .map_err(|e| {
+            ToolchainError::InstallationError(format!("Failed to run npx playwright: {}", e))
+        })?;
+
+    if output.status.success() {
+        Ok(UninstallResult {
+            tool: Tool::Playwright,
+            success: true,
+            message: "Browsers uninstalled successfully. Note: npm package remains in package.json"
+                .to_string(),
+            skipped: false,
+        })
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // If Playwright is not installed, that's okay
+        if stderr.contains("not found") || stderr.contains("no such file") {
+            Ok(UninstallResult {
+                tool: Tool::Playwright,
+                success: true,
+                message: "Not installed".to_string(),
+                skipped: false,
+            })
+        } else {
+            Err(ToolchainError::InstallationError(format!(
+                "Failed to uninstall Playwright: {}",
+                stderr
+            )))
+        }
+    }
+}
+
+/// Uninstall Wrangler CLI
+fn uninstall_wrangler(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
+    use std::process::Command;
+
+    if dry_run {
+        return Ok(UninstallResult {
+            tool: Tool::Wrangler,
+            success: true,
+            message: "Would uninstall: npm uninstall -g wrangler || cargo uninstall wrangler"
+                .to_string(),
+            skipped: false,
+        });
+    }
+
+    println!("Uninstalling Wrangler CLI...");
+
+    // Try npm first (most common installation method)
+    let npm_output = Command::new("npm")
+        .args(["uninstall", "-g", "wrangler"])
+        .output()
+        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run npm: {}", e)))?;
+
+    if npm_output.status.success() {
+        return Ok(UninstallResult {
+            tool: Tool::Wrangler,
+            success: true,
+            message: "Uninstalled successfully via npm".to_string(),
+            skipped: false,
+        });
+    }
+
+    // Try cargo as fallback
+    let cargo_output = Command::new("cargo")
+        .args(["uninstall", "wrangler"])
+        .output()
+        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+
+    if cargo_output.status.success() {
+        Ok(UninstallResult {
+            tool: Tool::Wrangler,
+            success: true,
+            message: "Uninstalled successfully via cargo".to_string(),
+            skipped: false,
+        })
+    } else {
+        let cargo_stderr = String::from_utf8_lossy(&cargo_output.stderr);
+        // If wrangler is not installed via either method, that's okay
+        if cargo_stderr.contains("package 'wrangler") || cargo_stderr.contains("not installed") {
+            Ok(UninstallResult {
+                tool: Tool::Wrangler,
+                success: true,
+                message: "Not installed via npm or cargo".to_string(),
+                skipped: false,
+            })
+        } else {
+            Err(ToolchainError::InstallationError(format!(
+                "Failed to uninstall wrangler: {}",
+                cargo_stderr
+            )))
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod install_tests {
@@ -1595,6 +1924,162 @@ mod install_tests {
         let install_result = result.unwrap();
         assert!(!install_result.success);
         assert!(install_result.message.contains("rustup"));
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod uninstall_tests {
+    use super::*;
+
+    #[test]
+    fn test_uninstall_options_default() {
+        let options = UninstallOptions::default();
+        assert!(options.specific_tools.is_none());
+        assert!(options.skip_tools.is_empty());
+        assert!(!options.dry_run);
+        assert!(!options.all);
+    }
+
+    #[test]
+    fn test_uninstall_tools_dry_run() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_uninstall_dry_run").unwrap();
+
+        // Create a Cast.toml with dioxus framework
+        fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+
+        let options = UninstallOptions {
+            specific_tools: None,
+            skip_tools: Vec::new(),
+            dry_run: true,
+            all: false,
+        };
+
+        let result = uninstall_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let results = result.unwrap();
+        // Should report what would be uninstalled for uninstallable tools only
+        assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn test_uninstall_tools_skip() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_uninstall_skip").unwrap();
+
+        // Create a Cast.toml with dioxus framework
+        fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+
+        let options = UninstallOptions {
+            specific_tools: None,
+            skip_tools: vec![Tool::Dx],
+            dry_run: true,
+            all: false,
+        };
+
+        let result = uninstall_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let results = result.unwrap();
+
+        // Check that skipped tools are marked as skipped
+        let dx_result = results.iter().find(|r| r.tool == Tool::Dx);
+        assert!(dx_result.is_some());
+        assert!(dx_result.unwrap().skipped);
+    }
+
+    #[test]
+    fn test_uninstall_tools_specific_tool() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_uninstall_specific").unwrap();
+
+        // Create a Cast.toml with dioxus framework
+        fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+
+        let options = UninstallOptions {
+            specific_tools: Some(vec![Tool::Dx]),
+            skip_tools: Vec::new(),
+            dry_run: true,
+            all: false,
+        };
+
+        let result = uninstall_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let results = result.unwrap();
+        // Should only try to uninstall dx
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].tool, Tool::Dx);
+    }
+
+    #[test]
+    fn test_uninstall_tools_all() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_uninstall_all").unwrap();
+
+        // Create a Cast.toml
+        fs::write(temp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let options = UninstallOptions {
+            specific_tools: None,
+            skip_tools: Vec::new(),
+            dry_run: true,
+            all: true,
+        };
+
+        let result = uninstall_tools(temp_dir.path(), options);
+        assert!(result.is_ok());
+
+        let results = result.unwrap();
+        // Should try to uninstall all uninstallable tools
+        assert_eq!(results.len(), 4); // cast, dx, playwright, wrangler
+    }
+
+    #[test]
+    fn test_is_uninstallable() {
+        assert!(is_uninstallable(&Tool::Cast));
+        assert!(is_uninstallable(&Tool::Dx));
+        assert!(is_uninstallable(&Tool::Playwright));
+        assert!(is_uninstallable(&Tool::Wrangler));
+
+        // System tools should not be uninstallable
+        assert!(!is_uninstallable(&Tool::Rustup));
+        assert!(!is_uninstallable(&Tool::Rustc));
+        assert!(!is_uninstallable(&Tool::Cargo));
+        assert!(!is_uninstallable(&Tool::Rustfmt));
+        assert!(!is_uninstallable(&Tool::Clippy));
+        assert!(!is_uninstallable(&Tool::Node));
+        assert!(!is_uninstallable(&Tool::Npm));
+        assert!(!is_uninstallable(&Tool::GitLfs));
+    }
+
+    #[test]
+    fn test_get_uninstallable_tools() {
+        let tools = get_uninstallable_tools();
+        assert_eq!(tools.len(), 4);
+        assert!(tools.contains(&Tool::Cast));
+        assert!(tools.contains(&Tool::Dx));
+        assert!(tools.contains(&Tool::Playwright));
+        assert!(tools.contains(&Tool::Wrangler));
+    }
+
+    #[test]
+    fn test_uninstall_system_tool_returns_error() {
+        let result = uninstall_single_tool(&Tool::Node, std::path::Path::new("."), true);
+        assert!(result.is_ok());
+        let uninstall_result = result.unwrap();
+        assert!(uninstall_result.skipped);
+        assert!(uninstall_result.message.contains("Cannot be uninstalled"));
     }
 }
 

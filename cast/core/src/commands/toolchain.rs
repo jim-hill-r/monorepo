@@ -123,6 +123,68 @@ impl Command for ListCommand {
     }
 }
 
+/// Command to uninstall tools
+pub struct UninstallCommand {
+    pub tool: Option<String>,
+    pub skip: Option<String>,
+    pub dry_run: bool,
+    pub all: bool,
+}
+
+impl Command for UninstallCommand {
+    fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
+        // Parse tool names from command line
+        let specific_tools = if let Some(tool_name) = &self.tool {
+            let tool =
+                Tool::from_name(tool_name).ok_or_else(|| format!("Unknown tool: {}", tool_name))?;
+            Some(vec![tool])
+        } else {
+            None
+        };
+
+        // Parse skip list
+        let skip_tools = if let Some(skip_str) = &self.skip {
+            skip_str
+                .split(',')
+                .filter_map(|s| Tool::from_name(s.trim()))
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        let options = toolchain::UninstallOptions {
+            specific_tools,
+            skip_tools,
+            dry_run: self.dry_run,
+            all: self.all,
+        };
+
+        let results = toolchain::uninstall_tools(working_directory, options)?;
+
+        // Format output
+        let mut output = String::new();
+        let mut any_failed = false;
+
+        for result in &results {
+            if result.skipped {
+                output.push_str(&format!("⊘ {}: {}\n", result.tool.name(), result.message));
+            } else if result.success {
+                output.push_str(&format!("✓ {}: {}\n", result.tool.name(), result.message));
+            } else {
+                output.push_str(&format!("✗ {}: {}\n", result.tool.name(), result.message));
+                any_failed = true;
+            }
+        }
+
+        if any_failed {
+            output.push_str("\nSome tools failed to uninstall. Please address the errors above.");
+            Err(output.into())
+        } else {
+            Ok(output)
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -293,5 +355,72 @@ mod tests {
         assert!(output.contains("\"tools\""));
         assert!(output.contains("\"name\""));
         assert!(output.contains("\"installed\""));
+    }
+
+    #[test]
+    fn test_uninstall_command_dry_run() {
+        let tmp_dir = TempDir::new("test_uninstall_toolchain").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let cmd = UninstallCommand {
+            tool: None,
+            skip: None,
+            dry_run: true,
+            all: false,
+        };
+        let result = cmd.execute(tmp_dir.path());
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(!output.is_empty());
+    }
+
+    #[test]
+    fn test_uninstall_command_specific_tool() {
+        let tmp_dir = TempDir::new("test_uninstall_specific_tool").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let cmd = UninstallCommand {
+            tool: Some("dx".to_string()),
+            skip: None,
+            dry_run: true,
+            all: false,
+        };
+        let result = cmd.execute(tmp_dir.path());
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.contains("dx"));
+    }
+
+    #[test]
+    fn test_uninstall_command_unknown_tool() {
+        let tmp_dir = TempDir::new("test_uninstall_unknown_tool").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let cmd = UninstallCommand {
+            tool: Some("unknown-tool".to_string()),
+            skip: None,
+            dry_run: true,
+            all: false,
+        };
+        let result = cmd.execute(tmp_dir.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_uninstall_command_all() {
+        let tmp_dir = TempDir::new("test_uninstall_all").unwrap();
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        let cmd = UninstallCommand {
+            tool: None,
+            skip: None,
+            dry_run: true,
+            all: true,
+        };
+        let result = cmd.execute(tmp_dir.path());
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        // Should contain uninstallable tools
+        assert!(output.contains("dx") || output.contains("cast") || output.contains("playwright"));
     }
 }
