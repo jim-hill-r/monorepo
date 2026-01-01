@@ -146,7 +146,7 @@ mod tests {
         // Create a simple Cargo project with a main.rs
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+            include_str!("../tests/fixtures/basic_cargo.toml"),
         )
         .unwrap();
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
@@ -167,7 +167,7 @@ mod tests {
         // Create a simple Cargo project with Cast.toml
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+            include_str!("../tests/fixtures/basic_cargo.toml"),
         )
         .unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
@@ -190,8 +190,7 @@ mod tests {
         // Create a Cargo project with dioxus framework
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
-            // TODO: Have this test toml be an external file versus a hardcoded string
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\ndioxus = \"0.7\"",
+            include_str!("../tests/fixtures/dioxus_cargo.toml"),
         )
         .unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
@@ -229,7 +228,7 @@ mod tests {
         // Create a Cargo project with dioxus framework in metadata
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"\n\n[dependencies]\ndioxus = \"0.6\"",
+            include_str!("../tests/fixtures/dioxus_metadata_cargo.toml"),
         )
         .unwrap();
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
@@ -265,7 +264,7 @@ mod tests {
         // This will cause the command to not be found
         fs::write(
             tmp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"",
+            include_str!("../tests/fixtures/dioxus_metadata_only_cargo.toml"),
         )
         .unwrap();
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
