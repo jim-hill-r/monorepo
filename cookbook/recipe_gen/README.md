@@ -16,6 +16,9 @@ Renames recipe files from day-based naming (day-X.md) to UUID-based naming ({uui
 ### plan-uuid-migration
 Updates plan files to reference recipe UUIDs instead of day numbers.
 
+### migration-validator
+Validates that the UUID migration completed successfully by checking that all recipe and plan files are properly migrated.
+
 ## Overview
 
 This tool automatically generates recipe markdown files in the correct format for the cookbook content directory. It creates recipes across various categories (breakfast, lunch, dinner, dessert, etc.) and cuisines (Italian, Chinese, Mexican, Indian, etc.) to ensure variety throughout the year.
@@ -107,6 +110,70 @@ The plan UUID migration tool will:
 - Parser tries UUID-based format first, falls back to day-based format
 
 **Note**: This tool requires that all recipes have UUID frontmatter (run `uuid-migration` first).
+
+### Validating the Migration
+
+After completing all migration steps, you can validate that everything was successful:
+
+```bash
+cargo run --bin migration-validator
+```
+
+The migration validation tool will:
+1. Check that all recipe files have valid UUID frontmatter
+2. Verify that all recipe files are named with their UUID (no day-*.md files remaining)
+3. Verify that all plan files have Recipe UUIDs field
+4. Check that all recipe UUIDs in plan files reference existing recipe files
+5. Detect any orphaned day-*.md files or invalid UUIDs
+6. Generate a detailed validation report
+
+**Example output** (successful migration):
+```
+Migration Validation Report
+===========================
+
+Recipe Files:
+  Total files found: 365
+  Files with UUID: 365
+  Files with UUID-based names: 365
+
+Plan Files:
+  Total files found: 53
+  Files with Recipe UUIDs: 53
+
+✓ Migration validation PASSED
+  All recipe and plan files are properly migrated.
+```
+
+**Example output** (incomplete migration):
+```
+Migration Validation Report
+===========================
+
+Recipe Files:
+  Total files found: 365
+  Files with UUID: 365
+  Files with UUID-based names: 0
+
+  ⚠ 365 files still have day-based names:
+    - day-1
+    - day-2
+    ...
+
+Plan Files:
+  Total files found: 53
+  Files with Recipe UUIDs: 0
+
+  ⚠ 53 files missing Recipe UUIDs:
+    - week-1
+    - week-2
+    ...
+
+✗ Migration validation FAILED
+  Some files require attention.
+```
+
+The validator will exit with code 0 if validation passes, or code 1 if validation fails. This makes it suitable for use in CI/CD pipelines or automated testing.
 
 ## Recipe Format
 
