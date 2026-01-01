@@ -28,12 +28,14 @@ fn test_load_example_recipes() {
     let plan_1 = store.get_by_week(1).expect("Should find plan for week 1");
     assert_eq!(plan_1.week, 1);
     assert_eq!(plan_1.recipe_uuids.len(), 7);
-    
+
     // Verify the UUIDs correspond to recipes for days 1-7
     for (i, uuid) in plan_1.recipe_uuids.iter().enumerate() {
         let recipe = RecipeReader::get_by_uuid(&store, uuid).expect("Recipe should exist");
         let expected_day = i + 1;
-        let day_from_id = recipe.id.strip_prefix("day-")
+        let day_from_id = recipe
+            .id
+            .strip_prefix("day-")
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap();
         assert_eq!(
