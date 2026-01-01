@@ -51,7 +51,7 @@ fn App() -> Element {
     // Initialize sidebar visibility state
     // Start with desktop default (visible), will be updated on mount for mobile
     let sidebar_visible = use_signal(|| true);
-    
+
     // Detect mobile viewport and update sidebar state accordingly
     #[cfg(target_arch = "wasm32")]
     {
@@ -69,7 +69,7 @@ fn App() -> Element {
             }
         });
     }
-    
+
     use_context_provider(|| sidebar_visible);
 
     rsx! {
