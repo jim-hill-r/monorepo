@@ -301,7 +301,13 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
 
 /// Aggregate all ingredients from recipes in a week into a shopping list
 /// Returns a sorted vector of unique ingredients from all recipes in the week
+/// Returns an empty vector if the week is invalid (not in range 1-52)
 fn get_week_shopping_list(week: u32) -> Vec<String> {
+    // Validate week parameter to ensure consistent behavior
+    if !(1..=52).contains(&week) {
+        return Vec::new();
+    }
+
     let store = EmbeddedRecipeStore::global();
     let mut all_ingredients = Vec::new();
 
@@ -1210,5 +1216,26 @@ mod tests {
             "Week 26 should have ingredients"
         );
         // Week 52 might be empty if it goes beyond day 365
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_invalid_weeks() {
+        // Test that shopping list returns empty for invalid weeks
+        let shopping_list_week_0 = get_week_shopping_list(0);
+        let shopping_list_week_53 = get_week_shopping_list(53);
+        let shopping_list_week_100 = get_week_shopping_list(100);
+
+        assert!(
+            shopping_list_week_0.is_empty(),
+            "Week 0 should return empty list"
+        );
+        assert!(
+            shopping_list_week_53.is_empty(),
+            "Week 53 should return empty list"
+        );
+        assert!(
+            shopping_list_week_100.is_empty(),
+            "Week 100 should return empty list"
+        );
     }
 }
