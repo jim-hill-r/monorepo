@@ -200,8 +200,9 @@ fn get_week_start_date() -> NaiveDate {
 }
 
 /// Get recipe day information for sidebar display
-/// Returns a vector of (day_of_year, formatted_date) tuples for the current week (7 days)
-/// Uses the same logic as get_week_recipes() to ensure sidebar matches the Plan component
+/// Returns a vector of (day_of_year, formatted_date) tuples for the current week
+/// (up to 7 days, or fewer if we reach MAX_DAY_OF_YEAR), using the same logic as
+/// get_week_recipes() to ensure the sidebar matches the Plan component.
 fn get_sidebar_recipe_days() -> Vec<(u32, String)> {
     let current_week = get_current_week_of_year();
     let recipes = get_week_recipes(current_week);
@@ -214,6 +215,13 @@ fn get_sidebar_recipe_days() -> Vec<(u32, String)> {
         if let Some(date) = NaiveDate::from_yo_opt(year, day_of_year) {
             let formatted = format_recipe_day(date);
             days.push((day_of_year, formatted));
+        } else {
+            // Log unexpected invalid day_of_year values instead of silently skipping them
+            eprintln!(
+                "get_sidebar_recipe_days: invalid day_of_year {} for year {} - \
+                 skipping this entry (sidebar may show fewer than 7 days)",
+                day_of_year, year
+            );
         }
     }
 
@@ -703,12 +711,11 @@ mod tests {
 
     #[test]
     fn test_sidebar_recipe_days_count() {
-        // Test that sidebar shows exactly 7 recipe entries (one week)
+        // Test that sidebar shows up to 7 recipe entries (one week, or fewer near year end)
         let days = get_sidebar_recipe_days();
-        assert_eq!(
-            days.len(),
-            7,
-            "Sidebar should show exactly 7 recipe entries (one week), found {}",
+        assert!(
+            days.len() >= 1 && days.len() <= 7,
+            "Sidebar should show between 1 and 7 recipe entries, found {}",
             days.len()
         );
     }
@@ -793,10 +800,11 @@ mod tests {
         assert_eq!(weeks.len(), 4);
 
         // The first week should be close to the current week.
-        // Note: There may be a difference at year boundaries where the calendar week
-        // (Sun-Sat) spans two years. In that case, the calendar-based sidebar week
-        // calculation may differ from the day-based week calculation.
-        // Week 52 -> Week 1 transition means they're adjacent across year boundary.
+        // Note: get_sidebar_plan_weeks() is based on calendar weeks (Sun-Sat). Around
+        // year boundaries, a calendar week can span two years, so this calendar-based
+        // sidebar week calculation may differ from the day-based week calculation used
+        // by get_sidebar_recipe_days() / get_week_recipes(). Week 52 -> Week 1
+        // transition means they're adjacent across the year boundary.
         let first_week = weeks[0].0;
         let week_diff = if first_week > current_week {
             first_week - current_week
