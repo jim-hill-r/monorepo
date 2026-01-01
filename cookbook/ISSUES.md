@@ -5,7 +5,6 @@
 This epic implements ISO 8601 week numbering (weeks 1-53, starting Monday, week 1 contains first Thursday) to replace the current simple day/7 calculation (weeks 1-52, no specific start day).
 
 ### Phase 1: Core Week Calculation
-- TODO (agent-generated): Update `get_current_week_of_year()` to use ISO 8601 week calculation (chrono::Datelike::iso_week())
 - TODO (agent-generated): Update `get_week_number_from_date()` to use ISO 8601 week calculation
 - TODO (agent-generated): Change all week validation from `(1..=52)` to `(1..=53)` to support years with 53 weeks
 - TODO (agent-generated): Update `get_week_start_date()` to return Monday (ISO 8601 start) instead of Sunday

@@ -50,7 +50,7 @@ fn App() -> Element {
 
     // Initialize sidebar visibility state
     // Start with desktop default (visible), will be updated on mount for mobile
-    let mut sidebar_visible = use_signal(|| true);
+    let sidebar_visible = use_signal(|| true);
 
     // Detect mobile viewport and update sidebar state accordingly
     #[cfg(target_arch = "wasm32")]
@@ -1265,7 +1265,7 @@ mod tests {
         // Jan 1, 2026 is in ISO week 1
         let date = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
         assert_eq!(date.iso_week().week(), 1);
-        
+
         // Last day of 2026 (Dec 31, 2026 is Thursday) is in week 53
         let date = NaiveDate::from_ymd_opt(2026, 12, 31).unwrap();
         assert_eq!(date.iso_week().week(), 53);
@@ -1278,7 +1278,7 @@ mod tests {
         // Jan 1, 2020 (Wednesday) is in week 1
         let date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
         assert_eq!(date.iso_week().week(), 1);
-        
+
         // Dec 31, 2020 (Thursday) is in week 53
         let date = NaiveDate::from_ymd_opt(2020, 12, 31).unwrap();
         assert_eq!(date.iso_week().week(), 53);
@@ -1290,7 +1290,7 @@ mod tests {
         // Week 1 starts on Dec 30, 2024 (Monday)
         let date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
         assert_eq!(date.iso_week().week(), 1);
-        
+
         // Dec 31, 2025 is Wednesday, in week 1 of 2026
         let date = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap();
         // This should be week 1 of 2026, not week 53 of 2025
@@ -1303,7 +1303,7 @@ mod tests {
         // Test a few random Mondays to verify they're the first day of their week
         let monday = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(); // Monday
         assert_eq!(monday.weekday(), chrono::Weekday::Mon);
-        
+
         let tuesday = NaiveDate::from_ymd_opt(2026, 1, 6).unwrap(); // Tuesday
         assert_eq!(tuesday.weekday(), chrono::Weekday::Tue);
         // Both Monday and Tuesday should be in the same week
