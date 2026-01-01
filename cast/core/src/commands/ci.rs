@@ -11,7 +11,12 @@ pub struct CiCommand {
 
 impl Command for CiCommand {
     fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
-        ci::run(working_directory, self.mode, self.recursive_depth, self.only_changed)?;
+        ci::run(
+            working_directory,
+            self.mode,
+            self.recursive_depth,
+            self.only_changed,
+        )?;
         Ok("CI passed".to_string())
     }
 }

@@ -78,7 +78,10 @@ pub fn run(
             }
             Err(e) => {
                 // Error checking for changes (e.g., not in a git repo)
-                eprintln!("Warning: Could not check for changes: {}. Proceeding with CI.", e);
+                eprintln!(
+                    "Warning: Could not check for changes: {}. Proceeding with CI.",
+                    e
+                );
                 // Continue with CI despite the error
             }
         }
@@ -434,7 +437,7 @@ fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
     let diff_output = Command::new("git")
         .arg("diff")
         .arg("--quiet")
-        .arg(&format!("origin/{}", default_branch))
+        .arg(format!("origin/{}", default_branch))
         .arg("HEAD")
         .arg("--")
         .arg(".")
