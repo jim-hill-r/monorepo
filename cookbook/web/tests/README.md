@@ -6,36 +6,66 @@ This directory contains Playwright end-to-end tests for the Cookbook web applica
 
 - Node.js (>= 18.0.0)
 - npm
-- Dioxus CLI (`cargo install dioxus-cli`)
+- Dioxus CLI (`dx`)
+- Cast CLI (for toolchain management)
 
 ## Setup
 
-Install dependencies:
+### Automated Setup (Recommended)
+
+Use the Cast toolchain manager to install all required dependencies:
 
 ```bash
-npm install
+cd cookbook/web
+cast toolchain install
 ```
 
-Install Playwright browsers:
+This will automatically install:
+- Dioxus CLI (`dx`)
+- Playwright and its browser dependencies
+- npm packages from package.json
+
+### Manual Setup (Alternative)
+
+If you prefer to install dependencies manually:
 
 ```bash
-npx playwright install
+# Install npm dependencies
+npm install
+
+# Install Playwright browsers
+npx playwright install --with-deps chromium
+
+# Install Dioxus CLI
+cargo install dioxus-cli --version 0.7.2
 ```
 
 ## Running Tests
 
-### Start the Development Server
+### Automated Dev Server (Recommended)
 
-Before running tests, start the Dioxus development server in a separate terminal:
+The tests are configured to automatically start and stop the development server. Simply run:
+
+```bash
+npm test
+```
+
+The Playwright configuration will:
+1. Start the dev server using `cast run`
+2. Wait for it to be ready at http://localhost:8080
+3. Run all tests
+4. Shut down the dev server automatically
+
+### Manual Dev Server (Alternative)
+
+If you prefer to manage the dev server yourself, start it in a separate terminal:
 
 ```bash
 cd cookbook/web
 dx serve --port 8080
 ```
 
-### Run Tests
-
-Run all tests:
+Then run tests:
 
 ```bash
 npm test
