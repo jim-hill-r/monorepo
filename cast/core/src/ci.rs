@@ -1,7 +1,7 @@
 use crate::build;
 use crate::publish;
 use crate::test;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use thiserror::Error;
 
@@ -54,7 +54,13 @@ pub enum CiError {
 ///   - Check: Run all checks (fmt --check, clippy, build, test)
 ///   - Fix: Auto-fix formatting issues, then run checks
 ///   - Release: Run all checks with release build, then publish artifacts
-pub fn run(working_directory: impl AsRef<Path>, mode: CiMode) -> Result<(), CiError> {
+/// - If recursive_depth is Some(depth), after running CI on the current directory,
+///   it will find all Cast projects up to 'depth' levels below and run CI on them
+pub fn run(
+    working_directory: impl AsRef<Path>,
+    mode: CiMode,
+    recursive_depth: Option<usize>,
+) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
 
     // Check if this is a Rust project or TypeScript project
@@ -94,6 +100,11 @@ pub fn run(working_directory: impl AsRef<Path>, mode: CiMode) -> Result<(), CiEr
         }
     }
     // If no CI checks were run, silently succeed (empty project or unsupported type)
+
+    // Run CI recursively on child projects if requested
+    if let Some(depth) = recursive_depth {
+        run_ci_recursively(working_directory, mode, depth)?;
+    }
 
     Ok(())
 }
@@ -343,6 +354,113 @@ fn commit_artifacts(working_directory: &Path) -> Result<(), CiError> {
     Ok(())
 }
 
+/// Run CI recursively on child projects
+/// Finds all Cast projects up to 'max_depth' levels below the current directory
+/// and runs CI on each of them with recursive_depth decremented by the depth at which they were found
+fn run_ci_recursively(
+    working_directory: &Path,
+    mode: CiMode,
+    max_depth: usize,
+) -> Result<(), CiError> {
+    if max_depth == 0 {
+        return Ok(());
+    }
+
+    let projects = find_cast_projects(working_directory, max_depth)?;
+
+    for (project_path, depth) in projects {
+        println!("Running CI on child project: {}", project_path.display());
+
+        // Calculate remaining depth for recursive calls
+        // If we found this project at depth D, and we started with max_depth,
+        // then we should run with max_depth - D for this project
+        let remaining_depth = if max_depth > depth {
+            Some(max_depth - depth)
+        } else {
+            None
+        };
+
+        // Run CI on the child project
+        run(&project_path, mode, remaining_depth)?;
+    }
+
+    Ok(())
+}
+
+/// Find Cast projects within a given depth below the working directory
+/// Returns a vector of (project_path, depth_found) tuples
+/// Skips common build directories like target, node_modules, .git, etc.
+fn find_cast_projects(
+    working_directory: &Path,
+    max_depth: usize,
+) -> Result<Vec<(PathBuf, usize)>, CiError> {
+    let mut projects = Vec::new();
+    find_cast_projects_recursive(working_directory, max_depth, 0, &mut projects)?;
+    Ok(projects)
+}
+
+/// Recursively find Cast projects up to max_depth levels
+fn find_cast_projects_recursive(
+    dir: &Path,
+    max_depth: usize,
+    current_depth: usize,
+    projects: &mut Vec<(PathBuf, usize)>,
+) -> Result<(), CiError> {
+    // Stop if we've reached max depth
+    if current_depth > max_depth {
+        return Ok(());
+    }
+
+    // Skip if not a directory
+    if !dir.is_dir() {
+        return Ok(());
+    }
+
+    // Skip directories that shouldn't be searched
+    if let Some(dir_name) = dir.file_name() {
+        let dir_name = dir_name.to_string_lossy();
+        if dir_name == "target"
+            || dir_name == "node_modules"
+            || dir_name == ".git"
+            || dir_name == "dist"
+            || dir_name == "build"
+            || dir_name == "artifacts"
+        {
+            return Ok(());
+        }
+    }
+
+    // Don't scan subdirectories at the starting level (current_depth == 0)
+    // We only want projects below the current directory
+    if current_depth > 0 {
+        // Check if this directory is a Cast project
+        let has_cast_toml = dir.join("Cast.toml").exists();
+        let cargo_toml_path = dir.join("Cargo.toml");
+        let has_cargo_with_cast = cargo_toml_path.exists()
+            && crate::config::CastConfig::load_from_cargo_toml(cargo_toml_path)
+                .map(|c| c.has_cast_metadata())
+                .unwrap_or(false);
+
+        if has_cast_toml || has_cargo_with_cast {
+            projects.push((dir.to_path_buf(), current_depth));
+            // Don't search subdirectories of a found project
+            return Ok(());
+        }
+    }
+
+    // Search subdirectories
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            find_cast_projects_recursive(&path, max_depth, current_depth + 1, projects)?;
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -354,7 +472,7 @@ mod tests {
     fn test_run_ci_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_ci").unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check);
+        let result = run(tmp_dir.path(), CiMode::Check, None);
         // Should succeed silently for directories without Cargo.toml or package.json
         // Publish should not run since no CI checks were performed
         assert!(result.is_ok());
@@ -430,7 +548,7 @@ mod tests {
             .output()
             .unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check);
+        let result = run(tmp_dir.path(), CiMode::Check, None);
         assert!(
             result.is_ok(),
             "CI should succeed and run publish: {:?}",
@@ -484,7 +602,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check);
+        let result = run(tmp_dir.path(), CiMode::Check, None);
         assert!(result.is_err(), "CI should fail when build fails");
 
         // Verify that artifacts directory was NOT created
@@ -549,7 +667,7 @@ mod tests {
             .unwrap();
 
         // CI in Fix mode should auto-format and succeed
-        let result = run(tmp_dir.path(), CiMode::Fix);
+        let result = run(tmp_dir.path(), CiMode::Fix, None);
         assert!(
             result.is_ok(),
             "CI Fix mode should succeed after auto-formatting: {:?}",
@@ -618,7 +736,7 @@ mod tests {
             .unwrap();
 
         // CI in Release mode should build in release and publish
-        let result = run(tmp_dir.path(), CiMode::Release);
+        let result = run(tmp_dir.path(), CiMode::Release, None);
         assert!(
             result.is_ok(),
             "CI Release mode should succeed: {:?}",
@@ -879,5 +997,206 @@ mod tests {
             }
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
+    }
+
+    #[test]
+    fn test_find_cast_projects_at_depth_1() {
+        let tmp_dir = TempDir::new("test_find_projects").unwrap();
+
+        // Create a cast project in the root
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create two child projects at depth 1
+        let child1 = tmp_dir.path().join("child1");
+        fs::create_dir_all(&child1).unwrap();
+        fs::write(child1.join("Cast.toml"), "").unwrap();
+
+        let child2 = tmp_dir.path().join("child2");
+        fs::create_dir_all(&child2).unwrap();
+        fs::write(child2.join("Cast.toml"), "").unwrap();
+
+        // Create a grandchild project at depth 2
+        let grandchild = child1.join("grandchild");
+        fs::create_dir_all(&grandchild).unwrap();
+        fs::write(grandchild.join("Cast.toml"), "").unwrap();
+
+        // Find projects at depth 1
+        let projects = find_cast_projects(tmp_dir.path(), 1).unwrap();
+
+        // Should find child1 and child2, but not grandchild
+        assert_eq!(projects.len(), 2);
+        assert!(projects.iter().any(|(p, d)| p == &child1 && *d == 1));
+        assert!(projects.iter().any(|(p, d)| p == &child2 && *d == 1));
+        assert!(!projects.iter().any(|(p, _)| p == &grandchild));
+    }
+
+    #[test]
+    fn test_find_cast_projects_at_depth_2() {
+        let tmp_dir = TempDir::new("test_find_projects_deep").unwrap();
+
+        // Create a cast project in the root
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create a child project at depth 1 in dir1
+        let child1 = tmp_dir.path().join("dir1");
+        fs::create_dir_all(&child1).unwrap();
+        fs::write(child1.join("Cast.toml"), "").unwrap();
+
+        // Create a non-project directory at depth 1
+        let dir2 = tmp_dir.path().join("dir2");
+        fs::create_dir_all(&dir2).unwrap();
+
+        // Create a grandchild project at depth 2 under dir2 (not under child1)
+        let grandchild = dir2.join("grandchild");
+        fs::create_dir_all(&grandchild).unwrap();
+        fs::write(grandchild.join("Cast.toml"), "").unwrap();
+
+        // Find projects at depth 2
+        let projects = find_cast_projects(tmp_dir.path(), 2).unwrap();
+
+        // Should find both child1 and grandchild
+        // Note: child1 is found at depth 1, and we don't search its subdirectories
+        // grandchild is found at depth 2 under dir2 (which is not a cast project)
+        assert_eq!(projects.len(), 2);
+        assert!(projects.iter().any(|(p, d)| p == &child1 && *d == 1));
+        assert!(projects.iter().any(|(p, d)| p == &grandchild && *d == 2));
+    }
+
+    #[test]
+    fn test_find_cast_projects_skips_build_directories() {
+        let tmp_dir = TempDir::new("test_skip_build_dirs").unwrap();
+
+        // Create a cast project in the root
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create projects in directories that should be skipped
+        let target_dir = tmp_dir.path().join("target");
+        fs::create_dir_all(&target_dir).unwrap();
+        fs::write(target_dir.join("Cast.toml"), "").unwrap();
+
+        let node_modules = tmp_dir.path().join("node_modules");
+        fs::create_dir_all(&node_modules).unwrap();
+        fs::write(node_modules.join("Cast.toml"), "").unwrap();
+
+        // Create a valid child project
+        let child = tmp_dir.path().join("child");
+        fs::create_dir_all(&child).unwrap();
+        fs::write(child.join("Cast.toml"), "").unwrap();
+
+        // Find projects
+        let projects = find_cast_projects(tmp_dir.path(), 1).unwrap();
+
+        // Should only find child, not target or node_modules
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0].0, child);
+    }
+
+    #[test]
+    fn test_find_cast_projects_with_cargo_metadata() {
+        let tmp_dir = TempDir::new("test_cargo_metadata").unwrap();
+
+        // Create a cast project in the root
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+
+        // Create a child project using Cargo.toml with Cast metadata
+        let child = tmp_dir.path().join("child");
+        fs::create_dir_all(&child).unwrap();
+        fs::write(
+            child.join("Cargo.toml"),
+            "[package]\nname = \"child\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nframework = \"dioxus\"",
+        )
+        .unwrap();
+
+        // Find projects
+        let projects = find_cast_projects(tmp_dir.path(), 1).unwrap();
+
+        // Should find the child project
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0].0, child);
+    }
+
+    #[test]
+    fn test_run_ci_with_recursive_depth() {
+        let tmp_dir = TempDir::new("test_recursive_ci").unwrap();
+
+        // Initialize git repo for the root
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create root project
+        fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"root\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"root\");\n}\n",
+        )
+        .unwrap();
+
+        // Create child project
+        let child = tmp_dir.path().join("child");
+        fs::create_dir_all(&child).unwrap();
+        fs::write(child.join("Cast.toml"), "").unwrap();
+        fs::write(
+            child.join("Cargo.toml"),
+            "[package]\nname = \"child\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(child.join("src")).unwrap();
+        fs::write(
+            child.join("src/main.rs"),
+            "fn main() {\n    println!(\"child\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit everything
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI with recursive depth 1
+        let result = run(tmp_dir.path(), CiMode::Check, Some(1));
+
+        // Should succeed
+        assert!(
+            result.is_ok(),
+            "Recursive CI should succeed: {:?}",
+            result.err()
+        );
+
+        // Verify artifacts were created for both projects
+        assert!(tmp_dir.path().join("artifacts").exists());
+        assert!(child.join("artifacts").exists());
     }
 }
