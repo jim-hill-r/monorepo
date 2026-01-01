@@ -5,6 +5,7 @@ use cookbook_core::{
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use uuid::Uuid;
 
 // Export the embedded module for WASM/web targets
 pub mod embedded;
@@ -285,6 +286,7 @@ impl MarkdownRecipeStore {
     }
 
     /// Parses plan data from markdown content
+    #[allow(deprecated)] // Using legacy API during migration
     fn parse_plan_markdown(&self, content: &str, week: u32) -> PlanResult<Plan> {
         // Extract recipe days from the markdown content
         let recipe_days = self.extract_plan_recipe_days(content)?;
@@ -298,7 +300,7 @@ impl MarkdownRecipeStore {
             )));
         }
 
-        Plan::new_checked(week, recipe_days)
+        Ok(Plan::new_with_days(week, recipe_days))
     }
 
     /// Extracts recipe days from the markdown content
@@ -384,6 +386,14 @@ impl RecipeReader for MarkdownRecipeStore {
             .get(id)
             .cloned()
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with id '{}' not found", id)))
+    }
+
+    fn get_by_uuid(&self, uuid: &Uuid) -> RecipeResult<Recipe> {
+        self.recipes
+            .values()
+            .find(|r| r.uuid == *uuid)
+            .cloned()
+            .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
     }
 
     fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {

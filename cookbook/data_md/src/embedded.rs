@@ -3,6 +3,7 @@ use cookbook_core::{
 };
 use std::collections::HashMap;
 use std::sync::OnceLock;
+use uuid::Uuid;
 
 /// Embedded recipe store that includes all recipe markdown files at compile time.
 /// This is suitable for WASM/web targets where filesystem access is not available.
@@ -222,6 +223,14 @@ impl RecipeReader for EmbeddedRecipeStore {
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with id '{}' not found", id)))
     }
 
+    fn get_by_uuid(&self, uuid: &Uuid) -> RecipeResult<Recipe> {
+        self.recipes
+            .values()
+            .find(|r| r.uuid == *uuid)
+            .cloned()
+            .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
+    }
+
     fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
         if !(1..=365).contains(&day) {
             return Err(RecipeError::InvalidData(format!(
@@ -361,6 +370,7 @@ impl EmbeddedPlanStore {
     }
 
     /// Parses plan data from markdown content
+    #[allow(deprecated)] // Using legacy API during migration
     fn parse_plan_markdown(content: &str, week: u32) -> PlanResult<Plan> {
         // Extract recipe days from the markdown content
         // Format: "Days: 1, 2, 3, 4, 5, 6, 7"
@@ -375,7 +385,7 @@ impl EmbeddedPlanStore {
             )));
         }
 
-        Plan::new_checked(week, recipe_days)
+        Ok(Plan::new_with_days(week, recipe_days))
     }
 
     /// Extracts recipe days from the markdown content

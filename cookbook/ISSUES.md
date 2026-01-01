@@ -47,7 +47,56 @@ All Phase 2 items have been completed:
 
 ### Phase 4: Recipe UUID Refactoring
 
-- TODO: Refactor recipes to include a UUID in the frontmatter of the markdown and also name the recipe files with the UUID. Ensure that the plans now reference the UUID for the recipe rather than the day number. The intent here is to allow future capability to rearrange what recipes belong to plans (ie decoupling a specific recipe from the day it is intended to be used on)
+This phase decouples recipes from day numbers, allowing future recipe rearrangement in plans.
+
+#### Sub-task 4.1: Core Data Model Update ✅ COMPLETED (Partial - Web App Integration Remaining)
+- ✅ Add `uuid` field to `Recipe` struct in `cookbook/core/src/lib.rs`
+- ✅ Add UUID generation function to Recipe implementation
+- ✅ Update `Plan` struct to store recipe UUIDs instead of day numbers
+- ✅ Update Plan validation to check recipe UUID references
+- ✅ Add comprehensive unit tests for UUID-based Recipe and Plan structs
+- ✅ Add `get_by_uuid()` method to RecipeReader trait
+- ✅ Update `cookbook/data_md` to implement `get_by_uuid()`
+- TODO (agent-generated): Update `cookbook/web` to use UUID-based Plan API (currently uses deprecated recipe_days field)
+
+#### Sub-task 4.2: Recipe Markdown Format Update
+- TODO (agent-generated): Update `cookbook/data_md` parser to extract UUID from recipe frontmatter
+- TODO (agent-generated): Update `cookbook/data_md` parser to generate/validate UUIDs if missing
+- TODO (agent-generated): Add fallback logic to support both old (day-based) and new (UUID-based) formats during migration
+- TODO (agent-generated): Add tests for UUID parsing and validation
+
+#### Sub-task 4.3: Content Migration Scripts
+- TODO (agent-generated): Create migration tool to add UUIDs to existing recipe files
+- TODO (agent-generated): Create migration tool to rename recipe files from `day-X.md` to `{uuid}.md`
+- TODO (agent-generated): Create migration tool to update plan files to reference UUIDs
+- TODO (agent-generated): Create validation tool to verify migration completed successfully
+- TODO (agent-generated): Document migration process in README
+
+#### Sub-task 4.4: Content Migration Execution
+- TODO (agent-generated): Run migration on all 365 recipe files
+- TODO (agent-generated): Run migration on all 53 plan files
+- TODO (agent-generated): Validate all recipes and plans load correctly
+- TODO (agent-generated): Update any hardcoded references to day-based file names
+
+#### Sub-task 4.5: Reader/Writer Trait Updates
+- TODO (agent-generated): Update `RecipeReader::get_by_id()` to work with UUIDs
+- TODO (agent-generated): Add `RecipeReader::get_by_uuid()` method
+- TODO (agent-generated): Remove or deprecate `RecipeReader::get_by_day()` method
+- TODO (agent-generated): Update `RecipeWriter` implementations to use UUIDs
+- TODO (agent-generated): Update all trait tests
+
+#### Sub-task 4.6: Web Application Updates
+- TODO (agent-generated): Update `cookbook/web` to use UUID-based recipe references
+- TODO (agent-generated): Update routing to use UUIDs instead of day numbers
+- TODO (agent-generated): Update UI components to display recipes by UUID
+- TODO (agent-generated): Add tests for UUID-based recipe display
+- TODO (agent-generated): Ensure backward compatibility or graceful migration for existing users
+
+#### Sub-task 4.7: Cleanup and Documentation
+- TODO (agent-generated): Remove old day-based code paths after migration
+- TODO (agent-generated): Update all documentation to reflect UUID-based architecture
+- TODO (agent-generated): Update README with new content file naming conventions
+- TODO (agent-generated): Add comments explaining UUID-based design decisions
 
 # Backlog
 
