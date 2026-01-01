@@ -12,6 +12,7 @@ auth_sdk = { workspace = true }
 chrono = { workspace = true }
 cookbook-core = { path = "../core" }
 cookbook-data-md = { path = "../data_md" }
+web-sys = "0.3.83"
 
 [features]
 default = ["web"]
