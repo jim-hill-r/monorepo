@@ -435,8 +435,9 @@ fn find_cast_projects_recursive(
     if current_depth > 0 {
         // Check if this directory is a Cast project
         let has_cast_toml = dir.join("Cast.toml").exists();
-        let has_cargo_with_cast = dir.join("Cargo.toml").exists()
-            && crate::config::CastConfig::load_from_cargo_toml(&dir.join("Cargo.toml"))
+        let cargo_toml_path = dir.join("Cargo.toml");
+        let has_cargo_with_cast = cargo_toml_path.exists()
+            && crate::config::CastConfig::load_from_cargo_toml(cargo_toml_path)
                 .map(|c| c.has_cast_metadata())
                 .unwrap_or(false);
 
