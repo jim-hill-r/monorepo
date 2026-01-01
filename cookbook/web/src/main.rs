@@ -216,8 +216,8 @@ fn format_recipe_day(date: NaiveDate) -> String {
 fn get_week_start_date() -> NaiveDate {
     let now = Local::now().date_naive();
     let weekday = now.weekday();
-    let days_since_sunday = weekday.num_days_from_sunday();
-    now - chrono::Duration::days(days_since_sunday.into())
+    let days_since_monday = weekday.num_days_from_monday();
+    now - chrono::Duration::days(days_since_monday.into())
 }
 
 /// Get recipe day information for sidebar display
@@ -269,13 +269,15 @@ fn get_sidebar_plan_weeks() -> Vec<(u32, String)> {
     weeks
 }
 
-/// Get the week number (1-52) for a given date
+/// Get the ISO 8601 week number (1-53) for a given date.
+///
+/// ISO 8601 week numbering rules:
+/// - Week 1 is the first week containing a Thursday (or the first week with 4+ days in January)
+/// - Weeks start on Monday
+/// - Years can have 53 weeks (when Jan 1 is Thursday, or Wednesday in leap years)
 fn get_week_number_from_date(date: NaiveDate) -> u32 {
-    let day_of_year = date.ordinal();
-    // Calculate week number (1-52), rounding up
-    let week = ((day_of_year - 1) / 7) + 1;
-    // Cap at week 52 to ensure valid range for Plan component
-    week.min(52)
+    use chrono::Datelike;
+    date.iso_week().week()
 }
 
 /// Format a week start date as "DD-Mon" (e.g., "28-Dec")
@@ -322,10 +324,10 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
 
 /// Aggregate all ingredients from recipes in a week into a shopping list
 /// Returns a sorted vector of unique ingredients from all recipes in the week
-/// Returns an empty vector if the week is invalid (not in range 1-52)
+/// Returns an empty vector if the week is invalid (not in range 1-53)
 fn get_week_shopping_list(week: u32) -> Vec<String> {
     // Validate week parameter to ensure consistent behavior
-    if !(1..=52).contains(&week) {
+    if !(1..=53).contains(&week) {
         return Vec::new();
     }
 
@@ -415,7 +417,7 @@ fn Home() -> Element {
                     class: "navigation-card plan-card",
                     span { class: "card-icon", "📅" }
                     h2 { "Weekly Meal Plans" }
-                    p { "Get organized with 52 complete meal plans - one for every week of the year. Perfect for planning ahead!" }
+                    p { "Get organized with complete meal plans - one for every week of the year (up to 53 weeks). Perfect for planning ahead!" }
                     Link { to: Route::Plan { week: current_week }, "View Meal Plans" }
                 }
             }
@@ -516,12 +518,12 @@ fn Recipe(day: u32) -> Element {
 
 #[component]
 fn Plan(week: u32) -> Element {
-    if !(1..=52).contains(&week) {
+    if !(1..=53).contains(&week) {
         rsx! {
             div {
                 class: "plan-container",
                 h1 { "Invalid Week" }
-                p { "Week {week} is not valid. Please select a week between 1 and 52." }
+                p { "Week {week} is not valid. Please select a week between 1 and 53." }
                 Link { to: Route::Home {}, "Back to Home" }
             }
         }
@@ -618,23 +620,24 @@ mod tests {
 
     #[test]
     fn test_plan_valid_week_in_range() {
-        // Test that valid weeks (1-52) are accepted
-        assert!((1..=52).contains(&1));
-        assert!((1..=52).contains(&26));
-        assert!((1..=52).contains(&52));
+        // Test that valid weeks (1-53) are accepted
+        assert!((1..=53).contains(&1));
+        assert!((1..=53).contains(&26));
+        assert!((1..=53).contains(&52));
+        assert!((1..=53).contains(&53));
     }
 
     #[test]
     fn test_plan_invalid_week_zero() {
         // Test that week 0 is invalid
-        assert!(!(1..=52).contains(&0));
+        assert!(!(1..=53).contains(&0));
     }
 
     #[test]
     fn test_plan_invalid_week_too_high() {
-        // Test that week > 52 is invalid
-        assert!(!(1..=52).contains(&53));
-        assert!(!(1..=52).contains(&100));
+        // Test that week > 53 is invalid
+        assert!(!(1..=53).contains(&54));
+        assert!(!(1..=53).contains(&100));
     }
 
     #[test]
@@ -649,10 +652,11 @@ mod tests {
     #[test]
     fn test_plan_edge_cases() {
         // Test edge cases for plan validation
-        assert!((1..=52).contains(&1), "Week 1 should be valid");
-        assert!((1..=52).contains(&52), "Week 52 should be valid");
-        assert!(!(1..=52).contains(&0), "Week 0 should be invalid");
-        assert!(!(1..=52).contains(&53), "Week 53 should be invalid");
+        assert!((1..=53).contains(&1), "Week 1 should be valid");
+        assert!((1..=53).contains(&52), "Week 52 should be valid");
+        assert!((1..=53).contains(&53), "Week 53 should be valid");
+        assert!(!(1..=53).contains(&0), "Week 0 should be invalid");
+        assert!(!(1..=53).contains(&54), "Week 54 should be invalid");
     }
 
     #[test]
@@ -675,6 +679,7 @@ mod tests {
         assert_eq!(Route::Plan { week: 1 }.to_string(), "/plan/1");
         assert_eq!(Route::Plan { week: 26 }.to_string(), "/plan/26");
         assert_eq!(Route::Plan { week: 52 }.to_string(), "/plan/52");
+        assert_eq!(Route::Plan { week: 53 }.to_string(), "/plan/53");
     }
 
     #[test]
@@ -739,11 +744,11 @@ mod tests {
         // Should have exactly 4 entries (4 upcoming weeks)
         assert_eq!(weeks.len(), 4, "Should show 4 upcoming weeks");
 
-        // Verify all weeks are within valid range (1-52)
+        // Verify all weeks are within valid range (1-53)
         for (week, formatted_date) in &weeks {
             assert!(
-                (1..=52).contains(week),
-                "Week {} should be in valid range 1-52",
+                (1..=53).contains(week),
+                "Week {} should be in valid range 1-53",
                 week
             );
             assert!(
@@ -820,11 +825,11 @@ mod tests {
 
     #[test]
     fn test_current_week_of_year_in_valid_range() {
-        // Test that current week is in valid range (1-52)
+        // Test that current week is in valid range (1-53)
         let week = get_current_week_of_year();
         assert!(
-            (1..=52).contains(&week),
-            "Current week {} should be in valid range 1-52",
+            (1..=53).contains(&week),
+            "Current week {} should be in valid range 1-53",
             week
         );
     }
@@ -899,8 +904,8 @@ mod tests {
         // All weeks should be in valid range
         for (week, formatted_date) in &weeks {
             assert!(
-                (1..=52).contains(week),
-                "Week {} should be in valid range 1-52",
+                (1..=53).contains(week),
+                "Week {} should be in valid range 1-53",
                 week
             );
             assert!(
@@ -909,7 +914,7 @@ mod tests {
             );
         }
 
-        // Note: Weeks may wrap around year boundary (52 -> 1), so we don't check strict consecutive order
+        // Note: Weeks may wrap around year boundary (53 -> 1 or 52 -> 1), so we don't check strict consecutive order
         // Just verify they represent 4 consecutive calendar weeks
     }
 
@@ -948,28 +953,32 @@ mod tests {
 
     #[test]
     fn test_get_week_number_from_date() {
-        // Test week number calculation
-        let date1 = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(); // Day 1 -> Week 1
+        // Test ISO 8601 week number calculation
+        // 2025-01-01 (Wednesday) is in ISO week 1 of 2025
+        let date1 = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
         assert_eq!(get_week_number_from_date(date1), 1);
 
-        let date2 = NaiveDate::from_ymd_opt(2025, 1, 7).unwrap(); // Day 7 -> Week 1
-        assert_eq!(get_week_number_from_date(date2), 1);
+        // 2025-01-07 (Tuesday) is in ISO week 2
+        let date2 = NaiveDate::from_ymd_opt(2025, 1, 7).unwrap();
+        assert_eq!(get_week_number_from_date(date2), 2);
 
-        let date3 = NaiveDate::from_ymd_opt(2025, 1, 8).unwrap(); // Day 8 -> Week 2
+        // 2025-01-08 (Wednesday) is also in ISO week 2
+        let date3 = NaiveDate::from_ymd_opt(2025, 1, 8).unwrap();
         assert_eq!(get_week_number_from_date(date3), 2);
 
-        let date4 = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap(); // Day 365 -> Week 52 (capped)
-        assert_eq!(get_week_number_from_date(date4), 52);
+        // 2025-12-31 (Wednesday) is in ISO week 1 of 2026
+        let date4 = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap();
+        assert_eq!(get_week_number_from_date(date4), 1);
     }
 
     #[test]
     fn test_get_week_start_date() {
-        // This test depends on the current date, so we just verify it returns a Sunday
+        // This test depends on the current date, so we just verify it returns a Monday
         let week_start = get_week_start_date();
         assert_eq!(
             week_start.weekday(),
-            chrono::Weekday::Sun,
-            "Week should start on Sunday"
+            chrono::Weekday::Mon,
+            "Week should start on Monday (ISO 8601)"
         );
 
         // Verify it's not in the future
@@ -1224,9 +1233,10 @@ mod tests {
         let shopping_list_week_1 = get_week_shopping_list(1);
         let shopping_list_week_26 = get_week_shopping_list(26);
         let _shopping_list_week_52 = get_week_shopping_list(52);
+        let _shopping_list_week_53 = get_week_shopping_list(53);
 
         // All should return some ingredients (assuming recipes have ingredients)
-        // Week 52 might have fewer days/recipes due to 365 day limit
+        // Week 52 and 53 might have fewer days/recipes due to 365 day limit
         assert!(
             !shopping_list_week_1.is_empty(),
             "Week 1 should have ingredients"
@@ -1235,14 +1245,14 @@ mod tests {
             !shopping_list_week_26.is_empty(),
             "Week 26 should have ingredients"
         );
-        // Week 52 might be empty if it goes beyond day 365
+        // Week 52 and 53 might be empty if they go beyond day 365
     }
 
     #[test]
     fn test_get_week_shopping_list_invalid_weeks() {
         // Test that shopping list returns empty for invalid weeks
         let shopping_list_week_0 = get_week_shopping_list(0);
-        let shopping_list_week_53 = get_week_shopping_list(53);
+        let shopping_list_week_54 = get_week_shopping_list(54);
         let shopping_list_week_100 = get_week_shopping_list(100);
 
         assert!(
@@ -1250,8 +1260,8 @@ mod tests {
             "Week 0 should return empty list"
         );
         assert!(
-            shopping_list_week_53.is_empty(),
-            "Week 53 should return empty list"
+            shopping_list_week_54.is_empty(),
+            "Week 54 should return empty list"
         );
         assert!(
             shopping_list_week_100.is_empty(),
