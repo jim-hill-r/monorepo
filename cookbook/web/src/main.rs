@@ -299,6 +299,40 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
     recipes
 }
 
+/// Aggregate all ingredients from recipes in a week into a shopping list
+/// Returns a sorted vector of unique ingredients from all recipes in the week
+/// Returns an empty vector if the week is invalid (not in range 1-52)
+fn get_week_shopping_list(week: u32) -> Vec<String> {
+    // Validate week parameter to ensure consistent behavior
+    if !(1..=52).contains(&week) {
+        return Vec::new();
+    }
+
+    let store = EmbeddedRecipeStore::global();
+    let mut all_ingredients = Vec::new();
+
+    // Calculate the starting day for this week
+    let start_day = (week - 1) * 7 + 1;
+
+    // Collect ingredients from all recipes in this week
+    for i in 0..7 {
+        let day = start_day + i;
+        if day > MAX_DAY_OF_YEAR {
+            break;
+        }
+
+        if let Ok(recipe) = store.get_by_day(day) {
+            all_ingredients.extend(recipe.ingredients);
+        }
+    }
+
+    // Sort and deduplicate ingredients
+    all_ingredients.sort();
+    all_ingredients.dedup();
+
+    all_ingredients
+}
+
 #[component]
 fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
@@ -472,11 +506,31 @@ fn Plan(week: u32) -> Element {
         }
     } else {
         let recipes = get_week_recipes(week);
+        let shopping_list = get_week_shopping_list(week);
 
         rsx! {
             div {
                 class: "plan-container",
                 h1 { "Meal Plan for Week {week}" }
+
+                div {
+                    class: "plan-shopping-list",
+                    h2 { "Shopping List" }
+
+                    if shopping_list.is_empty() {
+                        p { "No ingredients needed for this week." }
+                    } else {
+                        ul {
+                            class: "shopping-list",
+                            for ingredient in shopping_list {
+                                li {
+                                    class: "shopping-item",
+                                    "{ingredient}"
+                                }
+                            }
+                        }
+                    }
+                }
 
                 div {
                     class: "plan-recipes",
@@ -1105,5 +1159,82 @@ mod tests {
                 i, expected_day, day
             );
         }
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_returns_ingredients() {
+        // Test that shopping list returns ingredients from week 1
+        let shopping_list = get_week_shopping_list(1);
+
+        // Shopping list should not be empty for week 1
+        assert!(!shopping_list.is_empty(), "Week 1 should have ingredients");
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_is_sorted() {
+        // Test that shopping list is sorted
+        let shopping_list = get_week_shopping_list(1);
+
+        // Check if the list is sorted
+        let mut sorted_copy = shopping_list.clone();
+        sorted_copy.sort();
+        assert_eq!(shopping_list, sorted_copy, "Shopping list should be sorted");
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_is_deduplicated() {
+        // Test that shopping list removes duplicates
+        // This test verifies that if multiple recipes in a week use the same ingredient,
+        // it only appears once in the shopping list
+        let shopping_list = get_week_shopping_list(1);
+
+        // Use HashSet to check for duplicates
+        let unique_items: std::collections::HashSet<_> = shopping_list.iter().collect();
+        assert_eq!(
+            shopping_list.len(),
+            unique_items.len(),
+            "Shopping list should have no duplicates"
+        );
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_valid_weeks() {
+        // Test that shopping list works for various valid weeks
+        let shopping_list_week_1 = get_week_shopping_list(1);
+        let shopping_list_week_26 = get_week_shopping_list(26);
+        let _shopping_list_week_52 = get_week_shopping_list(52);
+
+        // All should return some ingredients (assuming recipes have ingredients)
+        // Week 52 might have fewer days/recipes due to 365 day limit
+        assert!(
+            !shopping_list_week_1.is_empty(),
+            "Week 1 should have ingredients"
+        );
+        assert!(
+            !shopping_list_week_26.is_empty(),
+            "Week 26 should have ingredients"
+        );
+        // Week 52 might be empty if it goes beyond day 365
+    }
+
+    #[test]
+    fn test_get_week_shopping_list_invalid_weeks() {
+        // Test that shopping list returns empty for invalid weeks
+        let shopping_list_week_0 = get_week_shopping_list(0);
+        let shopping_list_week_53 = get_week_shopping_list(53);
+        let shopping_list_week_100 = get_week_shopping_list(100);
+
+        assert!(
+            shopping_list_week_0.is_empty(),
+            "Week 0 should return empty list"
+        );
+        assert!(
+            shopping_list_week_53.is_empty(),
+            "Week 53 should return empty list"
+        );
+        assert!(
+            shopping_list_week_100.is_empty(),
+            "Week 100 should return empty list"
+        );
     }
 }

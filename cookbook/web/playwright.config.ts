@@ -68,6 +68,10 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
+    // IMPORTANT: Use 'cast run' instead of 'dx serve --port 8080'
+    // cast run is the correct command as it handles framework detection
+    // and ensures consistency with the development workflow.
+    // The CI workflow ensures cast is available in PATH before running tests.
     command: 'cast run',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
