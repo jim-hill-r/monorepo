@@ -63,7 +63,11 @@ impl EmbeddedRecipeStore {
         // Parse title from first heading or use day as title
         let title = Self::extract_title(content).unwrap_or_else(|| format!("Day {} Recipe", day));
 
-        let mut recipe = Recipe::new(id, title);
+        // Try to extract UUID from frontmatter, generate a new one if not found or invalid
+        let uuid = Self::extract_uuid(content).unwrap_or_else(Uuid::new_v4);
+
+        // Create recipe with extracted or generated UUID
+        let mut recipe = Recipe::new_with_uuid(id, uuid, title);
 
         // Parse optional fields from markdown
         recipe.description = Self::extract_description(content);
@@ -212,11 +216,34 @@ impl EmbeddedRecipeStore {
         }
         Vec::new()
     }
+
+    /// Extracts UUID from metadata
+    /// Returns None if no UUID field is found or if the UUID is invalid
+    fn extract_uuid(content: &str) -> Option<Uuid> {
+        for line in content.lines() {
+            if let Some(value) = line.strip_prefix("UUID:") {
+                let uuid_str = value.trim();
+                // Try to parse the UUID
+                if let Ok(uuid) = Uuid::parse_str(uuid_str) {
+                    return Some(uuid);
+                }
+                // If parsing fails, return None (caller will generate a new UUID)
+                return None;
+            }
+        }
+        None
+    }
 }
 
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 impl RecipeReader for EmbeddedRecipeStore {
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe> {
+        // Try to parse as UUID first
+        if let Ok(uuid) = Uuid::parse_str(id) {
+            return self.get_by_uuid(&uuid);
+        }
+
+        // Fall back to legacy ID lookup
         self.recipes
             .get(id)
             .cloned()

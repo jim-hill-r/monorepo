@@ -456,6 +456,12 @@ impl MarkdownRecipeStore {
 
 impl RecipeReader for MarkdownRecipeStore {
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe> {
+        // Try to parse as UUID first
+        if let Ok(uuid) = Uuid::parse_str(id) {
+            return self.get_by_uuid(&uuid);
+        }
+
+        // Fall back to legacy ID lookup
         self.recipes
             .get(id)
             .cloned()
@@ -1293,6 +1299,57 @@ Tags: test
         assert_ne!(recipe1.uuid, recipe2.uuid);
         assert_ne!(recipe1.uuid, Uuid::nil());
         assert_ne!(recipe2.uuid, Uuid::nil());
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_get_by_id_with_uuid_string() {
+        let temp_dir = create_temp_dir();
+
+        // Create a recipe with a known UUID
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let recipe_content = format!(
+            r#"# Test Recipe
+
+A recipe with a UUID.
+
+UUID: {}
+Prep Time: 10 minutes
+Cook Time: 15 minutes
+Servings: 4
+Tags: test
+
+## Ingredients
+
+- 1 cup flour
+- 2 eggs
+
+## Instructions
+
+1. Mix ingredients
+2. Cook
+"#,
+            uuid_str
+        );
+
+        let recipe_path = temp_dir.join("test-recipe.md");
+        fs::write(&recipe_path, recipe_content).unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Test that get_by_id works with UUID string
+        let recipe_by_uuid_str = store.get_by_id(uuid_str).unwrap();
+        assert_eq!(recipe_by_uuid_str.uuid.to_string(), uuid_str);
+        assert_eq!(recipe_by_uuid_str.title, "Test Recipe");
+
+        // Test that get_by_id still works with legacy ID
+        let recipe_by_id = store.get_by_id("test-recipe").unwrap();
+        assert_eq!(recipe_by_id.id, "test-recipe");
+        assert_eq!(recipe_by_id.uuid.to_string(), uuid_str);
+
+        // Both methods should return the same recipe
+        assert_eq!(recipe_by_uuid_str, recipe_by_id);
 
         cleanup_temp_dir(&temp_dir);
     }
