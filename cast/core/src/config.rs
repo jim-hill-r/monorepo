@@ -78,56 +78,56 @@ impl CastConfig {
     /// Load Cast configuration from a directory, checking Cargo.toml first, then Cast.toml
     pub fn load_from_dir(dir: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let dir = dir.as_ref();
-        
+
         let cargo_toml_path = dir.join("Cargo.toml");
         let cast_toml_path = dir.join("Cast.toml");
 
         // Priority 1: Cargo.toml with cast metadata
         if cargo_toml_path.exists() {
             let config = Self::load_from_cargo_toml(&cargo_toml_path)?;
-            
+
             if config.has_cast_metadata() {
                 return Ok(config);
             }
         }
-        
+
         // Priority 2: Cast.toml
         if cast_toml_path.exists() {
             return Self::load(&cast_toml_path);
         }
-        
+
         // Priority 3: Cargo.toml without metadata -> apply defaults
         if cargo_toml_path.exists() {
             let mut config = CastConfig::default();
-            
+
             // Detect project type from Cargo.toml structure
             let contents = fs::read_to_string(&cargo_toml_path)?;
             let cargo_toml: CargoToml = toml::from_str(&contents)?;
             let project_type = Self::detect_project_type(dir, &cargo_toml);
-            
+
             config.project_type = Some(project_type);
             config.language = Some("rust".to_string());
             config.framework = Some("cargo".to_string());
-            
+
             return Ok(config);
         }
 
         // If no files exist, return default config
         Ok(Self::default())
     }
-    
+
     /// Detect project type from Cargo.toml structure and filesystem
     fn detect_project_type(dir: &Path, cargo_toml: &CargoToml) -> String {
         let has_lib_section = cargo_toml.lib.is_some();
-        let has_bin_section = cargo_toml.bin.as_ref().map_or(false, |bins| !bins.is_empty());
+        let has_bin_section = cargo_toml.bin.as_ref().is_some_and(|bins| !bins.is_empty());
         let has_lib_rs = dir.join("src/lib.rs").exists();
         let has_main_rs = dir.join("src/main.rs").exists();
         let has_bin_dir = dir.join("src/bin").exists();
-        
+
         // Determine if it's a library or binary
         let is_library = has_lib_section || has_lib_rs;
         let is_binary = has_bin_section || has_main_rs || has_bin_dir;
-        
+
         // Default to library if both or neither (library is more common)
         if is_library && !is_binary {
             "library".to_string()
@@ -787,7 +787,7 @@ project_type = "library"
     #[test]
     fn test_cargo_toml_without_metadata_gets_defaults() {
         let tmp_dir = TempDir::new("test_cargo_defaults").unwrap();
-        
+
         // Create Cargo.toml without cast metadata
         let cargo_content = r#"
 [package]
@@ -795,13 +795,13 @@ name = "test_lib"
 version = "0.1.0"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        
+
         // Create src/lib.rs to indicate it's a library
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
         fs::write(tmp_dir.path().join("src/lib.rs"), "// library code").unwrap();
-        
+
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
-        
+
         // Should have defaults applied
         assert_eq!(config.project_type, Some("library".to_string()));
         assert_eq!(config.language, Some("rust".to_string()));
@@ -813,7 +813,7 @@ version = "0.1.0"
     #[test]
     fn test_cargo_toml_detects_binary_project() {
         let tmp_dir = TempDir::new("test_cargo_binary").unwrap();
-        
+
         // Create Cargo.toml without cast metadata
         let cargo_content = r#"
 [package]
@@ -821,13 +821,13 @@ name = "test_bin"
 version = "0.1.0"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        
+
         // Create src/main.rs to indicate it's a binary
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
         fs::write(tmp_dir.path().join("src/main.rs"), "fn main() {}").unwrap();
-        
+
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
-        
+
         // Should detect as binary
         assert_eq!(config.project_type, Some("binary".to_string()));
         assert_eq!(config.language, Some("rust".to_string()));
@@ -837,7 +837,7 @@ version = "0.1.0"
     #[test]
     fn test_cargo_toml_with_both_lib_and_bin_prefers_library() {
         let tmp_dir = TempDir::new("test_cargo_both").unwrap();
-        
+
         // Create Cargo.toml without cast metadata
         let cargo_content = r#"
 [package]
@@ -845,14 +845,14 @@ name = "test_both"
 version = "0.1.0"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        
+
         // Create both src/lib.rs and src/main.rs
         fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
         fs::write(tmp_dir.path().join("src/lib.rs"), "// library code").unwrap();
         fs::write(tmp_dir.path().join("src/main.rs"), "fn main() {}").unwrap();
-        
+
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
-        
+
         // Should prefer library when both exist
         assert_eq!(config.project_type, Some("library".to_string()));
         assert_eq!(config.language, Some("rust".to_string()));
@@ -862,7 +862,7 @@ version = "0.1.0"
     #[test]
     fn test_cargo_toml_with_lib_section() {
         let tmp_dir = TempDir::new("test_cargo_lib_section").unwrap();
-        
+
         // Create Cargo.toml with [lib] section
         let cargo_content = r#"
 [package]
@@ -873,9 +873,9 @@ version = "0.1.0"
 name = "test_lib"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        
+
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
-        
+
         // Should detect as library based on [lib] section
         assert_eq!(config.project_type, Some("library".to_string()));
     }
@@ -883,7 +883,7 @@ name = "test_lib"
     #[test]
     fn test_cargo_toml_with_bin_section() {
         let tmp_dir = TempDir::new("test_cargo_bin_section").unwrap();
-        
+
         // Create Cargo.toml with [[bin]] section
         let cargo_content = r#"
 [package]
@@ -894,9 +894,9 @@ version = "0.1.0"
 name = "test_bin"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        
+
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
-        
+
         // Should detect as binary based on [[bin]] section
         assert_eq!(config.project_type, Some("binary".to_string()));
     }
@@ -904,7 +904,7 @@ name = "test_bin"
     #[test]
     fn test_cast_toml_takes_precedence_over_cargo_defaults() {
         let tmp_dir = TempDir::new("test_cast_precedence").unwrap();
-        
+
         // Create Cargo.toml without metadata
         let cargo_content = r#"
 [package]
@@ -912,16 +912,16 @@ name = "test"
 version = "0.1.0"
 "#;
         fs::write(tmp_dir.path().join("Cargo.toml"), cargo_content).unwrap();
-        
+
         // Create Cast.toml with custom config
         fs::write(
             tmp_dir.path().join("Cast.toml"),
             "framework = \"dioxus\"\nproject_type = \"web_app\"",
         )
         .unwrap();
-        
+
         let config = CastConfig::load_from_dir(tmp_dir.path()).unwrap();
-        
+
         // Should use Cast.toml values, not defaults
         assert_eq!(config.framework, Some("dioxus".to_string()));
         assert_eq!(config.project_type, Some("web_app".to_string()));
