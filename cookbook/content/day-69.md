@@ -1,5 +1,8 @@
 # spanish lamb Soup with bell peppers
 
+UUID: aec78b98-6a59-450c-bb3d-d6bf7af1ba17
+
+
 A delicious spanish dish combining lamb with fresh bell peppers served with noodles
 
 Prep Time: 23 minutes
@@ -25,4 +28,3 @@ Tags: soup, spanish, day-69, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

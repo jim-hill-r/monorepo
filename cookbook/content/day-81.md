@@ -1,5 +1,8 @@
 # chinese shrimp Skewers
 
+UUID: af665d99-fc9d-4a81-98ab-723be092b277
+
+
 A delicious chinese dish combining shrimp with fresh zucchini served with noodles
 
 Prep Time: 28 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, chinese, day-81, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # thai shrimp Skewers
 
+UUID: 2b85c563-3a7c-49bd-8670-0e94a20bbcd1
+
+
 A delicious thai dish combining shrimp with fresh broccoli served with pasta
 
 Prep Time: 9 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, thai, day-60, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

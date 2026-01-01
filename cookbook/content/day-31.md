@@ -1,5 +1,8 @@
 # italian Style Cake with bell peppers Filling
 
+UUID: 2a128540-a14b-4011-b5a7-02443ccb8358
+
+
 A delicious italian dish combining shrimp with fresh bell peppers served with pasta
 
 Prep Time: 10 minutes
@@ -25,4 +28,3 @@ Tags: dessert, italian, day-31, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

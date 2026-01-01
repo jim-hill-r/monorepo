@@ -1,5 +1,8 @@
 # spanish tofu Breakfast Bowl
 
+UUID: 0fd6490e-79d2-4832-b515-1cdb5217361f
+
+
 A delicious spanish dish combining tofu with fresh carrots served with couscous
 
 Prep Time: 7 minutes
@@ -25,4 +28,3 @@ Tags: breakfast, spanish, day-28, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

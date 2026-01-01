@@ -1,5 +1,8 @@
 # american lamb Wrap with zucchini
 
+UUID: 513531c0-081d-49c3-b474-2cbb77292c8c
+
+
 A delicious american dish combining lamb with fresh zucchini served with couscous
 
 Prep Time: 15 minutes
@@ -25,4 +28,3 @@ Tags: lunch, american, day-58, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

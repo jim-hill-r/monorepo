@@ -1,5 +1,8 @@
 # Fresh mushrooms Salad with tofu
 
+UUID: 9283e902-21da-4a81-a8d2-001285765940
+
+
 A delicious vietnamese dish combining tofu with fresh mushrooms served with pasta
 
 Prep Time: 12 minutes
@@ -25,4 +28,3 @@ Tags: salad, vietnamese, day-16, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

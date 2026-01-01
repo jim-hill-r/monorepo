@@ -1,5 +1,8 @@
 # mediterranean fish Soup with carrots
 
+UUID: c910cd75-5a27-46dc-b8c3-eb69b3104afa
+
+
 A delicious mediterranean dish combining fish with fresh carrots served with noodles
 
 Prep Time: 10 minutes
@@ -25,4 +28,3 @@ Tags: soup, mediterranean, day-17, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

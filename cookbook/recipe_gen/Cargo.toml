@@ -10,7 +10,15 @@ workspace = true
 name = "recipe-gen"
 path = "src/main.rs"
 
+[[bin]]
+name = "uuid-migration"
+path = "src/uuid_migration.rs"
+
 [dependencies]
 cookbook-core = { path = "../core" }
 cookbook-data-md = { path = "../data_md" }
 rand = "0.8"
+uuid = "1.0"
+
+[dev-dependencies]
+tempfile = "3.0"

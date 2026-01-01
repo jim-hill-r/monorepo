@@ -1,5 +1,8 @@
 # Crispy mushrooms Bites
 
+UUID: 9d00f206-667f-46d9-b8eb-917fb559470b
+
+
 A delicious caribbean dish combining pork with fresh mushrooms served with quinoa
 
 Prep Time: 8 minutes
@@ -25,4 +28,3 @@ Tags: snack, caribbean, day-95
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

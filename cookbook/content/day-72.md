@@ -1,5 +1,8 @@
 # american fish Wrap with zucchini
 
+UUID: 13c9243a-e47f-466b-8443-875b5385672a
+
+
 A delicious american dish combining fish with fresh zucchini served with couscous
 
 Prep Time: 21 minutes
@@ -25,4 +28,3 @@ Tags: lunch, american, day-72, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

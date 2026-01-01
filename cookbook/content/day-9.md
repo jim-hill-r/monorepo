@@ -1,5 +1,8 @@
 # caribbean Style broccoli Smoothie
 
+UUID: c639026a-bc3d-4e0b-a16d-8a83243bc4da
+
+
 A delicious caribbean dish combining beef with fresh broccoli served with pasta
 
 Prep Time: 16 minutes
@@ -25,4 +28,3 @@ Tags: beverage, caribbean, day-9
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

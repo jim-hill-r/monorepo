@@ -1,5 +1,8 @@
 # japanese shrimp Skewers
 
+UUID: 9ef2de25-e8ca-45af-bbe7-d747dc041d42
+
+
 A delicious japanese dish combining shrimp with fresh mushrooms served with quinoa
 
 Prep Time: 27 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, japanese, day-86, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

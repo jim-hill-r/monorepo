@@ -1,5 +1,8 @@
 # Crispy zucchini Bites
 
+UUID: 444cd9b7-3847-4e6f-9feb-09579a63040c
+
+
 A delicious italian dish combining tofu with fresh zucchini served with noodles
 
 Prep Time: 25 minutes
@@ -25,4 +28,3 @@ Tags: snack, italian, day-33, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

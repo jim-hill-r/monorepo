@@ -1,5 +1,8 @@
 # mediterranean fish with carrots and rice
 
+UUID: 6a25a017-327c-4c6d-aa91-b7c7268a7f1d
+
+
 A delicious mediterranean dish combining fish with fresh carrots served with rice
 
 Prep Time: 28 minutes
@@ -25,4 +28,3 @@ Tags: dinner, mediterranean, day-4, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

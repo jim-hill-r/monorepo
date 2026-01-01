@@ -1,5 +1,8 @@
 # mexican shrimp Breakfast Bowl
 
+UUID: 8a5a1dca-911e-4512-8a47-3f2f5f6b584f
+
+
 A delicious mexican dish combining shrimp with fresh zucchini served with pasta
 
 Prep Time: 5 minutes
@@ -25,4 +28,3 @@ Tags: breakfast, mexican, day-97, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # Crispy zucchini Bites
 
+UUID: 009acc61-0221-49f7-ad35-133c98696579
+
+
 A delicious thai dish combining chicken with fresh zucchini served with noodles
 
 Prep Time: 18 minutes
@@ -25,4 +28,3 @@ Tags: snack, thai, day-24
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

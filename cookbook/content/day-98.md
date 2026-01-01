@@ -1,5 +1,8 @@
 # middle eastern chicken Skewers
 
+UUID: 7ca4d242-61f6-48be-97e3-ed2a66fa963c
+
+
 A delicious middle-eastern dish combining chicken with fresh spinach served with pasta
 
 Prep Time: 6 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, middle-eastern, day-98
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

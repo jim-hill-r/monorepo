@@ -1,5 +1,8 @@
 # Crispy zucchini Bites
 
+UUID: ee856afa-8afe-47f6-8c8e-cfa5f1711e5a
+
+
 A delicious caribbean dish combining lamb with fresh zucchini served with couscous
 
 Prep Time: 7 minutes
@@ -25,4 +28,3 @@ Tags: snack, caribbean, day-96, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

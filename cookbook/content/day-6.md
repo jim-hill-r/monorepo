@@ -1,5 +1,8 @@
 # Crispy bell peppers Bites
 
+UUID: 8ffb2050-fa21-4827-b5be-664ee1af49d2
+
+
 A delicious greek dish combining shrimp with fresh bell peppers served with quinoa
 
 Prep Time: 24 minutes
@@ -25,4 +28,3 @@ Tags: snack, greek, day-6, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

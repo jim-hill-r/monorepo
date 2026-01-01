@@ -1,5 +1,8 @@
 # Crispy bell peppers Bites
 
+UUID: 98e04b4c-93f7-469d-9eaf-06732b6a64ec
+
+
 A delicious thai dish combining shrimp with fresh bell peppers served with quinoa
 
 Prep Time: 25 minutes
@@ -25,4 +28,3 @@ Tags: snack, thai, day-35, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

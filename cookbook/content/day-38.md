@@ -1,5 +1,8 @@
 # japanese chicken Soup with broccoli
 
+UUID: 46a9f99e-bcdc-4088-9b68-01ea13834c06
+
+
 A delicious japanese dish combining chicken with fresh broccoli served with couscous
 
 Prep Time: 7 minutes
@@ -25,4 +28,3 @@ Tags: soup, japanese, day-38
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

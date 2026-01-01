@@ -1,5 +1,8 @@
 # spanish chicken Wrap with zucchini
 
+UUID: 8e3d2386-41ec-4471-9c09-7e794b0dc207
+
+
 A delicious spanish dish combining chicken with fresh zucchini served with pasta
 
 Prep Time: 25 minutes
@@ -25,4 +28,3 @@ Tags: lunch, spanish, day-3
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

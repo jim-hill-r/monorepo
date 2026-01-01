@@ -1,5 +1,8 @@
 # spanish fish with bell peppers and pasta
 
+UUID: 96ed75ba-c069-4a02-97a3-037036a78fec
+
+
 A delicious spanish dish combining fish with fresh bell peppers served with pasta
 
 Prep Time: 10 minutes
@@ -25,4 +28,3 @@ Tags: dinner, spanish, day-8, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

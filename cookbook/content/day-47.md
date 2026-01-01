@@ -1,5 +1,8 @@
 # Crispy zucchini Bites
 
+UUID: ccc24100-a939-4bc1-a916-080f3bfd83e4
+
+
 A delicious american dish combining beef with fresh zucchini served with pasta
 
 Prep Time: 10 minutes
@@ -25,4 +28,3 @@ Tags: snack, american, day-47
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

@@ -1,5 +1,8 @@
 # mediterranean shrimp Wrap with bell peppers
 
+UUID: 386c3b40-c979-4f5e-b1e2-d42080b44c09
+
+
 A delicious mediterranean dish combining shrimp with fresh bell peppers served with pasta
 
 Prep Time: 12 minutes
@@ -25,4 +28,3 @@ Tags: lunch, mediterranean, day-27, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

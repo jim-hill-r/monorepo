@@ -1,5 +1,8 @@
 # Crispy zucchini Bites
 
+UUID: 055d5fe6-4aa6-47e7-92a7-e4664a08c1d6
+
+
 A delicious mexican dish combining lamb with fresh zucchini served with pasta
 
 Prep Time: 21 minutes
@@ -25,4 +28,3 @@ Tags: snack, mexican, day-40, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

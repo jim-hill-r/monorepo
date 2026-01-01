@@ -1,5 +1,8 @@
 # vietnamese shrimp Wrap with bell peppers
 
+UUID: 5573a62d-3ec1-4a34-b3e1-107ca366e837
+
+
 A delicious vietnamese dish combining shrimp with fresh bell peppers served with rice
 
 Prep Time: 16 minutes
@@ -25,4 +28,3 @@ Tags: lunch, vietnamese, day-89, quick, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

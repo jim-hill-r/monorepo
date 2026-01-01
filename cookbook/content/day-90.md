@@ -1,5 +1,8 @@
 # Crispy broccoli Bites
 
+UUID: bc0cba89-ac50-463e-a744-3a69ea67aaa8
+
+
 A delicious middle-eastern dish combining lamb with fresh broccoli served with noodles
 
 Prep Time: 6 minutes
@@ -25,4 +28,3 @@ Tags: snack, middle-eastern, day-90, quick, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

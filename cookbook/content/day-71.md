@@ -1,5 +1,8 @@
 # Scrambled Eggs with Herbs
 
+UUID: 341c15d1-9fef-4cf7-b594-7cc33b6ad867
+
+
 Creamy scrambled eggs with fresh herbs
 
 Prep Time: 5 minutes
@@ -22,4 +25,3 @@ Tags: breakfast, american, day-71, quick, vegetarian
 3. Pour in eggs and gently stir
 4. Cook until softly set, about 3-4 minutes
 5. Stir in herbs and season with salt and pepper
-

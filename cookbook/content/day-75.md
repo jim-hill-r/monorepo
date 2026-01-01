@@ -1,5 +1,8 @@
 # japanese chicken Soup with bell peppers
 
+UUID: aaf10ef0-1365-40a2-a822-112a6f05ce88
+
+
 A delicious japanese dish combining chicken with fresh bell peppers served with couscous
 
 Prep Time: 9 minutes
@@ -25,4 +28,3 @@ Tags: soup, japanese, day-75
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

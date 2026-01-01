@@ -1,5 +1,8 @@
 # Crispy spinach Bites
 
+UUID: 9ff754b6-28d3-447e-b79f-560ab34b00ae
+
+
 A delicious vietnamese dish combining lamb with fresh spinach served with pasta
 
 Prep Time: 27 minutes
@@ -25,4 +28,3 @@ Tags: snack, vietnamese, day-51, vegetarian
 5. Meanwhile, cook pasta according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

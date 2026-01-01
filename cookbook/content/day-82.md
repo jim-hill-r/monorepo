@@ -1,5 +1,8 @@
 # middle eastern beef Soup with carrots
 
+UUID: c04f331b-45c8-47f6-9abd-63a68e074949
+
+
 A delicious middle-eastern dish combining beef with fresh carrots served with rice
 
 Prep Time: 15 minutes
@@ -25,4 +28,3 @@ Tags: soup, middle-eastern, day-82
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

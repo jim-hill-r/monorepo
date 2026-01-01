@@ -1,5 +1,8 @@
 # Fresh carrots Salad with chicken
 
+UUID: 80b0bf8b-6330-4b01-bb64-de4c87a8f2a6
+
+
 A delicious italian dish combining chicken with fresh carrots served with rice
 
 Prep Time: 5 minutes
@@ -25,4 +28,3 @@ Tags: salad, italian, day-26
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

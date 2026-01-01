@@ -1,5 +1,8 @@
 # indian lamb with spinach and couscous
 
+UUID: 3cfe0d6f-26ef-49aa-a303-4f3c23b7bf37
+
+
 A delicious indian dish combining lamb with fresh spinach served with couscous
 
 Prep Time: 27 minutes
@@ -25,4 +28,3 @@ Tags: dinner, indian, day-41, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

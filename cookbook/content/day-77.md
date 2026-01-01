@@ -1,5 +1,8 @@
 # mexican tofu Soup with broccoli
 
+UUID: 8a885fcf-ec4f-4069-8b13-ec8204a63e57
+
+
 A delicious mexican dish combining tofu with fresh broccoli served with quinoa
 
 Prep Time: 26 minutes
@@ -25,4 +28,3 @@ Tags: soup, mexican, day-77, vegetarian
 5. Meanwhile, cook quinoa according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

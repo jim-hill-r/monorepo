@@ -1,5 +1,8 @@
 # mediterranean lamb Soup with spinach
 
+UUID: c4caf05d-3e2a-47b5-9c3f-78c1a56c6bec
+
+
 A delicious mediterranean dish combining lamb with fresh spinach served with noodles
 
 Prep Time: 22 minutes
@@ -25,4 +28,3 @@ Tags: soup, mediterranean, day-13, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

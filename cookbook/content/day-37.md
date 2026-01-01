@@ -1,5 +1,8 @@
 # korean shrimp Skewers
 
+UUID: 7d75c709-437d-4934-8ad2-d46c04494f46
+
+
 A delicious korean dish combining shrimp with fresh broccoli served with noodles
 
 Prep Time: 18 minutes
@@ -25,4 +28,3 @@ Tags: appetizer, korean, day-37, vegetarian
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

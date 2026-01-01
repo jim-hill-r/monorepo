@@ -1,5 +1,8 @@
 # Fresh bell peppers Salad with chicken
 
+UUID: df4ef3ce-b3d4-4de4-ac13-dea9c0564dbf
+
+
 A delicious indian dish combining chicken with fresh bell peppers served with noodles
 
 Prep Time: 11 minutes
@@ -25,4 +28,3 @@ Tags: salad, indian, day-30
 5. Meanwhile, cook noodles according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

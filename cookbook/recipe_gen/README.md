@@ -1,6 +1,14 @@
 # Recipe Generation Tool
 
-A command-line tool for generating 365 unique recipe markdown files for the Cookbook application.
+A command-line tool for generating 365 unique recipe markdown files for the Cookbook application, and migrating existing recipes to include UUIDs.
+
+## Tools
+
+### recipe-gen
+Generates recipe markdown files with content.
+
+### uuid-migration
+Adds UUID frontmatter to existing recipe markdown files.
 
 ## Overview
 
@@ -14,13 +22,16 @@ This tool automatically generates recipe markdown files in the correct format fo
 - **Proper markdown formatting**: All recipes follow the cookbook's markdown format specification
 - **Intelligent tagging**: Automatically adds tags based on category, cuisine, cooking time, and dietary attributes
 - **Validation**: Verifies all 365 day files exist after generation
+- **UUID Migration**: Adds UUID frontmatter to existing recipe files to support the UUID-based architecture
 
 ## Usage
+
+### Generating Recipes
 
 From the `cookbook/recipe_gen` directory:
 
 ```bash
-cargo run
+cargo run --bin recipe-gen
 ```
 
 The tool will:
@@ -29,6 +40,23 @@ The tool will:
 3. Shuffle recipes for variety across days
 4. Write each recipe to a markdown file (day-1.md through day-365.md)
 5. Verify all files were created successfully
+
+### Migrating Recipes to Include UUIDs
+
+From the `cookbook/recipe_gen` directory:
+
+```bash
+cargo run --bin uuid-migration
+```
+
+The UUID migration tool will:
+1. Scan the content directory for all day-*.md files
+2. Check each file for existing UUID frontmatter
+3. Generate a new UUID for files without one
+4. Add the UUID field to the recipe markdown frontmatter
+5. Report statistics on the migration
+
+**Note**: The migration tool is idempotent - running it multiple times will not create duplicate UUIDs or modify files that already have UUIDs.
 
 ## Recipe Format
 

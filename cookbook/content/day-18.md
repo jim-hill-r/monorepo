@@ -1,5 +1,8 @@
 # american shrimp Soup with spinach
 
+UUID: f7eb9431-3d7c-4bdc-939f-2aa6cce76bdb
+
+
 A delicious american dish combining shrimp with fresh spinach served with rice
 
 Prep Time: 19 minutes
@@ -25,4 +28,3 @@ Tags: soup, american, day-18, vegetarian
 5. Meanwhile, cook rice according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-

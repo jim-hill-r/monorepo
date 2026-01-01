@@ -1,5 +1,8 @@
 # Fresh bell peppers Salad with fish
 
+UUID: 765c27ce-d7f7-4f20-abd8-ea14eed4236d
+
+
 A delicious greek dish combining fish with fresh bell peppers served with couscous
 
 Prep Time: 7 minutes
@@ -25,4 +28,3 @@ Tags: salad, greek, day-80, quick, vegetarian
 5. Meanwhile, cook couscous according to package directions
 6. Combine everything and season with salt and pepper
 7. Serve hot and enjoy
-
