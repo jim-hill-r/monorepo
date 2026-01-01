@@ -234,7 +234,7 @@ impl MigrationValidator {
             let is_week_file = file_name.starts_with("week-");
 
             // Only process recipe files (not plan files)
-            if !is_day_file && !is_uuid_file || is_week_file {
+            if (!is_day_file && !is_uuid_file) || is_week_file {
                 continue;
             }
 
