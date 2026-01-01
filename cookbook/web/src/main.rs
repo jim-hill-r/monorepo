@@ -291,21 +291,83 @@ fn format_week_start_date(date: NaiveDate) -> String {
     }
 }
 
-/// Get recipes for a specific week (1-52)
-/// Returns a vector of (day_of_year, recipe_title) tuples for the 7 days of that week
+/// Convert an ISO 8601 week number to day-of-year values for the current year.
+/// Returns a vector of day-of-year values (1-365/366) for all days in that ISO week
+/// that fall within the current calendar year.
+///
+/// # Arguments
+/// * `week` - ISO 8601 week number (1-53)
+///
+/// # Returns
+/// Vector of day-of-year values for days in the specified ISO week.
+/// May return fewer than 7 days if the week spans year boundaries.
+fn get_day_of_year_for_iso_week(week: u32) -> Vec<u32> {
+    let year = Local::now().year();
+    let mut days = Vec::new();
+
+    // Find the first day of the year
+    // Jan 1 is always valid for any year, so unwrap_or with a fallback is safe
+    let Some(jan1) = NaiveDate::from_ymd_opt(year, 1, 1) else {
+        return days; // Should never happen, but return empty if it does
+    };
+
+    // Find the Monday of week 1 (ISO 8601: week 1 is the first week with Thursday)
+    // Start by finding what ISO week Jan 1 belongs to
+    let jan1_week = jan1.iso_week().week();
+
+    let week1_monday = if jan1_week == 1 {
+        // Jan 1 is in week 1, find the Monday of that week
+        let weekday = jan1.weekday().num_days_from_monday();
+        jan1 - chrono::Duration::days(weekday.into())
+    } else {
+        // Jan 1 is in week 52/53 of previous year, week 1 starts after Jan 1
+        // Find the first Monday of January
+        let mut date = jan1;
+        while date.weekday() != chrono::Weekday::Mon {
+            date += chrono::Duration::days(1);
+        }
+        // Check if this Monday belongs to week 1
+        if date.iso_week().week() == 1 {
+            date
+        } else {
+            // Find the next Monday
+            date + chrono::Duration::days(7)
+        }
+    };
+
+    // Calculate the Monday of the requested week
+    let target_monday = week1_monday + chrono::Duration::weeks((week - 1).into());
+
+    // Get all 7 days of this week and convert to day-of-year if they're in the current year
+    for i in 0..7 {
+        let date = target_monday + chrono::Duration::days(i);
+        // Only include days that are in the current year
+        if date.year() == year {
+            days.push(date.ordinal());
+        }
+    }
+
+    days
+}
+
+/// Get recipes for a specific ISO 8601 week (1-53).
+/// Returns a vector of (day_of_year, recipe_title) tuples for the days of that week
+/// that fall within the current calendar year.
+///
+/// Uses ISO 8601 week numbering where weeks start on Monday and week 1 is the first
+/// week containing a Thursday. The function maps the ISO week number to the actual
+/// calendar dates, then retrieves recipes for those day-of-year values.
 fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
     let store = EmbeddedRecipeStore::global();
     let mut recipes = Vec::new();
 
-    // Calculate the starting day for this week
-    // Week 1 starts at day 1, week 2 at day 8, etc.
-    let start_day = (week - 1) * 7 + 1;
+    // Get day-of-year values for this ISO week
+    let days = get_day_of_year_for_iso_week(week);
 
-    // Get 7 recipes for this week (or fewer if we reach MAX_DAY_OF_YEAR)
-    for i in 0..7 {
-        let day = start_day + i;
+    // Get recipes for each day
+    for day in days {
         if day > MAX_DAY_OF_YEAR {
-            break; // Don't go beyond MAX_DAY_OF_YEAR
+            continue; // Skip invalid days
         }
 
         match store.get_by_day(day) {
@@ -322,9 +384,13 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
     recipes
 }
 
-/// Aggregate all ingredients from recipes in a week into a shopping list
-/// Returns a sorted vector of unique ingredients from all recipes in the week
-/// Returns an empty vector if the week is invalid (not in range 1-53)
+/// Aggregate all ingredients from recipes in an ISO 8601 week into a shopping list.
+/// Returns a sorted vector of unique ingredients from all recipes in the week.
+/// Returns an empty vector if the week is invalid (not in range 1-53).
+///
+/// Uses ISO 8601 week numbering where weeks start on Monday and week 1 is the first
+/// week containing a Thursday. The function maps the ISO week number to the actual
+/// calendar dates, then retrieves ingredients for those day-of-year values.
 fn get_week_shopping_list(week: u32) -> Vec<String> {
     // Validate week parameter to ensure consistent behavior
     if !(1..=53).contains(&week) {
@@ -334,14 +400,13 @@ fn get_week_shopping_list(week: u32) -> Vec<String> {
     let store = EmbeddedRecipeStore::global();
     let mut all_ingredients = Vec::new();
 
-    // Calculate the starting day for this week
-    let start_day = (week - 1) * 7 + 1;
+    // Get day-of-year values for this ISO week
+    let days = get_day_of_year_for_iso_week(week);
 
     // Collect ingredients from all recipes in this week
-    for i in 0..7 {
-        let day = start_day + i;
+    for day in days {
         if day > MAX_DAY_OF_YEAR {
-            break;
+            continue;
         }
 
         if let Ok(recipe) = store.get_by_day(day) {
@@ -711,14 +776,19 @@ mod tests {
 
     #[test]
     fn test_sidebar_recipe_days_sorted_numerically() {
-        // Test that recipe days are in chronological order for the current week
+        // Test that recipe days are in chronological order for the current ISO week
         let days = get_sidebar_recipe_days();
 
         // Should not be empty
         assert!(!days.is_empty(), "Recipe days should not be empty");
 
-        // Should have exactly 7 entries (one week)
-        assert_eq!(days.len(), 7, "Should show 7 days of the week");
+        // Should have at most 7 entries (one week)
+        // May be fewer at year boundaries when ISO week spans two calendar years
+        assert!(
+            days.len() <= 7,
+            "Should show at most 7 days of the week, got {}",
+            days.len()
+        );
 
         // Verify all days are within valid range (1-366 for leap years)
         for (day, _) in &days {
@@ -729,8 +799,13 @@ mod tests {
             );
         }
 
-        // Note: Days may wrap around year boundary, so we don't enforce strict ascending order
-        // The dates are generated in chronological order from week start (Sunday)
+        // Days should be in ascending order (within the current year)
+        for i in 1..days.len() {
+            assert!(
+                days[i].0 > days[i - 1].0,
+                "Days should be in ascending order"
+            );
+        }
     }
 
     #[test]
@@ -998,7 +1073,13 @@ mod tests {
         // Test that recipe days include formatted date strings
         let days = get_sidebar_recipe_days();
 
-        assert_eq!(days.len(), 7, "Should have 7 days");
+        // Should have at least 1 day, at most 7 days
+        // May be fewer than 7 at year boundaries when ISO week spans two calendar years
+        assert!(
+            !days.is_empty() && days.len() <= 7,
+            "Should have 1-7 days, got {}",
+            days.len()
+        );
 
         // Check that all entries have formatted dates
         for (day_num, formatted) in &days {
@@ -1101,28 +1182,89 @@ mod tests {
 
     #[test]
     fn test_get_week_recipes() {
-        // Test that we can get 7 recipes for a week
+        // Test that we can get recipes for ISO week 1
+        // The exact days depend on the current year, but we should get 7 days (or fewer if
+        // some days of the ISO week fall in the previous year)
         let recipes = get_week_recipes(1);
-        assert_eq!(recipes.len(), 7, "Week should have 7 recipes");
+        assert!(
+            !recipes.is_empty(),
+            "Week 1 should have at least some recipes"
+        );
+        assert!(
+            recipes.len() <= 7,
+            "Week should have at most 7 recipes, got {}",
+            recipes.len()
+        );
 
-        // Days should be 1-7 for week 1
-        for (i, (day, _)) in recipes.iter().enumerate() {
-            assert_eq!(*day, (i + 1) as u32, "Day {} should match expected", i + 1);
+        // Days should be in ascending order
+        for i in 1..recipes.len() {
+            assert!(
+                recipes[i].0 > recipes[i - 1].0,
+                "Days should be in ascending order"
+            );
         }
 
-        // Test week 2 (days 8-14)
+        // Test week 2
         let recipes_week2 = get_week_recipes(2);
-        assert_eq!(recipes_week2.len(), 7);
-        assert_eq!(recipes_week2[0].0, 8);
-        assert_eq!(recipes_week2[6].0, 14);
+        assert!(!recipes_week2.is_empty(), "Week 2 should have recipes");
+        assert!(
+            recipes_week2.len() <= 7,
+            "Week should have at most 7 recipes"
+        );
 
-        // Test last week (week 52)
-        let recipes_week52 = get_week_recipes(52);
-        assert_eq!(recipes_week52.len(), 7);
-        // Week 52 starts at day (52-1)*7 + 1 = 358
-        assert_eq!(recipes_week52[0].0, 358);
-        // Last day should be 358 + 6 = 364
-        assert_eq!(recipes_week52[6].0, 364);
+        // All days should be valid (1-365)
+        for (day, _) in &recipes_week2 {
+            assert!(
+                *day >= 1 && *day <= 365,
+                "Day {} should be in range 1-365",
+                day
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_week_recipes_iso_week_mapping() {
+        // Test that ISO week numbers map to correct dates
+        // For 2025: Week 1 is Dec 30, 2024 - Jan 5, 2025
+        // So in 2025, week 1 should include days 1-5 (Jan 1-5)
+
+        // Test that we get the correct day-of-year values for week 1
+        let days_week1 = get_day_of_year_for_iso_week(1);
+        assert!(
+            !days_week1.is_empty(),
+            "Week 1 should have days in the current year"
+        );
+
+        // Verify the days are consecutive (within the current year)
+        for i in 1..days_week1.len() {
+            assert_eq!(
+                days_week1[i],
+                days_week1[i - 1] + 1,
+                "Days within a week should be consecutive"
+            );
+        }
+
+        // Test a mid-year week (week 26) should have 7 days
+        let days_week26 = get_day_of_year_for_iso_week(26);
+        assert_eq!(
+            days_week26.len(),
+            7,
+            "Mid-year week should have all 7 days in the current year"
+        );
+
+        // Test that recipes are retrieved for the correct days
+        let recipes = get_week_recipes(26);
+        assert_eq!(
+            recipes.len(),
+            days_week26.len(),
+            "Should have recipes for all days in the week"
+        );
+        for (i, (day, _)) in recipes.iter().enumerate() {
+            assert_eq!(
+                *day, days_week26[i],
+                "Recipe day should match calculated day-of-year"
+            );
+        }
     }
 
     #[test]
@@ -1165,28 +1307,38 @@ mod tests {
 
     #[test]
     fn test_sidebar_recipes_use_week_logic() {
-        // Test that sidebar uses the same week calculation as get_week_recipes
-        // For week 52, we expect days 358-364
+        // Test that sidebar uses the same ISO week calculation as get_week_recipes
         let sidebar_days = get_sidebar_recipe_days();
         let current_week = get_current_week_of_year();
 
-        // Calculate expected starting day based on current week
-        let expected_start_day = (current_week - 1) * 7 + 1;
+        // Get expected days for the current ISO week
+        let expected_days = get_day_of_year_for_iso_week(current_week);
 
-        // First sidebar day should match the expected start day for the current week
+        // Sidebar should have the same number of days as the ISO week calculation
         assert_eq!(
-            sidebar_days[0].0, expected_start_day,
-            "Sidebar should start at day {} for week {}",
-            expected_start_day, current_week
+            sidebar_days.len(),
+            expected_days.len(),
+            "Sidebar should have {} days for ISO week {} but has {}",
+            expected_days.len(),
+            current_week,
+            sidebar_days.len()
         );
 
-        // Verify all days are consecutive from the start day
-        for (i, (day, _)) in sidebar_days.iter().enumerate() {
-            let expected_day = expected_start_day + i as u32;
+        // First sidebar day should match the first day of the ISO week
+        if !expected_days.is_empty() {
             assert_eq!(
-                *day, expected_day,
+                sidebar_days[0].0, expected_days[0],
+                "Sidebar should start at day {} for ISO week {}",
+                expected_days[0], current_week
+            );
+        }
+
+        // Verify all days match the ISO week calculation
+        for (i, (day, _)) in sidebar_days.iter().enumerate() {
+            assert_eq!(
+                *day, expected_days[i],
                 "Sidebar day at position {} should be {} but got {}",
-                i, expected_day, day
+                i, expected_days[i], day
             );
         }
     }

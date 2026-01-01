@@ -18,11 +18,15 @@ All Phase 1 items have been completed:
 - ✅ Updated function documentation to describe ISO 8601 week numbering
 - ✅ Added comments explaining ISO 8601 rules
 
-### Phase 2: Recipe and Plan Display Logic
-- TODO (agent-generated): Update `get_week_recipes()` to map ISO week numbers to correct day-of-year ranges
-- TODO (agent-generated): Update `get_sidebar_recipe_days()` to use ISO week-based recipe retrieval
-- TODO (agent-generated): Update `get_sidebar_plan_weeks()` to use ISO week numbering
-- TODO (agent-generated): Update `get_week_shopping_list()` to work with ISO week numbers
+### Phase 2: Recipe and Plan Display Logic ✅ COMPLETED
+All Phase 2 items have been completed:
+- ✅ Updated `get_week_recipes()` to map ISO week numbers to correct day-of-year ranges
+- ✅ Updated `get_sidebar_recipe_days()` to use ISO week-based recipe retrieval (calls `get_week_recipes()`)
+- ✅ Updated `get_sidebar_plan_weeks()` to use ISO week numbering (already used `get_week_number_from_date()`)
+- ✅ Updated `get_week_shopping_list()` to work with ISO week numbers
+- ✅ Added helper function `get_day_of_year_for_iso_week()` to convert ISO week numbers to day-of-year values
+- ✅ Updated tests to validate ISO week mapping behavior
+- ✅ Updated function documentation to describe ISO 8601 week mapping
 
 ### Dependencies
 - This epic must be completed before implementing the Plan data structure (next TODO)
