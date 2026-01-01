@@ -1,0 +1,10 @@
+[package]
+name = "test"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.cast]
+framework = "dioxus"
+
+[dependencies]
+dioxus = "0.6"
