@@ -767,8 +767,7 @@ mod tests {
         for i in 0..days.len() {
             let expected_day = expected_start_day + i as u32;
             assert_eq!(
-                days[i].0,
-                expected_day,
+                days[i].0, expected_day,
                 "Day {} should match expected day",
                 i
             );
@@ -804,7 +803,7 @@ mod tests {
         } else {
             current_week - first_week
         };
-        
+
         // Allow difference of 1 week, or 51 weeks (which represents week 52 -> week 1 transition)
         assert!(
             week_diff <= 1 || week_diff >= 51,
