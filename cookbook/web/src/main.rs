@@ -1236,7 +1236,9 @@ mod tests {
         let _shopping_list_week_53 = get_week_shopping_list(53);
 
         // All should return some ingredients (assuming recipes have ingredients)
-        // Week 52 and 53 might have fewer days/recipes due to 365 day limit
+        // Note: Week 52 and 53 might be empty or have fewer recipes since the recipe
+        // system is based on days 1-365 (MAX_DAY_OF_YEAR), and these weeks may
+        // extend beyond day 365 depending on the year
         assert!(
             !shopping_list_week_1.is_empty(),
             "Week 1 should have ingredients"
@@ -1245,7 +1247,6 @@ mod tests {
             !shopping_list_week_26.is_empty(),
             "Week 26 should have ingredients"
         );
-        // Week 52 and 53 might be empty if they go beyond day 365
     }
 
     #[test]
