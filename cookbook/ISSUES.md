@@ -49,7 +49,7 @@ All Phase 2 items have been completed:
 
 This phase decouples recipes from day numbers, allowing future recipe rearrangement in plans.
 
-#### Sub-task 4.1: Core Data Model Update ✅ COMPLETED (Partial - Web App Integration Remaining)
+#### Sub-task 4.1: Core Data Model Update ✅ COMPLETED
 - ✅ Add `uuid` field to `Recipe` struct in `cookbook/core/src/lib.rs`
 - ✅ Add UUID generation function to Recipe implementation
 - ✅ Update `Plan` struct to store recipe UUIDs instead of day numbers
@@ -57,7 +57,8 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Add comprehensive unit tests for UUID-based Recipe and Plan structs
 - ✅ Add `get_by_uuid()` method to RecipeReader trait
 - ✅ Update `cookbook/data_md` to implement `get_by_uuid()`
-- TODO (agent-generated): Update `cookbook/web` to use UUID-based Plan API (currently uses deprecated recipe_days field)
+- ✅ Update `cookbook/web` to use UUID-based Plan API
+- ✅ Update `cookbook/data_md` plan loading to convert day numbers to UUIDs
 
 #### Sub-task 4.2: Recipe Markdown Format Update
 - TODO (agent-generated): Update `cookbook/data_md` parser to extract UUID from recipe frontmatter

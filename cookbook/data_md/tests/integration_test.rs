@@ -27,8 +27,21 @@ fn test_load_example_recipes() {
     // Test plan loading
     let plan_1 = store.get_by_week(1).expect("Should find plan for week 1");
     assert_eq!(plan_1.week, 1);
-    assert_eq!(plan_1.recipe_days.len(), 7);
-    assert_eq!(plan_1.recipe_days, vec![1, 2, 3, 4, 5, 6, 7]);
+    assert_eq!(plan_1.recipe_uuids.len(), 7);
+    
+    // Verify the UUIDs correspond to recipes for days 1-7
+    for (i, uuid) in plan_1.recipe_uuids.iter().enumerate() {
+        let recipe = RecipeReader::get_by_uuid(&store, uuid).expect("Recipe should exist");
+        let expected_day = i + 1;
+        let day_from_id = recipe.id.strip_prefix("day-")
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap();
+        assert_eq!(
+            day_from_id, expected_day as u32,
+            "Plan week 1 UUID at position {} should be for day {}",
+            i, expected_day
+        );
+    }
 
     // Test get_all plans
     let all_plans = PlanReader::get_all(&store).expect("Should get all plans");

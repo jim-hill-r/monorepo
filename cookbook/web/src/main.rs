@@ -295,7 +295,7 @@ fn format_week_start_date(date: NaiveDate) -> String {
 /// Returns a vector of (day_of_year, recipe_title) tuples for the days of that week.
 ///
 /// Uses the PlanReader to load the pre-defined plan for the week, which contains
-/// the day-of-year values for each day (Monday-Sunday) of the plan.
+/// the recipe UUIDs for each day (Monday-Sunday) of the plan.
 fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
     let recipe_store = EmbeddedRecipeStore::global();
     let plan_store = EmbeddedPlanStore::global();
@@ -306,19 +306,29 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
         return recipes; // Return empty if plan not found
     };
 
-    // Get recipes for each day in the plan
-    for day in plan.recipe_days {
-        if day > MAX_DAY_OF_YEAR {
-            continue; // Skip invalid days
-        }
-
-        match recipe_store.get_by_day(day) {
+    // Get recipes for each UUID in the plan
+    for uuid in plan.recipe_uuids {
+        match recipe_store.get_by_uuid(&uuid) {
             Ok(recipe) => {
+                // Get the day number from the recipe ID (format: "day-X")
+                let day = recipe
+                    .id
+                    .strip_prefix("day-")
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap_or(0);
+
+                if day > MAX_DAY_OF_YEAR {
+                    continue; // Skip invalid days
+                }
+
                 recipes.push((day, recipe.title));
             }
             Err(_) => {
-                // If recipe not found, use a placeholder
-                recipes.push((day, format!("Recipe for Day {}", day)));
+                // If recipe not found by UUID, log and skip
+                eprintln!(
+                    "Warning: Recipe with UUID {} not found in week {}",
+                    uuid, week
+                );
             }
         }
     }
@@ -331,7 +341,7 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
 /// Returns an empty vector if the week is invalid or plan not found.
 ///
 /// Uses the PlanReader to load the pre-defined plan for the week, which contains
-/// the day-of-year values for the recipes in that week's plan.
+/// the recipe UUIDs for the recipes in that week's plan.
 fn get_week_shopping_list(week: u32) -> Vec<String> {
     let recipe_store = EmbeddedRecipeStore::global();
     let plan_store = EmbeddedPlanStore::global();
@@ -343,12 +353,8 @@ fn get_week_shopping_list(week: u32) -> Vec<String> {
     };
 
     // Collect ingredients from all recipes in this week's plan
-    for day in plan.recipe_days {
-        if day > MAX_DAY_OF_YEAR {
-            continue;
-        }
-
-        if let Ok(recipe) = recipe_store.get_by_day(day) {
+    for uuid in plan.recipe_uuids {
+        if let Ok(recipe) = recipe_store.get_by_uuid(&uuid) {
             all_ingredients.extend(recipe.ingredients);
         }
     }
@@ -1159,6 +1165,7 @@ mod tests {
     fn test_get_week_recipes_uses_plan_reader() {
         // Test that get_week_recipes uses PlanReader to load plans
         let plan_store = EmbeddedPlanStore::global();
+        let recipe_store = EmbeddedRecipeStore::global();
 
         // Test a few different weeks
         for week in [1, 2, 10, 26, 52] {
@@ -1166,20 +1173,33 @@ mod tests {
             let recipes = get_week_recipes(week);
 
             if let Ok(plan) = plan {
-                // If plan exists, recipes should match the plan's recipe_days
+                // If plan exists, recipes should match the plan's recipe_uuids
                 assert_eq!(
                     recipes.len(),
-                    plan.recipe_days.len(),
+                    plan.recipe_uuids.len(),
                     "Week {} should have {} recipes matching the plan",
                     week,
-                    plan.recipe_days.len()
+                    plan.recipe_uuids.len()
                 );
 
-                // Verify the days match
-                for (i, (day, _)) in recipes.iter().enumerate() {
+                // Verify the UUIDs match
+                for (i, uuid) in plan.recipe_uuids.iter().enumerate() {
+                    let recipe = recipe_store.get_by_uuid(uuid).unwrap();
+                    let (day, title) = &recipes[i];
                     assert_eq!(
-                        *day, plan.recipe_days[i],
-                        "Recipe day should match plan day at position {} for week {}",
+                        recipe.title, *title,
+                        "Recipe title should match at position {} for week {}",
+                        i, week
+                    );
+                    // Verify day number matches recipe ID
+                    let expected_day = recipe
+                        .id
+                        .strip_prefix("day-")
+                        .and_then(|s| s.parse::<u32>().ok())
+                        .unwrap();
+                    assert_eq!(
+                        *day, expected_day,
+                        "Recipe day should match at position {} for week {}",
                         i, week
                     );
                 }
@@ -1198,36 +1218,72 @@ mod tests {
     fn test_get_week_recipes_plan_consistency() {
         // Test that plans have consistent structure (7 days, consecutive)
         let plan_store = EmbeddedPlanStore::global();
+        let recipe_store = EmbeddedRecipeStore::global();
 
         // Test week 1 plan
         let plan1 = plan_store.get_by_week(1).expect("Week 1 plan should exist");
-        assert_eq!(plan1.recipe_days.len(), 7, "Week 1 should have 7 days");
-        assert_eq!(
-            plan1.recipe_days,
-            vec![1, 2, 3, 4, 5, 6, 7],
-            "Week 1 should have days 1-7"
-        );
+        assert_eq!(plan1.recipe_uuids.len(), 7, "Week 1 should have 7 UUIDs");
+
+        // Verify the UUIDs correspond to recipes for days 1-7
+        for (i, uuid) in plan1.recipe_uuids.iter().enumerate() {
+            let recipe = recipe_store.get_by_uuid(uuid).expect("Recipe should exist");
+            let expected_day = i + 1;
+            let day_from_id = recipe
+                .id
+                .strip_prefix("day-")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap();
+            assert_eq!(
+                day_from_id, expected_day as u32,
+                "Week 1 UUID at position {} should be for day {}",
+                i, expected_day
+            );
+        }
 
         // Test week 2 plan
         let plan2 = plan_store.get_by_week(2).expect("Week 2 plan should exist");
-        assert_eq!(plan2.recipe_days.len(), 7, "Week 2 should have 7 days");
-        assert_eq!(
-            plan2.recipe_days,
-            vec![8, 9, 10, 11, 12, 13, 14],
-            "Week 2 should have days 8-14"
-        );
+        assert_eq!(plan2.recipe_uuids.len(), 7, "Week 2 should have 7 UUIDs");
+
+        // Verify the UUIDs correspond to recipes for days 8-14
+        for (i, uuid) in plan2.recipe_uuids.iter().enumerate() {
+            let recipe = recipe_store.get_by_uuid(uuid).expect("Recipe should exist");
+            let expected_day = i + 8;
+            let day_from_id = recipe
+                .id
+                .strip_prefix("day-")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap();
+            assert_eq!(
+                day_from_id, expected_day as u32,
+                "Week 2 UUID at position {} should be for day {}",
+                i, expected_day
+            );
+        }
 
         // Test a mid-year week (week 26) should have 7 consecutive days
         let plan26 = plan_store
             .get_by_week(26)
             .expect("Week 26 plan should exist");
-        assert_eq!(plan26.recipe_days.len(), 7, "Week 26 should have 7 days");
+        assert_eq!(plan26.recipe_uuids.len(), 7, "Week 26 should have 7 UUIDs");
 
-        // Verify days are consecutive
-        for i in 1..plan26.recipe_days.len() {
+        // Verify UUIDs correspond to consecutive days
+        let first_recipe = recipe_store.get_by_uuid(&plan26.recipe_uuids[0]).unwrap();
+        let first_day = first_recipe
+            .id
+            .strip_prefix("day-")
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap();
+
+        for (i, uuid) in plan26.recipe_uuids.iter().enumerate() {
+            let recipe = recipe_store.get_by_uuid(uuid).expect("Recipe should exist");
+            let day_from_id = recipe
+                .id
+                .strip_prefix("day-")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap();
             assert_eq!(
-                plan26.recipe_days[i],
-                plan26.recipe_days[i - 1] + 1,
+                day_from_id,
+                first_day + i as u32,
                 "Days within a week should be consecutive"
             );
         }
@@ -1236,13 +1292,21 @@ mod tests {
         let recipes = get_week_recipes(26);
         assert_eq!(
             recipes.len(),
-            plan26.recipe_days.len(),
-            "Should have recipes for all days in the week"
+            plan26.recipe_uuids.len(),
+            "Should have recipes for all UUIDs in the week"
         );
-        for (i, (day, _)) in recipes.iter().enumerate() {
+        for (i, uuid) in plan26.recipe_uuids.iter().enumerate() {
+            let recipe = recipe_store.get_by_uuid(uuid).unwrap();
+            let (day, title) = &recipes[i];
+            let expected_day = recipe
+                .id
+                .strip_prefix("day-")
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap();
+            assert_eq!(*day, expected_day, "Recipe day should match UUID's recipe");
             assert_eq!(
-                *day, plan26.recipe_days[i],
-                "Recipe day should match plan day"
+                *title, recipe.title,
+                "Recipe title should match UUID's recipe"
             );
         }
     }
@@ -1293,34 +1357,47 @@ mod tests {
 
         // Get the plan for the current week
         let plan_store = EmbeddedPlanStore::global();
+        let recipe_store = EmbeddedRecipeStore::global();
         let plan = plan_store.get_by_week(current_week);
 
         if let Ok(plan) = plan {
             // Sidebar should have the same number of days as the plan
             assert_eq!(
                 sidebar_days.len(),
-                plan.recipe_days.len(),
-                "Sidebar should have {} days from the plan for ISO week {} but has {}",
-                plan.recipe_days.len(),
+                plan.recipe_uuids.len(),
+                "Sidebar should have {} UUIDs from the plan for ISO week {} but has {}",
+                plan.recipe_uuids.len(),
                 current_week,
                 sidebar_days.len()
             );
 
-            // First sidebar day should match the first day of the plan
-            if !plan.recipe_days.is_empty() {
+            // First sidebar day should match the first recipe's day from the plan
+            if !plan.recipe_uuids.is_empty() {
+                let first_recipe = recipe_store.get_by_uuid(&plan.recipe_uuids[0]).unwrap();
+                let first_day = first_recipe
+                    .id
+                    .strip_prefix("day-")
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap();
                 assert_eq!(
-                    sidebar_days[0].0, plan.recipe_days[0],
+                    sidebar_days[0].0, first_day,
                     "Sidebar should start at day {} for ISO week {}",
-                    plan.recipe_days[0], current_week
+                    first_day, current_week
                 );
             }
 
-            // Verify all days match the plan's recipe days
+            // Verify all days match the plan's recipe UUIDs
             for (i, (day, _)) in sidebar_days.iter().enumerate() {
+                let recipe = recipe_store.get_by_uuid(&plan.recipe_uuids[i]).unwrap();
+                let expected_day = recipe
+                    .id
+                    .strip_prefix("day-")
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap();
                 assert_eq!(
-                    *day, plan.recipe_days[i],
+                    *day, expected_day,
                     "Sidebar day at position {} should be {} but got {}",
-                    i, plan.recipe_days[i], day
+                    i, expected_day, day
                 );
             }
         }
@@ -1415,13 +1492,11 @@ mod tests {
         let plan = plan_store.get_by_week(1).expect("Week 1 plan should exist");
         let shopping_list = get_week_shopping_list(1);
 
-        // Collect all ingredients from the plan's recipe days manually
+        // Collect all ingredients from the plan's recipe UUIDs manually
         let mut expected_ingredients = Vec::new();
-        for day in &plan.recipe_days {
-            if *day <= MAX_DAY_OF_YEAR {
-                if let Ok(recipe) = recipe_store.get_by_day(*day) {
-                    expected_ingredients.extend(recipe.ingredients);
-                }
+        for uuid in &plan.recipe_uuids {
+            if let Ok(recipe) = recipe_store.get_by_uuid(uuid) {
+                expected_ingredients.extend(recipe.ingredients);
             }
         }
         expected_ingredients.sort();
@@ -1430,7 +1505,7 @@ mod tests {
         // Shopping list should match the manually collected ingredients
         assert_eq!(
             shopping_list, expected_ingredients,
-            "Shopping list should match ingredients from plan's recipe days"
+            "Shopping list should match ingredients from plan's recipe UUIDs"
         );
     }
 
