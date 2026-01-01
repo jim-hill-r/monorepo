@@ -141,6 +141,11 @@ cargo build --release
 # Run CI with release mode (build --release and publish artifacts)
 ./target/release/cast ci --release
 
+# Run CI recursively on child projects
+# This runs CI on the current project, then finds and runs CI on all cast projects
+# up to 2 levels below the current directory
+./target/release/cast ci --recursive 2
+
 # Start development server (auto-detects framework)
 ./target/release/cast dev
 
@@ -153,6 +158,29 @@ cargo build --release
 # Build release artifacts
 ./target/release/cast publish
 ```
+
+### Recursive CI Example
+
+The `--recursive` option is useful for monorepos with nested projects:
+
+```
+monorepo/
+├── Cast.toml
+├── Cargo.toml
+├── project1/
+│   ├── Cast.toml
+│   └── Cargo.toml
+└── project2/
+    ├── Cast.toml
+    └── Cargo.toml
+```
+
+Running `cast ci --recursive 1` from the monorepo root will:
+1. Run CI on the root project
+2. Find project1 and project2 at depth 1
+3. Run CI on each discovered project
+
+This ensures all projects in your monorepo pass CI checks without manually running CI in each directory.
 
 ### Working on Cast Core
 
