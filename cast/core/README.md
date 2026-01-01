@@ -273,13 +273,16 @@ build::run("/path/to/project").unwrap();
 
 ### Running Tests
 
-Cast provides a `test` command that runs tests for Rust projects.
+Cast provides a `test` command that runs tests for projects.
 
 ```bash
 cast test
 ```
 
-This will run `cargo test` in the current project directory. The command is designed to be consistent with other Cast commands and can be extended in the future with additional test functionality.
+This command detects the project type and runs appropriate tests:
+- For **Rust projects** (with Cargo.toml): Runs `cargo test`
+- For **TypeScript/Node.js projects** (with package.json and test script): Runs `npm test`
+- Projects can have both (e.g., Dioxus web apps with Playwright tests), and Cast will run both test suites
 
 Example usage in library code:
 
