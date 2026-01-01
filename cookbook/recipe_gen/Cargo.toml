@@ -14,6 +14,10 @@ path = "src/main.rs"
 name = "uuid-migration"
 path = "src/uuid_migration.rs"
 
+[[bin]]
+name = "filename-migration"
+path = "src/filename_migration.rs"
+
 [dependencies]
 cookbook-core = { path = "../core" }
 cookbook-data-md = { path = "../data_md" }
