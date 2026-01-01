@@ -340,6 +340,7 @@ impl MarkdownRecipeStore {
         let mut recipe_uuids = Vec::with_capacity(7);
 
         for day in recipe_days {
+            #[allow(deprecated)]
             let recipe = self.get_by_day(day).map_err(|e| {
                 PlanError::InvalidData(format!(
                     "Failed to find recipe for day {} in week {}: {}",
@@ -476,6 +477,7 @@ impl RecipeReader for MarkdownRecipeStore {
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
     }
 
+    #[allow(deprecated)]
     fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
         if !(1..=366).contains(&day) {
             return Err(RecipeError::InvalidData(format!(
@@ -803,6 +805,7 @@ Tags: italian, pasta, quick
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_get_by_day() {
         let temp_dir = create_temp_dir();
 

@@ -46,6 +46,15 @@ pub trait RecipeReader {
     fn get_by_uuid(&self, uuid: &Uuid) -> RecipeResult<Recipe>;
 
     /// Get a recipe by day of the year (1-365, or 1-366 in leap years)
+    ///
+    /// # Deprecated
+    /// This method is deprecated in favor of UUID-based recipe access.
+    /// Use `get_by_uuid()` or `get_by_id()` instead.
+    /// This method remains for backward compatibility with legacy day-based content.
+    #[deprecated(
+        since = "0.2.0",
+        note = "Use get_by_uuid() or get_by_id() instead. Day-based access is legacy."
+    )]
     fn get_by_day(&self, day: u32) -> RecipeResult<Recipe>;
 
     /// Get all recipes
@@ -342,6 +351,7 @@ mod tests {
                 })
         }
 
+        #[allow(deprecated)]
         fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
             if !(1..=366).contains(&day) {
                 return Err(RecipeError::InvalidData(format!(
@@ -436,6 +446,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_recipe_reader_get_by_day() {
         let recipe1 = Recipe::new("day-1".to_string(), "Day 1 Recipe".to_string());
         let recipe100 = Recipe::new("day-100".to_string(), "Day 100 Recipe".to_string());
