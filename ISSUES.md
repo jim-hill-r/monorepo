@@ -1,6 +1,8 @@
 
 # Priority Issues
 
+- TODO: Add a `cast ci --recursive 2` option that after running `cast ci` on the current directory it will look 2 levels below the current directory for other cast projects and run `cast ci --recursive 2` on them as well.
+
 # Backlog
 
 # Priority Projects
