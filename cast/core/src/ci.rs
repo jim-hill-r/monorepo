@@ -56,12 +56,33 @@ pub enum CiError {
 ///   - Release: Run all checks with release build, then publish artifacts
 /// - If recursive_depth is Some(depth), after running CI on the current directory,
 ///   it will find all Cast projects up to 'depth' levels below and run CI on them
+/// - If only_changed is true, CI will only run if the project has changes compared to the origin's default branch
 pub fn run(
     working_directory: impl AsRef<Path>,
     mode: CiMode,
     recursive_depth: Option<usize>,
+    only_changed: bool,
 ) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
+
+    // If only_changed is true, check if the project has changes
+    if only_changed {
+        match has_changes(working_directory) {
+            Ok(true) => {
+                // Has changes, continue with CI
+            }
+            Ok(false) => {
+                // No changes, skip CI
+                println!("No changes found in project. Skipping CI.");
+                return Ok(());
+            }
+            Err(e) => {
+                // Error checking for changes (e.g., not in a git repo)
+                eprintln!("Warning: Could not check for changes: {}. Proceeding with CI.", e);
+                // Continue with CI despite the error
+            }
+        }
+    }
 
     // Check if this is a Rust project or TypeScript project
     let has_cargo_toml = working_directory.join("Cargo.toml").exists();
@@ -103,7 +124,7 @@ pub fn run(
 
     // Run CI recursively on child projects if requested
     if let Some(depth) = recursive_depth {
-        run_ci_recursively(working_directory, mode, depth)?;
+        run_ci_recursively(working_directory, mode, depth, only_changed)?;
     }
 
     Ok(())
@@ -361,6 +382,7 @@ fn run_ci_recursively(
     working_directory: &Path,
     mode: CiMode,
     max_depth: usize,
+    only_changed: bool,
 ) -> Result<(), CiError> {
     if max_depth == 0 {
         return Ok(());
@@ -381,10 +403,94 @@ fn run_ci_recursively(
         };
 
         // Run CI on the child project
-        run(&project_path, mode, remaining_depth)?;
+        run(&project_path, mode, remaining_depth, only_changed)?;
     }
 
     Ok(())
+}
+
+/// Check if the current project has changes compared to the origin's default branch
+/// Returns true if there are changes, false if no changes
+/// Returns an error if git operations fail (e.g., not in a git repo)
+fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
+    // Check if we're in a git repository
+    let git_check = Command::new("git")
+        .arg("rev-parse")
+        .arg("--git-dir")
+        .current_dir(working_directory)
+        .output()?;
+
+    if !git_check.status.success() {
+        return Err(CiError::IoError(std::io::Error::other(
+            "Not in a git repository",
+        )));
+    }
+
+    // Get the default branch name from origin
+    let default_branch = get_default_branch(working_directory)?;
+
+    // Check if there are any changes between HEAD and origin/default_branch
+    // We'll check if the project directory has any diffs
+    let diff_output = Command::new("git")
+        .arg("diff")
+        .arg("--quiet")
+        .arg(&format!("origin/{}", default_branch))
+        .arg("HEAD")
+        .arg("--")
+        .arg(".")
+        .current_dir(working_directory)
+        .status()?;
+
+    // git diff --quiet returns 0 if no changes, 1 if there are changes
+    Ok(!diff_output.success())
+}
+
+/// Get the default branch name from origin (usually 'main' or 'master')
+fn get_default_branch(working_directory: &Path) -> Result<String, CiError> {
+    // Try to get the default branch from origin's HEAD
+    let output = Command::new("git")
+        .arg("symbolic-ref")
+        .arg("refs/remotes/origin/HEAD")
+        .current_dir(working_directory)
+        .output()?;
+
+    if output.status.success() {
+        let branch_ref = String::from_utf8_lossy(&output.stdout);
+        // Parse "refs/remotes/origin/main" to get "main"
+        if let Some(branch_name) = branch_ref.trim().strip_prefix("refs/remotes/origin/") {
+            return Ok(branch_name.to_string());
+        }
+    }
+
+    // Fallback: try to guess the default branch
+    // Check if origin/main exists
+    let main_check = Command::new("git")
+        .arg("rev-parse")
+        .arg("--verify")
+        .arg("origin/main")
+        .current_dir(working_directory)
+        .output()?;
+
+    if main_check.status.success() {
+        return Ok("main".to_string());
+    }
+
+    // Check if origin/master exists
+    let master_check = Command::new("git")
+        .arg("rev-parse")
+        .arg("--verify")
+        .arg("origin/master")
+        .current_dir(working_directory)
+        .output()?;
+
+    if master_check.status.success() {
+        return Ok("master".to_string());
+    }
+
+    // If we can't find the default branch, return an error
+    Err(CiError::IoError(std::io::Error::other(
+        "Could not determine default branch from origin",
+    )))
 }
 
 /// Find Cast projects within a given depth below the working directory
@@ -472,7 +578,7 @@ mod tests {
     fn test_run_ci_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_ci").unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check, None);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false);
         // Should succeed silently for directories without Cargo.toml or package.json
         // Publish should not run since no CI checks were performed
         assert!(result.is_ok());
@@ -548,7 +654,7 @@ mod tests {
             .output()
             .unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check, None);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false);
         assert!(
             result.is_ok(),
             "CI should succeed and run publish: {:?}",
@@ -602,7 +708,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check, None);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false);
         assert!(result.is_err(), "CI should fail when build fails");
 
         // Verify that artifacts directory was NOT created
@@ -667,7 +773,7 @@ mod tests {
             .unwrap();
 
         // CI in Fix mode should auto-format and succeed
-        let result = run(tmp_dir.path(), CiMode::Fix, None);
+        let result = run(tmp_dir.path(), CiMode::Fix, None, false);
         assert!(
             result.is_ok(),
             "CI Fix mode should succeed after auto-formatting: {:?}",
@@ -736,7 +842,7 @@ mod tests {
             .unwrap();
 
         // CI in Release mode should build in release and publish
-        let result = run(tmp_dir.path(), CiMode::Release, None);
+        let result = run(tmp_dir.path(), CiMode::Release, None, false);
         assert!(
             result.is_ok(),
             "CI Release mode should succeed: {:?}",
@@ -1186,7 +1292,7 @@ mod tests {
             .unwrap();
 
         // Run CI with recursive depth 1
-        let result = run(tmp_dir.path(), CiMode::Check, Some(1));
+        let result = run(tmp_dir.path(), CiMode::Check, Some(1), false);
 
         // Should succeed
         assert!(
@@ -1198,5 +1304,416 @@ mod tests {
         // Verify artifacts were created for both projects
         assert!(tmp_dir.path().join("artifacts").exists());
         assert!(child.join("artifacts").exists());
+    }
+
+    #[test]
+    fn test_only_changed_skips_ci_when_no_changes() {
+        let tmp_dir = TempDir::new("test_only_changed_no_changes").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal project
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a remote origin (simulated with a bare repo)
+        let remote_dir = tmp_dir.path().join("remote.git");
+        Command::new("git")
+            .arg("init")
+            .arg("--bare")
+            .arg(&remote_dir)
+            .output()
+            .unwrap();
+
+        // Add origin remote
+        Command::new("git")
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(&remote_dir)
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Push to origin to establish the default branch
+        Command::new("git")
+            .arg("push")
+            .arg("-u")
+            .arg("origin")
+            .arg("HEAD")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Set symbolic ref for origin/HEAD (simulating default branch)
+        Command::new("git")
+            .arg("symbolic-ref")
+            .arg("refs/remotes/origin/HEAD")
+            .arg("refs/remotes/origin/master")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI with only_changed=true
+        // Since there are no changes, CI should skip
+        let result = run(tmp_dir.path(), CiMode::Check, None, true);
+
+        // Should succeed without running CI
+        assert!(result.is_ok(), "CI should succeed: {:?}", result.err());
+
+        // Verify artifacts were NOT created (CI was skipped)
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            !artifacts_dir.exists(),
+            "Artifacts directory should not exist when CI is skipped"
+        );
+    }
+
+    #[test]
+    fn test_only_changed_runs_ci_when_changes_exist() {
+        let tmp_dir = TempDir::new("test_only_changed_with_changes").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal project
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a remote origin
+        let remote_dir = tmp_dir.path().join("remote.git");
+        Command::new("git")
+            .arg("init")
+            .arg("--bare")
+            .arg(&remote_dir)
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(&remote_dir)
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .arg("push")
+            .arg("-u")
+            .arg("origin")
+            .arg("HEAD")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        Command::new("git")
+            .arg("symbolic-ref")
+            .arg("refs/remotes/origin/HEAD")
+            .arg("refs/remotes/origin/master")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Make a change to the project
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, changed world!\");\n}\n",
+        )
+        .unwrap();
+
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("make change")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI with only_changed=true
+        // Since there are changes, CI should run
+        let result = run(tmp_dir.path(), CiMode::Check, None, true);
+
+        // Should succeed and run CI
+        assert!(result.is_ok(), "CI should succeed: {:?}", result.err());
+
+        // Verify artifacts were created (CI ran)
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            artifacts_dir.exists(),
+            "Artifacts directory should exist when CI runs"
+        );
+    }
+
+    #[test]
+    fn test_has_changes_detects_changes() {
+        let tmp_dir = TempDir::new("test_has_changes").unwrap();
+
+        // Initialize git repo with origin
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create initial file and commit
+        fs::write(tmp_dir.path().join("README.md"), "initial").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create remote and push
+        let remote_dir = tmp_dir.path().join("remote.git");
+        Command::new("git")
+            .arg("init")
+            .arg("--bare")
+            .arg(&remote_dir)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(&remote_dir)
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("push")
+            .arg("-u")
+            .arg("origin")
+            .arg("HEAD")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("symbolic-ref")
+            .arg("refs/remotes/origin/HEAD")
+            .arg("refs/remotes/origin/master")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Initially, no changes
+        let result = has_changes(tmp_dir.path());
+        assert!(result.is_ok());
+        assert!(!result.unwrap(), "Should have no changes initially");
+
+        // Make a change
+        fs::write(tmp_dir.path().join("README.md"), "changed").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("change")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Now should have changes
+        let result = has_changes(tmp_dir.path());
+        assert!(result.is_ok());
+        assert!(result.unwrap(), "Should detect changes after commit");
+    }
+
+    #[test]
+    fn test_get_default_branch_finds_main() {
+        let tmp_dir = TempDir::new("test_default_branch").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .arg("-b")
+            .arg("main")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create initial commit
+        fs::write(tmp_dir.path().join("README.md"), "test").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create remote and push
+        let remote_dir = tmp_dir.path().join("remote.git");
+        Command::new("git")
+            .arg("init")
+            .arg("--bare")
+            .arg(&remote_dir)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(&remote_dir)
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("push")
+            .arg("-u")
+            .arg("origin")
+            .arg("main")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("symbolic-ref")
+            .arg("refs/remotes/origin/HEAD")
+            .arg("refs/remotes/origin/main")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Should detect main as default branch
+        let result = get_default_branch(tmp_dir.path());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "main");
     }
 }

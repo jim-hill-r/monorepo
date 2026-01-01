@@ -78,6 +78,10 @@ enum Commands {
         /// After running CI, look N levels below current directory for other cast projects and run CI on them
         #[arg(long)]
         recursive: Option<usize>,
+
+        /// Only run CI if the project has changes compared to the origin's default branch
+        #[arg(long)]
+        only_changed: bool,
     },
     /// Run CD (Continuous Deployment)
     Cd,
@@ -292,6 +296,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 fix,
                 release,
                 recursive,
+                only_changed,
             } => {
                 // Determine the mode based on flags
                 // If no flags are set, default to Check mode
@@ -307,6 +312,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 let command = commands::ci::CiCommand {
                     mode,
                     recursive_depth: recursive,
+                    only_changed,
                 };
                 command.execute(working_directory)
             }
@@ -568,6 +574,7 @@ mod tests {
                     fix: false,
                     release: false,
                     recursive: None,
+                    only_changed: false,
                 },
             },
             tmp_dir.path(),
