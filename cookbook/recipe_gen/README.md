@@ -13,6 +13,9 @@ Adds UUID frontmatter to existing recipe markdown files.
 ### filename-migration
 Renames recipe files from day-based naming (day-X.md) to UUID-based naming ({uuid}.md).
 
+### plan-uuid-migration
+Updates plan files to reference recipe UUIDs instead of day numbers.
+
 ## Overview
 
 This tool automatically generates recipe markdown files in the correct format for the cookbook content directory. It creates recipes across various categories (breakfast, lunch, dinner, dessert, etc.) and cuisines (Italian, Chinese, Mexican, Indian, etc.) to ensure variety throughout the year.
@@ -81,6 +84,29 @@ The filename migration tool will:
 - The `uuid-migration` tool must be run FIRST to ensure all files have UUID frontmatter
 - This operation cannot be easily undone - make sure you have a backup!
 - After running this tool, you'll need to update build.rs and other code that references day-based filenames
+
+### Updating Plan Files to Use UUIDs
+
+After recipes have UUIDs, you can update plan files to reference UUIDs instead of day numbers:
+
+```bash
+cargo run --bin plan-uuid-migration
+```
+
+The plan UUID migration tool will:
+1. Scan the content directory for all week-*.md files
+2. Read the day numbers from each plan's `Days:` line
+3. Look up the corresponding recipe UUIDs
+4. Add a `Recipe UUIDs:` line to each plan file
+5. Report statistics on the migration
+
+**Benefits**:
+- Plans reference recipes by UUID instead of day number
+- Recipes can be rearranged without breaking plans
+- Backward compatible - both `Days:` and `Recipe UUIDs:` lines are kept
+- Parser tries UUID-based format first, falls back to day-based format
+
+**Note**: This tool requires that all recipes have UUID frontmatter (run `uuid-migration` first).
 
 ## Recipe Format
 

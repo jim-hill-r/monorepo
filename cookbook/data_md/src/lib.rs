@@ -1060,11 +1060,7 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
             .iter()
             .enumerate()
         {
-            let recipe_content = format!(
-                "# Recipe {}\n\nUUID: {}\n\nA test recipe\n",
-                i + 1,
-                uuid
-            );
+            let recipe_content = format!("# Recipe {}\n\nUUID: {}\n\nA test recipe\n", i + 1, uuid);
             fs::write(temp_dir.join(format!("day-{}.md", i + 1)), recipe_content).unwrap();
         }
 
