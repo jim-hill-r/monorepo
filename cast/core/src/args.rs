@@ -74,6 +74,10 @@ enum Commands {
         /// Build in release mode and publish artifacts (for post-merge to master)
         #[arg(long)]
         release: bool,
+
+        /// After running CI, look N levels below current directory for other cast projects and run CI on them
+        #[arg(long)]
+        recursive: Option<usize>,
     },
     /// Run CD (Continuous Deployment)
     Cd,
@@ -287,6 +291,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 check: _,
                 fix,
                 release,
+                recursive,
             } => {
                 // Determine the mode based on flags
                 // If no flags are set, default to Check mode
@@ -299,7 +304,10 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     crate::ci::CiMode::Check
                 };
 
-                let command = commands::ci::CiCommand { mode };
+                let command = commands::ci::CiCommand {
+                    mode,
+                    recursive_depth: recursive,
+                };
                 command.execute(working_directory)
             }
             Commands::Build => {
@@ -559,6 +567,7 @@ mod tests {
                     check: false,
                     fix: false,
                     release: false,
+                    recursive: None,
                 },
             },
             tmp_dir.path(),

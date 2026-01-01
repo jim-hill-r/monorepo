@@ -35,6 +35,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
   - `cast ci --check` - Run checks only (default mode for PR validation)
   - `cast ci --fix` - Auto-fix formatting issues, then run checks
   - `cast ci --release` - Build in release mode and publish artifacts (for post-merge to master)
+  - `cast ci --recursive <depth>` - After running CI, find and run CI on cast projects up to N levels below the current directory
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects

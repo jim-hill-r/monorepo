@@ -5,11 +5,12 @@ use std::path::Path;
 /// Command to run CI checks
 pub struct CiCommand {
     pub mode: ci::CiMode,
+    pub recursive_depth: Option<usize>,
 }
 
 impl Command for CiCommand {
     fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
-        ci::run(working_directory, self.mode)?;
+        ci::run(working_directory, self.mode, self.recursive_depth)?;
         Ok("CI passed".to_string())
     }
 }
@@ -76,6 +77,7 @@ mod tests {
 
         let cmd = CiCommand {
             mode: ci::CiMode::Check,
+            recursive_depth: None,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok(), "CI failed: {:?}", result.err());
@@ -102,6 +104,7 @@ mod tests {
 
         let cmd = CiCommand {
             mode: ci::CiMode::Check,
+            recursive_depth: None,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_err());
