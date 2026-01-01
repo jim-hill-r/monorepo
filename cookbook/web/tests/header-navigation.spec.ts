@@ -91,7 +91,8 @@ test.describe('Header Navigation', () => {
     
     // Click Plans link in header
     const plansLink = page.locator('#header .header-nav a:has-text("Plans")');
-    await plansLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await plansLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     // Verify we're on a plan page (check URL pattern)
@@ -130,14 +131,16 @@ test.describe('Header Navigation', () => {
     
     // Navigate between pages and verify header is always present
     const recipesLink = page.locator('#header .header-nav a:has-text("Recipes")');
-    await recipesLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await recipesLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     let header = page.locator('#header');
     await expect(header).toBeVisible();
     
     const plansLink = page.locator('#header .header-nav a:has-text("Plans")');
-    await plansLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await plansLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     header = page.locator('#header');

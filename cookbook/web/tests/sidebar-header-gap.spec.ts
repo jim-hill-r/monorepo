@@ -13,11 +13,6 @@ const SCROLLBAR_TOLERANCE = 5;
 
 test.describe('Sidebar and Header Alignment', () => {
   test('sidebar should touch header with no gap', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden by default
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
@@ -27,6 +22,13 @@ test.describe('Sidebar and Header Alignment', () => {
     
     // Get sidebar element
     const sidebar = page.locator('#sidebar');
+    
+    // On mobile, sidebar is hidden by default, so skip alignment check
+    if (viewport && viewport.width <= 768) {
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
+    }
+    
     await expect(sidebar).toBeVisible();
     
     // Get the bounding boxes
@@ -48,16 +50,17 @@ test.describe('Sidebar and Header Alignment', () => {
   });
   
   test('sidebar height should extend to bottom of viewport', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden by default
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
     // Get sidebar element
     const sidebar = page.locator('#sidebar');
+    
+    // On mobile, sidebar is hidden by default, so skip height check
+    if (viewport && viewport.width <= 768) {
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
+    }
     await expect(sidebar).toBeVisible();
     
     // Get the bounding box

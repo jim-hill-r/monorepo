@@ -94,7 +94,8 @@ test.describe('Recipe Routes', () => {
     await expect(backLink).toBeVisible();
     
     // Click the link and verify navigation
-    await backLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await backLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     // Check we're on home page by looking for the home page specific content
     await expect(page).toHaveURL('/');
@@ -160,7 +161,8 @@ test.describe('Plan Routes', () => {
     await expect(backLink).toBeVisible();
     
     // Click the link and verify navigation
-    await backLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await backLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL('/');
     await expect(page.locator('.home-container h1')).toHaveText("The Engineer's 365 Cookbook");

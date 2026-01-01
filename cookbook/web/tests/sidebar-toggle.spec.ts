@@ -99,16 +99,18 @@ test.describe('Sidebar Toggle', () => {
   });
 
   test('should persist sidebar state across navigation', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar behavior is different
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
     const sidebar = page.locator('#sidebar');
     const hamburger = page.locator('#header .hamburger-btn');
+    
+    // On mobile, sidebar behavior is different (hidden by default)
+    if (viewport && viewport.width <= 768) {
+      // Just verify sidebar is hidden on mobile by default
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
+    }
     
     // Hide sidebar
     await hamburger.click();

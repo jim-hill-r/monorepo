@@ -4,8 +4,7 @@ import { test, expect } from '@playwright/test';
  * Tests for the Cookbook sidebar navigation.
  * 
  * Before running these tests, start the Dioxus dev server:
- *   cd cookbook/web
- *   dx serve --port 8080
+ *   cast run
  * 
  * Run tests with:
  *   npm test
@@ -31,9 +30,12 @@ test.describe('Sidebar Navigation', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // On mobile viewports, skip this test since sidebar is hidden
+    // On mobile viewports, sidebar is hidden so title won't be visible
+    const sidebar = page.locator('#sidebar');
     if (viewport && viewport.width <= 768) {
-      test.skip();
+      // Just verify sidebar exists even if hidden
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
     }
     
     // Check for sidebar title
@@ -81,13 +83,16 @@ test.describe('Sidebar Navigation', () => {
   });
 
   test('should navigate to recipe from sidebar link', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden and links aren't clickable
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    
+    // On mobile, sidebar is hidden by default, so we need to show it first or skip the click
+    if (viewport && viewport.width <= 768) {
+      // On mobile, the sidebar is hidden, so verify it exists but don't test navigation
+      const sidebar = page.locator('#sidebar');
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
+    }
     
     // Click on the first recipe link in sidebar
     const recipeLink = page.locator('#sidebar .sidebar-section').first().locator('a').first();
@@ -104,13 +109,15 @@ test.describe('Sidebar Navigation', () => {
   });
 
   test('should navigate to plan from sidebar link', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden and links aren't clickable
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    
+    // On mobile, sidebar is hidden by default
+    if (viewport && viewport.width <= 768) {
+      const sidebar = page.locator('#sidebar');
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
+    }
     
     // Click on the first plan link in sidebar
     const planLink = page.locator('#sidebar .sidebar-section').last().locator('a').first();
@@ -129,37 +136,44 @@ test.describe('Sidebar Navigation', () => {
   });
 
   test('should display sidebar on recipe pages', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden by default
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/recipe/50');
     await page.waitForLoadState('networkidle');
     
     // Verify sidebar exists on recipe page
     const sidebar = page.locator('#sidebar');
-    await expect(sidebar).toBeVisible();
+    
+    // On mobile, sidebar is hidden by default
+    if (viewport && viewport.width <= 768) {
+      await expect(sidebar).toHaveClass(/hidden/);
+    } else {
+      await expect(sidebar).toBeVisible();
+    }
   });
 
   test('should display sidebar on plan pages', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden by default
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/plan/25');
     await page.waitForLoadState('networkidle');
     
     // Verify sidebar exists on plan page
     const sidebar = page.locator('#sidebar');
-    await expect(sidebar).toBeVisible();
+    
+    // On mobile, sidebar is hidden by default
+    if (viewport && viewport.width <= 768) {
+      await expect(sidebar).toHaveClass(/hidden/);
+    } else {
+      await expect(sidebar).toBeVisible();
+    }
   });
 
   test('should allow navigation between multiple recipe links', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden and links aren't clickable
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    // On mobile, sidebar is hidden and links aren't clickable
     if (viewport && viewport.width <= 768) {
-      test.skip();
+      const sidebar = page.locator('#sidebar');
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
     }
     
     await page.goto('/');
@@ -187,14 +201,16 @@ test.describe('Sidebar Navigation', () => {
   });
 
   test('should allow navigation between multiple plan links', async ({ page, viewport }) => {
-    // Skip on mobile since sidebar is hidden and links aren't clickable
-    if (viewport && viewport.width <= 768) {
-      test.skip();
-    }
-    
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
+    // On mobile, sidebar is hidden and links aren't clickable
+    if (viewport && viewport.width <= 768) {
+      const sidebar = page.locator('#sidebar');
+      await expect(sidebar).toHaveClass(/hidden/);
+      return;
+    }
+        
     // Get plan links from sidebar
     const planSection = page.locator('#sidebar .sidebar-section').last();
     const firstLink = planSection.locator('a').first();

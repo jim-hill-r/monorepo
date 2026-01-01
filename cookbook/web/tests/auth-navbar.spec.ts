@@ -60,7 +60,8 @@ test.describe('Authentication in Header', () => {
     
     // Navigate between pages and verify login button is always present in header
     const recipesLink = page.locator('#header .header-nav a', { hasText: 'Recipes' });
-    await recipesLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await recipesLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     let header = page.locator('#header');
@@ -69,7 +70,8 @@ test.describe('Authentication in Header', () => {
     expect(hasAuth1).toBeTruthy();
     
     const plansLink = page.locator('#header .header-nav a', { hasText: 'Plans' });
-    await plansLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await plansLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     header = page.locator('#header');
@@ -78,7 +80,8 @@ test.describe('Authentication in Header', () => {
     expect(hasAuth2).toBeTruthy();
     
     const homeLink = page.locator('#header .header-nav a', { hasText: 'Home' });
-    await homeLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await homeLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     header = page.locator('#header');

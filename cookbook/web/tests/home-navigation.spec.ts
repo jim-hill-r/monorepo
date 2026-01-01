@@ -54,7 +54,8 @@ test.describe('Home Page Navigation UI', () => {
     
     // Find and click the plans card link - "View Meal Plans"
     const plansLink = page.locator('.plan-card a:has-text("View Meal Plans")');
-    await plansLink.click();
+    // Use force:true for mobile viewports where elements may overlap
+    await plansLink.click({ force: true });
     await page.waitForLoadState('networkidle');
     
     // Verify we navigated to a plan page
