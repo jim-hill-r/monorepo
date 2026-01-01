@@ -1188,9 +1188,8 @@ mod tests {
         // it only appears once in the shopping list
         let shopping_list = get_week_shopping_list(1);
 
-        // Check that there are no duplicates
-        let mut unique_items = shopping_list.clone();
-        unique_items.dedup();
+        // Use HashSet to check for duplicates
+        let unique_items: std::collections::HashSet<_> = shopping_list.iter().collect();
         assert_eq!(
             shopping_list.len(),
             unique_items.len(),
