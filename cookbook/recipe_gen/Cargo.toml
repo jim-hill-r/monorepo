@@ -22,6 +22,10 @@ path = "src/filename_migration.rs"
 name = "plan-uuid-migration"
 path = "src/plan_uuid_migration.rs"
 
+[[bin]]
+name = "migration-validator"
+path = "src/migration_validator.rs"
+
 [dependencies]
 cookbook-core = { path = "../core" }
 cookbook-data-md = { path = "../data_md" }
