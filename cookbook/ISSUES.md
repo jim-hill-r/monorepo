@@ -34,11 +34,11 @@ All Phase 2 items have been completed:
 
 ### Phase 3: Plan Data Structure Implementation
 
-- TODO (agent-generated): Create `Plan` struct in `cookbook/core` with fields for week number and list of 7 day-of-year values (representing recipes for Mon-Sun).
-- TODO (agent-generated): Add `PlanError` enum to `cookbook/core` for plan-related errors (NotFound, InvalidData, AlreadyExists, etc).
-- TODO (agent-generated): Add `PlanReader` trait to `cookbook/core` with methods: `get_by_week(week: u32) -> PlanResult<Plan>`, `get_all() -> PlanResult<Vec<Plan>>`, `exists(week: u32) -> bool`.
-- TODO (agent-generated): Add `PlanWriter` trait to `cookbook/core` with methods: `create(plan: Plan)`, `update(plan: Plan)`, `delete(week: u32)`, `save(plan: Plan)`.
-- TODO (agent-generated): Add comprehensive tests for `Plan` struct, `PlanError`, `PlanReader`, and `PlanWriter` traits in `cookbook/core/src/lib.rs`.
+- ✅ Create `Plan` struct in `cookbook/core` with fields for week number and list of 7 day-of-year values (representing recipes for Mon-Sun).
+- ✅ Add `PlanError` enum to `cookbook/core` for plan-related errors (NotFound, InvalidData, AlreadyExists, etc).
+- ✅ Add `PlanReader` trait to `cookbook/core` with methods: `get_by_week(week: u32) -> PlanResult<Plan>`, `get_all() -> PlanResult<Vec<Plan>>`, `exists(week: u32) -> bool`.
+- ✅ Add `PlanWriter` trait to `cookbook/core` with methods: `create(plan: Plan)`, `update(plan: Plan)`, `delete(week: u32)`, `save(plan: Plan)`.
+- ✅ Add comprehensive tests for `Plan` struct, `PlanError`, `PlanReader`, and `PlanWriter` traits in `cookbook/core/src/lib.rs`.
 - TODO (agent-generated): Create plan content files in `cookbook/content/` directory with format `week-1.md`, `week-2.md`, etc. containing week metadata and 7 day references.
 - TODO (agent-generated): Update `cookbook/data_md` to parse plan markdown files and implement `PlanReader` trait for reading plans from embedded content.
 - TODO (agent-generated): Add tests to `cookbook/data_md` for plan parsing and `PlanReader` implementation.
