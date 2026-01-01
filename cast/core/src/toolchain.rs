@@ -1069,42 +1069,101 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
     }
 }
 
-/// Provide guidance for Git LFS installation
+/// Install Git LFS
 fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
-    // Git LFS should be installed via system package manager
-    // We provide guidance instead of trying to install
+    use std::process::Command;
 
-    let (os_name, install_cmd) = if cfg!(target_os = "linux") {
-        ("Linux", "sudo apt install git-lfs && git lfs install")
+    // Determine the installation command based on OS
+    let (os_name, package_manager, install_args) = if cfg!(target_os = "linux") {
+        ("Linux", "apt", vec!["install", "-y", "git-lfs"])
     } else if cfg!(target_os = "macos") {
-        ("macOS", "brew install git-lfs && git lfs install")
+        ("macOS", "brew", vec!["install", "git-lfs"])
     } else if cfg!(target_os = "windows") {
-        ("Windows", "winget install GitHub.GitLFS")
+        (
+            "Windows",
+            "winget",
+            vec!["install", "GitHub.GitLFS", "--silent"],
+        )
     } else {
-        ("your OS", "your system package manager")
-    };
-
-    let message = format!(
-        "git-lfs must be installed via your system package manager.\n\
-         For {}, use: {}",
-        os_name, install_cmd
-    );
-
-    if dry_run {
         return Ok(InstallResult {
             tool: Tool::GitLfs,
             success: false,
-            message: format!("Would provide guidance: {}", message),
+            message: "Unsupported operating system. Please install git-lfs manually using your system package manager.".to_string(),
+            skipped: false,
+        });
+    };
+
+    if dry_run {
+        let install_cmd = format!("{} {}", package_manager, install_args.join(" "));
+        return Ok(InstallResult {
+            tool: Tool::GitLfs,
+            success: true,
+            message: format!("Would install: {} && git lfs install", install_cmd),
             skipped: false,
         });
     }
 
-    Ok(InstallResult {
-        tool: Tool::GitLfs,
-        success: false,
-        message,
-        skipped: false,
-    })
+    println!("Installing Git LFS for {}...", os_name);
+
+    // Determine if we need sudo (Linux only)
+    let needs_sudo = cfg!(target_os = "linux");
+
+    // Build the command with or without sudo
+    let mut cmd = if needs_sudo {
+        let mut sudo_cmd = Command::new("sudo");
+        sudo_cmd.arg(package_manager);
+        sudo_cmd
+    } else {
+        Command::new(package_manager)
+    };
+
+    // Add the install arguments
+    for arg in &install_args {
+        cmd.arg(arg);
+    }
+
+    // Execute the package manager installation
+    let output = cmd.output().map_err(|e| {
+        ToolchainError::InstallationError(format!(
+            "Failed to run {} ({}): {}. Please install git-lfs manually.",
+            package_manager, os_name, e
+        ))
+    })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(ToolchainError::InstallationError(format!(
+            "Failed to install git-lfs using {}: {}",
+            package_manager, stderr
+        )));
+    }
+
+    println!("Git LFS package installed successfully!");
+    println!("Running 'git lfs install' to initialize Git LFS...");
+
+    // Run git lfs install to complete the setup
+    let lfs_install_output = Command::new("git")
+        .args(["lfs", "install"])
+        .output()
+        .map_err(|e| {
+            ToolchainError::InstallationError(format!("Failed to run 'git lfs install': {}", e))
+        })?;
+
+    if lfs_install_output.status.success() {
+        println!("Git LFS initialized successfully!");
+        Ok(InstallResult {
+            tool: Tool::GitLfs,
+            success: true,
+            message: "Installed and initialized successfully".to_string(),
+            skipped: false,
+        })
+    } else {
+        let stderr = String::from_utf8_lossy(&lfs_install_output.stderr);
+        Err(ToolchainError::InstallationError(format!(
+            "Git LFS installed but 'git lfs install' failed: {}",
+            stderr
+        )))
+    }
 }
 
 /// Options for checking tools
@@ -1509,6 +1568,24 @@ mod install_tests {
         assert!(install_result.message.contains("Would install"));
         assert!(install_result.message.contains("curl"));
         assert!(install_result.message.contains("https://sh.rustup.rs"));
+    }
+
+    #[test]
+    fn test_install_git_lfs_dry_run() {
+        let result = install_git_lfs(true);
+        assert!(result.is_ok());
+        let install_result = result.unwrap();
+        assert_eq!(install_result.tool, Tool::GitLfs);
+        assert!(install_result.success);
+        assert!(install_result.message.contains("Would install"));
+        assert!(install_result.message.contains("git lfs install"));
+        // Check that it contains the appropriate package manager for the OS
+        #[cfg(target_os = "linux")]
+        assert!(install_result.message.contains("apt"));
+        #[cfg(target_os = "macos")]
+        assert!(install_result.message.contains("brew"));
+        #[cfg(target_os = "windows")]
+        assert!(install_result.message.contains("winget"));
     }
 
     #[test]
