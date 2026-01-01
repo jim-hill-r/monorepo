@@ -32,6 +32,9 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 
 **Key Commands**:
 - `cast ci` - Run CI checks (format, lint, build, test, publish, commit artifacts)
+  - `cast ci --check` - Run checks only (default mode for PR validation)
+  - `cast ci --fix` - Auto-fix formatting issues, then run checks
+  - `cast ci --release` - Build in release mode and publish artifacts (for post-merge to master)
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
@@ -127,7 +130,15 @@ The Cast CLI is the primary interface for monorepo operations:
 # Run CI checks on current project (includes format, lint, build, test, and publish)
 cd cli
 cargo build --release
+
+# Run CI with default check mode
 ./target/release/cast ci
+
+# Run CI with auto-fix mode (auto-formats code)
+./target/release/cast ci --fix
+
+# Run CI with release mode (build --release and publish artifacts)
+./target/release/cast ci --release
 
 # Start development server (auto-detects framework)
 ./target/release/cast dev
@@ -149,8 +160,14 @@ The core library is used by the CLI and can also be used programmatically:
 ```rust
 use cast_core::ci;
 
-// Run CI checks on a project
-ci::run("/path/to/project").unwrap();
+// Run CI checks on a project with default Check mode
+ci::run("/path/to/project", ci::CiMode::Check).unwrap();
+
+// Run CI checks with Fix mode (auto-format code)
+ci::run("/path/to/project", ci::CiMode::Fix).unwrap();
+
+// Run CI checks with Release mode (build --release)
+ci::run("/path/to/project", ci::CiMode::Release).unwrap();
 ```
 
 See [core/README.md](core/README.md) for comprehensive API documentation and examples.

@@ -5,6 +5,18 @@ use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
+/// CI execution mode
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CiMode {
+    /// Run checks only (default mode for PR validation)
+    #[default]
+    Check,
+    /// Auto-fix issues that can be fixed automatically (e.g., formatting)
+    Fix,
+    /// Build in release mode and publish artifacts (for post-merge to master)
+    Release,
+}
+
 #[derive(Error, Debug)]
 pub enum CiError {
     #[error("Cargo fmt check failed")]
@@ -38,8 +50,11 @@ pub enum CiError {
 /// - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
 /// - For TypeScript projects (has package.json): npm lint, compile, test
 /// - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
-/// - If all checks pass, runs publish to create release artifacts
-pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
+/// - Behavior depends on the mode:
+///   - Check: Run all checks (fmt --check, clippy, build, test)
+///   - Fix: Auto-fix formatting issues, then run checks
+///   - Release: Run all checks with release build, then publish artifacts
+pub fn run(working_directory: impl AsRef<Path>, mode: CiMode) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
 
     // Check if this is a Rust project or TypeScript project
@@ -51,7 +66,7 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
 
     // Run Rust CI if Cargo.toml exists
     if has_cargo_toml {
-        run_rust_ci(working_directory)?;
+        run_rust_ci(working_directory, mode)?;
         ran_ci_checks = true;
     }
 
@@ -61,12 +76,22 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
         ran_ci_checks = true;
     }
 
-    // If we ran CI checks and they all passed, run publish to create release artifacts
+    // Handle post-check publishing based on mode
     if ran_ci_checks {
-        publish::run(working_directory)?;
+        match mode {
+            CiMode::Check | CiMode::Fix => {
+                // For Check and Fix modes, run publish to create artifacts
+                publish::run(working_directory)?;
 
-        // Commit artifacts to git with git LFS
-        commit_artifacts(working_directory)?;
+                // Commit artifacts to git with git LFS
+                commit_artifacts(working_directory)?;
+            }
+            CiMode::Release => {
+                // For Release mode, publish is already handled by run_rust_ci
+                // Just commit the artifacts
+                commit_artifacts(working_directory)?;
+            }
+        }
     }
     // If no CI checks were run, silently succeed (empty project or unsupported type)
 
@@ -74,23 +99,43 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CiError> {
 }
 
 /// Run CI checks for a Rust project
-/// This runs:
-/// 1. cargo fmt --check
-/// 2. cargo clippy -- -D warnings
-/// 3. cast build (cargo build)
-/// 4. cast test (cargo test)
-fn run_rust_ci(working_directory: &Path) -> Result<(), CiError> {
-    // Run cargo fmt --check
-    run_fmt_check(working_directory)?;
+/// This runs different steps based on the mode:
+/// - Check mode: cargo fmt --check, clippy, build (debug), test
+/// - Fix mode: cargo fmt (auto-fix), clippy, build (debug), test
+/// - Release mode: cargo fmt --check, clippy, build --release, test, publish
+fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
+    // Handle formatting based on mode
+    match mode {
+        CiMode::Check | CiMode::Release => {
+            // Run cargo fmt --check
+            run_fmt_check(working_directory)?;
+        }
+        CiMode::Fix => {
+            // Run cargo fmt to auto-fix formatting issues
+            run_fmt_fix(working_directory)?;
+        }
+    }
 
     // Run cargo clippy
     run_clippy(working_directory)?;
 
-    // Run cast build
-    build::run(working_directory)?;
+    // Run build - release mode for Release, debug for others
+    match mode {
+        CiMode::Check | CiMode::Fix => {
+            build::run(working_directory)?;
+        }
+        CiMode::Release => {
+            build::run_release(working_directory)?;
+        }
+    }
 
     // Run cast test
     test::run(working_directory)?;
+
+    // For Release mode, also run publish
+    if mode == CiMode::Release {
+        publish::run(working_directory)?;
+    }
 
     Ok(())
 }
@@ -170,6 +215,19 @@ fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
     let status = Command::new("cargo")
         .arg("fmt")
         .arg("--check")
+        .current_dir(working_directory)
+        .status()?;
+
+    if !status.success() {
+        return Err(CiError::FmtError);
+    }
+
+    Ok(())
+}
+
+fn run_fmt_fix(working_directory: &Path) -> Result<(), CiError> {
+    let status = Command::new("cargo")
+        .arg("fmt")
         .current_dir(working_directory)
         .status()?;
 
@@ -296,7 +354,7 @@ mod tests {
     fn test_run_ci_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_ci").unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), CiMode::Check);
         // Should succeed silently for directories without Cargo.toml or package.json
         // Publish should not run since no CI checks were performed
         assert!(result.is_ok());
@@ -372,7 +430,7 @@ mod tests {
             .output()
             .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), CiMode::Check);
         assert!(
             result.is_ok(),
             "CI should succeed and run publish: {:?}",
@@ -426,7 +484,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), CiMode::Check);
         assert!(result.is_err(), "CI should fail when build fails");
 
         // Verify that artifacts directory was NOT created
@@ -434,6 +492,151 @@ mod tests {
         assert!(
             !artifacts_dir.exists(),
             "Artifacts directory should not exist when CI fails"
+        );
+    }
+
+    #[test]
+    fn test_ci_fix_mode_auto_formats_code() {
+        let tmp_dir = TempDir::new("test_ci_fix").unwrap();
+
+        // Initialize git repo (required by publish)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal binary project with poorly formatted code
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main(){println!(\"Hello, world!\");}", // poorly formatted
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // CI in Fix mode should auto-format and succeed
+        let result = run(tmp_dir.path(), CiMode::Fix);
+        assert!(
+            result.is_ok(),
+            "CI Fix mode should succeed after auto-formatting: {:?}",
+            result.err()
+        );
+
+        // Verify the code was reformatted
+        let code = fs::read_to_string(tmp_dir.path().join("src/main.rs")).unwrap();
+        assert!(
+            code.contains("fn main()"),
+            "Code should be properly formatted"
+        );
+    }
+
+    #[test]
+    fn test_ci_release_mode_builds_with_release_flag() {
+        let tmp_dir = TempDir::new("test_ci_release").unwrap();
+
+        // Initialize git repo (required by publish)
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a minimal binary project with properly formatted code
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // CI in Release mode should build in release and publish
+        let result = run(tmp_dir.path(), CiMode::Release);
+        assert!(
+            result.is_ok(),
+            "CI Release mode should succeed: {:?}",
+            result.err()
+        );
+
+        // Verify that release binary was built
+        let release_binary = tmp_dir.path().join("target/release/test");
+        assert!(
+            release_binary.exists() || tmp_dir.path().join("target/release/test.exe").exists(),
+            "Release binary should exist after CI Release mode"
+        );
+
+        // Verify that artifacts directory was created by publish
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            artifacts_dir.exists(),
+            "Artifacts directory should exist after CI Release mode"
         );
     }
 
