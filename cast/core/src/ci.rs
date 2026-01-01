@@ -6,20 +6,15 @@ use std::process::Command;
 use thiserror::Error;
 
 /// CI execution mode
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CiMode {
     /// Run checks only (default mode for PR validation)
+    #[default]
     Check,
     /// Auto-fix issues that can be fixed automatically (e.g., formatting)
     Fix,
     /// Build in release mode and publish artifacts (for post-merge to master)
     Release,
-}
-
-impl Default for CiMode {
-    fn default() -> Self {
-        CiMode::Check
-    }
 }
 
 #[derive(Error, Debug)]

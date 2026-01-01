@@ -249,7 +249,11 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     )
                 }
             },
-            Commands::Ci { check: _, fix, release } => {
+            Commands::Ci {
+                check: _,
+                fix,
+                release,
+            } => {
                 // Determine the mode based on flags
                 // If no flags are set, default to Check mode
                 // If multiple flags are set, prioritize: release > fix > check
