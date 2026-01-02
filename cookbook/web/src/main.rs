@@ -450,8 +450,8 @@ fn Recipe(day: u32) -> Element {
     } else {
         let store = EmbeddedRecipeStore::global();
 
-        #[allow(deprecated)]
-        match store.get_by_day(day) {
+        // Use get_by_id with legacy day-based ID format
+        match store.get_by_id(&format!("day-{}", day)) {
             Ok(recipe) => {
                 rsx! {
                     div {
@@ -1061,35 +1061,33 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
-    fn test_embedded_recipe_store_get_by_day() {
+    fn test_embedded_recipe_store_get_by_id() {
         use cookbook_core::RecipeReader;
 
         let store = EmbeddedRecipeStore::global();
 
         // Test first day
-        let recipe1 = store.get_by_day(1).unwrap();
+        let recipe1 = store.get_by_id("day-1").unwrap();
         assert_eq!(recipe1.id, "day-1");
         assert!(!recipe1.title.is_empty());
 
         // Test middle day
-        let recipe100 = store.get_by_day(100).unwrap();
+        let recipe100 = store.get_by_id("day-100").unwrap();
         assert_eq!(recipe100.id, "day-100");
         assert!(!recipe100.title.is_empty());
 
         // Test last day
-        let recipe365 = store.get_by_day(365).unwrap();
+        let recipe365 = store.get_by_id("day-365").unwrap();
         assert_eq!(recipe365.id, "day-365");
         assert!(!recipe365.title.is_empty());
     }
 
     #[test]
-    #[allow(deprecated)]
     fn test_embedded_recipe_has_content() {
         use cookbook_core::RecipeReader;
 
         let store = EmbeddedRecipeStore::global();
-        let recipe = store.get_by_day(1).unwrap();
+        let recipe = store.get_by_id("day-1").unwrap();
 
         // Verify recipe has all expected content
         assert!(!recipe.title.is_empty(), "Recipe should have a title");
@@ -1117,17 +1115,19 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     fn test_embedded_recipe_invalid_days() {
         use cookbook_core::RecipeReader;
 
         let store = EmbeddedRecipeStore::global();
 
         // Day 0 should fail
-        assert!(store.get_by_day(0).is_err(), "Day 0 should be invalid");
+        assert!(store.get_by_id("day-0").is_err(), "Day 0 should be invalid");
 
         // Day 366 should fail
-        assert!(store.get_by_day(366).is_err(), "Day 366 should be invalid");
+        assert!(
+            store.get_by_id("day-366").is_err(),
+            "Day 366 should be invalid"
+        );
     }
 
     #[test]
