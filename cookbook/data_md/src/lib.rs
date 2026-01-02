@@ -402,12 +402,16 @@ impl MarkdownRecipeStore {
 
     /// Writes a recipe to a markdown file
     fn write_recipe_file(&self, recipe: &Recipe) -> RecipeResult<()> {
-        let file_path = self.content_dir.join(format!("{}.md", recipe.id));
+        // Use UUID for filename instead of legacy ID
+        let file_path = self.content_dir.join(format!("{}.md", recipe.uuid));
 
         let mut content = String::new();
 
         // Write title
         content.push_str(&format!("# {}\n\n", recipe.title));
+
+        // Write UUID in frontmatter
+        content.push_str(&format!("UUID: {}\n\n", recipe.uuid));
 
         // Write description
         if let Some(desc) = &recipe.description {
@@ -538,19 +542,18 @@ impl RecipeWriter for MarkdownRecipeStore {
     }
 
     fn delete(&mut self, id: &str) -> RecipeResult<()> {
-        if !self.recipes.contains_key(id) {
-            return Err(RecipeError::NotFound(format!(
-                "Recipe with id '{}' not found",
-                id
-            )));
-        }
+        // Get the recipe first to obtain its UUID
+        let recipe = self.get_by_id(id)?;
+        let uuid = recipe.uuid;
 
-        let file_path = self.content_dir.join(format!("{}.md", id));
+        // Delete the file using UUID filename
+        let file_path = self.content_dir.join(format!("{}.md", uuid));
         fs::remove_file(file_path).map_err(|e| {
             RecipeError::StorageError(format!("Failed to delete recipe file: {}", e))
         })?;
 
-        self.recipes.remove(id);
+        // Remove from in-memory store using the legacy ID
+        self.recipes.remove(&recipe.id);
         Ok(())
     }
 
@@ -701,14 +704,16 @@ Tags: italian, pasta, quick
         recipe.servings = Some(2);
         recipe.tags = vec!["test".to_string()];
 
+        let uuid = recipe.uuid;
+
         let result = store.create(recipe.clone());
         assert!(result.is_ok());
 
         // Verify recipe was added to store
         assert!(RecipeReader::exists(&store, "test-recipe"));
 
-        // Verify file was created
-        let file_path = temp_dir.join("test-recipe.md");
+        // Verify file was created with UUID filename
+        let file_path = temp_dir.join(format!("{}.md", uuid));
         assert!(file_path.exists());
 
         // Try to create duplicate
@@ -728,19 +733,26 @@ Tags: italian, pasta, quick
         let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
 
         let recipe = Recipe::new("update-test".to_string(), "Original Title".to_string());
+        let uuid = recipe.uuid;
         store.create(recipe).unwrap();
 
         // Need to reload the store to pick up the created file
         drop(store);
         let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
 
-        let mut updated = Recipe::new("update-test".to_string(), "Updated Title".to_string());
+        // After reload, the recipe ID will be the UUID string (since filename is UUID)
+        // So we need to get the recipe by UUID first
+        let loaded_recipe = store.get_by_uuid(&uuid).unwrap();
+
+        // Create updated recipe with the same UUID and ID as loaded recipe
+        let mut updated =
+            Recipe::new_with_uuid(loaded_recipe.id.clone(), uuid, "Updated Title".to_string());
         updated.description = Some("Updated description".to_string());
 
         let result = store.update(updated.clone());
         assert!(result.is_ok());
 
-        let retrieved = store.get_by_id("update-test").unwrap();
+        let retrieved = store.get_by_uuid(&uuid).unwrap();
         assert_eq!(retrieved.title, "Updated Title");
         assert_eq!(
             retrieved.description,
@@ -761,6 +773,7 @@ Tags: italian, pasta, quick
         let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
 
         let recipe = Recipe::new("delete-test".to_string(), "To Delete".to_string());
+        let uuid = recipe.uuid;
         store.create(recipe).unwrap();
 
         assert!(RecipeReader::exists(&store, "delete-test"));
@@ -770,8 +783,8 @@ Tags: italian, pasta, quick
 
         assert!(!RecipeReader::exists(&store, "delete-test"));
 
-        // Verify file was deleted
-        let file_path = temp_dir.join("delete-test.md");
+        // Verify file was deleted (UUID filename)
+        let file_path = temp_dir.join(format!("{}.md", uuid));
         assert!(!file_path.exists());
 
         // Try to delete again
@@ -1353,6 +1366,135 @@ Tags: test
 
         // Both methods should return the same recipe
         assert_eq!(recipe_by_uuid_str, recipe_by_id);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_create_recipe_uses_uuid_filename() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = Recipe::new("test-recipe".to_string(), "Test Recipe".to_string());
+        let uuid = recipe.uuid;
+
+        let result = store.create(recipe.clone());
+        assert!(result.is_ok());
+
+        // Verify file was created with UUID filename
+        let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
+        assert!(
+            uuid_file_path.exists(),
+            "Recipe file should be created with UUID filename"
+        );
+
+        // Verify old ID-based filename was NOT created
+        let id_file_path = temp_dir.join("test-recipe.md");
+        assert!(
+            !id_file_path.exists(),
+            "Recipe file should NOT be created with ID filename"
+        );
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_create_recipe_writes_uuid_to_frontmatter() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = Recipe::new("test-recipe".to_string(), "Test Recipe".to_string());
+        let uuid = recipe.uuid;
+
+        store.create(recipe.clone()).unwrap();
+
+        // Read the file and check for UUID in frontmatter
+        let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
+        let content = fs::read_to_string(uuid_file_path).unwrap();
+
+        // UUID should be in the frontmatter (after the title)
+        assert!(
+            content.contains(&format!("UUID: {}", uuid)),
+            "File should contain UUID in frontmatter"
+        );
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_update_recipe_uses_uuid_filename() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = Recipe::new("update-test".to_string(), "Original Title".to_string());
+        let uuid = recipe.uuid;
+        store.create(recipe).unwrap();
+
+        // Update the recipe
+        let mut updated =
+            Recipe::new_with_uuid("update-test".to_string(), uuid, "Updated Title".to_string());
+        updated.description = Some("Updated description".to_string());
+
+        store.update(updated).unwrap();
+
+        // Verify file exists with UUID filename
+        let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
+        assert!(
+            uuid_file_path.exists(),
+            "Updated recipe file should use UUID filename"
+        );
+
+        // Verify content was updated
+        let content = fs::read_to_string(uuid_file_path).unwrap();
+        assert!(content.contains("Updated Title"));
+        assert!(content.contains("Updated description"));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_delete_recipe_by_uuid() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = Recipe::new("delete-test".to_string(), "To Delete".to_string());
+        let uuid = recipe.uuid;
+        store.create(recipe).unwrap();
+
+        // Verify file exists
+        let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
+        assert!(uuid_file_path.exists());
+
+        // Delete by UUID string
+        let result = store.delete(&uuid.to_string());
+        assert!(result.is_ok());
+
+        // Verify file was deleted
+        assert!(!uuid_file_path.exists());
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_save_recipe_uses_uuid_filename() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipe = Recipe::new("save-test".to_string(), "Save Test".to_string());
+        let uuid = recipe.uuid;
+
+        store.save(recipe.clone()).unwrap();
+
+        // Verify file was saved with UUID filename
+        let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
+        assert!(
+            uuid_file_path.exists(),
+            "Saved recipe file should use UUID filename"
+        );
+
+        // Verify UUID is in frontmatter
+        let content = fs::read_to_string(uuid_file_path).unwrap();
+        assert!(content.contains(&format!("UUID: {}", uuid)));
 
         cleanup_temp_dir(&temp_dir);
     }
