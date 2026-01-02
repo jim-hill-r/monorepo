@@ -42,7 +42,8 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 - `cast build` - Build projects
 - `cast test` - Run tests
 - `cast publish` - Build release artifacts and copy to artifacts directory
-- `cast toolchain` - Manage framework-specific development tools
+- `cast install` - Install and manage framework-specific development tools
+- `cast uninstall` - Uninstall cast-managed tools
 - `cast cd` - Deploy to production environments
 - `cast project` - Analyze project dependencies and changes
 
@@ -154,7 +155,7 @@ cargo build --release
 ./target/release/cast install
 
 # Check which tools are installed
-./target/release/cast toolchain check
+./target/release/cast install check
 
 # Build release artifacts
 ./target/release/cast publish
@@ -283,7 +284,7 @@ cast/
 ## Documentation
 
 - **Core Library**: [core/README.md](core/README.md) - Complete API documentation
-- **Toolchain Design**: [core/docs/toolchain-command-design.md](core/docs/toolchain-command-design.md) - Toolchain management specification
+- **Install Command Design**: [core/docs/toolchain-command-design.md](core/docs/toolchain-command-design.md) - Toolchain management specification
 - **Workspace Issues**: [ISSUES.md](ISSUES.md) - Development roadmap and tracked tasks
 
 ## Contributing

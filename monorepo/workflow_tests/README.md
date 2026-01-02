@@ -49,7 +49,7 @@ Tests for `.github/workflows/cast-ci.yml`:
   - HEAD_SHA is properly quoted
 
 - **Toolchain Tests**
-  - Workflow uses `cast toolchain install` instead of manual tool installation
+  - Workflow uses `cast install` instead of manual tool installation
   - Workflow does not manually install Dioxus CLI
   - Workflow does not manually install Playwright
   - Workflow installs rustfmt component
@@ -57,10 +57,10 @@ Tests for `.github/workflows/cast-ci.yml`:
   - Workflow installs toolchain before running CI
 
 - **Integration Tests**
-  - `cast toolchain check` works on pure Rust library projects
-  - `cast toolchain check` detects Dioxus framework requirements
-  - `cast toolchain list` command works correctly
-  - `cast toolchain install --dry-run` shows installation status
+  - `cast install check` works on pure Rust library projects
+  - `cast install check` detects Dioxus framework requirements
+  - `cast install list` command works correctly
+  - `cast install --dry-run` shows installation status
 
 ## Why Rust Tests?
 

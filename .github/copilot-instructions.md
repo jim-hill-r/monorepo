@@ -110,23 +110,23 @@ Projects without a framework designation (pure Rust libraries and binaries) requ
 - Binaries: Projects with `src/main.rs`, files in `src/bin/` directory, or `[[bin]]` sections in Cargo.toml
 - Note: Projects can have both library and binary targets. Toolchain requirements remain the same regardless.
 
-### Cast Toolchain Command
-The `cast toolchain` command automates installation of framework-specific tooling:
+### Cast Install Command
+The `cast install` command automates installation of framework-specific tooling:
 
 ```bash
 # Install all required tools for a project
-cast toolchain install
+cast install
 
 # Check which tools are installed
-cast toolchain check
+cast install check
 
 # List required tools for current project
-cast toolchain list
+cast install list
 ```
 
 **Using in GitHub Workflows:**
 - GitHub workflows should only install Rust via `actions-rust-lang/setup-rust-toolchain`
-- Use `cast toolchain install` for all other framework-specific tools (Dioxus CLI, Playwright, etc.)
+- Use `cast install` for all other framework-specific tools (Dioxus CLI, Playwright, etc.)
 - See `.github/WORKFLOW_CONVENTIONS.md` for workflow patterns and best practices
 - See `standards/docs/toolchain.md` for complete toolchain management documentation
 
