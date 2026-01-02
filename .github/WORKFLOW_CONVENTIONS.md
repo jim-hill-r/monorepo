@@ -185,11 +185,11 @@ Cargo fmt check failed: error: 'cargo-fmt' is not installed for the toolchain 's
 
 ## Tool Installation
 
-### Framework-Specific Tools via Cast Toolchain
+### Framework-Specific Tools via Cast Install
 
-Workflows should use the `cast toolchain install` command to manage framework-specific tools (Node.js, npm, Playwright, Dioxus CLI, Wrangler, etc.) instead of manually installing them.
+Workflows should use the `cast install` command to manage framework-specific tools (Node.js, npm, Playwright, Dioxus CLI, Wrangler, etc.) instead of manually installing them.
 
-**✅ Correct - Use cast toolchain install:**
+**✅ Correct - Use cast install:**
 ```yaml
 - name: Setup Rust toolchain
   uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -212,7 +212,7 @@ Workflows should use the `cast toolchain install` command to manage framework-sp
 - name: Install toolchain for project
   run: |
     cd $PROJECT_DIR
-    cast toolchain install
+    cast install
 ```
 
 **❌ Incorrect - Manually install tools:**
@@ -241,7 +241,7 @@ Workflows should use the `cast toolchain install` command to manage framework-sp
 
 The standard pattern for CI workflows is:
 1. **Setup Rust** via `actions-rust-lang/setup-rust-toolchain@v1` (base requirement)
-2. **Setup Node.js** via `actions/setup-node@v4` (cast toolchain install requires Node.js for certain tools)
+2. **Setup Node.js** via `actions/setup-node@v4` (cast install requires Node.js for certain tools)
 3. **Build cast CLI** to make it available
 4. **Use cast commands** for all other logic including tool installation
 

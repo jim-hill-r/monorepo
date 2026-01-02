@@ -90,7 +90,7 @@ The `cast` CLI is the primary tool for managing this monorepo:
   - `cast project with-changes --base <ref> --head <ref>` - Find projects with changes between git refs
   - `cast ci` - Run CI checks (lint, build, test)
   - `cast session start` - Start a work session
-  - `cast toolchain install` - Install required tools for projects
+  - `cast install` - Install required tools for projects
 
 ## Exemplar Projects
 

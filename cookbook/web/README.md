@@ -23,11 +23,11 @@ Before running this project, you need to have:
 
 #### Automated Installation (Recommended)
 
-Use the Cast toolchain manager to install all required dependencies:
+Use the Cast install command to install all required dependencies:
 
 ```bash
 cd cookbook/web
-cast toolchain install
+cast install
 ```
 
 This will automatically install:

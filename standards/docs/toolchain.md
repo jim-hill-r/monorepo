@@ -109,10 +109,10 @@ Cast provides commands to automate toolchain management:
 cast install
 
 # Check which tools are installed
-cast toolchain check
+cast install check
 
 # List required tools for current project
-cast toolchain list
+cast install list
 ```
 
 The command will:

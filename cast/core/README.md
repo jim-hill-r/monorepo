@@ -83,7 +83,7 @@ Different frameworks require different tooling beyond Rust:
 - **Cloudflare Pages projects**: Require Wrangler CLI for deployment
 - **Pure Rust projects**: Only require the Rust toolchain (rustc, cargo, rustfmt, clippy)
 
-The `cast install` and `cast toolchain` commands help automate the installation and verification of these tools.
+The `cast install` command helps automate the installation and verification of these tools.
 
 ### Install Toolchain Dependencies
 
@@ -127,7 +127,7 @@ cast install --force
 ### Check Toolchain Status
 
 ```bash
-cast toolchain check
+cast install check
 ```
 
 Verifies that all required tools are installed and displays their versions.
@@ -139,13 +139,13 @@ Verifies that all required tools are installed and displays their versions.
 **Examples**:
 ```bash
 # Check if all required tools are installed
-cast toolchain check
+cast install check
 
 # Show detailed version information
-cast toolchain check --verbose
+cast install check --verbose
 
 # Output in JSON format for CI/CD
-cast toolchain check --json
+cast install check --json
 ```
 
 **Exit Codes**:
@@ -206,7 +206,7 @@ Status: 2 tools missing
 List all tools and their installation status:
 
 ```bash
-cast toolchain list
+cast install list
 ```
 
 **Options**:
@@ -228,7 +228,7 @@ playwright: not installed
 
 With JSON output:
 ```bash
-cast toolchain list --json
+cast install list --json
 ```
 
 Example JSON output:

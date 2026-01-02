@@ -2,7 +2,6 @@
 # Priority Issues
 
 
-- TODO: Remove 'cast toolchain' option. All of the logic should exist within `cast install` now. Remove all documentation regarding toolchain command as well.
 - TODO: In cast project, when running `cast ci`, update the error message `cast toml not found` to `cast configuration not found` since a cargo.toml could contain the information.
 - TODO: In cast project, when running `cast ci`, if a cast configuration is not found but recursive is enabled, still do the recursion into child directories.
 

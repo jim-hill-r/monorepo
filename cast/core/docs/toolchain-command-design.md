@@ -1,8 +1,8 @@
-# Cast Toolchain Management Design
+# Cast Install Command Design
 
 ## Overview
 
-Cast provides commands for managing development tools required by different project types. The `cast install` command installs required tools, while the `cast toolchain` command provides utilities for checking and listing installed tools. This design document outlines the command structure and implementation considerations.
+Cast provides commands for managing development tools required by different project types. The `cast install` command installs required tools and provides subcommands for checking and listing installed tools. This design document outlines the command structure and implementation considerations.
 
 ## Motivation
 
@@ -12,7 +12,7 @@ Different project frameworks require different tooling beyond the Rust toolchain
 - **Cloudflare Pages projects**: Require Rust toolchain, Wrangler CLI, Node.js/npm
 - **Pure Rust projects**: Only require Rust toolchain (rustc, cargo, rustfmt, clippy)
 
-Currently, developers and CI workflows must manually install these tools. The `cast install` and `cast toolchain` commands automate this process by reading the Cast configuration and managing the appropriate tools.
+Currently, developers and CI workflows must manually install these tools. The `cast install` command automates this process by reading the Cast configuration and managing the appropriate tools.
 
 ## Command Structure
 
@@ -20,17 +20,10 @@ Currently, developers and CI workflows must manually install these tools. The `c
 
 ```bash
 cast install [OPTIONS]
+cast install <SUBCOMMAND>
 ```
 
-The `install` command is a top-level command for installing required development tools.
-
-### Toolchain Subcommands
-
-```bash
-cast toolchain <SUBCOMMAND>
-```
-
-The `toolchain` command provides utilities for checking and listing tools, following the pattern of `rustup toolchain` and similar CLI tools.
+The `install` command is a top-level command for installing required development tools. It also provides subcommands for checking and listing tools.
 
 ## Commands
 
@@ -100,10 +93,10 @@ cast install --dry-run
 cast install --force
 ```
 
-### 2. `toolchain check` - Verify Tools Are Installed
+### 2. `install check` - Verify Tools Are Installed
 
 ```bash
-cast toolchain check [OPTIONS]
+cast install check [OPTIONS]
 ```
 
 Verifies that all required tools are installed and outputs their versions.
@@ -130,13 +123,13 @@ Verifies that all required tools are installed and outputs their versions.
 
 ```bash
 # Check if all required tools are installed
-cast toolchain check
+cast install check
 
 # Show detailed version information
-cast toolchain check --verbose
+cast install check --verbose
 
 # Output in JSON format for CI/CD
-cast toolchain check --json
+cast install check --json
 ```
 
 **Sample Output (text format):**
@@ -175,10 +168,10 @@ Status: 1 tool missing
 }
 ```
 
-### 3. `toolchain list` - List Installed Tools
+### 3. `install list` - List Installed Tools
 
 ```bash
-cast toolchain list [OPTIONS]
+cast install list [OPTIONS]
 ```
 
 Lists all tools managed by Cast and their installation status.
@@ -204,13 +197,13 @@ Lists all tools managed by Cast and their installation status.
 
 ```bash
 # List all tools managed by Cast
-cast toolchain list --all
+cast install list --all
 
 # List only tools required by current project
-cast toolchain list --required-only
+cast install list --required-only
 
 # List in JSON format
-cast toolchain list --json
+cast install list --json
 ```
 
 ## Tool Detection Logic
@@ -440,7 +433,7 @@ Potential future additions (not in initial scope):
 
 ### Windows Support
 
-The `cast toolchain` command supports Windows environments, with the following considerations:
+The `cast install` command supports Windows environments, with the following considerations:
 
 #### Recommended Environment: WSL2
 
@@ -462,7 +455,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 #### Native Windows Support
 
-Cast toolchain also supports native Windows environments with these considerations:
+Cast install also supports native Windows environments with these considerations:
 
 **Tool Installation Methods:**
 

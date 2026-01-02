@@ -17,7 +17,7 @@ Use the Cast toolchain manager to install all required dependencies:
 
 ```bash
 cd cookbook/web
-cast toolchain install
+cast install
 ```
 
 This will automatically install:
