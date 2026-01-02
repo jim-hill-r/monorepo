@@ -168,7 +168,7 @@ pub enum InstallSubcommands {
 #[derive(Error, Debug)]
 pub enum ExecuteError {
     #[error("cast configuration not found")]
-    CastTomlNotFound,
+    CastConfigurationNotFound,
     #[error("command error: {0}")]
     CommandError(String),
 }
@@ -371,7 +371,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
 
         result.map_err(|e| ExecuteError::CommandError(e.to_string()))
     } else {
-        Err(ExecuteError::CastTomlNotFound)
+        Err(ExecuteError::CastConfigurationNotFound)
     }
 }
 
