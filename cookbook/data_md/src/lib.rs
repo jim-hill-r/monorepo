@@ -703,7 +703,7 @@ Tags: italian, pasta, quick
         recipe.cook_time_minutes = Some(10);
         recipe.servings = Some(2);
         recipe.tags = vec!["test".to_string()];
-        
+
         let uuid = recipe.uuid;
 
         let result = store.create(recipe.clone());
@@ -743,13 +743,10 @@ Tags: italian, pasta, quick
         // After reload, the recipe ID will be the UUID string (since filename is UUID)
         // So we need to get the recipe by UUID first
         let loaded_recipe = store.get_by_uuid(&uuid).unwrap();
-        
+
         // Create updated recipe with the same UUID and ID as loaded recipe
-        let mut updated = Recipe::new_with_uuid(
-            loaded_recipe.id.clone(),
-            uuid,
-            "Updated Title".to_string(),
-        );
+        let mut updated =
+            Recipe::new_with_uuid(loaded_recipe.id.clone(), uuid, "Updated Title".to_string());
         updated.description = Some("Updated description".to_string());
 
         let result = store.update(updated.clone());
@@ -1434,11 +1431,8 @@ Tags: test
         store.create(recipe).unwrap();
 
         // Update the recipe
-        let mut updated = Recipe::new_with_uuid(
-            "update-test".to_string(),
-            uuid,
-            "Updated Title".to_string(),
-        );
+        let mut updated =
+            Recipe::new_with_uuid("update-test".to_string(), uuid, "Updated Title".to_string());
         updated.description = Some("Updated description".to_string());
 
         store.update(updated).unwrap();
