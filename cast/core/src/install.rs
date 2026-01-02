@@ -5,7 +5,7 @@ use thiserror::Error;
 use crate::config::CastConfig;
 
 #[derive(Error, Debug)]
-pub enum ToolchainError {
+pub enum InstallError {
     #[error("Tool detection failed: {0}")]
     DetectionError(String),
     #[error("Tool installation failed: {0}")]
@@ -16,10 +16,10 @@ pub enum ToolchainError {
     IoError(#[from] std::io::Error),
 }
 
-/// Represents a tool that can be managed by the toolchain command
+/// Represents a tool that can be managed by the install command
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Tool {
-    /// Rustup toolchain installer
+    /// Rustup installer
     Rustup,
     /// Rust compiler
     Rustc,
@@ -95,12 +95,12 @@ pub struct ToolStatus {
 /// Determine required tools based on project configuration
 pub fn detect_required_tools(
     working_directory: impl AsRef<Path>,
-) -> Result<Vec<Tool>, ToolchainError> {
+) -> Result<Vec<Tool>, InstallError> {
     let working_directory = working_directory.as_ref();
 
     // Load Cast configuration
     let config = CastConfig::load_from_dir(working_directory).map_err(|e| {
-        ToolchainError::ConfigError(format!("Failed to load Cast configuration: {}", e))
+        InstallError::ConfigError(format!("Failed to load Cast configuration: {}", e))
     })?;
 
     // Use a HashSet to ensure tools are unique
@@ -169,7 +169,7 @@ pub fn detect_required_tools(
 }
 
 /// Check if a tool is installed and get its version
-pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
+pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
     use std::process::Command;
 
     // Playwright needs special handling to verify chromium browsers are installed
@@ -231,7 +231,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, ToolchainError> {
 }
 
 /// Check if Playwright is installed with required browsers
-fn check_playwright_with_browsers() -> Result<ToolStatus, ToolchainError> {
+fn check_playwright_with_browsers() -> Result<ToolStatus, InstallError> {
     use std::process::Command;
 
     // First check if playwright npm package is available
@@ -692,7 +692,7 @@ pub struct InstallResult {
 pub fn install_tools(
     working_directory: impl AsRef<Path>,
     options: InstallOptions,
-) -> Result<Vec<InstallResult>, ToolchainError> {
+) -> Result<Vec<InstallResult>, InstallError> {
     let working_directory = working_directory.as_ref();
 
     // Determine which tools to install
@@ -750,7 +750,7 @@ fn install_single_tool(
     tool: &Tool,
     working_directory: &Path,
     dry_run: bool,
-) -> Result<InstallResult, ToolchainError> {
+) -> Result<InstallResult, InstallError> {
     match tool {
         Tool::Rustup => install_rustup(dry_run),
         Tool::Rustc | Tool::Cargo | Tool::Rustfmt | Tool::Clippy => {
@@ -771,8 +771,8 @@ fn install_single_tool(
     }
 }
 
-/// Install Rustup toolchain installer
-fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
+/// Install Rustup installer
+fn install_rustup(dry_run: bool) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
     let install_cmd = "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y";
@@ -787,7 +787,7 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
     }
 
     println!("Installing Rustup...");
-    println!("This will download and install the Rust toolchain installer.");
+    println!("This will download and install the Rust installer.");
 
     // Execute the rustup installation script
     let output = Command::new("sh")
@@ -795,7 +795,7 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         .arg(install_cmd)
         .output()
         .map_err(|e| {
-            ToolchainError::InstallationError(format!("Failed to run rustup installer: {}", e))
+            InstallError::InstallationError(format!("Failed to run rustup installer: {}", e))
         })?;
 
     if output.status.success() {
@@ -810,7 +810,7 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         })
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(ToolchainError::InstallationError(format!(
+        Err(InstallError::InstallationError(format!(
             "Failed to install rustup: {}",
             stderr
         )))
@@ -818,7 +818,7 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 }
 
 /// Install Cast CLI
-fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult, ToolchainError> {
+fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
     // Find the monorepo root by looking for cast/cli directory using ancestors
@@ -861,7 +861,7 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
     println!("Installing Cast CLI from {}...", cast_cli_path.display());
 
     let path_str = cast_cli_path.to_str().ok_or_else(|| {
-        ToolchainError::InstallationError(
+        InstallError::InstallationError(
             "Cast CLI path contains invalid UTF-8 characters".to_string(),
         )
     })?;
@@ -869,7 +869,7 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
     let output = Command::new("cargo")
         .args(["install", "--path", path_str])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
     if output.status.success() {
         Ok(InstallResult {
@@ -880,7 +880,7 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
         })
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(ToolchainError::InstallationError(format!(
+        Err(InstallError::InstallationError(format!(
             "Failed to install cast: {}",
             stderr
         )))
@@ -888,7 +888,7 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
 }
 
 /// Install Dioxus CLI
-fn install_dx(dry_run: bool) -> Result<InstallResult, ToolchainError> {
+fn install_dx(dry_run: bool) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
     let version = "0.7.2";
@@ -910,7 +910,7 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, ToolchainError> {
     let output = Command::new("cargo")
         .args(["install", "dioxus-cli", "--version", version])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
     if output.status.success() {
         Ok(InstallResult {
@@ -921,7 +921,7 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         })
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(ToolchainError::InstallationError(format!(
+        Err(InstallError::InstallationError(format!(
             "Failed to install dx: {}",
             stderr
         )))
@@ -929,7 +929,7 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 }
 
 /// Provide guidance for Node.js installation
-fn install_node(tool: &Tool, dry_run: bool) -> Result<InstallResult, ToolchainError> {
+fn install_node(tool: &Tool, dry_run: bool) -> Result<InstallResult, InstallError> {
     // Node.js and npm should be installed via system package manager
     // We provide guidance instead of trying to install
 
@@ -972,7 +972,7 @@ fn install_node(tool: &Tool, dry_run: bool) -> Result<InstallResult, ToolchainEr
 fn install_playwright(
     working_directory: &Path,
     dry_run: bool,
-) -> Result<InstallResult, ToolchainError> {
+) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
     if dry_run {
@@ -994,12 +994,12 @@ fn install_playwright(
             .current_dir(working_directory)
             .output()
             .map_err(|e| {
-                ToolchainError::InstallationError(format!("Failed to run npm ci: {}", e))
+                InstallError::InstallationError(format!("Failed to run npm ci: {}", e))
             })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(ToolchainError::InstallationError(format!(
+            return Err(InstallError::InstallationError(format!(
                 "npm ci failed: {}",
                 stderr
             )));
@@ -1013,7 +1013,7 @@ fn install_playwright(
         .current_dir(working_directory)
         .output()
         .map_err(|e| {
-            ToolchainError::InstallationError(format!("Failed to run npx playwright: {}", e))
+            InstallError::InstallationError(format!("Failed to run npx playwright: {}", e))
         })?;
 
     if output.status.success() {
@@ -1025,7 +1025,7 @@ fn install_playwright(
         })
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(ToolchainError::InstallationError(format!(
+        Err(InstallError::InstallationError(format!(
             "Failed to install Playwright: {}",
             stderr
         )))
@@ -1033,7 +1033,7 @@ fn install_playwright(
 }
 
 /// Install Wrangler CLI
-fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
+fn install_wrangler(dry_run: bool) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
     if dry_run {
@@ -1051,7 +1051,7 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
     let output = Command::new("npm")
         .args(["install", "-g", "wrangler"])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run npm: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run npm: {}", e)))?;
 
     if output.status.success() {
         Ok(InstallResult {
@@ -1062,7 +1062,7 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         })
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(ToolchainError::InstallationError(format!(
+        Err(InstallError::InstallationError(format!(
             "Failed to install wrangler: {}",
             stderr
         )))
@@ -1070,7 +1070,7 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 }
 
 /// Install Git LFS
-fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
+fn install_git_lfs(dry_run: bool) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
     // Determine the installation command based on OS
@@ -1124,7 +1124,7 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 
     // Execute the package manager installation
     let output = cmd.output().map_err(|e| {
-        ToolchainError::InstallationError(format!(
+        InstallError::InstallationError(format!(
             "Failed to run {} ({}): {}. Please install git-lfs manually.",
             package_manager, os_name, e
         ))
@@ -1132,7 +1132,7 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(ToolchainError::InstallationError(format!(
+        return Err(InstallError::InstallationError(format!(
             "Failed to install git-lfs using {}: {}",
             package_manager, stderr
         )));
@@ -1146,7 +1146,7 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         .args(["lfs", "install"])
         .output()
         .map_err(|e| {
-            ToolchainError::InstallationError(format!("Failed to run 'git lfs install': {}", e))
+            InstallError::InstallationError(format!("Failed to run 'git lfs install': {}", e))
         })?;
 
     if lfs_install_output.status.success() {
@@ -1159,7 +1159,7 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, ToolchainError> {
         })
     } else {
         let stderr = String::from_utf8_lossy(&lfs_install_output.stderr);
-        Err(ToolchainError::InstallationError(format!(
+        Err(InstallError::InstallationError(format!(
             "Git LFS installed but 'git lfs install' failed: {}",
             stderr
         )))
@@ -1192,11 +1192,11 @@ impl CheckResult {
         // Show framework if known
         if let Some(framework) = &self.framework {
             output.push_str(&format!(
-                "Checking toolchain for {} project...\n",
+                "Checking tools for {} project...\n",
                 framework
             ));
         } else {
-            output.push_str("Checking toolchain for pure Rust project...\n");
+            output.push_str("Checking tools for pure Rust project...\n");
         }
 
         // Show tool status
@@ -1233,7 +1233,7 @@ impl CheckResult {
     }
 
     /// Format check result as JSON
-    pub fn format_json(&self) -> Result<String, ToolchainError> {
+    pub fn format_json(&self) -> Result<String, InstallError> {
         use serde_json::json;
 
         let tools_json: Vec<serde_json::Value> = self
@@ -1257,7 +1257,7 @@ impl CheckResult {
         });
 
         serde_json::to_string_pretty(&result).map_err(|e| {
-            ToolchainError::DetectionError(format!("JSON serialization failed: {}", e))
+            InstallError::DetectionError(format!("JSON serialization failed: {}", e))
         })
     }
 }
@@ -1266,7 +1266,7 @@ impl CheckResult {
 pub fn check_tools(
     working_directory: impl AsRef<Path>,
     _options: CheckOptions,
-) -> Result<CheckResult, ToolchainError> {
+) -> Result<CheckResult, InstallError> {
     let working_directory = working_directory.as_ref();
 
     // Get framework from config
@@ -1341,7 +1341,7 @@ impl ListResult {
     }
 
     /// Format list result as JSON
-    pub fn format_json(&self) -> Result<String, ToolchainError> {
+    pub fn format_json(&self) -> Result<String, InstallError> {
         use serde_json::json;
 
         let tools_json: Vec<serde_json::Value> = self
@@ -1361,7 +1361,7 @@ impl ListResult {
         });
 
         serde_json::to_string_pretty(&result).map_err(|e| {
-            ToolchainError::DetectionError(format!("JSON serialization failed: {}", e))
+            InstallError::DetectionError(format!("JSON serialization failed: {}", e))
         })
     }
 }
@@ -1388,7 +1388,7 @@ fn get_all_tools() -> Vec<Tool> {
 pub fn list_tools(
     working_directory: impl AsRef<Path>,
     options: ListOptions,
-) -> Result<ListResult, ToolchainError> {
+) -> Result<ListResult, InstallError> {
     let working_directory = working_directory.as_ref();
 
     // Determine which tools to list
@@ -1439,7 +1439,7 @@ pub struct UninstallResult {
 pub fn uninstall_tools(
     working_directory: impl AsRef<Path>,
     options: UninstallOptions,
-) -> Result<Vec<UninstallResult>, ToolchainError> {
+) -> Result<Vec<UninstallResult>, InstallError> {
     let working_directory = working_directory.as_ref();
 
     // Determine which tools to uninstall
@@ -1518,7 +1518,7 @@ fn uninstall_single_tool(
     tool: &Tool,
     working_directory: &Path,
     dry_run: bool,
-) -> Result<UninstallResult, ToolchainError> {
+) -> Result<UninstallResult, InstallError> {
     match tool {
         Tool::Cast => uninstall_cast(dry_run),
         Tool::Dx => uninstall_dx(dry_run),
@@ -1534,7 +1534,7 @@ fn uninstall_single_tool(
 }
 
 /// Uninstall Cast CLI
-fn uninstall_cast(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
+fn uninstall_cast(dry_run: bool) -> Result<UninstallResult, InstallError> {
     use std::process::Command;
 
     if dry_run {
@@ -1551,7 +1551,7 @@ fn uninstall_cast(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
     let output = Command::new("cargo")
         .args(["uninstall", "cast_cli"])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
     if output.status.success() {
         Ok(UninstallResult {
@@ -1571,7 +1571,7 @@ fn uninstall_cast(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
                 skipped: false,
             })
         } else {
-            Err(ToolchainError::InstallationError(format!(
+            Err(InstallError::InstallationError(format!(
                 "Failed to uninstall cast: {}",
                 stderr
             )))
@@ -1580,7 +1580,7 @@ fn uninstall_cast(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
 }
 
 /// Uninstall Dioxus CLI
-fn uninstall_dx(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
+fn uninstall_dx(dry_run: bool) -> Result<UninstallResult, InstallError> {
     use std::process::Command;
 
     if dry_run {
@@ -1597,7 +1597,7 @@ fn uninstall_dx(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
     let output = Command::new("cargo")
         .args(["uninstall", "dioxus-cli"])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
     if output.status.success() {
         Ok(UninstallResult {
@@ -1617,7 +1617,7 @@ fn uninstall_dx(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
                 skipped: false,
             })
         } else {
-            Err(ToolchainError::InstallationError(format!(
+            Err(InstallError::InstallationError(format!(
                 "Failed to uninstall dx: {}",
                 stderr
             )))
@@ -1629,7 +1629,7 @@ fn uninstall_dx(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
 fn uninstall_playwright(
     working_directory: &Path,
     dry_run: bool,
-) -> Result<UninstallResult, ToolchainError> {
+) -> Result<UninstallResult, InstallError> {
     use std::process::Command;
 
     if dry_run {
@@ -1649,7 +1649,7 @@ fn uninstall_playwright(
         .current_dir(working_directory)
         .output()
         .map_err(|e| {
-            ToolchainError::InstallationError(format!("Failed to run npx playwright: {}", e))
+            InstallError::InstallationError(format!("Failed to run npx playwright: {}", e))
         })?;
 
     if output.status.success() {
@@ -1671,7 +1671,7 @@ fn uninstall_playwright(
                 skipped: false,
             })
         } else {
-            Err(ToolchainError::InstallationError(format!(
+            Err(InstallError::InstallationError(format!(
                 "Failed to uninstall Playwright: {}",
                 stderr
             )))
@@ -1680,7 +1680,7 @@ fn uninstall_playwright(
 }
 
 /// Uninstall Wrangler CLI
-fn uninstall_wrangler(dry_run: bool) -> Result<UninstallResult, ToolchainError> {
+fn uninstall_wrangler(dry_run: bool) -> Result<UninstallResult, InstallError> {
     use std::process::Command;
 
     if dry_run {
@@ -1699,7 +1699,7 @@ fn uninstall_wrangler(dry_run: bool) -> Result<UninstallResult, ToolchainError> 
     let npm_output = Command::new("npm")
         .args(["uninstall", "-g", "wrangler"])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run npm: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run npm: {}", e)))?;
 
     if npm_output.status.success() {
         return Ok(UninstallResult {
@@ -1714,7 +1714,7 @@ fn uninstall_wrangler(dry_run: bool) -> Result<UninstallResult, ToolchainError> 
     let cargo_output = Command::new("cargo")
         .args(["uninstall", "wrangler"])
         .output()
-        .map_err(|e| ToolchainError::InstallationError(format!("Failed to run cargo: {}", e)))?;
+        .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
     if cargo_output.status.success() {
         Ok(UninstallResult {
@@ -1734,7 +1734,7 @@ fn uninstall_wrangler(dry_run: bool) -> Result<UninstallResult, ToolchainError> 
                 skipped: false,
             })
         } else {
-            Err(ToolchainError::InstallationError(format!(
+            Err(InstallError::InstallationError(format!(
                 "Failed to uninstall wrangler: {}",
                 cargo_stderr
             )))
@@ -2171,7 +2171,7 @@ mod check_tests {
         };
 
         let output = check_result.format_text(false);
-        assert!(output.contains("Checking toolchain for dioxus project"));
+        assert!(output.contains("Checking tools for dioxus project"));
         assert!(output.contains("✓ rustc"));
         assert!(output.contains("✗ dx (not installed)"));
         assert!(output.contains("1 tool missing"));
@@ -2200,7 +2200,7 @@ mod check_tests {
         };
 
         let output = check_result.format_text(true);
-        assert!(output.contains("Checking toolchain for dioxus project"));
+        assert!(output.contains("Checking tools for dioxus project"));
         assert!(output.contains("✓ rustc"));
         assert!(output.contains("1.75.0")); // Version should be shown in verbose mode
         assert!(output.contains("✗ dx (not installed)"));

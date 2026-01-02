@@ -1,8 +1,8 @@
 use crate::command::Command;
-use crate::toolchain::{self, CheckOptions, InstallOptions, ListOptions, Tool};
+use crate::install::{self, CheckOptions, InstallOptions, ListOptions, Tool};
 use std::path::Path;
 
-/// Command to install toolchain dependencies
+/// Command to install dependencies
 pub struct InstallCommand {
     pub tool: Option<String>,
     pub skip: Option<String>,
@@ -38,7 +38,7 @@ impl Command for InstallCommand {
             force: self.force,
         };
 
-        let results = toolchain::install_tools(working_directory, options)?;
+        let results = install::install_tools(working_directory, options)?;
 
         // Format output
         let mut output = String::new();
@@ -77,7 +77,7 @@ impl Command for CheckCommand {
             json: self.json,
         };
 
-        let check_result = toolchain::check_tools(working_directory, options)?;
+        let check_result = install::check_tools(working_directory, options)?;
 
         // Format output based on options
         let output = if self.json {
@@ -110,7 +110,7 @@ impl Command for ListCommand {
             json: self.json,
         };
 
-        let list_result = toolchain::list_tools(working_directory, options)?;
+        let list_result = install::list_tools(working_directory, options)?;
 
         // Format output based on options
         let output = if self.json {
@@ -152,14 +152,14 @@ impl Command for UninstallCommand {
             Vec::new()
         };
 
-        let options = toolchain::UninstallOptions {
+        let options = install::UninstallOptions {
             specific_tools,
             skip_tools,
             dry_run: self.dry_run,
             all: self.all,
         };
 
-        let results = toolchain::uninstall_tools(working_directory, options)?;
+        let results = install::uninstall_tools(working_directory, options)?;
 
         // Format output
         let mut output = String::new();
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn test_install_command_dry_run() {
-        let tmp_dir = TempDir::new("test_install_toolchain").unwrap();
+        let tmp_dir = TempDir::new("test_install_command").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = InstallCommand {
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_check_command() {
-        let tmp_dir = TempDir::new("test_check_toolchain").unwrap();
+        let tmp_dir = TempDir::new("test_check_command").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = CheckCommand {
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_check_command_json() {
-        let tmp_dir = TempDir::new("test_check_toolchain_json").unwrap();
+        let tmp_dir = TempDir::new("test_check_command_json").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = CheckCommand {
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_list_command() {
-        let tmp_dir = TempDir::new("test_list_toolchain").unwrap();
+        let tmp_dir = TempDir::new("test_list_command").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = ListCommand {
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_list_command_all() {
-        let tmp_dir = TempDir::new("test_list_toolchain_all").unwrap();
+        let tmp_dir = TempDir::new("test_list_command_all").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = ListCommand {
@@ -339,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_list_command_json() {
-        let tmp_dir = TempDir::new("test_list_toolchain_json").unwrap();
+        let tmp_dir = TempDir::new("test_list_command_json").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = ListCommand {
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_uninstall_command_dry_run() {
-        let tmp_dir = TempDir::new("test_uninstall_toolchain").unwrap();
+        let tmp_dir = TempDir::new("test_uninstall_command").unwrap();
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
         let cmd = UninstallCommand {

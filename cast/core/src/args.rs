@@ -221,7 +221,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
         } => {
             match subcommand {
                 Some(InstallSubcommands::Check { verbose, json }) => {
-                    let command = commands::toolchain::CheckCommand {
+                    let command = commands::install::CheckCommand {
                         verbose: *verbose,
                         json: *json,
                     };
@@ -234,7 +234,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                     all,
                     json,
                 }) => {
-                    let command = commands::toolchain::ListCommand {
+                    let command = commands::install::ListCommand {
                         required_only: *required_only,
                         all: *all,
                         json: *json,
@@ -245,7 +245,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 }
                 None => {
                     // Default action: install tools
-                    let command = commands::toolchain::InstallCommand {
+                    let command = commands::install::InstallCommand {
                         tool: tool.clone(),
                         skip: skip.clone(),
                         dry_run: *dry_run,
@@ -263,7 +263,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             dry_run,
             all,
         } => {
-            let command = commands::toolchain::UninstallCommand {
+            let command = commands::install::UninstallCommand {
                 tool: tool.clone(),
                 skip: skip.clone(),
                 dry_run: *dry_run,
@@ -956,7 +956,7 @@ mod tests {
                 // If error, should show tool status
                 assert!(matches!(err, ExecuteError::CommandError(_)));
                 let error_msg = err.to_string();
-                // Should contain toolchain information
+                // Should contain tool information
                 assert!(
                     error_msg.contains("tool") || error_msg.contains("missing"),
                     "Error message should contain tool information: {}",

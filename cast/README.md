@@ -18,7 +18,7 @@ The core Cast library provides the foundational functionality for monorepo opera
 - Project detection and configuration management (Cast.toml, Cargo.toml metadata)
 - CI/CD operations (build, test, format, lint)
 - Development server management (run, serve)
-- Toolchain management (install, check, list development tools)
+- Tool management (install, check, list development tools)
 - Deployment operations (Cloudflare Pages, SSG bundles)
 - Project dependency analysis
 
@@ -63,8 +63,8 @@ The VSCode extension provides IDE integration for Cast workflows.
 
 ### Prerequisites
 
-- Rust toolchain (rustc, cargo, rustfmt, clippy)
-- For framework-specific projects, additional tools may be required (see Toolchain Management)
+- Rust (rustc, cargo, rustfmt, clippy)
+- For framework-specific projects, additional tools may be required (see Tool Management)
 
 ### Installing Cast CLI
 
@@ -235,9 +235,9 @@ npm run compile
 # See vscode_ext/README.md for development instructions
 ```
 
-## Toolchain Management
+## Tool Management
 
-Cast provides toolchain management to help install and uninstall framework-specific tools:
+Cast provides tool management to help install and uninstall framework-specific tools:
 
 ```bash
 # Install all required tools for a project
@@ -260,11 +260,11 @@ cast uninstall --dry-run --all
 Different frameworks require different tools:
 - **Dioxus**: Requires `dx` CLI, Node.js, npm, and Playwright
 - **Cloudflare Pages**: Requires Wrangler CLI
-- **Pure Rust**: Only requires Rust toolchain
+- **Pure Rust**: Only requires Rust
 
 **Note**: Cast can only uninstall tools that it installed via cargo or npm (e.g., dx, playwright, wrangler). System-level tools like Node.js, rustc, and git-lfs must be managed separately.
 
-See [core/README.md](core/README.md) for complete toolchain documentation.
+See [core/README.md](core/README.md) for complete tool management documentation.
 
 ## Workspace Structure
 
@@ -291,7 +291,7 @@ cast/
 ## Documentation
 
 - **Core Library**: [core/README.md](core/README.md) - Complete API documentation
-- **Install Command Design**: [core/docs/toolchain-command-design.md](core/docs/toolchain-command-design.md) - Toolchain management specification
+- **Install Command Design**: [core/docs/install-command-design.md](core/docs/install-command-design.md) - Tool management specification
 - **Workspace Issues**: [ISSUES.md](ISSUES.md) - Development roadmap and tracked tasks
 
 ## Contributing

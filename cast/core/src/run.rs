@@ -8,7 +8,7 @@ use thiserror::Error;
 pub enum RunError {
     #[error("Run command failed")]
     RunFailed,
-    #[error("Command '{0}' not found. Please install it using 'cast toolchain install' or install it manually.")]
+    #[error("Command '{0}' not found. Please install it using 'cast install' or install it manually.")]
     CommandNotFound(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
@@ -281,12 +281,12 @@ mod tests {
         let err = result.unwrap_err();
         let err_msg = err.to_string();
 
-        // The error message should mention the command and suggest using cast toolchain install
+        // The error message should mention the command and suggest using cast install
         assert!(
             err_msg.contains("dx")
                 || err_msg.contains("not found")
-                || err_msg.contains("toolchain"),
-            "Error message should mention the missing command or toolchain: {}",
+                || err_msg.contains("install"),
+            "Error message should mention the missing command or install: {}",
             err_msg
         );
     }

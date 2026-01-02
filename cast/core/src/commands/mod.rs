@@ -8,4 +8,4 @@ pub mod run;
 pub mod serve;
 pub mod session;
 pub mod test;
-pub mod toolchain;
+pub mod install;
