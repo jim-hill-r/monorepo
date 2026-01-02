@@ -65,7 +65,7 @@ test.describe('Authentication and Login', () => {
       // The button click should not cause any console errors related to unwrap/panic
       // (though there may be other errors like redirect failures in test environment)
       const hasUnwrapError = consoleErrors.some(err => 
-        err.includes('panick') || err.includes('unwrap')
+        err.includes('panic') || err.includes('unwrap')
       );
       expect(hasUnwrapError).toBe(false);
     }
