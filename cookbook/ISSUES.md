@@ -91,7 +91,7 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 - ✅ Ensure backward compatibility or graceful migration for existing users (day-based URLs still work, using get_by_id internally)
 
 #### Sub-task 4.7: Cleanup and Documentation
-- TODO (agent-generated): Remove old day-based code paths after migration
+- ✅ Remove old day-based code paths after migration
 - TODO (agent-generated): Update all documentation to reflect UUID-based architecture
 - TODO (agent-generated): Update README with new content file naming conventions
 - TODO (agent-generated): Add comments explaining UUID-based design decisions

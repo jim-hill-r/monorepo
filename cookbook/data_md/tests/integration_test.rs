@@ -2,14 +2,20 @@ use cookbook_core::{PlanReader, RecipeReader};
 use cookbook_data_md::MarkdownRecipeStore;
 
 #[test]
-#[allow(deprecated)]
 fn test_load_example_recipes() {
     let content_dir = "../content";
 
     let store = MarkdownRecipeStore::new(content_dir).expect("Should load content directory");
 
-    // Test day-1 recipe via get_by_day (deprecated but still functional)
-    let day_1 = store.get_by_day(1).expect("Should find day-1 recipe");
+    // Test plan loading first to get UUID for day-1
+    let plan_1 = store.get_by_week(1).expect("Should find plan for week 1");
+    assert_eq!(plan_1.week, 1);
+    assert_eq!(plan_1.recipe_uuids.len(), 7);
+
+    // Get day-1 recipe via UUID from plan (day-1 is Monday, first item in week 1)
+    let day_1_uuid = plan_1.recipe_uuids[0];
+    let day_1 = RecipeReader::get_by_uuid(&store, &day_1_uuid).expect("Should find day-1 recipe");
+
     // After migration, IDs are UUIDs, not day-based
     assert!(
         !day_1.id.starts_with("day-"),
@@ -33,11 +39,6 @@ fn test_load_example_recipes() {
         !RecipeReader::exists(&store, "intro"),
         "intro.md should not be loaded as recipe"
     );
-
-    // Test plan loading
-    let plan_1 = store.get_by_week(1).expect("Should find plan for week 1");
-    assert_eq!(plan_1.week, 1);
-    assert_eq!(plan_1.recipe_uuids.len(), 7);
 
     // Verify the UUIDs correspond to recipes for days 1-7
     for (i, uuid) in plan_1.recipe_uuids.iter().enumerate() {

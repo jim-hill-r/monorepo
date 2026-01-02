@@ -45,18 +45,6 @@ pub trait RecipeReader {
     /// Get a recipe by its UUID
     fn get_by_uuid(&self, uuid: &Uuid) -> RecipeResult<Recipe>;
 
-    /// Get a recipe by day of the year (1-365, or 1-366 in leap years)
-    ///
-    /// # Deprecated
-    /// This method is deprecated in favor of UUID-based recipe access.
-    /// Use `get_by_uuid()` or `get_by_id()` instead.
-    /// This method remains for backward compatibility with legacy day-based content.
-    #[deprecated(
-        since = "0.2.0",
-        note = "Use get_by_uuid() or get_by_id() instead. Day-based access is legacy."
-    )]
-    fn get_by_day(&self, day: u32) -> RecipeResult<Recipe>;
-
     /// Get all recipes
     fn get_all(&self) -> RecipeResult<Vec<Recipe>>;
 
@@ -351,19 +339,6 @@ mod tests {
                 })
         }
 
-        #[allow(deprecated)]
-        fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
-            if !(1..=366).contains(&day) {
-                return Err(RecipeError::InvalidData(format!(
-                    "Day must be between 1 and 366, got {}",
-                    day
-                )));
-            }
-            // For testing, map day to recipe ID
-            let id = format!("day-{}", day);
-            self.get_by_id(&id)
-        }
-
         fn get_all(&self) -> RecipeResult<Vec<Recipe>> {
             Ok(self.recipes.clone())
         }
@@ -443,39 +418,6 @@ mod tests {
         let nonexistent_uuid = Uuid::new_v4();
         let result = reader.get_by_id(&nonexistent_uuid.to_string());
         assert!(result.is_err());
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_recipe_reader_get_by_day() {
-        let recipe1 = Recipe::new("day-1".to_string(), "Day 1 Recipe".to_string());
-        let recipe100 = Recipe::new("day-100".to_string(), "Day 100 Recipe".to_string());
-        let reader = MockRecipeReader {
-            recipes: vec![recipe1.clone(), recipe100.clone()],
-        };
-
-        let result = reader.get_by_day(1);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), recipe1);
-
-        let result = reader.get_by_day(100);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), recipe100);
-
-        // Test invalid day
-        let result = reader.get_by_day(0);
-        assert!(result.is_err());
-        match result {
-            Err(RecipeError::InvalidData(_)) => {}
-            _ => panic!("Expected InvalidData error for day 0"),
-        }
-
-        let result = reader.get_by_day(367);
-        assert!(result.is_err());
-        match result {
-            Err(RecipeError::InvalidData(_)) => {}
-            _ => panic!("Expected InvalidData error for day 367"),
-        }
     }
 
     #[test]
