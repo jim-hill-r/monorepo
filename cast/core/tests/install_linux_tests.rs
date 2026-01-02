@@ -1,4 +1,4 @@
-//! Integration tests for the toolchain command on Linux/GitHub Actions environment
+//! Integration tests for the install command on Linux/GitHub Actions environment
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -37,8 +37,8 @@ fn get_cast_binary_path() -> PathBuf {
 }
 
 #[test]
-fn test_toolchain_check_pure_rust_linux() {
-    let temp_dir = TempDir::new("test_toolchain_check_rust").expect("Failed to create temp dir");
+fn test_install_check_pure_rust_linux() {
+    let temp_dir = TempDir::new("test_install_check_rust").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true")
         .expect("Failed to write Cast.toml");
 
@@ -63,8 +63,8 @@ fn test_toolchain_check_pure_rust_linux() {
 }
 
 #[test]
-fn test_toolchain_check_dioxus_detects_requirements_linux() {
-    let temp_dir = TempDir::new("test_toolchain_check_dioxus").expect("Failed to create temp dir");
+fn test_install_check_dioxus_detects_requirements_linux() {
+    let temp_dir = TempDir::new("test_install_check_dioxus").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"")
         .expect("Failed to write Cast.toml");
 
@@ -93,8 +93,8 @@ fn test_toolchain_check_dioxus_detects_requirements_linux() {
 }
 
 #[test]
-fn test_toolchain_check_json_output_linux() {
-    let temp_dir = TempDir::new("test_toolchain_check_json").expect("Failed to create temp dir");
+fn test_install_check_json_output_linux() {
+    let temp_dir = TempDir::new("test_install_check_json").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true")
         .expect("Failed to write Cast.toml");
 
@@ -124,8 +124,8 @@ fn test_toolchain_check_json_output_linux() {
 }
 
 #[test]
-fn test_toolchain_list_linux() {
-    let temp_dir = TempDir::new("test_toolchain_list").expect("Failed to create temp dir");
+fn test_install_list_linux() {
+    let temp_dir = TempDir::new("test_install_list").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true")
         .expect("Failed to write Cast.toml");
 
@@ -143,9 +143,8 @@ fn test_toolchain_list_linux() {
 }
 
 #[test]
-fn test_toolchain_install_dry_run_linux() {
-    let temp_dir =
-        TempDir::new("test_toolchain_install_dry_run").expect("Failed to create temp dir");
+fn test_install_install_dry_run_linux() {
+    let temp_dir = TempDir::new("test_install_install_dry_run").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"")
         .expect("Failed to write Cast.toml");
 
@@ -164,8 +163,8 @@ fn test_toolchain_install_dry_run_linux() {
 }
 
 #[test]
-fn test_toolchain_install_node_guidance_linux() {
-    let temp_dir = TempDir::new("test_toolchain_install_node").expect("Failed to create temp dir");
+fn test_install_install_node_guidance_linux() {
+    let temp_dir = TempDir::new("test_install_install_node").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"")
         .expect("Failed to write Cast.toml");
 
@@ -192,8 +191,8 @@ fn test_toolchain_install_node_guidance_linux() {
 }
 
 #[test]
-fn test_toolchain_list_json_output_linux() {
-    let temp_dir = TempDir::new("test_toolchain_list_json").expect("Failed to create temp dir");
+fn test_install_list_json_output_linux() {
+    let temp_dir = TempDir::new("test_install_list_json").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "exemplar = true")
         .expect("Failed to write Cast.toml");
 

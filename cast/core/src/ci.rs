@@ -1,7 +1,7 @@
 use crate::build;
+use crate::install;
 use crate::publish;
 use crate::test;
-use crate::toolchain;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use thiserror::Error;
@@ -44,13 +44,13 @@ pub enum CiError {
     GitLfsError(String),
     #[error("Git commit failed: {0}")]
     GitCommitError(String),
-    #[error("Toolchain installation failed: {0}")]
-    ToolchainError(#[from] toolchain::ToolchainError),
+    #[error("Installation failed: {0}")]
+    InstallError(#[from] install::InstallError),
 }
 
 /// Run CI checks for a project
 /// This function performs the following steps:
-/// 1. Installs required toolchain (rustc, cargo, clippy, dx, npm, playwright, etc.)
+/// 1. Installs required tools (rustc, cargo, clippy, dx, npm, playwright, etc.)
 /// 2. Detects the project type and runs appropriate checks:
 ///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test (includes npm test if package.json exists)
 ///    - For TypeScript projects (has package.json): npm ci, lint, compile
@@ -70,9 +70,9 @@ pub fn run(
 ) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
 
-    // Install required toolchain before running CI checks
+    // Install required tools before running CI checks
     // This ensures all necessary tools (rustc, cargo, clippy, dx, npm, etc.) are available
-    let install_options = toolchain::InstallOptions {
+    let install_options = install::InstallOptions {
         specific_tools: None,   // Install all required tools
         skip_tools: Vec::new(), // Don't skip any tools
         dry_run: false,         // Actually install
@@ -80,7 +80,7 @@ pub fn run(
     };
 
     // Run the installation
-    let install_results = toolchain::install_tools(working_directory, install_options)?;
+    let install_results = install::install_tools(working_directory, install_options)?;
 
     // Check if any installations failed (shouldn't happen if tools are already installed)
     let failed_installs: Vec<_> = install_results

@@ -6,11 +6,11 @@ Cast provides commands for managing development tools required by different proj
 
 ## Motivation
 
-Different project frameworks require different tooling beyond the Rust toolchain:
+Different project frameworks require different tooling beyond the Rust:
 
-- **Dioxus projects**: Require Rust toolchain, Dioxus CLI (`dx`), Node.js/npm, and Playwright
-- **Cloudflare Pages projects**: Require Rust toolchain, Wrangler CLI, Node.js/npm
-- **Pure Rust projects**: Only require Rust toolchain (rustc, cargo, rustfmt, clippy)
+- **Dioxus projects**: Require Rust, Dioxus CLI (`dx`), Node.js/npm, and Playwright
+- **Cloudflare Pages projects**: Require Rust, Wrangler CLI, Node.js/npm
+- **Pure Rust projects**: Only require Rust (rustc, cargo, rustfmt, clippy)
 
 Currently, developers and CI workflows must manually install these tools. The `cast install` command automates this process by reading the Cast configuration and managing the appropriate tools.
 
@@ -135,7 +135,7 @@ cast install check --json
 **Sample Output (text format):**
 
 ```
-Checking toolchain for dioxus project...
+Checking tools for dioxus project...
 ✓ rustc 1.75.0 (installed)
 ✓ cargo 1.75.0 (installed)
 ✓ rustfmt 1.75.0 (installed)
@@ -245,7 +245,7 @@ Tools installed via npm:
 
 - `wrangler` (primary method): `npm install -g wrangler`
 - `playwright`: `npm ci` (from package.json) then `npx playwright install --with-deps chromium`
-  - **Important**: The toolchain check verifies that chromium browser is actually installed, not just the npm package
+  - **Important**: The tool check verifies that chromium browser is actually installed, not just the npm package
   - Uses `npx playwright install --list` to verify chromium installation
 
 ### System Package Manager Tools
@@ -271,7 +271,7 @@ Tools that should be installed via system package manager:
 
 The command should handle common error scenarios:
 
-1. **No Cast configuration found**: Install default tools (Rust toolchain and git-lfs)
+1. **No Cast configuration found**: Install default tools (Rust and git-lfs)
 2. **Tool installation fails**: Show clear error with suggestions (e.g., network issues, permissions)
 3. **Unsupported platform**: Detect platform and show appropriate error if tool isn't available
 4. **Conflicting versions**: Warn if an incompatible version is installed
@@ -288,8 +288,8 @@ During installation, the command should:
 Example:
 
 ```
-Installing toolchain for dioxus project...
-✓ Rust toolchain already installed
+Installing tools for dioxus project...
+✓ Rust already installed
 ⠋ Installing Dioxus CLI (dx)...
 ```
 
@@ -315,8 +315,8 @@ Based on the root ISSUES.md, implementation will be broken into phases:
 
 ### Phase 1: Foundation (Issues 7-10)
 - Add `Install` command variant to args.rs (now complete - moved to top-level)
-- Create toolchain.rs module with basic structure (complete)
-- Implement toolchain detection logic (complete)
+- Create install.rs module with basic structure (complete)
+- Implement tool detection logic (complete)
 - Add unit tests (complete)
 
 ### Phase 2: Installation (Issues 13-18)
@@ -427,7 +427,7 @@ Potential future additions (not in initial scope):
 
 - **Minimum Rust version**: 1.70+ (aligned with Cast project requirements)
 - **Supported platforms**: Linux, macOS, Windows (WSL)
-- **Requires**: Rust toolchain must be installed before using this command
+- **Requires**: Rust must be installed before using this command
 
 ## Platform-Specific Considerations
 
@@ -517,6 +517,6 @@ If encountering issues on native Windows:
 
 ## References
 
-- Similar commands: `rustup toolchain`, `npm install`, `cargo install`
+- Similar commands: `rustup`, `npm install`, `cargo install`
 - Cast configuration: cast/src/config.rs
 - Framework requirements: See copilot-instructions.md

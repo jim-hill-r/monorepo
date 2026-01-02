@@ -72,20 +72,20 @@ use cast_core::serve;
 serve::run("/path/to/static/files").unwrap();
 ```
 
-## Toolchain Management
+## Tool Management
 
-Cast provides toolchain management commands to help install and manage framework-specific development tools required by your projects.
+Cast provides tool management commands to help install and manage framework-specific development tools required by your projects.
 
 ### Overview
 
 Different frameworks require different tooling beyond Rust:
 - **Dioxus projects**: Require Dioxus CLI (`dx`), Node.js, npm, and Playwright for testing
 - **Cloudflare Pages projects**: Require Wrangler CLI for deployment
-- **Pure Rust projects**: Only require the Rust toolchain (rustc, cargo, rustfmt, clippy)
+- **Pure Rust projects**: Only require the Rust (rustc, cargo, rustfmt, clippy)
 
 The `cast install` command helps automate the installation and verification of these tools.
 
-### Install Toolchain Dependencies
+### Install Tools
 
 ```bash
 cast install
@@ -124,7 +124,7 @@ cast install --force
 - Playwright is installed via `npm ci` (if package.json exists) and `npx playwright install --with-deps chromium`
 - Wrangler is installed via `npm install -g wrangler`
 
-### Check Toolchain Status
+### Check Tool Status
 
 ```bash
 cast install check
@@ -154,7 +154,7 @@ cast install check --json
 
 **Sample Output (text format)**:
 ```
-Checking toolchain for dioxus project...
+Checking tools for dioxus project...
 ✓ cargo
 ✓ clippy
 ✗ dx (not installed)
@@ -169,7 +169,7 @@ Status: 2 tools missing
 
 **Sample Output (verbose)**:
 ```
-Checking toolchain for dioxus project...
+Checking tools for dioxus project...
 ✓ cargo (1.75.0)
 ✓ clippy (0.1.75)
 ✗ dx (not installed)
@@ -711,4 +711,4 @@ Currently implemented:
 - `TestCommand` - Runs cargo test
 - `CiCommand` - Runs full CI checks (format, lint, build, test)
 
-**In Progress**: Additional commands (Run, Serve, Deploy, Cd, Publish, Session, Project, Toolchain) are being migrated to this pattern. See `cast/ISSUES.md` for the migration roadmap.
+**In Progress**: Additional commands (Run, Serve, Deploy, Cd, Publish, Session, Project, Install) are being migrated to this pattern. See `cast/ISSUES.md` for the migration roadmap.
