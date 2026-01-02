@@ -425,7 +425,7 @@ fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
 
     if !git_check.status.success() {
         return Err(CiError::IoError(std::io::Error::other(
-            "Not in a git repository",
+            "Cannot check for changes with --only-changed flag: Not in a git repository",
         )));
     }
 
@@ -434,11 +434,12 @@ fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
 
     // Check if there are any changes between HEAD and origin/default_branch
     // We'll check if the project directory has any diffs
+    // Note: git diff HEAD origin/branch shows what changed in HEAD compared to origin/branch
     let diff_output = Command::new("git")
         .arg("diff")
         .arg("--quiet")
-        .arg(format!("origin/{}", default_branch))
         .arg("HEAD")
+        .arg(format!("origin/{}", default_branch))
         .arg("--")
         .arg(".")
         .current_dir(working_directory)
@@ -492,7 +493,7 @@ fn get_default_branch(working_directory: &Path) -> Result<String, CiError> {
 
     // If we can't find the default branch, return an error
     Err(CiError::IoError(std::io::Error::other(
-        "Could not determine default branch from origin",
+        "Cannot determine default branch for --only-changed flag. Ensure origin remote is configured and origin/main or origin/master exists",
     )))
 }
 
