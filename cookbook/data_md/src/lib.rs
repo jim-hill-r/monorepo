@@ -1,6 +1,6 @@
 use cookbook_core::{
-    Plan, PlanError, PlanReader, PlanResult, Recipe, RecipeError, RecipeReader, RecipeResult,
-    RecipeWriter,
+    Plan, PlanError, PlanReader, PlanResult, PlanWriter, Recipe, RecipeError, RecipeReader,
+    RecipeResult, RecipeWriter,
 };
 use std::collections::HashMap;
 use std::fs;
@@ -457,6 +457,51 @@ impl MarkdownRecipeStore {
 
         Ok(())
     }
+
+    /// Writes a plan to a markdown file
+    fn write_plan_file(&self, plan: &Plan) -> PlanResult<()> {
+        let file_path = self.content_dir.join(format!("week-{}.md", plan.week));
+
+        let mut content = String::new();
+
+        // Write title
+        content.push_str(&format!("# Week {} Plan\n\n", plan.week));
+
+        // Write description
+        content.push_str(&format!(
+            "Meal plan for ISO 8601 week {}.\n\n",
+            plan.week
+        ));
+
+        // Write week metadata
+        content.push_str(&format!("Week: {}\n", plan.week));
+
+        // Write recipe UUIDs
+        let uuid_strings: Vec<String> = plan.recipe_uuids.iter().map(|u| u.to_string()).collect();
+        content.push_str(&format!("Recipe UUIDs: {}\n\n", uuid_strings.join(", ")));
+
+        // Write recipe days section for human readability
+        content.push_str("## Recipe Days\n\n");
+        content.push_str("This week's meal plan uses the following recipes (Monday through Sunday):\n\n");
+
+        let weekdays = [
+            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+        ];
+        for (i, uuid) in plan.recipe_uuids.iter().enumerate() {
+            // Try to get recipe title for better readability
+            if let Ok(recipe) = self.get_by_uuid(uuid) {
+                content.push_str(&format!("- {}: {}\n", weekdays[i], recipe.title));
+            } else {
+                content.push_str(&format!("- {}: {}\n", weekdays[i], uuid));
+            }
+        }
+
+        fs::write(file_path, content).map_err(|e| {
+            PlanError::StorageError(format!("Failed to write plan file: {}", e))
+        })?;
+
+        Ok(())
+    }
 }
 
 impl RecipeReader for MarkdownRecipeStore {
@@ -584,6 +629,57 @@ impl PlanReader for MarkdownRecipeStore {
     }
 }
 
+impl PlanWriter for MarkdownRecipeStore {
+    fn create(&mut self, plan: Plan) -> PlanResult<()> {
+        if self.plans.contains_key(&plan.week) {
+            return Err(PlanError::AlreadyExists(format!(
+                "Plan for week {} already exists",
+                plan.week
+            )));
+        }
+
+        self.write_plan_file(&plan)?;
+        self.plans.insert(plan.week, plan);
+        Ok(())
+    }
+
+    fn update(&mut self, plan: Plan) -> PlanResult<()> {
+        if !self.plans.contains_key(&plan.week) {
+            return Err(PlanError::NotFound(format!(
+                "Plan for week {} not found",
+                plan.week
+            )));
+        }
+
+        self.write_plan_file(&plan)?;
+        self.plans.insert(plan.week, plan);
+        Ok(())
+    }
+
+    fn delete(&mut self, week: u32) -> PlanResult<()> {
+        if !self.plans.contains_key(&week) {
+            return Err(PlanError::NotFound(format!(
+                "Plan for week {} not found",
+                week
+            )));
+        }
+
+        let file_path = self.content_dir.join(format!("week-{}.md", week));
+        fs::remove_file(file_path).map_err(|e| {
+            PlanError::StorageError(format!("Failed to delete plan file: {}", e))
+        })?;
+
+        self.plans.remove(&week);
+        Ok(())
+    }
+
+    fn save(&mut self, plan: Plan) -> PlanResult<()> {
+        self.write_plan_file(&plan)?;
+        self.plans.insert(plan.week, plan);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -706,7 +802,7 @@ Tags: italian, pasta, quick
 
         let uuid = recipe.uuid;
 
-        let result = store.create(recipe.clone());
+        let result = RecipeWriter::create(&mut store, recipe.clone());
         assert!(result.is_ok());
 
         // Verify recipe was added to store
@@ -717,7 +813,7 @@ Tags: italian, pasta, quick
         assert!(file_path.exists());
 
         // Try to create duplicate
-        let result = store.create(recipe);
+        let result = RecipeWriter::create(&mut store, recipe);
         assert!(result.is_err());
         match result {
             Err(RecipeError::AlreadyExists(_)) => {}
@@ -734,7 +830,7 @@ Tags: italian, pasta, quick
 
         let recipe = Recipe::new("update-test".to_string(), "Original Title".to_string());
         let uuid = recipe.uuid;
-        store.create(recipe).unwrap();
+        RecipeWriter::create(&mut store, recipe).unwrap();
 
         // Need to reload the store to pick up the created file
         drop(store);
@@ -749,7 +845,7 @@ Tags: italian, pasta, quick
             Recipe::new_with_uuid(loaded_recipe.id.clone(), uuid, "Updated Title".to_string());
         updated.description = Some("Updated description".to_string());
 
-        let result = store.update(updated.clone());
+        let result = RecipeWriter::update(&mut store, updated.clone());
         assert!(result.is_ok());
 
         let retrieved = store.get_by_uuid(&uuid).unwrap();
@@ -761,7 +857,7 @@ Tags: italian, pasta, quick
 
         // Try to update nonexistent
         let nonexistent = Recipe::new("nonexistent".to_string(), "Title".to_string());
-        let result = store.update(nonexistent);
+        let result = RecipeWriter::update(&mut store, nonexistent);
         assert!(result.is_err());
 
         cleanup_temp_dir(&temp_dir);
@@ -774,11 +870,11 @@ Tags: italian, pasta, quick
 
         let recipe = Recipe::new("delete-test".to_string(), "To Delete".to_string());
         let uuid = recipe.uuid;
-        store.create(recipe).unwrap();
+        RecipeWriter::create(&mut store, recipe).unwrap();
 
         assert!(RecipeReader::exists(&store, "delete-test"));
 
-        let result = store.delete("delete-test");
+        let result = RecipeWriter::delete(&mut store, "delete-test");
         assert!(result.is_ok());
 
         assert!(!RecipeReader::exists(&store, "delete-test"));
@@ -788,7 +884,7 @@ Tags: italian, pasta, quick
         assert!(!file_path.exists());
 
         // Try to delete again
-        let result = store.delete("delete-test");
+        let result = RecipeWriter::delete(&mut store, "delete-test");
         assert!(result.is_err());
 
         cleanup_temp_dir(&temp_dir);
@@ -801,14 +897,14 @@ Tags: italian, pasta, quick
 
         // Save new recipe
         let recipe = Recipe::new("save-test".to_string(), "Save Test".to_string());
-        let result = store.save(recipe.clone());
+        let result = RecipeWriter::save(&mut store, recipe.clone());
         assert!(result.is_ok());
         assert!(RecipeReader::exists(&store, "save-test"));
 
         // Save updated recipe
         let mut updated = recipe;
         updated.description = Some("Updated via save".to_string());
-        let result = store.save(updated);
+        let result = RecipeWriter::save(&mut store, updated);
         assert!(result.is_ok());
 
         let retrieved = store.get_by_id("save-test").unwrap();
@@ -851,15 +947,21 @@ Tags: italian, pasta, quick
         // Start fresh - count current recipes
         let initial_count = store.recipes.len();
 
-        store
-            .create(Recipe::new("recipe1".to_string(), "Recipe 1".to_string()))
-            .unwrap();
-        store
-            .create(Recipe::new("recipe2".to_string(), "Recipe 2".to_string()))
-            .unwrap();
-        store
-            .create(Recipe::new("recipe3".to_string(), "Recipe 3".to_string()))
-            .unwrap();
+        RecipeWriter::create(
+            &mut store,
+            Recipe::new("recipe1".to_string(), "Recipe 1".to_string()),
+        )
+        .unwrap();
+        RecipeWriter::create(
+            &mut store,
+            Recipe::new("recipe2".to_string(), "Recipe 2".to_string()),
+        )
+        .unwrap();
+        RecipeWriter::create(
+            &mut store,
+            Recipe::new("recipe3".to_string(), "Recipe 3".to_string()),
+        )
+        .unwrap();
 
         let all_recipes = RecipeReader::get_all(&store).unwrap();
         assert_eq!(all_recipes.len(), initial_count + 3);
@@ -881,9 +983,9 @@ Tags: italian, pasta, quick
         let mut recipe3 = Recipe::new("tag-recipe3".to_string(), "Recipe 3".to_string());
         recipe3.tags = vec!["quick".to_string()];
 
-        store.create(recipe1).unwrap();
-        store.create(recipe2).unwrap();
-        store.create(recipe3).unwrap();
+        RecipeWriter::create(&mut store, recipe1).unwrap();
+        RecipeWriter::create(&mut store, recipe2).unwrap();
+        RecipeWriter::create(&mut store, recipe3).unwrap();
 
         let quick_recipes = store.get_by_tag("quick").unwrap();
         assert_eq!(quick_recipes.len(), 2);
@@ -1378,7 +1480,7 @@ Tags: test
         let recipe = Recipe::new("test-recipe".to_string(), "Test Recipe".to_string());
         let uuid = recipe.uuid;
 
-        let result = store.create(recipe.clone());
+        let result = RecipeWriter::create(&mut store, recipe.clone());
         assert!(result.is_ok());
 
         // Verify file was created with UUID filename
@@ -1406,7 +1508,7 @@ Tags: test
         let recipe = Recipe::new("test-recipe".to_string(), "Test Recipe".to_string());
         let uuid = recipe.uuid;
 
-        store.create(recipe.clone()).unwrap();
+        RecipeWriter::create(&mut store, recipe.clone()).unwrap();
 
         // Read the file and check for UUID in frontmatter
         let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
@@ -1428,14 +1530,14 @@ Tags: test
 
         let recipe = Recipe::new("update-test".to_string(), "Original Title".to_string());
         let uuid = recipe.uuid;
-        store.create(recipe).unwrap();
+        RecipeWriter::create(&mut store, recipe).unwrap();
 
         // Update the recipe
         let mut updated =
             Recipe::new_with_uuid("update-test".to_string(), uuid, "Updated Title".to_string());
         updated.description = Some("Updated description".to_string());
 
-        store.update(updated).unwrap();
+        RecipeWriter::update(&mut store, updated).unwrap();
 
         // Verify file exists with UUID filename
         let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
@@ -1459,14 +1561,14 @@ Tags: test
 
         let recipe = Recipe::new("delete-test".to_string(), "To Delete".to_string());
         let uuid = recipe.uuid;
-        store.create(recipe).unwrap();
+        RecipeWriter::create(&mut store, recipe).unwrap();
 
         // Verify file exists
         let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
         assert!(uuid_file_path.exists());
 
         // Delete by UUID string
-        let result = store.delete(&uuid.to_string());
+        let result = RecipeWriter::delete(&mut store, &uuid.to_string());
         assert!(result.is_ok());
 
         // Verify file was deleted
@@ -1483,7 +1585,7 @@ Tags: test
         let recipe = Recipe::new("save-test".to_string(), "Save Test".to_string());
         let uuid = recipe.uuid;
 
-        store.save(recipe.clone()).unwrap();
+        RecipeWriter::save(&mut store, recipe.clone()).unwrap();
 
         // Verify file was saved with UUID filename
         let uuid_file_path = temp_dir.join(format!("{}.md", uuid));
@@ -1495,6 +1597,317 @@ Tags: test
         // Verify UUID is in frontmatter
         let content = fs::read_to_string(uuid_file_path).unwrap();
         assert!(content.contains(&format!("UUID: {}", uuid)));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    // PlanWriter trait tests
+
+    #[test]
+    fn test_plan_writer_create() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let uuids = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan = Plan::new(10, uuids.clone());
+
+        let result = PlanWriter::create(&mut store, plan.clone());
+        assert!(result.is_ok());
+
+        // Verify plan was added to store
+        assert!(PlanReader::exists(&store, 10));
+
+        // Verify file was created
+        let file_path = temp_dir.join("week-10.md");
+        assert!(file_path.exists());
+
+        // Verify file content
+        let content = fs::read_to_string(&file_path).unwrap();
+        assert!(content.contains("# Week 10 Plan"));
+        assert!(content.contains("Week: 10"));
+        for uuid in &uuids {
+            assert!(content.contains(&uuid.to_string()));
+        }
+
+        // Try to create duplicate
+        let result = PlanWriter::create(&mut store, plan);
+        assert!(result.is_err());
+        match result {
+            Err(PlanError::AlreadyExists(_)) => {}
+            _ => panic!("Expected AlreadyExists error"),
+        }
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_writer_update() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let uuids1 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan1 = Plan::new(20, uuids1);
+        PlanWriter::create(&mut store, plan1).unwrap();
+
+        // Create updated plan with different UUIDs
+        let uuids2 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan2 = Plan::new(20, uuids2.clone());
+
+        let result = PlanWriter::update(&mut store, plan2.clone());
+        assert!(result.is_ok());
+
+        // Verify plan was updated
+        let retrieved = PlanReader::get_by_week(&store, 20).unwrap();
+        assert_eq!(retrieved.recipe_uuids, uuids2);
+
+        // Try to update nonexistent
+        let uuids3 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let nonexistent = Plan::new(99, uuids3);
+        let result = PlanWriter::update(&mut store, nonexistent);
+        assert!(result.is_err());
+        match result {
+            Err(PlanError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_writer_delete() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let uuids1 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let uuids2 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan1 = Plan::new(30, uuids1);
+        let plan2 = Plan::new(31, uuids2);
+        PlanWriter::create(&mut store, plan1).unwrap();
+        PlanWriter::create(&mut store, plan2.clone()).unwrap();
+
+        assert!(PlanReader::exists(&store, 30));
+        assert!(PlanReader::exists(&store, 31));
+
+        let result = PlanWriter::delete(&mut store, 30);
+        assert!(result.is_ok());
+
+        assert!(!PlanReader::exists(&store, 30));
+        assert!(PlanReader::exists(&store, 31));
+
+        // Verify file was deleted
+        let file_path = temp_dir.join("week-30.md");
+        assert!(!file_path.exists());
+
+        // Try to delete again
+        let result = PlanWriter::delete(&mut store, 30);
+        assert!(result.is_err());
+        match result {
+            Err(PlanError::NotFound(_)) => {}
+            _ => panic!("Expected NotFound error"),
+        }
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_writer_save_create() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let uuids = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan = Plan::new(40, uuids.clone());
+
+        let result = PlanWriter::save(&mut store, plan.clone());
+        assert!(result.is_ok());
+
+        // Verify plan was created
+        assert!(PlanReader::exists(&store, 40));
+        let retrieved = PlanReader::get_by_week(&store, 40).unwrap();
+        assert_eq!(retrieved, plan);
+
+        // Verify file was created
+        let file_path = temp_dir.join("week-40.md");
+        assert!(file_path.exists());
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_writer_save_update() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let uuids1 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan1 = Plan::new(50, uuids1);
+        PlanWriter::create(&mut store, plan1).unwrap();
+
+        // Save updated plan
+        let uuids2 = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan2 = Plan::new(50, uuids2.clone());
+
+        let result = PlanWriter::save(&mut store, plan2.clone());
+        assert!(result.is_ok());
+
+        // Verify plan was updated
+        let retrieved = PlanReader::get_by_week(&store, 50).unwrap();
+        assert_eq!(retrieved.recipe_uuids, uuids2);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_writer_creates_readable_file() {
+        let temp_dir = create_temp_dir();
+        
+        // First create some recipes so the plan can reference them
+        let mut recipe_uuids = Vec::new();
+        for i in 1..=7 {
+            let recipe_content = format!(
+                "# Test Recipe {}\n\nUUID: {}\n\nA test recipe.\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                i,
+                Uuid::new_v4(),
+                i,
+                i
+            );
+            fs::write(temp_dir.join(format!("test-recipe-{}.md", i)), recipe_content).unwrap();
+        }
+
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Get the UUIDs of the created recipes
+        let all_recipes = RecipeReader::get_all(&store).unwrap();
+        for recipe in all_recipes.iter().take(7) {
+            recipe_uuids.push(recipe.uuid);
+        }
+
+        if recipe_uuids.len() < 7 {
+            // If we don't have enough recipes, add dummy UUIDs
+            while recipe_uuids.len() < 7 {
+                recipe_uuids.push(Uuid::new_v4());
+            }
+        }
+
+        let plan = Plan::new(15, recipe_uuids.clone());
+        PlanWriter::create(&mut store, plan).unwrap();
+
+        // Verify file content is human-readable
+        let file_path = temp_dir.join("week-15.md");
+        let content = fs::read_to_string(&file_path).unwrap();
+
+        assert!(content.contains("# Week 15 Plan"));
+        assert!(content.contains("Week: 15"));
+        assert!(content.contains("Recipe UUIDs:"));
+        assert!(content.contains("## Recipe Days"));
+        assert!(content.contains("Monday"));
+        assert!(content.contains("Sunday"));
+
+        // Verify all UUIDs are in the file
+        for uuid in &recipe_uuids {
+            assert!(content.contains(&uuid.to_string()));
+        }
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_plan_writer_roundtrip() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let uuids = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+        let plan = Plan::new(25, uuids.clone());
+
+        // Write plan
+        PlanWriter::create(&mut store, plan.clone()).unwrap();
+
+        // Reload store to read plan from disk
+        drop(store);
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        // Read plan and verify it matches
+        let loaded_plan = PlanReader::get_by_week(&store, 25).unwrap();
+        assert_eq!(loaded_plan.week, plan.week);
+        assert_eq!(loaded_plan.recipe_uuids, plan.recipe_uuids);
 
         cleanup_temp_dir(&temp_dir);
     }
