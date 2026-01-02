@@ -102,7 +102,14 @@ fn WebNavbar() -> Element {
                 Some(Ok(provider)) => {
                     let provider = provider.clone();
                     rsx! {
-                        button { onclick: move |_| provider.login().unwrap(), "Login" } // TODO (agent-generated): Handle login() errors properly instead of unwrapping
+                        button {
+                            onclick: move |_| {
+                                if let Err(e) = provider.login() {
+                                    eprintln!("Login error: {}", e);
+                                }
+                            },
+                            "Login"
+                        }
                     }
                 },
                 Some(Err(err)) => rsx! {
