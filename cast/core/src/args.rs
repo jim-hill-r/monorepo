@@ -195,30 +195,22 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
             check: _,
             fix,
             release,
-            recursive,
+            recursive: Some(depth),
             only_changed,
-        } => {
+        } if find_cast_toml(entry_directory).is_none() => {
             // Special handling: If recursive is enabled but no Cast config in current dir,
             // just run the recursive search for child projects
-            if recursive.is_some() && find_cast_toml(entry_directory).is_none() {
-                let mode = if *release {
-                    crate::ci::CiMode::Release
-                } else if *fix {
-                    crate::ci::CiMode::Fix
-                } else {
-                    crate::ci::CiMode::Check
-                };
+            let mode = if *release {
+                crate::ci::CiMode::Release
+            } else if *fix {
+                crate::ci::CiMode::Fix
+            } else {
+                crate::ci::CiMode::Check
+            };
 
-                return crate::ci::run_ci_recursively(
-                    entry_directory,
-                    mode,
-                    recursive.unwrap(),
-                    *only_changed,
-                )
+            return crate::ci::run_ci_recursively(entry_directory, mode, *depth, *only_changed)
                 .map(|_| "CI passed".to_string())
                 .map_err(|e| ExecuteError::CommandError(e.to_string()));
-            }
-            // Otherwise fall through to normal Cast.toml-required handling
         }
         Commands::Install {
             subcommand,
