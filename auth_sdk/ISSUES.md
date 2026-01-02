@@ -1,6 +1,5 @@
 # Priority Issues
 
-TODO (agent-generated): Add openidconnect dependency to Cargo.toml while keeping oauth2 temporarily for incremental migration
 TODO (agent-generated): Update ProviderConfig to support issuer URL for OIDC discovery alongside existing endpoint URLs
 TODO (agent-generated): Add nonce generation and storage to AppState structure
 TODO (agent-generated): Implement discovery document fetching and caching in WebAuthProvider
