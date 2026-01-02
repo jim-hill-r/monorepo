@@ -52,9 +52,9 @@ pub enum CiError {
 /// This function performs the following steps:
 /// 1. Installs required toolchain (rustc, cargo, clippy, dx, npm, playwright, etc.)
 /// 2. Detects the project type and runs appropriate checks:
-///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
-///    - For TypeScript projects (has package.json): npm lint, compile, test
-///    - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
+///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test (includes npm test if package.json exists)
+///    - For TypeScript projects (has package.json): npm ci, lint, compile
+///    - For hybrid projects (both files): runs both sets of checks, but npm test only runs once
 /// 3. Behavior depends on the mode:
 ///    - Check: Run all checks (fmt --check, clippy, build, test)
 ///    - Fix: Auto-fix formatting issues, then run checks
