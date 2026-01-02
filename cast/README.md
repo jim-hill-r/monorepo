@@ -196,6 +196,13 @@ Running `cast ci --recursive 1` from the monorepo root will:
 2. Find project1 and project2 at depth 1
 3. Run CI on each discovered project
 
+**Note**: If the current directory doesn't have a Cast configuration (Cast.toml or Cargo.toml with Cast metadata), the recursive flag will skip running CI on the current directory and only search for and run CI on child projects. This is useful for running CI across multiple projects from a parent directory that isn't itself a Cast project.
+
+```bash
+# From a directory without Cast.toml, find and run CI on all projects within 2 levels
+cast ci --recursive 2
+```
+
 This ensures all projects in your monorepo pass CI checks without manually running CI in each directory.
 
 ### Working on Cast Core

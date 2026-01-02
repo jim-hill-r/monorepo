@@ -413,7 +413,7 @@ fn commit_artifacts(working_directory: &Path) -> Result<(), CiError> {
 /// Run CI recursively on child projects
 /// Finds all Cast projects up to 'max_depth' levels below the current directory
 /// and runs CI on each of them with recursive_depth decremented by the depth at which they were found
-fn run_ci_recursively(
+pub fn run_ci_recursively(
     working_directory: &Path,
     mode: CiMode,
     max_depth: usize,

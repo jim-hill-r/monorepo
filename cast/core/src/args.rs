@@ -191,6 +191,27 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 .execute(entry_directory)
                 .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
+        Commands::Ci {
+            check: _,
+            fix,
+            release,
+            recursive: Some(depth),
+            only_changed,
+        } if find_cast_toml(entry_directory).is_none() => {
+            // Special handling: If recursive is enabled but no Cast config in current dir,
+            // just run the recursive search for child projects
+            let mode = if *release {
+                crate::ci::CiMode::Release
+            } else if *fix {
+                crate::ci::CiMode::Fix
+            } else {
+                crate::ci::CiMode::Check
+            };
+
+            return crate::ci::run_ci_recursively(entry_directory, mode, *depth, *only_changed)
+                .map(|_| "CI passed".to_string())
+                .map_err(|e| ExecuteError::CommandError(e.to_string()));
+        }
         Commands::Install {
             subcommand,
             tool,
@@ -1203,5 +1224,91 @@ mod tests {
         } else {
             panic!("Expected CommandError");
         }
+    }
+
+    #[test]
+    fn it_runs_ci_recursively_without_cast_config_in_current_dir() {
+        let tmp_dir = TempDir::new("test_ci_recursive_no_config").unwrap();
+
+        // Initialize git repo for child projects
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Don't create Cast.toml in the root - this is the key point of the test
+
+        // Create a child project with Cast.toml
+        let child = tmp_dir.path().join("child");
+        fs::create_dir_all(&child).unwrap();
+        fs::write(child.join("Cast.toml"), "").unwrap();
+        fs::write(
+            child.join("Cargo.toml"),
+            "[package]\nname = \"child\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(child.join("src")).unwrap();
+        fs::write(
+            child.join("src/main.rs"),
+            "fn main() {\n    println!(\"child\");\n}\n",
+        )
+        .unwrap();
+
+        // Commit everything
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI with recursive depth 1 from the root (which has no Cast.toml)
+        let result = execute(
+            Args {
+                cmd: Commands::Ci {
+                    check: false,
+                    fix: false,
+                    release: false,
+                    recursive: Some(1),
+                    only_changed: false,
+                },
+            },
+            tmp_dir.path(),
+        );
+
+        // Should succeed - it should find and run CI on the child project
+        assert!(
+            result.is_ok(),
+            "CI with recursive should succeed even without Cast config in current dir: {:?}",
+            result.err()
+        );
+
+        // Verify artifacts were created for the child project
+        assert!(
+            child.join("artifacts").exists(),
+            "Child project should have artifacts after CI"
+        );
     }
 }
