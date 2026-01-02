@@ -52,9 +52,9 @@ pub enum CiError {
 /// This function performs the following steps:
 /// 1. Installs required toolchain (rustc, cargo, clippy, dx, npm, playwright, etc.)
 /// 2. Detects the project type and runs appropriate checks:
-///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
-///    - For TypeScript projects (has package.json): npm lint, compile, test
-///    - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
+///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test (includes npm test if package.json exists)
+///    - For TypeScript projects (has package.json): npm ci, lint, compile
+///    - For hybrid projects (both files): runs both sets of checks, but npm test only runs once
 /// 3. Behavior depends on the mode:
 ///    - Check: Run all checks (fmt --check, clippy, build, test)
 ///    - Fix: Auto-fix formatting issues, then run checks
@@ -133,13 +133,16 @@ pub fn run(
     }
 
     // Run TypeScript CI if package.json exists (can run in addition to Rust CI)
+    // Pass has_cargo_toml so we can avoid running tests twice
     if has_package_json {
-        run_typescript_ci(working_directory)?;
+        run_typescript_ci(working_directory, has_cargo_toml)?;
         ran_ci_checks = true;
     }
 
     // Handle post-check publishing based on mode
-    if ran_ci_checks {
+    // Only publish if we have a Rust project (Cargo.toml exists)
+    // Cast's publish command creates binary/bundle artifacts from Rust projects
+    if ran_ci_checks && has_cargo_toml {
         match mode {
             CiMode::Check | CiMode::Fix => {
                 // For Check and Fix modes, run publish to create artifacts
@@ -212,8 +215,11 @@ fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
 /// 1. npm ci (to install dependencies from lockfile)
 /// 2. npm run lint (if script exists)
 /// 3. npm run compile (if script exists)
-/// 4. npm test (if script exists)
-fn run_typescript_ci(working_directory: &Path) -> Result<(), CiError> {
+/// 4. npm test (if script exists AND skip_tests is false)
+///
+/// The skip_tests parameter should be true when this is a hybrid project (has both Cargo.toml and package.json)
+/// because test::run() already runs npm test for hybrid projects
+fn run_typescript_ci(working_directory: &Path, skip_tests: bool) -> Result<(), CiError> {
     // Run npm ci to ensure dependencies are installed from lockfile
     run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
 
@@ -228,7 +234,8 @@ fn run_typescript_ci(working_directory: &Path) -> Result<(), CiError> {
     }
 
     // Run npm test if it exists (e.g., Playwright tests)
-    if npm_script_exists(working_directory, "test") {
+    // Skip if this is a hybrid project (tests already run by test::run())
+    if !skip_tests && npm_script_exists(working_directory, "test") {
         run_npm_command(working_directory, "test").map_err(|_| CiError::NpmTestError)?;
     }
 
@@ -1751,5 +1758,181 @@ mod tests {
         let result = get_default_branch(tmp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "main");
+    }
+
+    #[test]
+    fn test_ci_does_not_run_npm_test_twice_for_hybrid_project() {
+        let tmp_dir = TempDir::new("test_hybrid_no_double_test").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a hybrid project (both Rust and TypeScript)
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/main.rs"),
+            "fn main() {\n    println!(\"Hello, world!\");\n}\n",
+        )
+        .unwrap();
+
+        // Create a package.json with a test script that creates a marker file
+        // This lets us count how many times the test script runs
+        let marker_path = tmp_dir.path().join("test_marker.txt");
+        let test_script = format!(
+            "echo test >> {}",
+            marker_path.to_string_lossy().replace('\\', "/")
+        );
+        fs::write(
+            tmp_dir.path().join("package.json"),
+            format!(r#"{{"scripts": {{"test": "{}"}}}}"#, test_script),
+        )
+        .unwrap();
+
+        // Create package-lock.json for npm ci
+        fs::write(
+            tmp_dir.path().join("package-lock.json"),
+            r#"{"name": "test", "lockfileVersion": 3}"#,
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI
+        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        assert!(
+            result.is_ok(),
+            "CI should succeed for hybrid project: {:?}",
+            result.err()
+        );
+
+        // Check that test was only run once
+        // If the marker file exists, count the lines
+        if marker_path.exists() {
+            let content = fs::read_to_string(&marker_path).unwrap();
+            let line_count = content.lines().count();
+            assert_eq!(
+                line_count, 1,
+                "npm test should only run once, but ran {} times",
+                line_count
+            );
+        } else {
+            panic!("Test marker file should exist after running CI");
+        }
+    }
+
+    #[test]
+    fn test_ci_runs_npm_test_for_pure_typescript_project() {
+        let tmp_dir = TempDir::new("test_pure_typescript").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a pure TypeScript project (only package.json, no Cargo.toml)
+        let marker_path = tmp_dir.path().join("test_marker.txt");
+        let test_script = format!(
+            "echo test >> {}",
+            marker_path.to_string_lossy().replace('\\', "/")
+        );
+        fs::write(
+            tmp_dir.path().join("package.json"),
+            format!(r#"{{"scripts": {{"test": "{}"}}}}"#, test_script),
+        )
+        .unwrap();
+
+        // Create package-lock.json for npm ci
+        fs::write(
+            tmp_dir.path().join("package-lock.json"),
+            r#"{"name": "test", "lockfileVersion": 3}"#,
+        )
+        .unwrap();
+
+        // Commit the project
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI
+        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        assert!(
+            result.is_ok(),
+            "CI should succeed for pure TypeScript project: {:?}",
+            result.err()
+        );
+
+        // Check that test was run
+        if marker_path.exists() {
+            let content = fs::read_to_string(&marker_path).unwrap();
+            let line_count = content.lines().count();
+            assert_eq!(
+                line_count, 1,
+                "npm test should run once for pure TypeScript projects"
+            );
+        } else {
+            panic!("Test marker file should exist after running CI");
+        }
     }
 }
