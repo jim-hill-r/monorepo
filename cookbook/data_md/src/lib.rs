@@ -308,46 +308,16 @@ impl MarkdownRecipeStore {
 
     /// Parses plan data from markdown content
     fn parse_plan_markdown(&self, content: &str, week: u32) -> PlanResult<Plan> {
-        // First try to extract recipe UUIDs directly (new format)
-        if let Ok(recipe_uuids) = self.extract_plan_recipe_uuids(content) {
-            // Validate we have exactly 7 UUIDs
-            if recipe_uuids.len() != 7 {
-                return Err(PlanError::InvalidData(format!(
-                    "Plan for week {} must have exactly 7 recipe UUIDs, found {}",
-                    week,
-                    recipe_uuids.len()
-                )));
-            }
+        // Extract recipe UUIDs from the markdown content
+        let recipe_uuids = self.extract_plan_recipe_uuids(content)?;
 
-            return Plan::new_checked(week, recipe_uuids).map_err(|e| {
-                PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
-            });
-        }
-
-        // Fall back to day-based format (legacy format)
-        let recipe_days = self.extract_plan_recipe_days(content)?;
-
-        // Validate we have exactly 7 days
-        if recipe_days.len() != 7 {
+        // Validate we have exactly 7 UUIDs
+        if recipe_uuids.len() != 7 {
             return Err(PlanError::InvalidData(format!(
-                "Plan for week {} must have exactly 7 recipe days, found {}",
+                "Plan for week {} must have exactly 7 recipe UUIDs, found {}",
                 week,
-                recipe_days.len()
+                recipe_uuids.len()
             )));
-        }
-
-        // Convert day numbers to UUIDs by looking up recipes
-        let mut recipe_uuids = Vec::with_capacity(7);
-
-        for day in recipe_days {
-            #[allow(deprecated)]
-            let recipe = self.get_by_day(day).map_err(|e| {
-                PlanError::InvalidData(format!(
-                    "Failed to find recipe for day {} in week {}: {}",
-                    day, week, e
-                ))
-            })?;
-            recipe_uuids.push(recipe.uuid);
         }
 
         Plan::new_checked(week, recipe_uuids).map_err(|e| {
@@ -375,28 +345,6 @@ impl MarkdownRecipeStore {
 
         Err(PlanError::InvalidData(
             "Could not find 'Recipe UUIDs:' line in plan markdown".to_string(),
-        ))
-    }
-
-    /// Extracts recipe days from the markdown content
-    fn extract_plan_recipe_days(&self, content: &str) -> PlanResult<Vec<u32>> {
-        // Look for the "Days: X, Y, Z" line
-        for line in content.lines() {
-            let trimmed = line.trim();
-            if let Some(days_str) = trimmed.strip_prefix("Days:") {
-                let days: Result<Vec<u32>, _> = days_str
-                    .split(',')
-                    .map(|s| s.trim().parse::<u32>())
-                    .collect();
-
-                return days.map_err(|e| {
-                    PlanError::InvalidData(format!("Failed to parse recipe days: {}", e))
-                });
-            }
-        }
-
-        Err(PlanError::InvalidData(
-            "Could not find 'Days:' line in plan markdown".to_string(),
         ))
     }
 
@@ -528,30 +476,6 @@ impl RecipeReader for MarkdownRecipeStore {
             .find(|r| r.uuid == *uuid)
             .cloned()
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
-    }
-
-    #[allow(deprecated)]
-    fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
-        if !(1..=366).contains(&day) {
-            return Err(RecipeError::InvalidData(format!(
-                "Day must be between 1 and 366, got {}",
-                day
-            )));
-        }
-
-        // Look for recipe with "day-{day}" tag
-        let day_tag = format!("day-{}", day);
-
-        // Search through all recipes for one with matching day tag
-        for recipe in self.recipes.values() {
-            if recipe.tags.contains(&day_tag) {
-                return Ok(recipe.clone());
-            }
-        }
-
-        // If not found by tag, try old ID format for backward compatibility
-        let id = format!("day-{}", day);
-        self.get_by_id(&id)
     }
 
     fn get_all(&self) -> RecipeResult<Vec<Recipe>> {
@@ -917,32 +841,6 @@ Tags: italian, pasta, quick
     }
 
     #[test]
-    #[allow(deprecated)]
-    fn test_get_by_day() {
-        let temp_dir = create_temp_dir();
-
-        // Need to create store first, then add recipe
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        // Create a recipe with day format
-        let recipe_content = "# Day 1 Recipe\n\nA recipe for day 1.\n";
-        fs::write(temp_dir.join("day-1.md"), recipe_content).unwrap();
-
-        // Reload store to pick up the new file
-        drop(store);
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        let recipe = store.get_by_day(1).unwrap();
-        assert_eq!(recipe.id, "day-1");
-
-        // Test invalid days
-        assert!(store.get_by_day(0).is_err());
-        assert!(store.get_by_day(367).is_err());
-
-        cleanup_temp_dir(&temp_dir);
-    }
-
-    #[test]
     fn test_get_all() {
         let temp_dir = create_temp_dir();
         let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
@@ -1025,22 +923,32 @@ Tags: italian, pasta, quick
         let temp_dir = create_temp_dir();
 
         // Create recipe files that will be referenced by the plan
+        let mut recipe_uuids = Vec::new();
         for day in 1..=7 {
+            let uuid = Uuid::new_v4();
+            recipe_uuids.push(uuid);
             let recipe_content = format!(
-                "# Day {} Recipe\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
-                day, day, day
+                "# Day {} Recipe\n\nUUID: {}\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                day, uuid, day, day
             );
             fs::write(temp_dir.join(format!("day-{}.md", day)), recipe_content).unwrap();
         }
 
-        // Create a plan file
-        let plan_content = r#"# Week 1 Plan
+        // Create a plan file with the UUIDs
+        let uuids_str = recipe_uuids
+            .iter()
+            .map(|u| u.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let plan_content = format!(
+            r#"# Week 1 Plan
 
 Meal plan for ISO 8601 week 1.
 
 Week: 1
 Year: 2024
 Days: 1, 2, 3, 4, 5, 6, 7
+Recipe UUIDs: {}
 
 ## Recipe Days
 
@@ -1048,7 +956,9 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
 - Monday: Day 1
 - Tuesday: Day 2
-"#;
+"#,
+            uuids_str
+        );
 
         fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
 
@@ -1084,19 +994,29 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
     fn test_plan_reader_get_all() {
         let temp_dir = create_temp_dir();
 
-        // Create recipe files for weeks 1-3 (days 1-21)
+        // Create recipe files for weeks 1-3 (days 1-21) with UUIDs
+        let mut all_uuids = Vec::new();
         for day in 1..=21 {
+            let uuid = Uuid::new_v4();
+            all_uuids.push(uuid);
             let recipe_content = format!(
-                "# Day {} Recipe\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
-                day, day, day
+                "# Day {} Recipe\n\nUUID: {}\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                day, uuid, day, day
             );
             fs::write(temp_dir.join(format!("day-{}.md", day)), recipe_content).unwrap();
         }
 
-        // Create multiple plan files
+        // Create multiple plan files with UUIDs
         for week in 1..=3 {
+            let start_idx = (week - 1) * 7;
+            let week_uuids: Vec<String> = all_uuids[start_idx..start_idx + 7]
+                .iter()
+                .map(|u| u.to_string())
+                .collect();
+            let uuids_str = week_uuids.join(", ");
+
             let plan_content = format!(
-                "# Week {} Plan\n\nWeek: {}\nDays: {}, {}, {}, {}, {}, {}, {}\n",
+                "# Week {} Plan\n\nWeek: {}\nDays: {}, {}, {}, {}, {}, {}, {}\nRecipe UUIDs: {}\n",
                 week,
                 week,
                 week * 7 - 6,
@@ -1105,7 +1025,8 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
                 week * 7 - 3,
                 week * 7 - 2,
                 week * 7 - 1,
-                week * 7
+                week * 7,
+                uuids_str
             );
             fs::write(temp_dir.join(format!("week-{}.md", week)), plan_content).unwrap();
         }
@@ -1127,16 +1048,27 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
     fn test_plan_reader_exists() {
         let temp_dir = create_temp_dir();
 
-        // Create recipe files for days 29-35 (week 5)
+        // Create recipe files for days 29-35 (week 5) with UUIDs
+        let mut week_uuids = Vec::new();
         for day in 29..=35 {
+            let uuid = Uuid::new_v4();
+            week_uuids.push(uuid);
             let recipe_content = format!(
-                "# Day {} Recipe\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
-                day, day, day
+                "# Day {} Recipe\n\nUUID: {}\n\n## Ingredients\n\n- ingredient {}\n\n## Instructions\n\n1. step {}\n",
+                day, uuid, day, day
             );
             fs::write(temp_dir.join(format!("day-{}.md", day)), recipe_content).unwrap();
         }
 
-        let plan_content = "# Week 5 Plan\n\nWeek: 5\nDays: 29, 30, 31, 32, 33, 34, 35\n";
+        let uuids_str = week_uuids
+            .iter()
+            .map(|u| u.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let plan_content = format!(
+            "# Week 5 Plan\n\nWeek: 5\nDays: 29, 30, 31, 32, 33, 34, 35\nRecipe UUIDs: {}\n",
+            uuids_str
+        );
         fs::write(temp_dir.join("week-5.md"), plan_content).unwrap();
 
         let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
@@ -1247,32 +1179,6 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
         // Plan should not be loaded due to invalid UUID count
         assert!(!PlanReader::exists(&store, 1));
-
-        cleanup_temp_dir(&temp_dir);
-    }
-
-    #[test]
-    fn test_parse_plan_falls_back_to_days() {
-        let temp_dir = create_temp_dir();
-
-        // Create recipe files
-        for i in 1..=7 {
-            let uuid = Uuid::new_v4();
-            let recipe_content = format!("# Recipe {}\n\nUUID: {}\n\nA test recipe\n", i, uuid);
-            fs::write(temp_dir.join(format!("day-{}.md", i)), recipe_content).unwrap();
-        }
-
-        // Create a plan with only Days (no Recipe UUIDs) - legacy format
-        let plan_content = "# Week 1 Plan\n\nWeek: 1\nYear: 2024\nDays: 1, 2, 3, 4, 5, 6, 7\n";
-        fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
-
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        // Plan should be loaded and UUIDs should be looked up from days
-        assert!(PlanReader::exists(&store, 1));
-        let plan = PlanReader::get_by_week(&store, 1).unwrap();
-        assert_eq!(plan.week, 1);
-        assert_eq!(plan.recipe_uuids.len(), 7);
 
         cleanup_temp_dir(&temp_dir);
     }

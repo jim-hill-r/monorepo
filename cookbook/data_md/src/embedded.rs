@@ -259,19 +259,6 @@ impl RecipeReader for EmbeddedRecipeStore {
     }
 
     #[allow(deprecated)]
-    fn get_by_day(&self, day: u32) -> RecipeResult<Recipe> {
-        if !(1..=365).contains(&day) {
-            return Err(RecipeError::InvalidData(format!(
-                "Day must be between 1 and 365, got {}",
-                day
-            )));
-        }
-
-        // Look for recipe with ID "day-{day}"
-        let id = format!("day-{}", day);
-        self.get_by_id(&id)
-    }
-
     fn get_all(&self) -> RecipeResult<Vec<Recipe>> {
         Ok(self.recipes.values().cloned().collect())
     }
@@ -293,39 +280,9 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
-    fn test_get_by_day() {
-        let store = EmbeddedRecipeStore::global();
-
-        // Test day 1
-        let recipe = store.get_by_day(1).unwrap();
-        assert_eq!(recipe.id, "day-1");
-        assert!(!recipe.title.is_empty());
-
-        // Test a middle day
-        let recipe = store.get_by_day(100).unwrap();
-        assert_eq!(recipe.id, "day-100");
-
-        // Test last day
-        let recipe = store.get_by_day(365).unwrap();
-        assert_eq!(recipe.id, "day-365");
-    }
-
-    #[test]
-    fn test_invalid_days() {
-        let store = EmbeddedRecipeStore::global();
-
-        // Day 0 should fail
-        assert!(store.get_by_day(0).is_err());
-
-        // Day 366 should fail
-        assert!(store.get_by_day(366).is_err());
-    }
-
-    #[test]
     fn test_recipe_has_content() {
         let store = EmbeddedRecipeStore::global();
-        let recipe = store.get_by_day(1).unwrap();
+        let recipe = store.get_by_id("day-1").unwrap();
 
         // Verify recipe has parsed content
         assert!(!recipe.title.is_empty());
@@ -400,32 +357,17 @@ impl EmbeddedPlanStore {
 
     /// Parses plan data from markdown content
     fn parse_plan_markdown(content: &str, week: u32) -> PlanResult<Plan> {
-        // Extract recipe days from the markdown content
-        // Format: "Days: 1, 2, 3, 4, 5, 6, 7"
-        let recipe_days = Self::extract_recipe_days(content)?;
+        // Extract recipe UUIDs from the markdown content
+        // Format: "Recipe UUIDs: uuid1, uuid2, uuid3, ..."
+        let recipe_uuids = Self::extract_recipe_uuids(content)?;
 
-        // Validate we have exactly 7 days
-        if recipe_days.len() != 7 {
+        // Validate we have exactly 7 UUIDs
+        if recipe_uuids.len() != 7 {
             return Err(PlanError::InvalidData(format!(
-                "Plan for week {} must have exactly 7 recipe days, found {}",
+                "Plan for week {} must have exactly 7 recipe UUIDs, found {}",
                 week,
-                recipe_days.len()
+                recipe_uuids.len()
             )));
-        }
-
-        // Convert day numbers to UUIDs by looking up recipes
-        let recipe_store = EmbeddedRecipeStore::global();
-        let mut recipe_uuids = Vec::with_capacity(7);
-
-        for day in recipe_days {
-            #[allow(deprecated)]
-            let recipe = recipe_store.get_by_day(day).map_err(|e| {
-                PlanError::InvalidData(format!(
-                    "Failed to find recipe for day {} in week {}: {}",
-                    day, week, e
-                ))
-            })?;
-            recipe_uuids.push(recipe.uuid);
         }
 
         Plan::new_checked(week, recipe_uuids).map_err(|e| {
@@ -433,25 +375,26 @@ impl EmbeddedPlanStore {
         })
     }
 
-    /// Extracts recipe days from the markdown content
-    fn extract_recipe_days(content: &str) -> PlanResult<Vec<u32>> {
-        // Look for the "Days: X, Y, Z" line
+    /// Extracts recipe UUIDs from the markdown content
+    fn extract_recipe_uuids(content: &str) -> PlanResult<Vec<Uuid>> {
+        // Look for the "Recipe UUIDs: X, Y, Z" line
         for line in content.lines() {
             let trimmed = line.trim();
-            if let Some(days_str) = trimmed.strip_prefix("Days:") {
-                let days: Result<Vec<u32>, _> = days_str
+            if let Some(uuids_str) = trimmed.strip_prefix("Recipe UUIDs:") {
+                let uuids: Result<Vec<Uuid>, _> = uuids_str
                     .split(',')
-                    .map(|s| s.trim().parse::<u32>())
+                    .map(|s| {
+                        Uuid::parse_str(s.trim())
+                            .map_err(|e| PlanError::InvalidData(format!("Invalid UUID: {}", e)))
+                    })
                     .collect();
 
-                return days.map_err(|e| {
-                    PlanError::InvalidData(format!("Failed to parse recipe days: {}", e))
-                });
+                return uuids;
             }
         }
 
         Err(PlanError::InvalidData(
-            "Could not find 'Days:' line in plan markdown".to_string(),
+            "Could not find 'Recipe UUIDs:' line in plan markdown".to_string(),
         ))
     }
 }
@@ -494,7 +437,6 @@ mod plan_tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     fn test_get_by_week() {
         let store = EmbeddedPlanStore::global();
         let recipe_store = EmbeddedRecipeStore::global();
@@ -506,7 +448,8 @@ mod plan_tests {
 
         // Verify UUIDs match recipes for days 1-7
         for (i, day) in (1..=7).enumerate() {
-            let recipe = recipe_store.get_by_day(day).unwrap();
+            let day_id = format!("day-{}", day);
+            let recipe = recipe_store.get_by_id(&day_id).unwrap();
             assert_eq!(plan.recipe_uuids[i], recipe.uuid);
         }
 
@@ -517,7 +460,8 @@ mod plan_tests {
 
         // Verify UUIDs match recipes for days 8-14
         for (i, day) in (8..=14).enumerate() {
-            let recipe = recipe_store.get_by_day(day).unwrap();
+            let day_id = format!("day-{}", day);
+            let recipe = recipe_store.get_by_id(&day_id).unwrap();
             assert_eq!(plan.recipe_uuids[i], recipe.uuid);
         }
 
@@ -579,7 +523,6 @@ mod plan_tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     fn test_parse_plan_markdown() {
         let content = r#"# Week 1 Plan
 
@@ -588,6 +531,7 @@ Meal plan for ISO 8601 week 1.
 Week: 1
 Year: 2024
 Days: 1, 2, 3, 4, 5, 6, 7
+Recipe UUIDs: 9811d359-25fb-4cff-baf1-c78cd3243033, 4a604773-ec4d-47b1-b622-486bf61a878a, 8e3d2386-41ec-4471-9c09-7e794b0dc207, 6a25a017-327c-4c6d-aa91-b7c7268a7f1d, 12f50181-4156-4bee-b72a-7d7e10f19d2f, 8ffb2050-fa21-4827-b5be-664ee1af49d2, 2c14da93-84fd-4044-abf4-8dd83babec4c
 
 ## Recipe Days
 
@@ -606,29 +550,32 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
 
         // Verify UUIDs match the recipes for days 1-7
         for (i, day) in (1..=7).enumerate() {
-            let recipe = recipe_store.get_by_day(day).unwrap();
+            let day_id = format!("day-{}", day);
+            let recipe = recipe_store.get_by_id(&day_id).unwrap();
             assert_eq!(plan.recipe_uuids[i], recipe.uuid);
         }
     }
 
     #[test]
-    fn test_extract_recipe_days() {
-        let content = "Week: 5\nDays: 29, 30, 31, 32, 33, 34, 35\n";
-        let days = EmbeddedPlanStore::extract_recipe_days(content).unwrap();
-        assert_eq!(days, vec![29, 30, 31, 32, 33, 34, 35]);
+    fn test_extract_recipe_uuids() {
+        let content = "Week: 1\nRecipe UUIDs: 9811d359-25fb-4cff-baf1-c78cd3243033, 4a604773-ec4d-47b1-b622-486bf61a878a\n";
+        let uuids = EmbeddedPlanStore::extract_recipe_uuids(content).unwrap();
+        assert_eq!(uuids.len(), 2);
+        assert_eq!(uuids[0].to_string(), "9811d359-25fb-4cff-baf1-c78cd3243033");
+        assert_eq!(uuids[1].to_string(), "4a604773-ec4d-47b1-b622-486bf61a878a");
     }
 
     #[test]
-    fn test_extract_recipe_days_missing() {
-        let content = "Week: 5\nNo days field here\n";
-        let result = EmbeddedPlanStore::extract_recipe_days(content);
+    fn test_extract_recipe_uuids_missing() {
+        let content = "Week: 5\nNo Recipe UUIDs field here\n";
+        let result = EmbeddedPlanStore::extract_recipe_uuids(content);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_extract_recipe_days_invalid_format() {
-        let content = "Days: 1, 2, abc, 4, 5, 6, 7\n";
-        let result = EmbeddedPlanStore::extract_recipe_days(content);
+    fn test_extract_recipe_uuids_invalid_format() {
+        let content = "Recipe UUIDs: not-a-uuid, also-not-a-uuid\n";
+        let result = EmbeddedPlanStore::extract_recipe_uuids(content);
         assert!(result.is_err());
     }
 }
