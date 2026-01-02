@@ -92,9 +92,9 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 
 #### Sub-task 4.7: Cleanup and Documentation
 - ✅ Remove old day-based code paths after migration
-- TODO (agent-generated): Update all documentation to reflect UUID-based architecture
-- TODO (agent-generated): Update README with new content file naming conventions
-- TODO (agent-generated): Add comments explaining UUID-based design decisions
+- ✅ Update all documentation to reflect UUID-based architecture
+- ✅ Update README with new content file naming conventions
+- ✅ Add comments explaining UUID-based design decisions
 
 # Backlog
 

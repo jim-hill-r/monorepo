@@ -1,3 +1,30 @@
+//! # Cookbook Core Library
+//!
+//! This library provides the core data models and traits for the cookbook application.
+//!
+//! ## UUID-Based Architecture
+//!
+//! The cookbook uses a UUID-based architecture where each recipe is uniquely identified
+//! by a UUID (Universally Unique Identifier). This design decision enables:
+//!
+//! - **Recipe Rearrangement**: Recipes can be moved between days, weeks, or plans without
+//!   breaking references since UUIDs are stable identifiers independent of position.
+//! - **Flexibility**: Recipe files can be renamed or reorganized without affecting
+//!   functionality since the UUID in the recipe frontmatter is the source of truth.
+//! - **Data Integrity**: Plans reference recipes by UUID, ensuring that recipe
+//!   relationships remain valid even when recipes are modified or moved.
+//! - **Migration Support**: Legacy day-based IDs (e.g., "day-1") are supported for
+//!   backward compatibility during the transition from the old day-based system.
+//!
+//! ## Key Components
+//!
+//! - [`Recipe`]: The main recipe data structure with UUID as primary identifier
+//! - [`RecipeReader`]: Trait for reading recipes from a data source
+//! - [`RecipeWriter`]: Trait for writing recipes to a data source
+//! - [`Plan`]: Weekly meal plan that references recipes by UUID
+//! - [`PlanReader`]: Trait for reading plans from a data source
+//! - [`PlanWriter`]: Trait for writing plans to a data source
+
 use std::fmt;
 use uuid::Uuid;
 

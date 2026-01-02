@@ -43,7 +43,8 @@ Tags: tag1, tag2, tag3
 
 ### Required Fields
 - **Title**: First `# ` heading in the file
-- **ID**: Derived from the filename (without `.md` extension)
+- **UUID**: `UUID: <uuid-string>` format (RFC 4122 compliant UUID). Used as the primary identifier.
+- **ID**: Derived from the filename (without `.md` extension). Typically the same as the UUID for consistency.
 
 ### Optional Fields
 - **UUID**: `UUID: <uuid-string>` format (RFC 4122 compliant UUID). If not provided, a new UUID is automatically generated when the recipe is loaded.
@@ -73,33 +74,40 @@ use uuid::Uuid;
 // Create a store from a content directory
 let mut store = MarkdownRecipeStore::new("./content")?;
 
-// Read recipes
-let recipe = store.get_by_id("carbonara")?;
-let day_recipe = store.get_by_day(1)?;
-let all_recipes = store.get_all()?;
-
-// Read recipe by UUID
+// Read recipes by UUID (primary method)
 let uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000")?;
 let recipe = store.get_by_uuid(&uuid)?;
 
-// Write recipes
+// Read recipes by legacy ID (for backward compatibility)
+let recipe = store.get_by_id("day-1")?;
+
+// Read all recipes
+let all_recipes = store.get_all()?;
+
+// Write recipes (UUID is automatically generated if not provided)
 let new_recipe = Recipe::new("new-recipe".to_string(), "New Recipe".to_string());
 store.create(new_recipe)?;
 ```
 
-## Day-Based Recipes
+## File Organization
 
-Recipes can be organized by day of the year. Use the filename format `day-{N}.md` where N is between 1 and 366:
+Recipes are stored in individual markdown files named with their UUIDs:
 
-- `day-1.md` - Recipe for January 1st
-- `day-100.md` - Recipe for day 100
-- `day-365.md` - Recipe for December 31st
+- `{uuid}.md` - Recipe file named with its unique UUID
+- Example: `550e8400-e29b-41d4-a716-446655440000.md`
 
-These can be accessed using `get_by_day(day)`:
+Recipes can be accessed using their UUID or legacy ID:
 
 ```rust
-let recipe = store.get_by_day(1)?;  // Gets recipe from day-1.md
+// Access by UUID (recommended)
+let uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000")?;
+let recipe = store.get_by_uuid(&uuid)?;
+
+// Access by legacy ID (for backward compatibility)
+let recipe = store.get_by_id("day-1")?;  // Works with legacy day-based IDs
 ```
+
+The UUID-based file organization enables recipes to be rearranged and moved without breaking references in plans or other features.
 
 ## Special Files
 
