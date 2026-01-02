@@ -45,6 +45,7 @@ fn App() -> Element {
             auth_url: AUTH_URL.into(),
             token_url: TOKEN_URL.into(),
             redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
+            issuer_url: Some("https://dev-jdadpn4pckxevrv5.us.auth0.com".into()),
         })
         .await
     });
@@ -57,9 +58,10 @@ fn App() -> Element {
         // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
         // directive is needed for WebAssembly instantiation in some browsers.
         // Style unsafe-inline is kept for any inline styling that may be needed.
+        // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
         document::Meta {
             http_equiv: "Content-Security-Policy",
-            content: "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'",
+            content: "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'",
         }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }

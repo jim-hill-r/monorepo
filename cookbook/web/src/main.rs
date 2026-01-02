@@ -42,6 +42,7 @@ fn App() -> Element {
                 auth_url: AUTH_URL.into(),
                 token_url: TOKEN_URL.into(),
                 redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
+                issuer_url: Some("https://dev-jdadpn4pckxevrv5.us.auth0.com".into()),
             })
             .await
         });
