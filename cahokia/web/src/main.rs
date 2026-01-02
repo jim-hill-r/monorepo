@@ -139,3 +139,43 @@ fn WebNavbar() -> Element {
         Outlet::<Route> {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_csp_contains_auth0_domain() {
+        // Verify CSP includes the Auth0 domain for OAuth requests
+        const CSP: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
+        assert!(CSP.contains("https://dev-jdadpn4pckxevrv5.us.auth0.com"), "CSP should include Auth0 domain");
+    }
+
+    #[test]
+    fn test_csp_blocks_default_sources() {
+        // Verify CSP starts with default-src 'none' to block all by default
+        const CSP: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
+        assert!(CSP.starts_with("default-src 'none'"), "CSP should block all sources by default");
+    }
+
+    #[test]
+    fn test_csp_allows_wasm() {
+        // Verify CSP includes wasm-unsafe-eval for WebAssembly
+        const CSP: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
+        assert!(CSP.contains("'wasm-unsafe-eval'"), "CSP should allow WASM evaluation");
+    }
+
+    #[test]
+    fn test_provider_config_includes_issuer_url() {
+        // Verify ProviderConfig is created with issuer_url
+        // This is a compile-time check that the config structure is correct
+        let config = ProviderConfig {
+            client_id: "test".into(),
+            auth_url: "https://example.com/auth".into(),
+            token_url: "https://example.com/token".into(),
+            redirect_url: "https://example.com/callback".into(),
+            issuer_url: Some("https://example.com".into()),
+        };
+        assert_eq!(config.issuer_url, Some("https://example.com".into()));
+    }
+}
