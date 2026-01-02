@@ -33,6 +33,16 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 
+/// Content Security Policy for the application
+/// - default-src 'none': Block all sources by default
+/// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
+/// - connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com: Allow API calls to same origin and Auth0
+/// - img-src 'self': Allow images from same origin
+/// - style-src 'self' 'unsafe-inline': Allow styles from same origin and inline styles (required by Dioxus)
+/// - base-uri 'self': Restrict base tag to same origin
+/// - form-action 'self': Restrict form submissions to same origin
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
+
 fn main() {
     dioxus::launch(App);
 }
@@ -61,7 +71,7 @@ fn App() -> Element {
         // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
         document::Meta {
             http_equiv: "Content-Security-Policy",
-            content: "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'",
+            content: CONTENT_SECURITY_POLICY,
         }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
@@ -147,22 +157,28 @@ mod tests {
     #[test]
     fn test_csp_contains_auth0_domain() {
         // Verify CSP includes the Auth0 domain for OAuth requests
-        const CSP: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
-        assert!(CSP.contains("https://dev-jdadpn4pckxevrv5.us.auth0.com"), "CSP should include Auth0 domain");
+        assert!(
+            CONTENT_SECURITY_POLICY.contains("https://dev-jdadpn4pckxevrv5.us.auth0.com"),
+            "CSP should include Auth0 domain"
+        );
     }
 
     #[test]
     fn test_csp_blocks_default_sources() {
         // Verify CSP starts with default-src 'none' to block all by default
-        const CSP: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
-        assert!(CSP.starts_with("default-src 'none'"), "CSP should block all sources by default");
+        assert!(
+            CONTENT_SECURITY_POLICY.starts_with("default-src 'none'"),
+            "CSP should block all sources by default"
+        );
     }
 
     #[test]
     fn test_csp_allows_wasm() {
         // Verify CSP includes wasm-unsafe-eval for WebAssembly
-        const CSP: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'";
-        assert!(CSP.contains("'wasm-unsafe-eval'"), "CSP should allow WASM evaluation");
+        assert!(
+            CONTENT_SECURITY_POLICY.contains("'wasm-unsafe-eval'"),
+            "CSP should allow WASM evaluation"
+        );
     }
 
     #[test]
