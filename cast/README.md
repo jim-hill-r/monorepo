@@ -36,6 +36,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
   - `cast ci --fix` - Auto-fix formatting issues, then run checks
   - `cast ci --release` - Build in release mode and publish artifacts (for post-merge to master)
   - `cast ci --recursive <depth>` - After running CI, find and run CI on cast projects up to N levels below the current directory
+  - `cast ci --only-changed` - Only run CI if the project has changes compared to the origin's default branch
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
@@ -158,6 +159,20 @@ cargo build --release
 # Build release artifacts
 ./target/release/cast publish
 ```
+
+### Only Changed CI Example
+
+The `--only-changed` option is useful in CI/CD pipelines to skip projects without changes:
+
+```bash
+# Only run CI if the project has changes compared to origin's default branch
+./target/release/cast ci --only-changed
+
+# Combine with recursive to check all projects, but only run CI on changed ones
+./target/release/cast ci --recursive 2 --only-changed
+```
+
+This feature is helpful in monorepos where you want to optimize CI runtime by only running checks on projects that have actually changed since the last deployment to the default branch.
 
 ### Recursive CI Example
 
