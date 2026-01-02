@@ -9,3 +9,4 @@ workspace = true
 [dependencies]
 cookbook-core = { path = "../core" }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
+tracing = "0.1.41"
