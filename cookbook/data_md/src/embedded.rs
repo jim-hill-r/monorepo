@@ -39,10 +39,14 @@ impl EmbeddedRecipeStore {
                 Ok(recipe) => {
                     self.recipes.insert(recipe.id.clone(), recipe);
                 }
-                Err(_e) => {
-                    // Note: In a production environment, you might want to log this error
-                    // For now, we skip recipes that fail to parse
-                    // TODO (agent-generated): Consider using a logging framework to report parsing failures
+                Err(e) => {
+                    // Log parsing failures to help with debugging
+                    tracing::warn!(
+                        day = day,
+                        error = %e,
+                        "Failed to parse recipe markdown for day {}",
+                        day
+                    );
                 }
             }
         }
@@ -339,9 +343,14 @@ impl EmbeddedPlanStore {
                 Ok(plan) => {
                     self.plans.insert(plan.week, plan);
                 }
-                Err(_e) => {
-                    // Note: In a production environment, you might want to log this error
-                    // For now, we skip plans that fail to parse
+                Err(e) => {
+                    // Log parsing failures to help with debugging
+                    tracing::warn!(
+                        week = week,
+                        error = %e,
+                        "Failed to parse plan markdown for week {}",
+                        week
+                    );
                 }
             }
         }
