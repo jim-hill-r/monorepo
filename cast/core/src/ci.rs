@@ -1,6 +1,7 @@
 use crate::build;
 use crate::publish;
 use crate::test;
+use crate::toolchain;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use thiserror::Error;
@@ -43,20 +44,24 @@ pub enum CiError {
     GitLfsError(String),
     #[error("Git commit failed: {0}")]
     GitCommitError(String),
+    #[error("Toolchain installation failed: {0}")]
+    ToolchainError(#[from] toolchain::ToolchainError),
 }
 
 /// Run CI checks for a project
-/// This detects the project type and runs appropriate checks:
-/// - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
-/// - For TypeScript projects (has package.json): npm lint, compile, test
-/// - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
-/// - Behavior depends on the mode:
-///   - Check: Run all checks (fmt --check, clippy, build, test)
-///   - Fix: Auto-fix formatting issues, then run checks
-///   - Release: Run all checks with release build, then publish artifacts
-/// - If recursive_depth is Some(depth), after running CI on the current directory,
-///   it will find all Cast projects up to 'depth' levels below and run CI on them
-/// - If only_changed is true, CI will only run if the project has changes compared to the origin's default branch
+/// This function performs the following steps:
+/// 1. Installs required toolchain (rustc, cargo, clippy, dx, npm, playwright, etc.)
+/// 2. Detects the project type and runs appropriate checks:
+///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test
+///    - For TypeScript projects (has package.json): npm lint, compile, test
+///    - Projects can have both Cargo.toml and package.json (e.g., Dioxus web apps with Playwright tests)
+/// 3. Behavior depends on the mode:
+///    - Check: Run all checks (fmt --check, clippy, build, test)
+///    - Fix: Auto-fix formatting issues, then run checks
+///    - Release: Run all checks with release build, then publish artifacts
+/// 4. If recursive_depth is Some(depth), after running CI on the current directory,
+///    it will find all Cast projects up to 'depth' levels below and run CI on them
+/// 5. If only_changed is true, CI will only run if the project has changes compared to the origin's default branch
 pub fn run(
     working_directory: impl AsRef<Path>,
     mode: CiMode,
@@ -64,6 +69,33 @@ pub fn run(
     only_changed: bool,
 ) -> Result<(), CiError> {
     let working_directory = working_directory.as_ref();
+
+    // Install required toolchain before running CI checks
+    // This ensures all necessary tools (rustc, cargo, clippy, dx, npm, etc.) are available
+    let install_options = toolchain::InstallOptions {
+        specific_tools: None,   // Install all required tools
+        skip_tools: Vec::new(), // Don't skip any tools
+        dry_run: false,         // Actually install
+        force: false,           // Only install if not already installed
+    };
+
+    // Run the installation
+    let install_results = toolchain::install_tools(working_directory, install_options)?;
+
+    // Check if any installations failed (shouldn't happen if tools are already installed)
+    let failed_installs: Vec<_> = install_results
+        .iter()
+        .filter(|r| !r.success && !r.skipped)
+        .collect();
+
+    if !failed_installs.is_empty() {
+        eprintln!("Warning: Some tools failed to install:");
+        for result in &failed_installs {
+            eprintln!("  - {}: {}", result.tool.name(), result.message);
+        }
+        // Note: We continue anyway because the tools might already be installed
+        // and the failure might be about reinstalling them
+    }
 
     // If only_changed is true, check if the project has changes
     if only_changed {
