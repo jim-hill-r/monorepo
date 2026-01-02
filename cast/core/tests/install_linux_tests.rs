@@ -144,8 +144,7 @@ fn test_install_list_linux() {
 
 #[test]
 fn test_install_install_dry_run_linux() {
-    let temp_dir =
-        TempDir::new("test_install_install_dry_run").expect("Failed to create temp dir");
+    let temp_dir = TempDir::new("test_install_install_dry_run").expect("Failed to create temp dir");
     fs::write(temp_dir.path().join("Cast.toml"), "framework = \"dioxus\"")
         .expect("Failed to write Cast.toml");
 

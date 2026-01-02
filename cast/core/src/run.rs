@@ -8,7 +8,9 @@ use thiserror::Error;
 pub enum RunError {
     #[error("Run command failed")]
     RunFailed,
-    #[error("Command '{0}' not found. Please install it using 'cast install' or install it manually.")]
+    #[error(
+        "Command '{0}' not found. Please install it using 'cast install' or install it manually."
+    )]
     CommandNotFound(String),
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
@@ -283,9 +285,7 @@ mod tests {
 
         // The error message should mention the command and suggest using cast install
         assert!(
-            err_msg.contains("dx")
-                || err_msg.contains("not found")
-                || err_msg.contains("install"),
+            err_msg.contains("dx") || err_msg.contains("not found") || err_msg.contains("install"),
             "Error message should mention the missing command or install: {}",
             err_msg
         );

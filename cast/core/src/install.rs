@@ -993,9 +993,7 @@ fn install_playwright(
             .args(["ci"])
             .current_dir(working_directory)
             .output()
-            .map_err(|e| {
-                InstallError::InstallationError(format!("Failed to run npm ci: {}", e))
-            })?;
+            .map_err(|e| InstallError::InstallationError(format!("Failed to run npm ci: {}", e)))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1191,10 +1189,7 @@ impl CheckResult {
 
         // Show framework if known
         if let Some(framework) = &self.framework {
-            output.push_str(&format!(
-                "Checking tools for {} project...\n",
-                framework
-            ));
+            output.push_str(&format!("Checking tools for {} project...\n", framework));
         } else {
             output.push_str("Checking tools for pure Rust project...\n");
         }
@@ -1256,9 +1251,8 @@ impl CheckResult {
             "missing_count": self.missing_count,
         });
 
-        serde_json::to_string_pretty(&result).map_err(|e| {
-            InstallError::DetectionError(format!("JSON serialization failed: {}", e))
-        })
+        serde_json::to_string_pretty(&result)
+            .map_err(|e| InstallError::DetectionError(format!("JSON serialization failed: {}", e)))
     }
 }
 
@@ -1360,9 +1354,8 @@ impl ListResult {
             "tools": tools_json,
         });
 
-        serde_json::to_string_pretty(&result).map_err(|e| {
-            InstallError::DetectionError(format!("JSON serialization failed: {}", e))
-        })
+        serde_json::to_string_pretty(&result)
+            .map_err(|e| InstallError::DetectionError(format!("JSON serialization failed: {}", e)))
     }
 }
 
