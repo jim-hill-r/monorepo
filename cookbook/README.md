@@ -34,7 +34,8 @@ The `cookbook-core` library contains shared business logic and data models:
 The `cookbook-data-md` library implements the RecipeReader and RecipeWriter traits for markdown-based storage:
 - **MarkdownRecipeStore**: Reads and writes recipes from/to markdown files in a content directory
 - Parses markdown files with a specific format to extract recipe data (title, description, ingredients, instructions, metadata)
-- Supports day-based recipe organization (day-1.md through day-366.md)
+- Recipes are stored in UUID-based filenames (e.g., `550e8400-e29b-41d4-a716-446655440000.md`)
+- Supports legacy day-based ID lookups for backward compatibility (e.g., `get_by_id("day-1")`)
 - Data is loaded at build time from the content directory
 - See [data_md/README.md](./data_md/README.md) for detailed markdown format and usage
 
@@ -53,11 +54,22 @@ cd recipe_gen
 cargo run
 ```
 
-## Recipe UUID Migration
+## Recipe UUID Architecture
 
-The cookbook supports migrating from day-based recipe organization (`day-1.md` through `day-365.md`) to a UUID-based architecture that decouples recipes from day numbers. This enables future recipe rearrangement in plans without breaking references.
+The cookbook uses a UUID-based architecture where each recipe is identified by a unique UUID (Universally Unique Identifier). This enables recipes to be rearranged, renamed, and moved without breaking references in plans or other features.
 
-### Migration Process Overview
+### Current Architecture
+
+- **Recipe Files**: Named with their UUID (e.g., `550e8400-e29b-41d4-a716-446655440000.md`)
+- **Primary Identifier**: UUID field in recipe frontmatter
+- **Legacy Support**: Day-based IDs (e.g., "day-1") are supported for backward compatibility
+- **Plan References**: Plans reference recipes by UUID, enabling flexible recipe organization
+
+### Historical Migration Documentation
+
+The project was originally organized with day-based filenames (`day-1.md` through `day-365.md`). A migration to UUID-based architecture was completed to support more flexible recipe management. The documentation below is preserved for reference and for any future migrations.
+
+### Migration Process Overview (Historical Reference)
 
 The migration is performed using four tools in the `recipe_gen` directory, executed in order:
 
