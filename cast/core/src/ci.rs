@@ -50,7 +50,7 @@ pub enum CiError {
 
 /// Run CI checks for a project
 /// This function performs the following steps:
-/// 1. Installs required toolchain (rustc, cargo, clippy, dx, npm, playwright, etc.)
+/// 1. Installs required tools (rustc, cargo, clippy, dx, npm, playwright, etc.)
 /// 2. Detects the project type and runs appropriate checks:
 ///    - For Rust projects (has Cargo.toml): cargo fmt, clippy, build, test (includes npm test if package.json exists)
 ///    - For TypeScript projects (has package.json): npm ci, lint, compile

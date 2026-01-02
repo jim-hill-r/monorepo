@@ -163,7 +163,7 @@ pub enum InstallSubcommands {
 }
 
 // Remove the old types that are no longer needed
-// InstallCommands, InstallToolchainCommand, CheckToolchainCommand, ListToolchainCommand
+// InstallCommands, InstallCommand, CheckCommand, ListCommand
 
 #[derive(Error, Debug)]
 pub enum ExecuteError {

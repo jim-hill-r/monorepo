@@ -1173,7 +1173,7 @@ pub struct CheckOptions {
     pub json: bool,
 }
 
-/// Result of checking toolchain
+/// Result of checking tools
 #[derive(Debug, Clone)]
 pub struct CheckResult {
     pub framework: Option<String>,
