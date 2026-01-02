@@ -167,7 +167,7 @@ pub enum InstallSubcommands {
 
 #[derive(Error, Debug)]
 pub enum ExecuteError {
-    #[error("cast toml not found")]
+    #[error("cast configuration not found")]
     CastTomlNotFound,
     #[error("command error: {0}")]
     CommandError(String),
