@@ -468,10 +468,7 @@ impl MarkdownRecipeStore {
         content.push_str(&format!("# Week {} Plan\n\n", plan.week));
 
         // Write description
-        content.push_str(&format!(
-            "Meal plan for ISO 8601 week {}.\n\n",
-            plan.week
-        ));
+        content.push_str(&format!("Meal plan for ISO 8601 week {}.\n\n", plan.week));
 
         // Write week metadata
         content.push_str(&format!("Week: {}\n", plan.week));
@@ -482,10 +479,18 @@ impl MarkdownRecipeStore {
 
         // Write recipe days section for human readability
         content.push_str("## Recipe Days\n\n");
-        content.push_str("This week's meal plan uses the following recipes (Monday through Sunday):\n\n");
+        content.push_str(
+            "This week's meal plan uses the following recipes (Monday through Sunday):\n\n",
+        );
 
         let weekdays = [
-            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
         ];
         for (i, uuid) in plan.recipe_uuids.iter().enumerate() {
             // Try to get recipe title for better readability
@@ -496,9 +501,8 @@ impl MarkdownRecipeStore {
             }
         }
 
-        fs::write(file_path, content).map_err(|e| {
-            PlanError::StorageError(format!("Failed to write plan file: {}", e))
-        })?;
+        fs::write(file_path, content)
+            .map_err(|e| PlanError::StorageError(format!("Failed to write plan file: {}", e)))?;
 
         Ok(())
     }
@@ -665,9 +669,8 @@ impl PlanWriter for MarkdownRecipeStore {
         }
 
         let file_path = self.content_dir.join(format!("week-{}.md", week));
-        fs::remove_file(file_path).map_err(|e| {
-            PlanError::StorageError(format!("Failed to delete plan file: {}", e))
-        })?;
+        fs::remove_file(file_path)
+            .map_err(|e| PlanError::StorageError(format!("Failed to delete plan file: {}", e)))?;
 
         self.plans.remove(&week);
         Ok(())
@@ -1830,7 +1833,7 @@ Tags: test
     #[test]
     fn test_plan_writer_creates_readable_file() {
         let temp_dir = create_temp_dir();
-        
+
         // First create some recipes so the plan can reference them
         let mut recipe_uuids = Vec::new();
         for i in 1..=7 {
@@ -1841,7 +1844,11 @@ Tags: test
                 i,
                 i
             );
-            fs::write(temp_dir.join(format!("test-recipe-{}.md", i)), recipe_content).unwrap();
+            fs::write(
+                temp_dir.join(format!("test-recipe-{}.md", i)),
+                recipe_content,
+            )
+            .unwrap();
         }
 
         let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();

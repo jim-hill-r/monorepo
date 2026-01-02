@@ -81,7 +81,7 @@ This phase decouples recipes from day numbers, allowing future recipe rearrangem
 #### Sub-task 4.5: Reader/Writer Trait Updates
 - ✅ Deprecate `RecipeReader::get_by_day()` method with clear migration path
 - ✅ Update `RecipeWriter` implementations to use UUIDs
-- TODO (agent-generated): Update all trait tests
+- ✅ Update all trait tests (added comprehensive PlanWriter tests)
 
 #### Sub-task 4.6: Web Application Updates
 - TODO (agent-generated): Update `cookbook/web` to use UUID-based recipe references
