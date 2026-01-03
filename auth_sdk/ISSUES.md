@@ -9,5 +9,7 @@ TODO (agent-generated): Extract user information from ID token claims instead of
 TODO (agent-generated): Update tests to cover ID token validation and nonce handling
 TODO (agent-generated): Remove oauth2 dependency once migration is complete (it becomes transitive through openidconnect)
 TODO (agent-generated): Update documentation to reflect OIDC usage patterns
+TODO (agent-generated): Add more specific AuthError variants instead of returning AuthError::Unknown for validation failures
+TODO (agent-generated): Research if additional OAuth2/OIDC security validations are needed (e.g., nonce validation for OIDC, additional claims validation)
 
 # Backlog
