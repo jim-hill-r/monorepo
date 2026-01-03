@@ -22,11 +22,25 @@ const INTRO_MD: &str = include_str!("../../content/intro.md");
 const MAX_DAY_OF_YEAR: u32 = 365;
 
 #[cfg(target_arch = "wasm32")]
+const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
+#[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
 #[cfg(target_arch = "wasm32")]
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
 #[cfg(target_arch = "wasm32")]
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
+
+/// Content Security Policy for the application
+/// - default-src 'none': Block all sources by default
+/// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
+/// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
+/// - img-src 'self': Allow images from same origin
+/// - style-src 'self' 'unsafe-inline': Allow styles from same origin and inline styles (required by Dioxus)
+/// - font-src 'self': Allow fonts from same origin (required for self-hosted web fonts)
+/// - base-uri 'self': Restrict base tag to same origin
+/// - form-action 'self': Restrict form submissions to same origin
+#[cfg(target_arch = "wasm32")]
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
     dioxus::launch(App);
@@ -42,7 +56,7 @@ fn App() -> Element {
                 auth_url: AUTH_URL.into(),
                 token_url: TOKEN_URL.into(),
                 redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
-                issuer_url: Some("https://dev-jdadpn4pckxevrv5.us.auth0.com".into()),
+                issuer_url: Some(AUTH0_DOMAIN.into()),
             })
             .await
         });
@@ -75,6 +89,19 @@ fn App() -> Element {
     use_context_provider(|| sidebar_visible);
 
     rsx! {
+        // Include this CSP in server response headers for defense in depth redundancy
+        // CSP Analysis: Modern Dioxus (v0.7.x) compiles to WebAssembly and doesn't require
+        // unsafe-eval or unsafe-inline for scripts. WASM modules and proper event binding
+        // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
+        // directive is needed for WebAssembly instantiation in some browsers.
+        // Style unsafe-inline is kept for any inline styling that may be needed.
+        // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
+        if cfg!(target_arch = "wasm32") {
+            document::Meta {
+                http_equiv: "Content-Security-Policy",
+                content: CONTENT_SECURITY_POLICY,
+            }
+        }
         document::Link { rel: "stylesheet", href: HEADER_CSS }
         document::Link { rel: "stylesheet", href: NAVBAR_CSS }
         document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
