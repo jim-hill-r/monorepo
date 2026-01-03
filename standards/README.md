@@ -56,6 +56,7 @@ See the `docs/` directory for detailed standards documentation:
 - [Rust Standards](./docs/rust.md)
 - [TypeScript Standards](./docs/typescript.md)
 - [Documentation Standards](./docs/documentation.md)
+- [Testing Standards](./docs/testing.md)
 - [Toolchain Management](./docs/toolchain.md)
 
 ## Status
