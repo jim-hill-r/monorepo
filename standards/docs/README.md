@@ -6,8 +6,10 @@ This directory contains development standards and guidelines for the monorepo.
 
 - [Configuration](./configuration.md) - Configuration file standards
 - [Documentation](./documentation.md) - Documentation standards
+- [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Naming](./naming.md) - Naming conventions
 - [Rust](./rust.md) - Rust coding standards
+- [Testing](./testing.md) - Testing standards and requirements
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
 - [TypeScript](./typescript.md) - TypeScript coding standards
 
