@@ -8,23 +8,7 @@ See `standards/docs/rust.md` for complete Rust coding standards and proper error
 
 ## Issue Management
 
-- TODO: Consolidate issue management standards into the standards project.
-
-When working on issues:
-1. **Finding Issues**: Check ISSUES.md files in this priority order:
-   - Root `/ISSUES.md` for priority issues and priority projects list
-   - ISSUES.md in priority projects (as listed in root ISSUES.md)
-   - Other ISSUES.md files throughout the repository
-   - TODOs and FIX comments in code (skip items marked with `(agent-ignore)`)
-2. **Searching for References**: When documenting files that need updates:
-   - Use `grep -r "pattern" --exclude-dir=.git --exclude-dir=target` to search non-markdown files
-   - Use `grep -r "pattern" --include="*.md"` to search markdown documentation
-   - Use `find . -name "Cargo.toml" -exec grep -l "pattern" {} \;` to find Cargo.toml files with dependencies
-   - Always verify if metadata (like `[package.metadata.cast]`) is just configuration vs actual dependencies
-3. **TODO Conventions**:
-   - Mark TODOs with `(agent-generated)` if created by an agent
-   - Mark TODOs with `(agent-ignore)` if they should not be worked on by agents
-   - Remove completed TODO comments when the work is done
+See `standards/docs/issue-management.md` for complete issue management standards and conventions.
 
 ## Branching Requirements
 All branches should have unique names to prevent collisions.
