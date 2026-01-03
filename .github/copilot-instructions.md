@@ -33,19 +33,16 @@ All branches should have unique names to prevent collisions.
 
 ## Testing Requirements
 
-- TODO: Consolidate testing standards into the standards project.
+See `standards/docs/testing.md` for complete testing standards and requirements.
 
 All code changes require appropriate tests:
 1. **Unit Tests**: All code changes must include unit tests
    - For Rust code: Add `#[cfg(test)]` modules with test functions
-   - Tests should verify component behavior, logic, and edge cases
    - Run tests with `cargo test` in the project directory
 2. **Playwright Tests**: All UI changes must include Playwright end-to-end tests
    - For Dioxus web applications: Add `.spec.ts` files in the `tests/` directory
-   - Tests should verify user interactions, navigation, and visual elements
-   - Run tests with `npm test` after starting the dev server (`dx serve --port 8080`)
+   - Run tests with `npm test` after starting the dev server
    - See existing test files for examples of patterns and best practices
-   - **SSG Bundle Tests**: Tests that validate static site generation (like `ssg-bundle.spec.ts`) do not require a dev server - they create and test their own static site. These tests require the `dx` CLI to be installed (`cargo install dioxus-cli`)
 
 ## UI Changes Documentation
 
