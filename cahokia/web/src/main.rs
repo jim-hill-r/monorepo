@@ -11,6 +11,7 @@ use views::home::Home;
 
 mod views;
 
+const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
@@ -33,6 +34,20 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 
+/// Content Security Policy for the application
+/// - default-src 'none': Block all sources by default
+/// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
+/// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
+/// - img-src 'self': Allow images from same origin
+/// - style-src 'self' 'unsafe-inline': Allow styles from same origin and inline styles (required by Dioxus)
+/// - font-src 'self': Allow fonts from same origin (required for self-hosted web fonts)
+/// - base-uri 'self': Restrict base tag to same origin
+/// - form-action 'self': Restrict form submissions to same origin
+///
+/// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
+/// Tests verify that the CSP contains the correct Auth0 domain.
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
+
 fn main() {
     dioxus::launch(App);
 }
@@ -45,6 +60,7 @@ fn App() -> Element {
             auth_url: AUTH_URL.into(),
             token_url: TOKEN_URL.into(),
             redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
+            issuer_url: Some(AUTH0_DOMAIN.into()),
         })
         .await
     });
@@ -57,9 +73,10 @@ fn App() -> Element {
         // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
         // directive is needed for WebAssembly instantiation in some browsers.
         // Style unsafe-inline is kept for any inline styling that may be needed.
+        // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
         document::Meta {
             http_equiv: "Content-Security-Policy",
-            content: "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'",
+            content: CONTENT_SECURITY_POLICY,
         }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
@@ -135,5 +152,69 @@ fn WebNavbar() -> Element {
         }
 
         Outlet::<Route> {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_csp_contains_auth0_domain() {
+        // Verify CSP includes the Auth0 domain for OAuth requests
+        assert!(
+            CONTENT_SECURITY_POLICY.contains("https://dev-jdadpn4pckxevrv5.us.auth0.com"),
+            "CSP should include Auth0 domain"
+        );
+    }
+
+    #[test]
+    fn test_csp_blocks_default_sources() {
+        // Verify CSP starts with default-src 'none' to block all by default
+        assert!(
+            CONTENT_SECURITY_POLICY.starts_with("default-src 'none'"),
+            "CSP should block all sources by default"
+        );
+    }
+
+    #[test]
+    fn test_csp_allows_wasm() {
+        // Verify CSP includes wasm-unsafe-eval for WebAssembly
+        assert!(
+            CONTENT_SECURITY_POLICY.contains("'wasm-unsafe-eval'"),
+            "CSP should allow WASM evaluation"
+        );
+    }
+
+    #[test]
+    fn test_csp_allows_fonts() {
+        // Verify CSP includes font-src for web fonts
+        assert!(
+            CONTENT_SECURITY_POLICY.contains("font-src 'self'"),
+            "CSP should allow fonts from same origin"
+        );
+    }
+
+    #[test]
+    fn test_auth0_domain_constant_used() {
+        // Verify AUTH0_DOMAIN constant is properly defined
+        assert_eq!(AUTH0_DOMAIN, "https://dev-jdadpn4pckxevrv5.us.auth0.com");
+        // Verify it's used in AUTH_URL and TOKEN_URL
+        assert!(AUTH_URL.starts_with(AUTH0_DOMAIN));
+        assert!(TOKEN_URL.starts_with(AUTH0_DOMAIN));
+    }
+
+    #[test]
+    fn test_provider_config_includes_issuer_url() {
+        // Verify ProviderConfig is created with issuer_url
+        // This is a compile-time check that the config structure is correct
+        let config = ProviderConfig {
+            client_id: "test".into(),
+            auth_url: "https://example.com/auth".into(),
+            token_url: "https://example.com/token".into(),
+            redirect_url: "https://example.com/callback".into(),
+            issuer_url: Some("https://example.com".into()),
+        };
+        assert_eq!(config.issuer_url, Some("https://example.com".into()));
     }
 }
