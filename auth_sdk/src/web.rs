@@ -54,7 +54,10 @@ impl AuthProvider for WebAuthProvider {
     }
 
     fn login(&self) -> Result<(), AuthError> {
+        tracing::info!("Initiating OAuth2 login flow");
+
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+        tracing::debug!("Generated PKCE challenge and verifier for login");
 
         // Generate the full authorization URL.
         let (auth_url, csrf_token) = self
@@ -69,11 +72,15 @@ impl AuthProvider for WebAuthProvider {
             .set_pkce_challenge(pkce_challenge)
             .url();
 
+        tracing::debug!("Generated CSRF token for login");
+
         store_app_state_in_browser(&AppState {
             return_to: fetch_current_location_from_browser(),
             csrf_token: Some(CsrfTokenWrapper::new(csrf_token.secret().to_string())),
             pkce_verifier: Some(PkceVerifierWrapper::new(pkce_verifier.secret().to_string())),
         })?;
+
+        tracing::debug!("Stored authentication state in browser session storage");
 
         redirect_browser(auth_url.as_ref())
     }
@@ -146,7 +153,11 @@ async fn handle_redirect(
     authorization_code: AuthorizationCode,
     state: CsrfTokenState,
 ) -> Result<AccessToken, AuthError> {
+    tracing::info!("Processing OAuth2 redirect callback");
+
     let app_state = fetch_app_state_from_browser()?;
+    tracing::debug!("Retrieved authentication state from browser session storage");
+
     let csrf_token_wrapper = app_state.csrf_token.ok_or(AuthError::Unknown)?;
     let pkce_verifier_wrapper = app_state.pkce_verifier.ok_or(AuthError::Unknown)?;
 
@@ -156,11 +167,12 @@ async fn handle_redirect(
     // 3. No redirect following in HTTP client - prevents SSRF attacks
     // TODO (agent-generated): Research if additional OAuth2/OIDC security validations are needed (e.g., nonce validation for OIDC, additional claims validation)
     // TODO (agent-generated): Add more specific AuthError variants instead of returning AuthError::Unknown for validation failures
-    // TODO (agent-generated): Add logging/tracing for security events (successful/failed validations)
     if state.0 != csrf_token_wrapper.0 {
-        tracing::debug!("Failed checks");
+        tracing::warn!("CSRF token validation failed - potential CSRF attack detected");
         return Err(AuthError::Unknown);
     }
+
+    tracing::debug!("CSRF token validation successful");
 
     // Following redirects opens the client up to SSRF vulnerabilities.
     // OAuth2 RFC 6749 requires that token endpoints MUST NOT redirect.
@@ -182,15 +194,22 @@ async fn handle_redirect(
 
     // Convert wrapper type back to oauth2 type for token exchange
     let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_wrapper.0);
+    tracing::debug!("Prepared PKCE verifier for token exchange");
 
     // Now you can exchange it for an access token.
+    tracing::debug!("Initiating token exchange with authorization server");
     let token_result = client
         .exchange_code(authorization_code)
         // Set the PKCE code verifier.
         .set_pkce_verifier(pkce_verifier)
         .request_async(&http_client)
         .await
-        .map_err(|e| AuthError::TokenExchangeError(e.to_string()))?;
+        .map_err(|e| {
+            tracing::error!("Token exchange failed: {}", e);
+            AuthError::TokenExchangeError(e.to_string())
+        })?;
+
+    tracing::info!("Token exchange successful - access token obtained");
 
     // Unwrapping token_result will either produce a Token or a RequestTokenError.
     Ok(AccessToken::new(
