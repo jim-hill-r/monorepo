@@ -674,6 +674,8 @@ if let Some(language) = config.language {
 
 ## Architecture
 
+For detailed architecture documentation, including explanations of design decisions, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ### Command Pattern
 
 Cast uses the Command/Executor pattern for its CLI commands. This pattern provides a consistent interface for all commands and makes them more testable and maintainable.
