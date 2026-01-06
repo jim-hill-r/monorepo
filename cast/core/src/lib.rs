@@ -3,6 +3,7 @@ pub mod build;
 pub mod cd;
 pub mod ci;
 pub mod command;
+pub mod command_factory;
 pub mod commands;
 pub mod config;
 pub mod deploy;

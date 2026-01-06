@@ -1,5 +1,4 @@
-use crate::command::Command;
-use crate::commands;
+use crate::command_factory;
 use crate::config::CastConfig;
 use clap::{Parser, Subcommand};
 use std::path::Path;
@@ -13,7 +12,7 @@ pub struct Args {
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     /// Manage work sessions (start, pause, stop)
     #[command(subcommand)]
     Session(SessionCommands),
@@ -107,7 +106,7 @@ pub enum SessionCommands {
 #[derive(Parser)]
 pub struct StartSessionCommand {
     #[arg(short, long)]
-    name: Option<String>,
+    pub name: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -120,18 +119,18 @@ pub enum ProjectCommands {
 #[derive(Parser)]
 pub struct NewProjectCommand {
     #[arg(short, long)]
-    name: String,
+    pub name: String,
 }
 
 #[derive(Parser)]
 pub struct WithChangesCommand {
     /// Base git ref (commit SHA, branch, or tag)
     #[arg(long)]
-    base: String,
+    pub base: String,
 
     /// Head git ref (commit SHA, branch, or tag)
     #[arg(long)]
-    head: String,
+    pub head: String,
 }
 
 #[derive(Subcommand)]
@@ -174,32 +173,17 @@ pub enum ExecuteError {
 }
 
 pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteError> {
-    // Handle commands that don't require Cast.toml
-    match &args.cmd {
-        Commands::Project(ProjectCommands::WithChanges(cmd)) => {
-            let command = commands::project::WithChangesCommand {
-                base: cmd.base.clone(),
-                head: cmd.head.clone(),
-            };
-            return command
-                .execute(entry_directory)
-                .map_err(|e| ExecuteError::CommandError(e.to_string()));
-        }
-        Commands::Serve => {
-            let command = commands::serve::ServeCommand;
-            return command
-                .execute(entry_directory)
-                .map_err(|e| ExecuteError::CommandError(e.to_string()));
-        }
-        Commands::Ci {
-            check: _,
-            fix,
-            release,
-            recursive: Some(depth),
-            only_changed,
-        } if find_cast_toml(entry_directory).is_none() => {
-            // Special handling: If recursive is enabled but no Cast config in current dir,
-            // just run the recursive search for child projects
+    // Special case: CI with recursive option when no Cast.toml exists
+    // This allows running CI recursively on child projects from a parent directory
+    if let Commands::Ci {
+        check: _,
+        fix,
+        release,
+        recursive: Some(depth),
+        only_changed,
+    } = &args.cmd
+    {
+        if find_cast_toml(entry_directory).is_none() {
             let mode = if *release {
                 crate::ci::CiMode::Release
             } else if *fix {
@@ -212,188 +196,27 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 .map(|_| "CI passed".to_string())
                 .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
-        Commands::Install {
-            subcommand,
-            tool,
-            skip,
-            dry_run,
-            force,
-        } => {
-            match subcommand {
-                Some(InstallSubcommands::Check { verbose, json }) => {
-                    let command = commands::install::CheckCommand {
-                        verbose: *verbose,
-                        json: *json,
-                    };
-                    return command
-                        .execute(entry_directory)
-                        .map_err(|e| ExecuteError::CommandError(e.to_string()));
-                }
-                Some(InstallSubcommands::List {
-                    required_only,
-                    all,
-                    json,
-                }) => {
-                    let command = commands::install::ListCommand {
-                        required_only: *required_only,
-                        all: *all,
-                        json: *json,
-                    };
-                    return command
-                        .execute(entry_directory)
-                        .map_err(|e| ExecuteError::CommandError(e.to_string()));
-                }
-                None => {
-                    // Default action: install tools
-                    let command = commands::install::InstallCommand {
-                        tool: tool.clone(),
-                        skip: skip.clone(),
-                        dry_run: *dry_run,
-                        force: *force,
-                    };
-                    return command
-                        .execute(entry_directory)
-                        .map_err(|e| ExecuteError::CommandError(e.to_string()));
-                }
-            }
-        }
-        Commands::Uninstall {
-            tool,
-            skip,
-            dry_run,
-            all,
-        } => {
-            let command = commands::install::UninstallCommand {
-                tool: tool.clone(),
-                skip: skip.clone(),
-                dry_run: *dry_run,
-                all: *all,
-            };
-            return command
-                .execute(entry_directory)
-                .map_err(|e| ExecuteError::CommandError(e.to_string()));
-        }
-        _ => {} // Other commands require Cast.toml
     }
 
-    // Other commands require Cast.toml
-    if let Some(working_directory) = find_cast_toml(entry_directory) {
-        let result: Result<String, Box<dyn std::error::Error>> = match args.cmd {
-            Commands::Session(session_command) => match session_command {
-                SessionCommands::Start(start_session_command) => {
-                    let command = commands::session::StartCommand {
-                        name: start_session_command.name,
-                    };
-                    command.execute(working_directory)
-                }
-                SessionCommands::Pause => {
-                    let command = commands::session::PauseCommand;
-                    command.execute(working_directory)
-                }
-                SessionCommands::Stop => {
-                    let command = commands::session::StopCommand;
-                    command.execute(working_directory)
-                }
-            },
-            Commands::Project(project_command) => match project_command {
-                ProjectCommands::New(new_project_command) => {
-                    let command = commands::project::NewCommand {
-                        name: new_project_command.name,
-                    };
-                    command.execute(working_directory)
-                }
-                ProjectCommands::WithChanges(_) => {
-                    // This case should never be reached because WithChanges is handled
-                    // at the top of execute() before the Cast.toml check. If we reach
-                    // this point, there's a bug in the control flow logic.
-                    unreachable!(
-                        "WithChanges command should be handled before Cast.toml check. \
-                         This indicates a bug in the execute() function's control flow."
-                    )
-                }
-            },
-            Commands::Ci {
-                check: _,
-                fix,
-                release,
-                recursive,
-                only_changed,
-            } => {
-                // Determine the mode based on flags
-                // If no flags are set, default to Check mode
-                // If multiple flags are set, prioritize: release > fix > check
-                let mode = if release {
-                    crate::ci::CiMode::Release
-                } else if fix {
-                    crate::ci::CiMode::Fix
-                } else {
-                    crate::ci::CiMode::Check
-                };
-
-                let command = commands::ci::CiCommand {
-                    mode,
-                    recursive_depth: recursive,
-                    only_changed,
-                };
-                command.execute(working_directory)
-            }
-            Commands::Build => {
-                let command = commands::build::BuildCommand;
-                command.execute(working_directory)
-            }
-            Commands::Test => {
-                let command = commands::test::TestCommand;
-                command.execute(working_directory)
-            }
-            Commands::Run => {
-                let command = commands::run::RunCommand;
-                command.execute(working_directory)
-            }
-            Commands::Serve => {
-                // This case should never be reached because Serve is handled
-                // at the top of execute() before the Cast.toml check. If we reach
-                // this point, there's a bug in the control flow logic.
-                unreachable!(
-                    "Serve command should be handled before Cast.toml check. \
-                     This indicates a bug in the execute() function's control flow."
-                )
-            }
-            Commands::Deploy => {
-                let command = commands::deploy::DeployCommand;
-                command.execute(working_directory)
-            }
-            Commands::Cd => {
-                let command = commands::cd::CdCommand;
-                command.execute(working_directory)
-            }
-            Commands::Publish => {
-                let command = commands::publish::PublishCommand;
-                command.execute(working_directory)
-            }
-            Commands::Install { .. } => {
-                // This case should never be reached because Install is handled
-                // at the top of execute() before the Cast.toml check. If we reach
-                // this point, there's a bug in the control flow logic.
-                unreachable!(
-                    "Install command should be handled before Cast.toml check. \
-                     This indicates a bug in the execute() function's control flow."
-                )
-            }
-            Commands::Uninstall { .. } => {
-                // This case should never be reached because Uninstall is handled
-                // at the top of execute() before the Cast.toml check. If we reach
-                // this point, there's a bug in the control flow logic.
-                unreachable!(
-                    "Uninstall command should be handled before Cast.toml check. \
-                     This indicates a bug in the execute() function's control flow."
-                )
-            }
-        };
-
-        result.map_err(|e| ExecuteError::CommandError(e.to_string()))
+    // Check if command requires Cast.toml
+    let requires_config = command_factory::requires_cast_config(&args.cmd);
+    let working_directory = if requires_config {
+        find_cast_toml(entry_directory).ok_or(ExecuteError::CastConfigurationNotFound)?
     } else {
-        Err(ExecuteError::CastConfigurationNotFound)
-    }
+        entry_directory
+    };
+
+    // Create command using factory
+    let command = command_factory::create_command(&args.cmd, !requires_config || find_cast_toml(entry_directory).is_some())
+        .map_err(|e| match e {
+            command_factory::FactoryError::RequiresCastConfig => ExecuteError::CastConfigurationNotFound,
+            command_factory::FactoryError::InvalidConfiguration(msg) => ExecuteError::CommandError(msg),
+        })?;
+
+    // Execute command
+    command
+        .execute(working_directory)
+        .map_err(|e| ExecuteError::CommandError(e.to_string()))
 }
 
 fn find_cast_toml(working_directory: &Path) -> Option<&Path> {
