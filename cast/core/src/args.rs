@@ -207,11 +207,16 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
     };
 
     // Create command using factory
-    let command = command_factory::create_command(&args.cmd, !requires_config || find_cast_toml(entry_directory).is_some())
-        .map_err(|e| match e {
-            command_factory::FactoryError::RequiresCastConfig => ExecuteError::CastConfigurationNotFound,
-            command_factory::FactoryError::InvalidConfiguration(msg) => ExecuteError::CommandError(msg),
-        })?;
+    let command = command_factory::create_command(
+        &args.cmd,
+        !requires_config || find_cast_toml(entry_directory).is_some(),
+    )
+    .map_err(|e| match e {
+        command_factory::FactoryError::RequiresCastConfig => {
+            ExecuteError::CastConfigurationNotFound
+        }
+        command_factory::FactoryError::InvalidConfiguration(msg) => ExecuteError::CommandError(msg),
+    })?;
 
     // Execute command
     command

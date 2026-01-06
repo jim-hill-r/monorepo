@@ -57,31 +57,29 @@ pub fn create_command(
             skip,
             dry_run,
             force,
-        } => {
-            match subcommand {
-                Some(InstallSubcommands::Check { verbose, json }) => {
-                    Ok(Box::new(commands::install::CheckCommand {
-                        verbose: *verbose,
-                        json: *json,
-                    }))
-                }
-                Some(InstallSubcommands::List {
-                    required_only,
-                    all,
-                    json,
-                }) => Ok(Box::new(commands::install::ListCommand {
-                    required_only: *required_only,
-                    all: *all,
+        } => match subcommand {
+            Some(InstallSubcommands::Check { verbose, json }) => {
+                Ok(Box::new(commands::install::CheckCommand {
+                    verbose: *verbose,
                     json: *json,
-                })),
-                None => Ok(Box::new(commands::install::InstallCommand {
-                    tool: tool.clone(),
-                    skip: skip.clone(),
-                    dry_run: *dry_run,
-                    force: *force,
-                })),
+                }))
             }
-        }
+            Some(InstallSubcommands::List {
+                required_only,
+                all,
+                json,
+            }) => Ok(Box::new(commands::install::ListCommand {
+                required_only: *required_only,
+                all: *all,
+                json: *json,
+            })),
+            None => Ok(Box::new(commands::install::InstallCommand {
+                tool: tool.clone(),
+                skip: skip.clone(),
+                dry_run: *dry_run,
+                force: *force,
+            })),
+        },
         Commands::Uninstall {
             tool,
             skip,
