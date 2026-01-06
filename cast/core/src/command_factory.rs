@@ -146,25 +146,13 @@ pub fn create_command(
 /// Some commands (like Install, Serve, and project WithChanges) can run
 /// without Cast.toml, while others require it to determine project configuration.
 pub fn requires_cast_config(command: &Commands) -> bool {
-    matches!(
+    !matches!(
         command,
         Commands::Install { .. }
             | Commands::Uninstall { .. }
             | Commands::Serve
             | Commands::Project(ProjectCommands::WithChanges(_))
     )
-    .not()
-}
-
-/// Helper trait to invert boolean logic for readability
-trait Not {
-    fn not(self) -> bool;
-}
-
-impl Not for bool {
-    fn not(self) -> bool {
-        !self
-    }
 }
 
 #[cfg(test)]

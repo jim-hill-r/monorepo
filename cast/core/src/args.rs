@@ -200,8 +200,9 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
 
     // Check if command requires Cast.toml
     let requires_config = command_factory::requires_cast_config(&args.cmd);
+    let cast_config_available = find_cast_toml(entry_directory);
     let working_directory = if requires_config {
-        find_cast_toml(entry_directory).ok_or(ExecuteError::CastConfigurationNotFound)?
+        cast_config_available.ok_or(ExecuteError::CastConfigurationNotFound)?
     } else {
         entry_directory
     };
@@ -209,7 +210,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
     // Create command using factory
     let command = command_factory::create_command(
         &args.cmd,
-        !requires_config || find_cast_toml(entry_directory).is_some(),
+        !requires_config || cast_config_available.is_some(),
     )
     .map_err(|e| match e {
         command_factory::FactoryError::RequiresCastConfig => {
