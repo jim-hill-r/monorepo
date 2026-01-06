@@ -691,6 +691,53 @@ pub trait Command {
 }
 ```
 
+#### Command Factory
+
+The `command_factory` module provides a factory function to create command instances from parsed CLI arguments. This separates the concerns of argument parsing (handled by clap) from command instantiation and execution.
+
+```rust
+use cast_core::command_factory;
+use cast_core::args::Commands;
+
+// Create a command from parsed arguments
+let command = Commands::Build;
+let cmd = command_factory::create_command(&command, true)?;
+
+// Execute the command
+let result = cmd.execute(working_directory)?;
+println!("{}", result);
+```
+
+The factory function handles:
+- **Command instantiation**: Maps Args variants to their corresponding Command implementations
+- **Configuration requirements**: Determines whether a command requires Cast.toml
+- **Error handling**: Returns appropriate errors if configuration is missing
+
+Example with configuration checking:
+
+```rust
+use cast_core::command_factory;
+
+// Check if a command requires Cast.toml
+let requires_config = command_factory::requires_cast_config(&args.cmd);
+
+// Create command with appropriate configuration context
+let has_config = find_cast_toml(entry_directory).is_some();
+let cmd = command_factory::create_command(&args.cmd, !requires_config || has_config)?;
+```
+
+**Commands that don't require Cast.toml:**
+- `Install` / `Uninstall` - Tool management
+- `Serve` - Static file server
+- `Project WithChanges` - Git diff analysis
+
+**Commands that require Cast.toml:**
+- `Build`, `Test`, `Ci` - Compilation and testing
+- `Run` - Running development servers
+- `Deploy`, `Cd`, `Publish` - Deployment workflows
+- `Session` - Session management
+- `Project New` - Creating new projects
+
 #### Implementing Commands
 
 Commands are implemented in the `commands` module:
@@ -706,9 +753,15 @@ println!("{}", result);  // "Build passed"
 
 #### Available Command Implementations
 
-Currently implemented:
+All commands now use the Command/Executor pattern:
 - `BuildCommand` - Runs cargo build
-- `TestCommand` - Runs cargo test
+- `TestCommand` - Runs tests (cargo and/or npm)
 - `CiCommand` - Runs full CI checks (format, lint, build, test)
-
-**In Progress**: Additional commands (Run, Serve, Deploy, Cd, Publish, Session, Project, Install) are being migrated to this pattern. See `cast/ISSUES.md` for the migration roadmap.
+- `RunCommand` - Runs development servers
+- `ServeCommand` - Serves static files
+- `DeployCommand` - Deploys infrastructure projects
+- `CdCommand` - Continuous deployment workflows
+- `PublishCommand` - Publishes release artifacts
+- `SessionCommand` (Start/Pause/Stop) - Session management
+- `ProjectCommand` (New/WithChanges) - Project management
+- `InstallCommand` (Install/Check/List/Uninstall) - Tool management
