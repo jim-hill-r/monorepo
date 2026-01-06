@@ -78,6 +78,7 @@ impl AuthProvider for WebAuthProvider {
             return_to: fetch_current_location_from_browser(),
             csrf_token: Some(CsrfTokenWrapper::new(csrf_token.secret().to_string())),
             pkce_verifier: Some(PkceVerifierWrapper::new(pkce_verifier.secret().to_string())),
+            nonce: None,
         })?;
 
         tracing::debug!("Stored authentication state in browser session storage");
