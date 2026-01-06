@@ -12,7 +12,7 @@ A command registry pattern (where commands register themselves in a HashMap or s
 
 1. **Type Safety**: Rust's exhaustive pattern matching ensures all command variants are handled at compile time. A registry would require runtime lookups and lose this guarantee.
 
-2. **Performance**: The current approach has zero runtime overhead. A registry would require HashMap lookups and additional dynamic dispatch.
+2. **Performance**: The current approach uses compile-time optimized dispatch (typically compiled to a jump table). A registry would require HashMap lookups and additional runtime overhead.
 
 3. **Simplicity**: The factory function provides a single, clear location where all commands are instantiated. A registry would scatter this logic across multiple files.
 
