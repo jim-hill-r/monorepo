@@ -56,11 +56,23 @@ impl PkceVerifierWrapper {
     }
 }
 
+/// Internal wrapper for nonce that doesn't expose openidconnect types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NonceWrapper(pub(crate) String);
+
+impl NonceWrapper {
+    #[allow(dead_code)]
+    pub(crate) fn new(value: String) -> Self {
+        NonceWrapper(value)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppState {
     pub return_to: Option<String>,
     pub csrf_token: Option<CsrfTokenWrapper>,
     pub pkce_verifier: Option<PkceVerifierWrapper>,
+    pub nonce: Option<NonceWrapper>,
 }
 
 pub struct User {
@@ -130,10 +142,62 @@ mod tests {
             return_to: Some("https://example.com".to_string()),
             csrf_token: None,
             pkce_verifier: None,
+            nonce: None,
         };
         let serialized = serde_json::to_string(&app_state).unwrap();
         let deserialized: AppState = serde_json::from_str(&serialized).unwrap();
         assert_eq!(app_state.return_to, deserialized.return_to);
+    }
+
+    #[test]
+    fn test_app_state_serialization_with_nonce() {
+        let app_state = AppState {
+            return_to: Some("https://example.com".to_string()),
+            csrf_token: Some(CsrfTokenWrapper::new("csrf_value".to_string())),
+            pkce_verifier: Some(PkceVerifierWrapper::new("pkce_value".to_string())),
+            nonce: Some(NonceWrapper::new("nonce_value".to_string())),
+        };
+        let serialized = serde_json::to_string(&app_state).unwrap();
+        let deserialized: AppState = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(app_state.return_to, deserialized.return_to);
+        assert_eq!(
+            app_state.csrf_token.unwrap().0,
+            deserialized.csrf_token.unwrap().0
+        );
+        assert_eq!(
+            app_state.pkce_verifier.unwrap().0,
+            deserialized.pkce_verifier.unwrap().0
+        );
+        assert_eq!(app_state.nonce.unwrap().0, deserialized.nonce.unwrap().0);
+    }
+
+    #[test]
+    fn test_nonce_wrapper_new() {
+        let nonce = NonceWrapper::new("test_nonce_value".to_string());
+        assert_eq!(nonce.0, "test_nonce_value");
+    }
+
+    #[test]
+    fn test_nonce_wrapper_can_be_cloned() {
+        let nonce = NonceWrapper::new("test_nonce".to_string());
+        let cloned = nonce.clone();
+        assert_eq!(nonce.0, cloned.0);
+    }
+
+    #[test]
+    fn test_nonce_wrapper_debug() {
+        let nonce = NonceWrapper::new("test_nonce".to_string());
+        let debug_str = format!("{:?}", nonce);
+        assert!(debug_str.contains("test_nonce"));
+    }
+
+    #[test]
+    fn test_nonce_wrapper_serialization() {
+        let nonce = NonceWrapper::new("test_nonce_value".to_string());
+        let serialized = serde_json::to_string(&nonce).unwrap();
+        assert!(serialized.contains("test_nonce_value"));
+        let deserialized: NonceWrapper = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(nonce.0, deserialized.0);
     }
 
     #[test]
