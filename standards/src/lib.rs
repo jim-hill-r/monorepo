@@ -16,7 +16,7 @@
 use std::fmt;
 
 /// Type of standard being enforced
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StandardType {
     /// Naming conventions (e.g., snake_case for projects)
     Naming,
@@ -52,7 +52,7 @@ impl fmt::Display for StandardType {
 }
 
 /// Severity level of a standard violation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
     /// Must be fixed - blocks merging
     Error,
@@ -92,7 +92,7 @@ pub struct ParsedStandard {
 
 impl Standard for ParsedStandard {
     fn standard_type(&self) -> StandardType {
-        self.standard_type.clone()
+        self.standard_type
     }
 
     fn id(&self) -> String {
@@ -104,7 +104,7 @@ impl Standard for ParsedStandard {
     }
 
     fn severity(&self) -> Severity {
-        self.severity.clone()
+        self.severity
     }
 }
 
@@ -129,7 +129,7 @@ pub mod parser {
         for line in content.lines() {
             let trimmed = line.trim();
 
-            // Look for lines starting with "- " followed by "MUST" or "SHOULD"
+            // Parse bullet list items (lines starting with "- ")
             if trimmed.starts_with("- ") {
                 let description = trimmed.strip_prefix("- ").unwrap_or(trimmed).to_string();
 
@@ -146,7 +146,7 @@ pub mod parser {
                 let id = format!("{}-{:03}", standard_type_to_prefix(&standard_type), counter);
 
                 standards.push(ParsedStandard {
-                    standard_type: standard_type.clone(),
+                    standard_type,
                     id,
                     description,
                     severity,
@@ -222,7 +222,7 @@ pub mod loader {
             let file_path = docs_path.join(filename);
             if file_path.exists() {
                 match load_from_file(&file_path, standard_type) {
-                    Ok(mut standards) => all_standards.append(&mut standards),
+                    Ok(standards) => all_standards.extend(standards),
                     Err(_) => {
                         // Skip files that can't be read
                         continue;
