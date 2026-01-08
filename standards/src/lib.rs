@@ -524,7 +524,7 @@ pub mod discovery {
                 if let Some(equals_pos) = trimmed.find('=') {
                     // Ensure it's the 'name' field, not something like 'rename'
                     if trimmed[..equals_pos].trim() == "name" {
-                        let value = &trimmed[equals_pos + 1..].trim();
+                        let value = trimmed[equals_pos + 1..].trim();
                         // Remove quotes
                         let name = value.trim_matches('"').trim_matches('\'');
                         return Some(name.to_string());
@@ -542,6 +542,11 @@ pub mod discovery {
         // Simple parser to extract name from package.json
         // Look for: "name": "package-name"
         // This is a simplified parser that works for most common JSON formats
+        //
+        // Limitations:
+        // - May match "name" fields in nested objects (but typically the first "name" is at root level)
+        // - Does not handle escaped quotes within the name value
+        // - Assumes standard JSON formatting (works with both single-line and multi-line JSON)
 
         // First try to find "name" field
         if let Some(name_start) = content.find("\"name\"") {
@@ -573,16 +578,17 @@ pub mod discovery {
         #[test]
         fn test_discover_rust_project() {
             let temp_dir = std::env::temp_dir().join("test_rust_project");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             let cargo_toml = temp_dir.join("Cargo.toml");
             fs::write(
                 &cargo_toml,
                 "[package]\nname = \"test_project\"\nversion = \"0.1.0\"",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml");
 
-            let projects = discover_projects(&temp_dir).unwrap();
+            let projects = discover_projects(&temp_dir).expect("Failed to discover projects");
 
             assert_eq!(projects.len(), 1);
             assert_eq!(projects[0].name, "test_project");
@@ -594,16 +600,17 @@ pub mod discovery {
         #[test]
         fn test_discover_typescript_project() {
             let temp_dir = std::env::temp_dir().join("test_ts_project");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             let package_json = temp_dir.join("package.json");
             fs::write(
                 &package_json,
                 "{\n  \"name\": \"test-package\",\n  \"version\": \"1.0.0\"\n}",
             )
-            .unwrap();
+            .expect("Failed to write package.json");
 
-            let projects = discover_projects(&temp_dir).unwrap();
+            let projects = discover_projects(&temp_dir).expect("Failed to discover projects");
 
             assert_eq!(projects.len(), 1);
             assert_eq!(projects[0].name, "test-package");
@@ -617,23 +624,24 @@ pub mod discovery {
             let temp_dir = std::env::temp_dir().join("test_multiple_projects");
             // Clean up any existing test directory
             fs::remove_dir_all(&temp_dir).ok();
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             // Create Rust project
             let rust_dir = temp_dir.join("rust_project");
-            fs::create_dir_all(&rust_dir).unwrap();
+            fs::create_dir_all(&rust_dir).expect("Failed to create rust project directory");
             fs::write(
                 rust_dir.join("Cargo.toml"),
                 "[package]\nname = \"rust_project\"\n",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml");
 
             // Create TypeScript project
             let ts_dir = temp_dir.join("ts_project");
-            fs::create_dir_all(&ts_dir).unwrap();
-            fs::write(ts_dir.join("package.json"), "{\"name\": \"ts-project\"}").unwrap();
+            fs::create_dir_all(&ts_dir).expect("Failed to create ts project directory");
+            fs::write(ts_dir.join("package.json"), "{\"name\": \"ts-project\"}")
+                .expect("Failed to write package.json");
 
-            let projects = discover_projects(&temp_dir).unwrap();
+            let projects = discover_projects(&temp_dir).expect("Failed to discover projects");
 
             // Debug output if assertion fails
             if projects.len() != 2 {
@@ -656,24 +664,24 @@ pub mod discovery {
             let temp_dir = std::env::temp_dir().join("test_skip_node_modules");
             // Clean up any existing test directory
             fs::remove_dir_all(&temp_dir).ok();
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             // Create a project with node_modules
             fs::write(
                 temp_dir.join("package.json"),
                 "{\"name\": \"main-project\"}",
             )
-            .unwrap();
+            .expect("Failed to write package.json");
 
             let node_modules = temp_dir.join("node_modules").join("some-lib");
-            fs::create_dir_all(&node_modules).unwrap();
+            fs::create_dir_all(&node_modules).expect("Failed to create node_modules directory");
             fs::write(
                 node_modules.join("package.json"),
                 "{\"name\": \"should-skip\"}",
             )
-            .unwrap();
+            .expect("Failed to write package.json in node_modules");
 
-            let projects = discover_projects(&temp_dir).unwrap();
+            let projects = discover_projects(&temp_dir).expect("Failed to discover projects");
 
             // Debug output if assertion fails
             if projects.len() != 1 {
@@ -696,24 +704,25 @@ pub mod discovery {
         #[test]
         fn test_discover_skips_target_dir() {
             let temp_dir = std::env::temp_dir().join("test_skip_target");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             // Create a Rust project with target directory
             fs::write(
                 temp_dir.join("Cargo.toml"),
                 "[package]\nname = \"main_project\"\n",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml");
 
             let target = temp_dir.join("target").join("debug");
-            fs::create_dir_all(&target).unwrap();
+            fs::create_dir_all(&target).expect("Failed to create target directory");
             fs::write(
                 target.join("Cargo.toml"),
                 "[package]\nname = \"should_skip\"\n",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml in target");
 
-            let projects = discover_projects(&temp_dir).unwrap();
+            let projects = discover_projects(&temp_dir).expect("Failed to discover projects");
 
             // Should only find the main project, not the one in target
             assert_eq!(projects.len(), 1);
@@ -725,14 +734,15 @@ pub mod discovery {
         #[test]
         fn test_extract_cargo_name() {
             let temp_dir = std::env::temp_dir().join("test_extract_cargo");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             let cargo_toml = temp_dir.join("Cargo.toml");
             fs::write(
                 &cargo_toml,
                 "[package]\nname = \"my-crate\"\nversion = \"0.1.0\"",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml");
 
             let name = extract_cargo_name(&cargo_toml);
             assert_eq!(name, Some("my-crate".to_string()));
@@ -743,14 +753,15 @@ pub mod discovery {
         #[test]
         fn test_extract_cargo_name_ignores_rename() {
             let temp_dir = std::env::temp_dir().join("test_extract_cargo_rename");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             let cargo_toml = temp_dir.join("Cargo.toml");
             fs::write(
                 &cargo_toml,
                 "[package]\nname = \"correct-name\"\nversion = \"0.1.0\"\n\n[dependencies]\nrename = \"should-not-match\"",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml");
 
             let name = extract_cargo_name(&cargo_toml);
             assert_eq!(name, Some("correct-name".to_string()));
@@ -761,14 +772,15 @@ pub mod discovery {
         #[test]
         fn test_extract_cargo_name_only_in_package_section() {
             let temp_dir = std::env::temp_dir().join("test_extract_cargo_section");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             let cargo_toml = temp_dir.join("Cargo.toml");
             fs::write(
                 &cargo_toml,
                 "[lib]\nname = \"wrong-name\"\n\n[package]\nname = \"correct-name\"\nversion = \"0.1.0\"",
             )
-            .unwrap();
+            .expect("Failed to write Cargo.toml");
 
             let name = extract_cargo_name(&cargo_toml);
             assert_eq!(name, Some("correct-name".to_string()));
@@ -779,17 +791,87 @@ pub mod discovery {
         #[test]
         fn test_extract_package_name() {
             let temp_dir = std::env::temp_dir().join("test_extract_package");
-            fs::create_dir_all(&temp_dir).unwrap();
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
 
             let package_json = temp_dir.join("package.json");
             fs::write(
                 &package_json,
                 "{\n  \"name\": \"my-package\",\n  \"version\": \"1.0.0\"\n}",
             )
-            .unwrap();
+            .expect("Failed to write package.json");
 
             let name = extract_package_name(&package_json);
             assert_eq!(name, Some("my-package".to_string()));
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_cargo_toml_without_name() {
+            let temp_dir = std::env::temp_dir().join("test_cargo_no_name");
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            let cargo_toml = temp_dir.join("Cargo.toml");
+            fs::write(&cargo_toml, "[package]\nversion = \"0.1.0\"")
+                .expect("Failed to write Cargo.toml");
+
+            let name = extract_cargo_name(&cargo_toml);
+            assert_eq!(name, None);
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_package_json_without_name() {
+            let temp_dir = std::env::temp_dir().join("test_package_no_name");
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            let package_json = temp_dir.join("package.json");
+            fs::write(&package_json, "{\"version\": \"1.0.0\"}")
+                .expect("Failed to write package.json");
+
+            let name = extract_package_name(&package_json);
+            assert_eq!(name, None);
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_hybrid_project_both_cargo_and_package() {
+            let temp_dir = std::env::temp_dir().join("test_hybrid_project");
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create both Cargo.toml and package.json
+            fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"hybrid-rust\"\nversion = \"0.1.0\"",
+            )
+            .expect("Failed to write Cargo.toml");
+
+            fs::write(
+                temp_dir.join("package.json"),
+                "{\"name\": \"hybrid-ts\", \"version\": \"1.0.0\"}",
+            )
+            .expect("Failed to write package.json");
+
+            let projects = discover_projects(&temp_dir).expect("Failed to discover projects");
+
+            // Hybrid projects are discovered as two separate projects
+            assert_eq!(projects.len(), 2);
+
+            // Check that both projects were found
+            let rust_project = projects.iter().find(|p| p.name == "hybrid-rust");
+            let ts_project = projects.iter().find(|p| p.name == "hybrid-ts");
+
+            assert!(rust_project.is_some(), "Rust project should be discovered");
+            assert!(
+                ts_project.is_some(),
+                "TypeScript project should be discovered"
+            );
 
             fs::remove_dir_all(&temp_dir).ok();
         }
