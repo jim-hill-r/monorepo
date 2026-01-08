@@ -30,14 +30,7 @@ All code changes require appropriate tests:
 
 ## UI Changes Documentation
 
-- TODO: Consolidate UI Change management standards into the standards project.
-
-All UI changes must include visual documentation:
-1. **Screenshots**: Always include screenshots of UI changes in the PR description
-   - Take full-page screenshots showing the before and after states when possible
-   - Capture screenshots that clearly demonstrate the visual changes
-   - Include screenshots in commit messages or PR descriptions
-   - Use the playwright browser tools to take screenshots when the dev server is running
+See `standards/docs/documentation.md` for complete UI change documentation standards including screenshot requirements.
 
 ## Task Completion Requirements
 
