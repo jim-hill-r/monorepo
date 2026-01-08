@@ -523,8 +523,7 @@ pub mod discovery {
             if in_package_section && trimmed.starts_with("name") {
                 if let Some(equals_pos) = trimmed.find('=') {
                     // Ensure it's the 'name' field, not something like 'rename'
-                    let before_equals = &trimmed[..equals_pos].trim();
-                    if *before_equals == "name" {
+                    if trimmed[..equals_pos].trim() == "name" {
                         let value = &trimmed[equals_pos + 1..].trim();
                         // Remove quotes
                         let name = value.trim_matches('"').trim_matches('\'');
@@ -547,7 +546,7 @@ pub mod discovery {
         // First try to find "name" field
         if let Some(name_start) = content.find("\"name\"") {
             // Look for the colon after "name"
-            let after_name = &content[name_start + 6..]; // 6 is length of "name"
+            let after_name = &content[name_start + "\"name\"".len()..];
             if let Some(colon_pos) = after_name.find(':') {
                 let after_colon = &after_name[colon_pos + 1..];
 
@@ -795,10 +794,4 @@ pub mod discovery {
             fs::remove_dir_all(&temp_dir).ok();
         }
     }
-}
-
-#[cfg(test)]
-mod tests_moved_from_root {
-    // These tests were previously defined at module root level
-    // Moving them here for better organization
 }
