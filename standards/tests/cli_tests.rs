@@ -41,7 +41,8 @@ fn test_cli_audit_runs() {
     assert!(output.status.success(), "Command should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Standards audit completed"));
+    assert!(stdout.contains("Standards audit for path"));
+    assert!(stdout.contains("Discovered"));
 }
 
 /// Test that audit command accepts path parameter
@@ -55,5 +56,6 @@ fn test_cli_audit_with_path() {
     assert!(output.status.success(), "Command should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Standards audit completed"));
+    assert!(stdout.contains("Standards audit for path"));
+    assert!(stdout.contains("Discovered"));
 }

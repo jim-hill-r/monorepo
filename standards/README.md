@@ -36,7 +36,13 @@ standards audit
 standards audit --path /path/to/monorepo
 ```
 
-The audit command will check all projects against defined standards and report any violations.
+The audit command will discover all projects in the specified path (both Rust and TypeScript projects) and report any violations of defined standards.
+
+**Project Discovery:**
+- Automatically finds projects with `Cargo.toml` (Rust) or `package.json` (TypeScript/Node.js)
+- Recursively searches directories up to a depth of 10
+- Skips common build/dependency directories (`target`, `node_modules`, `.git`)
+- Extracts project names and metadata for audit reporting
 
 ### Get Help
 
@@ -62,7 +68,12 @@ See the `docs/` directory for detailed standards documentation:
 
 ## Status
 
-The CLI infrastructure is in place. See ISSUES.md for planned audit implementations and improvements.
+The CLI infrastructure is in place with project discovery implemented. The audit command can now:
+- Discover all Rust projects (with `Cargo.toml`)
+- Discover all TypeScript/Node.js projects (with `package.json`)
+- Report discovered projects with names and paths
+
+See ISSUES.md for planned audit implementations and improvements.
 
 ## Future Goals
 

@@ -10,6 +10,7 @@
 //! - `StandardType`: Enumeration of different standard categories
 //! - `parser`: Module for parsing standards from markdown documentation
 //! - `loader`: Module for loading standards from the docs/ directory
+//! - `discovery`: Module for discovering projects in the monorepo
 
 #![warn(missing_docs)]
 
@@ -393,4 +394,354 @@ More text
         let result = loader::load_from_file(&nonexistent, StandardType::Naming);
         assert!(result.is_err());
     }
+}
+
+/// Project discovery module for finding projects in the monorepo
+pub mod discovery {
+    use std::path::{Path, PathBuf};
+
+    /// Type of project detected
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ProjectType {
+        /// Rust project with Cargo.toml
+        Rust,
+        /// TypeScript/Node.js project with package.json
+        TypeScript,
+    }
+
+    /// Represents a discovered project in the monorepo
+    #[derive(Debug, Clone)]
+    pub struct Project {
+        /// Path to the project directory
+        pub path: PathBuf,
+        /// Type of project
+        pub project_type: ProjectType,
+        /// Project name (from Cargo.toml or package.json)
+        pub name: String,
+    }
+
+    impl Project {
+        /// Create a new Project
+        pub fn new(path: PathBuf, project_type: ProjectType, name: String) -> Self {
+            Self {
+                path,
+                project_type,
+                name,
+            }
+        }
+    }
+
+    /// Discover all projects in a directory tree
+    ///
+    /// # Arguments
+    ///
+    /// * `root` - Root directory to search from
+    ///
+    /// # Returns
+    ///
+    /// Vector of discovered projects
+    pub fn discover_projects(root: &Path) -> Result<Vec<Project>, std::io::Error> {
+        let mut projects = Vec::new();
+        discover_projects_recursive(root, &mut projects, 0, 10)?;
+        Ok(projects)
+    }
+
+    fn discover_projects_recursive(
+        dir: &Path,
+        projects: &mut Vec<Project>,
+        depth: usize,
+        max_depth: usize,
+    ) -> Result<(), std::io::Error> {
+        if depth > max_depth {
+            return Ok(());
+        }
+
+        // Skip directories that should not be searched
+        if let Some(name) = dir.file_name().and_then(|n| n.to_str()) {
+            if name == "node_modules" || name == "target" || name == ".git" {
+                return Ok(());
+            }
+        }
+
+        // Check for Cargo.toml (Rust project)
+        let cargo_toml = dir.join("Cargo.toml");
+        if cargo_toml.exists() {
+            if let Some(name) = extract_cargo_name(&cargo_toml) {
+                projects.push(Project::new(dir.to_path_buf(), ProjectType::Rust, name));
+            }
+        }
+
+        // Check for package.json (TypeScript/Node.js project)
+        let package_json = dir.join("package.json");
+        if package_json.exists() {
+            if let Some(name) = extract_package_name(&package_json) {
+                projects.push(Project::new(
+                    dir.to_path_buf(),
+                    ProjectType::TypeScript,
+                    name,
+                ));
+            }
+        }
+
+        // Recursively check subdirectories
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    discover_projects_recursive(&path, projects, depth + 1, max_depth)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn extract_cargo_name(cargo_toml: &Path) -> Option<String> {
+        let content = std::fs::read_to_string(cargo_toml).ok()?;
+
+        // Simple parser to extract package name from Cargo.toml
+        // Look for: name = "package_name"
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("name") {
+                if let Some(equals_pos) = trimmed.find('=') {
+                    let value = &trimmed[equals_pos + 1..].trim();
+                    // Remove quotes
+                    let name = value.trim_matches('"').trim_matches('\'');
+                    return Some(name.to_string());
+                }
+            }
+        }
+
+        None
+    }
+
+    fn extract_package_name(package_json: &Path) -> Option<String> {
+        let content = std::fs::read_to_string(package_json).ok()?;
+
+        // Simple parser to extract name from package.json
+        // Look for: "name": "package-name"
+        for line in content.lines() {
+            let trimmed = line.trim();
+            // Check if line contains "name" field (may not start with it on single-line JSON)
+            if let Some(name_pos) = trimmed.find("\"name\"") {
+                // Find the colon after "name"
+                if let Some(colon_pos) = trimmed[name_pos..].find(':') {
+                    let after_colon = &trimmed[name_pos + colon_pos + 1..];
+                    // Trim whitespace
+                    let value = after_colon.trim();
+
+                    // Remove trailing comma first (if present)
+                    let without_comma = value.trim_end_matches(',').trim_end_matches('}').trim();
+
+                    // Then remove quotes
+                    let name = without_comma.trim_matches('"').trim_matches('\'');
+
+                    return Some(name.to_string());
+                }
+            }
+        }
+
+        None
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use std::fs;
+
+        #[test]
+        fn test_discover_rust_project() {
+            let temp_dir = std::env::temp_dir().join("test_rust_project");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            let cargo_toml = temp_dir.join("Cargo.toml");
+            fs::write(
+                &cargo_toml,
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"",
+            )
+            .unwrap();
+
+            let projects = discover_projects(&temp_dir).unwrap();
+
+            assert_eq!(projects.len(), 1);
+            assert_eq!(projects[0].name, "test_project");
+            assert_eq!(projects[0].project_type, ProjectType::Rust);
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_discover_typescript_project() {
+            let temp_dir = std::env::temp_dir().join("test_ts_project");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            let package_json = temp_dir.join("package.json");
+            fs::write(
+                &package_json,
+                "{\n  \"name\": \"test-package\",\n  \"version\": \"1.0.0\"\n}",
+            )
+            .unwrap();
+
+            let projects = discover_projects(&temp_dir).unwrap();
+
+            assert_eq!(projects.len(), 1);
+            assert_eq!(projects[0].name, "test-package");
+            assert_eq!(projects[0].project_type, ProjectType::TypeScript);
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_discover_multiple_projects() {
+            let temp_dir = std::env::temp_dir().join("test_multiple_projects");
+            // Clean up any existing test directory
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            // Create Rust project
+            let rust_dir = temp_dir.join("rust_project");
+            fs::create_dir_all(&rust_dir).unwrap();
+            fs::write(
+                rust_dir.join("Cargo.toml"),
+                "[package]\nname = \"rust_project\"\n",
+            )
+            .unwrap();
+
+            // Create TypeScript project
+            let ts_dir = temp_dir.join("ts_project");
+            fs::create_dir_all(&ts_dir).unwrap();
+            fs::write(ts_dir.join("package.json"), "{\"name\": \"ts-project\"}").unwrap();
+
+            let projects = discover_projects(&temp_dir).unwrap();
+
+            // Debug output if assertion fails
+            if projects.len() != 2 {
+                eprintln!("Expected 2 projects, found {}", projects.len());
+                for proj in &projects {
+                    eprintln!(
+                        "  - {} ({:?}) at {:?}",
+                        proj.name, proj.project_type, proj.path
+                    );
+                }
+            }
+
+            assert_eq!(projects.len(), 2);
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_discover_skips_node_modules() {
+            let temp_dir = std::env::temp_dir().join("test_skip_node_modules");
+            // Clean up any existing test directory
+            fs::remove_dir_all(&temp_dir).ok();
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            // Create a project with node_modules
+            fs::write(
+                temp_dir.join("package.json"),
+                "{\"name\": \"main-project\"}",
+            )
+            .unwrap();
+
+            let node_modules = temp_dir.join("node_modules").join("some-lib");
+            fs::create_dir_all(&node_modules).unwrap();
+            fs::write(
+                node_modules.join("package.json"),
+                "{\"name\": \"should-skip\"}",
+            )
+            .unwrap();
+
+            let projects = discover_projects(&temp_dir).unwrap();
+
+            // Debug output if assertion fails
+            if projects.len() != 1 {
+                eprintln!("Expected 1 project, found {}", projects.len());
+                for proj in &projects {
+                    eprintln!(
+                        "  - {} ({:?}) at {:?}",
+                        proj.name, proj.project_type, proj.path
+                    );
+                }
+            }
+
+            // Should only find the main project, not the one in node_modules
+            assert_eq!(projects.len(), 1);
+            assert_eq!(projects[0].name, "main-project");
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_discover_skips_target_dir() {
+            let temp_dir = std::env::temp_dir().join("test_skip_target");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            // Create a Rust project with target directory
+            fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"main_project\"\n",
+            )
+            .unwrap();
+
+            let target = temp_dir.join("target").join("debug");
+            fs::create_dir_all(&target).unwrap();
+            fs::write(
+                target.join("Cargo.toml"),
+                "[package]\nname = \"should_skip\"\n",
+            )
+            .unwrap();
+
+            let projects = discover_projects(&temp_dir).unwrap();
+
+            // Should only find the main project, not the one in target
+            assert_eq!(projects.len(), 1);
+            assert_eq!(projects[0].name, "main_project");
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_extract_cargo_name() {
+            let temp_dir = std::env::temp_dir().join("test_extract_cargo");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            let cargo_toml = temp_dir.join("Cargo.toml");
+            fs::write(
+                &cargo_toml,
+                "[package]\nname = \"my-crate\"\nversion = \"0.1.0\"",
+            )
+            .unwrap();
+
+            let name = extract_cargo_name(&cargo_toml);
+            assert_eq!(name, Some("my-crate".to_string()));
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_extract_package_name() {
+            let temp_dir = std::env::temp_dir().join("test_extract_package");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            let package_json = temp_dir.join("package.json");
+            fs::write(
+                &package_json,
+                "{\n  \"name\": \"my-package\",\n  \"version\": \"1.0.0\"\n}",
+            )
+            .unwrap();
+
+            let name = extract_package_name(&package_json);
+            assert_eq!(name, Some("my-package".to_string()));
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests_moved_from_root {
+    // These tests were previously defined at module root level
+    // Moving them here for better organization
 }
