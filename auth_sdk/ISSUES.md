@@ -1,6 +1,5 @@
 # Priority Issues
 
-TODO (agent-generated): Implement discovery document fetching and caching in WebAuthProvider
 TODO (agent-generated): Create wrapper types for openidconnect CoreClient to maintain backward compatibility
 TODO (agent-generated): Update login flow to use openidconnect with nonce validation
 TODO (agent-generated): Update token exchange to validate ID tokens using openidconnect
