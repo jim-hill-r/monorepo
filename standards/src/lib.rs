@@ -34,6 +34,8 @@ pub enum StandardType {
     Toolchain,
     /// Issue management standards
     IssueManagement,
+    /// Build and CI standards
+    BuildAndCI,
 }
 
 impl fmt::Display for StandardType {
@@ -47,6 +49,7 @@ impl fmt::Display for StandardType {
             StandardType::TypeScript => write!(f, "TypeScript"),
             StandardType::Toolchain => write!(f, "Toolchain"),
             StandardType::IssueManagement => write!(f, "Issue Management"),
+            StandardType::BuildAndCI => write!(f, "Build and CI"),
         }
     }
 }
@@ -167,6 +170,7 @@ pub mod parser {
             StandardType::TypeScript => "TSC",
             StandardType::Toolchain => "TLC",
             StandardType::IssueManagement => "ISS",
+            StandardType::BuildAndCI => "BLD",
         }
     }
 }
@@ -216,6 +220,7 @@ pub mod loader {
             ("typescript.md", StandardType::TypeScript),
             ("toolchain.md", StandardType::Toolchain),
             ("issue-management.md", StandardType::IssueManagement),
+            ("build-and-ci.md", StandardType::BuildAndCI),
         ];
 
         for (filename, standard_type) in file_mappings {

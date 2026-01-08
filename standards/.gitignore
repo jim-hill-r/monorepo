@@ -1,0 +1,17 @@
+# Rust build artifacts
+/target/
+
+# Dirty build artifacts (should never be committed)
+artifacts/**/*-dirty.zip
+artifacts/**/*-dirty
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

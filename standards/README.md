@@ -58,6 +58,7 @@ See the `docs/` directory for detailed standards documentation:
 - [Documentation Standards](./docs/documentation.md)
 - [Testing Standards](./docs/testing.md)
 - [Toolchain Management](./docs/toolchain.md)
+- [Build and CI Standards](./docs/build-and-ci.md)
 
 ## Status
 
