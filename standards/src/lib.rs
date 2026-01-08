@@ -441,8 +441,9 @@ pub mod discovery {
     ///
     /// Vector of discovered projects
     pub fn discover_projects(root: &Path) -> Result<Vec<Project>, std::io::Error> {
+        const MAX_SEARCH_DEPTH: usize = 10;
         let mut projects = Vec::new();
-        discover_projects_recursive(root, &mut projects, 0, 10)?;
+        discover_projects_recursive(root, &mut projects, 0, MAX_SEARCH_DEPTH)?;
         Ok(projects)
     }
 
@@ -500,15 +501,35 @@ pub mod discovery {
         let content = std::fs::read_to_string(cargo_toml).ok()?;
 
         // Simple parser to extract package name from Cargo.toml
-        // Look for: name = "package_name"
+        // Look for: name = "package_name" in the [package] section
+        let mut in_package_section = false;
+
         for line in content.lines() {
             let trimmed = line.trim();
-            if trimmed.starts_with("name") {
+
+            // Check if we're entering the [package] section
+            if trimmed == "[package]" {
+                in_package_section = true;
+                continue;
+            }
+
+            // Check if we're entering a different section
+            if trimmed.starts_with('[') && trimmed.ends_with(']') && trimmed != "[package]" {
+                in_package_section = false;
+                continue;
+            }
+
+            // Only parse 'name' field if we're in the [package] section
+            if in_package_section && trimmed.starts_with("name") {
                 if let Some(equals_pos) = trimmed.find('=') {
-                    let value = &trimmed[equals_pos + 1..].trim();
-                    // Remove quotes
-                    let name = value.trim_matches('"').trim_matches('\'');
-                    return Some(name.to_string());
+                    // Ensure it's the 'name' field, not something like 'rename'
+                    let before_equals = &trimmed[..equals_pos].trim();
+                    if *before_equals == "name" {
+                        let value = &trimmed[equals_pos + 1..].trim();
+                        // Remove quotes
+                        let name = value.trim_matches('"').trim_matches('\'');
+                        return Some(name.to_string());
+                    }
                 }
             }
         }
@@ -521,23 +542,23 @@ pub mod discovery {
 
         // Simple parser to extract name from package.json
         // Look for: "name": "package-name"
-        for line in content.lines() {
-            let trimmed = line.trim();
-            // Check if line contains "name" field (may not start with it on single-line JSON)
-            if let Some(name_pos) = trimmed.find("\"name\"") {
-                // Find the colon after "name"
-                if let Some(colon_pos) = trimmed[name_pos..].find(':') {
-                    let after_colon = &trimmed[name_pos + colon_pos + 1..];
-                    // Trim whitespace
-                    let value = after_colon.trim();
+        // This is a simplified parser that works for most common JSON formats
 
-                    // Remove trailing comma first (if present)
-                    let without_comma = value.trim_end_matches(',').trim_end_matches('}').trim();
+        // First try to find "name" field
+        if let Some(name_start) = content.find("\"name\"") {
+            // Look for the colon after "name"
+            let after_name = &content[name_start + 6..]; // 6 is length of "name"
+            if let Some(colon_pos) = after_name.find(':') {
+                let after_colon = &after_name[colon_pos + 1..];
 
-                    // Then remove quotes
-                    let name = without_comma.trim_matches('"').trim_matches('\'');
-
-                    return Some(name.to_string());
+                // Find the opening quote for the value
+                let trimmed = after_colon.trim_start();
+                if let Some(after_quote) = trimmed.strip_prefix('"') {
+                    // Find the closing quote (not escaped)
+                    if let Some(end_quote) = after_quote.find('"') {
+                        let name = &after_quote[..end_quote];
+                        return Some(name.to_string());
+                    }
                 }
             }
         }
@@ -716,6 +737,42 @@ pub mod discovery {
 
             let name = extract_cargo_name(&cargo_toml);
             assert_eq!(name, Some("my-crate".to_string()));
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_extract_cargo_name_ignores_rename() {
+            let temp_dir = std::env::temp_dir().join("test_extract_cargo_rename");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            let cargo_toml = temp_dir.join("Cargo.toml");
+            fs::write(
+                &cargo_toml,
+                "[package]\nname = \"correct-name\"\nversion = \"0.1.0\"\n\n[dependencies]\nrename = \"should-not-match\"",
+            )
+            .unwrap();
+
+            let name = extract_cargo_name(&cargo_toml);
+            assert_eq!(name, Some("correct-name".to_string()));
+
+            fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_extract_cargo_name_only_in_package_section() {
+            let temp_dir = std::env::temp_dir().join("test_extract_cargo_section");
+            fs::create_dir_all(&temp_dir).unwrap();
+
+            let cargo_toml = temp_dir.join("Cargo.toml");
+            fs::write(
+                &cargo_toml,
+                "[lib]\nname = \"wrong-name\"\n\n[package]\nname = \"correct-name\"\nversion = \"0.1.0\"",
+            )
+            .unwrap();
+
+            let name = extract_cargo_name(&cargo_toml);
+            assert_eq!(name, Some("correct-name".to_string()));
 
             fs::remove_dir_all(&temp_dir).ok();
         }
