@@ -101,7 +101,7 @@ cast install list
 **Using in GitHub Workflows:**
 - GitHub workflows should only install Rust via `actions-rust-lang/setup-rust-toolchain`
 - Use `cast install` for all other framework-specific tools (Dioxus CLI, Playwright, etc.)
-- See `.github/WORKFLOW_CONVENTIONS.md` for workflow patterns and best practices
+- See `standards/docs/workflow-conventions.md` for workflow patterns and best practices (also available in `.github/WORKFLOW_CONVENTIONS.md`)
 - See `standards/docs/toolchain.md` for complete toolchain management documentation
 
 ## Cast Workspace Structure
