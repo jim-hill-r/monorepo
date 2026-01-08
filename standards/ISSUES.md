@@ -2,13 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Implement standards definition framework
-Create a framework for defining and loading standards:
-- Define `Standard` trait for different standard types
-- Implement standard loading from docs/ directory
-- Create parser for standards documentation
-- Add unit tests for standard parsing
-
 ### TODO (agent-generated): Implement project discovery
 Add functionality to discover projects in the monorepo:
 - Traverse directory structure

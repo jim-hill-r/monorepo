@@ -31,7 +31,7 @@ pub enum PublishError {
 }
 
 /// Get the target triple for the current platform
-fn get_target_triple() -> Result<String, PublishError> {
+pub fn get_target_triple() -> Result<String, PublishError> {
     let output = Command::new("rustc")
         .arg("--version")
         .arg("--verbose")
@@ -313,8 +313,8 @@ fn publish_dioxus(working_directory: &Path) -> Result<(), PublishError> {
     // Generate versioned filename
     let filename = generate_bundle_filename(working_directory)?;
 
-    // Create artifacts directory
-    let artifacts_dir = working_directory.join("artifacts");
+    // Create artifacts directory with 'web' subdirectory for platform-independent bundles
+    let artifacts_dir = working_directory.join("artifacts").join("web");
     fs::create_dir_all(&artifacts_dir)?;
 
     // Create zip file using Rust zip crate
@@ -343,9 +343,6 @@ fn publish_binary(working_directory: &Path) -> Result<(), PublishError> {
     // Find the built binary artifact
     let artifact_name = find_binary_artifact(working_directory)?;
 
-    // Get target triple
-    let target_triple = get_target_triple()?;
-
     // Get the full path to the artifact
     let release_dir = working_directory.join("target").join("release");
     let artifact_path = release_dir.join(&artifact_name);
@@ -353,8 +350,11 @@ fn publish_binary(working_directory: &Path) -> Result<(), PublishError> {
     // Generate versioned filename
     let filename = generate_bundle_filename(working_directory)?;
 
-    // Create artifacts directory
-    let artifacts_dir = working_directory.join("artifacts");
+    // Get target triple
+    let target_triple = get_target_triple()?;
+
+    // Create artifacts directory with target triple subdirectory
+    let artifacts_dir = working_directory.join("artifacts").join(&target_triple);
     fs::create_dir_all(&artifacts_dir)?;
 
     // Create zip file with target triple in the structure
@@ -549,8 +549,16 @@ edition = "2021"
         let artifacts_dir = tmp_dir.path().join("artifacts");
         assert!(artifacts_dir.exists());
 
-        // Check that a zip file was created (not the raw binary)
-        let entries = fs::read_dir(&artifacts_dir).unwrap();
+        // Get target triple
+        let target_triple = get_target_triple().unwrap();
+        let target_artifacts_dir = artifacts_dir.join(&target_triple);
+        assert!(
+            target_artifacts_dir.exists(),
+            "Target triple subdirectory should exist"
+        );
+
+        // Check that a zip file was created (not the raw binary) in the target directory
+        let entries = fs::read_dir(&target_artifacts_dir).unwrap();
         let zip_files: Vec<_> = entries
             .filter_map(|e| e.ok())
             .filter(|e| {
@@ -565,7 +573,7 @@ edition = "2021"
         assert_eq!(
             zip_files.len(),
             1,
-            "Expected exactly one zip file in artifacts directory"
+            "Expected exactly one zip file in artifacts target directory"
         );
 
         // Verify the zip file contains the binary in the target triple directory
