@@ -1,9 +1,8 @@
 # Rust build artifacts
 /target/
 
-# Dirty build artifacts (should never be committed)
-artifacts/**/*-dirty.zip
-artifacts/**/*-dirty
+# Build artifacts (should never be committed)
+artifacts/
 
 # IDE files
 .vscode/
