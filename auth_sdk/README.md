@@ -28,7 +28,7 @@ ProviderConfig {
 }
 ```
 
-### OIDC Discovery Mode (Recommended for OIDC providers)
+### OIDC Discovery Mode (Implemented)
 Provide an issuer URL for automatic endpoint discovery:
 ```rust
 ProviderConfig {
@@ -40,7 +40,7 @@ ProviderConfig {
 }
 ```
 
-When `issuer_url` is provided, future implementations can use OIDC discovery to automatically fetch endpoints from `{issuer_url}/.well-known/openid-configuration`.
+When `issuer_url` is provided, the WebAuthProvider will automatically fetch the OIDC discovery document from `{issuer_url}/.well-known/openid-configuration` and use the discovered endpoints. The provider metadata is cached for the lifetime of the WebAuthProvider instance.
 
 ## Documentation
 

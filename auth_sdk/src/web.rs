@@ -3,6 +3,10 @@ use oauth2::{
     PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
     basic::BasicClient,
 };
+use openidconnect::{
+    IssuerUrl,
+    core::{CoreClient, CoreProviderMetadata},
+};
 use web_sys::UrlSearchParams;
 
 use crate::provider::{
@@ -14,18 +18,22 @@ const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
 #[derive(Clone)]
 pub struct WebAuthProvider {
-    client: BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>,
+    client: CoreClient,
+    provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
 }
 
 impl WebAuthProvider {
     pub async fn new(config: ProviderConfig) -> Result<WebAuthProvider, AuthError> {
-        let client = BasicClient::new(ClientId::new(config.client_id))
-            .set_auth_uri(AuthUrl::new(config.auth_url).map_err(|_| AuthError::ParseError)?)
-            .set_token_uri(TokenUrl::new(config.token_url).map_err(|_| AuthError::ParseError)?)
-            .set_redirect_uri(
-                RedirectUrl::new(config.redirect_url).map_err(|_| AuthError::ParseError)?,
-            );
+        // Check if OIDC discovery should be used
+        let (client, provider_metadata) = if let Some(issuer_url) = config.issuer_url {
+            tracing::info!("Using OIDC discovery with issuer: {}", issuer_url);
+            Self::create_client_from_discovery(issuer_url, &config).await?
+        } else {
+            tracing::info!("Using explicit OAuth2 endpoints");
+            Self::create_client_from_explicit_endpoints(&config)?
+        };
+
         let access_token =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
                 Some(handle_redirect(&client, authorization_code, state).await?)
@@ -35,8 +43,68 @@ impl WebAuthProvider {
 
         Ok(WebAuthProvider {
             client,
+            provider_metadata,
             access_token,
         })
+    }
+
+    /// Create a CoreClient using OIDC discovery
+    async fn create_client_from_discovery(
+        issuer_url: String,
+        config: &ProviderConfig,
+    ) -> Result<(CoreClient, Option<CoreProviderMetadata>), AuthError> {
+        tracing::debug!(
+            "Fetching OIDC discovery document from: {}/.well-known/openid-configuration",
+            issuer_url
+        );
+
+        let issuer = IssuerUrl::new(issuer_url).map_err(|_| AuthError::ParseError)?;
+
+        // Create HTTP client for discovery
+        let http_client = reqwest::Client::new();
+
+        // Fetch provider metadata from discovery document
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http_client)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch OIDC discovery document: {}", e);
+                AuthError::Unknown
+            })?;
+
+        tracing::debug!("Successfully fetched OIDC discovery document");
+
+        // Create client from discovered metadata
+        let client = CoreClient::from_provider_metadata(
+            provider_metadata.clone(),
+            ClientId::new(config.client_id.clone()),
+            None, // No client secret for public clients (PKCE is used instead)
+        )
+        .set_redirect_uri(
+            RedirectUrl::new(config.redirect_url.clone()).map_err(|_| AuthError::ParseError)?,
+        );
+
+        tracing::info!("OIDC client created successfully from discovery");
+        Ok((client, Some(provider_metadata)))
+    }
+
+    /// Create a CoreClient using explicit OAuth2 endpoints (backward compatibility)
+    fn create_client_from_explicit_endpoints(
+        config: &ProviderConfig,
+    ) -> Result<(CoreClient, Option<CoreProviderMetadata>), AuthError> {
+        tracing::debug!("Creating client with explicit endpoints");
+
+        // CoreClient can be created manually just like BasicClient
+        let client = CoreClient::new(ClientId::new(config.client_id.clone()))
+            .set_auth_uri(AuthUrl::new(config.auth_url.clone()).map_err(|_| AuthError::ParseError)?)
+            .set_token_uri(
+                TokenUrl::new(config.token_url.clone()).map_err(|_| AuthError::ParseError)?,
+            )
+            .set_redirect_uri(
+                RedirectUrl::new(config.redirect_url.clone()).map_err(|_| AuthError::ParseError)?,
+            );
+
+        tracing::debug!("Client created with explicit endpoints");
+        Ok((client, None))
     }
 }
 
@@ -150,7 +218,7 @@ fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
 }
 
 async fn handle_redirect(
-    client: &BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>,
+    client: &CoreClient,
     authorization_code: AuthorizationCode,
     state: CsrfTokenState,
 ) -> Result<AccessToken, AuthError> {
@@ -216,4 +284,100 @@ async fn handle_redirect(
     Ok(AccessToken::new(
         token_result.access_token().clone().into_secret(),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_client_from_explicit_endpoints() {
+        let config = ProviderConfig {
+            client_id: "test_client_id".to_string(),
+            auth_url: "https://example.com/authorize".to_string(),
+            token_url: "https://example.com/token".to_string(),
+            redirect_url: "https://example.com/callback".to_string(),
+            issuer_url: None,
+        };
+
+        let result = WebAuthProvider::create_client_from_explicit_endpoints(&config);
+        assert!(result.is_ok());
+
+        let (client, metadata) = result.unwrap();
+        assert!(
+            metadata.is_none(),
+            "Metadata should be None when using explicit endpoints"
+        );
+
+        // Verify client was created (we can't easily test the internal state, but we can verify it doesn't panic)
+        drop(client);
+    }
+
+    #[test]
+    fn test_create_client_from_explicit_endpoints_with_invalid_auth_url() {
+        let config = ProviderConfig {
+            client_id: "test_client_id".to_string(),
+            auth_url: "not a valid url".to_string(),
+            token_url: "https://example.com/token".to_string(),
+            redirect_url: "https://example.com/callback".to_string(),
+            issuer_url: None,
+        };
+
+        let result = WebAuthProvider::create_client_from_explicit_endpoints(&config);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AuthError::ParseError));
+    }
+
+    #[test]
+    fn test_create_client_from_explicit_endpoints_with_invalid_token_url() {
+        let config = ProviderConfig {
+            client_id: "test_client_id".to_string(),
+            auth_url: "https://example.com/authorize".to_string(),
+            token_url: "not a valid url".to_string(),
+            redirect_url: "https://example.com/callback".to_string(),
+            issuer_url: None,
+        };
+
+        let result = WebAuthProvider::create_client_from_explicit_endpoints(&config);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AuthError::ParseError));
+    }
+
+    #[test]
+    fn test_create_client_from_explicit_endpoints_with_invalid_redirect_url() {
+        let config = ProviderConfig {
+            client_id: "test_client_id".to_string(),
+            auth_url: "https://example.com/authorize".to_string(),
+            token_url: "https://example.com/token".to_string(),
+            redirect_url: "not a valid url".to_string(),
+            issuer_url: None,
+        };
+
+        let result = WebAuthProvider::create_client_from_explicit_endpoints(&config);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AuthError::ParseError));
+    }
+
+    // Note: Testing create_client_from_discovery requires mocking HTTP requests,
+    // which is complex in wasm32 environment. The discovery functionality will be
+    // tested through integration tests or manual testing with a real OIDC provider.
+    // For unit tests, we verify that:
+    // 1. Invalid issuer URLs are rejected with ParseError
+    #[tokio::test]
+    async fn test_create_client_from_discovery_with_invalid_issuer_url() {
+        let config = ProviderConfig {
+            client_id: "test_client_id".to_string(),
+            auth_url: "https://example.com/authorize".to_string(),
+            token_url: "https://example.com/token".to_string(),
+            redirect_url: "https://example.com/callback".to_string(),
+            issuer_url: None,
+        };
+
+        let result =
+            WebAuthProvider::create_client_from_discovery("not a valid url".to_string(), &config)
+                .await;
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AuthError::ParseError));
+    }
 }
