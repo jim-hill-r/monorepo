@@ -2,13 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Implement project discovery
-Add functionality to discover projects in the monorepo:
-- Traverse directory structure
-- Identify projects (Cargo.toml, package.json, etc.)
-- Collect project metadata
-- Test with sample directory structures
-
 ### TODO (agent-generated): Implement naming standards audit
 Create auditing logic for naming standards (standards/docs/naming.md):
 - Check project names are snake_case
