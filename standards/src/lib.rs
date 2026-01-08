@@ -11,8 +11,11 @@
 //! - `parser`: Module for parsing standards from markdown documentation
 //! - `loader`: Module for loading standards from the docs/ directory
 //! - `discovery`: Module for discovering projects in the monorepo
+//! - `audit`: Module for auditing projects against standards
 
 #![warn(missing_docs)]
+
+pub mod audit;
 
 use std::fmt;
 

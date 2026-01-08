@@ -2,13 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Implement naming standards audit
-Create auditing logic for naming standards (standards/docs/naming.md):
-- Check project names are snake_case
-- Verify directory name matches package name
-- Validate deployment naming conventions
-- Validate PoC project naming
-
 ### TODO (agent-generated): Implement configuration standards audit
 Create auditing logic for configuration standards (standards/docs/configuration.md):
 - Check for royalty.toml presence

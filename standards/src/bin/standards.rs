@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use standards::discovery;
+use standards::{audit::naming, discovery};
 use std::path::PathBuf;
 use std::process;
 
@@ -58,18 +58,30 @@ fn audit(cmd: AuditCommand) -> Result<String, String> {
     // Build the audit report
     let mut report = String::new();
     report.push_str(&format!("Standards audit for path: {}\n\n", path));
-    report.push_str(&format!("Discovered {} project(s):\n", projects.len()));
+    report.push_str(&format!("Discovered {} project(s)\n\n", projects.len()));
 
-    for project in &projects {
+    // Run naming standards audit
+    let naming_result = naming::audit_naming_standards(&projects);
+
+    if naming_result.has_violations() {
+        report.push_str("=== Naming Standards Violations ===\n\n");
+
+        for violation in &naming_result.violations {
+            report.push_str(&format!(
+                "[{}] {} - {}\n",
+                violation.standard_id, violation.project_name, violation.message
+            ));
+            report.push_str(&format!("  Path: {}\n", violation.project_path));
+            report.push_str(&format!("  Severity: {:?}\n\n", violation.severity));
+        }
+
         report.push_str(&format!(
-            "  - {} ({:?}) at {}\n",
-            project.name,
-            project.project_type,
-            project.path.display()
+            "Total violations: {}\n",
+            naming_result.violations.len()
         ));
+    } else {
+        report.push_str("✓ All naming standards checks passed\n");
     }
-
-    report.push_str("\nNo audits implemented yet.");
 
     Ok(report)
 }
