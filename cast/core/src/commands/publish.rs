@@ -97,8 +97,16 @@ edition = "2021"
         let artifacts_dir = tmp_dir.path().join("artifacts");
         assert!(artifacts_dir.exists());
 
-        // Check that a zip file was created
-        let entries = fs::read_dir(&artifacts_dir).unwrap();
+        // Get target triple
+        let target_triple = publish::get_target_triple().unwrap();
+        let target_artifacts_dir = artifacts_dir.join(&target_triple);
+        assert!(
+            target_artifacts_dir.exists(),
+            "Target triple subdirectory should exist"
+        );
+
+        // Check that a zip file was created in the target directory
+        let entries = fs::read_dir(&target_artifacts_dir).unwrap();
         let zip_files: Vec<_> = entries
             .filter_map(|e| e.ok())
             .filter(|e| {
@@ -113,7 +121,7 @@ edition = "2021"
         assert_eq!(
             zip_files.len(),
             1,
-            "Expected exactly one zip file in artifacts directory"
+            "Expected exactly one zip file in artifacts target directory"
         );
     }
 
