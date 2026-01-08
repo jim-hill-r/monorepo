@@ -19,9 +19,9 @@ All pull requests with UI changes MUST include visual documentation.
 
 **Screenshot Requirements:**
 
-1. **Screenshots**: Always include screenshots of UI changes in the PR description
-   - Take full-page screenshots showing the before and after states when possible
-   - Capture screenshots that clearly demonstrate the visual changes
-   - Use the playwright browser tools to take screenshots when the dev server is running
+- **Screenshots**: Always include screenshots of UI changes in the PR description
+  - Take full-page screenshots showing the before and after states when possible
+  - Capture screenshots that clearly demonstrate the visual changes
+  - Use the playwright browser tools to take screenshots when the dev server is running
 
 **Exceptions:** Backend-only changes, configuration changes, or changes to non-visual code do not require screenshots.
