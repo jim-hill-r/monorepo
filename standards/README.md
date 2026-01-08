@@ -65,6 +65,7 @@ See the `docs/` directory for detailed standards documentation:
 - [Testing Standards](./docs/testing.md)
 - [Toolchain Management](./docs/toolchain.md)
 - [Build and CI Standards](./docs/build-and-ci.md)
+- [Workflow Conventions](./docs/workflow-conventions.md)
 
 ## Status
 

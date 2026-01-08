@@ -1,7 +1,5 @@
 # GitHub Workflows Conventions
 
-> **Note**: This document is also maintained in the standards project at [standards/docs/workflow-conventions.md](../standards/docs/workflow-conventions.md). Both versions should be kept in sync.
-
 This document describes conventions and best practices for GitHub workflows in this repository.
 
 ## General Principles
@@ -246,4 +244,3 @@ The standard pattern for CI workflows is:
 4. **Use cast commands** for all other logic including tool installation
 
 See `.github/workflows/cast-ci.yml` for a complete example.
-
