@@ -40,8 +40,7 @@ impl Person {
     ///
     /// # Example
     /// ```
-    /// use core::{Person, Gender};
-    ///
+    /// # use core::{Person, Gender};
     /// let person = Person::new(
     ///     "person1".to_string(),
     ///     "John Doe".to_string(),
