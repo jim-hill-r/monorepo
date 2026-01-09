@@ -95,13 +95,27 @@ test('SSG bundle generates and serves correctly', async ({ page }) => {
 
 ## Running Tests
 
-### Using Cast CI
+### Using Cast Commands
 
-The `cast ci` command automatically runs all appropriate tests for your project:
+The `cast test` command automatically runs appropriate tests for your project:
 
 - **Rust projects**: Runs `cargo test`
 - **TypeScript/Node.js projects**: Runs `npm test`
 - **Hybrid projects** (both Cargo.toml and package.json): Runs both Rust and TypeScript tests
+
+```bash
+cast test
+```
+
+The `cast ci` command runs all checks including tests, formatting, linting, and building:
+
+- **Rust projects**: Runs `cargo fmt`, `clippy`, `build`, and `test`
+- **TypeScript/Node.js projects**: Runs `npm install`, `npm run lint`, `npm run compile`, and `npm test`
+- **Hybrid projects**: Runs both Rust and TypeScript CI checks
+
+```bash
+cast ci
+```
 
 Always run `cast ci` before completing a task to ensure all tests pass.
 

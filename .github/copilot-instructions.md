@@ -34,21 +34,24 @@ See `standards/docs/documentation.md` for complete UI change documentation stand
 
 ## Task Completion Requirements
 
-- TODO: Ensure agent is using cast commands as a primary source of tooling. If cast is missing a command it needs, then it should be added to cast as a TODO.
-
 Before finishing any task that involves code changes:
 1. Always run `cast ci` on any projects that have been modified
 2. Ensure `cast ci` passes before completing the task
 3. Fix any formatting, linting, build, or test failures reported by `cast ci`
 4. If changes are made to a workspace project, ensure the workspace configuration supports CI builds (e.g., use `default-members` to exclude platform-specific members that require system dependencies)
-5. Verify all unit tests pass with `cargo test`
-6. For UI changes, verify Playwright tests pass with `npm test`
+5. Verify all tests pass with `cast test` (automatically runs both `cargo test` and `npm test` as appropriate)
 
 ### Cast CI Behavior
 - For **Rust projects** (with Cargo.toml): Runs `cargo fmt`, `clippy`, `build`, and `test`
 - For **TypeScript/Node.js projects** (with package.json): Runs `npm install`, `npm run lint`, `npm run compile`, and `npm test`
 - For **hybrid projects** (both Cargo.toml and package.json, e.g., Dioxus web apps): Runs both Rust and TypeScript CI checks
 - Playwright tests are automatically run via `npm test` when a package.json with test script exists
+
+### Cast Test Behavior
+- For **Rust projects** (with Cargo.toml): Runs `cargo test`
+- For **Node.js projects** (with package.json and test script): Runs `npm test`
+- For **hybrid projects** (both Cargo.toml and package.json): Runs both `cargo test` and `npm test`
+- Automatically detects project type and runs appropriate tests
 
 ## Toolchain Requirements by Framework
 
