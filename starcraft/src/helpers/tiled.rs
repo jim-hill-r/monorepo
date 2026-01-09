@@ -17,7 +17,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use bevy::{
-    asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
+    asset::{AssetLoader, AssetPath, AsyncReadExt, io::Reader},
     log,
     prelude::{
         Added, Asset, AssetApp, AssetEvent, AssetId, Assets, Bundle, Commands, Component,
@@ -141,7 +141,9 @@ impl AssetLoader for TiledLoader {
                                     .expect("The asset load context was empty.");
                                 let tile_path = tmx_dir.join(&img.source);
                                 let asset_path = AssetPath::from(tile_path);
-                                log::info!("Loading tile image from {asset_path:?} as image ({tileset_index}, {tile_id})");
+                                log::info!(
+                                    "Loading tile image from {asset_path:?} as image ({tileset_index}, {tile_id})"
+                                );
                                 let texture: Handle<Image> = load_context.load(asset_path.clone());
                                 tile_image_offsets
                                     .insert((tileset_index, tile_id), tile_images.len() as u32);
@@ -232,13 +234,21 @@ pub fn process_loaded_maps(
                 continue;
             }
             if let Some(tiled_map) = maps.get(map_handle) {
-                // TODO: Create a RemoveMap component..
+                // FIXME: Current implementation manually despawns tiles on every map change
+                // (Added/Modified/Removed). This is inefficient and doesn't properly handle
+                // the Remove event. A better approach would be to:
+                // 1. Create a RemoveMap marker component
+                // 2. Add a separate cleanup system that processes RemoveMap components
+                // 3. Only despawn entities when explicitly marked for removal
+                // See starcraft/ISSUES.md for the breakdown of this refactoring work.
                 for layer_entity in layer_storage.storage.values() {
                     if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
                         for tile in layer_tile_storage.iter().flatten() {
                             commands.entity(*tile).despawn_recursive()
                         }
                     }
+                    // FIXME: Layer entity despawn is commented out, suggesting uncertainty
+                    // about the correct cleanup approach. This needs investigation.
                     // commands.entity(*layer_entity).despawn_recursive();
                 }
 
