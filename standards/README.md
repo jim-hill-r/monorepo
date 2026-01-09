@@ -69,7 +69,36 @@ See the `docs/` directory for detailed standards documentation:
 
 ## Status
 
-The CLI infrastructure is in place with project discovery implemented. The audit command can now:
+The CLI infrastructure is in place with the following features implemented:
+
+### Implemented Audits
+
+#### Naming Standards Audit ✅
+The naming standards audit is fully implemented and checks:
+- **NAM-001**: All projects MUST be snake_case
+- **NAM-002**: Directory name must match package name
+- **NAM-004**: Proof of Concept projects must begin with `poc_`
+
+Example output:
+```
+Standards audit for path: .
+
+Discovered 35 project(s)
+
+=== Naming Standards Violations ===
+
+[NAM-001] InvalidName - Project name 'InvalidName' is not in snake_case format. All projects MUST be snake_case.
+  Path: ./example/InvalidName
+  Severity: Error
+
+[NAM-002] correct_name - Directory name 'wrong_dir' does not match package name 'correct_name'. Directory name MUST match the package name.
+  Path: ./example/wrong_dir
+  Severity: Error
+
+Total violations: 2
+```
+
+### Project Discovery
 - Discover all Rust projects (with `Cargo.toml`)
 - Discover all TypeScript/Node.js projects (with `package.json`)
 - Report discovered projects with names and paths
