@@ -1,7 +1,6 @@
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, CsrfToken, EndpointNotSet, EndpointSet,
-    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
-    basic::BasicClient,
+    AuthUrl, AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
+    RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use openidconnect::{
     IssuerUrl,
@@ -93,7 +92,7 @@ impl WebAuthProvider {
     ) -> Result<(CoreClient, Option<CoreProviderMetadata>), AuthError> {
         tracing::debug!("Creating client with explicit endpoints");
 
-        // CoreClient can be created manually just like BasicClient
+        // CoreClient can be created manually with explicit endpoints for backward compatibility
         let client = CoreClient::new(ClientId::new(config.client_id.clone()))
             .set_auth_uri(AuthUrl::new(config.auth_url.clone()).map_err(|_| AuthError::ParseError)?)
             .set_token_uri(

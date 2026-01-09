@@ -1,6 +1,5 @@
 # Priority Issues
 
-TODO (agent-generated): Create wrapper types for openidconnect CoreClient to maintain backward compatibility
 TODO (agent-generated): Update login flow to use openidconnect with nonce validation
 TODO (agent-generated): Update token exchange to validate ID tokens using openidconnect
 TODO (agent-generated): Extract user information from ID token claims instead of separate API calls
