@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use standards::{
-    audit::{configuration, naming},
+    audit::{configuration, documentation, naming},
     discovery,
 };
 use std::path::PathBuf;
@@ -109,8 +109,33 @@ fn audit(cmd: AuditCommand) -> Result<String, String> {
         report.push_str("✓ All configuration standards checks passed\n\n");
     }
 
+    // Run documentation standards audit
+    let doc_result = documentation::audit_documentation_standards(&projects);
+
+    if doc_result.has_violations() {
+        report.push_str("=== Documentation Standards Violations ===\n\n");
+
+        for violation in &doc_result.violations {
+            report.push_str(&format!(
+                "[{}] {} - {}\n",
+                violation.standard_id, violation.project_name, violation.message
+            ));
+            report.push_str(&format!("  Path: {}\n", violation.project_path));
+            report.push_str(&format!("  Severity: {:?}\n\n", violation.severity));
+        }
+
+        report.push_str(&format!(
+            "Total violations: {}\n\n",
+            doc_result.violations.len()
+        ));
+    } else {
+        report.push_str("✓ All documentation standards checks passed\n\n");
+    }
+
     // Summary
-    let total_violations = naming_result.violations.len() + config_result.violations.len();
+    let total_violations = naming_result.violations.len()
+        + config_result.violations.len()
+        + doc_result.violations.len();
     report.push_str("=== Summary ===\n");
     report.push_str(&format!("Total violations found: {}\n", total_violations));
 
@@ -118,6 +143,7 @@ fn audit(cmd: AuditCommand) -> Result<String, String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
