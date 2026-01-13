@@ -751,7 +751,6 @@ pub mod documentation {
     mod tests {
         use super::*;
 
-        #[allow(clippy::unwrap_used, clippy::expect_used)]
         #[test]
         fn test_has_project_name_section_found() {
             let content = "# my_project\n\nThis is the description.";
