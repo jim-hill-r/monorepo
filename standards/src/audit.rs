@@ -626,43 +626,35 @@ pub mod configuration {
 pub mod documentation {
     use super::*;
 
+    /// Helper function to check if a markdown header with specific text exists
+    ///
+    /// Searches for a markdown heading (# Header, ## Header, etc.) with the given text (case-insensitive)
+    fn has_markdown_header(content: &str, expected_text: &str) -> bool {
+        let expected_lower = expected_text.to_lowercase();
+
+        content.lines().any(|line| {
+            let trimmed = line.trim();
+            if trimmed.starts_with('#') {
+                let heading_text = trimmed.trim_start_matches('#').trim().to_lowercase();
+                heading_text == expected_lower
+            } else {
+                false
+            }
+        })
+    }
+
     /// Check if a section header exists in README content
     ///
     /// Looks for a header like "# {project_name}" at the start of a line
     fn has_project_name_section(content: &str, project_name: &str) -> bool {
-        // Look for heading with project name (case-insensitive)
-        let project_name_lower = project_name.to_lowercase();
-
-        for line in content.lines() {
-            let trimmed = line.trim();
-            // Check for markdown heading (# Header, ## Header, etc.)
-            if trimmed.starts_with('#') {
-                let heading_text = trimmed.trim_start_matches('#').trim().to_lowercase();
-                if heading_text == project_name_lower {
-                    return true;
-                }
-            }
-        }
-
-        false
+        has_markdown_header(content, project_name)
     }
 
     /// Check if a section header exists in CONTRIBUTING content
     ///
     /// Looks for a "Getting Started" section (case-insensitive)
     fn has_getting_started_section(content: &str) -> bool {
-        for line in content.lines() {
-            let trimmed = line.trim();
-            // Check for markdown heading
-            if trimmed.starts_with('#') {
-                let heading_text = trimmed.trim_start_matches('#').trim().to_lowercase();
-                if heading_text == "getting started" {
-                    return true;
-                }
-            }
-        }
-
-        false
+        has_markdown_header(content, "getting started")
     }
 
     /// Audit projects for documentation standards compliance
