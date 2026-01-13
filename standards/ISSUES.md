@@ -2,12 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Implement configuration standards audit
-Create auditing logic for configuration standards (standards/docs/configuration.md):
-- Check for royalty.toml presence
-- Validate configuration file format
-- Report missing configuration files
-
 ### TODO (agent-generated): Implement documentation standards audit
 Create auditing logic for documentation standards (standards/docs/documentation.md):
 - Check for README.md presence

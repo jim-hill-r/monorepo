@@ -1,5 +1,8 @@
 use clap::{Parser, Subcommand};
-use standards::{audit::naming, discovery};
+use standards::{
+    audit::{configuration, naming},
+    discovery,
+};
 use std::path::PathBuf;
 use std::process;
 
@@ -76,12 +79,40 @@ fn audit(cmd: AuditCommand) -> Result<String, String> {
         }
 
         report.push_str(&format!(
-            "Total violations: {}\n",
+            "Total violations: {}\n\n",
             naming_result.violations.len()
         ));
     } else {
-        report.push_str("✓ All naming standards checks passed\n");
+        report.push_str("✓ All naming standards checks passed\n\n");
     }
+
+    // Run configuration standards audit
+    let config_result = configuration::audit_configuration_standards(&projects);
+
+    if config_result.has_violations() {
+        report.push_str("=== Configuration Standards Violations ===\n\n");
+
+        for violation in &config_result.violations {
+            report.push_str(&format!(
+                "[{}] {} - {}\n",
+                violation.standard_id, violation.project_name, violation.message
+            ));
+            report.push_str(&format!("  Path: {}\n", violation.project_path));
+            report.push_str(&format!("  Severity: {:?}\n\n", violation.severity));
+        }
+
+        report.push_str(&format!(
+            "Total violations: {}\n\n",
+            config_result.violations.len()
+        ));
+    } else {
+        report.push_str("✓ All configuration standards checks passed\n\n");
+    }
+
+    // Summary
+    let total_violations = naming_result.violations.len() + config_result.violations.len();
+    report.push_str("=== Summary ===\n");
+    report.push_str(&format!("Total violations found: {}\n", total_violations));
 
     Ok(report)
 }
