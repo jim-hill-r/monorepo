@@ -417,6 +417,209 @@ pub mod naming {
     }
 }
 
+/// Configuration standards audit module
+pub mod configuration {
+    use super::*;
+
+    /// Audit projects for configuration standards compliance
+    ///
+    /// Checks:
+    /// - CFG-001: All projects MUST include a royalty.toml
+    pub fn audit_configuration_standards(projects: &[Project]) -> AuditResult {
+        let mut result = AuditResult::new();
+
+        for project in projects {
+            // CFG-001: Check for royalty.toml presence
+            let royalty_toml = project.path.join("royalty.toml");
+            if !royalty_toml.exists() {
+                result.add_violation(Violation::new(
+                    StandardType::Configuration,
+                    "CFG-001".to_string(),
+                    project.name.clone(),
+                    project.path.display().to_string(),
+                    Severity::Error,
+                    format!(
+                        "Project '{}' is missing royalty.toml. All projects MUST include a royalty.toml for use with the royalty project.",
+                        project.name
+                    ),
+                ));
+            } else {
+                // Validate that the file can be read (basic format check)
+                if let Err(e) = std::fs::read_to_string(&royalty_toml) {
+                    result.add_violation(Violation::new(
+                        StandardType::Configuration,
+                        "CFG-001".to_string(),
+                        project.name.clone(),
+                        project.path.display().to_string(),
+                        Severity::Error,
+                        format!(
+                            "Project '{}' has royalty.toml but it cannot be read: {}",
+                            project.name, e
+                        ),
+                    ));
+                }
+            }
+        }
+
+        result
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_audit_project_with_royalty_toml() {
+            // Create a temporary project with royalty.toml
+            let temp_dir = std::env::temp_dir().join("test_config_audit_with_royalty");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create royalty.toml
+            let royalty_toml = temp_dir.join("royalty.toml");
+            std::fs::write(&royalty_toml, "# Sample royalty.toml")
+                .expect("Failed to write royalty.toml");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_configuration_standards(&projects);
+
+            // Should have no violations
+            assert!(!result.has_violations());
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_project_without_royalty_toml() {
+            let temp_dir = std::env::temp_dir().join("test_config_audit_without_royalty");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_configuration_standards(&projects);
+
+            // Should have CFG-001 violation
+            assert!(result.has_violations());
+            assert_eq!(result.violations.len(), 1);
+
+            let violation = &result.violations[0];
+            assert_eq!(violation.standard_id, "CFG-001");
+            assert_eq!(violation.standard_type, StandardType::Configuration);
+            assert_eq!(violation.severity, Severity::Error);
+            assert!(violation.message.contains("royalty.toml"));
+            assert!(violation.message.contains("test_project"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_project_with_unreadable_royalty_toml() {
+            let temp_dir = std::env::temp_dir().join("test_config_audit_unreadable");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create royalty.toml
+            let royalty_toml = temp_dir.join("royalty.toml");
+            std::fs::write(&royalty_toml, "# Sample").expect("Failed to write royalty.toml");
+
+            // Make it unreadable on Unix systems
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut perms = std::fs::metadata(&royalty_toml)
+                    .expect("Failed to get metadata")
+                    .permissions();
+                perms.set_mode(0o000); // Remove all permissions
+                std::fs::set_permissions(&royalty_toml, perms).expect("Failed to set permissions");
+            }
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_configuration_standards(&projects);
+
+            // On Unix, should have a violation for unreadable file
+            // On Windows, this test may not work as expected due to different permission model
+            #[cfg(unix)]
+            {
+                assert!(result.has_violations());
+                assert_eq!(result.violations.len(), 1);
+                let violation = &result.violations[0];
+                assert!(violation.message.contains("cannot be read"));
+            }
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_multiple_projects_mixed() {
+            let temp_dir_root = std::env::temp_dir().join("test_config_audit_mixed");
+            std::fs::remove_dir_all(&temp_dir_root).ok();
+            std::fs::create_dir_all(&temp_dir_root).expect("Failed to create test directory");
+
+            // Project 1: has royalty.toml
+            let proj1_dir = temp_dir_root.join("project1");
+            std::fs::create_dir_all(&proj1_dir).expect("Failed to create project1");
+            std::fs::write(proj1_dir.join("royalty.toml"), "# Project 1")
+                .expect("Failed to write royalty.toml");
+
+            // Project 2: missing royalty.toml
+            let proj2_dir = temp_dir_root.join("project2");
+            std::fs::create_dir_all(&proj2_dir).expect("Failed to create project2");
+
+            let projects = vec![
+                Project::new(proj1_dir.clone(), ProjectType::Rust, "project1".to_string()),
+                Project::new(proj2_dir.clone(), ProjectType::Rust, "project2".to_string()),
+            ];
+
+            let result = audit_configuration_standards(&projects);
+
+            // Should have 1 violation (project2)
+            assert!(result.has_violations());
+            assert_eq!(result.violations.len(), 1);
+            assert_eq!(result.violations[0].project_name, "project2");
+
+            std::fs::remove_dir_all(&temp_dir_root).ok();
+        }
+
+        #[test]
+        fn test_audit_typescript_project() {
+            let temp_dir = std::env::temp_dir().join("test_config_audit_typescript");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // TypeScript projects also need royalty.toml
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::TypeScript,
+                "ts_project".to_string(),
+            )];
+
+            let result = audit_configuration_standards(&projects);
+
+            // Should have CFG-001 violation
+            assert!(result.has_violations());
+            assert_eq!(result.violations.len(), 1);
+            assert_eq!(result.violations[0].project_name, "ts_project");
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
