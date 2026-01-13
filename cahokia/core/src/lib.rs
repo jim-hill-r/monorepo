@@ -1,3 +1,79 @@
+/// Represents a person's sex in a family tree.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Sex {
+    /// Male sex
+    Male,
+    /// Female sex
+    Female,
+    /// Unknown or unspecified sex
+    Unknown,
+}
+
+/// Represents an individual person in a family tree.
+///
+/// A person has a unique identifier, name, sex, and optional birth/death dates.
+/// The dates are stored as optional strings to accommodate various date formats and
+/// partial date information (e.g., "1920", "June 1920", "1920-06-15").
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Person {
+    /// Unique identifier for this person
+    pub id: String,
+    /// Full name of the person
+    pub name: String,
+    /// Sex of the person
+    pub sex: Sex,
+    /// Birth date in string format (e.g., "1920-06-15" or "June 1920")
+    pub birth_date: Option<String>,
+    /// Death date in string format, None if person is still living or date is unknown
+    pub death_date: Option<String>,
+}
+
+impl Person {
+    /// Creates a new Person with the specified details.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for this person
+    /// * `name` - Full name of the person
+    /// * `sex` - Sex of the person
+    /// * `birth_date` - Optional birth date as a string
+    /// * `death_date` - Optional death date as a string
+    ///
+    /// # Example
+    /// ```
+    /// # use core::{Person, Sex};
+    /// #
+    /// let person = Person::new(
+    ///     "person1".to_string(),
+    ///     "John Doe".to_string(),
+    ///     Sex::Male,
+    ///     Some("1920-06-15".to_string()),
+    ///     None,
+    /// );
+    /// assert_eq!(person.name, "John Doe");
+    /// assert_eq!(person.sex, Sex::Male);
+    /// ```
+    pub fn new(
+        id: String,
+        name: String,
+        sex: Sex,
+        birth_date: Option<String>,
+        death_date: Option<String>,
+    ) -> Self {
+        Person {
+            id,
+            name,
+            sex,
+            birth_date,
+            death_date,
+        }
+    }
+
+    /// Returns true if the person is deceased (has a death date).
+    pub fn is_deceased(&self) -> bool {
+        self.death_date.is_some()
+    }
+}
+
 /// Represents significant events in a person's ancestry or genealogy.
 /// These events are used to build and track family trees and relationships.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -295,5 +371,148 @@ mod tests {
         };
         let cloned = event.clone();
         assert_eq!(event, cloned);
+    }
+
+    // Person struct tests
+    #[test]
+    fn test_person_new() {
+        let person = Person::new(
+            "person1".to_string(),
+            "John Doe".to_string(),
+            Sex::Male,
+            Some("1920-06-15".to_string()),
+            None,
+        );
+        assert_eq!(person.id, "person1");
+        assert_eq!(person.name, "John Doe");
+        assert_eq!(person.sex, Sex::Male);
+        assert_eq!(person.birth_date, Some("1920-06-15".to_string()));
+        assert_eq!(person.death_date, None);
+    }
+
+    #[test]
+    fn test_person_with_death_date() {
+        let person = Person::new(
+            "person2".to_string(),
+            "Jane Smith".to_string(),
+            Sex::Female,
+            Some("1925-03-10".to_string()),
+            Some("2010-12-25".to_string()),
+        );
+        assert_eq!(person.id, "person2");
+        assert_eq!(person.name, "Jane Smith");
+        assert_eq!(person.sex, Sex::Female);
+        assert_eq!(person.birth_date, Some("1925-03-10".to_string()));
+        assert_eq!(person.death_date, Some("2010-12-25".to_string()));
+        assert!(person.is_deceased());
+    }
+
+    #[test]
+    fn test_person_is_deceased() {
+        let living = Person::new(
+            "person3".to_string(),
+            "Bob Johnson".to_string(),
+            Sex::Male,
+            Some("1990-01-01".to_string()),
+            None,
+        );
+        assert!(!living.is_deceased());
+
+        let deceased = Person::new(
+            "person4".to_string(),
+            "Alice Brown".to_string(),
+            Sex::Female,
+            Some("1900-01-01".to_string()),
+            Some("1980-01-01".to_string()),
+        );
+        assert!(deceased.is_deceased());
+    }
+
+    #[test]
+    fn test_person_with_unknown_sex() {
+        let person = Person::new(
+            "person5".to_string(),
+            "Pat Wilson".to_string(),
+            Sex::Unknown,
+            Some("1995-05-15".to_string()),
+            None,
+        );
+        assert_eq!(person.sex, Sex::Unknown);
+    }
+
+    #[test]
+    fn test_person_with_no_dates() {
+        let person = Person::new(
+            "person6".to_string(),
+            "Unknown Ancestor".to_string(),
+            Sex::Unknown,
+            None,
+            None,
+        );
+        assert_eq!(person.birth_date, None);
+        assert_eq!(person.death_date, None);
+        assert!(!person.is_deceased());
+    }
+
+    #[test]
+    fn test_person_equality() {
+        let person1 = Person::new(
+            "person7".to_string(),
+            "Test Person".to_string(),
+            Sex::Male,
+            Some("1950-01-01".to_string()),
+            None,
+        );
+        let person2 = Person::new(
+            "person7".to_string(),
+            "Test Person".to_string(),
+            Sex::Male,
+            Some("1950-01-01".to_string()),
+            None,
+        );
+        assert_eq!(person1, person2);
+    }
+
+    #[test]
+    fn test_person_clone() {
+        let person = Person::new(
+            "person8".to_string(),
+            "Clone Test".to_string(),
+            Sex::Female,
+            Some("1960-06-15".to_string()),
+            Some("2020-03-20".to_string()),
+        );
+        let cloned = person.clone();
+        assert_eq!(person, cloned);
+    }
+
+    #[test]
+    fn test_person_with_partial_date() {
+        // Test that we can store partial date information
+        let person = Person::new(
+            "person9".to_string(),
+            "Historical Figure".to_string(),
+            Sex::Male,
+            Some("circa 1800".to_string()),
+            Some("1875".to_string()),
+        );
+        assert_eq!(person.birth_date, Some("circa 1800".to_string()));
+        assert_eq!(person.death_date, Some("1875".to_string()));
+    }
+
+    // Sex tests
+    #[test]
+    fn test_sex_equality() {
+        assert_eq!(Sex::Male, Sex::Male);
+        assert_eq!(Sex::Female, Sex::Female);
+        assert_eq!(Sex::Unknown, Sex::Unknown);
+        assert_ne!(Sex::Male, Sex::Female);
+    }
+
+    #[test]
+    fn test_sex_clone() {
+        let sex = Sex::Male;
+        let cloned = sex.clone();
+        assert_eq!(sex, cloned);
     }
 }

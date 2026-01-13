@@ -1,4 +1,3 @@
-TODO (agent-generated): Define Person struct to represent individuals in the family tree (id, name, gender, birth_date, death_date)
 TODO (agent-generated): Define Relationship enum to represent different types of relationships (Parent, Child, Spouse, Sibling)
 TODO (agent-generated): Define FamilyTree struct to store the graph of people and their relationships
 TODO (agent-generated): Implement method to add a person to the family tree from AncestryEvent::Birth
