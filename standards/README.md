@@ -44,6 +44,28 @@ The audit command will discover all projects in the specified path (both Rust an
 - Skips common build/dependency directories (`target`, `node_modules`, `.git`)
 - Extracts project names and metadata for audit reporting
 
+#### Add TODO Command
+
+Add TODO items to ISSUES.md files:
+
+```bash
+# Add a TODO to Priority Issues section (default)
+standards add-todo --todo "TODO: Implement feature X"
+
+# Add a TODO to a specific ISSUES.md file
+standards add-todo --file /path/to/ISSUES.md --todo "TODO: Fix bug Y"
+
+# Add a TODO to Backlog section
+standards add-todo --todo "TODO: Consider optimization Z" --backlog
+```
+
+The add-todo command will:
+- Create ISSUES.md if it doesn't exist
+- Parse existing ISSUES.md and preserve its structure
+- Check for duplicate TODOs (case-insensitive)
+- Add the TODO to the appropriate section (Priority Issues or Backlog)
+- Maintain proper formatting and section headers
+
 ### Get Help
 
 ```bash
@@ -52,6 +74,7 @@ standards --help
 
 # Show help for a specific command
 standards audit --help
+standards add-todo --help
 ```
 
 ## Standards Documentation
