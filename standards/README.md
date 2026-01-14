@@ -98,6 +98,28 @@ Discovered 35 project(s)
 Total violations: 2
 ```
 
+#### Documentation Standards Audit ✅
+The documentation standards audit is fully implemented and checks:
+- **DOC-001**: All projects MUST include a README.md (Error)
+- **DOC-002**: README.md should include a section with the project name and description (Warning)
+- **DOC-003**: All projects MUST include a CONTRIBUTING.md (Error)
+- **DOC-004**: CONTRIBUTING.md should include a "Getting Started" section describing how to install toolchain, build, and test (Warning)
+
+Example output:
+```
+=== Documentation Standards Violations ===
+
+[DOC-001] myproject - Project 'myproject' is missing README.md. All projects MUST include a README.md.
+  Path: ./myproject
+  Severity: Error
+
+[DOC-003] myproject - Project 'myproject' is missing CONTRIBUTING.md. All projects MUST include a CONTRIBUTING.md.
+  Path: ./myproject
+  Severity: Error
+
+Total violations: 2
+```
+
 ### Project Discovery
 - Discover all Rust projects (with `Cargo.toml`)
 - Discover all TypeScript/Node.js projects (with `package.json`)

@@ -2,13 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Implement documentation standards audit
-Create auditing logic for documentation standards (standards/docs/documentation.md):
-- Check for README.md presence
-- Validate README.md sections
-- Check for CONTRIBUTING.md presence
-- Validate CONTRIBUTING.md sections
-
 ### TODO (agent-generated): Implement ISSUES.md modification
 Add functionality to add TODOs to project ISSUES.md files:
 - Parse existing ISSUES.md files

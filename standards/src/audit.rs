@@ -219,6 +219,7 @@ pub mod naming {
     }
 
     #[cfg(test)]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     mod tests {
         use super::*;
         use std::path::PathBuf;
@@ -465,6 +466,7 @@ pub mod configuration {
     }
 
     #[cfg(test)]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
     mod tests {
         use super::*;
 
@@ -620,7 +622,409 @@ pub mod configuration {
     }
 }
 
+/// Documentation standards audit module
+pub mod documentation {
+    use super::*;
+
+    /// Helper function to check if a markdown header with specific text exists
+    ///
+    /// Searches for a markdown heading (# Header, ## Header, etc.) with the given text (case-insensitive)
+    fn has_markdown_header(content: &str, expected_text: &str) -> bool {
+        let expected_lower = expected_text.to_lowercase();
+
+        content.lines().any(|line| {
+            let trimmed = line.trim();
+            if trimmed.starts_with('#') {
+                let heading_text = trimmed.trim_start_matches('#').trim().to_lowercase();
+                heading_text == expected_lower
+            } else {
+                false
+            }
+        })
+    }
+
+    /// Check if a section header exists in README content
+    ///
+    /// Looks for a header like "# {project_name}" at the start of a line
+    fn has_project_name_section(content: &str, project_name: &str) -> bool {
+        has_markdown_header(content, project_name)
+    }
+
+    /// Check if a section header exists in CONTRIBUTING content
+    ///
+    /// Looks for a "Getting Started" section (case-insensitive)
+    fn has_getting_started_section(content: &str) -> bool {
+        has_markdown_header(content, "getting started")
+    }
+
+    /// Audit projects for documentation standards compliance
+    ///
+    /// Checks:
+    /// - DOC-001: All projects MUST include a README.md
+    /// - DOC-002: README.md should include a project name section with description
+    /// - DOC-003: All projects MUST include a CONTRIBUTING.md
+    /// - DOC-004: CONTRIBUTING.md should include a Getting Started section
+    pub fn audit_documentation_standards(projects: &[Project]) -> AuditResult {
+        let mut result = AuditResult::new();
+
+        for project in projects {
+            // DOC-001: Check for README.md presence
+            let readme_path = project.path.join("README.md");
+            if !readme_path.exists() {
+                result.add_violation(Violation::new(
+                    StandardType::Documentation,
+                    "DOC-001".to_string(),
+                    project.name.clone(),
+                    project.path.display().to_string(),
+                    Severity::Error,
+                    format!(
+                        "Project '{}' is missing README.md. All projects MUST include a README.md.",
+                        project.name
+                    ),
+                ));
+            } else {
+                // DOC-002: Validate README.md sections
+                if let Ok(readme_content) = std::fs::read_to_string(&readme_path) {
+                    if !has_project_name_section(&readme_content, &project.name) {
+                        result.add_violation(Violation::new(
+                            StandardType::Documentation,
+                            "DOC-002".to_string(),
+                            project.name.clone(),
+                            project.path.display().to_string(),
+                            Severity::Warning,
+                            format!(
+                                "Project '{}' README.md should include a section with the project name ({}) which includes a short description.",
+                                project.name, project.name
+                            ),
+                        ));
+                    }
+                }
+            }
+
+            // DOC-003: Check for CONTRIBUTING.md presence
+            let contributing_path = project.path.join("CONTRIBUTING.md");
+            if !contributing_path.exists() {
+                result.add_violation(Violation::new(
+                    StandardType::Documentation,
+                    "DOC-003".to_string(),
+                    project.name.clone(),
+                    project.path.display().to_string(),
+                    Severity::Error,
+                    format!(
+                        "Project '{}' is missing CONTRIBUTING.md. All projects MUST include a CONTRIBUTING.md.",
+                        project.name
+                    ),
+                ));
+            } else {
+                // DOC-004: Validate CONTRIBUTING.md sections
+                if let Ok(contributing_content) = std::fs::read_to_string(&contributing_path) {
+                    if !has_getting_started_section(&contributing_content) {
+                        result.add_violation(Violation::new(
+                            StandardType::Documentation,
+                            "DOC-004".to_string(),
+                            project.name.clone(),
+                            project.path.display().to_string(),
+                            Severity::Warning,
+                            format!(
+                                "Project '{}' CONTRIBUTING.md should include a 'Getting Started' section which describes how to install the project's toolchain, how to build, and how to test.",
+                                project.name
+                            ),
+                        ));
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
+    #[cfg(test)]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_has_project_name_section_found() {
+            let content = "# my_project\n\nThis is the description.";
+            assert!(has_project_name_section(content, "my_project"));
+        }
+
+        #[test]
+        fn test_has_project_name_section_case_insensitive() {
+            let content = "# My_Project\n\nDescription here.";
+            assert!(has_project_name_section(content, "my_project"));
+        }
+
+        #[test]
+        fn test_has_project_name_section_with_multiple_hashes() {
+            let content = "## my_project\n\nDescription.";
+            assert!(has_project_name_section(content, "my_project"));
+        }
+
+        #[test]
+        fn test_has_project_name_section_not_found() {
+            let content = "# Different Header\n\nSome text.";
+            assert!(!has_project_name_section(content, "my_project"));
+        }
+
+        #[test]
+        fn test_has_getting_started_section_found() {
+            let content = "# Contributing\n\n## Getting Started\n\nInstructions here.";
+            assert!(has_getting_started_section(content));
+        }
+
+        #[test]
+        fn test_has_getting_started_section_case_insensitive() {
+            let content = "# GETTING STARTED\n\nInstructions.";
+            assert!(has_getting_started_section(content));
+        }
+
+        #[test]
+        fn test_has_getting_started_section_not_found() {
+            let content = "# Different Section\n\nSome text.";
+            assert!(!has_getting_started_section(content));
+        }
+
+        #[test]
+        fn test_audit_project_with_all_docs() {
+            let temp_dir = std::env::temp_dir().join("test_doc_audit_with_all");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create README.md with proper section
+            std::fs::write(
+                temp_dir.join("README.md"),
+                "# test_project\n\nThis is a test project.",
+            )
+            .expect("Failed to write README.md");
+
+            // Create CONTRIBUTING.md with Getting Started section
+            std::fs::write(
+                temp_dir.join("CONTRIBUTING.md"),
+                "# Contributing\n\n## Getting Started\n\nBuild instructions here.",
+            )
+            .expect("Failed to write CONTRIBUTING.md");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have no violations
+            assert!(!result.has_violations());
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_project_without_readme() {
+            let temp_dir = std::env::temp_dir().join("test_doc_audit_no_readme");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have DOC-001 and DOC-003 violations
+            assert!(result.has_violations());
+
+            let doc_001 = result
+                .violations
+                .iter()
+                .find(|v| v.standard_id == "DOC-001");
+            assert!(doc_001.is_some());
+            assert_eq!(doc_001.unwrap().severity, Severity::Error);
+            assert!(doc_001.unwrap().message.contains("README.md"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_project_without_contributing() {
+            let temp_dir = std::env::temp_dir().join("test_doc_audit_no_contributing");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create README.md
+            std::fs::write(temp_dir.join("README.md"), "# test_project\n\nDescription.")
+                .expect("Failed to write README.md");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have DOC-003 violation
+            assert!(result.has_violations());
+
+            let doc_003 = result
+                .violations
+                .iter()
+                .find(|v| v.standard_id == "DOC-003");
+            assert!(doc_003.is_some());
+            assert_eq!(doc_003.unwrap().severity, Severity::Error);
+            assert!(doc_003.unwrap().message.contains("CONTRIBUTING.md"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_project_readme_missing_project_name_section() {
+            let temp_dir = std::env::temp_dir().join("test_doc_audit_readme_no_section");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create README.md without project name section
+            std::fs::write(
+                temp_dir.join("README.md"),
+                "# Wrong Header\n\nSome description.",
+            )
+            .expect("Failed to write README.md");
+
+            // Create CONTRIBUTING.md
+            std::fs::write(
+                temp_dir.join("CONTRIBUTING.md"),
+                "# Contributing\n\n## Getting Started\n\nInstructions.",
+            )
+            .expect("Failed to write CONTRIBUTING.md");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have DOC-002 violation (warning)
+            assert!(result.has_violations());
+
+            let doc_002 = result
+                .violations
+                .iter()
+                .find(|v| v.standard_id == "DOC-002");
+            assert!(doc_002.is_some());
+            assert_eq!(doc_002.unwrap().severity, Severity::Warning);
+            assert!(doc_002.unwrap().message.contains("project name"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_project_contributing_missing_getting_started() {
+            let temp_dir = std::env::temp_dir().join("test_doc_audit_no_getting_started");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // Create README.md
+            std::fs::write(temp_dir.join("README.md"), "# test_project\n\nDescription.")
+                .expect("Failed to write README.md");
+
+            // Create CONTRIBUTING.md without Getting Started section
+            std::fs::write(
+                temp_dir.join("CONTRIBUTING.md"),
+                "# Contributing\n\n## Other Section\n\nSome text.",
+            )
+            .expect("Failed to write CONTRIBUTING.md");
+
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have DOC-004 violation (warning)
+            assert!(result.has_violations());
+
+            let doc_004 = result
+                .violations
+                .iter()
+                .find(|v| v.standard_id == "DOC-004");
+            assert!(doc_004.is_some());
+            assert_eq!(doc_004.unwrap().severity, Severity::Warning);
+            assert!(doc_004.unwrap().message.contains("Getting Started"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_audit_multiple_projects_mixed_violations() {
+            let temp_dir_root = std::env::temp_dir().join("test_doc_audit_mixed");
+            std::fs::remove_dir_all(&temp_dir_root).ok();
+            std::fs::create_dir_all(&temp_dir_root).expect("Failed to create test directory");
+
+            // Project 1: Has all documentation
+            let proj1_dir = temp_dir_root.join("project1");
+            std::fs::create_dir_all(&proj1_dir).expect("Failed to create project1");
+            std::fs::write(proj1_dir.join("README.md"), "# project1\n\nDescription.")
+                .expect("Failed to write README.md");
+            std::fs::write(
+                proj1_dir.join("CONTRIBUTING.md"),
+                "# Getting Started\n\nInstructions.",
+            )
+            .expect("Failed to write CONTRIBUTING.md");
+
+            // Project 2: Missing documentation
+            let proj2_dir = temp_dir_root.join("project2");
+            std::fs::create_dir_all(&proj2_dir).expect("Failed to create project2");
+
+            let projects = vec![
+                Project::new(proj1_dir.clone(), ProjectType::Rust, "project1".to_string()),
+                Project::new(proj2_dir.clone(), ProjectType::Rust, "project2".to_string()),
+            ];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have violations only for project2
+            assert!(result.has_violations());
+            assert!(result
+                .violations
+                .iter()
+                .all(|v| v.project_name == "project2"));
+
+            std::fs::remove_dir_all(&temp_dir_root).ok();
+        }
+
+        #[test]
+        fn test_audit_typescript_project() {
+            let temp_dir = std::env::temp_dir().join("test_doc_audit_typescript");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create test directory");
+
+            // TypeScript projects also need documentation
+            let projects = vec![Project::new(
+                temp_dir.clone(),
+                ProjectType::TypeScript,
+                "ts_project".to_string(),
+            )];
+
+            let result = audit_documentation_standards(&projects);
+
+            // Should have DOC-001 and DOC-003 violations
+            assert!(result.has_violations());
+            assert!(result.violations.iter().any(|v| v.standard_id == "DOC-001"));
+            assert!(result.violations.iter().any(|v| v.standard_id == "DOC-003"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+    }
+}
+
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use std::process::Command;
 
 /// Test that the standards binary can be invoked and shows help
