@@ -16,6 +16,7 @@
 #![warn(missing_docs)]
 
 pub mod audit;
+pub mod issues;
 
 use std::fmt;
 
