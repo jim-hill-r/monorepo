@@ -97,15 +97,9 @@ impl IssuesFile {
     /// Add a TODO item to the Priority Issues section
     /// Returns true if the TODO was added, false if it already exists
     pub fn add_priority_todo(&mut self, todo: String) -> bool {
-        // Check if this TODO already exists (case-insensitive, trimmed comparison)
-        let normalized_todo = todo.trim().to_lowercase();
-
-        for existing in &self.priority_issues {
-            if existing.trim().to_lowercase() == normalized_todo {
-                return false; // TODO already exists
-            }
+        if self.has_duplicate(&self.priority_issues, &todo) {
+            return false;
         }
-
         self.priority_issues.push(todo);
         true
     }
@@ -113,17 +107,18 @@ impl IssuesFile {
     /// Add a TODO item to the Backlog section
     /// Returns true if the TODO was added, false if it already exists
     pub fn add_backlog_todo(&mut self, todo: String) -> bool {
-        // Check if this TODO already exists
-        let normalized_todo = todo.trim().to_lowercase();
-
-        for existing in &self.backlog {
-            if existing.trim().to_lowercase() == normalized_todo {
-                return false; // TODO already exists
-            }
+        if self.has_duplicate(&self.backlog, &todo) {
+            return false;
         }
-
         self.backlog.push(todo);
         true
+    }
+
+    /// Check if a TODO already exists in the given list (case-insensitive)
+    fn has_duplicate(&self, list: &[String], todo: &str) -> bool {
+        let normalized_todo = todo.trim().to_lowercase();
+        list.iter()
+            .any(|existing| existing.trim().to_lowercase() == normalized_todo)
     }
 
     /// Write the IssuesFile to disk, creating the file if it doesn't exist
