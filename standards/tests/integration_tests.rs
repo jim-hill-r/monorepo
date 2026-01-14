@@ -189,3 +189,98 @@ fn test_typescript_standard_exists() {
         "Standard must mention tsconfig.json"
     );
 }
+
+/// Integration test for ISSUES.md modification workflow
+#[test]
+fn test_issues_modification_workflow() {
+    use standards::issues::IssuesFile;
+
+    let temp_dir = std::env::temp_dir().join("test_issues_workflow");
+    fs::create_dir_all(&temp_dir).ok();
+
+    let issues_path = temp_dir.join("ISSUES.md");
+
+    // Step 1: Create a new ISSUES.md file
+    let mut issues = IssuesFile::new(issues_path.to_string_lossy().to_string());
+    issues.add_priority_todo("TODO: First priority task".to_string());
+    issues.add_backlog_todo("TODO: Future consideration".to_string());
+    issues.write().expect("Failed to write initial file");
+
+    assert!(issues_path.exists(), "ISSUES.md should be created");
+
+    // Step 2: Parse the file and verify contents
+    let parsed = IssuesFile::parse(&issues_path).expect("Failed to parse file");
+    assert_eq!(parsed.priority_issues.len(), 1);
+    assert_eq!(parsed.backlog.len(), 1);
+
+    // Step 3: Add another TODO and verify duplicate detection
+    let mut modified = IssuesFile::parse(&issues_path).expect("Failed to parse file");
+
+    // Try to add duplicate (should fail)
+    assert!(!modified.add_priority_todo("TODO: First priority task".to_string()));
+
+    // Add new TODO (should succeed)
+    assert!(modified.add_priority_todo("TODO: Second priority task".to_string()));
+    modified.write().expect("Failed to write modified file");
+
+    // Step 4: Verify the file has correct content after modification
+    let final_content = fs::read_to_string(&issues_path).expect("Failed to read final file");
+    assert!(final_content.contains("TODO: First priority task"));
+    assert!(final_content.contains("TODO: Second priority task"));
+    assert!(final_content.contains("TODO: Future consideration"));
+    assert!(final_content.contains("# Priority Issues"));
+    assert!(final_content.contains("# Backlog"));
+
+    // Step 5: Parse again and verify structure is maintained
+    let final_parsed = IssuesFile::parse(&issues_path).expect("Failed to parse final file");
+    assert_eq!(final_parsed.priority_issues.len(), 2);
+    assert_eq!(final_parsed.backlog.len(), 1);
+
+    fs::remove_dir_all(&temp_dir).ok();
+}
+
+/// Integration test for ISSUES.md with complex structure
+#[test]
+fn test_issues_modification_with_other_sections() {
+    use standards::issues::IssuesFile;
+
+    let temp_dir = std::env::temp_dir().join("test_issues_complex");
+    fs::create_dir_all(&temp_dir).ok();
+
+    let issues_path = temp_dir.join("ISSUES.md");
+
+    // Create a file with multiple sections
+    let initial_content = r#"# Priority Issues
+
+TODO: Existing priority item
+
+# Backlog
+
+TODO: Existing backlog item
+
+# Priority Projects
+- project_a
+- project_b
+
+# On Hold Projects
+- old_project
+"#;
+
+    fs::write(&issues_path, initial_content).expect("Failed to write initial file");
+
+    // Parse and modify
+    let mut issues = IssuesFile::parse(&issues_path).expect("Failed to parse file");
+    issues.add_priority_todo("TODO: New priority item".to_string());
+    issues.write().expect("Failed to write modified file");
+
+    // Verify other sections are preserved
+    let content = fs::read_to_string(&issues_path).expect("Failed to read file");
+    assert!(content.contains("TODO: Existing priority item"));
+    assert!(content.contains("TODO: New priority item"));
+    assert!(content.contains("# Priority Projects"));
+    assert!(content.contains("- project_a"));
+    assert!(content.contains("# On Hold Projects"));
+    assert!(content.contains("- old_project"));
+
+    fs::remove_dir_all(&temp_dir).ok();
+}
