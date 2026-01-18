@@ -75,8 +75,25 @@ pub struct AppState {
     pub nonce: Option<NonceWrapper>,
 }
 
+/// User information extracted from OIDC ID token claims.
+///
+/// This struct contains standard OIDC claims that are commonly available
+/// from identity providers. Fields are optional as not all providers
+/// return all claims.
+#[derive(Debug, Clone, PartialEq)]
 pub struct User {
-    pub name: String,
+    /// Subject identifier - unique identifier for the user (required)
+    pub sub: String,
+    /// Full name of the user
+    pub name: Option<String>,
+    /// Email address of the user
+    pub email: Option<String>,
+    /// Whether the email address has been verified
+    pub email_verified: Option<bool>,
+    /// URL of the user's profile picture
+    pub picture: Option<String>,
+    /// Preferred username (may be different from email)
+    pub preferred_username: Option<String>,
 }
 
 pub struct CsrfTokenState(
@@ -263,5 +280,75 @@ mod tests {
         let debug_str = format!("{:?}", config);
         assert!(debug_str.contains("test_client_id"));
         assert!(debug_str.contains("https://example.com"));
+    }
+
+    #[test]
+    fn test_user_with_all_fields() {
+        let user = User {
+            sub: "user123".to_string(),
+            name: Some("John Doe".to_string()),
+            email: Some("john@example.com".to_string()),
+            email_verified: Some(true),
+            picture: Some("https://example.com/photo.jpg".to_string()),
+            preferred_username: Some("johndoe".to_string()),
+        };
+        assert_eq!(user.sub, "user123");
+        assert_eq!(user.name, Some("John Doe".to_string()));
+        assert_eq!(user.email, Some("john@example.com".to_string()));
+        assert_eq!(user.email_verified, Some(true));
+        assert_eq!(
+            user.picture,
+            Some("https://example.com/photo.jpg".to_string())
+        );
+        assert_eq!(user.preferred_username, Some("johndoe".to_string()));
+    }
+
+    #[test]
+    fn test_user_with_minimal_fields() {
+        // Only sub is required
+        let user = User {
+            sub: "user456".to_string(),
+            name: None,
+            email: None,
+            email_verified: None,
+            picture: None,
+            preferred_username: None,
+        };
+        assert_eq!(user.sub, "user456");
+        assert!(user.name.is_none());
+        assert!(user.email.is_none());
+        assert!(user.email_verified.is_none());
+        assert!(user.picture.is_none());
+        assert!(user.preferred_username.is_none());
+    }
+
+    #[test]
+    fn test_user_can_be_cloned() {
+        let user = User {
+            sub: "user789".to_string(),
+            name: Some("Jane Doe".to_string()),
+            email: Some("jane@example.com".to_string()),
+            email_verified: Some(false),
+            picture: None,
+            preferred_username: None,
+        };
+        let cloned = user.clone();
+        assert_eq!(user, cloned);
+    }
+
+    #[test]
+    fn test_user_debug_format() {
+        let user = User {
+            sub: "user101".to_string(),
+            name: Some("Test User".to_string()),
+            email: Some("test@example.com".to_string()),
+            email_verified: Some(true),
+            picture: None,
+            preferred_username: Some("testuser".to_string()),
+        };
+        let debug_str = format!("{:?}", user);
+        assert!(debug_str.contains("user101"));
+        assert!(debug_str.contains("Test User"));
+        assert!(debug_str.contains("test@example.com"));
     }
 }

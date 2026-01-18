@@ -3,14 +3,14 @@ use oauth2::{
     RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use openidconnect::{
-    IssuerUrl, Nonce,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+    IdTokenClaims, IssuerUrl, Nonce,
+    core::{CoreAuthenticationFlow, CoreClient, CoreIdTokenClaims, CoreProviderMetadata},
 };
 use web_sys::UrlSearchParams;
 
 use crate::provider::{
     AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, CsrfTokenWrapper, NonceWrapper,
-    PkceVerifierWrapper, ProviderConfig,
+    PkceVerifierWrapper, ProviderConfig, User,
 };
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
@@ -20,6 +20,7 @@ pub struct WebAuthProvider {
     client: CoreClient,
     provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
+    id_token_claims: Option<CoreIdTokenClaims>,
 }
 
 impl WebAuthProvider {
@@ -33,17 +34,19 @@ impl WebAuthProvider {
             Self::create_client_from_explicit_endpoints(&config)?
         };
 
-        let access_token =
+        let (access_token, id_token_claims) =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
-                Some(handle_redirect(&client, authorization_code, state).await?)
+                let (token, claims) = handle_redirect(&client, authorization_code, state).await?;
+                (Some(token), claims)
             } else {
-                None
+                (None, None)
             };
 
         Ok(WebAuthProvider {
             client,
             provider_metadata,
             access_token,
+            id_token_claims,
         })
     }
 
@@ -135,6 +138,11 @@ impl AuthProvider for WebAuthProvider {
                 Nonce::new_random,
             )
             // Set the desired scopes.
+            // Note: "openid" scope is required for OIDC and to get ID token with user claims.
+            // "profile" and "email" scopes request additional standard claims.
+            .add_scope(Scope::new("openid".to_string()))
+            .add_scope(Scope::new("profile".to_string()))
+            .add_scope(Scope::new("email".to_string()))
             .add_scope(Scope::new("read".to_string()))
             .add_scope(Scope::new("write".to_string()))
             // Offline access results in refresh token being provided
@@ -162,7 +170,23 @@ impl AuthProvider for WebAuthProvider {
     }
 
     fn user(&self) -> Option<crate::provider::User> {
-        todo!()
+        // Extract user information from ID token claims
+        self.id_token_claims.as_ref().map(|claims| {
+            tracing::debug!("Extracting user information from ID token claims");
+
+            crate::provider::User {
+                sub: claims.subject().to_string(),
+                name: claims
+                    .name()
+                    .and_then(|n| n.get(None).map(|localized| localized.to_string())),
+                email: claims.email().map(|e| e.to_string()),
+                email_verified: claims.email_verified(),
+                picture: claims
+                    .picture()
+                    .and_then(|p| p.get(None).map(|localized| localized.to_string())),
+                preferred_username: claims.preferred_username().map(|u| u.to_string()),
+            }
+        })
     }
 
     fn access_token(&self) -> Option<crate::provider::AccessToken> {
@@ -224,7 +248,7 @@ async fn handle_redirect(
     client: &CoreClient,
     authorization_code: AuthorizationCode,
     state: CsrfTokenState,
-) -> Result<AccessToken, AuthError> {
+) -> Result<(AccessToken, Option<CoreIdTokenClaims>), AuthError> {
     tracing::info!("Processing OIDC redirect callback");
 
     let app_state = fetch_app_state_from_browser()?;
@@ -283,8 +307,8 @@ async fn handle_redirect(
 
     tracing::info!("Token exchange successful - access token and ID token obtained");
 
-    // Validate the ID token with nonce verification
-    if let Some(id_token) = token_result.id_token() {
+    // Validate the ID token with nonce verification and extract claims
+    let id_token_claims = if let Some(id_token) = token_result.id_token() {
         tracing::debug!("Validating ID token with nonce");
 
         // Convert wrapper back to openidconnect Nonce type
@@ -292,19 +316,22 @@ async fn handle_redirect(
 
         // Create ID token verifier and validate the token
         let id_token_verifier = client.id_token_verifier();
-        let _claims = id_token.claims(&id_token_verifier, &nonce).map_err(|e| {
+        let claims = id_token.claims(&id_token_verifier, &nonce).map_err(|e| {
             tracing::error!("ID token validation failed: {}", e);
             AuthError::Unknown
         })?;
 
-        tracing::info!("ID token validation successful - nonce verified");
+        tracing::info!("ID token validation successful - nonce verified, claims extracted");
+        Some(claims.clone())
     } else {
         tracing::warn!("No ID token returned by server - nonce validation skipped");
-    }
+        None
+    };
 
-    // Return the access token
-    Ok(AccessToken::new(
-        token_result.access_token().clone().into_secret(),
+    // Return both the access token and the ID token claims
+    Ok((
+        AccessToken::new(token_result.access_token().clone().into_secret()),
+        id_token_claims,
     ))
 }
 
