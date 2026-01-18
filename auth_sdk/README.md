@@ -52,6 +52,19 @@ ProviderConfig {
 
 When `issuer_url` is provided, the WebAuthProvider will automatically fetch the OIDC discovery document from `{issuer_url}/.well-known/openid-configuration` and use the discovered endpoints. The provider metadata is cached for the lifetime of the WebAuthProvider instance.
 
+## User Information
+
+The SDK automatically extracts user information from the ID token claims returned during authentication. The `user()` method on the `AuthProvider` trait returns a `User` struct containing standard OIDC claims:
+
+- `sub` (subject) - Unique user identifier (required)
+- `name` - Full name (optional)
+- `email` - Email address (optional)
+- `email_verified` - Email verification status (optional)
+- `picture` - Profile picture URL (optional)
+- `preferred_username` - Preferred username (optional)
+
+This approach eliminates the need for separate API calls to fetch user information, as recommended by OIDC best practices. The user information is extracted directly from the validated ID token claims during the authentication flow.
+
 ## Documentation
 
 - [OAuth2 vs OpenID Connect Research](docs/oauth2_vs_openidconnect_research.md) - Comprehensive comparison and recommendation for migrating to the `openidconnect` crate
