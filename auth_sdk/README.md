@@ -7,16 +7,26 @@ Currently targetting auth0 API's, but is designed to be as generic as possible i
 ## Platform Support
 
 This library is designed to support multiple platforms:
-- **Web (WebAssembly)**: Full OAuth2 implementation with browser-based authentication flow
+- **Web (WebAssembly)**: Full OpenID Connect implementation with browser-based authentication flow
 - **Desktop/Mobile**: Platform-specific implementations (coming soon)
 
 The web-specific dependencies (like `web-sys`) are only included when compiling for WebAssembly targets.
+
+## Security Features
+
+The auth SDK implements multiple layers of security for OAuth2/OIDC flows:
+
+- **PKCE (Proof Key for Code Exchange)**: Protects against authorization code interception attacks
+- **CSRF Protection**: Uses state parameter validation to prevent cross-site request forgery
+- **Nonce Validation**: Validates ID token nonce to prevent replay attacks (OIDC)
+- **ID Token Verification**: Automatically validates ID token signatures and claims (OIDC)
+- **SSRF Protection**: Disables HTTP redirects on non-wasm32 targets to prevent server-side request forgery
 
 ## Configuration
 
 The `ProviderConfig` struct supports two configuration modes:
 
-### OAuth2 Mode (Current)
+### OAuth2 Mode
 Explicitly specify authentication endpoints:
 ```rust
 ProviderConfig {
@@ -28,7 +38,7 @@ ProviderConfig {
 }
 ```
 
-### OIDC Discovery Mode (Implemented)
+### OIDC Discovery Mode (Recommended)
 Provide an issuer URL for automatic endpoint discovery:
 ```rust
 ProviderConfig {
