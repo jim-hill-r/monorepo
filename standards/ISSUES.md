@@ -2,26 +2,12 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Implement ISSUES.md modification
-Add functionality to add TODOs to project ISSUES.md files:
-- Parse existing ISSUES.md files
-- Add new TODO entries without duplicates
-- Maintain proper formatting
-- Create ISSUES.md if it doesn't exist
-
 ### TODO (agent-generated): Integrate audit results with ISSUES.md
 Connect the audit engine with ISSUES.md modification:
 - Convert audit findings to TODO entries
 - Write TODOs to appropriate project ISSUES.md files
 - Generate summary report
 - Add end-to-end integration tests
-
-### TODO (agent-generated): Add CLI documentation
-Document the standards CLI tool:
-- Add usage examples to standards/README.md
-- Document CLI commands and options
-- Add troubleshooting guide
-- Include example audit output
 
 # Other Issues
 ## TODO: Implement Linting Standards
