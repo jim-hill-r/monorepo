@@ -1053,8 +1053,7 @@ pub fn write_violations_to_issues(
 
     // Try to parse existing file, or create new one if it doesn't exist
     let mut issues_file = if issues_path.exists() {
-        IssuesFile::parse(issues_path)
-            .map_err(|e| format!("Failed to parse ISSUES.md: {}", e))?
+        IssuesFile::parse(issues_path).map_err(|e| format!("Failed to parse ISSUES.md: {}", e))?
     } else {
         IssuesFile::new(issues_path.to_string_lossy().to_string())
     };

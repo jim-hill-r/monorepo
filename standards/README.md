@@ -66,6 +66,34 @@ The add-todo command will:
 - Add the TODO to the appropriate section (Priority Issues or Backlog)
 - Maintain proper formatting and section headers
 
+#### Audit-to-Issues Command
+
+Audit projects and automatically write violations as TODO entries to their ISSUES.md files:
+
+```bash
+# Audit from current directory and write violations to ISSUES.md files
+standards audit-to-issues
+
+# Audit a specific path
+standards audit-to-issues --path /path/to/monorepo
+
+# Run without summary report
+standards audit-to-issues --summary false
+```
+
+The audit-to-issues command will:
+- Discover all projects in the specified path
+- Run all standards audits (naming, configuration, documentation)
+- Convert violations to TODO entries with the format: `TODO (agent-generated): [STANDARD-ID] project_name - message`
+- Write TODOs to each project's ISSUES.md file in the Priority Issues section
+- Skip duplicate TODOs (case-insensitive comparison)
+- Generate a summary report showing how many TODOs were written to each project
+
+This command is useful for:
+- Batch processing audit results across all projects
+- Automatically creating actionable TODO items from violations
+- Tracking standards compliance issues in each project's ISSUES.md
+
 ### Get Help
 
 ```bash
@@ -75,6 +103,7 @@ standards --help
 # Show help for a specific command
 standards audit --help
 standards add-todo --help
+standards audit-to-issues --help
 ```
 
 ## Standards Documentation

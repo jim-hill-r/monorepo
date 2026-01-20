@@ -228,10 +228,7 @@ fn audit_to_issues(cmd: AuditToIssuesCommand) -> Result<String, String> {
 
     // Build report header
     let mut report = String::new();
-    report.push_str(&format!(
-        "Audit-to-Issues for path: {}\n\n",
-        path
-    ));
+    report.push_str(&format!("Audit-to-Issues for path: {}\n\n", path));
     report.push_str(&format!("Discovered {} project(s)\n\n", projects.len()));
 
     // Run all audits
@@ -245,7 +242,10 @@ fn audit_to_issues(cmd: AuditToIssuesCommand) -> Result<String, String> {
     all_violations.extend(doc_result.violations.clone());
 
     if all_violations.is_empty() {
-        return Ok(format!("{}✓ No violations found. All projects comply with standards.", report));
+        return Ok(format!(
+            "{}✓ No violations found. All projects comply with standards.",
+            report
+        ));
     }
 
     // Group violations by project path
@@ -297,7 +297,10 @@ fn audit_to_issues(cmd: AuditToIssuesCommand) -> Result<String, String> {
 
     // Summary
     report.push_str("\n=== Summary ===\n");
-    report.push_str(&format!("Total violations found: {}\n", all_violations.len()));
+    report.push_str(&format!(
+        "Total violations found: {}\n",
+        all_violations.len()
+    ));
     report.push_str(&format!("Projects updated: {}\n", projects_updated));
     report.push_str(&format!("TODOs written: {}\n", total_written));
 
