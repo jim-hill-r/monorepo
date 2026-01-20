@@ -25,6 +25,8 @@ enum Commands {
     Audit(AuditCommand),
     /// Add a TODO item to an ISSUES.md file
     AddTodo(AddTodoCommand),
+    /// Audit projects and write violations to their ISSUES.md files
+    AuditToIssues(AuditToIssuesCommand),
 }
 
 #[derive(Parser)]
@@ -49,12 +51,24 @@ struct AddTodoCommand {
     backlog: bool,
 }
 
+#[derive(Parser)]
+struct AuditToIssuesCommand {
+    /// Path to the monorepo root (defaults to current directory)
+    #[arg(short, long)]
+    path: Option<String>,
+
+    /// Generate a summary report (defaults to true)
+    #[arg(short, long, default_value = "true")]
+    summary: bool,
+}
+
 fn main() {
     let args = Args::parse();
 
     let result = match args.cmd {
         Commands::Audit(audit_cmd) => audit(audit_cmd),
         Commands::AddTodo(add_todo_cmd) => add_todo(add_todo_cmd),
+        Commands::AuditToIssues(audit_to_issues_cmd) => audit_to_issues(audit_to_issues_cmd),
     };
 
     match result {
@@ -200,6 +214,94 @@ fn add_todo(cmd: AddTodoCommand) -> Result<String, String> {
         "Successfully added TODO to {} section in {}\nTODO: {}",
         section, file_path, cmd.todo
     ))
+}
+
+fn audit_to_issues(cmd: AuditToIssuesCommand) -> Result<String, String> {
+    use standards::audit;
+
+    let path = cmd.path.unwrap_or_else(|| ".".to_string());
+    let root_path = PathBuf::from(&path);
+
+    // Discover projects in the repository
+    let projects = discovery::discover_projects(&root_path)
+        .map_err(|e| format!("Failed to discover projects: {}", e))?;
+
+    // Build report header
+    let mut report = String::new();
+    report.push_str(&format!(
+        "Audit-to-Issues for path: {}\n\n",
+        path
+    ));
+    report.push_str(&format!("Discovered {} project(s)\n\n", projects.len()));
+
+    // Run all audits
+    let naming_result = naming::audit_naming_standards(&projects);
+    let config_result = configuration::audit_configuration_standards(&projects);
+    let doc_result = documentation::audit_documentation_standards(&projects);
+
+    // Combine all violations
+    let mut all_violations = naming_result.violations.clone();
+    all_violations.extend(config_result.violations.clone());
+    all_violations.extend(doc_result.violations.clone());
+
+    if all_violations.is_empty() {
+        return Ok(format!("{}✓ No violations found. All projects comply with standards.", report));
+    }
+
+    // Group violations by project path
+    let mut violations_by_project: std::collections::HashMap<String, Vec<&audit::Violation>> =
+        std::collections::HashMap::new();
+    for violation in &all_violations {
+        violations_by_project
+            .entry(violation.project_path.clone())
+            .or_default()
+            .push(violation);
+    }
+
+    // Write violations to each project's ISSUES.md
+    let mut total_written = 0;
+    let mut projects_updated = 0;
+
+    for (project_path, violations) in &violations_by_project {
+        let issues_path = PathBuf::from(project_path).join("ISSUES.md");
+
+        // Create audit result for this project
+        let mut project_result = audit::AuditResult::new();
+        for violation in violations {
+            project_result.add_violation((*violation).clone());
+        }
+
+        match audit::write_violations_to_issues(&project_result, &issues_path) {
+            Ok(count) => {
+                if count > 0 {
+                    total_written += count;
+                    projects_updated += 1;
+                    if cmd.summary {
+                        report.push_str(&format!(
+                            "✓ Wrote {} TODO(s) to {}\n",
+                            count,
+                            issues_path.display()
+                        ));
+                    }
+                }
+            }
+            Err(e) => {
+                report.push_str(&format!(
+                    "✗ Failed to write to {}: {}\n",
+                    issues_path.display(),
+                    e
+                ));
+            }
+        }
+    }
+
+    // Summary
+    report.push_str("\n=== Summary ===\n");
+    report.push_str(&format!("Total violations found: {}\n", all_violations.len()));
+    report.push_str(&format!("Projects updated: {}\n", projects_updated));
+    report.push_str(&format!("TODOs written: {}\n", total_written));
+
+    Ok(report)
 }
 
 #[cfg(test)]

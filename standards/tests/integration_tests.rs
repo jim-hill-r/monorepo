@@ -284,3 +284,115 @@ TODO: Existing backlog item
 
     fs::remove_dir_all(&temp_dir).ok();
 }
+
+// Tests for audit-to-ISSUES.md integration
+
+#[test]
+fn test_violation_to_todo_conversion() {
+    use standards::audit::Violation;
+    use standards::{Severity, StandardType};
+
+    let violation = Violation::new(
+        StandardType::Naming,
+        "NAM-001".to_string(),
+        "test_project".to_string(),
+        "/path/to/project".to_string(),
+        Severity::Error,
+        "Project name is not snake_case".to_string(),
+    );
+
+    let todo = standards::audit::violation_to_todo(&violation);
+    assert!(todo.contains("TODO (agent-generated)"));
+    assert!(todo.contains("NAM-001"));
+    assert!(todo.contains("test_project"));
+    assert!(todo.contains("not snake_case"));
+}
+
+#[test]
+fn test_write_violations_to_issues_file() {
+    use standards::audit::{write_violations_to_issues, AuditResult, Violation};
+    use standards::issues::IssuesFile;
+    use standards::{Severity, StandardType};
+    use std::fs;
+
+    // Create a temporary directory for testing
+    let temp_dir = PathBuf::from("target/test_write_violations");
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    let issues_path = temp_dir.join("ISSUES.md");
+
+    // Create some violations
+    let mut audit_result = AuditResult::new();
+    audit_result.add_violation(Violation::new(
+        StandardType::Naming,
+        "NAM-001".to_string(),
+        "test_project".to_string(),
+        temp_dir.to_string_lossy().to_string(),
+        Severity::Error,
+        "Project name is not snake_case".to_string(),
+    ));
+    audit_result.add_violation(Violation::new(
+        StandardType::Documentation,
+        "DOC-001".to_string(),
+        "test_project".to_string(),
+        temp_dir.to_string_lossy().to_string(),
+        Severity::Warning,
+        "Missing README.md".to_string(),
+    ));
+
+    // Write violations to ISSUES.md
+    let result = write_violations_to_issues(&audit_result, &issues_path);
+    assert!(result.is_ok());
+
+    // Verify the file was created and contains the TODOs
+    assert!(issues_path.exists());
+    let content = fs::read_to_string(&issues_path).unwrap();
+    assert!(content.contains("TODO (agent-generated)"));
+    assert!(content.contains("NAM-001"));
+    assert!(content.contains("DOC-001"));
+    assert!(content.contains("snake_case"));
+    assert!(content.contains("README.md"));
+
+    // Verify structure is preserved
+    let issues_file = IssuesFile::parse(&issues_path).unwrap();
+    assert!(!issues_file.priority_issues.is_empty());
+
+    fs::remove_dir_all(&temp_dir).ok();
+}
+
+#[test]
+fn test_write_violations_no_duplicates() {
+    use standards::audit::{write_violations_to_issues, AuditResult, Violation};
+    use standards::{Severity, StandardType};
+    use std::fs;
+
+    // Create a temporary directory for testing
+    let temp_dir = PathBuf::from("target/test_no_duplicates");
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    let issues_path = temp_dir.join("ISSUES.md");
+
+    // Create a violation
+    let mut audit_result = AuditResult::new();
+    audit_result.add_violation(Violation::new(
+        StandardType::Naming,
+        "NAM-001".to_string(),
+        "test_project".to_string(),
+        temp_dir.to_string_lossy().to_string(),
+        Severity::Error,
+        "Project name is not snake_case".to_string(),
+    ));
+
+    // Write violations first time
+    write_violations_to_issues(&audit_result, &issues_path).unwrap();
+
+    // Write same violations again - should not duplicate
+    write_violations_to_issues(&audit_result, &issues_path).unwrap();
+
+    // Verify no duplicates
+    let content = fs::read_to_string(&issues_path).unwrap();
+    let todo_count = content.matches("TODO (agent-generated)").count();
+    assert_eq!(todo_count, 1, "Should not create duplicate TODOs");
+
+    fs::remove_dir_all(&temp_dir).ok();
+}

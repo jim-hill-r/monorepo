@@ -1023,6 +1023,59 @@ pub mod documentation {
     }
 }
 
+/// Convert a violation to a TODO string for ISSUES.md
+///
+/// Creates a formatted TODO entry with the standard ID, project name, and message.
+/// The format is: `TODO (agent-generated): [STANDARD-ID] project_name - message`
+pub fn violation_to_todo(violation: &Violation) -> String {
+    format!(
+        "TODO (agent-generated): [{}] {} - {}",
+        violation.standard_id, violation.project_name, violation.message
+    )
+}
+
+/// Write audit violations to a project's ISSUES.md file
+///
+/// # Arguments
+///
+/// * `audit_result` - The audit results containing violations
+/// * `issues_path` - Path to the ISSUES.md file to write to
+///
+/// # Returns
+///
+/// * `Ok(usize)` - Number of TODOs written (excluding duplicates)
+/// * `Err(String)` - Error message if writing fails
+pub fn write_violations_to_issues(
+    audit_result: &AuditResult,
+    issues_path: &std::path::Path,
+) -> Result<usize, String> {
+    use crate::issues::IssuesFile;
+
+    // Try to parse existing file, or create new one if it doesn't exist
+    let mut issues_file = if issues_path.exists() {
+        IssuesFile::parse(issues_path)
+            .map_err(|e| format!("Failed to parse ISSUES.md: {}", e))?
+    } else {
+        IssuesFile::new(issues_path.to_string_lossy().to_string())
+    };
+
+    // Convert violations to TODOs and add them
+    let mut added_count = 0;
+    for violation in &audit_result.violations {
+        let todo = violation_to_todo(violation);
+        if issues_file.add_priority_todo(todo) {
+            added_count += 1;
+        }
+    }
+
+    // Write the updated file
+    issues_file
+        .write()
+        .map_err(|e| format!("Failed to write ISSUES.md: {}", e))?;
+
+    Ok(added_count)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
