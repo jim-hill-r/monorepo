@@ -67,7 +67,7 @@ impl WebAuthProvider {
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch OIDC discovery document: {}", e);
-                AuthError::Unknown
+                AuthError::OidcDiscoveryFailed(e.to_string())
             })?;
 
         tracing::debug!("Successfully fetched OIDC discovery document");
@@ -198,46 +198,70 @@ pub fn fetch_current_location_from_browser() -> Option<String> {
     None
 }
 fn fetch_code_and_state_from_browser() -> Result<(AuthorizationCode, CsrfTokenState), AuthError> {
-    let window = web_sys::window().ok_or(AuthError::Unknown)?;
-    let search = window.location().search().map_err(|_| AuthError::Unknown)?;
-    let params = UrlSearchParams::new_with_str(&search).map_err(|_| AuthError::Unknown)?;
-    let code = params.get("code").ok_or(AuthError::Unknown)?;
-    let state = params.get("state").ok_or(AuthError::Unknown)?;
+    let window = web_sys::window()
+        .ok_or_else(|| AuthError::BrowserApiError("window object not available".to_string()))?;
+    let search = window
+        .location()
+        .search()
+        .map_err(|_| AuthError::BrowserApiError("failed to get location search".to_string()))?;
+    let params = UrlSearchParams::new_with_str(&search)
+        .map_err(|_| AuthError::BrowserApiError("failed to parse URL search params".to_string()))?;
+    let code = params
+        .get("code")
+        .ok_or_else(|| AuthError::MissingUrlParameter("code".to_string()))?;
+    let state = params
+        .get("state")
+        .ok_or_else(|| AuthError::MissingUrlParameter("state".to_string()))?;
     Ok((AuthorizationCode::new(code), CsrfTokenState::new(state)))
 }
 
 fn redirect_browser(url: &str) -> Result<(), AuthError> {
-    let window = web_sys::window().ok_or(AuthError::Unknown)?;
+    let window = web_sys::window()
+        .ok_or_else(|| AuthError::BrowserApiError("window object not available".to_string()))?;
     window
         .open_with_url_and_target_and_features(url, "_self", "")
         .map(|_| ())
-        .map_err(|_| AuthError::Unknown)
+        .map_err(|_| AuthError::BrowserApiError("failed to redirect browser".to_string()))
 }
 
 fn store_app_state_in_browser(app_state: &AppState) -> Result<(), AuthError> {
-    let window = web_sys::window().ok_or(AuthError::Unknown)?;
+    let window = web_sys::window()
+        .ok_or_else(|| AuthError::BrowserApiError("window object not available".to_string()))?;
     let storage = window
         .session_storage()
-        .map_err(|_| AuthError::Unknown)?
-        .ok_or(AuthError::Unknown)?;
-    let json = serde_json::to_string(app_state).map_err(|_| AuthError::Unknown)?;
+        .map_err(|_| AuthError::BrowserApiError("failed to access session storage".to_string()))?
+        .ok_or_else(|| AuthError::BrowserApiError("session storage not available".to_string()))?;
+    let json = serde_json::to_string(app_state).map_err(|e| {
+        AuthError::SerializationError(format!("failed to serialize app state: {}", e))
+    })?;
     storage
         .set_item(DEFAULT_APP_STATE_STORAGE_KEY, &json)
-        .map_err(|_| AuthError::Unknown)
+        .map_err(|_| {
+            AuthError::BrowserApiError("failed to store app state in session storage".to_string())
+        })
 }
 
 fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
-    let window = web_sys::window().ok_or(AuthError::Unknown)?;
+    let window = web_sys::window()
+        .ok_or_else(|| AuthError::BrowserApiError("window object not available".to_string()))?;
     let storage = window
         .session_storage()
-        .map_err(|_| AuthError::Unknown)?
-        .ok_or(AuthError::Unknown)?;
+        .map_err(|_| AuthError::BrowserApiError("failed to access session storage".to_string()))?
+        .ok_or_else(|| AuthError::BrowserApiError("session storage not available".to_string()))?;
     let item = storage
         .get_item(DEFAULT_APP_STATE_STORAGE_KEY)
-        .map_err(|_| AuthError::Unknown)?;
+        .map_err(|_| {
+            AuthError::BrowserApiError(
+                "failed to retrieve app state from session storage".to_string(),
+            )
+        })?;
     match item {
-        Some(json) => serde_json::from_str(&json).map_err(|_| AuthError::Unknown),
-        _ => Err(AuthError::Unknown),
+        Some(json) => serde_json::from_str(&json).map_err(|e| {
+            AuthError::SerializationError(format!("failed to deserialize app state: {}", e))
+        }),
+        _ => Err(AuthError::MissingStateData(
+            "app state not found in session storage".to_string(),
+        )),
     }
 }
 
@@ -251,9 +275,15 @@ async fn handle_redirect(
     let app_state = fetch_app_state_from_browser()?;
     tracing::debug!("Retrieved authentication state from browser session storage");
 
-    let csrf_token_wrapper = app_state.csrf_token.ok_or(AuthError::Unknown)?;
-    let pkce_verifier_wrapper = app_state.pkce_verifier.ok_or(AuthError::Unknown)?;
-    let nonce_wrapper = app_state.nonce.ok_or(AuthError::Unknown)?;
+    let csrf_token_wrapper = app_state
+        .csrf_token
+        .ok_or_else(|| AuthError::MissingStateData("csrf_token".to_string()))?;
+    let pkce_verifier_wrapper = app_state
+        .pkce_verifier
+        .ok_or_else(|| AuthError::MissingStateData("pkce_verifier".to_string()))?;
+    let nonce_wrapper = app_state
+        .nonce
+        .ok_or_else(|| AuthError::MissingStateData("nonce".to_string()))?;
 
     // Security validations:
     // 1. CSRF token validation (state parameter) - protects against CSRF attacks
@@ -262,7 +292,7 @@ async fn handle_redirect(
     // 4. No redirect following in HTTP client - prevents SSRF attacks
     if state.0 != csrf_token_wrapper.0 {
         tracing::warn!("CSRF token validation failed - potential CSRF attack detected");
-        return Err(AuthError::Unknown);
+        return Err(AuthError::CsrfValidationFailed);
     }
 
     tracing::debug!("CSRF token validation successful");
@@ -280,7 +310,9 @@ async fn handle_redirect(
     let http_client = reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::none())
         .build()
-        .map_err(|_| AuthError::Unknown)?;
+        .map_err(|e| {
+            AuthError::HttpClientError(format!("failed to configure HTTP client: {}", e))
+        })?;
 
     #[cfg(target_arch = "wasm32")]
     let http_client = reqwest::Client::new();
@@ -315,7 +347,7 @@ async fn handle_redirect(
         let id_token_verifier = client.id_token_verifier();
         let claims = id_token.claims(&id_token_verifier, &nonce).map_err(|e| {
             tracing::error!("ID token validation failed: {}", e);
-            AuthError::Unknown
+            AuthError::IdTokenValidationFailed(e.to_string())
         })?;
 
         tracing::info!("ID token validation successful - nonce verified, claims extracted");

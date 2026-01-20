@@ -7,6 +7,22 @@ pub enum AuthError {
     ParseError,
     #[error("token exchange error: {0}")]
     TokenExchangeError(String),
+    #[error("browser API error: {0}")]
+    BrowserApiError(String),
+    #[error("missing URL parameter: {0}")]
+    MissingUrlParameter(String),
+    #[error("serialization error: {0}")]
+    SerializationError(String),
+    #[error("missing state data: {0}")]
+    MissingStateData(String),
+    #[error("CSRF token validation failed")]
+    CsrfValidationFailed,
+    #[error("OIDC discovery failed: {0}")]
+    OidcDiscoveryFailed(String),
+    #[error("ID token validation failed: {0}")]
+    IdTokenValidationFailed(String),
+    #[error("HTTP client configuration error: {0}")]
+    HttpClientError(String),
     #[error("unknown error")]
     Unknown,
 }
@@ -151,6 +167,81 @@ mod tests {
         let error = AuthError::TokenExchangeError("test error".to_string());
         let cloned = error.clone();
         assert_eq!(error.to_string(), cloned.to_string());
+    }
+
+    #[test]
+    fn test_auth_error_browser_api_error() {
+        let error = AuthError::BrowserApiError("window not available".to_string());
+        assert_eq!(error.to_string(), "browser API error: window not available");
+    }
+
+    #[test]
+    fn test_auth_error_missing_url_parameter() {
+        let error = AuthError::MissingUrlParameter("code".to_string());
+        assert_eq!(error.to_string(), "missing URL parameter: code");
+    }
+
+    #[test]
+    fn test_auth_error_serialization_error() {
+        let error = AuthError::SerializationError("JSON parse failed".to_string());
+        assert_eq!(error.to_string(), "serialization error: JSON parse failed");
+    }
+
+    #[test]
+    fn test_auth_error_missing_state_data() {
+        let error = AuthError::MissingStateData("csrf_token".to_string());
+        assert_eq!(error.to_string(), "missing state data: csrf_token");
+    }
+
+    #[test]
+    fn test_auth_error_csrf_validation_failed() {
+        let error = AuthError::CsrfValidationFailed;
+        assert_eq!(error.to_string(), "CSRF token validation failed");
+    }
+
+    #[test]
+    fn test_auth_error_oidc_discovery_failed() {
+        let error = AuthError::OidcDiscoveryFailed("network timeout".to_string());
+        assert_eq!(error.to_string(), "OIDC discovery failed: network timeout");
+    }
+
+    #[test]
+    fn test_auth_error_id_token_validation_failed() {
+        let error = AuthError::IdTokenValidationFailed("signature invalid".to_string());
+        assert_eq!(
+            error.to_string(),
+            "ID token validation failed: signature invalid"
+        );
+    }
+
+    #[test]
+    fn test_auth_error_http_client_error() {
+        let error = AuthError::HttpClientError("failed to configure redirect policy".to_string());
+        assert_eq!(
+            error.to_string(),
+            "HTTP client configuration error: failed to configure redirect policy"
+        );
+    }
+
+    #[test]
+    fn test_all_auth_errors_are_cloneable() {
+        let errors = vec![
+            AuthError::ParseError,
+            AuthError::TokenExchangeError("test".to_string()),
+            AuthError::BrowserApiError("test".to_string()),
+            AuthError::MissingUrlParameter("test".to_string()),
+            AuthError::SerializationError("test".to_string()),
+            AuthError::MissingStateData("test".to_string()),
+            AuthError::CsrfValidationFailed,
+            AuthError::OidcDiscoveryFailed("test".to_string()),
+            AuthError::IdTokenValidationFailed("test".to_string()),
+            AuthError::HttpClientError("test".to_string()),
+            AuthError::Unknown,
+        ];
+        for error in errors {
+            let cloned = error.clone();
+            assert_eq!(error.to_string(), cloned.to_string());
+        }
     }
 
     #[test]
