@@ -1,9 +1,6 @@
-use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
-    RedirectUrl, Scope, TokenResponse, TokenUrl,
-};
 use openidconnect::{
-    IdTokenClaims, IssuerUrl, Nonce,
+    AuthUrl, AuthorizationCode, ClientId, CsrfToken, IdTokenClaims, IssuerUrl, Nonce,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
     core::{CoreAuthenticationFlow, CoreClient, CoreIdTokenClaims, CoreProviderMetadata},
 };
 use web_sys::UrlSearchParams;
