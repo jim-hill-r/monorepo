@@ -194,6 +194,57 @@ impl AncestryEvent {
     }
 }
 
+/// Represents different types of relationships between people in a family tree.
+///
+/// This enum defines the primary relationship types that connect individuals
+/// in a genealogical context. Each variant represents a directional relationship
+/// from one person to another.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Relationship {
+    /// One person is a parent of another person.
+    /// This relationship is directional: from parent to child.
+    Parent,
+    /// One person is a child of another person.
+    /// This relationship is directional: from child to parent.
+    Child,
+    /// Two people are married or in a spousal relationship.
+    /// This relationship is typically bidirectional.
+    Spouse,
+    /// Two people are siblings (share at least one parent).
+    /// This relationship is typically bidirectional.
+    Sibling,
+}
+
+impl Relationship {
+    /// Returns a human-readable description of the relationship type.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Relationship::Parent => "Parent",
+            Relationship::Child => "Child",
+            Relationship::Spouse => "Spouse",
+            Relationship::Sibling => "Sibling",
+        }
+    }
+
+    /// Returns the inverse relationship.
+    /// For example, the inverse of Parent is Child, and vice versa.
+    /// Spouse and Sibling are their own inverses (symmetric relationships).
+    pub fn inverse(&self) -> Relationship {
+        match self {
+            Relationship::Parent => Relationship::Child,
+            Relationship::Child => Relationship::Parent,
+            Relationship::Spouse => Relationship::Spouse,
+            Relationship::Sibling => Relationship::Sibling,
+        }
+    }
+
+    /// Returns true if the relationship is symmetric (bidirectional).
+    /// Spouse and Sibling relationships are symmetric.
+    pub fn is_symmetric(&self) -> bool {
+        matches!(self, Relationship::Spouse | Relationship::Sibling)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -514,5 +565,55 @@ mod tests {
         let sex = Sex::Male;
         let cloned = sex.clone();
         assert_eq!(sex, cloned);
+    }
+
+    // Relationship tests
+    #[test]
+    fn test_relationship_description() {
+        assert_eq!(Relationship::Parent.description(), "Parent");
+        assert_eq!(Relationship::Child.description(), "Child");
+        assert_eq!(Relationship::Spouse.description(), "Spouse");
+        assert_eq!(Relationship::Sibling.description(), "Sibling");
+    }
+
+    #[test]
+    fn test_relationship_inverse() {
+        assert_eq!(Relationship::Parent.inverse(), Relationship::Child);
+        assert_eq!(Relationship::Child.inverse(), Relationship::Parent);
+        assert_eq!(Relationship::Spouse.inverse(), Relationship::Spouse);
+        assert_eq!(Relationship::Sibling.inverse(), Relationship::Sibling);
+    }
+
+    #[test]
+    fn test_relationship_is_symmetric() {
+        assert!(!Relationship::Parent.is_symmetric());
+        assert!(!Relationship::Child.is_symmetric());
+        assert!(Relationship::Spouse.is_symmetric());
+        assert!(Relationship::Sibling.is_symmetric());
+    }
+
+    #[test]
+    fn test_relationship_equality() {
+        assert_eq!(Relationship::Parent, Relationship::Parent);
+        assert_eq!(Relationship::Child, Relationship::Child);
+        assert_eq!(Relationship::Spouse, Relationship::Spouse);
+        assert_eq!(Relationship::Sibling, Relationship::Sibling);
+        assert_ne!(Relationship::Parent, Relationship::Child);
+        assert_ne!(Relationship::Spouse, Relationship::Sibling);
+    }
+
+    #[test]
+    fn test_relationship_clone() {
+        let rel = Relationship::Parent;
+        let cloned = rel.clone();
+        assert_eq!(rel, cloned);
+    }
+
+    #[test]
+    fn test_relationship_debug() {
+        // Ensure Debug trait is working
+        let rel = Relationship::Spouse;
+        let debug_str = format!("{:?}", rel);
+        assert!(debug_str.contains("Spouse"));
     }
 }
