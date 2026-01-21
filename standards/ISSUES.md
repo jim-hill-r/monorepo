@@ -2,13 +2,6 @@
 
 ## Standards CLI Implementation (Broken Down)
 
-### TODO (agent-generated): Integrate audit results with ISSUES.md
-Connect the audit engine with ISSUES.md modification:
-- Convert audit findings to TODO entries
-- Write TODOs to appropriate project ISSUES.md files
-- Generate summary report
-- Add end-to-end integration tests
-
 # Other Issues
 ## TODO: Implement Linting Standards
 Define and enforce linting standards across all Rust projects in the monorepo. Consider:
