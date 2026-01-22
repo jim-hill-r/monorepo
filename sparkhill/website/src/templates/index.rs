@@ -4,7 +4,7 @@ use sycamore::prelude::*;
 fn index_page<G: Html>(cx: Scope) -> View<G> {
     view! { cx,
         div(class="content") {
-            h1() { "TODO" }
+            h1() { "Everyone deserves to read ...we help get them there." }
         }
         div(class="footer") {
 
