@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["cloudflare", "core", "desktop", "mobile", "ui", "web"]
-default-members = ["core", "ui", "web"]
+default-members = ["core", "ui"]
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
