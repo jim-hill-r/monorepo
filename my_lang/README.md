@@ -4,7 +4,25 @@ A programming language implementation that will eventually compile to LLVM.
 
 ## Overview
 
-This project provides the foundation for building a new programming language. The lexer has been implemented with support for basic token types.
+This project provides the foundation for building a new programming language with a focus on pure functions and controlled side effects.
+
+## Language Semantics
+
+### Keywords
+
+- **`function`**: Defines a pure function
+  - Single segment only
+  - Must return a single value
+  - Cannot be void
+  - No side effects allowed
+  
+- **`input`**: Allows side effects (input operations)
+  - Does NOT allow return statements
+  - Used for reading external state
+  
+- **`output`**: Allows side effects (output operations)
+  - DOES allow return statements
+  - Used for writing external state
 
 ## Architecture
 
@@ -19,10 +37,10 @@ The language implementation consists of three main phases:
 The lexer supports the following token types:
 
 ### Keywords
-- `let`, `fn`, `if`, `else`, `return`, `while`, `for`, `true`, `false`
+- `function`, `input`, `output`
 
 ### Identifiers
-- Variable and function names (starting with letter or underscore)
+- Function and variable names (starting with letter or underscore)
 - Examples: `x`, `foo`, `_private`, `my_var`
 
 ### Literals
@@ -44,7 +62,7 @@ The lexer supports the following token types:
 ```rust
 use my_lang::lexer::{Lexer, Token};
 
-let input = "let x = 42;".to_string();
+let input = "function add(a, b) { a + b }".to_string();
 let mut lexer = Lexer::new(input);
 
 // Tokenize the input
@@ -58,7 +76,7 @@ while let token = lexer.next_token() {
 
 ## Current Status
 
-- ✅ Lexer: Fully implemented with comprehensive tests
+- ✅ Lexer: Fully implemented with correct language keywords
 - ⏳ Parser: Placeholder implementation
 - ⏳ Code Generator: Not yet implemented
 

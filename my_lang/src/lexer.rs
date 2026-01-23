@@ -6,8 +6,11 @@
 //! ## Token Types
 //!
 //! The lexer supports the following token types:
-//! - **Keywords**: `let`, `fn`, `if`, `else`, `return`, `while`, `for`, `true`, `false`
-//! - **Identifiers**: Variable and function names (starting with letter or underscore)
+//! - **Keywords**: `function`, `input`, `output`
+//!   - `function`: Defines a pure function (single segment, must return a single value, cannot be void)
+//!   - `input`: Allows side effects, does not allow return
+//!   - `output`: Allows side effects, allows return
+//! - **Identifiers**: Function and variable names (starting with letter or underscore)
 //! - **Literals**: Integer and string literals
 //! - **Operators**: `+`, `-`, `*`, `/`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`
 //! - **Delimiters**: `(`, `)`, `{`, `}`, `,`, `;`
@@ -16,15 +19,9 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     // Keywords
-    Let,
-    Fn,
-    If,
-    Else,
-    Return,
-    While,
-    For,
-    True,
-    False,
+    Function,
+    Input,
+    Output,
 
     // Identifiers and literals
     Identifier(String),
@@ -204,15 +201,9 @@ impl Lexer {
 
         // Check if it's a keyword
         match identifier.as_str() {
-            "let" => Token::Let,
-            "fn" => Token::Fn,
-            "if" => Token::If,
-            "else" => Token::Else,
-            "return" => Token::Return,
-            "while" => Token::While,
-            "for" => Token::For,
-            "true" => Token::True,
-            "false" => Token::False,
+            "function" => Token::Function,
+            "input" => Token::Input,
+            "output" => Token::Output,
             _ => Token::Identifier(identifier),
         }
     }
@@ -305,21 +296,10 @@ mod tests {
 
     #[test]
     fn test_keywords() {
-        let input = "let fn if else return while for true false".to_string();
+        let input = "function input output".to_string();
         let mut lexer = Lexer::new(input);
 
-        let expected = vec![
-            Token::Let,
-            Token::Fn,
-            Token::If,
-            Token::Else,
-            Token::Return,
-            Token::While,
-            Token::For,
-            Token::True,
-            Token::False,
-            Token::Eof,
-        ];
+        let expected = vec![Token::Function, Token::Input, Token::Output, Token::Eof];
 
         for expected_token in expected {
             assert_eq!(lexer.next_token(), expected_token);
@@ -382,23 +362,17 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_program() {
+    fn test_simple_function() {
         let input = r#"
-            let x = 42;
-            fn add(a, b) {
-                return a + b;
+            function add(a, b) {
+                a + b
             }
         "#
         .to_string();
         let mut lexer = Lexer::new(input);
 
         let expected = vec![
-            Token::Let,
-            Token::Identifier("x".to_string()),
-            Token::Assign,
-            Token::Integer(42),
-            Token::Semicolon,
-            Token::Fn,
+            Token::Function,
             Token::Identifier("add".to_string()),
             Token::LeftParen,
             Token::Identifier("a".to_string()),
@@ -406,11 +380,9 @@ mod tests {
             Token::Identifier("b".to_string()),
             Token::RightParen,
             Token::LeftBrace,
-            Token::Return,
             Token::Identifier("a".to_string()),
             Token::Plus,
             Token::Identifier("b".to_string()),
-            Token::Semicolon,
             Token::RightBrace,
             Token::Eof,
         ];
@@ -421,26 +393,15 @@ mod tests {
     }
 
     #[test]
-    fn test_if_statement() {
-        let input = "if x < 10 { return true; } else { return false; }".to_string();
+    fn test_input_output_keywords() {
+        let input = "input x output y".to_string();
         let mut lexer = Lexer::new(input);
 
         let expected = vec![
-            Token::If,
+            Token::Input,
             Token::Identifier("x".to_string()),
-            Token::LessThan,
-            Token::Integer(10),
-            Token::LeftBrace,
-            Token::Return,
-            Token::True,
-            Token::Semicolon,
-            Token::RightBrace,
-            Token::Else,
-            Token::LeftBrace,
-            Token::Return,
-            Token::False,
-            Token::Semicolon,
-            Token::RightBrace,
+            Token::Output,
+            Token::Identifier("y".to_string()),
             Token::Eof,
         ];
 
@@ -465,11 +426,11 @@ mod tests {
 
     #[test]
     fn test_whitespace_handling() {
-        let input = "  let   x  =  42  ;  ".to_string();
+        let input = "  function   x  =  42  ;  ".to_string();
         let mut lexer = Lexer::new(input);
 
         let expected = vec![
-            Token::Let,
+            Token::Function,
             Token::Identifier("x".to_string()),
             Token::Assign,
             Token::Integer(42),
