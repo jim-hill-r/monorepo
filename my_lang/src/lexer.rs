@@ -59,19 +59,23 @@ pub enum Token {
 
 /// Lexer structure that tokenizes source code
 pub struct Lexer {
-    input: String,
+    input: Vec<char>,
     position: usize,
-    current_char: Option<char>,
 }
 
 impl Lexer {
     /// Create a new lexer for the given input
     pub fn new(input: String) -> Self {
-        let current_char = input.chars().next();
-        Self {
-            input,
-            position: 0,
-            current_char,
+        let input = input.chars().collect();
+        Self { input, position: 0 }
+    }
+
+    /// Get the current character
+    fn current_char(&self) -> Option<char> {
+        if self.position < self.input.len() {
+            Some(self.input[self.position])
+        } else {
+            None
         }
     }
 
@@ -79,7 +83,7 @@ impl Lexer {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        match self.current_char {
+        match self.current_char() {
             None => Token::Eof,
             Some(ch) => match ch {
                 '+' => {
@@ -100,7 +104,7 @@ impl Lexer {
                 }
                 '=' => {
                     self.advance();
-                    if self.current_char == Some('=') {
+                    if self.current_char() == Some('=') {
                         self.advance();
                         Token::Equal
                     } else {
@@ -109,7 +113,7 @@ impl Lexer {
                 }
                 '!' => {
                     self.advance();
-                    if self.current_char == Some('=') {
+                    if self.current_char() == Some('=') {
                         self.advance();
                         Token::NotEqual
                     } else {
@@ -118,7 +122,7 @@ impl Lexer {
                 }
                 '<' => {
                     self.advance();
-                    if self.current_char == Some('=') {
+                    if self.current_char() == Some('=') {
                         self.advance();
                         Token::LessThanEqual
                     } else {
@@ -127,7 +131,7 @@ impl Lexer {
                 }
                 '>' => {
                     self.advance();
-                    if self.current_char == Some('=') {
+                    if self.current_char() == Some('=') {
                         self.advance();
                         Token::GreaterThanEqual
                     } else {
@@ -173,12 +177,11 @@ impl Lexer {
     /// Advance to the next character
     fn advance(&mut self) {
         self.position += 1;
-        self.current_char = self.input.chars().nth(self.position);
     }
 
     /// Skip whitespace characters
     fn skip_whitespace(&mut self) {
-        while let Some(ch) = self.current_char {
+        while let Some(ch) = self.current_char() {
             if ch.is_whitespace() {
                 self.advance();
             } else {
@@ -190,14 +193,14 @@ impl Lexer {
     /// Read an identifier or keyword
     fn read_identifier(&mut self) -> Token {
         let start = self.position;
-        while let Some(ch) = self.current_char {
+        while let Some(ch) = self.current_char() {
             if ch.is_ascii_alphanumeric() || ch == '_' {
                 self.advance();
             } else {
                 break;
             }
         }
-        let identifier = self.input[start..self.position].to_string();
+        let identifier: String = self.input[start..self.position].iter().collect();
 
         // Check if it's a keyword
         match identifier.as_str() {
@@ -217,31 +220,37 @@ impl Lexer {
     /// Read an integer literal
     fn read_integer(&mut self) -> Token {
         let start = self.position;
-        while let Some(ch) = self.current_char {
+        while let Some(ch) = self.current_char() {
             if ch.is_ascii_digit() {
                 self.advance();
             } else {
                 break;
             }
         }
-        let number_str = &self.input[start..self.position];
-        let number = number_str.parse::<i64>().unwrap_or(0);
-        Token::Integer(number)
+        let number_str: String = self.input[start..self.position].iter().collect();
+        match number_str.parse::<i64>() {
+            Ok(number) => Token::Integer(number),
+            Err(_) => {
+                // Return Illegal token for invalid integers (e.g., overflow)
+                Token::Illegal('0')
+            }
+        }
     }
 
     /// Read a string literal
     fn read_string(&mut self) -> Token {
         self.advance(); // Skip opening quote
         let start = self.position;
-        while let Some(ch) = self.current_char {
+        while let Some(ch) = self.current_char() {
             if ch == '"' {
-                break;
+                let string: String = self.input[start..self.position].iter().collect();
+                self.advance(); // Skip closing quote
+                return Token::StringLiteral(string);
             }
             self.advance();
         }
-        let string = self.input[start..self.position].to_string();
-        self.advance(); // Skip closing quote
-        Token::StringLiteral(string)
+        // Unterminated string - return illegal token
+        Token::Illegal('"')
     }
 }
 
@@ -471,5 +480,20 @@ mod tests {
         for expected_token in expected {
             assert_eq!(lexer.next_token(), expected_token);
         }
+    }
+
+    #[test]
+    fn test_unterminated_string() {
+        let input = r#""unterminated"#.to_string();
+        let mut lexer = Lexer::new(input);
+        assert_eq!(lexer.next_token(), Token::Illegal('"'));
+    }
+
+    #[test]
+    fn test_integer_overflow() {
+        // Test with a number larger than i64::MAX
+        let input = "99999999999999999999999999999".to_string();
+        let mut lexer = Lexer::new(input);
+        assert_eq!(lexer.next_token(), Token::Illegal('0'));
     }
 }
