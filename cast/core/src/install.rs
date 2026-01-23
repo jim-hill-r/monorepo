@@ -1237,7 +1237,7 @@ fn install_llvm(dry_run: bool) -> Result<InstallResult, InstallError> {
     let needs_sudo = cfg!(target_os = "linux");
 
     // On Linux, run apt-get update first
-    if cfg!(target_os = "linux") && needs_sudo {
+    if cfg!(target_os = "linux") {
         println!("Updating package index...");
         let update_output = Command::new("sudo")
             .args(["apt-get", "update"])
