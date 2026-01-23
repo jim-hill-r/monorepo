@@ -82,6 +82,35 @@ while let token = lexer.next_token() {
 
 ## Getting Started
 
+### Prerequisites
+
+This project requires LLVM to be installed on your system for code generation support.
+
+#### Linux (Ubuntu/Debian)
+
+```bash
+# Install LLVM 18 development libraries
+sudo apt-get update
+sudo apt-get install llvm-18-dev libpolly-18-dev
+```
+
+#### macOS
+
+```bash
+# Install LLVM via Homebrew
+brew install llvm@18
+
+# Set environment variable for inkwell to find LLVM
+export LLVM_SYS_180_PREFIX=$(brew --prefix llvm@18)
+```
+
+#### Verifying Installation
+
+```bash
+# Check LLVM installation
+llvm-config-18 --version
+```
+
 ### Building
 
 ```bash
