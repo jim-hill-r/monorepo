@@ -86,21 +86,27 @@ while let token = lexer.next_token() {
 
 This project requires LLVM to be installed on your system for code generation support.
 
-#### Linux (Ubuntu/Debian)
+Use Cast to automatically install all required tools including LLVM 18:
 
 ```bash
-# Install LLVM 18 development libraries
+cast install
+```
+
+Cast will automatically detect that this is a programming language project and install LLVM along with other required tools.
+
+#### Manual Installation (Alternative)
+
+If you prefer to install LLVM manually:
+
+**Linux (Ubuntu/Debian)**:
+```bash
 sudo apt-get update
 sudo apt-get install llvm-18-dev libpolly-18-dev
 ```
 
-#### macOS
-
+**macOS**:
 ```bash
-# Install LLVM via Homebrew
 brew install llvm@18
-
-# Set environment variable for inkwell to find LLVM
 export LLVM_SYS_180_PREFIX=$(brew --prefix llvm@18)
 ```
 
