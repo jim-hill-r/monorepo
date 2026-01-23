@@ -194,6 +194,11 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
         return check_playwright_with_browsers();
     }
 
+    // LLVM needs special handling to verify development libraries are installed
+    if matches!(tool, Tool::Llvm) {
+        return check_llvm_with_libraries();
+    }
+
     let (command, args) = match tool {
         Tool::Rustup => ("rustup", vec!["--version"]),
         Tool::Rustc => ("rustc", vec!["--version"]),
@@ -329,6 +334,74 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, InstallError> {
                 version,
             })
         }
+    }
+}
+
+/// Check if LLVM is installed with required development libraries
+fn check_llvm_with_libraries() -> Result<ToolStatus, InstallError> {
+    use std::process::Command;
+
+    // First check if llvm-config-18 is available
+    let version_check = Command::new("llvm-config-18").args(["--version"]).output();
+
+    let version = match version_check {
+        Ok(output) if output.status.success() => {
+            let version_output = String::from_utf8_lossy(&output.stdout);
+            Some(parse_version_string(version_output.trim()))
+        }
+        _ => {
+            // llvm-config not found
+            return Ok(ToolStatus {
+                tool: Tool::Llvm,
+                installed: false,
+                version: None,
+            });
+        }
+    };
+
+    // On Linux, verify that the development libraries are installed by checking for libpolly
+    // We do this by attempting to check if the Polly library exists using llvm-config
+    if cfg!(target_os = "linux") {
+        // Check if libpolly library is available by querying llvm-config
+        let libs_check = Command::new("llvm-config-18").args(["--libdir"]).output();
+
+        match libs_check {
+            Ok(output) if output.status.success() => {
+                let libdir = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let polly_lib = std::path::Path::new(&libdir).join("libPolly.a");
+
+                // Check if Polly library file exists
+                if polly_lib.exists() {
+                    Ok(ToolStatus {
+                        tool: Tool::Llvm,
+                        installed: true,
+                        version,
+                    })
+                } else {
+                    // llvm-config found but Polly library is missing (dev packages not installed)
+                    Ok(ToolStatus {
+                        tool: Tool::Llvm,
+                        installed: false,
+                        version,
+                    })
+                }
+            }
+            _ => {
+                // Can't determine library directory, assume not properly installed
+                Ok(ToolStatus {
+                    tool: Tool::Llvm,
+                    installed: false,
+                    version,
+                })
+            }
+        }
+    } else {
+        // On macOS and other platforms, just check if llvm-config works
+        Ok(ToolStatus {
+            tool: Tool::Llvm,
+            installed: true,
+            version,
+        })
     }
 }
 
