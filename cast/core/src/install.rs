@@ -653,6 +653,36 @@ framework = "dioxus"
     }
 
     #[test]
+    fn test_detect_required_tools_programming_language_project_type() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_programming_language").unwrap();
+
+        // Create a Cast.toml with programming_language project_type
+        fs::write(
+            temp_dir.path().join("Cast.toml"),
+            "project_type = \"programming_language\"",
+        )
+        .unwrap();
+
+        let result = detect_required_tools(temp_dir.path());
+        assert!(result.is_ok());
+
+        let tools = result.unwrap();
+        // Programming language projects require: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast, llvm
+        assert!(tools.contains(&Tool::Rustup));
+        assert!(tools.contains(&Tool::Rustc));
+        assert!(tools.contains(&Tool::Cargo));
+        assert!(tools.contains(&Tool::Rustfmt));
+        assert!(tools.contains(&Tool::Clippy));
+        assert!(tools.contains(&Tool::GitLfs));
+        assert!(tools.contains(&Tool::Cast));
+        assert!(tools.contains(&Tool::Llvm));
+        assert_eq!(tools.len(), 8);
+    }
+
+    #[test]
     fn test_check_tool_rustc() {
         // This test checks if rustc is available (it should be in the CI environment)
         let result = check_tool(&Tool::Rustc);
@@ -2048,6 +2078,29 @@ mod install_tests {
         assert!(install_result.message.contains("brew"));
         #[cfg(target_os = "windows")]
         assert!(install_result.message.contains("winget"));
+    }
+
+    #[test]
+    fn test_install_llvm_dry_run() {
+        let result = install_llvm(true);
+        assert!(result.is_ok());
+        let install_result = result.unwrap();
+        assert_eq!(install_result.tool, Tool::Llvm);
+        assert!(install_result.success);
+        assert!(install_result.message.contains("Would install"));
+        // Check that it contains the appropriate package manager for the OS
+        #[cfg(target_os = "linux")]
+        {
+            assert!(install_result.message.contains("apt"));
+            assert!(install_result.message.contains("llvm-18-dev"));
+            assert!(install_result.message.contains("libpolly-18-dev"));
+        }
+        #[cfg(target_os = "macos")]
+        {
+            assert!(install_result.message.contains("brew"));
+            assert!(install_result.message.contains("llvm@18"));
+            assert!(install_result.message.contains("LLVM_SYS_180_PREFIX"));
+        }
     }
 
     #[test]
