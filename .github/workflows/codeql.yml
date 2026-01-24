@@ -1,0 +1,57 @@
+---
+name: CodeQL Security Scanning
+
+# This workflow replaces GitHub's default CodeQL setup to exclude Rust scanning.
+# Rust analysis takes ~26 minutes per scan, which is impractical for this monorepo.
+#
+# Languages scanned:
+# - JavaScript/TypeScript (~1 minute)
+# - Actions (~40 seconds)
+#
+# Rust is excluded because:
+# - Takes ~26 minutes per scan
+# - Monorepo has many Rust projects
+# - Most PRs don't modify all Rust code
+# - Rust security is checked by clippy in `cast ci`
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Only scan JavaScript/TypeScript and Actions, NOT Rust
+        language: ['javascript-typescript', 'actions']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

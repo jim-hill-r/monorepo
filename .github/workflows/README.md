@@ -161,3 +161,59 @@ This Rust test suite validates:
 - Required permissions
 - Concurrency control logic
 
+## codeql.yml
+
+This workflow runs CodeQL security scanning on the codebase, analyzing JavaScript/TypeScript and GitHub Actions workflows but **not Rust**.
+
+### Why Rust is Excluded
+
+- **Performance**: Rust CodeQL analysis takes ~26 minutes per scan
+- **Scope**: The monorepo contains ~20+ Rust projects
+- **Efficiency**: Most PRs don't modify all Rust code
+- **Alternative**: Rust security is checked by `clippy` in `cast ci`
+
+### How It Works
+
+1. **Trigger**: The workflow runs on:
+   - Push to `main` branch
+   - Pull requests to `main` branch
+   - Weekly schedule (Sundays at 2 AM UTC)
+
+2. **Language Scanning**: 
+   - **JavaScript/TypeScript**: ~1 minute scan time
+   - **GitHub Actions**: ~40 seconds scan time
+   - **Rust**: Excluded (would take ~26 minutes)
+
+3. **Analysis**:
+   - Uses GitHub's CodeQL action
+   - Automatically builds the code (autobuild)
+   - Uploads results to GitHub Security tab
+
+### Relationship to GitHub's Default CodeQL
+
+This custom workflow **replaces** GitHub's default CodeQL setup. When a custom `.github/workflows/codeql.yml` exists:
+- GitHub's automatic default CodeQL is disabled
+- This custom workflow takes over
+- You have full control over which languages are scanned
+
+### Re-enabling Rust Scanning
+
+If Rust security scanning is needed:
+
+**Option 1: Enable in this workflow**
+- Edit `.github/workflows/codeql.yml`
+- Add `'rust'` to the `matrix.language` array
+- Note: This will add ~26 minutes to each PR/push
+
+**Option 2: Create a separate scheduled workflow**
+- Create a new workflow that only runs weekly
+- Only scans Rust
+- Doesn't block PRs with long scan times
+
+### Permissions
+
+The workflow requires:
+- `contents: read` - To checkout the repository
+- `security-events: write` - To upload CodeQL results
+- `actions: read` - To read workflow information
+
