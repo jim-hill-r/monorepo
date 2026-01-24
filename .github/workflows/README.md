@@ -65,6 +65,37 @@ The workflow includes robust error handling for git operations:
 
 This ensures that the workflow fails fast with clear error messages when commits are unavailable, rather than continuing with corrupted state.
 
+## nightly.yml
+
+This workflow runs `cast ci` recursively across all projects in the monorepo on a nightly schedule.
+
+### How It Works
+
+1. **Trigger**: The workflow runs automatically at 2 AM Pacific Time (10 AM UTC) every day, and can also be triggered manually via `workflow_dispatch`.
+
+2. **Build and Run**: 
+   - Sets up the Rust toolchain
+   - Builds the `cast` CLI from `cast/cli`
+   - Runs `cast ci --recursive 2 --check` from the repository root
+   - This recursively finds all projects with `Cast.toml` up to 2 levels deep and runs CI checks on them
+
+3. **Results**: 
+   - Fails the workflow if any project's CI check fails
+   - Provides a comprehensive health check of the entire monorepo
+
+### Setup Requirements
+
+The workflow requires:
+1. Rust toolchain (automatically installed by the workflow)
+2. Node.js toolchain (automatically installed by the workflow)
+3. Projects must have a `Cast.toml` file in their root directory
+4. The `cast/cli` project must be buildable
+
+### Permissions
+
+The workflow requires the following permissions:
+- `contents: read` - To checkout the repository and read files
+
 ## cast-cd.yml
 
 This workflow automatically runs `cast cd` for any project that has changes when a pull request is merged.
