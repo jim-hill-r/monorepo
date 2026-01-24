@@ -53,10 +53,15 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
+          
+          # Only add artifacts directories, not other changes
+          find . -type d -name "artifacts" -path "*/artifacts" -exec git add {}/ \;
+          
           if git diff --staged --quiet; then
             echo "No artifacts to commit"
           else
+            echo "Committing artifacts:"
+            git diff --staged --name-only
             git commit -m "chore: update release artifacts [skip ci]"
             git push
           fi
