@@ -2,8 +2,11 @@ use crate::build;
 use crate::install;
 use crate::publish;
 use crate::test;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::rc::Rc;
 use thiserror::Error;
 
 /// CI execution mode
@@ -48,6 +51,10 @@ pub enum CiError {
     InstallError(#[from] install::InstallError),
 }
 
+/// Cache for git diff results to avoid running the same git commands repeatedly
+/// Maps absolute path to whether the directory has changes
+type GitDiffCache = Rc<RefCell<HashMap<PathBuf, bool>>>;
+
 /// Run CI checks for a project
 /// This function performs the following steps:
 /// 1. Installs required tools (rustc, cargo, clippy, dx, npm, playwright, etc.)
@@ -68,7 +75,26 @@ pub fn run(
     recursive_depth: Option<usize>,
     only_changed: bool,
 ) -> Result<(), CiError> {
-    let working_directory = working_directory.as_ref();
+    // Create a cache for git diff results to improve performance with --only-changed
+    let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
+    run_internal(
+        working_directory.as_ref(),
+        mode,
+        recursive_depth,
+        only_changed,
+        git_diff_cache,
+    )
+}
+
+/// Internal implementation of run that accepts a git diff cache
+/// This allows memoization of git diff results across recursive calls
+fn run_internal(
+    working_directory: &Path,
+    mode: CiMode,
+    recursive_depth: Option<usize>,
+    only_changed: bool,
+    git_diff_cache: GitDiffCache,
+) -> Result<(), CiError> {
 
     // Install required tools before running CI checks
     // This ensures all necessary tools (rustc, cargo, clippy, dx, npm, etc.) are available
@@ -99,7 +125,7 @@ pub fn run(
 
     // If only_changed is true, check if the project has changes
     if only_changed {
-        match has_changes(working_directory) {
+        match has_changes_cached(working_directory, &git_diff_cache) {
             Ok(true) => {
                 // Has changes, continue with CI
             }
@@ -153,7 +179,7 @@ pub fn run(
 
     // Run CI recursively on child projects if requested
     if let Some(depth) = recursive_depth {
-        run_ci_recursively(working_directory, mode, depth, only_changed)?;
+        run_ci_recursively_internal(working_directory, mode, depth, only_changed, git_diff_cache)?;
     }
 
     Ok(())
@@ -417,6 +443,19 @@ pub fn run_ci_recursively(
     max_depth: usize,
     only_changed: bool,
 ) -> Result<(), CiError> {
+    // Create a cache for git diff results to improve performance with --only-changed
+    let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
+    run_ci_recursively_internal(working_directory, mode, max_depth, only_changed, git_diff_cache)
+}
+
+/// Internal implementation of run_ci_recursively that accepts a git diff cache
+fn run_ci_recursively_internal(
+    working_directory: &Path,
+    mode: CiMode,
+    max_depth: usize,
+    only_changed: bool,
+    git_diff_cache: GitDiffCache,
+) -> Result<(), CiError> {
     if max_depth == 0 {
         return Ok(());
     }
@@ -435,8 +474,8 @@ pub fn run_ci_recursively(
             None
         };
 
-        // Run CI on the child project
-        run(&project_path, mode, remaining_depth, only_changed)?;
+        // Run CI on the child project with the shared cache
+        run_internal(&project_path, mode, remaining_depth, only_changed, git_diff_cache.clone())?;
     }
 
     Ok(())
@@ -477,6 +516,33 @@ fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
 
     // git diff --quiet returns 0 if no changes, 1 if there are changes
     Ok(!diff_output.success())
+}
+
+/// Check if the current project has changes compared to the origin's default branch
+/// This version uses a cache to avoid running the same git command multiple times
+/// Returns true if there are changes, false if no changes
+/// Returns an error if git operations fail (e.g., not in a git repo)
+fn has_changes_cached(working_directory: &Path, cache: &GitDiffCache) -> Result<bool, CiError> {
+    // Convert to absolute path for cache key consistency
+    let abs_path = working_directory
+        .canonicalize()
+        .unwrap_or_else(|_| working_directory.to_path_buf());
+
+    // Check cache first
+    {
+        let cache_ref = cache.borrow();
+        if let Some(&cached_result) = cache_ref.get(&abs_path) {
+            return Ok(cached_result);
+        }
+    }
+
+    // Not in cache, compute the result
+    let result = has_changes(working_directory)?;
+
+    // Store in cache
+    cache.borrow_mut().insert(abs_path, result);
+
+    Ok(result)
 }
 
 /// Get the default branch name from origin (usually 'main' or 'master')
@@ -1932,5 +1998,114 @@ mod tests {
         } else {
             panic!("Test marker file should exist after running CI");
         }
+    }
+
+    #[test]
+    fn test_git_diff_cache_improves_performance() {
+        let tmp_dir = TempDir::new("test_git_diff_cache").unwrap();
+        
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .arg("-b")
+            .arg("main")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create initial file and commit
+        fs::write(tmp_dir.path().join("README.md"), "test").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create remote and setup origin/main
+        let remote_dir = tmp_dir.path().join("remote.git");
+        Command::new("git")
+            .arg("init")
+            .arg("--bare")
+            .arg(&remote_dir)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(&remote_dir)
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("push")
+            .arg("-u")
+            .arg("origin")
+            .arg("main")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Set up symbolic ref for origin/HEAD
+        Command::new("git")
+            .arg("symbolic-ref")
+            .arg("refs/remotes/origin/HEAD")
+            .arg("refs/remotes/origin/main")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create child projects
+        let child1 = tmp_dir.path().join("child1");
+        let child2 = tmp_dir.path().join("child2");
+        fs::create_dir_all(&child1).unwrap();
+        fs::create_dir_all(&child2).unwrap();
+
+        // Create Cast.toml in each child
+        fs::write(child1.join("Cast.toml"), "[project]\nname = \"child1\"\n").unwrap();
+        fs::write(child2.join("Cast.toml"), "[project]\nname = \"child2\"\n").unwrap();
+
+        // Test that cache is being used
+        let cache = Rc::new(RefCell::new(HashMap::new()));
+        
+        // First call should populate cache
+        let result1 = has_changes_cached(&child1, &cache);
+        assert!(result1.is_ok());
+        assert_eq!(cache.borrow().len(), 1, "Cache should have 1 entry after first call");
+
+        // Second call to same path should use cache
+        let result2 = has_changes_cached(&child1, &cache);
+        assert!(result2.is_ok());
+        assert_eq!(cache.borrow().len(), 1, "Cache should still have 1 entry (using cached value)");
+        
+        // Both results should be the same
+        assert_eq!(result1.unwrap(), result2.unwrap(), "Cached result should match original");
+
+        // Call with different path should add to cache
+        let result3 = has_changes_cached(&child2, &cache);
+        assert!(result3.is_ok());
+        assert_eq!(cache.borrow().len(), 2, "Cache should have 2 entries after calling with different path");
     }
 }
