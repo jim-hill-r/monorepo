@@ -49,8 +49,7 @@ fn test_workflow_detects_projects_from_artifacts() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("artifacts/x86_64-unknown-linux-gnu/")
-            && content.contains("PROJECTS="),
+        content.contains("artifacts/x86_64-unknown-linux-gnu/") && content.contains("PROJECTS="),
         "Workflow should detect projects from artifact paths"
     );
 }
