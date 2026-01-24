@@ -1,9 +1,6 @@
 # Rust build artifacts
 /target/
 
-# Build artifacts (should never be committed)
-artifacts/
-
 # IDE files
 .vscode/
 .idea/
