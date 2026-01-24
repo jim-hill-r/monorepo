@@ -84,7 +84,7 @@ Currently, toolchains are managed manually:
 - **Local development**: Developers install tools as needed based on project README
 - **CI/CD**: GitHub Actions workflows manually install required tools using action steps
 
-Example workflow steps from `.github/workflows/cast-ci.yml` (simplified):
+Example workflow steps from `.github/workflows/pull-request-ci.yml` (simplified):
 ```yaml
 - name: Setup Node.js
   uses: actions/setup-node@v4
@@ -219,7 +219,8 @@ In configuration files (Playwright, CI workflows, etc.), **always use cast comma
 ## Related Documentation
 
 - Cast README: `/cast/README.md`
-- Cast CI Workflow: `.github/workflows/cast-ci.yml`
+- Pull Request CI Workflow: `.github/workflows/pull-request-ci.yml`
+- Trunk CI Workflow: `.github/workflows/trunk-ci.yml`
 - Workflow Conventions: `.github/WORKFLOW_CONVENTIONS.md`
 - Copilot Instructions: `.github/copilot-instructions.md`
 - Cast Toolchain Epic: `/ISSUES.md` (implementation plan)
