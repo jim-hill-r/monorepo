@@ -1,13 +1,112 @@
 use std::fs;
 use workflow_tests::*;
 
+// Tests for Pull Request CI workflow
 #[test]
-fn test_workflow_file_exists() {
-    let workflow_path = get_cast_ci_workflow_path();
+fn test_pull_request_workflow_file_exists() {
+    let workflow_path = get_pull_request_ci_workflow_path();
     assert!(
         workflow_path.exists(),
-        "Workflow file not found: {}",
+        "Pull Request CI workflow file not found: {}",
         workflow_path.display()
+    );
+}
+
+#[test]
+fn test_pull_request_workflow_yaml_can_be_parsed() {
+    let content = fs::read_to_string(get_pull_request_ci_workflow_path())
+        .expect("Failed to read workflow file");
+
+    // Parse YAML to ensure it's valid
+    let _parsed: serde_yaml::Value =
+        serde_yaml::from_str(&content).expect("Failed to parse workflow YAML");
+}
+
+#[test]
+fn test_pull_request_workflow_trigger_is_pull_request() {
+    let content = fs::read_to_string(get_pull_request_ci_workflow_path())
+        .expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("pull_request:"),
+        "Pull Request CI workflow trigger does not include pull_request"
+    );
+}
+
+#[test]
+fn test_pull_request_workflow_uses_check_flag() {
+    let content = fs::read_to_string(get_pull_request_ci_workflow_path())
+        .expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("--check"),
+        "Pull Request CI workflow should use --check flag for validation only"
+    );
+}
+
+// Tests for Trunk CI workflow
+#[test]
+fn test_trunk_workflow_file_exists() {
+    let workflow_path = get_trunk_ci_workflow_path();
+    assert!(
+        workflow_path.exists(),
+        "Trunk CI workflow file not found: {}",
+        workflow_path.display()
+    );
+}
+
+#[test]
+fn test_trunk_workflow_yaml_can_be_parsed() {
+    let content =
+        fs::read_to_string(get_trunk_ci_workflow_path()).expect("Failed to read workflow file");
+
+    // Parse YAML to ensure it's valid
+    let _parsed: serde_yaml::Value =
+        serde_yaml::from_str(&content).expect("Failed to parse workflow YAML");
+}
+
+#[test]
+fn test_trunk_workflow_trigger_is_push_to_main() {
+    let content =
+        fs::read_to_string(get_trunk_ci_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("push:") && content.contains("main"),
+        "Trunk CI workflow should trigger on push to main"
+    );
+}
+
+#[test]
+fn test_trunk_workflow_uses_release_flag() {
+    let content =
+        fs::read_to_string(get_trunk_ci_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("--release"),
+        "Trunk CI workflow should use --release flag to build artifacts"
+    );
+}
+
+#[test]
+fn test_trunk_workflow_ignores_artifacts() {
+    let content =
+        fs::read_to_string(get_trunk_ci_workflow_path()).expect("Failed to read workflow file");
+
+    assert!(
+        content.contains("paths-ignore") && content.contains("artifacts"),
+        "Trunk CI workflow should ignore changes to artifacts directories"
+    );
+}
+
+// Shared tests for both workflows
+#[test]
+fn test_workflow_file_exists() {
+    // Test backwards compatibility - at least one workflow exists
+    let pr_path = get_pull_request_ci_workflow_path();
+    assert!(
+        pr_path.exists(),
+        "Workflow file not found: {}",
+        pr_path.display()
     );
 }
 

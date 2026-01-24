@@ -7,7 +7,7 @@ This document describes the organization and structure of this monorepo to help 
 ```
 /
 ├── .github/              # GitHub Actions workflows and agent configurations
-│   ├── workflows/        # CI/CD workflows (cast-ci.yml, start-a-new-task.yml)
+│   ├── workflows/        # CI/CD workflows (pull-request-ci.yml, trunk-ci.yml, start-a-new-task.yml)
 │   └── dependabot.yml    # Dependency update configuration
 ├── monorepo/            # High-level monorepo functionality workspace
 │   └── workflow_tests/  # Tests for GitHub Actions workflows
@@ -116,7 +116,8 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 ## Testing and CI
 
 - Each project with `Cast.toml` can be tested with `cast ci`
-- The Cast CI workflow automatically detects and tests changed projects
+- The Pull Request CI workflow automatically validates changed projects on PRs
+- The Trunk CI workflow builds release artifacts for changed projects on main branch commits
 - Tests should be run before committing changes
 - Workflow tests are located at `monorepo/workflow_tests/` and validate GitHub Actions configurations
 

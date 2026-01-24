@@ -1,9 +1,9 @@
 ---
-name: Cast CI
+name: Pull Request CI
 
 'on':
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -11,23 +11,12 @@ permissions:
 
 jobs:
   detect-and-run-ci:
-    # Skip if PR was closed without merging
-    if: >-
-      github.event.pull_request.merged == true ||
-      github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          # Use merge commit if PR was merged, otherwise use PR head
-          ref: >-
-            ${{
-              github.event.pull_request.merged &&
-              github.event.pull_request.merge_commit_sha ||
-              github.event.pull_request.head.sha
-            }}
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -47,11 +36,13 @@ jobs:
           cd cast/cli
           cargo build --release
 
-      - name: Run CI on changed projects
+      - name: Run CI checks on changed projects
         run: |
           # Use absolute path to cast binary
           CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
           
-          # Run cast ci with --only-changed to check only projects with changes
-          # and --recursive 2 to find all Cast projects up to 2 levels deep
-          "$CAST_BIN" ci --only-changed --recursive 2
+          # Run cast ci with --check to validate projects with changes
+          # --only-changed: check only projects with changes
+          # --check: run checks only (no artifacts)
+          # --recursive 2: find all Cast projects up to 2 levels deep
+          "$CAST_BIN" ci --only-changed --check --recursive 2

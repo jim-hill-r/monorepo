@@ -18,31 +18,34 @@ cargo test
 
 ## Test Coverage
 
-### Cast CI Workflow Tests (`cast_ci_workflow_tests.rs`)
+### CI Workflow Tests (`cast_ci_workflow_tests.rs`)
 
-Tests for `.github/workflows/cast-ci.yml`:
+Tests for `.github/workflows/pull-request-ci.yml` and `.github/workflows/trunk-ci.yml`:
 
-- **File and Structure Tests**
+- **Pull Request CI Tests**
   - Workflow file exists
   - YAML syntax is valid
   - Workflow can be parsed
-
-- **Trigger and Configuration Tests**
   - Pull request trigger is configured
-  - Uses cast CLI to detect changes
-  - Searches for Cast.toml files
+  - Uses `--check` flag for validation-only mode
+  - Uses `--only-changed` to check only projects with changes
+  - Uses `--recursive 2` to find all Cast projects
+
+- **Trunk CI Tests**
+  - Workflow file exists
+  - YAML syntax is valid
+  - Workflow can be parsed
+  - Push to main trigger is configured
+  - Uses `--release` flag to build artifacts
+  - Uses `--only-changed` to check only projects with changes
+  - Uses `--recursive 2` to find all Cast projects
+  - Ignores changes to artifacts directories
+
+- **Shared Tests**
   - Builds cast CLI
   - Runs cast ci command
   - Sets up Rust toolchain
   - Handles no projects changed
-
-- **Error Handling Tests**
-  - Contains explicit git fetch commands
-  - Checks git diff exit code
-  - Captures stderr from cast command
-  - Prints error output on failure
-  - Exits with error on cast command failure
-  - Fetch commands use graceful failure (`|| true`)
 
 - **Security Tests**
   - BASE_SHA is properly quoted
