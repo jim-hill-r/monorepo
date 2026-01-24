@@ -142,22 +142,13 @@ pub fn run(
     // Handle post-check publishing based on mode
     // Only publish if we have a Rust project (Cargo.toml exists)
     // Cast's publish command creates binary/bundle artifacts from Rust projects
-    if ran_ci_checks && has_cargo_toml {
-        match mode {
-            CiMode::Check | CiMode::Fix => {
-                // For Check and Fix modes, run publish to create artifacts
-                publish::run(working_directory)?;
-
-                // Commit artifacts to git with git LFS
-                commit_artifacts(working_directory)?;
-            }
-            CiMode::Release => {
-                // For Release mode, publish is already handled by run_rust_ci
-                // Just commit the artifacts
-                commit_artifacts(working_directory)?;
-            }
-        }
+    if ran_ci_checks && has_cargo_toml && mode == CiMode::Release {
+        // For Release mode, publish is already handled by run_rust_ci
+        // Just commit the artifacts
+        commit_artifacts(working_directory)?;
     }
+    // For Check and Fix modes, do NOT create artifacts
+    // Artifacts should only be created in Release mode
     // If no CI checks were run, silently succeed (empty project or unsupported type)
 
     // Run CI recursively on child projects if requested
@@ -700,15 +691,15 @@ mod tests {
         let result = run(tmp_dir.path(), CiMode::Check, None, false);
         assert!(
             result.is_ok(),
-            "CI should succeed and run publish: {:?}",
+            "CI should succeed in Check mode: {:?}",
             result.err()
         );
 
-        // Verify that artifacts directory was created by publish
+        // Verify that artifacts directory was NOT created in Check mode
         let artifacts_dir = tmp_dir.path().join("artifacts");
         assert!(
-            artifacts_dir.exists(),
-            "Artifacts directory should exist after CI runs publish"
+            !artifacts_dir.exists(),
+            "Artifacts directory should NOT exist after CI Check mode (only in Release mode)"
         );
     }
 
@@ -828,6 +819,13 @@ mod tests {
         assert!(
             code.contains("fn main()"),
             "Code should be properly formatted"
+        );
+
+        // Verify that artifacts directory was NOT created in Fix mode
+        let artifacts_dir = tmp_dir.path().join("artifacts");
+        assert!(
+            !artifacts_dir.exists(),
+            "Artifacts directory should NOT exist after CI Fix mode (only in Release mode)"
         );
     }
 
@@ -1344,9 +1342,9 @@ mod tests {
             result.err()
         );
 
-        // Verify artifacts were created for both projects
-        assert!(tmp_dir.path().join("artifacts").exists());
-        assert!(child.join("artifacts").exists());
+        // Verify artifacts were NOT created in Check mode (only created in Release mode)
+        assert!(!tmp_dir.path().join("artifacts").exists());
+        assert!(!child.join("artifacts").exists());
     }
 
     #[test]
@@ -1571,11 +1569,11 @@ mod tests {
         // Should succeed and run CI
         assert!(result.is_ok(), "CI should succeed: {:?}", result.err());
 
-        // Verify artifacts were created (CI ran)
+        // Verify artifacts were NOT created in Check mode (only created in Release mode)
         let artifacts_dir = tmp_dir.path().join("artifacts");
         assert!(
-            artifacts_dir.exists(),
-            "Artifacts directory should exist when CI runs"
+            !artifacts_dir.exists(),
+            "Artifacts directory should NOT exist in Check mode (only in Release mode)"
         );
     }
 
