@@ -142,19 +142,13 @@ pub fn run(
     // Handle post-check publishing based on mode
     // Only publish if we have a Rust project (Cargo.toml exists)
     // Cast's publish command creates binary/bundle artifacts from Rust projects
-    if ran_ci_checks && has_cargo_toml {
-        match mode {
-            CiMode::Check | CiMode::Fix => {
-                // For Check and Fix modes, do NOT create artifacts
-                // Artifacts should only be created in Release mode
-            }
-            CiMode::Release => {
-                // For Release mode, publish is already handled by run_rust_ci
-                // Just commit the artifacts
-                commit_artifacts(working_directory)?;
-            }
-        }
+    if ran_ci_checks && has_cargo_toml && mode == CiMode::Release {
+        // For Release mode, publish is already handled by run_rust_ci
+        // Just commit the artifacts
+        commit_artifacts(working_directory)?;
     }
+    // For Check and Fix modes, do NOT create artifacts
+    // Artifacts should only be created in Release mode
     // If no CI checks were run, silently succeed (empty project or unsupported type)
 
     // Run CI recursively on child projects if requested
