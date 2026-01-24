@@ -240,22 +240,25 @@ impl Parser {
         }
     }
 
-    /// Parse a function declaration
-    fn parse_function_decl(&mut self) -> ParseResult<FunctionDecl> {
-        // Parse function name
-        let name = match &self.current_token {
+    /// Parse an identifier token and return its string value
+    fn parse_identifier(&mut self) -> ParseResult<String> {
+        match &self.current_token {
             Token::Identifier(name) => {
                 let n = name.clone();
                 self.advance();
-                n
+                Ok(n)
             }
-            _ => {
-                return Err(ParseError::UnexpectedToken {
-                    expected: "identifier".to_string(),
-                    found: self.current_token.clone(),
-                });
-            }
-        };
+            _ => Err(ParseError::UnexpectedToken {
+                expected: "identifier".to_string(),
+                found: self.current_token.clone(),
+            }),
+        }
+    }
+
+    /// Parse a function declaration
+    fn parse_function_decl(&mut self) -> ParseResult<FunctionDecl> {
+        // Parse function name
+        let name = self.parse_identifier()?;
 
         // Parse parameters
         let parameters = self.parse_parameters()?;
@@ -273,19 +276,7 @@ impl Parser {
     /// Parse an input declaration
     fn parse_input_decl(&mut self) -> ParseResult<InputDecl> {
         // Parse input function name
-        let name = match &self.current_token {
-            Token::Identifier(name) => {
-                let n = name.clone();
-                self.advance();
-                n
-            }
-            _ => {
-                return Err(ParseError::UnexpectedToken {
-                    expected: "identifier".to_string(),
-                    found: self.current_token.clone(),
-                });
-            }
-        };
+        let name = self.parse_identifier()?;
 
         // Parse parameters
         let parameters = self.parse_parameters()?;
@@ -303,19 +294,7 @@ impl Parser {
     /// Parse an output declaration
     fn parse_output_decl(&mut self) -> ParseResult<OutputDecl> {
         // Parse output function name
-        let name = match &self.current_token {
-            Token::Identifier(name) => {
-                let n = name.clone();
-                self.advance();
-                n
-            }
-            _ => {
-                return Err(ParseError::UnexpectedToken {
-                    expected: "identifier".to_string(),
-                    found: self.current_token.clone(),
-                });
-            }
-        };
+        let name = self.parse_identifier()?;
 
         // Parse parameters
         let parameters = self.parse_parameters()?;
@@ -343,35 +322,12 @@ impl Parser {
         }
 
         // Parse first parameter
-        match &self.current_token {
-            Token::Identifier(name) => {
-                parameters.push(name.clone());
-                self.advance();
-            }
-            _ => {
-                return Err(ParseError::UnexpectedToken {
-                    expected: "identifier".to_string(),
-                    found: self.current_token.clone(),
-                });
-            }
-        }
+        parameters.push(self.parse_identifier()?);
 
         // Parse remaining parameters
         while self.current_token == Token::Comma {
             self.advance(); // consume comma
-
-            match &self.current_token {
-                Token::Identifier(name) => {
-                    parameters.push(name.clone());
-                    self.advance();
-                }
-                _ => {
-                    return Err(ParseError::UnexpectedToken {
-                        expected: "identifier".to_string(),
-                        found: self.current_token.clone(),
-                    });
-                }
-            }
+            parameters.push(self.parse_identifier()?);
         }
 
         self.expect_token(Token::RightParen)?;
