@@ -95,7 +95,6 @@ fn run_internal(
     only_changed: bool,
     git_diff_cache: GitDiffCache,
 ) -> Result<(), CiError> {
-
     // Install required tools before running CI checks
     // This ensures all necessary tools (rustc, cargo, clippy, dx, npm, etc.) are available
     let install_options = install::InstallOptions {
@@ -445,7 +444,13 @@ pub fn run_ci_recursively(
 ) -> Result<(), CiError> {
     // Create a cache for git diff results to improve performance with --only-changed
     let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
-    run_ci_recursively_internal(working_directory, mode, max_depth, only_changed, git_diff_cache)
+    run_ci_recursively_internal(
+        working_directory,
+        mode,
+        max_depth,
+        only_changed,
+        git_diff_cache,
+    )
 }
 
 /// Internal implementation of run_ci_recursively that accepts a git diff cache
@@ -475,7 +480,13 @@ fn run_ci_recursively_internal(
         };
 
         // Run CI on the child project with the shared cache
-        run_internal(&project_path, mode, remaining_depth, only_changed, git_diff_cache.clone())?;
+        run_internal(
+            &project_path,
+            mode,
+            remaining_depth,
+            only_changed,
+            git_diff_cache.clone(),
+        )?;
     }
 
     Ok(())
@@ -2003,7 +2014,7 @@ mod tests {
     #[test]
     fn test_git_diff_cache_improves_performance() {
         let tmp_dir = TempDir::new("test_git_diff_cache").unwrap();
-        
+
         // Initialize git repo
         Command::new("git")
             .arg("init")
@@ -2089,23 +2100,39 @@ mod tests {
 
         // Test that cache is being used
         let cache = Rc::new(RefCell::new(HashMap::new()));
-        
+
         // First call should populate cache
         let result1 = has_changes_cached(&child1, &cache);
         assert!(result1.is_ok());
-        assert_eq!(cache.borrow().len(), 1, "Cache should have 1 entry after first call");
+        assert_eq!(
+            cache.borrow().len(),
+            1,
+            "Cache should have 1 entry after first call"
+        );
 
         // Second call to same path should use cache
         let result2 = has_changes_cached(&child1, &cache);
         assert!(result2.is_ok());
-        assert_eq!(cache.borrow().len(), 1, "Cache should still have 1 entry (using cached value)");
-        
+        assert_eq!(
+            cache.borrow().len(),
+            1,
+            "Cache should still have 1 entry (using cached value)"
+        );
+
         // Both results should be the same
-        assert_eq!(result1.unwrap(), result2.unwrap(), "Cached result should match original");
+        assert_eq!(
+            result1.unwrap(),
+            result2.unwrap(),
+            "Cached result should match original"
+        );
 
         // Call with different path should add to cache
         let result3 = has_changes_cached(&child2, &cache);
         assert!(result3.is_ok());
-        assert_eq!(cache.borrow().len(), 2, "Cache should have 2 entries after calling with different path");
+        assert_eq!(
+            cache.borrow().len(),
+            2,
+            "Cache should have 2 entries after calling with different path"
+        );
     }
 }
