@@ -55,7 +55,10 @@ pub struct InputDecl {
     pub name: String,
     /// List of parameter names
     pub parameters: Vec<String>,
-    /// Function body (list of statements, no return allowed)
+    /// Function body (list of statements)
+    ///
+    /// Note: The parser must validate that no Return statements appear in input functions,
+    /// as the language semantics prohibit return statements in input declarations.
     pub body: Vec<Statement>,
 }
 
@@ -138,7 +141,10 @@ pub enum BinaryOperator {
     GreaterThanEqual,
 }
 
-/// Placeholder AST node type (deprecated - use Program instead)
+/// Placeholder AST node type
+///
+/// Deprecated: Use the `Program` struct instead for representing complete programs.
+/// This type will be removed in a future version once the parser implementation is complete.
 #[deprecated(since = "0.1.0", note = "Use Program struct instead")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AstNode {
@@ -150,6 +156,10 @@ pub enum AstNode {
 ///
 /// Future implementation will parse tokens into an AST
 pub struct Parser {
+    /// Lexer for tokenizing input
+    ///
+    /// This will be used by the parser implementation to read tokens sequentially
+    /// and build the AST using recursive descent parsing techniques.
     _lexer: Lexer,
 }
 
