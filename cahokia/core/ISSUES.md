@@ -1,10 +1,6 @@
-TODO (agent-generated): Define FamilyTree struct to store the graph of people and their relationships
-TODO (agent-generated): Implement method to add a person to the family tree from AncestryEvent::Birth
-TODO (agent-generated): Implement method to establish parent-child relationships from biological births or adoptions
-TODO (agent-generated): Implement method to establish spouse relationships from Marriage events
+TODO (agent-generated): Implement method to add person to family tree from AncestryEvent::Birth (create Person from Birth event data)
 TODO (agent-generated): Implement method to handle Divorce events (mark relationships as ended)
-TODO (agent-generated): Implement method to process a list of AncestryEvents and build the family tree
-TODO (agent-generated): Add validation to prevent duplicate persons and invalid relationships
-TODO (agent-generated): Implement queries to traverse the family tree (find parents, children, siblings, ancestors, descendants)
-TODO (agent-generated): Add comprehensive tests for family tree building algorithm with complex scenarios
+TODO (agent-generated): Extend process_event to handle all relevant AncestryEvent types (currently only handles Marriage and Adoption)
+TODO (agent-generated): Implement ancestor traversal queries (find all ancestors of a person)
+TODO (agent-generated): Implement descendant traversal queries (find all descendants of a person)
 TODO: Visualize the family tree (this may be platform specific?)

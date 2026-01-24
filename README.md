@@ -4,9 +4,14 @@ Monorepo for all projects
 
 # Getting Started
 
+Only Rust and Npm need to be installed system wide. Everything else is managed by the monorepo cli
+
+- Install Rust via [online instructions](https://rust-lang.org/tools/install/)
+- Install npm via [nvm online instructions](https://www.nvmnode.com/guide/installation-sh.html)
+
 Cast is the CLI tool for this monorepo. All developer commands use Cast.
 
-- To install Cast, run `./cast/cli/artifacts/{target-architecture}/cast install`
+- Install cast: `cargo install --path ./cast/cli`
 
 Once Cast is installed, you can use it for all other work in this monorepo.
 - To start a work session, use `cast session start`.

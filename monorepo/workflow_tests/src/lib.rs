@@ -21,9 +21,20 @@ pub fn get_repo_root() -> PathBuf {
     }
 }
 
-/// Get the path to the cast-ci.yml workflow file
+/// Get the path to the cast-ci.yml workflow file (legacy - now split into PR and Trunk CI)
 pub fn get_cast_ci_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/cast-ci.yml")
+    // For backwards compatibility, return pull-request-ci.yml path
+    get_pull_request_ci_workflow_path()
+}
+
+/// Get the path to the pull-request-ci.yml workflow file
+pub fn get_pull_request_ci_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/pull-request-ci.yml")
+}
+
+/// Get the path to the trunk-ci.yml workflow file
+pub fn get_trunk_ci_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/trunk-ci.yml")
 }
 
 /// Get the path to the start-a-new-task.yml workflow file
@@ -49,4 +60,9 @@ pub fn get_cast_cli_cargo_path() -> PathBuf {
 /// Get the path to the cast-cd.yml workflow file
 pub fn get_cast_cd_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/cast-cd.yml")
+}
+
+/// Get the path to the codeql.yml workflow file
+pub fn get_codeql_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/codeql.yml")
 }

@@ -1,9 +1,9 @@
 # Troubleshooting GitHub Workflows
 
-## Issue: Cast CI fails with "Cargo fmt check failed"
+## Issue: Pull Request CI fails with "Cargo fmt check failed"
 
 ### Problem
-The Cast CI workflow fails during the `cast ci` step with an error about formatting differences:
+The Pull Request CI workflow fails during the `cast ci` step with an error about formatting differences:
 ```
 Error: ci error: Cargo fmt check failed: Diff in /path/to/file.rs
 ```
