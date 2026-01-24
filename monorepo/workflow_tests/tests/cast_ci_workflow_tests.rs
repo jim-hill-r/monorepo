@@ -14,8 +14,8 @@ fn test_pull_request_workflow_file_exists() {
 
 #[test]
 fn test_pull_request_workflow_yaml_can_be_parsed() {
-    let content =
-        fs::read_to_string(get_pull_request_ci_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_pull_request_ci_workflow_path())
+        .expect("Failed to read workflow file");
 
     // Parse YAML to ensure it's valid
     let _parsed: serde_yaml::Value =
@@ -24,8 +24,8 @@ fn test_pull_request_workflow_yaml_can_be_parsed() {
 
 #[test]
 fn test_pull_request_workflow_trigger_is_pull_request() {
-    let content =
-        fs::read_to_string(get_pull_request_ci_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_pull_request_ci_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("pull_request:"),
@@ -35,8 +35,8 @@ fn test_pull_request_workflow_trigger_is_pull_request() {
 
 #[test]
 fn test_pull_request_workflow_uses_check_flag() {
-    let content =
-        fs::read_to_string(get_pull_request_ci_workflow_path()).expect("Failed to read workflow file");
+    let content = fs::read_to_string(get_pull_request_ci_workflow_path())
+        .expect("Failed to read workflow file");
 
     assert!(
         content.contains("--check"),
