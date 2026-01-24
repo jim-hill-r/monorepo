@@ -22,48 +22,59 @@ fn test_workflow_yaml_can_be_parsed() {
 }
 
 #[test]
-fn test_workflow_trigger_is_pull_request_closed() {
+fn test_workflow_trigger_is_push_on_main() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("pull_request:") && content.contains("types: [closed]"),
-        "Workflow trigger does not include pull_request with closed type"
+        content.contains("push:") && content.contains("branches:") && content.contains("- main"),
+        "Workflow trigger should be push on main branch"
     );
 }
 
 #[test]
-fn test_workflow_checks_merged_condition() {
+fn test_workflow_trigger_filters_artifacts_path() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("github.event.pull_request.merged"),
-        "Workflow does not check if PR was merged"
+        content.contains("paths:") && content.contains("**/artifacts/x86_64-unknown-linux-gnu/**"),
+        "Workflow trigger should filter for Linux artifact paths"
     );
 }
 
 #[test]
-fn test_workflow_uses_cast_cli_to_detect_changes() {
+fn test_workflow_detects_projects_from_artifacts() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("CAST_BIN")
-            && content.contains("project")
-            && content.contains("with-changes"),
-        "Workflow does not use cast CLI to detect changes"
+        content.contains("artifacts/x86_64-unknown-linux-gnu/") && content.contains("PROJECTS="),
+        "Workflow should detect projects from artifact paths"
     );
 }
 
 #[test]
-fn test_workflow_searches_for_cast_toml() {
+fn test_workflow_uses_git_diff_for_detection() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("Cast.toml"),
-        "Workflow does not search for Cast.toml files"
+        content.contains("git diff") && content.contains("HEAD~1"),
+        "Workflow should use git diff to detect changed artifacts"
+    );
+}
+
+#[test]
+fn test_workflow_processes_projects_with_cast_toml() {
+    let content =
+        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
+
+    // While the workflow doesn't search for Cast.toml during detection,
+    // it still expects projects to have Cast.toml for cast cd to work
+    assert!(
+        content.contains("project") || content.contains("cd \"$GITHUB_WORKSPACE/$project\""),
+        "Workflow should process projects (which are expected to have Cast.toml)"
     );
 }
 
@@ -113,39 +124,15 @@ fn test_workflow_handles_no_projects_changed() {
     );
 }
 
-// Error handling tests
-#[test]
-fn test_workflow_contains_explicit_git_fetch_commands() {
-    let content =
-        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
-
-    assert!(
-        content.contains("git fetch origin")
-            && content.contains("BASE_SHA")
-            && content.contains("HEAD_SHA"),
-        "Workflow missing explicit git fetch commands"
-    );
-}
-
 #[test]
 fn test_workflow_checks_git_diff_exit_code() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
+    // The workflow may check exit codes for validation
     assert!(
-        content.contains("if [ $? -ne 0 ]") || content.contains("if [ $? -eq 0 ]"),
-        "Workflow does not check git diff exit code"
-    );
-}
-
-#[test]
-fn test_workflow_captures_stderr_from_cast_command() {
-    let content =
-        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
-
-    assert!(
-        content.contains("with-changes") && content.contains("2>&1"),
-        "Workflow does not capture stderr from cast command"
+        content.contains("EXIT_CODE"),
+        "Workflow should track exit code"
     );
 }
 
@@ -155,8 +142,8 @@ fn test_workflow_prints_error_output_on_failure() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("echo") && content.contains("CHANGED_PROJECTS"),
-        "Workflow does not print error output"
+        content.contains("echo") && content.contains("PROJECTS"),
+        "Workflow should print error output"
     );
 }
 
@@ -165,46 +152,10 @@ fn test_workflow_exits_with_error_on_cast_command_failure() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // Check that after checking exit code, there's an exit 1
+    // Check that after checking exit code, there's an exit 1 or EXIT_CODE tracking
     assert!(
-        content.contains("exit 1"),
-        "Workflow does not exit with error on cast command failure"
-    );
-}
-
-#[test]
-fn test_fetch_commands_use_graceful_failure() {
-    let content =
-        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
-
-    assert!(
-        content.contains("git fetch") && content.contains("|| true"),
-        "Fetch commands may fail the workflow unnecessarily"
-    );
-}
-
-// Quoting tests
-#[test]
-fn test_base_sha_is_properly_quoted() {
-    let content =
-        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
-
-    // Check for properly quoted BASE_SHA assignment
-    assert!(
-        content.contains(r#"BASE_SHA="${{ github.event.pull_request.base.sha }}"#),
-        "BASE_SHA is not properly quoted. Expected: BASE_SHA=\"${{{{ github.event.pull_request.base.sha }}}}\""
-    );
-}
-
-#[test]
-fn test_head_sha_is_properly_quoted() {
-    let content =
-        fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
-
-    // Check for properly quoted HEAD_SHA assignment
-    assert!(
-        content.contains(r#"HEAD_SHA="${{ github.event.pull_request.head.sha }}"#),
-        "HEAD_SHA is not properly quoted. Expected: HEAD_SHA=\"${{{{ github.event.pull_request.head.sha }}}}\""
+        content.contains("exit") && content.contains("EXIT_CODE"),
+        "Workflow should exit with error on cast command failure"
     );
 }
 

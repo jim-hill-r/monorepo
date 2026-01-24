@@ -69,23 +69,24 @@ The workflow requires:
 The workflow requires the following permissions:
 - `contents: read` - To checkout the repository and read files
 
-## cast-cd.yml
+## cast-cd.yml (CD)
 
-This workflow automatically runs `cast cd` for any project that has changes when a pull request is merged.
+This workflow automatically runs `cast cd` for any project when new Linux build artifacts are committed to the main branch.
 
 ### How It Works
 
-1. **Trigger**: The workflow runs when a pull request is closed and merged.
+1. **Trigger**: The workflow runs when artifacts are pushed to the main branch. Specifically, it triggers on changes to `**/artifacts/x86_64-unknown-linux-gnu/**` paths.
 
-2. **Changed Project Detection**: 
-   - Gets the list of changed files between the base and head branches
-   - For each changed file, walks up the directory tree to find a `Cast.toml` file
-   - Collects unique project directories that have a `Cast.toml`
+2. **Artifact Detection**: 
+   - Gets the list of files changed in the latest commit
+   - Filters for files in `artifacts/x86_64-unknown-linux-gnu/` directories
+   - Extracts the parent project directory for each artifact
+   - Collects unique project directories that have new Linux artifacts
 
 3. **Build and Run**: 
-   - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `cast_workspace/cli`
-   - Runs `cast cd` for each detected project
+   - Sets up the Rust and Node.js toolchains
+   - Builds the `cast` CLI from `cast/cli`
+   - Runs `cast cd` for each project with new artifacts
 
 4. **Results**: 
    - Groups output by project for easy reading
@@ -95,14 +96,23 @@ This workflow automatically runs `cast cd` for any project that has changes when
 
 The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
-2. Projects must have a `Cast.toml` file in their root directory
-3. The `cast_workspace/cli` project must be buildable
+2. Node.js toolchain (automatically installed by the workflow)
+3. Projects must have a `Cast.toml` file in their root directory
+4. The `cast/cli` project must be buildable
 
 ### Permissions
 
 The workflow requires the following permissions:
 - `contents: read` - To checkout the repository and read files
-- `pull-requests: read` - To access PR information
+
+### Integration with Trunk CI
+
+This workflow is designed to run after the Trunk CI workflow, which:
+1. Runs `cast ci --release` on changed projects
+2. Builds Linux artifacts in `artifacts/x86_64-unknown-linux-gnu/` directories
+3. Commits these artifacts back to the main branch
+
+When Trunk CI commits new artifacts, this CD workflow automatically triggers to deploy those projects.
 
 ## start-a-new-task.yml
 
