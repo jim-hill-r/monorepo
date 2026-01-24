@@ -1,8 +1,8 @@
 use openidconnect::{
-    AuthorizationCode, ClientId, CsrfToken, IssuerUrl, Nonce,
-    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    AuthorizationCode, ClientId, CsrfToken, EndpointMaybeSet, EndpointNotSet, EndpointSet,
+    IssuerUrl, Nonce, OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
+    TokenResponse,
     core::{CoreAuthenticationFlow, CoreClient, CoreIdTokenClaims, CoreProviderMetadata},
-    EndpointSet, EndpointMaybeSet, EndpointNotSet, OAuth2TokenResponse,
 };
 use web_sys::UrlSearchParams;
 
@@ -15,7 +15,14 @@ const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
 #[derive(Clone)]
 pub struct WebAuthProvider {
-    client: CoreClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointMaybeSet>,
+    client: CoreClient<
+        EndpointSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointSet,
+        EndpointMaybeSet,
+    >,
     provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
@@ -28,9 +35,10 @@ impl WebAuthProvider {
             tracing::error!("issuer_url is required for OIDC discovery");
             AuthError::ConfigError("issuer_url is required".to_string())
         })?;
-        
+
         tracing::info!("Using OIDC discovery with issuer: {}", issuer_url);
-        let (client, provider_metadata) = Self::create_client_from_discovery(issuer_url, &config).await?;
+        let (client, provider_metadata) =
+            Self::create_client_from_discovery(issuer_url, &config).await?;
 
         let (access_token, id_token_claims) =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
@@ -52,7 +60,20 @@ impl WebAuthProvider {
     async fn create_client_from_discovery(
         issuer_url: String,
         config: &ProviderConfig,
-    ) -> Result<(CoreClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointMaybeSet>, Option<CoreProviderMetadata>), AuthError> {
+    ) -> Result<
+        (
+            CoreClient<
+                EndpointSet,
+                EndpointNotSet,
+                EndpointNotSet,
+                EndpointNotSet,
+                EndpointSet,
+                EndpointMaybeSet,
+            >,
+            Option<CoreProviderMetadata>,
+        ),
+        AuthError,
+    > {
         tracing::debug!(
             "Fetching OIDC discovery document from: {}/.well-known/openid-configuration",
             issuer_url
@@ -261,7 +282,14 @@ fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
 }
 
 async fn handle_redirect(
-    client: &CoreClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointMaybeSet>,
+    client: &CoreClient<
+        EndpointSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointNotSet,
+        EndpointSet,
+        EndpointMaybeSet,
+    >,
     authorization_code: AuthorizationCode,
     state: CsrfTokenState,
 ) -> Result<(AccessToken, Option<CoreIdTokenClaims>), AuthError> {
