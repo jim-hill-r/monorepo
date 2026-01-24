@@ -1,0 +1,48 @@
+---
+name: Pull Request CI
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  detect-and-run-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Build cast CLI
+        run: |
+          cd cast/cli
+          cargo build --release
+
+      - name: Run CI checks on changed projects
+        run: |
+          # Use absolute path to cast binary
+          CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
+          
+          # Run cast ci with --check to validate projects with changes
+          # --only-changed: check only projects with changes
+          # --check: run checks only (no artifacts)
+          # --recursive 2: find all Cast projects up to 2 levels deep
+          "$CAST_BIN" ci --only-changed --check --recursive 2

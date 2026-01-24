@@ -42,7 +42,6 @@ const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 ///
 /// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
 /// Tests verify that the CSP contains the correct Auth0 domain.
-#[cfg(target_arch = "wasm32")]
 const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
