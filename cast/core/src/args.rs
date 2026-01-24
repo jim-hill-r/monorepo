@@ -1134,10 +1134,10 @@ mod tests {
             result.err()
         );
 
-        // Verify artifacts were created for the child project
+        // Verify artifacts were NOT created for the child project (Check mode by default)
         assert!(
-            child.join("artifacts").exists(),
-            "Child project should have artifacts after CI"
+            !child.join("artifacts").exists(),
+            "Child project should NOT have artifacts after CI in Check mode (only in Release mode)"
         );
     }
 }
