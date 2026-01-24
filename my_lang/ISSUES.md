@@ -1,7 +1,5 @@
 # Priority Issues
 
-- TODO (agent-generated): Implement basic parser to build AST from tokens (recursive descent parser for function declarations and expressions)
-- TODO (agent-generated): Add parser unit tests for function declarations, expressions, and statements
 - TODO (agent-generated): Create LLVM code generator module (codegen.rs) with initial structure and Context/Module setup
 - TODO (agent-generated): Implement LLVM code generation for integer literals and basic arithmetic operations
 - TODO (agent-generated): Implement LLVM code generation for function declarations with parameters and return values
