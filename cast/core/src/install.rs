@@ -43,6 +43,8 @@ pub enum Tool {
     Wrangler,
     /// Git Large File Storage
     GitLfs,
+    /// LLVM compiler infrastructure
+    Llvm,
 }
 
 impl Tool {
@@ -61,6 +63,7 @@ impl Tool {
             Tool::Playwright => "playwright",
             Tool::Wrangler => "wrangler",
             Tool::GitLfs => "git-lfs",
+            Tool::Llvm => "llvm",
         }
     }
 
@@ -79,6 +82,7 @@ impl Tool {
             "playwright" => Some(Tool::Playwright),
             "wrangler" => Some(Tool::Wrangler),
             "git-lfs" | "gitlfs" | "lfs" => Some(Tool::GitLfs),
+            "llvm" => Some(Tool::Llvm),
             _ => None,
         }
     }
@@ -161,6 +165,19 @@ pub fn detect_required_tools(
         tools.insert(Tool::Wrangler);
     }
 
+    // Add project type-specific tools
+    if let Some(project_type) = &config.project_type {
+        match project_type.as_str() {
+            "programming_language" => {
+                // Programming language projects need LLVM for code generation
+                tools.insert(Tool::Llvm);
+            }
+            _ => {
+                // Unknown project type - log but continue with defaults
+            }
+        }
+    }
+
     // Convert HashSet to Vec and sort for consistent ordering
     let mut tools_vec: Vec<Tool> = tools.into_iter().collect();
     tools_vec.sort_by_key(|tool| tool.name());
@@ -177,6 +194,11 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
         return check_playwright_with_browsers();
     }
 
+    // LLVM needs special handling to verify development libraries are installed
+    if matches!(tool, Tool::Llvm) {
+        return check_llvm_with_libraries();
+    }
+
     let (command, args) = match tool {
         Tool::Rustup => ("rustup", vec!["--version"]),
         Tool::Rustc => ("rustc", vec!["--version"]),
@@ -190,6 +212,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
         Tool::Playwright => ("npx", vec!["playwright", "--version"]),
         Tool::Wrangler => ("wrangler", vec!["--version"]),
         Tool::GitLfs => ("git", vec!["lfs", "version"]),
+        Tool::Llvm => ("llvm-config-18", vec!["--version"]),
     };
 
     // Try to run the command
@@ -314,6 +337,74 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, InstallError> {
     }
 }
 
+/// Check if LLVM is installed with required development libraries
+fn check_llvm_with_libraries() -> Result<ToolStatus, InstallError> {
+    use std::process::Command;
+
+    // First check if llvm-config-18 is available
+    let version_check = Command::new("llvm-config-18").args(["--version"]).output();
+
+    let version = match version_check {
+        Ok(output) if output.status.success() => {
+            let version_output = String::from_utf8_lossy(&output.stdout);
+            Some(parse_version_string(version_output.trim()))
+        }
+        _ => {
+            // llvm-config not found
+            return Ok(ToolStatus {
+                tool: Tool::Llvm,
+                installed: false,
+                version: None,
+            });
+        }
+    };
+
+    // On Linux, verify that the development libraries are installed by checking for libpolly
+    // We do this by attempting to check if the Polly library exists using llvm-config
+    if cfg!(target_os = "linux") {
+        // Check if libpolly library is available by querying llvm-config
+        let libs_check = Command::new("llvm-config-18").args(["--libdir"]).output();
+
+        match libs_check {
+            Ok(output) if output.status.success() => {
+                let libdir = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let polly_lib = std::path::Path::new(&libdir).join("libPolly.a");
+
+                // Check if Polly library file exists
+                if polly_lib.exists() {
+                    Ok(ToolStatus {
+                        tool: Tool::Llvm,
+                        installed: true,
+                        version,
+                    })
+                } else {
+                    // llvm-config found but Polly library is missing (dev packages not installed)
+                    Ok(ToolStatus {
+                        tool: Tool::Llvm,
+                        installed: false,
+                        version,
+                    })
+                }
+            }
+            _ => {
+                // Can't determine library directory, assume not properly installed
+                Ok(ToolStatus {
+                    tool: Tool::Llvm,
+                    installed: false,
+                    version,
+                })
+            }
+        }
+    } else {
+        // On macOS and other platforms, just check if llvm-config works
+        Ok(ToolStatus {
+            tool: Tool::Llvm,
+            installed: true,
+            version,
+        })
+    }
+}
+
 /// Parse version string from tool output
 /// This extracts the version number from various tool output formats
 fn parse_version_string(output: &str) -> String {
@@ -375,6 +466,7 @@ mod tests {
         assert_eq!(Tool::Playwright.name(), "playwright");
         assert_eq!(Tool::Wrangler.name(), "wrangler");
         assert_eq!(Tool::GitLfs.name(), "git-lfs");
+        assert_eq!(Tool::Llvm.name(), "llvm");
     }
 
     #[test]
@@ -395,6 +487,7 @@ mod tests {
         assert_eq!(Tool::from_name("git-lfs"), Some(Tool::GitLfs));
         assert_eq!(Tool::from_name("gitlfs"), Some(Tool::GitLfs));
         assert_eq!(Tool::from_name("lfs"), Some(Tool::GitLfs));
+        assert_eq!(Tool::from_name("llvm"), Some(Tool::Llvm));
         assert_eq!(Tool::from_name("unknown"), None);
     }
 
@@ -633,6 +726,36 @@ framework = "dioxus"
     }
 
     #[test]
+    fn test_detect_required_tools_programming_language_project_type() {
+        use std::fs;
+        use tempdir::TempDir;
+
+        let temp_dir = TempDir::new("test_programming_language").unwrap();
+
+        // Create a Cast.toml with programming_language project_type
+        fs::write(
+            temp_dir.path().join("Cast.toml"),
+            "project_type = \"programming_language\"",
+        )
+        .unwrap();
+
+        let result = detect_required_tools(temp_dir.path());
+        assert!(result.is_ok());
+
+        let tools = result.unwrap();
+        // Programming language projects require: rustup, rustc, cargo, rustfmt, clippy, git-lfs, cast, llvm
+        assert!(tools.contains(&Tool::Rustup));
+        assert!(tools.contains(&Tool::Rustc));
+        assert!(tools.contains(&Tool::Cargo));
+        assert!(tools.contains(&Tool::Rustfmt));
+        assert!(tools.contains(&Tool::Clippy));
+        assert!(tools.contains(&Tool::GitLfs));
+        assert!(tools.contains(&Tool::Cast));
+        assert!(tools.contains(&Tool::Llvm));
+        assert_eq!(tools.len(), 8);
+    }
+
+    #[test]
     fn test_check_tool_rustc() {
         // This test checks if rustc is available (it should be in the CI environment)
         let result = check_tool(&Tool::Rustc);
@@ -768,6 +891,7 @@ fn install_single_tool(
         Tool::Playwright => install_playwright(working_directory, dry_run),
         Tool::Wrangler => install_wrangler(dry_run),
         Tool::GitLfs => install_git_lfs(dry_run),
+        Tool::Llvm => install_llvm(dry_run),
     }
 }
 
@@ -1162,6 +1286,125 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, InstallError> {
             stderr
         )))
     }
+}
+
+/// Install LLVM compiler infrastructure
+fn install_llvm(dry_run: bool) -> Result<InstallResult, InstallError> {
+    use std::process::Command;
+
+    // Determine the installation command based on OS
+    let (os_name, package_manager, install_args) = if cfg!(target_os = "linux") {
+        // On Linux, install LLVM 18 development libraries
+        (
+            "Linux",
+            "apt",
+            vec!["install", "-y", "llvm-18-dev", "libpolly-18-dev"],
+        )
+    } else if cfg!(target_os = "macos") {
+        // On macOS, install LLVM 18 via Homebrew
+        ("macOS", "brew", vec!["install", "llvm@18"])
+    } else if cfg!(target_os = "windows") {
+        return Ok(InstallResult {
+            tool: Tool::Llvm,
+            success: false,
+            message: "Windows is not currently supported. Please install LLVM manually from https://releases.llvm.org/".to_string(),
+            skipped: false,
+        });
+    } else {
+        return Ok(InstallResult {
+            tool: Tool::Llvm,
+            success: false,
+            message: "Unsupported operating system. Please install LLVM manually from https://releases.llvm.org/".to_string(),
+            skipped: false,
+        });
+    };
+
+    if dry_run {
+        let install_cmd = format!("{} {}", package_manager, install_args.join(" "));
+        let extra_msg = if cfg!(target_os = "macos") {
+            "\nNote: On macOS, you'll need to set LLVM_SYS_180_PREFIX=$(brew --prefix llvm@18) in your environment."
+        } else {
+            ""
+        };
+        return Ok(InstallResult {
+            tool: Tool::Llvm,
+            success: true,
+            message: format!("Would install: {}{}", install_cmd, extra_msg),
+            skipped: false,
+        });
+    }
+
+    println!("Installing LLVM 18 for {}...", os_name);
+
+    // Determine if we need sudo (Linux only)
+    let needs_sudo = cfg!(target_os = "linux");
+
+    // On Linux, run apt-get update first
+    if cfg!(target_os = "linux") {
+        println!("Updating package index...");
+        let update_output = Command::new("sudo")
+            .args(["apt-get", "update"])
+            .output()
+            .map_err(|e| {
+                InstallError::InstallationError(format!("Failed to run apt-get update: {}", e))
+            })?;
+
+        if !update_output.status.success() {
+            let stderr = String::from_utf8_lossy(&update_output.stderr);
+            return Err(InstallError::InstallationError(format!(
+                "Failed to update package index: {}",
+                stderr
+            )));
+        }
+    }
+
+    // Build the command with or without sudo
+    let mut cmd = if needs_sudo {
+        let mut sudo_cmd = Command::new("sudo");
+        sudo_cmd.arg(package_manager);
+        sudo_cmd
+    } else {
+        Command::new(package_manager)
+    };
+
+    // Add the install arguments
+    for arg in &install_args {
+        cmd.arg(arg);
+    }
+
+    // Execute the package manager installation
+    let output = cmd.output().map_err(|e| {
+        InstallError::InstallationError(format!(
+            "Failed to run {} ({}): {}. Please install LLVM manually.",
+            package_manager, os_name, e
+        ))
+    })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(InstallError::InstallationError(format!(
+            "Failed to install LLVM using {}: {}",
+            package_manager, stderr
+        )));
+    }
+
+    println!("LLVM 18 installed successfully!");
+
+    // On macOS, provide additional instructions for setting environment variable
+    if cfg!(target_os = "macos") {
+        println!("\n⚠️  IMPORTANT: On macOS, you need to set an environment variable:");
+        println!("    export LLVM_SYS_180_PREFIX=$(brew --prefix llvm@18)");
+        println!(
+            "Add this to your shell profile (~/.zshrc or ~/.bash_profile) to make it permanent.\n"
+        );
+    }
+
+    Ok(InstallResult {
+        tool: Tool::Llvm,
+        success: true,
+        message: "Installed successfully".to_string(),
+        skipped: false,
+    })
 }
 
 /// Options for checking tools
@@ -1908,6 +2151,29 @@ mod install_tests {
         assert!(install_result.message.contains("brew"));
         #[cfg(target_os = "windows")]
         assert!(install_result.message.contains("winget"));
+    }
+
+    #[test]
+    fn test_install_llvm_dry_run() {
+        let result = install_llvm(true);
+        assert!(result.is_ok());
+        let install_result = result.unwrap();
+        assert_eq!(install_result.tool, Tool::Llvm);
+        assert!(install_result.success);
+        assert!(install_result.message.contains("Would install"));
+        // Check that it contains the appropriate package manager for the OS
+        #[cfg(target_os = "linux")]
+        {
+            assert!(install_result.message.contains("apt"));
+            assert!(install_result.message.contains("llvm-18-dev"));
+            assert!(install_result.message.contains("libpolly-18-dev"));
+        }
+        #[cfg(target_os = "macos")]
+        {
+            assert!(install_result.message.contains("brew"));
+            assert!(install_result.message.contains("llvm@18"));
+            assert!(install_result.message.contains("LLVM_SYS_180_PREFIX"));
+        }
     }
 
     #[test]

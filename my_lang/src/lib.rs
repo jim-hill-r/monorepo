@@ -1,19 +1,34 @@
-//! my_lang: A placeholder for a new programming language
+//! my_lang: A programming language implementation with LLVM backend
 //!
-//! This project serves as a foundation for building a new programming language
-//! that will eventually compile to LLVM.
+//! This project provides a foundation for building a new programming language
+//! that compiles to LLVM IR for execution on multiple platforms.
 //!
 //! ## Architecture
 //!
-//! The language implementation will consist of:
+//! The language implementation consists of:
 //! - **Lexer**: Tokenizes source code into a stream of tokens
 //! - **Parser**: Builds an Abstract Syntax Tree (AST) from tokens
-//! - **Code Generator**: Compiles the AST to LLVM IR
+//! - **Code Generator**: Compiles the AST to LLVM IR (using inkwell)
+//!
+//! ## LLVM Support
+//!
+//! This project uses [inkwell](https://github.com/TheDan64/inkwell) to safely
+//! interface with LLVM. The LLVM backend enables:
+//! - Cross-platform code generation
+//! - Optimizations via LLVM's optimization passes
+//! - JIT compilation for interactive execution
+//! - AOT compilation for native binaries
+//!
+//! ## Supported Platforms
+//!
+//! - Linux x86_64 (with LLVM 18 installed)
+//! - macOS ARM64 (aarch64-apple-darwin, with LLVM 18 installed)
 //!
 //! ## Current Status
 //!
-//! This is a placeholder implementation. The actual lexer, parser, and code
-//! generation will be implemented in future iterations.
+//! - ✅ Lexer: Fully implemented with language keywords
+//! - ⏳ Parser: Placeholder implementation
+//! - ⏳ Code Generator: Not yet implemented (LLVM toolchain now available)
 
 pub mod lexer;
 pub mod parser;
