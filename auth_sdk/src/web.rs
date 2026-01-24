@@ -13,16 +13,26 @@ use crate::provider::{
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
+// Type alias for the CoreClient with OIDC discovery endpoints configured
+// Type parameters represent endpoint availability states:
+// 1. AuthUrl: EndpointSet (authorization endpoint always set via discovery)
+// 2. DeviceAuthUrl: EndpointNotSet (device authorization not used)
+// 3. IntrospectionUrl: EndpointNotSet (token introspection not used)
+// 4. RevocationUrl: EndpointNotSet (token revocation not used)
+// 5. TokenUrl: EndpointSet (token endpoint explicitly set for exchange_code)
+// 6. UserInfoUrl: EndpointMaybeSet (userinfo endpoint optional in OIDC)
+type OidcClient = CoreClient<
+    EndpointSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointSet,
+    EndpointMaybeSet,
+>;
+
 #[derive(Clone)]
 pub struct WebAuthProvider {
-    client: CoreClient<
-        EndpointSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointSet,
-        EndpointMaybeSet,
-    >,
+    client: OidcClient,
     provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
@@ -60,20 +70,7 @@ impl WebAuthProvider {
     async fn create_client_from_discovery(
         issuer_url: String,
         config: &ProviderConfig,
-    ) -> Result<
-        (
-            CoreClient<
-                EndpointSet,
-                EndpointNotSet,
-                EndpointNotSet,
-                EndpointNotSet,
-                EndpointSet,
-                EndpointMaybeSet,
-            >,
-            Option<CoreProviderMetadata>,
-        ),
-        AuthError,
-    > {
+    ) -> Result<(OidcClient, Option<CoreProviderMetadata>), AuthError> {
         tracing::debug!(
             "Fetching OIDC discovery document from: {}/.well-known/openid-configuration",
             issuer_url
@@ -282,14 +279,7 @@ fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
 }
 
 async fn handle_redirect(
-    client: &CoreClient<
-        EndpointSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointNotSet,
-        EndpointSet,
-        EndpointMaybeSet,
-    >,
+    client: &OidcClient,
     authorization_code: AuthorizationCode,
     state: CsrfTokenState,
 ) -> Result<(AccessToken, Option<CoreIdTokenClaims>), AuthError> {
