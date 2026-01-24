@@ -8,62 +8,35 @@ This workflow automatically runs `cast ci` for any project that has changes in a
 
 1. **Trigger**: The workflow runs on pull request events (opened, synchronized, reopened).
 
-2. **Changed Project Detection**: 
-   - Gets the list of changed files between the base and head branches
-   - For each changed file, walks up the directory tree to find a `Cast.toml` file
-   - Collects unique project directories that have a `Cast.toml`
+2. **Build and Run**: 
+   - Sets up the Rust and Node.js toolchains
+   - Builds the `cast` CLI from `cast/cli`
+   - Runs `cast ci --only-changed --recursive 2` from the repository root
+   - This recursively finds all projects with `Cast.toml` up to 2 levels deep and runs CI checks only on projects with changes
 
-3. **Build and Run**: 
-   - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `cast_workspace/cli`
-   - Runs `cast ci` for each detected project
+3. **Changed Project Detection**: 
+   - The `--only-changed` flag makes `cast ci` check each project for changes compared to the origin's default branch
+   - Projects with no changes are automatically skipped
+   - The `--recursive 2` flag ensures all Cast projects up to 2 levels deep are checked
 
 4. **Results**: 
-   - Groups output by project for easy reading
+   - `cast ci` automatically installs required tools for each project
+   - Runs all CI checks (fmt, clippy, build, test) for changed projects
    - Fails the workflow if any project's CI check fails
 
 ### Setup Requirements
 
 The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
-2. Projects must have a `Cast.toml` file in their root directory
-3. The `cast_workspace/cli` project must be buildable
+2. Node.js toolchain (automatically installed by the workflow)
+3. Projects must have a `Cast.toml` file in their root directory
+4. The `cast/cli` project must be buildable
 
 ### Permissions
 
 The workflow requires the following permissions:
 - `contents: read` - To checkout the repository and read files
 - `pull-requests: read` - To access PR information
-
-### Testing
-
-You can test this workflow configuration by running:
-
-```bash
-cd monorepo/workflow_tests
-cargo test cast_ci_workflow_tests
-```
-
-These Rust tests validate:
-- Workflow file existence and YAML syntax
-- Correct trigger configuration
-- Use of git diff for change detection
-- Cast.toml detection logic
-- Rust toolchain setup
-- Cast CLI build and execution
-- Error handling for git operations
-- Proper fetching of commit SHAs
-- Proper quoting of GitHub Actions expressions
-
-### Error Handling
-
-The workflow includes robust error handling for git operations:
-- Explicitly fetches both base and head commits to ensure they're available
-- Captures stderr from git diff to provide clear error messages
-- Checks git diff exit code and fails gracefully with diagnostic output
-- Uses `|| true` on fetch operations to prevent unnecessary failures
-
-This ensures that the workflow fails fast with clear error messages when commits are unavailable, rather than continuing with corrupted state.
 
 ## nightly.yml
 

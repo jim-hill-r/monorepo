@@ -269,32 +269,32 @@ fn test_workflow_sets_up_nodejs() {
 }
 
 #[test]
-fn test_workflow_runs_cast_toolchain_install() {
+fn test_workflow_runs_cast_install() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("toolchain install"),
-        "Workflow does not run cast toolchain install command"
+        content.contains("cast") && content.contains("install"),
+        "Workflow does not run cast install command"
     );
 }
 
 #[test]
-fn test_workflow_installs_toolchain_before_cd() {
+fn test_workflow_installs_before_cd() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // Find positions of toolchain install and cast cd
-    let toolchain_pos = content
-        .find("toolchain install")
-        .expect("Workflow missing toolchain install");
+    // Find positions of cast install and cast cd
+    let install_pos = content
+        .find(r#"CAST_BIN" install"#)
+        .expect("Workflow missing cast install");
     // Look for the pattern where CAST_BIN is used to run cd command
     let cd_pos = content
         .find(r#"CAST_BIN" cd"#)
         .expect("Workflow missing cast cd command (looking for CAST_BIN cd)");
 
     assert!(
-        toolchain_pos < cd_pos,
-        "Workflow must run toolchain install before cast cd"
+        install_pos < cd_pos,
+        "Workflow must run cast install before cast cd"
     );
 }
