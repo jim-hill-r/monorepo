@@ -23,6 +23,8 @@ pub enum AuthError {
     IdTokenValidationFailed(String),
     #[error("HTTP client configuration error: {0}")]
     HttpClientError(String),
+    #[error("configuration error: {0}")]
+    ConfigError(String),
     #[error("unknown error")]
     Unknown,
 }

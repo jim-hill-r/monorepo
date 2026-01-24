@@ -1,20 +1,21 @@
 use openidconnect::{
-    AuthUrl, AuthorizationCode, ClientId, CsrfToken, IdTokenClaims, IssuerUrl, Nonce,
-    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    AuthorizationCode, ClientId, CsrfToken, IssuerUrl, Nonce,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
     core::{CoreAuthenticationFlow, CoreClient, CoreIdTokenClaims, CoreProviderMetadata},
+    EndpointSet, EndpointMaybeSet, EndpointNotSet, OAuth2TokenResponse,
 };
 use web_sys::UrlSearchParams;
 
 use crate::provider::{
     AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, CsrfTokenWrapper, NonceWrapper,
-    PkceVerifierWrapper, ProviderConfig, User,
+    PkceVerifierWrapper, ProviderConfig,
 };
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
 #[derive(Clone)]
 pub struct WebAuthProvider {
-    client: CoreClient,
+    client: CoreClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointMaybeSet>,
     provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
@@ -22,14 +23,14 @@ pub struct WebAuthProvider {
 
 impl WebAuthProvider {
     pub async fn new(config: ProviderConfig) -> Result<WebAuthProvider, AuthError> {
-        // Check if OIDC discovery should be used
-        let (client, provider_metadata) = if let Some(issuer_url) = config.issuer_url {
-            tracing::info!("Using OIDC discovery with issuer: {}", issuer_url);
-            Self::create_client_from_discovery(issuer_url, &config).await?
-        } else {
-            tracing::info!("Using explicit OAuth2 endpoints");
-            Self::create_client_from_explicit_endpoints(&config)?
-        };
+        // OIDC discovery is required in openidconnect v4+
+        let issuer_url = config.issuer_url.clone().ok_or_else(|| {
+            tracing::error!("issuer_url is required for OIDC discovery");
+            AuthError::ConfigError("issuer_url is required".to_string())
+        })?;
+        
+        tracing::info!("Using OIDC discovery with issuer: {}", issuer_url);
+        let (client, provider_metadata) = Self::create_client_from_discovery(issuer_url, &config).await?;
 
         let (access_token, id_token_claims) =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
@@ -51,7 +52,7 @@ impl WebAuthProvider {
     async fn create_client_from_discovery(
         issuer_url: String,
         config: &ProviderConfig,
-    ) -> Result<(CoreClient, Option<CoreProviderMetadata>), AuthError> {
+    ) -> Result<(CoreClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointMaybeSet>, Option<CoreProviderMetadata>), AuthError> {
         tracing::debug!(
             "Fetching OIDC discovery document from: {}/.well-known/openid-configuration",
             issuer_url
@@ -72,38 +73,32 @@ impl WebAuthProvider {
 
         tracing::debug!("Successfully fetched OIDC discovery document");
 
+        // Extract the token endpoint from provider metadata - it's required for token exchange
+        let token_endpoint = provider_metadata
+            .token_endpoint()
+            .ok_or_else(|| {
+                AuthError::OidcDiscoveryFailed(
+                    "Provider metadata missing required token_endpoint".to_string(),
+                )
+            })?
+            .clone();
+
         // Create client from discovered metadata
         let client = CoreClient::from_provider_metadata(
             provider_metadata.clone(),
             ClientId::new(config.client_id.clone()),
             None, // No client secret for public clients (PKCE is used instead)
         )
+        // Set redirect URI for the OAuth2 flow
         .set_redirect_uri(
             RedirectUrl::new(config.redirect_url.clone()).map_err(|_| AuthError::ParseError)?,
-        );
+        )
+        // Explicitly set token endpoint to upgrade type state from EndpointMaybeSet to EndpointSet
+        // This is required for methods like exchange_code() to be available
+        .set_token_uri(token_endpoint);
 
         tracing::info!("OIDC client created successfully from discovery");
         Ok((client, Some(provider_metadata)))
-    }
-
-    /// Create a CoreClient using explicit OAuth2 endpoints (backward compatibility)
-    fn create_client_from_explicit_endpoints(
-        config: &ProviderConfig,
-    ) -> Result<(CoreClient, Option<CoreProviderMetadata>), AuthError> {
-        tracing::debug!("Creating client with explicit endpoints");
-
-        // CoreClient can be created manually with explicit endpoints for backward compatibility
-        let client = CoreClient::new(ClientId::new(config.client_id.clone()))
-            .set_auth_uri(AuthUrl::new(config.auth_url.clone()).map_err(|_| AuthError::ParseError)?)
-            .set_token_uri(
-                TokenUrl::new(config.token_url.clone()).map_err(|_| AuthError::ParseError)?,
-            )
-            .set_redirect_uri(
-                RedirectUrl::new(config.redirect_url.clone()).map_err(|_| AuthError::ParseError)?,
-            );
-
-        tracing::debug!("Client created with explicit endpoints");
-        Ok((client, None))
     }
 }
 
@@ -266,7 +261,7 @@ fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
 }
 
 async fn handle_redirect(
-    client: &CoreClient,
+    client: &CoreClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet, EndpointMaybeSet>,
     authorization_code: AuthorizationCode,
     state: CsrfTokenState,
 ) -> Result<(AccessToken, Option<CoreIdTokenClaims>), AuthError> {
