@@ -29,7 +29,7 @@ This project provides the foundation for building a new programming language wit
 The language implementation consists of three main phases:
 
 1. **Lexer** (`src/lexer.rs`): ✅ **Implemented** - Tokenizes source code into a stream of tokens
-2. **Parser** (`src/parser.rs`): Builds an Abstract Syntax Tree (AST) from tokens
+2. **Parser** (`src/parser.rs`): ✅ **Implemented** - Builds an Abstract Syntax Tree (AST) from tokens using recursive descent parsing
 3. **Code Generator** (future): Compiles the AST to LLVM IR
 
 ## Lexer Features
@@ -77,7 +77,7 @@ while let token = lexer.next_token() {
 ## Current Status
 
 - ✅ Lexer: Fully implemented with correct language keywords
-- ⏳ Parser: Placeholder implementation
+- ✅ Parser: Fully implemented with recursive descent parsing for function declarations, expressions, and statements
 - ⏳ Code Generator: Not yet implemented
 
 ## Getting Started
