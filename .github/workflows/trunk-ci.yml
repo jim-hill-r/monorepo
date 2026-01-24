@@ -1,0 +1,62 @@
+---
+name: Trunk CI
+
+'on':
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/artifacts/**'
+
+permissions:
+  contents: write
+
+jobs:
+  detect-and-run-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Build cast CLI
+        run: |
+          cd cast/cli
+          cargo build --release
+
+      - name: Run CI and build release artifacts on changed projects
+        run: |
+          # Use absolute path to cast binary
+          CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
+          
+          # Run cast ci with --release to build and publish artifacts for changed projects
+          # --only-changed: check only projects with changes
+          # --release: build in release mode and publish artifacts
+          # --recursive 2: find all Cast projects up to 2 levels deep
+          "$CAST_BIN" ci --only-changed --release --recursive 2
+
+      - name: Commit and push artifacts
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No artifacts to commit"
+          else
+            git commit -m "chore: update release artifacts [skip ci]"
+            git push
+          fi
