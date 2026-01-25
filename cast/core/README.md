@@ -466,14 +466,15 @@ For Dioxus web projects (projects with `framework = "dioxus"` in Cast.toml or Ca
 3. Gets the current git commit SHA and checks if the working directory is dirty
 4. Generates a timestamped filename: `<version>+<year>-<month>-<day>.<counter>.<sha>[-dirty].zip`
 5. Creates a zip file of the bundled assets (excluding `.DS_Store` files)
-6. Places the zip in the `artifacts/` directory
+6. Places the zip in the `artifacts/wasm/` directory (since Dioxus web targets WebAssembly)
 
 Example artifact structure:
 
 ```bash
 # After running cast publish on a Dioxus project:
 artifacts/
-└── 0.1.0+2025-01-15.1.a3f4b2c.zip
+└── wasm/
+    └── 0.1.0+2025-01-15.1.a3f4b2c.zip
 ```
 
 The versioned filename includes:
