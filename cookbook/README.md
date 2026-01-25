@@ -246,7 +246,7 @@ cargo tarpaulin
 
 This will:
 - Run all tests in the workspace
-- Generate an HTML report in `target/tarpaulin/index.html`
+- Generate an HTML report as `tarpaulin-report.html` in the cookbook directory
 - Display a coverage summary in the terminal
 - Fail if coverage drops below 80% (per [testing standards](../standards/docs/testing.md))
 
@@ -280,7 +280,9 @@ Coverage settings are configured in `tarpaulin.toml`:
 
 ### Interpreting Results
 
-Current coverage baseline: **~76%**
+Run `cargo tarpaulin` to see the current coverage metrics.
+
+As of the initial setup, coverage is approximately 76% across the workspace.
 
 Focus on improving coverage for:
 - Error handling paths and edge cases

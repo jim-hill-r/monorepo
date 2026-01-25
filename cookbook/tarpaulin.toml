@@ -11,7 +11,7 @@ exclude-files = [
 ]
 
 # Output formats
-# HTML report is generated in target/tarpaulin/
+# HTML report is generated as tarpaulin-report.html in the cookbook directory
 # Stdout shows a summary in the terminal
 out = ["Html", "Stdout"]
 
