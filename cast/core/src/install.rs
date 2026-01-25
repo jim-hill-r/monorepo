@@ -212,6 +212,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
         Tool::Playwright => ("npx", vec!["playwright", "--version"]),
         Tool::Wrangler => ("wrangler", vec!["--version"]),
         Tool::GitLfs => ("git", vec!["lfs", "version"]),
+        // LLVM handled above via check_llvm_with_libraries(), this is unreachable
         Tool::Llvm => ("llvm-config-18", vec!["--version"]),
     };
 
@@ -404,11 +405,12 @@ fn check_llvm_with_libraries() -> Result<ToolStatus, InstallError> {
         });
     }
 
-    // At this point, we know working_llvm_config is Some because of the check above
+    // At this point, we know working_llvm_config is Some because of the check above,
+    // but we use pattern matching instead of unwrap() to satisfy clippy::unwrap_used
     let llvm_config_cmd = match working_llvm_config {
         Some(ref cmd) => cmd,
         None => {
-            // This should never happen due to the check above, but satisfy the compiler
+            // This should never happen due to the check above
             return Ok(ToolStatus {
                 tool: Tool::Llvm,
                 installed: false,
