@@ -175,6 +175,8 @@ The `--only-changed` option is useful in CI/CD pipelines to skip projects withou
 
 This feature is helpful in monorepos where you want to optimize CI runtime by only running checks on projects that have actually changed since the last deployment to the default branch.
 
+**Performance optimization:** When using `--only-changed` with `--recursive`, Cast caches git diff results to avoid running the same git commands multiple times, making recursive traversal very fast when most projects have no changes.
+
 ### Recursive CI Example
 
 The `--recursive` option is useful for monorepos with nested projects:
