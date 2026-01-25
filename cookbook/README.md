@@ -222,3 +222,71 @@ To run all tests in the workspace:
 ```bash
 cargo test
 ```
+
+## Code Coverage
+
+The cookbook project uses [cargo-tarpaulin](https://github.com/xd009642/tarpaulin) for code coverage reporting. Tarpaulin analyzes which lines of code are executed during tests, helping identify untested code paths.
+
+### Installing Tarpaulin
+
+If you don't have tarpaulin installed, install it with:
+
+```bash
+cargo install cargo-tarpaulin
+```
+
+### Running Coverage Reports
+
+To generate a code coverage report:
+
+```bash
+cd cookbook
+cargo tarpaulin
+```
+
+This will:
+- Run all tests in the workspace
+- Generate an HTML report in `target/tarpaulin/index.html`
+- Display a coverage summary in the terminal
+- Fail if coverage drops below 80% (per [testing standards](../standards/docs/testing.md))
+
+### Viewing the HTML Report
+
+Open the generated HTML report in your browser to see detailed line-by-line coverage:
+
+```bash
+# Linux
+xdg-open tarpaulin-report.html
+
+# macOS
+open tarpaulin-report.html
+
+# Windows
+start tarpaulin-report.html
+```
+
+The HTML report shows:
+- Overall coverage percentage for each file
+- Line-by-line highlighting of covered (green) and uncovered (red) code
+- Coverage statistics per file and function
+
+### Configuration
+
+Coverage settings are configured in `tarpaulin.toml`:
+- Excludes test files from coverage calculations
+- Sets the 80% coverage threshold (from testing standards)
+- Generates both HTML and terminal output
+- Timeout set to 120 seconds for all tests
+
+### Interpreting Results
+
+Current coverage baseline: **~76%**
+
+Focus on improving coverage for:
+- Error handling paths and edge cases
+- Business logic in core and data_md libraries
+- UI rendering logic in the web application
+
+See the [Testing Standards](../standards/docs/testing.md) for coverage goals:
+- 80% coverage for critical business logic
+- 100% coverage for public APIs and error handling

@@ -1,0 +1,29 @@
+# Tarpaulin Configuration for Cookbook Project
+# Run with: cargo tarpaulin
+
+[tarpaulin]
+# Run tests for all workspace members
+workspace = true
+
+# Exclude test files from coverage calculations
+exclude-files = [
+    "tests/*",
+]
+
+# Output formats
+# HTML report is generated in target/tarpaulin/
+# Stdout shows a summary in the terminal
+out = ["Html", "Stdout"]
+
+# Follow child processes (useful for integration tests)
+follow-exec = true
+
+# Fail if coverage drops below this threshold (80% per standards/docs/testing.md)
+fail-under = 80.0
+
+# Timeout for tests (in seconds)
+timeout = 120
+
+# Enable branch coverage (more detailed than line coverage)
+# Note: This may increase runtime significantly
+# branch = true
