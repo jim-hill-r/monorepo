@@ -341,23 +341,68 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, InstallError> {
 fn check_llvm_with_libraries() -> Result<ToolStatus, InstallError> {
     use std::process::Command;
 
-    // First check if llvm-config-18 is available
-    let version_check = Command::new("llvm-config-18").args(["--version"]).output();
-
-    let version = match version_check {
-        Ok(output) if output.status.success() => {
-            let version_output = String::from_utf8_lossy(&output.stdout);
-            Some(parse_version_string(version_output.trim()))
-        }
-        _ => {
-            // llvm-config not found
-            return Ok(ToolStatus {
-                tool: Tool::Llvm,
-                installed: false,
-                version: None,
-            });
-        }
+    // Try multiple llvm-config commands based on platform
+    let llvm_config_commands = if cfg!(target_os = "macos") {
+        // On macOS, Homebrew installs llvm-config without version suffix in versioned directory
+        // Try both the Homebrew path and the versioned command
+        vec![
+            "llvm-config",    // Homebrew default (in /opt/homebrew/opt/llvm@18/bin/)
+            "llvm-config-18", // Alternative if linked to PATH
+        ]
+    } else {
+        // On Linux and other platforms, use versioned command
+        vec!["llvm-config-18"]
     };
+
+    let mut version = None;
+    let mut llvm_config_found = false;
+
+    // Try each llvm-config command until one succeeds
+    for cmd in &llvm_config_commands {
+        let version_check = Command::new(cmd).args(["--version"]).output();
+
+        if let Ok(output) = version_check {
+            if output.status.success() {
+                let version_output = String::from_utf8_lossy(&output.stdout);
+                version = Some(parse_version_string(version_output.trim()));
+                llvm_config_found = true;
+                break;
+            }
+        }
+    }
+
+    // If no llvm-config command succeeded, check Homebrew on macOS
+    if !llvm_config_found && cfg!(target_os = "macos") {
+        // Try to find LLVM via Homebrew
+        let brew_check = Command::new("brew").args(["--prefix", "llvm@18"]).output();
+
+        if let Ok(output) = brew_check {
+            if output.status.success() {
+                let prefix = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let llvm_config_path = format!("{}/bin/llvm-config", prefix);
+
+                // Try to get version from Homebrew's llvm-config
+                let version_check = Command::new(&llvm_config_path).args(["--version"]).output();
+
+                if let Ok(output) = version_check {
+                    if output.status.success() {
+                        let version_output = String::from_utf8_lossy(&output.stdout);
+                        version = Some(parse_version_string(version_output.trim()));
+                        llvm_config_found = true;
+                    }
+                }
+            }
+        }
+    }
+
+    if !llvm_config_found {
+        // llvm-config not found
+        return Ok(ToolStatus {
+            tool: Tool::Llvm,
+            installed: false,
+            version: None,
+        });
+    }
 
     // On Linux, verify that the development libraries are installed by checking for libpolly
     // We do this by attempting to check if the Polly library exists using llvm-config
