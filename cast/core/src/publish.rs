@@ -313,8 +313,8 @@ fn publish_dioxus(working_directory: &Path) -> Result<(), PublishError> {
     // Generate versioned filename
     let filename = generate_bundle_filename(working_directory)?;
 
-    // Create artifacts directory with 'web' subdirectory for platform-independent bundles
-    let artifacts_dir = working_directory.join("artifacts").join("web");
+    // Create artifacts directory with 'wasm' subdirectory for WebAssembly bundles
+    let artifacts_dir = working_directory.join("artifacts").join("wasm");
     fs::create_dir_all(&artifacts_dir)?;
 
     // Create zip file using Rust zip crate
