@@ -197,6 +197,10 @@ Running `cast ci --recursive 1` from the monorepo root will:
 1. Run CI on the root project
 2. Find project1 and project2 at depth 1
 3. Run CI on each discovered project
+4. Continue running CI on remaining projects even if one fails
+5. Display a summary showing which projects passed and which failed
+
+**Error Handling**: When using `--recursive`, if one project fails CI checks, the process will continue to run CI on the remaining projects. At the end, a summary is displayed showing all successes and failures. The command exits with an error code if any project failed, but only after attempting to run CI on all discovered projects.
 
 **Note**: If the current directory doesn't have a Cast configuration (Cast.toml or Cargo.toml with Cast metadata), the recursive flag will skip running CI on the current directory and only search for and run CI on child projects. This is useful for running CI across multiple projects from a parent directory that isn't itself a Cast project.
 
