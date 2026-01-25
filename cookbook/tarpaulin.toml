@@ -5,9 +5,9 @@
 # Run tests for all workspace members
 workspace = true
 
-# Exclude test files from coverage calculations
+# Exclude test files from coverage calculations (including member test directories)
 exclude-files = [
-    "tests/*",
+    "**/tests/*",
 ]
 
 # Output formats
@@ -18,7 +18,9 @@ out = ["Html", "Stdout"]
 # Follow child processes (useful for integration tests)
 follow-exec = true
 
-# Fail if coverage drops below this threshold (80% per standards/docs/testing.md)
+# Workspace policy: fail if coverage drops below this threshold (80%, informed by standards/docs/testing.md)
+# Note: Current coverage is ~76%, so this will fail until coverage is improved
+# Set to 76.0 temporarily if you want passing builds, then incrementally raise it
 fail-under = 80.0
 
 # Timeout for tests (in seconds)

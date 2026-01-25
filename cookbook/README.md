@@ -232,8 +232,10 @@ The cookbook project uses [cargo-tarpaulin](https://github.com/xd009642/tarpauli
 If you don't have tarpaulin installed, install it with:
 
 ```bash
-cargo install cargo-tarpaulin
+cargo install cargo-tarpaulin --version 0.35.1
 ```
+
+**Note:** Version 0.35.1 is pinned for reproducible coverage results across developers and CI environments.
 
 ### Running Coverage Reports
 
@@ -249,6 +251,8 @@ This will:
 - Generate an HTML report as `tarpaulin-report.html` in the cookbook directory
 - Display a coverage summary in the terminal
 - Fail if coverage drops below 80% (per [testing standards](../standards/docs/testing.md))
+
+**Note:** Current coverage is ~76%, which is below the 80% threshold. The command will exit with an error code but still generate the coverage report. You can view the report to identify untested code paths. To allow the command to pass temporarily, set `fail-under = 76.0` in `tarpaulin.toml`.
 
 ### Viewing the HTML Report
 
