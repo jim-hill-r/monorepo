@@ -153,6 +153,13 @@ fn run_internal(
     // Track if we ran any CI checks
     let mut ran_ci_checks = false;
 
+    // For hybrid projects (both Cargo.toml and package.json), run npm ci first
+    // This ensures npm dependencies are installed before running tests
+    // which may include npm test (e.g., Playwright tests)
+    if has_cargo_toml && has_package_json {
+        run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
+    }
+
     // Run Rust CI if Cargo.toml exists
     if has_cargo_toml {
         run_rust_ci(working_directory, mode)?;

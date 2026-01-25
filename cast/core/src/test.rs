@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum TestError {
     #[error("Cargo test failed")]
     TestFailed,
+    #[error("npm ci failed")]
+    NpmCiFailed,
     #[error("npm test failed")]
     NpmTestFailed,
     #[error("IO error: {0}")]
@@ -15,7 +17,7 @@ pub enum TestError {
 /// Run tests for a project
 /// This detects the project type and runs appropriate tests:
 /// - For Rust projects (has Cargo.toml): cargo test
-/// - For TypeScript/Node.js projects (has package.json with test script): npm test
+/// - For TypeScript/Node.js projects (has package.json with test script): npm ci (to ensure dependencies are installed), then npm test
 /// - Projects can have both (e.g., Dioxus web apps with Playwright tests)
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), TestError> {
     let working_directory = working_directory.as_ref();
@@ -29,7 +31,9 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), TestError> {
     }
 
     // Run npm tests if package.json exists and has a test script
+    // First ensure dependencies are installed via npm ci
     if has_package_json && npm_script_exists(working_directory, "test") {
+        run_npm_ci(working_directory)?;
         run_npm_test(working_directory)?;
     }
 
@@ -59,6 +63,20 @@ fn run_npm_test(working_directory: &Path) -> Result<(), TestError> {
 
     if !status.success() {
         return Err(TestError::NpmTestFailed);
+    }
+
+    Ok(())
+}
+
+/// Run npm ci to install dependencies
+fn run_npm_ci(working_directory: &Path) -> Result<(), TestError> {
+    let status = Command::new("npm")
+        .arg("ci")
+        .current_dir(working_directory)
+        .status()?;
+
+    if !status.success() {
+        return Err(TestError::NpmCiFailed);
     }
 
     Ok(())
