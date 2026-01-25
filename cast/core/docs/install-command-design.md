@@ -220,11 +220,18 @@ The command determines required tools based on the Cast configuration:
 
 **Note**: Git LFS (git-lfs) is always required for all projects to handle large files in the repository.
 
+### Project Type-Based Requirements
+
+| Project Type | Additional Required Tools |
+|--------------|---------------------------|
+| `programming_language` | llvm (LLVM 18 compiler infrastructure) |
+
 ### Additional Considerations
 
 1. **Node.js detection**: If a `package.json` exists, Node.js and npm are required regardless of framework
 2. **Playwright detection**: If a `playwright.config.ts` or `playwright.config.js` exists, Playwright is required. The installation automatically includes chromium browser and headless shell with system dependencies.
 3. **Wrangler detection**: If a `wrangler.toml` exists, Wrangler is required
+4. **LLVM detection**: For projects with `project_type = "programming_language"`, LLVM 18 is required for code generation
 
 ## Installation Methods
 
@@ -261,6 +268,14 @@ Tools that should be installed via system package manager:
   - Linux: `sudo apt install git-lfs && git lfs install`
   - macOS: `brew install git-lfs && git lfs install`
   - Windows: `winget install GitHub.GitLFS`
+
+- `llvm`: Install LLVM 18 compiler infrastructure
+  - Linux: `sudo apt install llvm-18-dev libpolly-18-dev`
+  - macOS: `brew install llvm@18`
+    - **Important**: On macOS, Homebrew installs LLVM in a versioned directory (`/opt/homebrew/opt/llvm@18/`) and does not add it to PATH by default
+    - Detection checks for: `llvm-config` (Homebrew default), `llvm-config-18` (if linked), or queries `brew --prefix llvm@18`
+    - Users should set `LLVM_SYS_180_PREFIX=$(brew --prefix llvm@18)` in their environment for LLVM-dependent tools
+  - Windows: Not currently supported (manual installation required from https://releases.llvm.org/)
 
 **Guidance approach**: Instead of attempting to install Node.js, the command should:
 1. Detect if Node.js is already installed
