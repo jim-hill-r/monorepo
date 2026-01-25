@@ -156,7 +156,8 @@ fn run_internal(
     // For hybrid projects (both Cargo.toml and package.json), run npm ci first
     // This ensures npm dependencies are installed before running tests
     // which may include npm test (e.g., Playwright tests)
-    if has_cargo_toml && has_package_json {
+    // Only run npm ci if package-lock.json exists (npm ci requires a lock file)
+    if has_cargo_toml && has_package_json && working_directory.join("package-lock.json").exists() {
         run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
     }
 

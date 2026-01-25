@@ -31,9 +31,12 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), TestError> {
     }
 
     // Run npm tests if package.json exists and has a test script
-    // First ensure dependencies are installed via npm ci
+    // First ensure dependencies are installed via npm ci (only if package-lock.json exists)
     if has_package_json && npm_script_exists(working_directory, "test") {
-        run_npm_ci(working_directory)?;
+        // Only run npm ci if package-lock.json exists (npm ci requires a lock file)
+        if working_directory.join("package-lock.json").exists() {
+            run_npm_ci(working_directory)?;
+        }
         run_npm_test(working_directory)?;
     }
 
