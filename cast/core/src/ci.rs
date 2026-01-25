@@ -49,6 +49,8 @@ pub enum CiError {
     GitCommitError(String),
     #[error("Installation failed: {0}")]
     InstallError(#[from] install::InstallError),
+    #[error("Multiple projects failed CI:\n{}", .0.iter().map(|(path, err)| format!("  - {}: {}", path.display(), err)).collect::<Vec<_>>().join("\n"))]
+    MultipleProjectFailures(Vec<(PathBuf, Box<CiError>)>),
 }
 
 /// Cache for git diff results to avoid running the same git commands repeatedly
@@ -467,6 +469,9 @@ fn run_ci_recursively_internal(
 
     let projects = find_cast_projects(working_directory, max_depth)?;
 
+    let mut failures: Vec<(PathBuf, Box<CiError>)> = Vec::new();
+    let mut successes: Vec<PathBuf> = Vec::new();
+
     for (project_path, depth) in projects {
         println!("Running CI on child project: {}", project_path.display());
 
@@ -480,13 +485,42 @@ fn run_ci_recursively_internal(
         };
 
         // Run CI on the child project with the shared cache
-        run_internal(
+        match run_internal(
             &project_path,
             mode,
             remaining_depth,
             only_changed,
             git_diff_cache.clone(),
-        )?;
+        ) {
+            Ok(_) => {
+                println!("✓ CI passed for {}", project_path.display());
+                successes.push(project_path);
+            }
+            Err(e) => {
+                eprintln!("✗ CI failed for {}: {}", project_path.display(), e);
+                failures.push((project_path, Box::new(e)));
+            }
+        }
+    }
+
+    // Print summary
+    println!("\n=== CI Summary ===");
+    println!("Passed: {}", successes.len());
+    println!("Failed: {}", failures.len());
+
+    if !successes.is_empty() {
+        println!("\nSuccessful projects:");
+        for path in &successes {
+            println!("  ✓ {}", path.display());
+        }
+    }
+
+    if !failures.is_empty() {
+        println!("\nFailed projects:");
+        for (path, err) in &failures {
+            println!("  ✗ {}: {}", path.display(), err);
+        }
+        return Err(CiError::MultipleProjectFailures(failures));
     }
 
     Ok(())
@@ -2009,6 +2043,101 @@ mod tests {
         } else {
             panic!("Test marker file should exist after running CI");
         }
+    }
+
+    #[test]
+    fn test_recursive_ci_continues_on_failure() {
+        let tmp_dir = TempDir::new("test_recursive_ci_failure").unwrap();
+
+        // Initialize git repo
+        Command::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create three child projects: one failing, two passing
+        let child1 = tmp_dir.path().join("child1");
+        let child2_fail = tmp_dir.path().join("child2_fail");
+        let child3 = tmp_dir.path().join("child3");
+
+        // Child 1: Valid project
+        fs::create_dir_all(child1.join("src")).unwrap();
+        fs::write(
+            child1.join("Cargo.toml"),
+            "[package]\nname = \"child1\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nproject_type = \"rust_library\"",
+        )
+        .unwrap();
+        fs::write(child1.join("src/lib.rs"), "pub fn test() {}\n").unwrap();
+
+        // Child 2: Invalid project (will fail CI)
+        fs::create_dir_all(child2_fail.join("src")).unwrap();
+        fs::write(
+            child2_fail.join("Cargo.toml"),
+            "[package]\nname = \"child2_fail\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nproject_type = \"rust_library\"",
+        )
+        .unwrap();
+        fs::write(
+            child2_fail.join("src/lib.rs"),
+            "pub fn test() {\n    undefined_function();\n}\n",
+        )
+        .unwrap();
+
+        // Child 3: Valid project
+        fs::create_dir_all(child3.join("src")).unwrap();
+        fs::write(
+            child3.join("Cargo.toml"),
+            "[package]\nname = \"child3\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cast]\nproject_type = \"rust_library\"",
+        )
+        .unwrap();
+        fs::write(child3.join("src/lib.rs"), "pub fn test2() {}\n").unwrap();
+
+        // Commit everything
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Run CI recursively
+        // The function should continue even if child2 fails
+        let result = run_ci_recursively(tmp_dir.path(), CiMode::Check, 1, false);
+
+        // The result should be an error because child2 failed
+        assert!(
+            result.is_err(),
+            "Recursive CI should return error when at least one project fails"
+        );
+
+        // The error should indicate which project failed
+        let error_msg = result.unwrap_err().to_string();
+        assert!(
+            error_msg.contains("child2_fail") || error_msg.contains("Failed projects"),
+            "Error message should indicate which project failed: {}",
+            error_msg
+        );
     }
 
     #[test]
