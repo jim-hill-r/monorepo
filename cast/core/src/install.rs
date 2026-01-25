@@ -212,6 +212,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
         Tool::Playwright => ("npx", vec!["playwright", "--version"]),
         Tool::Wrangler => ("wrangler", vec!["--version"]),
         Tool::GitLfs => ("git", vec!["lfs", "version"]),
+        // LLVM handled above via check_llvm_with_libraries(), this is unreachable
         Tool::Llvm => ("llvm-config-18", vec!["--version"]),
     };
 
@@ -341,16 +342,75 @@ fn check_playwright_with_browsers() -> Result<ToolStatus, InstallError> {
 fn check_llvm_with_libraries() -> Result<ToolStatus, InstallError> {
     use std::process::Command;
 
-    // First check if llvm-config-18 is available
-    let version_check = Command::new("llvm-config-18").args(["--version"]).output();
+    // Try multiple llvm-config commands based on platform
+    let llvm_config_commands = if cfg!(target_os = "macos") {
+        // On macOS, Homebrew installs llvm-config without version suffix in versioned directory
+        // Try both the Homebrew path and the versioned command
+        vec![
+            "llvm-config",    // Homebrew default (in /opt/homebrew/opt/llvm@18/bin/)
+            "llvm-config-18", // Alternative if linked to PATH
+        ]
+    } else {
+        // On Linux and other platforms, use versioned command
+        vec!["llvm-config-18"]
+    };
 
-    let version = match version_check {
-        Ok(output) if output.status.success() => {
-            let version_output = String::from_utf8_lossy(&output.stdout);
-            Some(parse_version_string(version_output.trim()))
+    let mut version = None;
+    let mut working_llvm_config: Option<String> = None;
+
+    // Try each llvm-config command until one succeeds
+    for cmd in &llvm_config_commands {
+        let version_check = Command::new(cmd).args(["--version"]).output();
+
+        if let Ok(output) = version_check {
+            if output.status.success() {
+                let version_output = String::from_utf8_lossy(&output.stdout);
+                version = Some(parse_version_string(version_output.trim()));
+                working_llvm_config = Some(cmd.to_string());
+                break;
+            }
         }
-        _ => {
-            // llvm-config not found
+    }
+
+    // If no llvm-config command succeeded, check Homebrew on macOS
+    if working_llvm_config.is_none() && cfg!(target_os = "macos") {
+        // Try to find LLVM via Homebrew
+        let brew_check = Command::new("brew").args(["--prefix", "llvm@18"]).output();
+
+        if let Ok(output) = brew_check {
+            if output.status.success() {
+                let prefix = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let llvm_config_path = format!("{}/bin/llvm-config", prefix);
+
+                // Try to get version from Homebrew's llvm-config
+                let version_check = Command::new(&llvm_config_path).args(["--version"]).output();
+
+                if let Ok(output) = version_check {
+                    if output.status.success() {
+                        let version_output = String::from_utf8_lossy(&output.stdout);
+                        version = Some(parse_version_string(version_output.trim()));
+                        working_llvm_config = Some(llvm_config_path);
+                    }
+                }
+            }
+        }
+    }
+
+    if working_llvm_config.is_none() {
+        // llvm-config not found
+        return Ok(ToolStatus {
+            tool: Tool::Llvm,
+            installed: false,
+            version: None,
+        });
+    }
+
+    // At this point, we know working_llvm_config is Some because of the check above,
+    // but we use pattern matching instead of unwrap() to satisfy clippy::unwrap_used
+    let llvm_config_cmd = match working_llvm_config {
+        Some(ref cmd) => cmd,
+        None => {
+            // This should never happen due to the check above
             return Ok(ToolStatus {
                 tool: Tool::Llvm,
                 installed: false,
@@ -362,8 +422,8 @@ fn check_llvm_with_libraries() -> Result<ToolStatus, InstallError> {
     // On Linux, verify that the development libraries are installed by checking for libpolly
     // We do this by attempting to check if the Polly library exists using llvm-config
     if cfg!(target_os = "linux") {
-        // Check if libpolly library is available by querying llvm-config
-        let libs_check = Command::new("llvm-config-18").args(["--libdir"]).output();
+        // Use the working llvm-config command we found earlier
+        let libs_check = Command::new(llvm_config_cmd).args(["--libdir"]).output();
 
         match libs_check {
             Ok(output) if output.status.success() => {
