@@ -2,6 +2,45 @@
 
 All coding standards are found in the `standards` project in this monorepo. Reference those standards as primary source of truth. If duplicate or contradictory information exists in this document, copilot should remove the information here and instead recommend referencing the information there. If information is missing there that copilot is using from here, it should be added to the `standards` project and removed from here.
 
+## IMPORTANT: Always Verify CI Before Committing
+
+**Before committing any changes, ALWAYS run `cast ci` locally on affected projects to verify they pass.**
+
+This is especially important because:
+- GitHub CI can take 15-20 minutes to run
+- Local `cast ci` mimics the GitHub workflow and catches issues immediately
+- Many CI failures (formatting, linting, test failures) can be caught and fixed locally
+
+### How to Verify CI Locally
+
+```bash
+# For a specific project (recommended)
+cd <project-directory>
+cast ci
+
+# For the entire repository (slower)
+cd /home/runner/work/monorepo/monorepo
+cast ci --recursive 2
+
+# Example: Before committing cast changes
+cd /home/runner/work/monorepo/monorepo/cast
+cast ci
+
+# Example: Before committing cookbook changes
+cd /home/runner/work/monorepo/monorepo/cookbook
+cast ci
+```
+
+### When CI Fails
+1. Review the error messages from `cast ci`
+2. Fix formatting issues with `cargo fmt` or `npm run lint`
+3. Fix compilation errors
+4. Fix test failures
+5. Re-run `cast ci` to verify fixes
+6. Only commit after `cast ci` passes
+
+**Note**: Running `cast ci` locally saves significant time compared to waiting for GitHub CI to fail and then fixing issues.
+
 ## Rust Code Standards
 
 See `standards/docs/rust.md` for complete Rust coding standards and proper error handling patterns.
