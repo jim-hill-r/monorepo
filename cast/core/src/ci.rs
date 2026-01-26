@@ -308,24 +308,6 @@ fn run_npm_install(working_directory: &Path) -> Result<(), std::io::Error> {
         return Err(std::io::Error::other("npm ci failed"));
     }
 
-    // After installing npm packages, check if Playwright is installed and install browsers
-    // This is necessary because npm ci only installs the packages, not the browser binaries
-    if working_directory
-        .join("node_modules/@playwright/test")
-        .exists()
-    {
-        println!("Installing Playwright browsers...");
-        let status = Command::new("npx")
-            .args(["playwright", "install", "--with-deps"])
-            .current_dir(working_directory)
-            .status()?;
-
-        if !status.success() {
-            eprintln!("Warning: Playwright browser installation failed, tests may fail");
-            // Don't return error here, as tests might still work with cached browsers
-        }
-    }
-
     Ok(())
 }
 

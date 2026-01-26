@@ -82,23 +82,6 @@ fn run_npm_ci(working_directory: &Path) -> Result<(), TestError> {
         return Err(TestError::NpmCiFailed);
     }
 
-    // After installing npm packages, check if Playwright is installed and install browsers
-    // This is necessary because npm ci only installs the packages, not the browser binaries
-    if working_directory
-        .join("node_modules/@playwright/test")
-        .exists()
-    {
-        let status = Command::new("npx")
-            .args(["playwright", "install", "--with-deps"])
-            .current_dir(working_directory)
-            .status()?;
-
-        if !status.success() {
-            eprintln!("Warning: Playwright browser installation failed, tests may fail");
-            // Don't return error here, as tests might still work with cached browsers
-        }
-    }
-
     Ok(())
 }
 

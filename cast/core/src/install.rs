@@ -1163,7 +1163,7 @@ fn install_playwright(
         return Ok(InstallResult {
             tool: Tool::Playwright,
             success: true,
-            message: "Would install: npm ci && npx playwright install --with-deps".to_string(),
+            message: "Would install: npm ci && npx playwright install chromium".to_string(),
             skipped: false,
         });
     }
@@ -1188,10 +1188,10 @@ fn install_playwright(
         }
     }
 
-    // Then install Playwright browsers (all browsers for comprehensive testing)
+    // Then install Playwright browsers (without system deps - those should be in CI setup)
     println!("Installing Playwright browsers...");
     let output = Command::new("npx")
-        .args(["playwright", "install", "--with-deps"])
+        .args(["playwright", "install", "chromium"])
         .current_dir(working_directory)
         .output()
         .map_err(|e| {
