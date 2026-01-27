@@ -3,3 +3,8 @@ Cargo.lock
 playwright-report
 test-results
 node_modules
+
+# Code coverage reports
+tarpaulin-report.html
+cobertura.xml
+lcov.info

@@ -1,0 +1,35 @@
+# Code coverage configuration for cargo-tarpaulin
+#
+# Run with: cargo tarpaulin --config tarpaulin.toml
+
+[report]
+# Output formats - generate both text summary and HTML report
+# Text is displayed in console, HTML is saved to tarpaulin-report.html
+out = ["Html", "Stdout"]
+
+[coverage]
+# Measure code coverage for the entire project
+# Run all tests including unit tests
+run-types = ["Tests"]
+
+# Exclude test code from coverage metrics
+# We want to measure coverage of actual code, not test code itself
+exclude-files = ["src/main.rs:#[cfg(test)]"]
+
+# Show coverage statistics for all files, even those with 0% coverage
+# This helps identify untested files
+all = true
+
+# Continue running tests even if some fail
+# This ensures we get coverage data from all passing tests
+fail-under = 0
+
+# Coverage thresholds and goals
+# Note: These are informational - tarpaulin will not fail if they're not met
+# Recommended targets:
+# - 80% for overall coverage
+# - 100% for critical business logic and error handling paths
+
+[html]
+# HTML report configuration
+dark_mode = false

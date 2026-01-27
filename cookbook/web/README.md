@@ -124,6 +124,61 @@ cargo check
 
 ## Testing
 
+This project includes both unit tests and Playwright end-to-end tests.
+
+### Unit Tests
+
+Run Rust unit tests with:
+
+```bash
+cargo test
+```
+
+### Code Coverage
+
+Code coverage reporting is available using [cargo-tarpaulin](https://github.com/xd009642/tarpaulin). 
+
+#### Installing Tarpaulin
+
+```bash
+cargo install cargo-tarpaulin
+```
+
+#### Running Coverage Reports
+
+To generate a code coverage report:
+
+```bash
+cargo tarpaulin --config tarpaulin.toml
+```
+
+This will:
+- Run all tests and measure code coverage
+- Display coverage statistics in the terminal
+- Generate an HTML report at `tarpaulin-report.html`
+
+You can open the HTML report in your browser to see detailed line-by-line coverage information:
+
+```bash
+# On Linux
+xdg-open tarpaulin-report.html
+
+# On macOS
+open tarpaulin-report.html
+
+# On Windows
+start tarpaulin-report.html
+```
+
+#### Coverage Goals
+
+While not strictly enforced, aim for:
+- At least 80% code coverage for critical business logic
+- 100% coverage for public APIs and error handling paths
+- All edge cases and error conditions should be tested
+
+### End-to-End Tests
+
 This project includes Playwright end-to-end tests. The tests automatically start and stop the development server, so you can simply run:
 
 ```bash

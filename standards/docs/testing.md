@@ -159,6 +159,73 @@ While not strictly enforced, aim for:
 - 100% coverage for public APIs and error handling paths
 - All edge cases and error conditions should be tested
 
+### Measuring Code Coverage
+
+#### Rust Projects - Using Tarpaulin
+
+[cargo-tarpaulin](https://github.com/xd009642/tarpaulin) is the recommended tool for measuring code coverage in Rust projects.
+
+**Installation:**
+
+```bash
+cargo install cargo-tarpaulin
+```
+
+**Configuration:**
+
+Create a `tarpaulin.toml` file in your project root:
+
+```toml
+# Code coverage configuration for cargo-tarpaulin
+[report]
+# Output formats - generate both text summary and HTML report
+out = ["Html", "Stdout"]
+
+[coverage]
+# Measure code coverage for the entire project
+run-types = ["Tests"]
+
+# Exclude test code from coverage metrics
+exclude-files = ["src/main.rs:#[cfg(test)]"]
+
+# Show coverage statistics for all files
+all = true
+
+# Continue running tests even if some fail
+fail-under = 0
+
+[html]
+# HTML report configuration
+dark_mode = false
+```
+
+**Usage:**
+
+```bash
+# Generate coverage report
+cargo tarpaulin --config tarpaulin.toml
+
+# Open the HTML report (generated as tarpaulin-report.html)
+xdg-open tarpaulin-report.html  # Linux
+open tarpaulin-report.html      # macOS
+start tarpaulin-report.html     # Windows
+```
+
+**Gitignore:**
+
+Add coverage reports to `.gitignore`:
+
+```
+# Code coverage reports
+tarpaulin-report.html
+cobertura.xml
+lcov.info
+```
+
+**Example Projects:**
+
+See `cookbook/web` for a complete example of tarpaulin configuration and usage.
+
 ## Continuous Integration
 
 All tests are automatically run in CI/CD pipelines:
