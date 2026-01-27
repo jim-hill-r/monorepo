@@ -14,7 +14,8 @@ run-types = ["Tests"]
 
 # Exclude test code from coverage metrics
 # We want to measure coverage of actual code, not test code itself
-exclude-files = ["src/main.rs:#[cfg(test)]"]
+# This pattern excludes all #[cfg(test)] blocks in all files
+exclude-files = ["**/*::#[cfg(test)]"]
 
 # Show coverage statistics for all files, even those with 0% coverage
 # This helps identify untested files
