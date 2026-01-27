@@ -1,2 +1,7 @@
 /target
 Cargo.lock
+
+# Code coverage reports
+tarpaulin-report.html
+cobertura.xml
+lcov.info
