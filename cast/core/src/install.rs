@@ -1189,6 +1189,26 @@ fn install_playwright(
         }
     }
 
+    // Check if Playwright browsers are already installed
+    // This avoids reinstallation in CI where browsers are pre-installed
+    let browser_check = Command::new("npx")
+        .args(["playwright", "install", "--dry-run", "chromium"])
+        .current_dir(working_directory)
+        .output();
+
+    if let Ok(check_output) = browser_check {
+        let stdout = String::from_utf8_lossy(&check_output.stdout);
+        if stdout.contains("is already installed") || stdout.trim().is_empty() {
+            println!("Playwright browsers already installed, skipping...");
+            return Ok(InstallResult {
+                tool: Tool::Playwright,
+                success: true,
+                message: "Already installed (skipped)".to_string(),
+                skipped: true,
+            });
+        }
+    }
+
     // Then install Playwright browsers with system dependencies
     // Using --with-deps ensures system libraries are installed
     println!("Installing Playwright browsers with system dependencies...");

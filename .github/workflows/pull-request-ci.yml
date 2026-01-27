@@ -31,6 +31,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
+      - name: Install Playwright browsers
+        run: |
+          # Find projects with Playwright and install browsers once with caching
+          for dir in cookbook/web cahokia/web; do
+            if [ -f "$dir/package.json" ] && grep -q "@playwright/test" "$dir/package.json" 2>/dev/null; then
+              echo "Installing Playwright browsers for $dir..."
+              cd "$dir"
+              npm ci
+              npx playwright install --with-deps chromium
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+
       - name: Build cast CLI
         run: |
           cd cast/cli
