@@ -186,7 +186,7 @@ out = ["Html", "Stdout"]
 run-types = ["Tests"]
 
 # Exclude test code from coverage metrics
-exclude-files = ["src/main.rs:#[cfg(test)]"]
+exclude-files = ["**/*:#[cfg(test)]"]
 
 # Show coverage statistics for all files
 all = true
