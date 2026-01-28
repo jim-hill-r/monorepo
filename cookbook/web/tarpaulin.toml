@@ -12,10 +12,9 @@ out = ["Html", "Stdout"]
 # Run all tests including unit tests
 run-types = ["Tests"]
 
-# Exclude test code from coverage metrics
-# We want to measure coverage of actual code, not test code itself
-# This pattern excludes all #[cfg(test)] blocks in all files
-exclude-files = ["**/*:#[cfg(test)]"]
+# Note: Tarpaulin automatically excludes #[cfg(test)] blocks from coverage by default
+# Use exclude-files to exclude specific file patterns if needed, e.g.:
+# exclude-files = ["tests/**/*.rs", "**/test_*.rs"]
 
 # Show coverage statistics for all files, even those with 0% coverage
 # This helps identify untested files
