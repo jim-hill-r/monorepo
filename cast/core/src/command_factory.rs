@@ -133,7 +133,9 @@ pub fn create_command(
             }))
         }
         Commands::Build => Ok(Box::new(commands::build::BuildCommand)),
-        Commands::Test => Ok(Box::new(commands::test::TestCommand)),
+        Commands::Test { coverage } => Ok(Box::new(commands::test::TestCommand {
+            coverage: *coverage,
+        })),
         Commands::Run => Ok(Box::new(commands::run::RunCommand)),
         Commands::Deploy => Ok(Box::new(commands::deploy::DeployCommand)),
         Commands::Cd => Ok(Box::new(commands::cd::CdCommand)),
@@ -182,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_create_test_command() {
-        let cmd = Commands::Test;
+        let cmd = Commands::Test { coverage: false };
         let result = create_command(&cmd, true);
         assert!(result.is_ok());
     }

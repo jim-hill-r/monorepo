@@ -85,7 +85,11 @@ pub enum Commands {
     /// Run CD (Continuous Deployment)
     Cd,
     /// Run tests
-    Test,
+    Test {
+        /// Generate code coverage reports
+        #[arg(long)]
+        coverage: bool,
+    },
     /// Run server (dx serve for dioxus, cargo run otherwise)
     Run,
     /// Serve static files from current directory
@@ -490,7 +494,7 @@ mod tests {
 
         let result = execute(
             Args {
-                cmd: Commands::Test,
+                cmd: Commands::Test { coverage: false },
             },
             tmp_dir.path(),
         )

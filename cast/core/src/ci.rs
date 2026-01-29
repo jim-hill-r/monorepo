@@ -217,8 +217,8 @@ fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
         }
     }
 
-    // Run cast test
-    test::run(working_directory)?;
+    // Run cast test (without coverage in CI)
+    test::run(working_directory, false)?;
 
     // For Release mode, also run publish
     if mode == CiMode::Release {

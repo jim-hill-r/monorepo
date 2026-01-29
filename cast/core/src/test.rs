@@ -14,10 +14,10 @@ pub enum TestError {
 
 /// Run tests for a project
 /// This detects the project type and runs appropriate tests:
-/// - For Rust projects (has Cargo.toml): cargo test
-/// - For TypeScript/Node.js projects (has package.json with test script): npm test
+/// - For Rust projects (has Cargo.toml): cargo test (or cargo llvm-cov if coverage is requested)
+/// - For TypeScript/Node.js projects (has package.json with test script): npm test (with --coverage if supported)
 /// - Projects can have both (e.g., Dioxus web apps with Playwright tests)
-pub fn run(working_directory: impl AsRef<Path>) -> Result<(), TestError> {
+pub fn run(working_directory: impl AsRef<Path>, coverage: bool) -> Result<(), TestError> {
     let working_directory = working_directory.as_ref();
 
     let has_cargo_toml = working_directory.join("Cargo.toml").exists();
@@ -25,40 +25,115 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), TestError> {
 
     // Run Rust tests if Cargo.toml exists
     if has_cargo_toml {
-        run_cargo_test(working_directory)?;
+        run_cargo_test(working_directory, coverage)?;
     }
 
     // Run npm tests if package.json exists and has a test script
     if has_package_json && npm_script_exists(working_directory, "test") {
-        run_npm_test(working_directory)?;
+        run_npm_test(working_directory, coverage)?;
     }
 
     Ok(())
 }
 
 /// Run cargo test for a Rust project
-fn run_cargo_test(working_directory: &Path) -> Result<(), TestError> {
-    let status = Command::new("cargo")
-        .arg("test")
-        .current_dir(working_directory)
-        .status()?;
+fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestError> {
+    if coverage {
+        // Use cargo-llvm-cov for code coverage
+        // First check if cargo-llvm-cov is installed
+        let check = Command::new("cargo")
+            .arg("llvm-cov")
+            .arg("--version")
+            .output();
 
-    if !status.success() {
-        return Err(TestError::TestFailed);
+        let is_installed = match check {
+            Ok(output) => output.status.success(),
+            Err(_) => false,
+        };
+
+        if !is_installed {
+            eprintln!("Warning: cargo-llvm-cov is not installed. Installing it now...");
+            eprintln!("Run: cargo install cargo-llvm-cov");
+
+            let install = Command::new("cargo")
+                .args(["install", "cargo-llvm-cov"])
+                .status();
+
+            let install_success = match install {
+                Ok(status) => status.success(),
+                Err(_) => false,
+            };
+
+            if !install_success {
+                eprintln!("Failed to install cargo-llvm-cov. Falling back to regular cargo test.");
+                // Fall back to regular cargo test
+                let status = Command::new("cargo")
+                    .arg("test")
+                    .current_dir(working_directory)
+                    .status()?;
+
+                if !status.success() {
+                    return Err(TestError::TestFailed);
+                }
+                return Ok(());
+            }
+        }
+
+        // Run cargo llvm-cov to generate coverage
+        let status = Command::new("cargo")
+            .args([
+                "llvm-cov",
+                "--all-features",
+                "--workspace",
+                "--lcov",
+                "--output-path",
+                "lcov.info",
+            ])
+            .current_dir(working_directory)
+            .status()?;
+
+        if !status.success() {
+            return Err(TestError::TestFailed);
+        }
+
+        println!("Coverage report generated: lcov.info");
+    } else {
+        // Regular cargo test without coverage
+        let status = Command::new("cargo")
+            .arg("test")
+            .current_dir(working_directory)
+            .status()?;
+
+        if !status.success() {
+            return Err(TestError::TestFailed);
+        }
     }
 
     Ok(())
 }
 
 /// Run npm test for a Node.js project
-fn run_npm_test(working_directory: &Path) -> Result<(), TestError> {
+fn run_npm_test(working_directory: &Path, coverage: bool) -> Result<(), TestError> {
+    let mut args = vec!["test"];
+
+    // Add --coverage flag if coverage is requested
+    // Most modern test frameworks (Jest, Vitest, etc.) support this flag
+    if coverage {
+        args.push("--");
+        args.push("--coverage");
+    }
+
     let status = Command::new("npm")
-        .arg("test")
+        .args(&args)
         .current_dir(working_directory)
         .status()?;
 
     if !status.success() {
         return Err(TestError::NpmTestFailed);
+    }
+
+    if coverage {
+        println!("Coverage report generated in coverage/ directory");
     }
 
     Ok(())
@@ -87,7 +162,7 @@ mod tests {
     #[test]
     fn test_run_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_run_no_project").unwrap();
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         // Should succeed silently for directories without Cargo.toml or package.json
         assert!(result.is_ok());
     }
@@ -109,7 +184,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_ok());
     }
 
@@ -130,7 +205,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_err());
         if let Err(TestError::TestFailed) = result {
             // Expected error type
@@ -185,7 +260,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_ok());
     }
 
@@ -200,7 +275,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_err());
         if let Err(TestError::NpmTestFailed) = result {
             // Expected error type
@@ -233,7 +308,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_ok());
     }
 
@@ -261,8 +336,31 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         // Should succeed (only cargo test runs, npm test is skipped)
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_run_cargo_coverage_without_cargo_llvm_cov() {
+        let tmp_dir = TempDir::new("test_coverage").unwrap();
+
+        // Create a simple Cargo project with a passing test
+        fs::write(
+            tmp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+        )
+        .unwrap();
+        fs::create_dir_all(tmp_dir.path().join("src")).unwrap();
+        fs::write(
+            tmp_dir.path().join("src/lib.rs"),
+            "pub fn add(a: i32, b: i32) -> i32 { a + b }\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    #[test]\n    fn test_add() {\n        assert_eq!(add(1, 2), 3);\n    }\n}",
+        )
+        .unwrap();
+
+        // Coverage should fall back to regular tests if cargo-llvm-cov is not installed
+        let result = run(tmp_dir.path(), true);
+        // Should succeed (either with coverage or falling back to regular tests)
         assert!(result.is_ok());
     }
 }
