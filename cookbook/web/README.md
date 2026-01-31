@@ -124,11 +124,31 @@ cargo check
 
 ## Testing
 
-This project includes Playwright end-to-end tests. The tests automatically start and stop the development server, so you can simply run:
+This project includes both Rust unit tests and Playwright end-to-end tests.
+
+**Prerequisites**: Before running tests, ensure all required tools (including Playwright) are installed:
 
 ```bash
+cast install
+```
+
+Then run all tests (both Rust and Playwright) using:
+
+```bash
+cast test
+```
+
+Alternatively, you can run tests separately:
+
+```bash
+# Run Rust unit tests only
+cargo test
+
+# Run Playwright end-to-end tests only
 npm test
 ```
+
+The Playwright tests automatically start and stop the development server, so no manual setup is required.
 
 For more details on testing, including other test modes and manual setup options, see the [tests README](tests/README.md).
 
