@@ -5,4 +5,8 @@ target
 public
 *.rlib
 
+# Coverage reports
+lcov.info
+coverage/
+
 **/.env

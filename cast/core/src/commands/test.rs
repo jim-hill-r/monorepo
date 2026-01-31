@@ -3,11 +3,13 @@ use crate::test;
 use std::path::Path;
 
 /// Command to run tests for a project (Rust and/or npm tests)
-pub struct TestCommand;
+pub struct TestCommand {
+    pub coverage: bool,
+}
 
 impl Command for TestCommand {
     fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
-        test::run(working_directory)?;
+        test::run(working_directory, self.coverage)?;
         Ok("Tests passed".to_string())
     }
 }
@@ -36,7 +38,7 @@ mod tests {
         )
         .unwrap();
 
-        let cmd = TestCommand;
+        let cmd = TestCommand { coverage: false };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Tests passed");
@@ -59,7 +61,7 @@ mod tests {
         )
         .unwrap();
 
-        let cmd = TestCommand;
+        let cmd = TestCommand { coverage: false };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_err());
     }
@@ -68,7 +70,7 @@ mod tests {
     fn test_test_command_succeeds_without_project() {
         let tmp_dir = TempDir::new("test_test_command_empty").unwrap();
 
-        let cmd = TestCommand;
+        let cmd = TestCommand { coverage: false };
         let result = cmd.execute(tmp_dir.path());
         // Should succeed silently when there are no tests to run
         assert!(result.is_ok());

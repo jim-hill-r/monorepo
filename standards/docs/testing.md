@@ -107,6 +107,24 @@ The `cast test` command automatically runs appropriate tests for your project:
 cast test
 ```
 
+#### Code Coverage
+
+To generate code coverage reports, use the `--coverage` flag:
+
+```bash
+cast test --coverage
+```
+
+This will:
+- For **Rust projects**: Use `cargo-llvm-cov` to generate coverage (installs automatically if needed)
+  - Generates `lcov.info` file in the project directory
+  - Supports standard LCOV format for integration with coverage tools
+- For **TypeScript/Node.js projects**: Pass `--coverage` to the test framework
+  - Generates coverage reports in the `coverage/` directory
+  - Works with Jest, Vitest, and other modern test frameworks
+
+**Note**: Coverage files (`lcov.info` and `coverage/`) are excluded from git via `.gitignore`.
+
 The `cast ci` command runs all checks including tests, formatting, linting, and building:
 
 - **Rust projects**: Runs `cargo fmt`, `clippy`, `build`, and `test`

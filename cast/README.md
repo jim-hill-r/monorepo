@@ -41,6 +41,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
 - `cast test` - Run tests
+  - `cast test --coverage` - Run tests with code coverage (generates `lcov.info` for Rust, `coverage/` for npm)
 - `cast publish` - Build release artifacts and copy to artifacts directory
 - `cast install` - Install and manage framework-specific development tools
 - `cast uninstall` - Uninstall cast-managed tools
