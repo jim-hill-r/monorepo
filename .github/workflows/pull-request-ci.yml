@@ -34,7 +34,7 @@ jobs:
       - name: Install Playwright browsers
         run: |
           # Install Playwright dependencies for projects that need it
-          for package_json in $(find . -name "package.json" -not -path "*/node_modules/*" -type f); do
+          find . -name "package.json" -not -path "*/node_modules/*" -type f -print0 | while IFS= read -r -d '' package_json; do
             dir=$(dirname "$package_json")
             if grep -q "@playwright/test" "$package_json"; then
               echo "Installing Playwright dependencies in $dir"
