@@ -52,7 +52,10 @@ jobs:
 
       - name: Run CI checks on changed projects
         run: |
-          # Use absolute path to cast binary
+          # Add cast to PATH so it can be used by Playwright tests
+          export PATH="$GITHUB_WORKSPACE/cast/target/release:$PATH"
+          
+          # Use absolute path to cast binary for cast ci command
           CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
           
           # Run cast ci with --check to validate projects with changes
