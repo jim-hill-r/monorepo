@@ -28,6 +28,50 @@ test.describe('Authentication in Header', () => {
     expect(hasLoginButton || hasLoadingState || hasError).toBeTruthy();
   });
 
+  test('should display user-friendly error messages when auth fails', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    const header = page.locator('#header');
+    await expect(header).toBeVisible();
+    
+    // Check if there's an error displayed
+    const errorElement = header.locator('.error');
+    const hasError = await errorElement.isVisible().catch(() => false);
+    
+    if (hasError) {
+      // If there's an error, verify it's user-friendly
+      const errorText = await errorElement.textContent();
+      
+      // Verify error message is concise (less than 100 characters)
+      expect(errorText?.length || 0).toBeLessThan(100);
+      
+      // Verify it doesn't contain technical details
+      expect(errorText).not.toContain('https://');
+      expect(errorText).not.toContain('.well-known');
+      expect(errorText).not.toContain('NetworkError');
+      expect(errorText).not.toContain('stack trace');
+      expect(errorText).not.toContain('Error:');
+      
+      // Verify it uses plain language
+      const plainLanguageTerms = [
+        'authentication',
+        'login',
+        'service',
+        'error',
+        'try again',
+        'check',
+        'unavailable',
+        'incomplete',
+        'failed',
+      ];
+      const hasPlainLanguage = plainLanguageTerms.some(term => 
+        errorText?.toLowerCase().includes(term)
+      );
+      expect(hasPlainLanguage).toBeTruthy();
+    }
+  });
+
   test('should display login button in header on all pages', async ({ page }) => {
     const pages = [
       '/',
