@@ -177,6 +177,26 @@ fn Header() -> Element {
     }
 }
 
+/// Format authentication errors into user-friendly messages
+#[cfg(target_arch = "wasm32")]
+fn format_auth_error(err: &AuthError) -> String {
+    use auth_sdk::provider::AuthError;
+    match err {
+        AuthError::ParseError => "Unable to process authentication".to_string(),
+        AuthError::TokenExchangeError(_) => "Login failed. Please try again".to_string(),
+        AuthError::BrowserApiError(_) => "Browser compatibility issue".to_string(),
+        AuthError::MissingUrlParameter(_) => "Authentication incomplete".to_string(),
+        AuthError::SerializationError(_) => "Unable to process authentication".to_string(),
+        AuthError::MissingStateData(_) => "Authentication incomplete".to_string(),
+        AuthError::CsrfValidationFailed => "Security check failed. Please try again".to_string(),
+        AuthError::OidcDiscoveryFailed(_) => "Authentication service unavailable".to_string(),
+        AuthError::IdTokenValidationFailed(_) => "Login verification failed".to_string(),
+        AuthError::HttpClientError(_) => "Network error. Please check your connection".to_string(),
+        AuthError::ConfigError(_) => "Authentication not configured".to_string(),
+        AuthError::Unknown => "An unexpected error occurred".to_string(),
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 fn render_auth_section() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
@@ -195,12 +215,15 @@ fn render_auth_section() -> Element {
                 }
             }
         }
-        Some(Err(err)) => rsx! {
-            div {
-                class: "error",
-                "Authentication Error: {err}"
+        Some(Err(err)) => {
+            let user_message = format_auth_error(err);
+            rsx! {
+                div {
+                    class: "error",
+                    "{user_message}"
+                }
             }
-        },
+        }
         None => rsx! {
             div { "Loading authentication..." }
         },
@@ -1605,5 +1628,100 @@ mod tests {
             AUTH0_DOMAIN.ends_with("/"),
             "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
         );
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[test]
+    fn test_format_auth_error_user_friendly() {
+        use auth_sdk::provider::AuthError;
+
+        // Test that all error messages are concise and user-friendly
+        let test_cases = vec![
+            (AuthError::ParseError, "Unable to process authentication"),
+            (
+                AuthError::TokenExchangeError("detailed error".to_string()),
+                "Login failed. Please try again",
+            ),
+            (
+                AuthError::BrowserApiError("browser error".to_string()),
+                "Browser compatibility issue",
+            ),
+            (
+                AuthError::MissingUrlParameter("code".to_string()),
+                "Authentication incomplete",
+            ),
+            (
+                AuthError::SerializationError("json error".to_string()),
+                "Unable to process authentication",
+            ),
+            (
+                AuthError::MissingStateData("state".to_string()),
+                "Authentication incomplete",
+            ),
+            (
+                AuthError::CsrfValidationFailed,
+                "Security check failed. Please try again",
+            ),
+            (
+                AuthError::OidcDiscoveryFailed("discovery error".to_string()),
+                "Authentication service unavailable",
+            ),
+            (
+                AuthError::IdTokenValidationFailed("validation error".to_string()),
+                "Login verification failed",
+            ),
+            (
+                AuthError::HttpClientError("network error".to_string()),
+                "Network error. Please check your connection",
+            ),
+            (
+                AuthError::ConfigError("config error".to_string()),
+                "Authentication not configured",
+            ),
+            (AuthError::Unknown, "An unexpected error occurred"),
+        ];
+
+        for (error, expected_message) in test_cases {
+            let message = format_auth_error(&error);
+            assert_eq!(
+                message, expected_message,
+                "Error message should be user-friendly"
+            );
+
+            // Verify messages are reasonably short (less than 100 characters)
+            assert!(
+                message.len() < 100,
+                "Error message '{}' should be concise (less than 100 chars), got {} chars",
+                message,
+                message.len()
+            );
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[test]
+    fn test_format_auth_error_no_technical_details() {
+        use auth_sdk::provider::AuthError;
+
+        // Verify that formatted messages don't contain technical details from the original error
+        let technical_error = AuthError::OidcDiscoveryFailed(
+            "Failed to fetch https://example.com/.well-known/openid-configuration: NetworkError"
+                .to_string(),
+        );
+        let message = format_auth_error(&technical_error);
+
+        // Should not contain URLs or technical terms
+        assert!(!message.contains("https://"), "Should not contain URLs");
+        assert!(
+            !message.contains(".well-known"),
+            "Should not contain technical paths"
+        );
+        assert!(
+            !message.contains("NetworkError"),
+            "Should not contain technical error types"
+        );
+
+        // Should be a simple, user-friendly message
+        assert_eq!(message, "Authentication service unavailable");
     }
 }
