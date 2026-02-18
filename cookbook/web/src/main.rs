@@ -22,7 +22,7 @@ const INTRO_MD: &str = include_str!("../../content/intro.md");
 const MAX_DAY_OF_YEAR: u32 = 365;
 
 #[cfg(target_arch = "wasm32")]
-const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
+const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
 #[cfg(target_arch = "wasm32")]
@@ -1593,5 +1593,17 @@ mod tests {
         assert_eq!(tuesday.weekday(), chrono::Weekday::Tue);
         // Both Monday and Tuesday should be in the same week
         assert_eq!(monday.iso_week().week(), tuesday.iso_week().week());
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[test]
+    fn test_auth0_domain_has_trailing_slash() {
+        // Verify AUTH0_DOMAIN includes trailing slash for OIDC discovery
+        // Auth0's OIDC discovery endpoint returns issuer URLs with trailing slashes,
+        // and the openidconnect crate validates exact matches
+        assert!(
+            AUTH0_DOMAIN.ends_with("/"),
+            "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
+        );
     }
 }
