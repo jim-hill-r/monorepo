@@ -41,6 +41,21 @@ jobs:
           # Use absolute path to cast binary
           CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
           
+          # Get list of changed projects
+          CHANGED_PROJECTS=$("$CAST_BIN" project with-changes --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.sha }}")
+          
+          if [ -n "$CHANGED_PROJECTS" ]; then
+            # Install toolchain for each changed project
+            echo "$CHANGED_PROJECTS" | while read -r project; do
+              if [ -n "$project" ]; then
+                echo "Installing toolchain for $project"
+                cd "$GITHUB_WORKSPACE/$project"
+                "$CAST_BIN" install || echo "Warning: install failed for $project"
+                cd "$GITHUB_WORKSPACE"
+              fi
+            done
+          fi
+          
           # Run cast ci with --check to validate projects with changes
           # --only-changed: check only projects with changes
           # --check: run checks only (no artifacts)

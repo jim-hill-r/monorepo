@@ -1594,4 +1594,16 @@ mod tests {
         // Both Monday and Tuesday should be in the same week
         assert_eq!(monday.iso_week().week(), tuesday.iso_week().week());
     }
+
+    #[cfg(target_arch = "wasm32")]
+    #[test]
+    fn test_auth0_domain_has_trailing_slash() {
+        // Verify AUTH0_DOMAIN includes trailing slash for OIDC discovery
+        // Auth0's OIDC discovery endpoint returns issuer URLs with trailing slashes,
+        // and the openidconnect crate validates exact matches
+        assert!(
+            AUTH0_DOMAIN.ends_with("/"),
+            "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
+        );
+    }
 }
