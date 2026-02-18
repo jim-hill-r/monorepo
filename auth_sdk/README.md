@@ -46,11 +46,13 @@ ProviderConfig {
     auth_url: "https://example.com/authorize".to_string(), // Used as fallback
     token_url: "https://example.com/token".to_string(), // Used as fallback
     redirect_url: "https://example.com/callback".to_string(),
-    issuer_url: Some("https://example.com".to_string()), // Enable OIDC discovery
+    issuer_url: Some("https://example.com/".to_string()), // Enable OIDC discovery
 }
 ```
 
 When `issuer_url` is provided, the WebAuthProvider will automatically fetch the OIDC discovery document from `{issuer_url}/.well-known/openid-configuration` and use the discovered endpoints. The provider metadata is cached for the lifetime of the WebAuthProvider instance.
+
+**Important**: The issuer URL must match exactly (including trailing slashes) with the `issuer` field returned in the OIDC discovery document. For Auth0 domains, the issuer URL includes a trailing slash (e.g., `https://your-domain.auth0.com/`).
 
 ## User Information
 
