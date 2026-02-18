@@ -22,7 +22,7 @@ const INTRO_MD: &str = include_str!("../../content/intro.md");
 const MAX_DAY_OF_YEAR: u32 = 365;
 
 #[cfg(target_arch = "wasm32")]
-const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
+const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
 #[cfg(target_arch = "wasm32")]
