@@ -1467,6 +1467,46 @@ fn install_llvm(dry_run: bool) -> Result<InstallResult, InstallError> {
     })
 }
 
+/// Detect LLVM installation and return the environment variable settings if needed
+/// On macOS, LLVM installed via Homebrew requires LLVM_SYS_*_PREFIX to be set
+/// This function checks if LLVM is installed and returns the appropriate values
+///
+/// Returns a vector of (var_name, var_value) tuples for all needed LLVM environment variables
+pub fn detect_llvm_env() -> Vec<(String, String)> {
+    use std::process::Command;
+
+    // Only macOS needs this configuration (Homebrew-specific)
+    if !cfg!(target_os = "macos") {
+        return Vec::new();
+    }
+
+    // Try to get LLVM prefix from Homebrew
+    let brew_check = Command::new("brew").args(["--prefix", "llvm@18"]).output();
+
+    if let Ok(output) = brew_check {
+        if output.status.success() {
+            let prefix = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !prefix.is_empty() {
+                // Set multiple LLVM version prefixes to cover different llvm-sys versions
+                // This ensures compatibility with various LLVM 18.x bindings
+                let mut env_vars = Vec::new();
+                
+                // Only set if not already present in environment
+                for version in ["180", "181", "170", "171", "160", "161"] {
+                    let var_name = format!("LLVM_SYS_{}_PREFIX", version);
+                    if std::env::var(&var_name).is_err() {
+                        env_vars.push((var_name, prefix.clone()));
+                    }
+                }
+                
+                return env_vars;
+            }
+        }
+    }
+
+    Vec::new()
+}
+
 /// Options for checking tools
 #[derive(Debug, Clone, Default)]
 pub struct CheckOptions {

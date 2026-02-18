@@ -1,4 +1,5 @@
 use crate::config::CastConfig;
+use crate::install;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -68,17 +69,21 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), RunError> {
         }
         _ => {
             // For non-Dioxus projects, run cargo run from current directory
-            let status = Command::new("cargo")
-                .args(["run"])
-                .current_dir(working_directory)
-                .status()
-                .map_err(|e| {
-                    if e.kind() == std::io::ErrorKind::NotFound {
-                        RunError::CommandNotFound("cargo".to_string())
-                    } else {
-                        RunError::IoError(e)
-                    }
-                })?;
+            let mut cmd = Command::new("cargo");
+            cmd.args(["run"]).current_dir(working_directory);
+
+            // Configure LLVM environment if needed
+            for (var_name, var_value) in install::detect_llvm_env() {
+                cmd.env(var_name, var_value);
+            }
+
+            let status = cmd.status().map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    RunError::CommandNotFound("cargo".to_string())
+                } else {
+                    RunError::IoError(e)
+                }
+            })?;
 
             if !status.success() {
                 return Err(RunError::RunFailed);

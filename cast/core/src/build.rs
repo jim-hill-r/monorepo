@@ -1,3 +1,4 @@
+use crate::install;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
@@ -14,10 +15,15 @@ pub enum BuildError {
 pub fn run(working_directory: impl AsRef<Path>) -> Result<(), BuildError> {
     let working_directory = working_directory.as_ref();
 
-    let status = Command::new("cargo")
-        .arg("build")
-        .current_dir(working_directory)
-        .status()?;
+    let mut cmd = Command::new("cargo");
+    cmd.arg("build").current_dir(working_directory);
+
+    // Configure LLVM environment if needed
+    for (var_name, var_value) in install::detect_llvm_env() {
+        cmd.env(var_name, var_value);
+    }
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(BuildError::BuildFailed);
@@ -30,11 +36,17 @@ pub fn run(working_directory: impl AsRef<Path>) -> Result<(), BuildError> {
 pub fn run_release(working_directory: impl AsRef<Path>) -> Result<(), BuildError> {
     let working_directory = working_directory.as_ref();
 
-    let status = Command::new("cargo")
-        .arg("build")
+    let mut cmd = Command::new("cargo");
+    cmd.arg("build")
         .arg("--release")
-        .current_dir(working_directory)
-        .status()?;
+        .current_dir(working_directory);
+
+    // Configure LLVM environment if needed
+    for (var_name, var_value) in install::detect_llvm_env() {
+        cmd.env(var_name, var_value);
+    }
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(BuildError::BuildFailed);

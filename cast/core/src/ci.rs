@@ -304,11 +304,17 @@ fn run_npm_install(working_directory: &Path) -> Result<(), std::io::Error> {
 }
 
 fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
-    let status = Command::new("cargo")
-        .arg("fmt")
+    let mut cmd = Command::new("cargo");
+    cmd.arg("fmt")
         .arg("--check")
-        .current_dir(working_directory)
-        .status()?;
+        .current_dir(working_directory);
+
+    // Configure LLVM environment if needed
+    for (var_name, var_value) in install::detect_llvm_env() {
+        cmd.env(var_name, var_value);
+    }
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(CiError::FmtError);
@@ -318,10 +324,15 @@ fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
 }
 
 fn run_fmt_fix(working_directory: &Path) -> Result<(), CiError> {
-    let status = Command::new("cargo")
-        .arg("fmt")
-        .current_dir(working_directory)
-        .status()?;
+    let mut cmd = Command::new("cargo");
+    cmd.arg("fmt").current_dir(working_directory);
+
+    // Configure LLVM environment if needed
+    for (var_name, var_value) in install::detect_llvm_env() {
+        cmd.env(var_name, var_value);
+    }
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(CiError::FmtError);
@@ -331,13 +342,19 @@ fn run_fmt_fix(working_directory: &Path) -> Result<(), CiError> {
 }
 
 fn run_clippy(working_directory: &Path) -> Result<(), CiError> {
-    let status = Command::new("cargo")
-        .arg("clippy")
+    let mut cmd = Command::new("cargo");
+    cmd.arg("clippy")
         .arg("--")
         .arg("-D")
         .arg("warnings")
-        .current_dir(working_directory)
-        .status()?;
+        .current_dir(working_directory);
+
+    // Configure LLVM environment if needed
+    for (var_name, var_value) in install::detect_llvm_env() {
+        cmd.env(var_name, var_value);
+    }
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(CiError::ClippyError);

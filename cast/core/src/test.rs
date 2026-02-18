@@ -1,3 +1,4 @@
+use crate::install;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
@@ -67,10 +68,15 @@ fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestEr
             if !install_success {
                 eprintln!("Failed to install cargo-llvm-cov. Falling back to regular cargo test.");
                 // Fall back to regular cargo test
-                let status = Command::new("cargo")
-                    .arg("test")
-                    .current_dir(working_directory)
-                    .status()?;
+                let mut cmd = Command::new("cargo");
+                cmd.arg("test").current_dir(working_directory);
+
+                // Configure LLVM environment if needed
+                for (var_name, var_value) in install::detect_llvm_env() {
+                    cmd.env(var_name, var_value);
+                }
+
+                let status = cmd.status()?;
 
                 if !status.success() {
                     return Err(TestError::TestFailed);
@@ -80,17 +86,23 @@ fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestEr
         }
 
         // Run cargo llvm-cov to generate coverage
-        let status = Command::new("cargo")
-            .args([
-                "llvm-cov",
-                "--all-features",
-                "--workspace",
-                "--lcov",
-                "--output-path",
-                "lcov.info",
-            ])
-            .current_dir(working_directory)
-            .status()?;
+        let mut cmd = Command::new("cargo");
+        cmd.args([
+            "llvm-cov",
+            "--all-features",
+            "--workspace",
+            "--lcov",
+            "--output-path",
+            "lcov.info",
+        ])
+        .current_dir(working_directory);
+
+        // Configure LLVM environment if needed
+        for (var_name, var_value) in install::detect_llvm_env() {
+            cmd.env(var_name, var_value);
+        }
+
+        let status = cmd.status()?;
 
         if !status.success() {
             return Err(TestError::TestFailed);
@@ -99,10 +111,15 @@ fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestEr
         println!("Coverage report generated: lcov.info");
     } else {
         // Regular cargo test without coverage
-        let status = Command::new("cargo")
-            .arg("test")
-            .current_dir(working_directory)
-            .status()?;
+        let mut cmd = Command::new("cargo");
+        cmd.arg("test").current_dir(working_directory);
+
+        // Configure LLVM environment if needed
+        for (var_name, var_value) in install::detect_llvm_env() {
+            cmd.env(var_name, var_value);
+        }
+
+        let status = cmd.status()?;
 
         if !status.success() {
             return Err(TestError::TestFailed);
