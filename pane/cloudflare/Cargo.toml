@@ -1,5 +1,5 @@
 [package]
-name = "ciam"
+name = "cloudflare"
 version = "0.1.0"
 edition = "2024"
 
@@ -11,3 +11,8 @@ expect_used = "warn"
 unsafe_code = "forbid"
 
 [dependencies]
+
+[dev-dependencies]
+
+[features]
+default = []

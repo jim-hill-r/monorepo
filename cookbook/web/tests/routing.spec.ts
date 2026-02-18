@@ -108,7 +108,8 @@ test.describe('Recipe Routes', () => {
     
     for (const day of days) {
       await page.goto(`/recipe/${day}`);
-      await page.waitForLoadState('networkidle');
+      // Use domcontentloaded instead of networkidle for faster, more reliable tests
+      await page.waitForLoadState('domcontentloaded');
       // Verify we're on the correct recipe page by checking URL
       await expect(page).toHaveURL(`/recipe/${day}`);
       // Verify recipe content is displayed
@@ -174,7 +175,8 @@ test.describe('Plan Routes', () => {
     
     for (const week of weeks) {
       await page.goto(`/plan/${week}`);
-      await page.waitForLoadState('networkidle');
+      // Use domcontentloaded instead of networkidle for faster, more reliable tests
+      await page.waitForLoadState('domcontentloaded');
       const contentH1 = page.locator('#content h1');
       await expect(contentH1).toHaveText(`Meal Plan for Week ${week}`);
     }

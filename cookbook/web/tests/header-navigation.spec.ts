@@ -112,7 +112,8 @@ test.describe('Header Navigation', () => {
     
     for (const path of pages) {
       await page.goto(path);
-      await page.waitForLoadState('networkidle');
+      // Use domcontentloaded instead of networkidle for faster, more reliable tests
+      await page.waitForLoadState('domcontentloaded');
       
       // Verify header exists on each page
       const header = page.locator('#header');

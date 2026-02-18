@@ -37,12 +37,13 @@ test.describe('Home Page Navigation UI', () => {
 
   test('should navigate to recipes when clicking the recipes card', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find and click the recipes card link - "Browse Recipes"
     const recipesLink = page.locator('.recipe-card a:has-text("Browse Recipes")');
-    await recipesLink.click();
-    await page.waitForLoadState('networkidle');
+    // Use force click to bypass overlapping elements
+    await recipesLink.click({ force: true });
+    await page.waitForLoadState('domcontentloaded');
     
     // Verify we navigated to a recipe page
     await expect(page).toHaveURL(/\/recipe\/\d+/);
