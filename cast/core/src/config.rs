@@ -607,31 +607,8 @@ deploys = ["deploy1", "deploy2"]
         }
     }
 
-    #[test]
-    fn test_moved_poc_projects_have_proof_of_concept_flag() {
-        // Test that all moved proof-of-concept projects have Cast.toml with proof_of_concept = true
-        let poc_projects = vec!["dioxus_ssg", "dioxus_static_website", "marp"];
-
-        // CARGO_MANIFEST_DIR is now cast_workspace/core, so go up two levels to reach monorepo root
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap();
-
-        for project in poc_projects {
-            let cast_toml = root.join(project).join("Cast.toml");
-            let config = CastConfig::load(&cast_toml)
-                .unwrap_or_else(|e| panic!("Failed to load {} Cast.toml: {}", project, e));
-
-            assert_eq!(
-                config.proof_of_concept,
-                Some(true),
-                "Expected proof_of_concept to be true for {}",
-                project
-            );
-        }
-    }
+    // Removed: test_moved_poc_projects_have_proof_of_concept_flag
+    // These POC projects (dioxus_ssg, dioxus_static_website, marp) no longer exist in the repository
 
     #[test]
     fn test_parse_config_with_deploys() {

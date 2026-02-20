@@ -1043,6 +1043,7 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
     }
 
     println!("Installing Cast CLI from {}...", cast_cli_path.display());
+    println!("This may take a few minutes to compile. Progress will be shown below.");
 
     let path_str = cast_cli_path.to_str().ok_or_else(|| {
         InstallError::InstallationError(
@@ -1050,12 +1051,12 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
         )
     })?;
 
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         .args(["install", "--path", path_str])
-        .output()
+        .status()
         .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
-    if output.status.success() {
+    if status.success() {
         Ok(InstallResult {
             tool: Tool::Cast,
             success: true,
@@ -1063,11 +1064,9 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
             skipped: false,
         })
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(InstallError::InstallationError(format!(
-            "Failed to install cast: {}",
-            stderr
-        )))
+        Err(InstallError::InstallationError(
+            "Failed to install cast. Check the output above for details.".to_string(),
+        ))
     }
 }
 
@@ -1090,13 +1089,14 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, InstallError> {
     }
 
     println!("Installing Dioxus CLI (dx) version {}...", version);
+    println!("This may take several minutes to compile. Progress will be shown below.");
 
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         .args(["install", "dioxus-cli", "--version", version])
-        .output()
+        .status()
         .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 
-    if output.status.success() {
+    if status.success() {
         Ok(InstallResult {
             tool: Tool::Dx,
             success: true,
@@ -1104,11 +1104,9 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, InstallError> {
             skipped: false,
         })
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(InstallError::InstallationError(format!(
-            "Failed to install dx: {}",
-            stderr
-        )))
+        Err(InstallError::InstallationError(
+            "Failed to install dx. Check the output above for details.".to_string(),
+        ))
     }
 }
 
@@ -1173,32 +1171,30 @@ fn install_playwright(
     // First, run npm ci if package.json exists
     if working_directory.join("package.json").exists() {
         println!("Running npm ci to install dependencies...");
-        let output = Command::new("npm")
+        let status = Command::new("npm")
             .args(["ci"])
             .current_dir(working_directory)
-            .output()
+            .status()
             .map_err(|e| InstallError::InstallationError(format!("Failed to run npm ci: {}", e)))?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(InstallError::InstallationError(format!(
-                "npm ci failed: {}",
-                stderr
-            )));
+        if !status.success() {
+            return Err(InstallError::InstallationError(
+                "npm ci failed. Check the output above for details.".to_string(),
+            ));
         }
     }
 
     // Then install Playwright browsers (all browsers for comprehensive testing)
     println!("Installing Playwright browsers...");
-    let output = Command::new("npx")
+    let status = Command::new("npx")
         .args(["playwright", "install", "--with-deps"])
         .current_dir(working_directory)
-        .output()
+        .status()
         .map_err(|e| {
             InstallError::InstallationError(format!("Failed to run npx playwright: {}", e))
         })?;
 
-    if output.status.success() {
+    if status.success() {
         Ok(InstallResult {
             tool: Tool::Playwright,
             success: true,
@@ -1206,11 +1202,9 @@ fn install_playwright(
             skipped: false,
         })
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(InstallError::InstallationError(format!(
-            "Failed to install Playwright: {}",
-            stderr
-        )))
+        Err(InstallError::InstallationError(
+            "Failed to install Playwright. Check the output above for details.".to_string(),
+        ))
     }
 }
 
@@ -1230,12 +1224,12 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, InstallError> {
     println!("Installing Wrangler CLI...");
 
     // Try npm first (primary method)
-    let output = Command::new("npm")
+    let status = Command::new("npm")
         .args(["install", "-g", "wrangler"])
-        .output()
+        .status()
         .map_err(|e| InstallError::InstallationError(format!("Failed to run npm: {}", e)))?;
 
-    if output.status.success() {
+    if status.success() {
         Ok(InstallResult {
             tool: Tool::Wrangler,
             success: true,
@@ -1243,11 +1237,9 @@ fn install_wrangler(dry_run: bool) -> Result<InstallResult, InstallError> {
             skipped: false,
         })
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(InstallError::InstallationError(format!(
-            "Failed to install wrangler: {}",
-            stderr
-        )))
+        Err(InstallError::InstallationError(
+            "Failed to install wrangler. Check the output above for details.".to_string(),
+        ))
     }
 }
 
@@ -1305,18 +1297,17 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, InstallError> {
     }
 
     // Execute the package manager installation
-    let output = cmd.output().map_err(|e| {
+    let status = cmd.status().map_err(|e| {
         InstallError::InstallationError(format!(
             "Failed to run {} ({}): {}. Please install git-lfs manually.",
             package_manager, os_name, e
         ))
     })?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
+    if !status.success() {
         return Err(InstallError::InstallationError(format!(
-            "Failed to install git-lfs using {}: {}",
-            package_manager, stderr
+            "Failed to install git-lfs using {}. Check the output above for details.",
+            package_manager
         )));
     }
 
@@ -1324,14 +1315,14 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, InstallError> {
     println!("Running 'git lfs install' to initialize Git LFS...");
 
     // Run git lfs install to complete the setup
-    let lfs_install_output = Command::new("git")
+    let lfs_install_status = Command::new("git")
         .args(["lfs", "install"])
-        .output()
+        .status()
         .map_err(|e| {
             InstallError::InstallationError(format!("Failed to run 'git lfs install': {}", e))
         })?;
 
-    if lfs_install_output.status.success() {
+    if lfs_install_status.success() {
         println!("Git LFS initialized successfully!");
         Ok(InstallResult {
             tool: Tool::GitLfs,
@@ -1340,11 +1331,10 @@ fn install_git_lfs(dry_run: bool) -> Result<InstallResult, InstallError> {
             skipped: false,
         })
     } else {
-        let stderr = String::from_utf8_lossy(&lfs_install_output.stderr);
-        Err(InstallError::InstallationError(format!(
-            "Git LFS installed but 'git lfs install' failed: {}",
-            stderr
-        )))
+        Err(InstallError::InstallationError(
+            "Git LFS installed but 'git lfs install' failed. Check the output above for details."
+                .to_string(),
+        ))
     }
 }
 
@@ -1402,19 +1392,17 @@ fn install_llvm(dry_run: bool) -> Result<InstallResult, InstallError> {
     // On Linux, run apt-get update first
     if cfg!(target_os = "linux") {
         println!("Updating package index...");
-        let update_output = Command::new("sudo")
+        let update_status = Command::new("sudo")
             .args(["apt-get", "update"])
-            .output()
+            .status()
             .map_err(|e| {
                 InstallError::InstallationError(format!("Failed to run apt-get update: {}", e))
             })?;
 
-        if !update_output.status.success() {
-            let stderr = String::from_utf8_lossy(&update_output.stderr);
-            return Err(InstallError::InstallationError(format!(
-                "Failed to update package index: {}",
-                stderr
-            )));
+        if !update_status.success() {
+            return Err(InstallError::InstallationError(
+                "Failed to update package index. Check the output above for details.".to_string(),
+            ));
         }
     }
 
@@ -1433,18 +1421,17 @@ fn install_llvm(dry_run: bool) -> Result<InstallResult, InstallError> {
     }
 
     // Execute the package manager installation
-    let output = cmd.output().map_err(|e| {
+    let status = cmd.status().map_err(|e| {
         InstallError::InstallationError(format!(
             "Failed to run {} ({}): {}. Please install LLVM manually.",
             package_manager, os_name, e
         ))
     })?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
+    if !status.success() {
         return Err(InstallError::InstallationError(format!(
-            "Failed to install LLVM using {}: {}",
-            package_manager, stderr
+            "Failed to install LLVM using {}. Check the output above for details.",
+            package_manager
         )));
     }
 
@@ -1490,7 +1477,7 @@ pub fn detect_llvm_env() -> Vec<(String, String)> {
                 // Set multiple LLVM version prefixes to cover different llvm-sys versions
                 // This ensures compatibility with various LLVM 18.x bindings
                 let mut env_vars = Vec::new();
-                
+
                 // Only set if not already present in environment
                 for version in ["180", "181", "170", "171", "160", "161"] {
                     let var_name = format!("LLVM_SYS_{}_PREFIX", version);
@@ -1498,7 +1485,7 @@ pub fn detect_llvm_env() -> Vec<(String, String)> {
                         env_vars.push((var_name, prefix.clone()));
                     }
                 }
-                
+
                 return env_vars;
             }
         }
