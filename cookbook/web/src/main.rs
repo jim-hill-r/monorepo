@@ -180,7 +180,6 @@ fn Header() -> Element {
 /// Format authentication errors into user-friendly messages
 #[cfg(target_arch = "wasm32")]
 fn format_auth_error(err: &AuthError) -> String {
-    use auth_sdk::provider::AuthError;
     match err {
         AuthError::ParseError => "Unable to process authentication".to_string(),
         AuthError::TokenExchangeError(_) => "Login failed. Please try again".to_string(),
