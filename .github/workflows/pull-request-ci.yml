@@ -10,7 +10,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  detect-and-run-ci:
+  run-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,37 +27,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
-      - name: Build cast CLI
-        run: |
-          cd cast/cli
-          cargo build --release
-
       - name: Run CI checks on changed projects
         run: |
-          # Use absolute path to cast binary
-          CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
-          
-          # Get list of changed projects
-          CHANGED_PROJECTS=$("$CAST_BIN" project with-changes --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.sha }}")
-          
-          if [ -n "$CHANGED_PROJECTS" ]; then
-            # Install toolchain for each changed project
-            echo "$CHANGED_PROJECTS" | while read -r project; do
-              if [ -n "$project" ]; then
-                echo "Installing toolchain for $project"
-                cd "$GITHUB_WORKSPACE/$project"
-                "$CAST_BIN" install || echo "Warning: install failed for $project"
-                cd "$GITHUB_WORKSPACE"
-              fi
-            done
-          fi
-          
-          # Run cast ci with --check to validate projects with changes
-          # --only-changed: check only projects with changes
-          # --check: run checks only (no artifacts)
-          # --recursive 2: find all Cast projects up to 2 levels deep
-          "$CAST_BIN" ci --only-changed --check --recursive 2
+          cargo install --path ./cast/cli
+          cast ci --only-changed --check --recursive 2
