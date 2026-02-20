@@ -305,9 +305,7 @@ fn run_npm_install(working_directory: &Path) -> Result<(), std::io::Error> {
 
 fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
     let mut cmd = Command::new("cargo");
-    cmd.arg("fmt")
-        .arg("--check")
-        .current_dir(working_directory);
+    cmd.arg("fmt").arg("--check").current_dir(working_directory);
 
     // Configure LLVM environment if needed
     for (var_name, var_value) in install::detect_llvm_env() {
@@ -1709,9 +1707,11 @@ mod tests {
     fn test_has_changes_detects_changes() {
         let tmp_dir = TempDir::new("test_has_changes").unwrap();
 
-        // Initialize git repo with origin
+        // Initialize git repo with master branch explicitly
         Command::new("git")
             .arg("init")
+            .arg("-b")
+            .arg("master")
             .current_dir(tmp_dir.path())
             .output()
             .unwrap();
