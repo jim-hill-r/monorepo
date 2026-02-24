@@ -1,0 +1,13 @@
+# Priority Issues
+
+- TODO: Implement deck building system allowing players to create and manage card decks
+- TODO: Add card rendering system to display cards with artwork, name, and stats
+- TODO: Implement game rules engine for turn-based card game mechanics
+- TODO: Add player vs player (local multiplayer) support
+- TODO: Create AI opponent for single-player mode
+
+# Backlog
+
+# Priority Projects
+
+# On Hold Projects
