@@ -83,7 +83,11 @@ pub enum Commands {
         only_changed: bool,
     },
     /// Run CD (Continuous Deployment)
-    Cd,
+    Cd {
+        /// Deploy artifacts committed in the most recent git commit
+        #[arg(long)]
+        last_commit: bool,
+    },
     /// Run tests
     Test {
         /// Generate code coverage reports
@@ -470,7 +474,13 @@ mod tests {
 
         fs::write(tmp_dir.path().join("Cast.toml"), "").unwrap();
 
-        let result = execute(Args { cmd: Commands::Cd }, tmp_dir.path()).unwrap();
+        let result = execute(
+            Args {
+                cmd: Commands::Cd { last_commit: false },
+            },
+            tmp_dir.path(),
+        )
+        .unwrap();
         assert_eq!(result, "CD completed");
     }
 
