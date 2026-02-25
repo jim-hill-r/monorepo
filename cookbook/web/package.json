@@ -13,6 +13,7 @@
     "bundle:release": "dx bundle --package web --platform web --release"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.48.2",
     "@types/node": "^20.17.10",
     "typescript": "^5.7.3"
