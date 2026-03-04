@@ -138,7 +138,9 @@ pub fn create_command(
         })),
         Commands::Run => Ok(Box::new(commands::run::RunCommand)),
         Commands::Deploy => Ok(Box::new(commands::deploy::DeployCommand)),
-        Commands::Cd => Ok(Box::new(commands::cd::CdCommand)),
+        Commands::Cd { last_commit } => Ok(Box::new(commands::cd::CdCommand {
+            last_commit: *last_commit,
+        })),
         Commands::Publish => Ok(Box::new(commands::publish::PublishCommand)),
     }
 }
@@ -344,7 +346,7 @@ mod tests {
 
     #[test]
     fn test_create_cd_command() {
-        let cmd = Commands::Cd;
+        let cmd = Commands::Cd { last_commit: false };
         let result = create_command(&cmd, true);
         assert!(result.is_ok());
     }
