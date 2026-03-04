@@ -66,3 +66,8 @@ pub fn get_cast_cd_workflow_path() -> PathBuf {
 pub fn get_codeql_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/codeql.yml")
 }
+
+/// Get the path to the standards-audit.yml workflow file
+pub fn get_standards_audit_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/standards-audit.yml")
+}

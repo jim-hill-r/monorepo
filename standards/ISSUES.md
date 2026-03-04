@@ -1,7 +1,5 @@
 # Priority Issues
 
-- TODO: Add a github workflow that runs the standards cli once per day. The cli should be adding todos to the repository. The CLI may need to be extended to push those changes as a PR once the todos are created. Assign the PR to jim-hill-r.
-
 ## Standards CLI Implementation (Broken Down)
 
 # Other Issues
