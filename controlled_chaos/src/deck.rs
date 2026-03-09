@@ -11,10 +11,12 @@ pub struct Deck {
 }
 
 impl Deck {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[allow(dead_code)]
     pub fn add_card(&mut self, card: Card) {
         self.cards.push(card);
     }
@@ -35,6 +37,7 @@ impl Deck {
     /// Shuffles the deck in place using the provided random number generator.
     ///
     /// Prefer this variant in tests where deterministic output is required.
+    #[allow(dead_code)]
     pub fn shuffle_with(&mut self, rng: &mut impl Rng) {
         self.cards.shuffle(rng);
     }

@@ -42,6 +42,7 @@ impl CardLibrary {
     }
 
     /// Returns `true` when the library has no cards registered.
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.cards.is_empty()
     }
