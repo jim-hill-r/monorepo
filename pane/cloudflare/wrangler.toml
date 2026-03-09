@@ -2,4 +2,4 @@
 
 name = "pane"
 compatibility_date = "2024-12-20"
-pages_build_output_dir = "../pane/dist"
+pages_build_output_dir = "../web/dist"
