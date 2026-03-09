@@ -12,6 +12,7 @@ unsafe_code = "forbid"
 
 [dependencies]
 bevy = "0.14.2"
+rand = "0.8"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
