@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 mod card;
+mod card_library;
 mod deck;
 mod game;
 

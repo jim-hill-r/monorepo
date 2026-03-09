@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::card::Card;
-use crate::deck::Deck;
+use crate::card_library::CardLibrary;
+use crate::deck::{Deck, DeckBuilder};
 
 /// Plugin that sets up the core game systems.
 pub struct GamePlugin;
@@ -23,11 +24,24 @@ pub struct GameState {
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
-    let mut deck = Deck::new();
-    deck.add_card(Card::new("Ace", 14));
-    deck.add_card(Card::new("King", 13));
-    deck.add_card(Card::new("Queen", 12));
-    deck.add_card(Card::new("Jack", 11));
+    // Build a card library with the available cards.
+    let mut library = CardLibrary::new();
+    library.register(Card::new("Ace", 14));
+    library.register(Card::new("King", 13));
+    library.register(Card::new("Queen", 12));
+    library.register(Card::new("Jack", 11));
+    library.register(Card::new("Fireball", 10));
+
+    info!("Card library contains {} cards.", library.len());
+
+    // Use DeckBuilder to compose a player deck (max 2 copies of any card).
+    let mut builder = DeckBuilder::new().with_max_copies(2);
+    for name in ["Ace", "King", "Queen", "Jack", "Ace"] {
+        if let Some(card) = library.get(name) {
+            builder.add_card(card);
+        }
+    }
+    let mut deck: Deck = builder.build();
 
     info!("Deck initialized with {} cards.", deck.remaining());
 
