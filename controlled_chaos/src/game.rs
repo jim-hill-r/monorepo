@@ -32,7 +32,11 @@ fn setup(mut commands: Commands) {
     library.register(Card::new("Jack", 11));
     library.register(Card::new("Fireball", 10));
 
-    info!("Card library contains {} cards.", library.len());
+    info!(
+        "Card library contains {} cards: {}",
+        library.len(),
+        library.card_names().join(", ")
+    );
 
     // Use DeckBuilder to compose a player deck (max 2 copies of any card).
     let mut builder = DeckBuilder::new().with_max_copies(2);
@@ -42,8 +46,13 @@ fn setup(mut commands: Commands) {
         }
     }
     let mut deck: Deck = builder.build();
+    deck.shuffle();
 
     info!("Deck initialized with {} cards.", deck.remaining());
+    info!(
+        "Top card after shuffle: {:?}",
+        deck.cards().first().map(|c| c.name.as_str())
+    );
 
     if let Some(card) = deck.draw() {
         info!("Drew card: {} (value: {})", card.name, card.value);
