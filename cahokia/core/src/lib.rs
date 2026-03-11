@@ -488,6 +488,12 @@ impl FamilyTree {
 
     /// Processes an AncestryEvent and updates the family tree accordingly.
     ///
+    /// For Birth events, the person's `birth_date` is updated if the event has a date.
+    /// For Death events, the person's `death_date` is updated if the event has a date.
+    /// For Marriage events, a bidirectional spouse relationship is created.
+    /// For Divorce events, the spouse relationship between the two people is removed.
+    /// For Adoption events, a parent-child relationship is created.
+    ///
     /// # Arguments
     /// * `person_id` - The ID of the person associated with this event
     /// * `event` - The AncestryEvent to process
@@ -499,9 +505,29 @@ impl FamilyTree {
         person_id: &str,
         event: &AncestryEvent,
     ) -> FamilyTreeResult<()> {
+        if !self.people.contains_key(person_id) {
+            return Err(FamilyTreeError::PersonNotFound(person_id.to_string()));
+        }
         match event {
+            AncestryEvent::Birth {
+                date: Some(date), ..
+            } => {
+                if let Some(person) = self.people.get_mut(person_id) {
+                    person.birth_date = Some(date.clone());
+                }
+            }
+            AncestryEvent::Death {
+                date: Some(date), ..
+            } => {
+                if let Some(person) = self.people.get_mut(person_id) {
+                    person.death_date = Some(date.clone());
+                }
+            }
             AncestryEvent::Marriage { spouse_id, .. } => {
                 self.add_spouse_relationship(person_id.to_string(), spouse_id.clone())?;
+            }
+            AncestryEvent::Divorce { spouse_id, .. } => {
+                self.remove_spouse_relationship(person_id, spouse_id);
             }
             AncestryEvent::Adoption {
                 adoptive_parent_id, ..
@@ -511,10 +537,31 @@ impl FamilyTree {
                     person_id.to_string(),
                 )?;
             }
-            // Other events don't directly create relationships
+            // Other events are informational and do not directly modify the tree structure
             _ => {}
         }
         Ok(())
+    }
+
+    /// Removes a bidirectional spouse relationship between two people.
+    ///
+    /// If either person does not exist or the relationship does not exist, this is a no-op.
+    ///
+    /// # Arguments
+    /// * `person1_id` - The ID of the first person
+    /// * `person2_id` - The ID of the second person
+    pub fn remove_spouse_relationship(&mut self, person1_id: &str, person2_id: &str) {
+        self.remove_relationship(person1_id, person2_id, &Relationship::Spouse);
+        self.remove_relationship(person2_id, person1_id, &Relationship::Spouse);
+    }
+
+    /// Removes a specific directed relationship between two people.
+    ///
+    /// If the relationship does not exist, this is a no-op.
+    fn remove_relationship(&mut self, from_id: &str, to_id: &str, relationship: &Relationship) {
+        if let Some(rels) = self.relationships.get_mut(from_id) {
+            rels.retain(|(id, rel)| !(id == to_id && rel == relationship));
+        }
     }
 
     /// Gets all parents of a person.
@@ -572,6 +619,82 @@ impl FamilyTree {
         }
 
         siblings
+    }
+
+    /// Gets all ancestors of a person (parents, grandparents, great-grandparents, etc.).
+    ///
+    /// Performs a breadth-first traversal up the family tree, following Parent->Child
+    /// relationships in reverse (i.e., following Child relationships from each person).
+    ///
+    /// # Arguments
+    /// * `person_id` - The ID of the person to find ancestors for
+    ///
+    /// # Returns
+    /// A vector of references to Person objects that are ancestors of the specified person,
+    /// in breadth-first order (closest ancestors first). Each ancestor is included only once.
+    pub fn get_ancestors(&self, person_id: &str) -> Vec<&Person> {
+        let mut visited = std::collections::HashSet::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut ancestors = Vec::new();
+
+        // Seed with the immediate parents
+        for parent in self.get_parents(person_id) {
+            let id = parent.id.clone();
+            if visited.insert(id.clone()) {
+                queue.push_back(id);
+                ancestors.push(parent);
+            }
+        }
+
+        while let Some(current_id) = queue.pop_front() {
+            for parent in self.get_parents(&current_id) {
+                let id = parent.id.clone();
+                if visited.insert(id.clone()) {
+                    queue.push_back(id);
+                    ancestors.push(parent);
+                }
+            }
+        }
+
+        ancestors
+    }
+
+    /// Gets all descendants of a person (children, grandchildren, great-grandchildren, etc.).
+    ///
+    /// Performs a breadth-first traversal down the family tree, following Parent relationships
+    /// from each person.
+    ///
+    /// # Arguments
+    /// * `person_id` - The ID of the person to find descendants for
+    ///
+    /// # Returns
+    /// A vector of references to Person objects that are descendants of the specified person,
+    /// in breadth-first order (closest descendants first). Each descendant is included only once.
+    pub fn get_descendants(&self, person_id: &str) -> Vec<&Person> {
+        let mut visited = std::collections::HashSet::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut descendants = Vec::new();
+
+        // Seed with the immediate children
+        for child in self.get_children(person_id) {
+            let id = child.id.clone();
+            if visited.insert(id.clone()) {
+                queue.push_back(id);
+                descendants.push(child);
+            }
+        }
+
+        while let Some(current_id) = queue.pop_front() {
+            for child in self.get_children(&current_id) {
+                let id = child.id.clone();
+                if visited.insert(id.clone()) {
+                    queue.push_back(id);
+                    descendants.push(child);
+                }
+            }
+        }
+
+        descendants
     }
 }
 
@@ -1313,5 +1436,326 @@ mod tests {
         assert_eq!(siblings.len(), 2);
         assert!(siblings.iter().any(|p| p.id == "c2"));
         assert!(siblings.iter().any(|p| p.id == "c3"));
+    }
+
+    #[test]
+    fn test_process_birth_event_updates_birth_date() {
+        let mut tree = FamilyTree::new();
+        let person = Person::new(
+            "p1".to_string(),
+            "Person".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        tree.add_person(person).unwrap();
+
+        let event = AncestryEvent::Birth {
+            date: Some("1990-05-15".to_string()),
+            location: Some("New York".to_string()),
+        };
+        tree.process_event("p1", &event).unwrap();
+
+        let updated = tree.get_person("p1").unwrap();
+        assert_eq!(updated.birth_date, Some("1990-05-15".to_string()));
+    }
+
+    #[test]
+    fn test_process_birth_event_no_date_does_not_overwrite() {
+        let mut tree = FamilyTree::new();
+        let person = Person::new(
+            "p1".to_string(),
+            "Person".to_string(),
+            Sex::Male,
+            Some("1990-01-01".to_string()),
+            None,
+        );
+        tree.add_person(person).unwrap();
+
+        let event = AncestryEvent::Birth {
+            date: None,
+            location: Some("New York".to_string()),
+        };
+        tree.process_event("p1", &event).unwrap();
+
+        // Birth date should remain unchanged when event has no date
+        let updated = tree.get_person("p1").unwrap();
+        assert_eq!(updated.birth_date, Some("1990-01-01".to_string()));
+    }
+
+    #[test]
+    fn test_process_death_event_updates_death_date() {
+        let mut tree = FamilyTree::new();
+        let person = Person::new(
+            "p1".to_string(),
+            "Person".to_string(),
+            Sex::Male,
+            Some("1900-01-01".to_string()),
+            None,
+        );
+        tree.add_person(person).unwrap();
+
+        let event = AncestryEvent::Death {
+            date: Some("1975-12-25".to_string()),
+            location: Some("Boston".to_string()),
+        };
+        tree.process_event("p1", &event).unwrap();
+
+        let updated = tree.get_person("p1").unwrap();
+        assert_eq!(updated.death_date, Some("1975-12-25".to_string()));
+        assert!(updated.is_deceased());
+    }
+
+    #[test]
+    fn test_process_divorce_event_removes_spouse_relationship() {
+        let mut tree = FamilyTree::new();
+        let p1 = Person::new(
+            "p1".to_string(),
+            "Person 1".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let p2 = Person::new(
+            "p2".to_string(),
+            "Person 2".to_string(),
+            Sex::Female,
+            None,
+            None,
+        );
+
+        tree.add_person(p1).unwrap();
+        tree.add_person(p2).unwrap();
+        tree.add_spouse_relationship("p1".to_string(), "p2".to_string())
+            .unwrap();
+
+        // Verify the spouse relationship exists
+        assert_eq!(tree.get_spouses("p1").len(), 1);
+        assert_eq!(tree.get_spouses("p2").len(), 1);
+
+        let divorce_event = AncestryEvent::Divorce {
+            spouse_id: "p2".to_string(),
+            date: Some("2020-01-01".to_string()),
+        };
+        tree.process_event("p1", &divorce_event).unwrap();
+
+        // Spouse relationship should be removed bidirectionally
+        assert_eq!(tree.get_spouses("p1").len(), 0);
+        assert_eq!(tree.get_spouses("p2").len(), 0);
+    }
+
+    #[test]
+    fn test_process_event_person_not_found() {
+        let mut tree = FamilyTree::new();
+        let event = AncestryEvent::Birth {
+            date: Some("1990-01-01".to_string()),
+            location: None,
+        };
+        let result = tree.process_event("nonexistent", &event);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            FamilyTreeError::PersonNotFound(_)
+        ));
+    }
+
+    #[test]
+    fn test_get_ancestors_empty() {
+        let tree = FamilyTree::new();
+        let ancestors = tree.get_ancestors("p1");
+        assert!(ancestors.is_empty());
+    }
+
+    #[test]
+    fn test_get_ancestors_single_generation() {
+        let mut tree = FamilyTree::new();
+        let parent1 = Person::new(
+            "gp1".to_string(),
+            "Grandpa".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let parent2 = Person::new(
+            "gp2".to_string(),
+            "Grandma".to_string(),
+            Sex::Female,
+            None,
+            None,
+        );
+        let child = Person::new("c1".to_string(), "Child".to_string(), Sex::Male, None, None);
+
+        tree.add_person(parent1).unwrap();
+        tree.add_person(parent2).unwrap();
+        tree.add_person(child).unwrap();
+        tree.add_parent_child_relationship("gp1".to_string(), "c1".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("gp2".to_string(), "c1".to_string())
+            .unwrap();
+
+        let ancestors = tree.get_ancestors("c1");
+        assert_eq!(ancestors.len(), 2);
+        assert!(ancestors.iter().any(|p| p.id == "gp1"));
+        assert!(ancestors.iter().any(|p| p.id == "gp2"));
+    }
+
+    #[test]
+    fn test_get_ancestors_multiple_generations() {
+        let mut tree = FamilyTree::new();
+        let grandparent = Person::new(
+            "gp1".to_string(),
+            "Grandparent".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let parent = Person::new(
+            "p1".to_string(),
+            "Parent".to_string(),
+            Sex::Female,
+            None,
+            None,
+        );
+        let child = Person::new("c1".to_string(), "Child".to_string(), Sex::Male, None, None);
+
+        tree.add_person(grandparent).unwrap();
+        tree.add_person(parent).unwrap();
+        tree.add_person(child).unwrap();
+        tree.add_parent_child_relationship("gp1".to_string(), "p1".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("p1".to_string(), "c1".to_string())
+            .unwrap();
+
+        let ancestors = tree.get_ancestors("c1");
+        assert_eq!(ancestors.len(), 2);
+        assert!(ancestors.iter().any(|p| p.id == "p1"));
+        assert!(ancestors.iter().any(|p| p.id == "gp1"));
+    }
+
+    #[test]
+    fn test_get_ancestors_no_duplicates() {
+        // Shared ancestor (e.g., two siblings both have the same grandparent)
+        let mut tree = FamilyTree::new();
+        let grandparent = Person::new(
+            "gp1".to_string(),
+            "Grandparent".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let parent1 = Person::new(
+            "p1".to_string(),
+            "Parent 1".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let parent2 = Person::new(
+            "p2".to_string(),
+            "Parent 2".to_string(),
+            Sex::Female,
+            None,
+            None,
+        );
+        let child = Person::new("c1".to_string(), "Child".to_string(), Sex::Male, None, None);
+
+        tree.add_person(grandparent).unwrap();
+        tree.add_person(parent1).unwrap();
+        tree.add_person(parent2).unwrap();
+        tree.add_person(child).unwrap();
+        tree.add_parent_child_relationship("gp1".to_string(), "p1".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("gp1".to_string(), "p2".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("p1".to_string(), "c1".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("p2".to_string(), "c1".to_string())
+            .unwrap();
+
+        let ancestors = tree.get_ancestors("c1");
+        // Should have p1, p2, and gp1 (no duplicates even though gp1 is reached via both parents)
+        assert_eq!(ancestors.len(), 3);
+        assert!(ancestors.iter().any(|p| p.id == "p1"));
+        assert!(ancestors.iter().any(|p| p.id == "p2"));
+        assert!(ancestors.iter().any(|p| p.id == "gp1"));
+    }
+
+    #[test]
+    fn test_get_descendants_empty() {
+        let tree = FamilyTree::new();
+        let descendants = tree.get_descendants("p1");
+        assert!(descendants.is_empty());
+    }
+
+    #[test]
+    fn test_get_descendants_single_generation() {
+        let mut tree = FamilyTree::new();
+        let parent = Person::new(
+            "p1".to_string(),
+            "Parent".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let child1 = Person::new(
+            "c1".to_string(),
+            "Child 1".to_string(),
+            Sex::Female,
+            None,
+            None,
+        );
+        let child2 = Person::new(
+            "c2".to_string(),
+            "Child 2".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+
+        tree.add_person(parent).unwrap();
+        tree.add_person(child1).unwrap();
+        tree.add_person(child2).unwrap();
+        tree.add_parent_child_relationship("p1".to_string(), "c1".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("p1".to_string(), "c2".to_string())
+            .unwrap();
+
+        let descendants = tree.get_descendants("p1");
+        assert_eq!(descendants.len(), 2);
+        assert!(descendants.iter().any(|p| p.id == "c1"));
+        assert!(descendants.iter().any(|p| p.id == "c2"));
+    }
+
+    #[test]
+    fn test_get_descendants_multiple_generations() {
+        let mut tree = FamilyTree::new();
+        let grandparent = Person::new(
+            "gp1".to_string(),
+            "Grandparent".to_string(),
+            Sex::Male,
+            None,
+            None,
+        );
+        let parent = Person::new(
+            "p1".to_string(),
+            "Parent".to_string(),
+            Sex::Female,
+            None,
+            None,
+        );
+        let child = Person::new("c1".to_string(), "Child".to_string(), Sex::Male, None, None);
+
+        tree.add_person(grandparent).unwrap();
+        tree.add_person(parent).unwrap();
+        tree.add_person(child).unwrap();
+        tree.add_parent_child_relationship("gp1".to_string(), "p1".to_string())
+            .unwrap();
+        tree.add_parent_child_relationship("p1".to_string(), "c1".to_string())
+            .unwrap();
+
+        let descendants = tree.get_descendants("gp1");
+        assert_eq!(descendants.len(), 2);
+        assert!(descendants.iter().any(|p| p.id == "p1"));
+        assert!(descendants.iter().any(|p| p.id == "c1"));
     }
 }

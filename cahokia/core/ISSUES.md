@@ -1,6 +1,4 @@
-TODO (agent-generated): Implement method to add person to family tree from AncestryEvent::Birth (create Person from Birth event data)
-TODO (agent-generated): Implement method to handle Divorce events (mark relationships as ended)
-TODO (agent-generated): Extend process_event to handle all relevant AncestryEvent types (currently only handles Marriage and Adoption)
-TODO (agent-generated): Implement ancestor traversal queries (find all ancestors of a person)
-TODO (agent-generated): Implement descendant traversal queries (find all descendants of a person)
-TODO: Visualize the family tree (this may be platform specific?)
+# Priority Issues
+- TODO: Visualize the family tree (this may be platform specific?)
+
+# Backlog
