@@ -28,16 +28,8 @@
 //!
 //! - ✅ Lexer: Fully implemented with language keywords
 //! - ✅ Parser: Fully implemented with recursive descent parsing
-//! - ⏳ Code Generator: Not yet implemented (LLVM toolchain now available)
+//! - ✅ Code Generator: Implemented — compiles AST to LLVM IR (integer arithmetic, comparisons, functions, assignments)
 
+pub mod codegen;
 pub mod lexer;
 pub mod parser;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_placeholder() {
-        // Placeholder test to ensure the project structure is correct
-        assert!(true, "Project structure is valid");
-    }
-}
