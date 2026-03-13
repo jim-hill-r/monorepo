@@ -1,5 +1,10 @@
 # Priority Issues
 
+TODO (agent-generated): [CFG-001] standards - Project 'standards' is missing royalty.toml. All projects MUST include a royalty.toml for use with the royalty project.
+
+TODO (agent-generated): [DOC-003] standards - Project 'standards' is missing CONTRIBUTING.md. All projects MUST include a CONTRIBUTING.md.
+# Backlog
+
 ## Standards CLI Implementation (Broken Down)
 
 # Other Issues
