@@ -149,7 +149,7 @@ pub mod naming {
     ///
     /// Checks:
     /// - NAM-001: All projects MUST be snake_case
-    /// - NAM-002: Directory name must match package name
+    /// - NAM-002: Directory name must match package name, or parent_dir + "_" + dir_name must match
     /// - NAM-004: PoC projects must begin with "poc_"
     pub fn audit_naming_standards(projects: &[Project]) -> AuditResult {
         let mut result = AuditResult::new();
@@ -170,9 +170,20 @@ pub mod naming {
                 ));
             }
 
-            // NAM-002: Check if directory name matches package name
+            // NAM-002: Check if directory name matches package name.
+            // Allows either an exact match OR parent_dir + "_" + dir_name (e.g., cast/core → cast_core).
             if let Some(dir_name) = project.path.file_name().and_then(|n| n.to_str()) {
-                if dir_name != project.name {
+                let parent_prefixed_name = project
+                    .path
+                    .parent()
+                    .and_then(|p| p.file_name())
+                    .and_then(|n| n.to_str())
+                    .map(|parent| format!("{}_{}", parent, dir_name));
+
+                let is_valid = dir_name == project.name
+                    || parent_prefixed_name.as_deref() == Some(project.name.as_str());
+
+                if !is_valid {
                     result.add_violation(Violation::new(
                         StandardType::Naming,
                         "NAM-002".to_string(),
@@ -180,7 +191,7 @@ pub mod naming {
                         project.path.display().to_string(),
                         Severity::Error,
                         format!(
-                            "Directory name '{}' does not match package name '{}'. Directory name MUST match the package name.",
+                            "Directory name '{}' does not match package name '{}'. Directory name MUST match the package name, or the package name must equal the parent directory name joined with the directory name using an underscore.",
                             dir_name, project.name
                         ),
                     ));
@@ -318,6 +329,49 @@ pub mod naming {
             assert_eq!(violations.len(), 1);
             assert!(violations[0].message.contains("wrong_dir"));
             assert!(violations[0].message.contains("correct_name"));
+        }
+
+        #[test]
+        fn test_audit_parent_prefixed_name_is_valid() {
+            // cast/core with package name cast_core should be valid (parent + "_" + dir)
+            let projects = vec![Project::new(
+                PathBuf::from("/monorepo/cast/core"),
+                ProjectType::Rust,
+                "cast_core".to_string(),
+            )];
+
+            let result = audit_naming_standards(&projects);
+            let nam_002: Vec<_> = result
+                .violations
+                .iter()
+                .filter(|v| v.standard_id == "NAM-002")
+                .collect();
+            assert!(
+                nam_002.is_empty(),
+                "cast/core with package cast_core should be valid"
+            );
+        }
+
+        #[test]
+        fn test_audit_parent_prefixed_name_mismatch_still_fails() {
+            // cast/web with package name cast_core should still be invalid
+            let projects = vec![Project::new(
+                PathBuf::from("/monorepo/cast/web"),
+                ProjectType::Rust,
+                "cast_core".to_string(),
+            )];
+
+            let result = audit_naming_standards(&projects);
+            let nam_002: Vec<_> = result
+                .violations
+                .iter()
+                .filter(|v| v.standard_id == "NAM-002")
+                .collect();
+            assert_eq!(
+                nam_002.len(),
+                1,
+                "cast/web with package cast_core should be invalid"
+            );
         }
 
         #[test]
