@@ -1,4 +1,4 @@
-# Cookbook Data MD
+# cookbook_data_md
 
 A markdown-based implementation of the recipe storage system for the cookbook application.
 
