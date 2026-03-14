@@ -338,7 +338,7 @@ mod tests {
         let tmp_dir = TempDir::new("test_find_nested").unwrap();
         let files = vec![
             "cookbook/web/artifacts/wasm/0.1.0+2025-01-01.1.abc1234.zip".to_string(),
-            "cast/cli/artifacts/x86_64-unknown-linux-gnu/0.1.0+2025-01-01.1.abc1234.zip"
+            "cast/cast_cli/artifacts/x86_64-unknown-linux-gnu/0.1.0+2025-01-01.1.abc1234.zip"
                 .to_string(),
         ];
         let result = find_projects_with_artifacts(&files, tmp_dir.path());
@@ -346,7 +346,9 @@ mod tests {
         assert!(result
             .iter()
             .any(|p| p == &tmp_dir.path().join("cookbook/web")));
-        assert!(result.iter().any(|p| p == &tmp_dir.path().join("cast/cli")));
+        assert!(result
+            .iter()
+            .any(|p| p == &tmp_dir.path().join("cast/cast_cli")));
     }
 
     #[test]

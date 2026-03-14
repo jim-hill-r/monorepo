@@ -11,7 +11,7 @@ Only Rust and Npm need to be installed system wide. Everything else is managed b
 
 Cast is the CLI tool for this monorepo. All developer commands use Cast.
 
-- Install cast: `cargo install --path ./cast/cli`
+- Install cast: `cargo install --path ./cast/cast_cli`
 
 Once Cast is installed, you can use it for all other work in this monorepo.
 - To start a work session, use `cast session start`.

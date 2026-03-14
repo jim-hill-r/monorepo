@@ -194,7 +194,7 @@ cast install      # Installs all required tools including cast itself
 dx serve --port 8080              # Don't hardcode dx commands
 cargo run                          # Use cast run instead
 npm test                           # Use cast test for consistency
-cargo install --path cast/cli      # Use cast install instead
+cargo install --path cast/cast_cli      # Use cast install instead
 ```
 
 ### When to Use Direct Commands

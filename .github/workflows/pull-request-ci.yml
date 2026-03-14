@@ -33,5 +33,5 @@ jobs:
 
       - name: Run CI checks on changed projects
         run: |
-          cargo install --path ./cast/cli
+          cargo install --path ./cast/cast_cli
           cast ci --only-changed --check --recursive 2

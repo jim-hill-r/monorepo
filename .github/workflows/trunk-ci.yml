@@ -35,7 +35,7 @@ jobs:
 
       - name: Build cast CLI
         run: |
-          cd cast/cli
+          cd cast/cast_cli
           cargo build --release
 
       - name: Run CI and build release artifacts on changed projects

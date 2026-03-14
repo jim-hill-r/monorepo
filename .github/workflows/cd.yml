@@ -35,5 +35,5 @@ jobs:
 
       - name: Run CD on new artifacts
         run: |
-          cargo install --path ./cast/cli
+          cargo install --path ./cast/cast_cli
           cast cd --last-commit --recursive 2
