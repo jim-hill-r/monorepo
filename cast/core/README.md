@@ -1,6 +1,6 @@
-# Cast
+# cast_core
 
-Highly opinionated tooling for rust monorepos.
+The core library for the Cast tool — highly opinionated tooling for Rust monorepos.
 
 This project aims to make managing Rust monorepos simple via a simple CLI that can be run locally, on CI, and in cloud environments.
 
