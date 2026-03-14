@@ -117,9 +117,9 @@ impl AssetLoader for TiledLoader {
             tiled::DefaultResourceCache::new(),
             BytesResourceReader::new(&bytes),
         );
-        let map = loader.load_tmx_map(load_context.path()).map_err(|e| {
-            std::io::Error::other(format!("Could not load TMX map: {e}"))
-        })?;
+        let map = loader
+            .load_tmx_map(load_context.path())
+            .map_err(|e| std::io::Error::other(format!("Could not load TMX map: {e}")))?;
 
         let mut tilemap_textures = HashMap::default();
         #[cfg(not(feature = "atlas"))]
@@ -157,7 +157,9 @@ impl AssetLoader for TiledLoader {
                     #[cfg(feature = "atlas")]
                     {
                         // When atlas feature is enabled, skip tilesets using image collections
-                        log::info!("Skipping tileset {tileset_index} (image collection not supported with atlas feature)");
+                        log::info!(
+                            "Skipping tileset {tileset_index} (image collection not supported with atlas feature)"
+                        );
                         continue;
                     }
                 }
