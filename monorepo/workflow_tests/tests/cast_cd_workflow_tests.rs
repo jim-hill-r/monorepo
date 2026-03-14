@@ -155,9 +155,13 @@ fn test_workflow_installs_cast_before_running() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     // Workflow installs cast CLI before using it
-    let install_pos = content.find("cargo install").expect("Workflow missing cargo install");
-    let cd_pos = content.find("cast cd").expect("Workflow missing cast cd command");
-    
+    let install_pos = content
+        .find("cargo install")
+        .expect("Workflow missing cargo install");
+    let cd_pos = content
+        .find("cast cd")
+        .expect("Workflow missing cast cd command");
+
     assert!(
         install_pos < cd_pos,
         "Workflow should install cast CLI before running cast cd"
