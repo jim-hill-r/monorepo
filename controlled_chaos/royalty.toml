@@ -1,0 +1,3 @@
+[project]
+name = "controlled_chaos"
+description = "A digital tabletop card game built with Bevy, featuring turn-based card game mechanics and deck-building."

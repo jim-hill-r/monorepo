@@ -1,6 +1,6 @@
-# Controlled Chaos
+# controlled_chaos
 
-A tabletop card game built with [Bevy](https://bevyengine.org/).
+A digital tabletop card game built with [Bevy](https://bevyengine.org/), featuring turn-based card game mechanics and deck-building gameplay.
 
 ## Overview
 
