@@ -1,5 +1,5 @@
 [package]
-name = "cookbook-recipe-gen"
+name = "cookbook_recipe_gen"
 version = "0.1.0"
 edition = "2024"
 
@@ -27,8 +27,8 @@ name = "migration-validator"
 path = "src/migration_validator.rs"
 
 [dependencies]
-cookbook-core = { path = "../core" }
-cookbook-data-md = { path = "../data_md" }
+cookbook_core = { path = "../core" }
+cookbook_data_md = { path = "../data_md" }
 rand = "0.8"
 uuid = "1.0"
 

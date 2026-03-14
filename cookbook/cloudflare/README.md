@@ -1,4 +1,4 @@
-# Cookbook Cloudflare Pages Deployment
+# cloudflare
 
 This project handles the deployment of the `cookbook/web` Dioxus web application build artifacts to Cloudflare Pages.
 
