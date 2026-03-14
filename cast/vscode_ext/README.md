@@ -1,4 +1,4 @@
-# Cast VS Code Extension
+# cast_vscode_ext
 
 A Visual Studio Code extension for the Cast CLI tool - highly opinionated tooling for Rust monorepos.
 

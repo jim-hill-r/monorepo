@@ -1,5 +1,5 @@
 {
-  "name": "cast",
+  "name": "cast_vscode_ext",
   "displayName": "Cast",
   "description": "Highly opinionated tooling for rust monorepos.",
   "version": "0.0.1",
@@ -17,7 +17,7 @@
     "commands": []
   },
   "scripts": {
-    "package": "vsce package && cp cast-0.0.1.vsix cast.vsix && rm cast-0.0.1.vsix",
+    "package": "vsce package && cp cast_vscode_ext-0.0.1.vsix cast.vsix && rm cast_vscode_ext-0.0.1.vsix",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
