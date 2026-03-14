@@ -32,14 +32,14 @@ pub fn get_pull_request_ci_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/pull-request-ci.yml")
 }
 
-/// Get the path to the trunk-ci.yml workflow file
+/// Get the path to the push-main-ci.yml workflow file
 pub fn get_trunk_ci_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/trunk-ci.yml")
+    get_repo_root().join(".github/workflows/push-main-ci.yml")
 }
 
-/// Get the path to the start-a-new-task.yml workflow file
+/// Get the path to the all-start-a-new-task.yml workflow file
 pub fn get_start_a_new_task_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/start-a-new-task.yml")
+    get_repo_root().join(".github/workflows/all-start-a-new-task.yml")
 }
 
 /// Get the path to the agent prompt file
@@ -57,17 +57,17 @@ pub fn get_cast_cli_cargo_path() -> PathBuf {
     get_repo_root().join("cast/cli/Cargo.toml")
 }
 
-/// Get the path to the cd.yml workflow file
+/// Get the path to the push-main-cd.yml workflow file
 pub fn get_cast_cd_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/cd.yml")
+    get_repo_root().join(".github/workflows/push-main-cd.yml")
 }
 
-/// Get the path to the codeql.yml workflow file
+/// Get the path to the all-codeql.yml workflow file
 pub fn get_codeql_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/codeql.yml")
+    get_repo_root().join(".github/workflows/all-codeql.yml")
 }
 
-/// Get the path to the standards-audit.yml workflow file
+/// Get the path to the nightly-standards-audit.yml workflow file
 pub fn get_standards_audit_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/standards-audit.yml")
+    get_repo_root().join(".github/workflows/nightly-standards-audit.yml")
 }
