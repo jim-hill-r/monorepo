@@ -1,21 +1,34 @@
+#[cfg(any(target_arch = "wasm32", test))]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
+#[cfg(target_arch = "wasm32")]
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
+#[cfg(target_arch = "wasm32")]
 use dioxus::prelude::*;
 
+#[cfg(target_arch = "wasm32")]
 use ui::{Navbar, Sidebar};
+#[cfg(target_arch = "wasm32")]
 use views::about::About;
+#[cfg(target_arch = "wasm32")]
 use views::explore::Explore;
+#[cfg(target_arch = "wasm32")]
 use views::history::History;
+#[cfg(target_arch = "wasm32")]
 use views::home::Home;
 
 mod views;
 
+#[cfg(any(target_arch = "wasm32", test))]
 const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
+#[cfg(any(target_arch = "wasm32", test))]
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
+#[cfg(any(target_arch = "wasm32", test))]
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
+#[cfg(any(target_arch = "wasm32", test))]
 const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
+#[cfg(target_arch = "wasm32")]
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 enum Route {
@@ -30,8 +43,11 @@ enum Route {
     Explore {},
 }
 
+#[cfg(target_arch = "wasm32")]
 const FAVICON: Asset = asset!("/assets/favicon.ico");
+#[cfg(target_arch = "wasm32")]
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+#[cfg(target_arch = "wasm32")]
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 
 /// Content Security Policy for the application
@@ -46,12 +62,22 @@ const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 ///
 /// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
 /// Tests verify that the CSP contains the correct Auth0 domain.
+#[cfg(any(target_arch = "wasm32", test))]
 const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
+#[cfg(target_arch = "wasm32")]
 fn main() {
     dioxus::launch(App);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn main() {
+    // This binary is only meant to run in a WebAssembly environment
+    eprintln!("This application is designed to run in a web browser as WebAssembly.");
+    eprintln!("Please use `dx serve` to run the development server.");
+}
+
+#[cfg(target_arch = "wasm32")]
 #[component]
 fn App() -> Element {
     let auth = use_resource(|| async move {
@@ -86,6 +112,7 @@ fn App() -> Element {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 #[component]
 fn WebNavbar() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
