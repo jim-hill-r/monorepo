@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::card::Card;
+use crate::state::AppState;
 
 /// Width of a rendered card in pixels.
 pub const CARD_WIDTH: f32 = 120.0;
@@ -51,8 +52,11 @@ pub struct CardRenderPlugin;
 
 impl Plugin for CardRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_card_visuals_from_cards)
-            .add_systems(Update, cleanup_orphaned_visuals);
+        app.add_systems(OnEnter(AppState::InGame), spawn_card_visuals_from_cards)
+            .add_systems(
+                Update,
+                cleanup_orphaned_visuals.run_if(in_state(AppState::InGame)),
+            );
     }
 }
 

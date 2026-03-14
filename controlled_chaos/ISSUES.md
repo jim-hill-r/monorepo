@@ -1,7 +1,5 @@
 # Priority Issues
 
-- TODO: When running `cast run` the bevy game window opens but nothing is on the screen. Add a splash screen with a button for start game.
-
 - TODO: Implement game rules engine for turn-based card game mechanics
 
 - TODO: Add player vs player (local multiplayer) support
