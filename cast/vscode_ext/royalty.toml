@@ -1,0 +1,3 @@
+[project]
+name = "cast_vscode_ext"
+description = "A Visual Studio Code extension for the Cast CLI tool — highly opinionated tooling for Rust monorepos."
