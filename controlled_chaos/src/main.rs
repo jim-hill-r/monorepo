@@ -18,9 +18,15 @@ fn main() {
             }),
             ..default()
         }))
+        .add_systems(Startup, setup_camera)
         .init_state::<state::AppState>()
         .add_plugins(splash::SplashPlugin)
         .add_plugins(game::GamePlugin)
         .add_plugins(card_render::CardRenderPlugin)
         .run();
+}
+
+/// Spawns the main camera at app startup so it's available for all states.
+fn setup_camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
 }

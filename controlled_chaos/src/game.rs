@@ -32,8 +32,6 @@ pub struct GameState {
 pub struct RulesEngineResource(pub RulesEngine);
 
 fn setup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
-
     // Build a card library with the available cards.
     let mut library = CardLibrary::new();
     library.register(Card::new("Ace", 14));
