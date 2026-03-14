@@ -171,7 +171,8 @@ fn test_workflow_builds_cast_cli() {
         fs::read_to_string(get_cast_ci_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("cast/cli") && (content.contains("cargo install") || content.contains("cargo build")),
+        content.contains("cast/cli")
+            && (content.contains("cargo install") || content.contains("cargo build")),
         "Workflow does not build cast CLI"
     );
 }
@@ -296,7 +297,10 @@ fn test_cast_install_check_works_on_rust_library() {
 
     // Skip test if cast CLI is not built (avoid cargo build deadlock during test)
     if !cast_cli.exists() {
-        eprintln!("Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli", cast_cli);
+        eprintln!(
+            "Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli",
+            cast_cli
+        );
         return;
     }
 
@@ -331,7 +335,10 @@ fn test_cast_install_check_detects_framework() {
 
     // Skip test if cast CLI is not built (avoid cargo build deadlock during test)
     if !cast_cli.exists() {
-        eprintln!("Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli", cast_cli);
+        eprintln!(
+            "Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli",
+            cast_cli
+        );
         return;
     }
 
@@ -363,7 +370,10 @@ fn test_cast_install_list_command() {
 
     // Skip test if cast CLI is not built (avoid cargo build deadlock during test)
     if !cast_cli.exists() {
-        eprintln!("Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli", cast_cli);
+        eprintln!(
+            "Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli",
+            cast_cli
+        );
         return;
     }
 
@@ -398,7 +408,10 @@ fn test_cast_install_dry_run() {
 
     // Skip test if cast CLI is not built (avoid cargo build deadlock during test)
     if !cast_cli.exists() {
-        eprintln!("Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli", cast_cli);
+        eprintln!(
+            "Skipping test: cast CLI not found at {:?}. Build it with: cd cast && cargo build --release -p cast_cli",
+            cast_cli
+        );
         return;
     }
 
