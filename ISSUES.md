@@ -6,7 +6,9 @@
 # Priority Projects
 - cast
 - cookbook
+- homer
 
 # On Hold Projects
 - luggage
 - starcraft
+- profiles
