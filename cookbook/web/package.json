@@ -1,5 +1,5 @@
 {
-  "name": "cookbook_web_tests",
+  "name": "web",
   "version": "0.1.0",
   "description": "Playwright tests for Cookbook web application",
   "private": true,
