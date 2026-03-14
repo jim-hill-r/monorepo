@@ -34,7 +34,7 @@ type OidcClient = CoreClient<
 #[derive(Clone)]
 pub struct WebAuthProvider {
     client: OidcClient,
-    provider_metadata: Option<CoreProviderMetadata>,
+    _provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
 }
@@ -61,7 +61,7 @@ impl WebAuthProvider {
 
         Ok(WebAuthProvider {
             client,
-            provider_metadata,
+            _provider_metadata: provider_metadata,
             access_token,
             id_token_claims,
         })

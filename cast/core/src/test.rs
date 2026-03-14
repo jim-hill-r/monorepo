@@ -143,6 +143,7 @@ fn run_npm_test(working_directory: &Path, coverage: bool) -> Result<(), TestErro
     let status = Command::new("npm")
         .args(&args)
         .current_dir(working_directory)
+        .stdin(std::process::Stdio::null()) // Prevent blocking on user input (e.g., Playwright HTML reporter)
         .status()?;
 
     if !status.success() {

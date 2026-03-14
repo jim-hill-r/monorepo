@@ -279,6 +279,7 @@ fn run_npm_command(working_directory: &Path, command: &str) -> Result<(), std::i
         .arg("run")
         .arg(command)
         .current_dir(working_directory)
+        .stdin(std::process::Stdio::null()) // Prevent blocking on user input (e.g., Playwright HTML reporter)
         .status()?;
 
     if !status.success() {

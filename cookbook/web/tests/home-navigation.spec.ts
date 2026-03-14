@@ -41,6 +41,9 @@ test.describe('Home Page Navigation UI', () => {
     
     // Find and click the recipes card link - "Browse Recipes"
     const recipesLink = page.locator('.recipe-card a:has-text("Browse Recipes")');
+    await recipesLink.waitFor({ state: 'visible' });
+    // Scroll into view first to ensure it's accessible
+    await recipesLink.scrollIntoViewIfNeeded();
     // Use force click to bypass overlapping elements
     await recipesLink.click({ force: true });
     await page.waitForLoadState('domcontentloaded');

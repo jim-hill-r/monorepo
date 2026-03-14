@@ -24,8 +24,12 @@ const test = createSSGWorkerFixture({
 });
 
 test.describe('Cahokia Smoke Test', () => {
-  // Override the base URL to use the SSG server
-  test.use({ baseURL: 'http://localhost:8092' });
+  // Use the dynamic ssgBaseURL from the fixture (per-worker port)
+  test.use({
+    baseURL: async ({ ssgBaseURL }, use) => {
+      await use(ssgBaseURL);
+    },
+  });
 
   test('should load and display home page', async ({ page }) => {
     // Navigate to the home page

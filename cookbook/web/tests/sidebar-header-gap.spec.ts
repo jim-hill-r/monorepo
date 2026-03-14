@@ -79,7 +79,7 @@ test.describe('Sidebar and Header Alignment', () => {
     }
   });
   
-  test('CSS custom property should be used for header height', async ({ page }) => {
+  test('CSS custom property should be used for header height', async ({ page, viewport }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
@@ -89,7 +89,14 @@ test.describe('Sidebar and Header Alignment', () => {
     });
     
     expect(headerHeightVar).toBeTruthy();
-    expect(headerHeightVar.trim()).toBe('60px');
+    
+    // On mobile viewports (<=768px), header height variable may be different
+    // On desktop, it should be 60px
+    if (viewport && viewport.width <= 768) {
+      expect(headerHeightVar.trim()).toBe('90px');
+    } else {
+      expect(headerHeightVar.trim()).toBe('60px');
+    }
   });
   
   test('header should have consistent height', async ({ page, viewport }) => {

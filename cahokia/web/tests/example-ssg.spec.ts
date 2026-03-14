@@ -27,8 +27,12 @@ const test = createSSGWorkerFixture({
 });
 
 test.describe('Cahokia Web Application (SSG Bundle)', () => {
-  // Override the base URL to use the SSG server
-  test.use({ baseURL: 'http://localhost:8091' });
+  // Use the dynamic ssgBaseURL from the fixture (per-worker port)
+  test.use({
+    baseURL: async ({ ssgBaseURL }, use) => {
+      await use(ssgBaseURL);
+    },
+  });
 
   test('should load the home page', async ({ page }) => {
     // Navigate to the home page
