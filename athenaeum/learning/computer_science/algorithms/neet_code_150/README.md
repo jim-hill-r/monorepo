@@ -1,4 +1,6 @@
-[NeetCode 150](https://neetcode.io/)
+# neet_code_150
+
+A Rust implementation of the [NeetCode 150](https://neetcode.io/) algorithm problems — focused on mastering the top 6 algorithm patterns.
 
 Top 6 algorithms from youtube video:
 
