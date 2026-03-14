@@ -9,5 +9,7 @@ TODO (agent-generated): [CFG-001] cookbook-recipe-gen - Project 'cookbook-recipe
 TODO (agent-generated): [DOC-002] cookbook-recipe-gen - Project 'cookbook-recipe-gen' README.md should include a section with the project name (cookbook-recipe-gen) which includes a short description.
 
 TODO (agent-generated): [DOC-003] cookbook-recipe-gen - Project 'cookbook-recipe-gen' is missing CONTRIBUTING.md. All projects MUST include a CONTRIBUTING.md.
+
+TODO (agent-generated): [NAM-002] cookbook-recipe-gen - Directory name 'recipe_gen' does not match package name 'cookbook-recipe-gen'. Directory name MUST match the package name, or the package name must equal the parent directory name joined with the directory name using an underscore.
 # Backlog
 
