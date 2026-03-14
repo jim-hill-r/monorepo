@@ -3,11 +3,13 @@ use crate::command::Command;
 use std::path::Path;
 
 /// Command to run continuous deployment
-pub struct CdCommand;
+pub struct CdCommand {
+    pub last_commit: bool,
+}
 
 impl Command for CdCommand {
     fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
-        cd::run(working_directory)?;
+        cd::run(working_directory, self.last_commit)?;
         Ok("CD completed".to_string())
     }
 }
@@ -29,7 +31,7 @@ mod tests {
         // Create Cast.toml without IAC project type or deploys
         fs::write(tmp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
 
-        let cmd = CdCommand;
+        let cmd = CdCommand { last_commit: false };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "CD completed");
@@ -49,7 +51,7 @@ mod tests {
         )
         .unwrap();
 
-        let cmd = CdCommand;
+        let cmd = CdCommand { last_commit: false };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_err());
     }
@@ -68,7 +70,7 @@ mod tests {
         )
         .unwrap();
 
-        let cmd = CdCommand;
+        let cmd = CdCommand { last_commit: false };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "CD completed");

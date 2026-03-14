@@ -1,6 +1,8 @@
 use crate::config::CastConfig;
 use crate::deploy;
-use std::path::Path;
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,6 +13,94 @@ pub enum CdError {
     ConfigError(#[from] crate::config::ConfigError),
     #[error("Deploy error: {0}")]
     DeployError(#[from] deploy::DeployError),
+    #[error("Git error: {0}")]
+    GitError(String),
+}
+
+/// Get the root directory of the git repository
+fn get_git_root(working_directory: &Path) -> Result<PathBuf, CdError> {
+    let output = Command::new("git")
+        .arg("rev-parse")
+        .arg("--show-toplevel")
+        .current_dir(working_directory)
+        .output()?;
+
+    if !output.status.success() {
+        return Err(CdError::GitError("Failed to find git root".to_string()));
+    }
+
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(PathBuf::from(path))
+}
+
+/// Get the list of files changed in the most recent commit
+fn get_last_commit_files(git_root: &Path) -> Result<Vec<String>, CdError> {
+    let output = Command::new("git")
+        .arg("diff-tree")
+        .arg("--no-commit-id")
+        .arg("-r")
+        .arg("HEAD")
+        .arg("--name-only")
+        .current_dir(git_root)
+        .output()?;
+
+    if !output.status.success() {
+        return Err(CdError::GitError(
+            "Failed to get last commit files".to_string(),
+        ));
+    }
+
+    let files = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(|l| l.to_string())
+        .collect();
+
+    Ok(files)
+}
+
+/// Find project directories that had artifacts committed
+fn find_projects_with_artifacts(files: &[String], git_root: &Path) -> Vec<PathBuf> {
+    let mut project_dirs: HashSet<PathBuf> = HashSet::new();
+
+    for file in files {
+        // Look for files that contain "/artifacts/" in their path
+        if let Some(artifacts_pos) = file.find("/artifacts/") {
+            let project_rel_path = &file[..artifacts_pos];
+            let project_dir = git_root.join(project_rel_path);
+            project_dirs.insert(project_dir);
+        } else if file.starts_with("artifacts/") {
+            // Handle case where the artifact is at the repo root
+            project_dirs.insert(git_root.to_path_buf());
+        }
+    }
+
+    let mut dirs: Vec<PathBuf> = project_dirs.into_iter().collect();
+    dirs.sort();
+    dirs
+}
+
+/// Run CD for projects with artifacts in the most recent git commit
+fn run_last_commit(working_directory: &Path) -> Result<(), CdError> {
+    let git_root = get_git_root(working_directory)?;
+    let files = get_last_commit_files(&git_root)?;
+    let project_dirs = find_projects_with_artifacts(&files, &git_root);
+
+    if project_dirs.is_empty() {
+        println!("No artifacts found in last commit");
+        return Ok(());
+    }
+
+    for project_dir in &project_dirs {
+        if project_dir.join("Cast.toml").exists() {
+            println!("Deploying {}", project_dir.display());
+            run_deploy(project_dir)?;
+            println!("✓ {} deployed successfully", project_dir.display());
+        } else {
+            println!("Skipping {} - no Cast.toml found", project_dir.display());
+        }
+    }
+
+    Ok(())
 }
 
 /// Run continuous deployment for a project
@@ -18,9 +108,17 @@ pub enum CdError {
 /// This command:
 /// 1. Runs `cast deploy` on the current project if it's an IAC project
 /// 2. Runs `cast deploy` on any projects listed in the `deploys` section of the Cast config
-pub fn run(working_directory: impl AsRef<Path>) -> Result<(), CdError> {
+pub fn run(working_directory: impl AsRef<Path>, last_commit: bool) -> Result<(), CdError> {
     let working_directory = working_directory.as_ref();
 
+    if last_commit {
+        return run_last_commit(working_directory);
+    }
+
+    run_deploy(working_directory)
+}
+
+fn run_deploy(working_directory: &Path) -> Result<(), CdError> {
     // Load config to check if current project is IAC and get deploys list
     let config = CastConfig::load_from_dir(working_directory)?;
 
@@ -67,7 +165,7 @@ mod tests {
         fs::write(tmp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
 
         // Should succeed without doing anything
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_ok());
     }
 
@@ -87,7 +185,7 @@ mod tests {
         .unwrap();
 
         // Should fail because it tries to deploy unsupported framework
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_err());
     }
 
@@ -115,7 +213,7 @@ mod tests {
         .unwrap();
 
         // Should fail because deploy project has unsupported framework
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_err());
     }
 
@@ -134,7 +232,7 @@ mod tests {
         .unwrap();
 
         // Should succeed by skipping the non-existent project
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_ok());
     }
 
@@ -162,7 +260,7 @@ mod tests {
         .unwrap();
 
         // Should fail when trying to deploy the current project (first)
-        let result = run(tmp_dir.path());
+        let result = run(tmp_dir.path(), false);
         assert!(result.is_err());
     }
 
@@ -193,7 +291,7 @@ mod tests {
         .unwrap();
 
         // Should fail when trying to deploy the '../deploy' directory (proves path resolution works)
-        let result = run(&web_dir);
+        let result = run(&web_dir, false);
         assert!(result.is_err());
     }
 
@@ -223,7 +321,169 @@ mod tests {
         .unwrap();
 
         // Should fail when trying to deploy the 'deploy' subdirectory (proves path resolution works)
-        let result = run(&web_dir);
+        let result = run(&web_dir, false);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_projects_with_artifacts_empty() {
+        let tmp_dir = TempDir::new("test_find_empty").unwrap();
+        let files = vec![];
+        let result = find_projects_with_artifacts(&files, tmp_dir.path());
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_find_projects_with_artifacts_detects_nested_artifacts() {
+        let tmp_dir = TempDir::new("test_find_nested").unwrap();
+        let files = vec![
+            "cookbook/web/artifacts/wasm/0.1.0+2025-01-01.1.abc1234.zip".to_string(),
+            "cast/cli/artifacts/x86_64-unknown-linux-gnu/0.1.0+2025-01-01.1.abc1234.zip"
+                .to_string(),
+        ];
+        let result = find_projects_with_artifacts(&files, tmp_dir.path());
+        assert_eq!(result.len(), 2);
+        assert!(result
+            .iter()
+            .any(|p| p == &tmp_dir.path().join("cookbook/web")));
+        assert!(result.iter().any(|p| p == &tmp_dir.path().join("cast/cli")));
+    }
+
+    #[test]
+    fn test_find_projects_with_artifacts_detects_root_artifacts() {
+        let tmp_dir = TempDir::new("test_find_root").unwrap();
+        let files = vec!["artifacts/x86_64-unknown-linux-gnu/0.1.0.zip".to_string()];
+        let result = find_projects_with_artifacts(&files, tmp_dir.path());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], tmp_dir.path());
+    }
+
+    #[test]
+    fn test_find_projects_with_artifacts_deduplicates() {
+        let tmp_dir = TempDir::new("test_find_dedup").unwrap();
+        let files = vec![
+            "cookbook/web/artifacts/wasm/build1.zip".to_string(),
+            "cookbook/web/artifacts/wasm/build2.zip".to_string(),
+        ];
+        let result = find_projects_with_artifacts(&files, tmp_dir.path());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], tmp_dir.path().join("cookbook/web"));
+    }
+
+    #[test]
+    fn test_find_projects_ignores_non_artifact_files() {
+        let tmp_dir = TempDir::new("test_find_ignore").unwrap();
+        let files = vec![
+            "src/main.rs".to_string(),
+            "Cargo.toml".to_string(),
+            "cookbook/web/src/lib.rs".to_string(),
+        ];
+        let result = find_projects_with_artifacts(&files, tmp_dir.path());
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_run_last_commit_with_no_artifacts_in_last_commit() {
+        use std::process::Command as StdCommand;
+
+        let tmp_dir = TempDir::new("test_cd_last_commit_no_artifacts").unwrap();
+
+        // Initialize git repo
+        StdCommand::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Commit a non-artifact file
+        fs::write(tmp_dir.path().join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+        StdCommand::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("Initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Should succeed with no deployments triggered
+        let result = run(tmp_dir.path(), true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_run_last_commit_deploys_project_with_artifacts() {
+        use std::process::Command as StdCommand;
+
+        let tmp_dir = TempDir::new("test_cd_last_commit_artifacts").unwrap();
+
+        // Initialize git repo
+        StdCommand::new("git")
+            .arg("init")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a subdirectory project with an artifact and a Cast.toml (non-IAC)
+        let project_dir = tmp_dir.path().join("myproject");
+        let artifact_dir = project_dir
+            .join("artifacts")
+            .join("x86_64-unknown-linux-gnu");
+        fs::create_dir_all(&artifact_dir).unwrap();
+
+        fs::write(project_dir.join("Cast.toml"), "framework = \"dioxus\"").unwrap();
+        fs::write(artifact_dir.join("app.zip"), "fake zip").unwrap();
+
+        // Commit the artifact
+        StdCommand::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        StdCommand::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("Add artifact")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Should succeed: project has Cast.toml but no deploys/iac, so cd does nothing
+        let result = run(tmp_dir.path(), true);
+        assert!(result.is_ok());
     }
 }

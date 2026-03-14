@@ -32,11 +32,11 @@ wrangler login
 Before deploying, you need to build the `pane` project:
 
 ```bash
-cd ../pane
-dx build --release
+cd ../web
+dx bundle --release
 ```
 
-This will create build artifacts in `../pane/dist/` directory.
+This will create build artifacts in `../web/dist/` directory.
 
 ## Deploying to Cloudflare Pages
 
@@ -61,7 +61,7 @@ The Cast deploy command reads configuration from `wrangler.toml` and automatical
 Alternatively, you can deploy directly with wrangler:
 
 ```bash
-wrangler pages deploy ../pane/dist --project-name=pane
+wrangler pages deploy ../web/dist --project-name=pane
 ```
 
 ### Automated Deployment
@@ -107,7 +107,7 @@ This will verify:
 
 Make sure you've built the pane project first:
 ```bash
-cd ../pane && dx build --release
+cd ../web && dx bundle --release
 ```
 
 ### Authentication issues

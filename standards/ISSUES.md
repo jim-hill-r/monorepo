@@ -1,6 +1,9 @@
 # Priority Issues
 
-- TODO: Add a github workflow that runs the standards cli once per day. The cli should be adding todos to the repository. The CLI may need to be extended to push those changes as a PR once the todos are created. Assign the PR to jim-hill-r.
+TODO (agent-generated): [CFG-001] standards - Project 'standards' is missing royalty.toml. All projects MUST include a royalty.toml for use with the royalty project.
+
+TODO (agent-generated): [DOC-003] standards - Project 'standards' is missing CONTRIBUTING.md. All projects MUST include a CONTRIBUTING.md.
+# Backlog
 
 ## Standards CLI Implementation (Broken Down)
 

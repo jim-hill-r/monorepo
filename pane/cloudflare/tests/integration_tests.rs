@@ -74,7 +74,7 @@ fn test_pane_project_exists() {
     );
 
     let cargo_toml = pane_dir.join("Cargo.toml");
-    assert!(cargo_toml.exists(), "pane project missing Cargo.toml");
+    assert!(cargo_toml.exists(), "pane web project missing Cargo.toml");
 }
 
 #[test]

@@ -1,6 +1,6 @@
 # my_lang
 
-A programming language implementation that will eventually compile to LLVM.
+A programming language implementation that compiles to LLVM IR.
 
 ## Overview
 
@@ -30,7 +30,47 @@ The language implementation consists of three main phases:
 
 1. **Lexer** (`src/lexer.rs`): ✅ **Implemented** - Tokenizes source code into a stream of tokens
 2. **Parser** (`src/parser.rs`): ✅ **Implemented** - Builds an Abstract Syntax Tree (AST) from tokens using recursive descent parsing
-3. **Code Generator** (future): Compiles the AST to LLVM IR
+3. **Code Generator** (`src/codegen.rs`): ✅ **Implemented** - Compiles the AST to LLVM IR using [inkwell](https://github.com/TheDan64/inkwell)
+
+## Code Generator
+
+The code generator (`src/codegen.rs`) translates the AST into LLVM IR.
+
+### Supported Constructs
+
+- **Integer literals** — compiled to 64-bit constant values (`i64`)
+- **Arithmetic operations** — `+`, `-`, `*`, `/` using LLVM integer instructions
+- **Comparison operations** — `==`, `!=`, `<`, `>`, `<=`, `>=` (result is `i64`: 1 or 0)
+- **Function declarations** (`function`) — compiled to LLVM functions with `i64` parameters and return type
+- **Output declarations** (`output`) — same as function, return statements are allowed
+- **Input declarations** (`input`) — compiled to LLVM functions without return statements
+- **Variable assignments** — stack-allocated via `alloca`/`store`/`load`
+- **Function calls** — intra-module calls resolved by name
+
+### Type System
+
+All values are currently `i64` (64-bit signed integer). String literals parse correctly but are not yet supported by the code generator.
+
+### Usage Example
+
+```rust
+use inkwell::context::Context;
+use my_lang::codegen::CodeGenerator;
+use my_lang::lexer::Lexer;
+use my_lang::parser::Parser;
+
+let source = "function add(a, b) { a + b }".to_string();
+let lexer = Lexer::new(source);
+let mut parser = Parser::new(lexer);
+let program = parser.parse().unwrap();
+
+let context = Context::create();
+let mut codegen = CodeGenerator::new(&context, "my_module");
+codegen.compile_program(&program).unwrap();
+
+// Print generated LLVM IR
+println!("{}", codegen.module().print_to_string());
+```
 
 ## Lexer Features
 
@@ -78,7 +118,7 @@ while let token = lexer.next_token() {
 
 - ✅ Lexer: Fully implemented with correct language keywords
 - ✅ Parser: Fully implemented with recursive descent parsing for function declarations, expressions, and statements
-- ⏳ Code Generator: Not yet implemented
+- ✅ Code Generator: Implemented — compiles AST to LLVM IR via inkwell (integer arithmetic, comparisons, function calls, variable assignments)
 
 ## Getting Started
 
