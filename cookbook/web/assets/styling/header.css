@@ -73,21 +73,21 @@
 }
 
 .header-nav a {
-  color: #f5e6d3;
+  color: #fff;
   text-decoration: none;
   font-size: 1rem;
   font-weight: 600;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   transition: all 0.3s ease;
-  background-color: rgba(245, 230, 211, 0.1);
+  background-color: transparent;
   border: 1px solid transparent;
 }
 
 .header-nav a:hover {
-  background-color: #d4a574;
+  background-color: #5a3a1a;
   color: #fff;
-  border-color: #d4a574;
+  border-color: #5a3a1a;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   cursor: pointer;
@@ -99,11 +99,11 @@
 }
 
 .header-nav a:focus-visible {
-  background-color: #d4a574;
+  background-color: #5a3a1a;
   color: #fff;
-  border-color: #d4a574;
+  border-color: #5a3a1a;
   transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.4), 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 0 3px rgba(90, 58, 26, 0.4), 0 2px 4px rgba(0, 0, 0, 0.15);
   outline: none;
   cursor: pointer;
 }
@@ -114,9 +114,9 @@
 }
 
 .header-auth button {
-  background-color: #d4a574;
+  background-color: #5a3a1a;
   color: #fff;
-  border: 1px solid #d4a574;
+  border: 1px solid #5a3a1a;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -127,7 +127,7 @@
 }
 
 .header-auth button:hover {
-  background-color: #c0935f;
+  background-color: #3d2612;
   transform: translateY(-1px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
