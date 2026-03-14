@@ -170,14 +170,39 @@ body {
 @media (max-width: 768px) {
   #header {
     padding: 0.5rem 1rem;
+    height: auto;
+    min-height: var(--header-height);
+    max-height: none;
+    flex-wrap: wrap;
   }
   
-  /* Hide navigation links on mobile - use sidebar instead */
-  .header-nav {
-    display: none;
+  .header-left {
+    flex-shrink: 0;
   }
   
   .header-title {
     font-size: 1.3rem;
+  }
+  
+  .header-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .header-nav a {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+  
+  .header-auth {
+    flex-shrink: 0;
+  }
+  
+  .header-auth button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
   }
 }
