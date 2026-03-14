@@ -4,6 +4,7 @@ use crate::card::Card;
 use crate::card_library::CardLibrary;
 use crate::deck::{Deck, DeckBuilder};
 use crate::rules::{Player, RulesEngine};
+use crate::state::AppState;
 
 /// Plugin that sets up the core game systems.
 pub struct GamePlugin;
@@ -11,8 +12,11 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GameState::default())
-            .add_systems(Startup, setup)
-            .add_systems(Update, (log_game_state, run_demo_round));
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(
+                Update,
+                (log_game_state, run_demo_round).run_if(in_state(AppState::InGame)),
+            );
     }
 }
 
