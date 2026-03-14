@@ -1,7 +1,5 @@
 # Priority Issues
 
-- TODO: An example of what rules might exist has been put in docs/rulebook.md. Implement some of this in the UI.
-
 - TODO: Implement game rules engine for turn-based card game mechanics
 
 - TODO: Add player vs player (local multiplayer) support

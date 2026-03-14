@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::card::Card;
+use crate::card::{Card, CardCategory};
 use crate::card_library::CardLibrary;
 use crate::deck::{Deck, DeckBuilder};
 use crate::rules::{Player, RulesEngine};
@@ -44,18 +44,54 @@ pub struct Player1InfoText;
 #[derive(Component, Debug)]
 pub struct Player2InfoText;
 
+/// Marks the text displaying Player 1's civilian count.
+#[derive(Component, Debug)]
+pub struct Player1CiviliansText;
+
+/// Marks the text displaying Player 2's civilian count.
+#[derive(Component, Debug)]
+pub struct Player2CiviliansText;
+
+/// Marks the text displaying Player 1's happiness score.
+#[derive(Component, Debug)]
+pub struct Player1HappinessText;
+
+/// Marks the text displaying Player 2's happiness score.
+#[derive(Component, Debug)]
+pub struct Player2HappinessText;
+
 /// Marks the text displaying the current game phase.
 #[derive(Component, Debug)]
 pub struct GamePhaseText;
 
 fn setup(mut commands: Commands) {
-    // Build a card library with the available cards.
+    // Build a card library with the available cards, using proper categories
+    // from the rulebook.
     let mut library = CardLibrary::new();
-    library.register(Card::new("Ace", 14));
-    library.register(Card::new("King", 13));
-    library.register(Card::new("Queen", 12));
-    library.register(Card::new("Jack", 11));
-    library.register(Card::new("Fireball", 10));
+    library.register(Card::with_category(
+        "Ace of Spades",
+        14,
+        CardCategory::Technology,
+    ));
+    library.register(Card::with_category("NASA", 13, CardCategory::Government));
+    library.register(Card::with_category(
+        "Biodome",
+        12,
+        CardCategory::Environment,
+    ));
+    library.register(Card::with_category(
+        "Stock Market",
+        11,
+        CardCategory::Economy,
+    ));
+    library.register(Card::with_category("Asteroid", 10, CardCategory::Crisis));
+    library.register(Card::with_category("Engineer", 9, CardCategory::Profession));
+    library.register(Card::with_category("Suburb", 8, CardCategory::Civilian));
+    library.register(Card::with_category(
+        "Space Station",
+        7,
+        CardCategory::Society,
+    ));
 
     info!(
         "Card library contains {} cards: {}",
@@ -65,7 +101,13 @@ fn setup(mut commands: Commands) {
 
     // Use DeckBuilder to compose a player deck (max 2 copies of any card).
     let mut builder = DeckBuilder::new().with_max_copies(2);
-    for name in ["Ace", "King", "Queen", "Jack", "Ace"] {
+    for name in [
+        "Ace of Spades",
+        "NASA",
+        "Biodome",
+        "Stock Market",
+        "Ace of Spades",
+    ] {
         if let Some(card) = library.get(name) {
             builder.add_card(card);
         }
@@ -80,17 +122,26 @@ fn setup(mut commands: Commands) {
     );
 
     if let Some(card) = deck.draw() {
-        info!("Drew card: {} (value: {})", card.name, card.value);
+        info!(
+            "Drew card: {} (value: {}, category: {})",
+            card.name,
+            card.value,
+            card.category.label()
+        );
     }
 
     // Initialise the rules engine with two players and register it as a resource.
     let engine = RulesEngine::new(Player::new("Player 1", 20), Player::new("Player 2", 20));
     info!(
-        "Rules engine created: {} ({} life) vs {} ({} life)",
+        "Rules engine created: {} ({} life, {} civilians, {} happiness) vs {} ({} life, {} civilians, {} happiness)",
         engine.players[0].name,
         engine.players[0].life,
+        engine.players[0].civilians,
+        engine.players[0].happiness,
         engine.players[1].name,
         engine.players[1].life,
+        engine.players[1].civilians,
+        engine.players[1].happiness,
     );
     commands.insert_resource(RulesEngineResource(engine));
 }
@@ -115,9 +166,10 @@ fn run_demo_round(engine_res: Option<ResMut<RulesEngineResource>>, mut ran: Loca
     };
     let engine = &mut res.0;
 
-    // Demo cards for this round: attacker plays high, defender reveals low.
-    let attacker_card = Card::new("Ace", 14);
-    let defender_card = Card::new("Two", 2);
+    // Demo cards for this round: attacker plays a high Technology card, defender
+    // reveals a low-value card.
+    let attacker_card = Card::with_category("Ace of Spades", 14, CardCategory::Technology);
+    let defender_card = Card::new("Two of Clubs", 2);
 
     let active_name = engine.players[engine.active_player].name.clone();
     info!(
@@ -142,13 +194,28 @@ fn run_demo_round(engine_res: Option<ResMut<RulesEngineResource>>, mut ran: Loca
         }
     };
     info!(
-        "{active_name} plays {} (value: {})",
-        played.name, played.value
+        "{active_name} plays {} ({}, value: {})",
+        played.name,
+        played.category.label(),
+        played.value
     );
 
     // Phase 3: Battle
     match engine.resolve_battle(&played, &defender_card) {
-        Ok(outcome) => info!("Battle outcome: {:?}", outcome),
+        Ok(outcome) => {
+            info!("Battle outcome: {:?}", outcome);
+            // Winning the battle gives the active player a small happiness boost.
+            match outcome {
+                crate::rules::BattleOutcome::AttackerWins => {
+                    engine.players[engine.active_player].adjust_happiness(5);
+                }
+                crate::rules::BattleOutcome::DefenderWins => {
+                    let defender_idx = engine.inactive_player();
+                    engine.players[defender_idx].adjust_happiness(5);
+                }
+                crate::rules::BattleOutcome::Draw => {}
+            }
+        }
         Err(e) => {
             warn!("resolve_battle failed: {e}");
             *ran = true;
@@ -170,8 +237,14 @@ fn run_demo_round(engine_res: Option<ResMut<RulesEngineResource>>, mut ran: Loca
         }
     } else {
         info!(
-            "Round complete — now at round {}. Player 1 life={}, Player 2 life={}",
-            engine.round, engine.players[0].life, engine.players[1].life,
+            "Round complete — now at round {}. Player 1 life={}, civilians={}, happiness={} | Player 2 life={}, civilians={}, happiness={}",
+            engine.round,
+            engine.players[0].life,
+            engine.players[0].civilians,
+            engine.players[0].happiness,
+            engine.players[1].life,
+            engine.players[1].civilians,
+            engine.players[1].happiness,
         );
     }
 
@@ -208,7 +281,7 @@ fn spawn_game_ui(mut commands: Commands) {
                 },
             ));
 
-            // Player 1 Info
+            // Player 1 Info (life)
             root.spawn((
                 Player1InfoText,
                 TextBundle::from_section(
@@ -221,7 +294,33 @@ fn spawn_game_ui(mut commands: Commands) {
                 ),
             ));
 
-            // Player 2 Info
+            // Player 1 civilians
+            root.spawn((
+                Player1CiviliansText,
+                TextBundle::from_section(
+                    "  Civilians: 2",
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(0.3, 0.7, 0.7),
+                        ..default()
+                    },
+                ),
+            ));
+
+            // Player 1 happiness
+            root.spawn((
+                Player1HappinessText,
+                TextBundle::from_section(
+                    "  Happiness: 50",
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(0.8, 0.8, 0.3),
+                        ..default()
+                    },
+                ),
+            ));
+
+            // Player 2 Info (life)
             root.spawn((
                 Player2InfoText,
                 TextBundle::from_section(
@@ -229,6 +328,32 @@ fn spawn_game_ui(mut commands: Commands) {
                     TextStyle {
                         font_size: 24.0,
                         color: Color::srgb(0.8, 0.3, 0.3),
+                        ..default()
+                    },
+                ),
+            ));
+
+            // Player 2 civilians
+            root.spawn((
+                Player2CiviliansText,
+                TextBundle::from_section(
+                    "  Civilians: 2",
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(0.3, 0.5, 0.7),
+                        ..default()
+                    },
+                ),
+            ));
+
+            // Player 2 happiness
+            root.spawn((
+                Player2HappinessText,
+                TextBundle::from_section(
+                    "  Happiness: 50",
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(0.8, 0.6, 0.3),
                         ..default()
                     },
                 ),
@@ -247,6 +372,16 @@ fn spawn_game_ui(mut commands: Commands) {
                 ),
             ));
 
+            // Win condition reminder
+            root.spawn(TextBundle::from_section(
+                "Win: Highest happiness when deck runs out. Lose: No civilians left.",
+                TextStyle {
+                    font_size: 14.0,
+                    color: Color::srgb(0.6, 0.6, 0.6),
+                    ..default()
+                },
+            ));
+
             // Instructions
             root.spawn(TextBundle::from_section(
                 "Demo game running in background. Check console for details.",
@@ -261,6 +396,7 @@ fn spawn_game_ui(mut commands: Commands) {
 
 /// Updates the game UI to reflect the current state of the rules engine.
 #[allow(clippy::type_complexity)]
+#[allow(clippy::too_many_arguments)]
 fn update_game_ui(
     engine_res: Option<Res<RulesEngineResource>>,
     mut p1_query: Query<
@@ -269,6 +405,10 @@ fn update_game_ui(
             With<Player1InfoText>,
             Without<Player2InfoText>,
             Without<GamePhaseText>,
+            Without<Player1CiviliansText>,
+            Without<Player2CiviliansText>,
+            Without<Player1HappinessText>,
+            Without<Player2HappinessText>,
         ),
     >,
     mut p2_query: Query<
@@ -277,6 +417,58 @@ fn update_game_ui(
             With<Player2InfoText>,
             Without<Player1InfoText>,
             Without<GamePhaseText>,
+            Without<Player1CiviliansText>,
+            Without<Player2CiviliansText>,
+            Without<Player1HappinessText>,
+            Without<Player2HappinessText>,
+        ),
+    >,
+    mut p1_civ_query: Query<
+        &mut Text,
+        (
+            With<Player1CiviliansText>,
+            Without<Player1InfoText>,
+            Without<Player2InfoText>,
+            Without<GamePhaseText>,
+            Without<Player2CiviliansText>,
+            Without<Player1HappinessText>,
+            Without<Player2HappinessText>,
+        ),
+    >,
+    mut p2_civ_query: Query<
+        &mut Text,
+        (
+            With<Player2CiviliansText>,
+            Without<Player1InfoText>,
+            Without<Player2InfoText>,
+            Without<GamePhaseText>,
+            Without<Player1CiviliansText>,
+            Without<Player1HappinessText>,
+            Without<Player2HappinessText>,
+        ),
+    >,
+    mut p1_happiness_query: Query<
+        &mut Text,
+        (
+            With<Player1HappinessText>,
+            Without<Player1InfoText>,
+            Without<Player2InfoText>,
+            Without<GamePhaseText>,
+            Without<Player1CiviliansText>,
+            Without<Player2CiviliansText>,
+            Without<Player2HappinessText>,
+        ),
+    >,
+    mut p2_happiness_query: Query<
+        &mut Text,
+        (
+            With<Player2HappinessText>,
+            Without<Player1InfoText>,
+            Without<Player2InfoText>,
+            Without<GamePhaseText>,
+            Without<Player1CiviliansText>,
+            Without<Player2CiviliansText>,
+            Without<Player1HappinessText>,
         ),
     >,
     mut phase_query: Query<
@@ -285,13 +477,17 @@ fn update_game_ui(
             With<GamePhaseText>,
             Without<Player1InfoText>,
             Without<Player2InfoText>,
+            Without<Player1CiviliansText>,
+            Without<Player2CiviliansText>,
+            Without<Player1HappinessText>,
+            Without<Player2HappinessText>,
         ),
     >,
 ) {
     let Some(res) = engine_res else { return };
     let engine = &res.0;
 
-    // Update Player 1 info
+    // Update Player 1 life
     if let Ok(mut text) = p1_query.get_single_mut() {
         text.sections[0].value = format!(
             "{}: {} Life",
@@ -299,12 +495,32 @@ fn update_game_ui(
         );
     }
 
-    // Update Player 2 info
+    // Update Player 2 life
     if let Ok(mut text) = p2_query.get_single_mut() {
         text.sections[0].value = format!(
             "{}: {} Life",
             engine.players[1].name, engine.players[1].life
         );
+    }
+
+    // Update Player 1 civilians
+    if let Ok(mut text) = p1_civ_query.get_single_mut() {
+        text.sections[0].value = format!("  Civilians: {}", engine.players[0].civilians);
+    }
+
+    // Update Player 2 civilians
+    if let Ok(mut text) = p2_civ_query.get_single_mut() {
+        text.sections[0].value = format!("  Civilians: {}", engine.players[1].civilians);
+    }
+
+    // Update Player 1 happiness
+    if let Ok(mut text) = p1_happiness_query.get_single_mut() {
+        text.sections[0].value = format!("  Happiness: {}", engine.players[0].happiness);
+    }
+
+    // Update Player 2 happiness
+    if let Ok(mut text) = p2_happiness_query.get_single_mut() {
+        text.sections[0].value = format!("  Happiness: {}", engine.players[1].happiness);
     }
 
     // Update phase info

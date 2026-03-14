@@ -12,9 +12,6 @@ pub const CARD_HEIGHT: f32 = 180.0;
 /// Height of the artwork placeholder area inside a card.
 pub const CARD_ARTWORK_HEIGHT: f32 = 80.0;
 
-/// Background color of the card frame.
-pub const CARD_FRAME_COLOR: Color = Color::srgb(0.2, 0.2, 0.4);
-
 /// Background color of the artwork placeholder.
 pub const CARD_ARTWORK_COLOR: Color = Color::srgb(0.4, 0.4, 0.6);
 
@@ -111,7 +108,7 @@ pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -
                     padding: UiRect::all(Val::Px(8.0)),
                     ..default()
                 },
-                background_color: BackgroundColor(CARD_FRAME_COLOR),
+                background_color: BackgroundColor(card.category.frame_color()),
                 ..default()
             },
         ))
@@ -143,11 +140,11 @@ pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -
                 },
             ));
 
-            // Stats (power value)
+            // Stats (power value and category)
             frame.spawn((
                 CardStatsText,
                 TextBundle::from_section(
-                    format!("Power: {}", card.value),
+                    format!("{} | Power: {}", card.category.label(), card.value),
                     TextStyle {
                         font_size: 12.0,
                         color: Color::WHITE,

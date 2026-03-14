@@ -33,21 +33,60 @@ pub struct Player {
     pub hand: Vec<Card>,
     /// Remaining life points.
     pub life: u32,
+    /// Number of civilian cards in this player's community.
+    ///
+    /// Per the rulebook each player starts with two civilians.  A player
+    /// automatically loses when this reaches zero.
+    pub civilians: u32,
+    /// Happiness score of this player's community (0–100).
+    ///
+    /// The winning player is the one with the highest happiness score at game
+    /// end.  Some actions raise or lower happiness.
+    pub happiness: u32,
 }
 
 impl Player {
+    /// Initial number of civilians per player as defined by the rulebook.
+    pub const STARTING_CIVILIANS: u32 = 2;
+
+    /// Initial happiness score per player.
+    pub const STARTING_HAPPINESS: u32 = 50;
+
     /// Creates a new player with an empty hand and the given starting life total.
+    ///
+    /// Civilians are initialized to [`STARTING_CIVILIANS`] and happiness to
+    /// [`STARTING_HAPPINESS`] as specified by the rulebook.
+    ///
+    /// [`STARTING_CIVILIANS`]: Player::STARTING_CIVILIANS
+    /// [`STARTING_HAPPINESS`]: Player::STARTING_HAPPINESS
     pub fn new(name: impl Into<String>, starting_life: u32) -> Self {
         Self {
             name: name.into(),
             hand: Vec::new(),
             life: starting_life,
+            civilians: Self::STARTING_CIVILIANS,
+            happiness: Self::STARTING_HAPPINESS,
         }
     }
 
-    /// Returns `true` if the player still has at least one life point.
+    /// Returns `true` if the player still has at least one life point **and**
+    /// at least one civilian.
+    ///
+    /// Per the rulebook a player automatically loses when they have no
+    /// civilians left.
     pub fn is_alive(&self) -> bool {
-        self.life > 0
+        self.life > 0 && self.has_civilians()
+    }
+
+    /// Returns `true` when this player still has at least one civilian.
+    pub fn has_civilians(&self) -> bool {
+        self.civilians > 0
+    }
+
+    /// Adjusts the happiness score by `delta`, clamping the result to `[0, 100]`.
+    pub fn adjust_happiness(&mut self, delta: i32) {
+        let new_val = self.happiness as i32 + delta;
+        self.happiness = new_val.clamp(0, 100) as u32;
     }
 
     /// Adds a card to the player's hand.
@@ -282,6 +321,13 @@ mod tests {
     }
 
     #[test]
+    fn player_new_starts_with_default_civilians_and_happiness() {
+        let p = Player::new("Alice", 5);
+        assert_eq!(p.civilians, Player::STARTING_CIVILIANS);
+        assert_eq!(p.happiness, Player::STARTING_HAPPINESS);
+    }
+
+    #[test]
     fn player_is_alive_when_life_above_zero() {
         let p = Player::new("Alice", 1);
         assert!(p.is_alive());
@@ -291,6 +337,57 @@ mod tests {
     fn player_is_not_alive_when_life_is_zero() {
         let p = Player::new("Alice", 0);
         assert!(!p.is_alive());
+    }
+
+    #[test]
+    fn player_is_not_alive_when_civilians_is_zero() {
+        let mut p = Player::new("Alice", 5);
+        p.civilians = 0;
+        assert!(
+            !p.is_alive(),
+            "player with no civilians should not be alive"
+        );
+    }
+
+    #[test]
+    fn player_has_civilians_returns_true_when_civilians_above_zero() {
+        let p = Player::new("Alice", 3);
+        assert!(p.has_civilians());
+    }
+
+    #[test]
+    fn player_has_civilians_returns_false_when_civilians_is_zero() {
+        let mut p = Player::new("Alice", 3);
+        p.civilians = 0;
+        assert!(!p.has_civilians());
+    }
+
+    #[test]
+    fn player_adjust_happiness_increases_score() {
+        let mut p = Player::new("Alice", 3);
+        p.adjust_happiness(10);
+        assert_eq!(p.happiness, Player::STARTING_HAPPINESS + 10);
+    }
+
+    #[test]
+    fn player_adjust_happiness_decreases_score() {
+        let mut p = Player::new("Alice", 3);
+        p.adjust_happiness(-5);
+        assert_eq!(p.happiness, Player::STARTING_HAPPINESS - 5);
+    }
+
+    #[test]
+    fn player_adjust_happiness_clamps_to_zero() {
+        let mut p = Player::new("Alice", 3);
+        p.adjust_happiness(-200);
+        assert_eq!(p.happiness, 0);
+    }
+
+    #[test]
+    fn player_adjust_happiness_clamps_to_one_hundred() {
+        let mut p = Player::new("Alice", 3);
+        p.adjust_happiness(200);
+        assert_eq!(p.happiness, 100);
     }
 
     #[test]
