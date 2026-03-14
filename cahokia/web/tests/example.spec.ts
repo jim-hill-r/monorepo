@@ -114,7 +114,7 @@ test.describe('Cahokia Web Application', () => {
     // Check that we're on the home page
     expect(page.url()).not.toContain('/about');
     
-    // Check that the Home page content is displayed
-    await expect(page.locator('h1:has-text("Cahokia")')).toBeVisible();
+    // Check that the Home page content is displayed (use unique hero h2)
+    await expect(page.locator('#hero h2:has-text("Discover your ancestors!")')).toBeVisible();
   });
 });

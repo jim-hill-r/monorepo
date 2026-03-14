@@ -112,6 +112,7 @@ test.describe('Sidebar Component', () => {
     
     const sidebar = page.locator('#sidebar');
     const toggleButton = page.locator('.sidebar-toggle');
+    const closeButton = page.locator('.sidebar-content button:has-text("Close")');
     
     // Verify initial state
     let hasOpenClass = await sidebar.evaluate((el) => el.classList.contains('open'));
@@ -123,8 +124,8 @@ test.describe('Sidebar Component', () => {
     hasOpenClass = await sidebar.evaluate((el) => el.classList.contains('open'));
     expect(hasOpenClass).toBe(true);
     
-    // Toggle closed
-    await toggleButton.click();
+    // Close using the close button inside sidebar (toggle button is covered when sidebar is open)
+    await closeButton.click();
     await page.waitForTimeout(100);
     hasOpenClass = await sidebar.evaluate((el) => el.classList.contains('open'));
     expect(hasOpenClass).toBe(false);

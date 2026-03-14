@@ -133,11 +133,11 @@ fn WebNavbar() -> Element {
                 Link { to: Route::About {}, "About" }
                 Link { to: Route::History {}, "History" }
                 Link { to: Route::Explore {}, "Explore" }
-                button {
-                    class: "sidebar-toggle",
-                    onclick: move |_| sidebar_open.set(!sidebar_open()),
-                    "☰"
-                }
+            }
+            button {
+                class: "sidebar-toggle",
+                onclick: move |_| sidebar_open.set(!sidebar_open()),
+                "☰"
             }
         }
 
