@@ -165,3 +165,19 @@ body {
   color: #f5e6d3;
   font-size: 0.9rem;
 }
+
+/* Mobile responsive design */
+@media (max-width: 768px) {
+  #header {
+    padding: 0.5rem 1rem;
+  }
+  
+  /* Hide navigation links on mobile - use sidebar instead */
+  .header-nav {
+    display: none;
+  }
+  
+  .header-title {
+    font-size: 1.3rem;
+  }
+}
