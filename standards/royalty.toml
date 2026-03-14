@@ -1,0 +1,3 @@
+[project]
+name = "standards"
+description = "Tooling and documentation for enforcing standards across the monorepo."
