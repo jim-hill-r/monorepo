@@ -1,6 +1,6 @@
-# Cookbook
+# web
 
-A Dioxus web application built with Rust that provides daily recipes and weekly meal plans.
+The `web` project is the browser-based frontend for the Cookbook application. It is named "web" because it is the web platform target within the Cookbook workspace, delivering daily recipes and weekly meal plans as a WebAssembly application built with Dioxus and Rust.
 
 ## Features
 
