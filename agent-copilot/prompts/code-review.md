@@ -16,7 +16,7 @@ Perform a general code quality review of one project in this monorepo and record
 4. If a project does not have an `ISSUES.md` at all, treat it as having zero TODO items (highest priority for review).
 
 ## Setup Environment
-1. Run `./cast/cast_cli/artifacts/x86_64-unknown-linux-gnu/cast install` in the root directory.
+1. Run `./cast/cli/artifacts/x86_64-unknown-linux-gnu/cast install` in the root directory.
 2. Run `cast install` in the root directory.
 3. Run `cast install` inside the selected project directory before beginning work.
 4. Use `cast -h` to explore available commands such as `build`, `test`, and `ci`.

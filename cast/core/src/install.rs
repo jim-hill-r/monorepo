@@ -1005,9 +1005,9 @@ fn install_rustup(dry_run: bool) -> Result<InstallResult, InstallError> {
 fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult, InstallError> {
     use std::process::Command;
 
-    // Find the monorepo root by looking for cast/cast_cli directory using ancestors
+    // Find the monorepo root by looking for cast/cli directory using ancestors
     let cast_cli_path = working_directory.ancestors().find_map(|ancestor| {
-        let potential_path = ancestor.join("cast/cast_cli");
+        let potential_path = ancestor.join("cast/cli");
         if potential_path.exists() && potential_path.is_dir() {
             Some(potential_path)
         } else {
@@ -1023,7 +1023,7 @@ fn install_cast(working_directory: &Path, dry_run: bool) -> Result<InstallResult
                 tool: Tool::Cast,
                 success: false,
                 message:
-                    "Skipped: Could not find cast/cast_cli directory. Run from within the monorepo."
+                    "Skipped: Could not find cast/cli directory. Run from within the monorepo."
                         .to_string(),
                 skipped: true,
             });

@@ -123,7 +123,7 @@ cast/
 │   ├── tests/          # Integration tests
 │   ├── benches/        # Performance benchmarks
 │   └── examples/       # Usage examples
-├── cast_cli/           # cast_cli binary
+├── cli/                # cast_cli binary (previously "cast_cli")
 │   └── src/            # CLI implementation
 └── vscode_ext/         # VSCode extension (previously "cast_vscode")
     └── src/            # Extension TypeScript code
@@ -148,11 +148,11 @@ cargo test --workspace
 
 # Run CI on specific member
 cd cast/core && cast ci
-cd cast/cast_cli && cast ci
+cd cast/cli && cast ci
 ```
 
 ### GitHub Workflows
 Workflows reference the new workspace structure:
-- Build path: `cast/cast_cli/` (directory name matches package name `cast_cli`)
+- Build path: `cast/cli/` instead of `cast_cli/`
 - Binary path: `cast/target/release/cast` instead of `cast_cli/target/release/cast`
 - See `.github/workflows/cast-ci.yml` and `.github/workflows/cast-cd.yml` for examples

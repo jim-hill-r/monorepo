@@ -21,7 +21,7 @@ Complete one issue within this repo.
 10. If no issues are found, do any investigation and find some issues and add them to an appropriate ISSUES.md for future consideration.
 
 ## Setup Environment
-1. Run `./cast/cast_cli/artifacts/x86_64-unknown-linux-gnu/cast install` in root directory.
+1. Run `./cast/cli/artifacts/x86_64-unknown-linux-gnu/cast install` in root directory.
 2. Run `cast install` in root directory.
 3. Anytime you are working within a project, run `cast install` in that directory before beginning work.
 4. When working in this repo, most common needs such as `build`, `test`, and `ci` have `cast` commands. Use `cast -h` to explore the cli to find commands you might need.

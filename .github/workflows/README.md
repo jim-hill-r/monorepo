@@ -10,7 +10,7 @@ This workflow automatically runs `cast ci` for any project that has changes in a
 
 2. **Build and Run**: 
    - Sets up the Rust and Node.js toolchains
-   - Builds the `cast` CLI from `cast/cast_cli`
+   - Builds the `cast` CLI from `cast/cli`
    - Runs `cast ci --only-changed --recursive 2` from the repository root
    - This recursively finds all projects with `Cast.toml` up to 2 levels deep and runs CI checks only on projects with changes
 
@@ -30,7 +30,7 @@ The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
 2. Node.js toolchain (automatically installed by the workflow)
 3. Projects must have a `Cast.toml` file in their root directory
-4. The `cast/cast_cli` project must be buildable
+4. The `cast/cli` project must be buildable
 
 ### Permissions
 
@@ -48,7 +48,7 @@ This workflow runs `cast ci` recursively across all projects in the monorepo on 
 
 2. **Build and Run**: 
    - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `cast/cast_cli`
+   - Builds the `cast` CLI from `cast/cli`
    - Runs `cast ci --recursive 2 --check` from the repository root
    - This recursively finds all projects with `Cast.toml` up to 2 levels deep and runs CI checks on them
 
@@ -62,7 +62,7 @@ The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
 2. Node.js toolchain (automatically installed by the workflow)
 3. Projects must have a `Cast.toml` file in their root directory
-4. The `cast/cast_cli` project must be buildable
+4. The `cast/cli` project must be buildable
 
 ### Permissions
 
@@ -85,7 +85,7 @@ This workflow automatically runs `cast cd` for any project when new Linux build 
 
 3. **Build and Run**: 
    - Sets up the Rust and Node.js toolchains
-   - Builds the `cast` CLI from `cast/cast_cli`
+   - Builds the `cast` CLI from `cast/cli`
    - Runs `cast cd` for each project with new artifacts
 
 4. **Results**: 
@@ -98,7 +98,7 @@ The workflow requires:
 1. Rust toolchain (automatically installed by the workflow)
 2. Node.js toolchain (automatically installed by the workflow)
 3. Projects must have a `Cast.toml` file in their root directory
-4. The `cast/cast_cli` project must be buildable
+4. The `cast/cli` project must be buildable
 
 ### Permissions
 

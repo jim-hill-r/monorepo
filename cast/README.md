@@ -28,7 +28,7 @@ The core Cast library provides the foundational functionality for monorepo opera
 
 The Cast CLI is the primary tool for developers working with Cast-enabled monorepos.
 
-**Location**: `cast/cast_cli/`
+**Location**: `cast/cli/`
 
 **Key Commands**:
 - `cast ci` - Run CI checks (format, lint, build, test)
@@ -75,15 +75,15 @@ From the workspace root:
 # Build the CLI in release mode
 cargo build --release -p cast_cli
 
-# The binary will be at cast/cast_cli/target/release/cast
+# The binary will be at cast/cli/target/release/cast
 # You can add it to your PATH or use it directly
-./cast_cli/target/release/cast --help
+./cli/target/release/cast --help
 ```
 
 Or install it to your Cargo bin directory:
 
 ```bash
-cd cast_cli
+cd cli
 cargo install --path .
 cast --help
 ```
@@ -132,7 +132,7 @@ The Cast CLI is the primary interface for monorepo operations:
 
 ```bash
 # Run CI checks on current project (includes format, lint, build, test, and publish)
-cd cast_cli
+cd cli
 cargo build --release
 
 # Run CI with default check mode
@@ -287,7 +287,7 @@ cast/
 │   ├── benches/        # Performance benchmarks
 │   ├── examples/       # Usage examples
 │   └── docs/           # Design documents
-├── cast_cli/           # Cast CLI (cast_cli)
+├── cli/                # Cast CLI (cast_cli)
 │   ├── src/            # CLI implementation
 │   └── examples/       # CLI usage examples
 └── vscode_ext/         # VSCode extension (cast)

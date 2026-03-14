@@ -20,7 +20,7 @@ This document describes the organization and structure of this monorepo to help 
 │   ├── example_rust_library/ # Exemplar project for libraries
 │   └── binary/          # Exemplar project for binaries
 ├── docs/                # Documentation and learning resources
-├── cast/               # Cast monorepo tooling workspace (contains core, cast_cli, vscode_ext)
+├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
 ├── agent-copilot/       # Binary for creating GitHub Copilot agent tasks
 │   └── prompts/         # Prompts for GitHub Copilot agents
 ├── [other projects]     # Various projects and applications
@@ -77,14 +77,14 @@ See `.github/workflows/README.md` and `.github/WORKFLOW_CONVENTIONS.md` for deta
 
 The Cast monorepo tooling is organized as a Cargo workspace at `cast/`:
 - **core** (`cast_core`) - Core Cast library for monorepo operations
-- **cast_cli** (`cast_cli`) - Cast command-line interface
+- **cli** (`cast_cli`) - Cast command-line interface
 - **vscode_ext** (`cast`) - VSCode extension for Cast
 
 ### Cast CLI
 
 The `cast` CLI is the primary tool for managing this monorepo:
-- Located at `cast/cast_cli/`
-- Build with: `cd cast/cast_cli && cargo build --release`
+- Located at `cast/cli/`
+- Build with: `cd cast/cli && cargo build --release`
 - Commands:
   - `cast project new <name>` - Create new project from exemplars
   - `cast project with-changes --base <ref> --head <ref>` - Find projects with changes between git refs
