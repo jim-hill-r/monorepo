@@ -35,6 +35,7 @@ fn test_linux_x86_64_artifact_is_executable() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_linux_x86_64_artifact_shows_help() {
     let artifact_path = Path::new(ARTIFACT_PATH);
 

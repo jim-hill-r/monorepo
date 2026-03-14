@@ -66,11 +66,11 @@ fn test_gitignore_has_cloudflare_entries() {
 
 #[test]
 fn test_pane_project_exists() {
-    let pane_dir = Path::new("../pane");
+    let pane_dir = Path::new("..");
 
     assert!(
         pane_dir.exists() && pane_dir.is_dir(),
-        "pane project not found at ../pane"
+        "pane project not found at .."
     );
 
     let cargo_toml = pane_dir.join("Cargo.toml");

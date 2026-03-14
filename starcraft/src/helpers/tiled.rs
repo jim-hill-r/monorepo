@@ -12,7 +12,7 @@
 //   * When the 'atlas' feature is enabled tilesets using a collection of images will be skipped.
 //   * Only finite tile layers are loaded. Infinite tile layers and object layers will be skipped.
 
-use std::io::{Cursor, ErrorKind};
+use std::io::Cursor;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -118,7 +118,7 @@ impl AssetLoader for TiledLoader {
             BytesResourceReader::new(&bytes),
         );
         let map = loader.load_tmx_map(load_context.path()).map_err(|e| {
-            std::io::Error::new(ErrorKind::Other, format!("Could not load TMX map: {e}"))
+            std::io::Error::other(format!("Could not load TMX map: {e}"))
         })?;
 
         let mut tilemap_textures = HashMap::default();
@@ -135,6 +135,7 @@ impl AssetLoader for TiledLoader {
                             if let Some(img) = &tile.image {
                                 // The load context path is the TMX file itself. If the file is at the root of the
                                 // assets/ directory structure then the tmx_dir will be empty, which is fine.
+                                #[allow(clippy::expect_used)]
                                 let tmx_dir = load_context
                                     .path()
                                     .parent()
@@ -153,10 +154,17 @@ impl AssetLoader for TiledLoader {
 
                         TilemapTexture::Vector(tile_images)
                     }
+                    #[cfg(feature = "atlas")]
+                    {
+                        // When atlas feature is enabled, skip tilesets using image collections
+                        log::info!("Skipping tileset {tileset_index} (image collection not supported with atlas feature)");
+                        continue;
+                    }
                 }
                 Some(img) => {
                     // The load context path is the TMX file itself. If the file is at the root of the
                     // assets/ directory structure then the tmx_dir will be empty, which is fine.
+                    #[allow(clippy::expect_used)]
                     let tmx_dir = load_context
                         .path()
                         .parent()
@@ -349,11 +357,16 @@ pub fn process_loaded_maps(
                                 let texture_index = match tilemap_texture {
                                     TilemapTexture::Single(_) => layer_tile.id(),
                                     #[cfg(not(feature = "atlas"))]
-                                    TilemapTexture::Vector(_) =>
-                                        *tiled_map.tile_image_offsets.get(&(tileset_index, layer_tile.id()))
-                                        .expect("The offset into to image vector should have been saved during the initial load."),
+                                    TilemapTexture::Vector(_) => {
+                                        #[allow(clippy::expect_used)]
+                                        let offset = *tiled_map.tile_image_offsets.get(&(tileset_index, layer_tile.id()))
+                                            .expect("The offset into to image vector should have been saved during the initial load.");
+                                        offset
+                                    }
                                     #[cfg(not(feature = "atlas"))]
-                                    _ => unreachable!()
+                                    _ => unreachable!(),
+                                    #[cfg(feature = "atlas")]
+                                    _ => layer_tile.id(),
                                 };
 
                                 let tile_pos = TilePos { x, y };
