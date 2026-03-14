@@ -5,6 +5,7 @@ mod card_library;
 mod card_render;
 mod deck;
 mod game;
+mod rules;
 
 fn main() {
     App::new()

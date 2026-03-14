@@ -1,5 +1,5 @@
 [package]
-name = "cookbook-data-md"
+name = "cookbook_data_md"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,6 +7,6 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-cookbook-core = { path = "../core" }
+cookbook_core = { path = "../core" }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 tracing = "0.1.41"

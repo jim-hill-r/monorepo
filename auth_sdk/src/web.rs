@@ -3,6 +3,7 @@ use openidconnect::{
     IssuerUrl, Nonce, OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
     TokenResponse,
     core::{CoreAuthenticationFlow, CoreClient, CoreIdTokenClaims, CoreProviderMetadata},
+    reqwest,
 };
 use web_sys::UrlSearchParams;
 

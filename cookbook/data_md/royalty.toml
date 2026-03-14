@@ -1,0 +1,3 @@
+[project]
+name = "cookbook_data_md"
+description = "A markdown-based implementation of the recipe storage system for the Cookbook application."

@@ -1,4 +1,4 @@
-# Recipe Generation Tool
+# cookbook_recipe_gen
 
 A command-line tool for generating 365 unique recipe markdown files for the Cookbook application, and migrating existing recipes to include UUIDs.
 
