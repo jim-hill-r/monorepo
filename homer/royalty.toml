@@ -1,0 +1,3 @@
+[project]
+name = "homer"
+description = "A CLI tool for looking up and evaluating house details from Zillow."
