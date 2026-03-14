@@ -1,5 +1,7 @@
 # Blue Eel
 
+## blueeel
+
 A reading education application built with Dioxus that provides comprehensive reading instruction and support for learners of all ages.
 
 ## About

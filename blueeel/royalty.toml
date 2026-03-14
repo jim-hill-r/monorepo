@@ -1,0 +1,3 @@
+[project]
+name = "blueeel"
+description = "A reading education application built with Dioxus that provides comprehensive reading instruction and support for learners of all ages."
