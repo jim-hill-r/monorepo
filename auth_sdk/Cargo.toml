@@ -14,7 +14,6 @@ unsafe_code = "forbid"
 tracing = "0.1.44"
 thiserror = "2.0.18"
 openidconnect = { version = "4.0.1", features = ["reqwest"] }
-reqwest = { version = "0.13.2" }
 serde = "1.0.228"
 serde_json = "1.0.149"
 

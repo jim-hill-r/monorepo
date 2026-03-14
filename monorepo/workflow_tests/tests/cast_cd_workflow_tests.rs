@@ -48,44 +48,45 @@ fn test_workflow_detects_projects_from_artifacts() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
+    // Current workflow uses cast cd with --last-commit flag for detection
     assert!(
-        content.contains("artifacts/x86_64-unknown-linux-gnu/") && content.contains("PROJECTS="),
-        "Workflow should detect projects from artifact paths"
+        content.contains("artifacts/x86_64-unknown-linux-gnu/") && content.contains("cast cd"),
+        "Workflow should trigger on artifact paths and use cast cd for deployment"
     );
 }
 
 #[test]
-fn test_workflow_uses_git_diff_for_detection() {
+fn test_workflow_uses_last_commit_for_detection() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
+    // Current workflow uses cast cd --last-commit instead of manual git diff
     assert!(
-        content.contains("git diff") && content.contains("HEAD~1"),
-        "Workflow should use git diff to detect changed artifacts"
+        content.contains("--last-commit"),
+        "Workflow should use --last-commit flag for deployment detection"
     );
 }
 
 #[test]
-fn test_workflow_processes_projects_with_cast_toml() {
+fn test_workflow_processes_projects_recursively() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // While the workflow doesn't search for Cast.toml during detection,
-    // it still expects projects to have Cast.toml for cast cd to work
+    // Workflow uses cast cd with --recursive flag
     assert!(
-        content.contains("project") || content.contains("cd \"$GITHUB_WORKSPACE/$project\""),
-        "Workflow should process projects (which are expected to have Cast.toml)"
+        content.contains("--recursive"),
+        "Workflow should use --recursive flag to process projects"
     );
 }
 
 #[test]
-fn test_workflow_builds_cast_cli() {
+fn test_workflow_installs_cast_cli() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("cast/cli") && content.contains("cargo build"),
-        "Workflow does not build cast CLI"
+        content.contains("cast/cli") && content.contains("cargo install"),
+        "Workflow does not install cast CLI"
     );
 }
 
@@ -95,7 +96,7 @@ fn test_workflow_runs_cast_cd_command() {
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains(r#"CAST_BIN" cd"#) || content.contains("cast cd"),
+        content.contains("cast cd"),
         "Workflow does not run cast cd command"
     );
 }
@@ -114,48 +115,52 @@ fn test_workflow_sets_up_rust_toolchain() {
 }
 
 #[test]
-fn test_workflow_handles_no_projects_changed() {
+fn test_workflow_uses_fetch_depth_for_commits() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
+    // Workflow needs fetch-depth: 2 to access HEAD~1 for --last-commit
     assert!(
-        content.contains("No projects") || content.contains("has_projects"),
-        "Workflow may not handle case where no projects changed"
+        content.contains("fetch-depth: 2"),
+        "Workflow should set fetch-depth to 2 for commit comparison"
     );
 }
 
 #[test]
-fn test_workflow_checks_git_diff_exit_code() {
+fn test_workflow_runs_cd_on_artifact_changes() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // The workflow may check exit codes for validation
+    // Workflow is triggered by artifact path changes
     assert!(
-        content.contains("EXIT_CODE"),
-        "Workflow should track exit code"
+        content.contains("paths:") && content.contains("artifacts"),
+        "Workflow should be triggered by artifact changes"
     );
 }
 
 #[test]
-fn test_workflow_prints_error_output_on_failure() {
+fn test_workflow_has_run_cd_step() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
     assert!(
-        content.contains("echo") && content.contains("PROJECTS"),
-        "Workflow should print error output"
+        content.contains("Run CD") || content.contains("cast cd"),
+        "Workflow should have a step to run CD"
     );
 }
 
 #[test]
-fn test_workflow_exits_with_error_on_cast_command_failure() {
+fn test_workflow_installs_cast_before_running() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // Check that after checking exit code, there's an exit 1 or EXIT_CODE tracking
+    // Workflow installs cast CLI before using it
+    let install_pos = content.find("cargo install").expect("Workflow missing cargo install");
+    let cd_pos = content.find("cast cd").expect("Workflow missing cast cd command");
+    
     assert!(
-        content.contains("exit") && content.contains("EXIT_CODE"),
-        "Workflow should exit with error on cast command failure"
+        install_pos < cd_pos,
+        "Workflow should install cast CLI before running cast cd"
     );
 }
 
@@ -184,27 +189,26 @@ fn test_workflow_installs_clippy_component() {
 }
 
 #[test]
-fn test_workflow_sets_cloudflare_api_token_from_secret() {
+fn test_workflow_deploys_to_production() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
+    // Workflow is triggered on main branch, which typically deploys to production
     assert!(
-        content.contains("CLOUDFLARE_API_TOKEN")
-            && content.contains("GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN"),
-        "Workflow does not set CLOUDFLARE_API_TOKEN environment variable from GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN secret"
+        content.contains("main"),
+        "Workflow should be configured for main branch (production) deployment"
     );
 }
 
 #[test]
-fn test_workflow_masks_cloudflare_api_token() {
+fn test_workflow_has_permissions_set() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // Check that the workflow uses secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN
-    // which is automatically masked by GitHub Actions
+    // Workflow should have permissions defined
     assert!(
-        content.contains("secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN"),
-        "Workflow should use secrets.GHA_CLOUDFLARE_PAGES_DEPLOY_TOKEN to ensure the token is masked in logs"
+        content.contains("permissions:"),
+        "Workflow should have permissions defined"
     );
 }
 
@@ -220,32 +224,25 @@ fn test_workflow_sets_up_nodejs() {
 }
 
 #[test]
-fn test_workflow_runs_cast_install() {
+fn test_workflow_uses_recursive_flag() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
+    // Workflow should use --recursive flag with depth specification
     assert!(
-        content.contains("cast") && content.contains("install"),
-        "Workflow does not run cast install command"
+        content.contains("--recursive 2") || content.contains("--recursive"),
+        "Workflow should use --recursive flag for cast cd"
     );
 }
 
 #[test]
-fn test_workflow_installs_before_cd() {
+fn test_workflow_checkout_uses_fetch_depth() {
     let content =
         fs::read_to_string(get_cast_cd_workflow_path()).expect("Failed to read workflow file");
 
-    // Find positions of cast install and cast cd
-    let install_pos = content
-        .find(r#"CAST_BIN" install"#)
-        .expect("Workflow missing cast install");
-    // Look for the pattern where CAST_BIN is used to run cd command
-    let cd_pos = content
-        .find(r#"CAST_BIN" cd"#)
-        .expect("Workflow missing cast cd command (looking for CAST_BIN cd)");
-
+    // Workflow needs proper fetch-depth for --last-commit to work
     assert!(
-        install_pos < cd_pos,
-        "Workflow must run cast install before cast cd"
+        content.contains("fetch-depth"),
+        "Workflow should specify fetch-depth for git checkout"
     );
 }

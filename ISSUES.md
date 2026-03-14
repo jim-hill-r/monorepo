@@ -7,6 +7,9 @@
 - cast
 - cookbook
 - homer
+- controlled_chaos
+- royalty
+- sparkhill
 
 # On Hold Projects
 - luggage
