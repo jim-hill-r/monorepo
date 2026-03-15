@@ -1,3 +1,7 @@
+# Branch naming
+
+All copilot branches should follow the format: `copilot/{timestamp}-{description}`. For example: `copilot/2024-06-01-add-new-feature`. This ensures unique branch names and prevents collisions with other branches.
+
 # Standards
 
 All coding standards are found in the `standards` project in this monorepo. Reference those standards as primary source of truth. If duplicate or contradictory information exists in this document, copilot should remove the information here and instead recommend referencing the information there. If information is missing there that copilot is using from here, it should be added to the `standards` project and removed from here.
