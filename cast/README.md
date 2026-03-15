@@ -36,7 +36,13 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
   - `cast ci --fix` - Auto-fix formatting issues, then run checks without creating artifacts
   - `cast ci --release` - Build in release mode, publish artifacts, and commit them (for post-merge to master)
   - `cast ci --recursive <depth>` - After running CI, find and run CI on cast projects up to N levels below the current directory
-  - `cast ci --only-changed` - Only run CI if the project has changes compared to the origin's default branch
+  - `cast ci --only-changed` - Only run CI if the project has changes
+    - With uncommitted changes in repository (anywhere):
+      - On default branch: Only checks if THIS project has uncommitted changes (ignores last commit)
+      - On feature branch: Checks both committed changes vs origin's default branch AND uncommitted files in this project
+    - With clean repository (no uncommitted changes anywhere):
+      - On default branch: Compares HEAD to HEAD~1 (previous commit)
+      - On feature branch: Compares HEAD to origin's default branch (PR-style diff)
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
@@ -167,14 +173,37 @@ cargo build --release
 The `--only-changed` option is useful in CI/CD pipelines to skip projects without changes:
 
 ```bash
-# Only run CI if the project has changes compared to origin's default branch
+# Only run CI if the project has changes
 ./target/release/cast ci --only-changed
 
 # Combine with recursive to check all projects, but only run CI on changed ones
 ./target/release/cast ci --recursive 2 --only-changed
 ```
 
-This feature is helpful in monorepos where you want to optimize CI runtime by only running checks on projects that have actually changed since the last deployment to the default branch.
+**Change Detection Behavior:**
+
+The `--only-changed` flag adapts to your workflow state:
+
+1. **With uncommitted changes in repository (anywhere):**
+   - **Default branch**: Validates only projects with uncommitted changes IN THEM (ignores what the last commit touched)
+   - **Feature branch**: Validates projects with either branch changes OR uncommitted changes
+
+2. **With clean repository (no uncommitted changes anywhere):**
+   - **Default branch**: Compares HEAD to HEAD~1 (validates projects touched by last commit)
+   - **Feature branch**: Compares HEAD to origin's default branch (PR-style diff)
+
+This is helpful in monorepos:
+- **During development**: With uncommitted changes, immediately validate only the projects you're actively editing
+- **After committing on default branch**: Validates projects touched by your last commit
+- **On feature branches**: See exactly what would be validated in a PR, plus any uncommitted work
+- **In CI/CD**: Optimize runtime by skipping projects with no changes
+
+**Output Clarity:** When using `--only-changed` with `--recursive`, the CI summary clearly separates:
+- **Successful projects**: Projects where CI actually ran and passed
+- **Skipped projects (no changes)**: Projects that were skipped because they have no changes
+- **Failed projects**: Projects where CI ran but failed
+
+This makes it easy to see at a glance which projects were actually validated versus which were optimized away.
 
 **Performance optimization:** When using `--only-changed` with `--recursive`, Cast caches git diff results to avoid running the same git commands multiple times, making recursive traversal very fast when most projects have no changes.
 
@@ -199,9 +228,9 @@ Running `cast ci --recursive 1` from the monorepo root will:
 2. Find project1 and project2 at depth 1
 3. Run CI on each discovered project
 4. Continue running CI on remaining projects even if one fails
-5. Display a summary showing which projects passed and which failed
+5. Display a summary showing which projects passed, which were skipped (when using `--only-changed`), and which failed
 
-**Error Handling**: When using `--recursive`, if one project fails CI checks, the process will continue to run CI on the remaining projects. At the end, a summary is displayed showing all successes and failures. The command exits with an error code if any project failed, but only after attempting to run CI on all discovered projects.
+**Error Handling**: When using `--recursive`, if one project fails CI checks, the process will continue to run CI on the remaining projects. At the end, a summary is displayed showing all successes, skipped projects (when using `--only-changed`), and failures. The command exits with an error code if any project failed, but only after attempting to run CI on all discovered projects.
 
 **Note**: If the current directory doesn't have a Cast configuration (Cast.toml or Cargo.toml with Cast metadata), the recursive flag will skip running CI on the current directory and only search for and run CI on child projects. This is useful for running CI across multiple projects from a parent directory that isn't itself a Cast project.
 

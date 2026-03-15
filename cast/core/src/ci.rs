@@ -21,6 +21,15 @@ pub enum CiMode {
     Release,
 }
 
+/// Result of running CI on a project
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CiRunResult {
+    /// CI checks were run and passed
+    Ran,
+    /// CI checks were skipped (e.g., no changes with --only-changed)
+    Skipped,
+}
+
 #[derive(Error, Debug)]
 pub enum CiError {
     #[error("Cargo fmt check failed")]
@@ -57,6 +66,13 @@ pub enum CiError {
 /// Maps absolute path to whether the directory has changes
 type GitDiffCache = Rc<RefCell<HashMap<PathBuf, bool>>>;
 
+/// Accumulated results from recursive CI runs
+struct CiResults {
+    successes: Vec<PathBuf>,
+    skipped: Vec<PathBuf>,
+    failures: Vec<(PathBuf, Box<CiError>)>,
+}
+
 /// Run CI checks for a project
 /// This function performs the following steps:
 /// 1. Installs required tools (rustc, cargo, clippy, dx, npm, playwright, etc.)
@@ -70,7 +86,13 @@ type GitDiffCache = Rc<RefCell<HashMap<PathBuf, bool>>>;
 ///    - Release: Run all checks with release build, then publish artifacts
 /// 4. If recursive_depth is Some(depth), after running CI on the current directory,
 ///    it will find all Cast projects up to 'depth' levels below and run CI on them
-/// 5. If only_changed is true, CI will only run if the project has changes compared to the origin's default branch
+/// 5. If only_changed is true, CI will only run if the project has changes:
+///    - With uncommitted changes in repository (anywhere):
+///      - On default branch: Only checks if THIS project has uncommitted changes (ignores last commit)
+///      - On feature branch: Checks both committed changes (HEAD vs origin/default) AND uncommitted changes in this project
+///    - With clean repository (no uncommitted changes anywhere):
+///      - On default branch: Compares HEAD to HEAD~1 (checks if last commit touched this project)
+///      - On feature branch: Compares HEAD to origin/default_branch (PR-style diff)
 pub fn run(
     working_directory: impl AsRef<Path>,
     mode: CiMode,
@@ -79,24 +101,30 @@ pub fn run(
 ) -> Result<(), CiError> {
     // Create a cache for git diff results to improve performance with --only-changed
     let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
+
+    // If recursive_depth is specified, use run_ci_recursively to handle the entire tree
+    if let Some(depth) = recursive_depth {
+        return run_ci_recursively(working_directory.as_ref(), mode, depth, only_changed);
+    }
+
     run_internal(
         working_directory.as_ref(),
         mode,
-        recursive_depth,
         only_changed,
         git_diff_cache,
     )
+    .map(|_| ()) // Convert CiRunResult to () for public API
 }
 
 /// Internal implementation of run that accepts a git diff cache
 /// This allows memoization of git diff results across recursive calls
+/// Returns CiRunResult indicating whether CI was run or skipped
 fn run_internal(
     working_directory: &Path,
     mode: CiMode,
-    recursive_depth: Option<usize>,
     only_changed: bool,
     git_diff_cache: GitDiffCache,
-) -> Result<(), CiError> {
+) -> Result<CiRunResult, CiError> {
     // Install required tools before running CI checks
     // This ensures all necessary tools (rustc, cargo, clippy, dx, npm, etc.) are available
     let install_options = install::InstallOptions {
@@ -133,7 +161,7 @@ fn run_internal(
             Ok(false) => {
                 // No changes, skip CI
                 println!("No changes found in project. Skipping CI.");
-                return Ok(());
+                return Ok(CiRunResult::Skipped);
             }
             Err(e) => {
                 // Error checking for changes (e.g., not in a git repo)
@@ -178,12 +206,10 @@ fn run_internal(
     // Artifacts should only be created in Release mode
     // If no CI checks were run, silently succeed (empty project or unsupported type)
 
-    // Run CI recursively on child projects if requested
-    if let Some(depth) = recursive_depth {
-        run_ci_recursively_internal(working_directory, mode, depth, only_changed, git_diff_cache)?;
-    }
+    // Note: Recursive CI is now handled by run_ci_recursively to accumulate all results
+    // Don't recurse from here to avoid nested summaries
 
-    Ok(())
+    Ok(CiRunResult::Ran)
 }
 
 /// Run CI checks for a Rust project
@@ -462,31 +488,69 @@ pub fn run_ci_recursively(
 ) -> Result<(), CiError> {
     // Create a cache for git diff results to improve performance with --only-changed
     let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
+
+    // Accumulate all results from the entire tree
+    let mut results = CiResults {
+        successes: Vec::new(),
+        skipped: Vec::new(),
+        failures: Vec::new(),
+    };
+
     run_ci_recursively_internal(
         working_directory,
         mode,
         max_depth,
         only_changed,
         git_diff_cache,
-    )
+        &mut results,
+    )?;
+
+    // Print summary at the top level with all accumulated results
+    println!("\n=== CI Summary ===");
+    println!("Passed: {}", results.successes.len());
+    println!("Skipped: {}", results.skipped.len());
+    println!("Failed: {}", results.failures.len());
+
+    if !results.successes.is_empty() {
+        println!("\nSuccessful projects:");
+        for path in &results.successes {
+            println!("  ✓ {}", path.display());
+        }
+    }
+
+    if !results.skipped.is_empty() {
+        println!("\nSkipped projects (no changes):");
+        for path in &results.skipped {
+            println!("  ○ {}", path.display());
+        }
+    }
+
+    if !results.failures.is_empty() {
+        println!("\nFailed projects:");
+        for (path, err) in &results.failures {
+            println!("  ✗ {}: {}", path.display(), err);
+        }
+        return Err(CiError::MultipleProjectFailures(results.failures));
+    }
+
+    Ok(())
 }
 
 /// Internal implementation of run_ci_recursively that accepts a git diff cache
+/// and accumulates results in the provided CiResults struct
 fn run_ci_recursively_internal(
     working_directory: &Path,
     mode: CiMode,
     max_depth: usize,
     only_changed: bool,
     git_diff_cache: GitDiffCache,
+    results: &mut CiResults,
 ) -> Result<(), CiError> {
     if max_depth == 0 {
         return Ok(());
     }
 
     let projects = find_cast_projects(working_directory, max_depth)?;
-
-    let mut failures: Vec<(PathBuf, Box<CiError>)> = Vec::new();
-    let mut successes: Vec<PathBuf> = Vec::new();
 
     for (project_path, depth) in projects {
         println!("Running CI on child project: {}", project_path.display());
@@ -501,42 +565,36 @@ fn run_ci_recursively_internal(
         };
 
         // Run CI on the child project with the shared cache
-        match run_internal(
-            &project_path,
-            mode,
-            remaining_depth,
-            only_changed,
-            git_diff_cache.clone(),
-        ) {
-            Ok(_) => {
+        match run_internal(&project_path, mode, only_changed, git_diff_cache.clone()) {
+            Ok(CiRunResult::Ran) => {
                 println!("✓ CI passed for {}", project_path.display());
-                successes.push(project_path);
+                results.successes.push(project_path.clone());
+            }
+            Ok(CiRunResult::Skipped) => {
+                // Project was skipped due to no changes
+                results.skipped.push(project_path.clone());
             }
             Err(e) => {
                 eprintln!("✗ CI failed for {}: {}", project_path.display(), e);
-                failures.push((project_path, Box::new(e)));
+                results.failures.push((project_path.clone(), Box::new(e)));
             }
         }
-    }
 
-    // Print summary
-    println!("\n=== CI Summary ===");
-    println!("Passed: {}", successes.len());
-    println!("Failed: {}", failures.len());
-
-    if !successes.is_empty() {
-        println!("\nSuccessful projects:");
-        for path in &successes {
-            println!("  ✓ {}", path.display());
+        // Now handle nested projects if there's remaining depth
+        if let Some(remaining) = remaining_depth {
+            if remaining > 0 {
+                // Recursively process nested projects, accumulating results in the same struct
+                let _ = run_ci_recursively_internal(
+                    &project_path,
+                    mode,
+                    remaining,
+                    only_changed,
+                    git_diff_cache.clone(),
+                    results,
+                );
+                // Continue even if nested recursion fails - we want to check all projects
+            }
         }
-    }
-
-    if !failures.is_empty() {
-        println!("\nFailed projects:");
-        for (path, err) in &failures {
-            println!("  ✗ {}: {}", path.display(), err);
-        }
-        return Err(CiError::MultipleProjectFailures(failures));
     }
 
     Ok(())
@@ -545,6 +603,14 @@ fn run_ci_recursively_internal(
 /// Check if the current project has changes compared to the origin's default branch
 /// Returns true if there are changes, false if no changes
 /// Returns an error if git operations fail (e.g., not in a git repo)
+///
+/// Behavior:
+/// - If repository has uncommitted changes anywhere (dirty):
+///   - On default branch: Only check if THIS project has uncommitted changes
+///   - On feature branch: Check both committed changes (HEAD vs origin/default) AND uncommitted changes in this project
+/// - If repository is clean (no uncommitted changes anywhere):
+///   - On default branch: Compare HEAD to HEAD~1 (previous commit)
+///   - On feature branch: Compare HEAD to origin/default_branch (PR-style diff)
 fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
     // Check if we're in a git repository
     let git_check = Command::new("git")
@@ -559,24 +625,114 @@ fn has_changes(working_directory: &Path) -> Result<bool, CiError> {
         )));
     }
 
-    // Get the default branch name from origin
+    // Get the current and default branch names
+    let current_branch = get_current_branch(working_directory)?;
     let default_branch = get_default_branch(working_directory)?;
+    let on_default_branch = current_branch == default_branch;
 
-    // Check if there are any changes between HEAD and origin/default_branch
-    // We'll check if the project directory has any diffs
-    // Note: git diff HEAD origin/branch shows what changed in HEAD compared to origin/branch
+    // Check if repository has uncommitted changes ANYWHERE (not just this project)
+    let repository_is_dirty = is_repository_dirty(working_directory)?;
+
+    // Special handling when repository has uncommitted changes
+    if repository_is_dirty {
+        // Check if THIS specific project has uncommitted changes
+        let project_has_dirty_files = is_working_directory_dirty(working_directory)?;
+
+        if on_default_branch {
+            // On default branch with dirty repository: Only include if THIS project has uncommitted changes
+            // Ignore what was in the last commit (HEAD vs HEAD~1)
+            return Ok(project_has_dirty_files);
+        } else {
+            // On feature branch with dirty repository: Check both committed changes AND uncommitted changes in this project
+            let has_committed_changes =
+                check_committed_changes(working_directory, &format!("origin/{}", default_branch))?;
+            return Ok(has_committed_changes || project_has_dirty_files);
+        }
+    }
+
+    // Repository is clean, use standard comparison logic
+    let base_ref = if on_default_branch {
+        // On default branch: compare HEAD to previous commit (HEAD~1)
+        "HEAD~1".to_string()
+    } else {
+        // On feature branch: compare to origin/default_branch (like a PR)
+        format!("origin/{}", default_branch)
+    };
+
+    check_committed_changes(working_directory, &base_ref)
+}
+
+/// Check if there are committed changes between base_ref and HEAD in the current directory
+fn check_committed_changes(working_directory: &Path, base_ref: &str) -> Result<bool, CiError> {
+    // Check if there are any changes in the current project directory
     let diff_output = Command::new("git")
         .arg("diff")
         .arg("--quiet")
+        .arg(base_ref)
         .arg("HEAD")
-        .arg(format!("origin/{}", default_branch))
+        .arg("--")
+        .arg(".")
+        .current_dir(working_directory)
+        .output();
+
+    match diff_output {
+        Ok(output) => {
+            // git diff --quiet exit codes:
+            // 0 = no differences
+            // 1 = differences found
+            // 2+ = error (e.g., invalid ref like HEAD~1 when it doesn't exist)
+            if let Some(code) = output.status.code() {
+                if code >= 2 {
+                    // Error case (e.g., HEAD~1 doesn't exist on first commit)
+                    // For HEAD~1 on default branch, this means first commit - no changes
+                    Ok(false)
+                } else {
+                    // Exit code 0 = no changes, 1 = has changes
+                    Ok(!output.status.success())
+                }
+            } else {
+                // Process was terminated by signal
+                Err(CiError::IoError(std::io::Error::other(
+                    "git diff was terminated by signal",
+                )))
+            }
+        }
+        Err(e) => Err(CiError::IoError(e)),
+    }
+}
+
+/// Check if the working directory has uncommitted changes in the current directory
+/// Returns true if there are staged or unstaged changes, false otherwise
+fn is_working_directory_dirty(working_directory: &Path) -> Result<bool, CiError> {
+    // Check for both staged and unstaged changes in the current directory
+    // git diff-index --quiet HEAD -- . checks for any changes (staged or unstaged)
+    let status = Command::new("git")
+        .arg("diff-index")
+        .arg("--quiet")
+        .arg("HEAD")
         .arg("--")
         .arg(".")
         .current_dir(working_directory)
         .status()?;
 
-    // git diff --quiet returns 0 if no changes, 1 if there are changes
-    Ok(!diff_output.success())
+    // Exit code 0 = no changes, 1 = has changes
+    Ok(!status.success())
+}
+
+/// Check if the repository has uncommitted changes ANYWHERE (not just in current directory)
+/// Returns true if there are any staged or unstaged changes in the entire repository
+fn is_repository_dirty(working_directory: &Path) -> Result<bool, CiError> {
+    // Check for uncommitted changes anywhere in the repository
+    // git diff-index --quiet HEAD (without path) checks the entire repository
+    let status = Command::new("git")
+        .arg("diff-index")
+        .arg("--quiet")
+        .arg("HEAD")
+        .current_dir(working_directory)
+        .status()?;
+
+    // Exit code 0 = no changes, 1 = has changes
+    Ok(!status.success())
 }
 
 /// Check if the current project has changes compared to the origin's default branch
@@ -604,6 +760,25 @@ fn has_changes_cached(working_directory: &Path, cache: &GitDiffCache) -> Result<
     cache.borrow_mut().insert(abs_path, result);
 
     Ok(result)
+}
+
+/// Get the current branch name
+fn get_current_branch(working_directory: &Path) -> Result<String, CiError> {
+    let output = Command::new("git")
+        .arg("rev-parse")
+        .arg("--abbrev-ref")
+        .arg("HEAD")
+        .current_dir(working_directory)
+        .output()?;
+
+    if output.status.success() {
+        let branch_name = String::from_utf8_lossy(&output.stdout);
+        Ok(branch_name.trim().to_string())
+    } else {
+        Err(CiError::IoError(std::io::Error::other(
+            "Cannot determine current branch name",
+        )))
+    }
 }
 
 /// Get the default branch name from origin (usually 'main' or 'master')
@@ -1885,6 +2060,123 @@ mod tests {
         let result = get_default_branch(tmp_dir.path());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "main");
+    }
+
+    #[test]
+    fn test_has_changes_on_feature_branch_compares_to_default() {
+        let tmp_dir = TempDir::new("test_feature_branch").unwrap();
+
+        // Initialize git repo with master branch
+        Command::new("git")
+            .arg("init")
+            .arg("-b")
+            .arg("master")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.email")
+            .arg("test@example.com")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("config")
+            .arg("user.name")
+            .arg("Test User")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create initial file and commit
+        fs::write(tmp_dir.path().join("README.md"), "initial").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create remote and push
+        let remote_dir = tmp_dir.path().join("remote.git");
+        Command::new("git")
+            .arg("init")
+            .arg("--bare")
+            .arg(&remote_dir)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("remote")
+            .arg("add")
+            .arg("origin")
+            .arg(&remote_dir)
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("push")
+            .arg("-u")
+            .arg("origin")
+            .arg("master")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("symbolic-ref")
+            .arg("refs/remotes/origin/HEAD")
+            .arg("refs/remotes/origin/master")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Create a feature branch
+        Command::new("git")
+            .arg("checkout")
+            .arg("-b")
+            .arg("feature")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Initially on feature branch, no changes compared to master
+        let result = has_changes(tmp_dir.path());
+        assert!(result.is_ok());
+        assert!(
+            !result.unwrap(),
+            "Should have no changes on feature branch initially"
+        );
+
+        // Make a change on the feature branch
+        fs::write(tmp_dir.path().join("README.md"), "feature change").unwrap();
+        Command::new("git")
+            .arg("add")
+            .arg(".")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("feature change")
+            .current_dir(tmp_dir.path())
+            .output()
+            .unwrap();
+
+        // Now should have changes compared to origin/master
+        let result = has_changes(tmp_dir.path());
+        assert!(result.is_ok());
+        assert!(
+            result.unwrap(),
+            "Should detect changes on feature branch after commit"
+        );
     }
 
     #[test]
