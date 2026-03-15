@@ -188,9 +188,9 @@ fn run_internal(
     }
 
     // Run TypeScript CI if package.json exists (can run in addition to Rust CI)
-    // Pass has_cargo_toml so we can avoid running tests twice
+    // Pass has_cargo_toml so we can avoid running tests twice, and mode for fix behavior
     if has_package_json {
-        run_typescript_ci(working_directory, has_cargo_toml)?;
+        run_typescript_ci(working_directory, has_cargo_toml, mode)?;
         ran_ci_checks = true;
     }
 
@@ -215,7 +215,7 @@ fn run_internal(
 /// Run CI checks for a Rust project
 /// This runs different steps based on the mode:
 /// - Check mode: cargo fmt --check, clippy, build (debug), test
-/// - Fix mode: cargo fmt (auto-fix), clippy, build (debug), test
+/// - Fix mode: cargo fmt (auto-fix only)
 /// - Release mode: cargo fmt --check, clippy, build --release, test, publish
 fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
     // Handle formatting based on mode
@@ -227,6 +227,8 @@ fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
         CiMode::Fix => {
             // Run cargo fmt to auto-fix formatting issues
             run_fmt_fix(working_directory)?;
+            // Skip clippy, build, and tests in Fix mode - only do auto-fixable tasks
+            return Ok(());
         }
     }
 
@@ -235,12 +237,13 @@ fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
 
     // Run build - release mode for Release, debug for others
     match mode {
-        CiMode::Check | CiMode::Fix => {
+        CiMode::Check => {
             build::run(working_directory)?;
         }
         CiMode::Release => {
             build::run_release(working_directory)?;
         }
+        CiMode::Fix => unreachable!(), // Fix mode returns early
     }
 
     // Run cast test (without coverage in CI)
@@ -257,15 +260,26 @@ fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
 /// Run CI checks for a TypeScript/Node.js project
 /// This runs:
 /// 1. npm ci (to install dependencies from lockfile)
-/// 2. npm run lint (if script exists)
-/// 3. npm run compile (if script exists)
-/// 4. npm test (if script exists AND skip_tests is false)
+/// 2. npm run lint (if script exists, skipped in Fix mode)
+/// 3. npm run compile (if script exists, skipped in Fix mode)
+/// 4. npm test (if script exists AND skip_tests is false, skipped in Fix mode)
 ///
 /// The skip_tests parameter should be true when this is a hybrid project (has both Cargo.toml and package.json)
 /// because test::run() already runs npm test for hybrid projects
-fn run_typescript_ci(working_directory: &Path, skip_tests: bool) -> Result<(), CiError> {
+///
+/// In Fix mode, only npm install is run - no linting, compiling, or testing
+fn run_typescript_ci(
+    working_directory: &Path,
+    skip_tests: bool,
+    mode: CiMode,
+) -> Result<(), CiError> {
     // Run npm ci to ensure dependencies are installed from lockfile
     run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
+
+    // In Fix mode, skip everything else - only install dependencies
+    if mode == CiMode::Fix {
+        return Ok(());
+    }
 
     // Run npm run lint if it exists
     if npm_script_exists(working_directory, "lint") {
@@ -350,7 +364,9 @@ fn run_fmt_check(working_directory: &Path) -> Result<(), CiError> {
 
 fn run_fmt_fix(working_directory: &Path) -> Result<(), CiError> {
     let mut cmd = Command::new("cargo");
-    cmd.arg("fmt").current_dir(working_directory);
+    cmd.arg("fmt")
+        .current_dir(working_directory)
+        .stdin(std::process::Stdio::null()); // Prevent blocking on user input
 
     // Configure LLVM environment if needed
     for (var_name, var_value) in install::detect_llvm_env() {

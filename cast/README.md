@@ -33,7 +33,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
 **Key Commands**:
 - `cast ci` - Run CI checks (format, lint, build, test)
   - `cast ci --check` - Run checks only without creating artifacts (default mode for PR validation)
-  - `cast ci --fix` - Auto-fix formatting issues, then run checks without creating artifacts
+  - `cast ci --fix` - Auto-fix formatting issues only (skips tests, builds, and linting)
   - `cast ci --release` - Build in release mode, publish artifacts, and commit them (for post-merge to master)
   - `cast ci --recursive <depth>` - After running CI, find and run CI on cast projects up to N levels below the current directory
   - `cast ci --only-changed` - Only run CI if the project has changes
@@ -144,7 +144,7 @@ cargo build --release
 # Run CI with default check mode
 ./target/release/cast ci
 
-# Run CI with auto-fix mode (auto-formats code)
+# Run CI with auto-fix mode (auto-formats code, skips tests and builds)
 ./target/release/cast ci --fix
 
 # Run CI with release mode (build --release and publish artifacts)
