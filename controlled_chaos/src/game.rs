@@ -230,10 +230,17 @@ fn run_demo_round(engine_res: Option<ResMut<RulesEngineResource>>, mut ran: Loca
         return;
     }
 
+    // Simulate deck exhaustion: the demo uses a single round, so signal that
+    // the action deck is now empty.  In a full game this would be called by
+    // the deck management system when the last card is drawn.
+    engine.signal_deck_exhausted();
+
     // Check game state after the round.
     if engine.is_game_over() {
         if let Some(winner_idx) = engine.winner() {
             info!("Game over! Winner: {}", engine.players[winner_idx].name);
+        } else {
+            info!("Game over! It's a draw.");
         }
     } else {
         info!(
