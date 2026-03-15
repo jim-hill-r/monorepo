@@ -17,12 +17,21 @@ impl Plugin for GamePlugin {
                 Update,
                 (
                     log_game_state,
-                    handle_draw_phase,
-                    handle_play_phase,
-                    handle_battle_phase,
-                    handle_end_phase,
+                    // Phase handlers first: they mutate RulesEngineResource and insert/
+                    // remove AttackerCardResource via Commands.  apply_deferred flushes
+                    // those commands so the UI systems below read the latest state.
+                    (
+                        handle_draw_phase,
+                        handle_play_phase,
+                        handle_battle_phase,
+                        handle_end_phase,
+                    )
+                        .chain(),
+                    apply_deferred,
+                    // UI systems run after deferred commands are applied.
                     (update_game_ui, update_pvp_ui).chain(),
                 )
+                    .chain()
                     .run_if(in_state(AppState::InGame)),
             )
             .add_systems(
@@ -561,7 +570,7 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Win condition reminder
             root.spawn(TextBundle::from_section(
-                "Win: Highest happiness when deck runs out.  Lose: No civilians left.",
+                "Win: Highest happiness when deck runs out.  Lose: Life or civilians reach 0.",
                 TextStyle {
                     font_size: 12.0,
                     color: Color::srgb(0.5, 0.5, 0.5),
@@ -788,10 +797,29 @@ fn update_pvp_ui(
     // Build the instruction string based on current phase.
     let instructions = if engine.is_game_over() {
         match engine.winner() {
-            Some(idx) => format!(
-                "GAME OVER — {} wins! (Happiness: {})",
-                engine.players[idx].name, engine.players[idx].happiness
-            ),
+            Some(idx) => {
+                let loser_idx = 1 - idx;
+                if engine.deck_exhausted {
+                    // Deck ran out — winner has higher happiness.
+                    format!(
+                        "GAME OVER — {} wins! (Happiness: {} vs {})",
+                        engine.players[idx].name,
+                        engine.players[idx].happiness,
+                        engine.players[loser_idx].happiness,
+                    )
+                } else {
+                    // Immediate defeat — loser lost all life or civilians.
+                    let reason = if engine.players[loser_idx].life == 0 {
+                        "ran out of life"
+                    } else {
+                        "lost all civilians"
+                    };
+                    format!(
+                        "GAME OVER — {} wins! ({} {})",
+                        engine.players[idx].name, engine.players[loser_idx].name, reason,
+                    )
+                }
+            }
             None => "GAME OVER — It's a draw!".to_string(),
         }
     } else {
