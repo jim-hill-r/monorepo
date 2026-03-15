@@ -480,4 +480,4 @@ Right Bonus:
 
 
 
-TODO: Incomplete. Mostly brainstorming. Let's create another document called `official_rules.md` that represents the actual rules codified in the software code and use this document as a means to implement code.
+TODO (agent-ignore): Incomplete. Mostly brainstorming. See `official_rules.md` for the rules codified in the software.

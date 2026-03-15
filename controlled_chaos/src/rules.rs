@@ -141,10 +141,17 @@ impl std::fmt::Display for RulesError {
 /// 3. **Battle** – call [`resolve_battle`] with both players' chosen cards to apply damage.
 /// 4. **End** – call [`end_turn`] to pass control to the other player and start the next round.
 ///
+/// # Win / loss conditions
+///
+/// - A player **loses immediately** when they have no civilians remaining.
+/// - When the action deck runs out (signalled via [`signal_deck_exhausted`]), the game
+///   ends and the player with the **higher happiness score wins**.  A tie is possible.
+///
 /// [`draw_card`]: RulesEngine::draw_card
 /// [`play_card`]: RulesEngine::play_card
 /// [`resolve_battle`]: RulesEngine::resolve_battle
 /// [`end_turn`]: RulesEngine::end_turn
+/// [`signal_deck_exhausted`]: RulesEngine::signal_deck_exhausted
 #[derive(Debug)]
 pub struct RulesEngine {
     /// The two players; index `0` is player one, index `1` is player two.
@@ -158,6 +165,14 @@ pub struct RulesEngine {
     ///
     /// [`end_turn`]: RulesEngine::end_turn
     pub round: u32,
+    /// Set to `true` once the caller signals that the action deck is exhausted.
+    ///
+    /// When `true`, [`is_game_over`] returns `true` and [`winner`] resolves
+    /// the result by comparing happiness scores.
+    ///
+    /// [`is_game_over`]: RulesEngine::is_game_over
+    /// [`winner`]: RulesEngine::winner
+    pub deck_exhausted: bool,
 }
 
 impl RulesEngine {
@@ -168,6 +183,7 @@ impl RulesEngine {
             active_player: 0,
             phase: TurnPhase::Draw,
             round: 1,
+            deck_exhausted: false,
         }
     }
 
@@ -259,22 +275,60 @@ impl RulesEngine {
         Ok(())
     }
 
-    /// Returns the index of the winning player if the game is over, otherwise `None`.
+    /// Notifies the engine that the action deck has been exhausted.
     ///
-    /// A player wins when their opponent's life total reaches zero.
-    pub fn winner(&self) -> Option<usize> {
-        if !self.players[0].is_alive() {
-            Some(1)
-        } else if !self.players[1].is_alive() {
-            Some(0)
-        } else {
-            None
-        }
+    /// Once called, [`is_game_over`] returns `true` and [`winner`] determines
+    /// the result by comparing happiness scores.
+    ///
+    /// [`is_game_over`]: RulesEngine::is_game_over
+    /// [`winner`]: RulesEngine::winner
+    pub fn signal_deck_exhausted(&mut self) {
+        self.deck_exhausted = true;
     }
 
-    /// Returns `true` when the game has ended (at least one player has zero life).
+    /// Returns the index of the winning player if the game is over, otherwise `None`.
+    ///
+    /// Win conditions (checked in order):
+    /// 1. A player who is no longer alive (see [`Player::is_alive`]) — i.e. their
+    ///    life points **or** civilian count has reached zero — loses immediately
+    ///    and the opponent wins.
+    /// 2. When the action deck is exhausted (see [`signal_deck_exhausted`]), the
+    ///    player with the higher happiness score wins.  If both players have the
+    ///    same happiness the result is `None` (a draw).
+    ///
+    /// [`Player::is_alive`]: Player::is_alive
+    /// [`signal_deck_exhausted`]: RulesEngine::signal_deck_exhausted
+    pub fn winner(&self) -> Option<usize> {
+        // Immediate loss: a player who is no longer alive loses.
+        if !self.players[0].is_alive() {
+            return Some(1);
+        }
+        if !self.players[1].is_alive() {
+            return Some(0);
+        }
+
+        // Deck-exhaustion victory: highest happiness wins.
+        if self.deck_exhausted {
+            return match self.players[0].happiness.cmp(&self.players[1].happiness) {
+                std::cmp::Ordering::Greater => Some(0),
+                std::cmp::Ordering::Less => Some(1),
+                std::cmp::Ordering::Equal => None,
+            };
+        }
+
+        None
+    }
+
+    /// Returns `true` when the game has ended.
+    ///
+    /// The game ends when at least one player is no longer alive (see
+    /// [`Player::is_alive`]), or when the action deck has been exhausted
+    /// (see [`signal_deck_exhausted`]).
+    ///
+    /// [`Player::is_alive`]: Player::is_alive
+    /// [`signal_deck_exhausted`]: RulesEngine::signal_deck_exhausted
     pub fn is_game_over(&self) -> bool {
-        self.winner().is_some()
+        !self.players[0].is_alive() || !self.players[1].is_alive() || self.deck_exhausted
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -632,6 +686,58 @@ mod tests {
         engine.resolve_battle(&two(), &ace()).unwrap();
         assert_eq!(engine.winner(), Some(1));
         assert!(engine.is_game_over());
+    }
+
+    // ── deck exhaustion ───────────────────────────────────────────────────────
+
+    #[test]
+    fn deck_not_exhausted_by_default() {
+        let engine = make_engine();
+        assert!(!engine.deck_exhausted);
+        assert!(!engine.is_game_over());
+    }
+
+    #[test]
+    fn signal_deck_exhausted_ends_game() {
+        let mut engine = make_engine();
+        engine.signal_deck_exhausted();
+        assert!(engine.is_game_over());
+    }
+
+    #[test]
+    fn deck_exhausted_player_with_higher_happiness_wins() {
+        let mut engine = make_engine();
+        engine.players[0].adjust_happiness(10); // Alice: 60, Bob: 50
+        engine.signal_deck_exhausted();
+        assert_eq!(engine.winner(), Some(0));
+    }
+
+    #[test]
+    fn deck_exhausted_player_two_higher_happiness_wins() {
+        let mut engine = make_engine();
+        engine.players[1].adjust_happiness(20); // Bob: 70, Alice: 50
+        engine.signal_deck_exhausted();
+        assert_eq!(engine.winner(), Some(1));
+    }
+
+    #[test]
+    fn deck_exhausted_equal_happiness_is_a_draw() {
+        let mut engine = make_engine();
+        // Both players start at STARTING_HAPPINESS (50); no adjustments.
+        engine.signal_deck_exhausted();
+        assert!(engine.winner().is_none());
+        // is_game_over is still true even on a draw.
+        assert!(engine.is_game_over());
+    }
+
+    #[test]
+    fn no_civilians_takes_priority_over_deck_exhaustion() {
+        let mut engine = make_engine();
+        // Player 0 loses their civilians.
+        engine.players[0].civilians = 0;
+        engine.signal_deck_exhausted();
+        // Player 1 wins via civilian loss, not happiness.
+        assert_eq!(engine.winner(), Some(1));
     }
 
     // ── full round trip ───────────────────────────────────────────────────────
