@@ -48,8 +48,34 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   margin-left: 1rem;
+  position: relative;
+  z-index: 10;
 }
 
 .sidebar-toggle:hover {
   background-color: #8b7355;
+}
+
+/* Mobile-specific styles to prevent nav from covering toggle button */
+@media (max-width: 768px) {
+  #header {
+    flex-wrap: wrap;
+  }
+  
+  .header-nav {
+    order: 3;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .sidebar-toggle {
+    order: 2;
+    margin-left: auto;
+  }
+  
+  .header-title {
+    order: 1;
+  }
 }

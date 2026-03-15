@@ -9,11 +9,14 @@ pub fn Hero() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: HERO_CSS }
 
-        h1 {
-            "Cahokia"
-        }
-        h2 {
-            "Discover your ancestors!"
+        div {
+            id: "hero",
+            h1 {
+                "Cahokia"
+            }
+            h2 {
+                "Discover your ancestors!"
+            }
         }
     }
 }

@@ -4,6 +4,11 @@
 # HTML title tag content
 title = "Cookbook"
 
+# Web server configuration
+[web.server]
+# Port for the development server  
+port = 8080
+
 [web.watcher]
 
 [web.resource]
