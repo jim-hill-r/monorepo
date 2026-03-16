@@ -1,5 +1,7 @@
 # Priority Issues
 
+TODO: For some reason the agents keep adding back Cast.toml. Cast should be using the `cast` section in the Cargo.toml if it is present even when running an npm command such as playwright. Add a standard the enforces that if a Cargo.toml is a workspace that the Cast configuration should only be workspace. Add a standard that enforces that if something is defined by Cargo.toml that it is not also defined by Cast.toml.
+
 TODO (agent-generated): [NAM-001] cahokia-web-tests - Project name 'cahokia-web-tests' is not in snake_case format. All projects MUST be snake_case.
 
 TODO (agent-generated): [NAM-002] cahokia-web-tests - Directory name 'web' does not match package name 'cahokia-web-tests'. Directory name MUST match the package name.
