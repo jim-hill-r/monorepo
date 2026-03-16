@@ -43,6 +43,7 @@ impl Deck {
     }
 
     /// Returns a slice of all cards currently in the deck (top-to-bottom order).
+    #[allow(dead_code)]
     pub fn cards(&self) -> &[Card] {
         &self.cards
     }
