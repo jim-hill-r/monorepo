@@ -1,4 +1,6 @@
-#[cfg(any(target_arch = "wasm32", test))]
+#[cfg(test)]
+use auth_sdk::provider::ProviderConfig;
+#[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
@@ -21,7 +23,7 @@ mod views;
 
 #[cfg(any(target_arch = "wasm32", test))]
 const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
-#[cfg(any(target_arch = "wasm32", test))]
+#[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 #[cfg(any(target_arch = "wasm32", test))]
 const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";

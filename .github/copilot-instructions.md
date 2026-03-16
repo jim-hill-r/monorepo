@@ -2,6 +2,12 @@
 
 All copilot branches should follow the format: `copilot/{timestamp}-{description}`. For example: `copilot/2024-06-01-add-new-feature`. This ensures unique branch names and prevents collisions with other branches.
 
+# Working with the repo
+
+Please use `cast` for all development tasks, including building, testing, and running the project. This ensures that all necessary tools and checks are properly executed. If you do not use `cast` some things may not work.
+
+`cast` commands are automatically allowed by IDE's improving throughput when running agents.
+
 # Standards
 
 All coding standards are found in the `standards` project in this monorepo. Reference those standards as primary source of truth. If duplicate or contradictory information exists in this document, copilot should remove the information here and instead recommend referencing the information there. If information is missing there that copilot is using from here, it should be added to the `standards` project and removed from here.
