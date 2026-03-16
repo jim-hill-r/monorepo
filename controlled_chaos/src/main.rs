@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+mod ai;
 mod card;
 mod card_library;
 mod card_render;

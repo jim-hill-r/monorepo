@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
 use crate::card::{Card, CardCategory};
 use crate::card_library::CardLibrary;
 use crate::deck::{Deck, DeckBuilder};
@@ -25,6 +26,13 @@ impl Plugin for GamePlugin {
                         handle_play_phase,
                         handle_battle_phase,
                         handle_end_phase,
+                        // AI handlers run after human handlers so human input is
+                        // processed first.  The AI acts automatically when it is
+                        // Player 2's turn or when it needs to defend.
+                        ai_handle_draw_phase,
+                        ai_handle_play_phase,
+                        ai_handle_battle_phase,
+                        ai_handle_end_phase,
                     )
                         .chain(),
                     apply_deferred,
@@ -105,6 +113,10 @@ pub struct InstructionsText;
 
 /// Number of starting cards dealt to each player at game setup.
 pub const STARTING_HAND_SIZE: usize = 3;
+
+/// Placeholder card used when a player has no cards left in hand during the
+/// battle phase.  A value of `0` ensures it always loses.
+const EMPTY_HAND_CARD: &str = "Empty Hand";
 
 fn setup(mut commands: Commands) {
     // Build a card library with the available cards, using proper categories
@@ -190,7 +202,7 @@ fn setup(mut commands: Commands) {
     );
 
     // Initialise the rules engine with two players.
-    let mut engine = RulesEngine::new(Player::new("Player 1", 20), Player::new("Player 2", 20));
+    let mut engine = RulesEngine::new(Player::new("Player 1", 20), Player::new("CPU", 20));
 
     // Deal starting hands to each player.
     for _ in 0..STARTING_HAND_SIZE {
@@ -213,6 +225,7 @@ fn setup(mut commands: Commands) {
 
     commands.insert_resource(RulesEngineResource(engine));
     commands.insert_resource(ActionDeckResource(action_deck));
+    commands.insert_resource(AiOpponent);
 }
 
 fn log_game_state(state: Res<GameState>, mut ran: Local<bool>) {
@@ -227,10 +240,14 @@ fn log_game_state(state: Res<GameState>, mut ran: Local<bool>) {
 /// The active player presses **Space** to draw the top card from the shared
 /// action deck.  If the deck is empty the game signals deck exhaustion and the
 /// game ends.
+///
+/// In single-player mode (when [`AiOpponent`] is present) this handler only
+/// responds when it is Player 1's turn (`active_player == 0`).
 fn handle_draw_phase(
     keys: Res<ButtonInput<KeyCode>>,
     engine_res: Option<ResMut<RulesEngineResource>>,
     deck_res: Option<ResMut<ActionDeckResource>>,
+    ai: Option<Res<AiOpponent>>,
 ) {
     let (Some(mut engine_res), Some(mut deck_res)) = (engine_res, deck_res) else {
         return;
@@ -238,6 +255,11 @@ fn handle_draw_phase(
     let engine = &mut engine_res.0;
 
     if engine.phase != TurnPhase::Draw || engine.is_game_over() {
+        return;
+    }
+
+    // In single-player mode, only Player 1 controls this phase.
+    if ai.is_some() && engine.active_player != 0 {
         return;
     }
 
@@ -259,10 +281,14 @@ fn handle_draw_phase(
 /// The active player presses **1–8** to select a card from their hand to play
 /// as the attacker.  The selected card is stored in [`AttackerCardResource`]
 /// and removed from the player's hand.
+///
+/// In single-player mode (when [`AiOpponent`] is present) this handler only
+/// responds when it is Player 1's turn (`active_player == 0`).
 fn handle_play_phase(
     keys: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     engine_res: Option<ResMut<RulesEngineResource>>,
+    ai: Option<Res<AiOpponent>>,
 ) {
     let Some(mut engine_res) = engine_res else {
         return;
@@ -270,6 +296,11 @@ fn handle_play_phase(
     let engine = &mut engine_res.0;
 
     if engine.phase != TurnPhase::Play || engine.is_game_over() {
+        return;
+    }
+
+    // In single-player mode, only Player 1 controls this phase.
+    if ai.is_some() && engine.active_player != 0 {
         return;
     }
 
@@ -317,11 +348,17 @@ fn handle_play_phase(
 /// [`AttackerCardResource`] is removed to signal that the battle is complete.
 ///
 /// If the defender has no cards in hand they automatically lose the battle.
+///
+/// In single-player mode (when [`AiOpponent`] is present) this handler only
+/// responds when Player 1 is the defender (`inactive_player == 0`), i.e. when
+/// the AI is attacking.  When the AI is defending, [`ai_handle_battle_phase`]
+/// handles the response instead.
 fn handle_battle_phase(
     keys: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     engine_res: Option<ResMut<RulesEngineResource>>,
     attacker_res: Option<Res<AttackerCardResource>>,
+    ai: Option<Res<AiOpponent>>,
 ) {
     let (Some(mut engine_res), Some(attacker_res)) = (engine_res, attacker_res) else {
         return;
@@ -333,12 +370,18 @@ fn handle_battle_phase(
     }
 
     let defender_idx = engine.inactive_player();
+
+    // In single-player mode, only handle input when Player 1 is defending.
+    if ai.is_some() && defender_idx != 0 {
+        return;
+    }
+
     let defender_hand_len = engine.players[defender_idx].hand.len();
 
     // If the defender has no cards, the attacker wins automatically.
     if defender_hand_len == 0 {
         let attacker_card = attacker_res.0.clone();
-        let empty_hand_card = Card::new("Empty Hand", 0);
+        let empty_hand_card = Card::new(EMPTY_HAND_CARD, 0);
         apply_battle_result(engine, &attacker_card, &empty_hand_card);
         commands.remove_resource::<AttackerCardResource>();
         return;
@@ -395,9 +438,14 @@ fn apply_battle_result(engine: &mut RulesEngine, attacker: &Card, defender: &Car
 ///
 /// Either player presses **Space** to end the turn.  If the game is over no
 /// input is accepted and the result is displayed on screen.
+///
+/// In single-player mode (when [`AiOpponent`] is present) this handler only
+/// responds when it is Player 1's turn.  When it is the AI's turn,
+/// [`ai_handle_end_phase`] ends the turn automatically.
 fn handle_end_phase(
     keys: Res<ButtonInput<KeyCode>>,
     engine_res: Option<ResMut<RulesEngineResource>>,
+    ai: Option<Res<AiOpponent>>,
 ) {
     let Some(mut engine_res) = engine_res else {
         return;
@@ -405,6 +453,11 @@ fn handle_end_phase(
     let engine = &mut engine_res.0;
 
     if engine.phase != TurnPhase::End || engine.is_game_over() {
+        return;
+    }
+
+    // In single-player mode, only Player 1 ends the turn manually.
+    if ai.is_some() && engine.active_player != 0 {
         return;
     }
 
@@ -419,6 +472,141 @@ fn handle_end_phase(
 fn cleanup_pvp_resources(mut commands: Commands) {
     commands.remove_resource::<ActionDeckResource>();
     commands.remove_resource::<AttackerCardResource>();
+    commands.remove_resource::<AiOpponent>();
+}
+
+// ── AI systems ────────────────────────────────────────────────────────────────
+
+/// Handles AI actions during the Draw phase.
+///
+/// When the AI is the active player (index 1), it automatically draws a card
+/// from the action deck instead of waiting for keyboard input.
+fn ai_handle_draw_phase(
+    engine_res: Option<ResMut<RulesEngineResource>>,
+    deck_res: Option<ResMut<ActionDeckResource>>,
+    ai: Option<Res<AiOpponent>>,
+) {
+    let (Some(_ai), Some(mut engine_res), Some(mut deck_res)) = (ai, engine_res, deck_res) else {
+        return;
+    };
+    let engine = &mut engine_res.0;
+
+    if engine.phase != TurnPhase::Draw || engine.is_game_over() || engine.active_player != 1 {
+        return;
+    }
+
+    let deck = &mut deck_res.0;
+    if let Some(card) = deck.draw() {
+        if let Err(e) = engine.draw_card(card) {
+            warn!("AI draw_card failed: {e}");
+        } else {
+            info!("CPU draws a card.");
+        }
+    } else {
+        engine.signal_deck_exhausted();
+    }
+}
+
+/// Handles AI actions during the Play phase.
+///
+/// When the AI is the active player (index 1), it automatically plays the
+/// highest-value card from its hand using [`choose_attack_card`].
+fn ai_handle_play_phase(
+    mut commands: Commands,
+    engine_res: Option<ResMut<RulesEngineResource>>,
+    ai: Option<Res<AiOpponent>>,
+) {
+    let (Some(_ai), Some(mut engine_res)) = (ai, engine_res) else {
+        return;
+    };
+    let engine = &mut engine_res.0;
+
+    if engine.phase != TurnPhase::Play || engine.is_game_over() || engine.active_player != 1 {
+        return;
+    }
+
+    let hand_len = engine.players[1].hand.len();
+    if hand_len == 0 {
+        return;
+    }
+
+    let idx = choose_attack_card(&engine.players[1].hand);
+    match engine.play_card(idx) {
+        Ok(card) => {
+            info!("CPU plays {} (value: {})", card.name, card.value);
+            commands.insert_resource(AttackerCardResource(card));
+        }
+        Err(e) => warn!("AI play_card failed: {e}"),
+    }
+}
+
+/// Handles AI defense during the Battle phase.
+///
+/// When Player 1 is attacking (`active_player == 0`) and the AI is the
+/// defender (index 1), the AI automatically chooses a card to defend with
+/// using [`choose_defense_card`].  If the AI has no cards in hand the attacker
+/// wins automatically.
+fn ai_handle_battle_phase(
+    mut commands: Commands,
+    engine_res: Option<ResMut<RulesEngineResource>>,
+    attacker_res: Option<Res<AttackerCardResource>>,
+    ai: Option<Res<AiOpponent>>,
+) {
+    let (Some(_ai), Some(mut engine_res), Some(attacker_res)) = (ai, engine_res, attacker_res)
+    else {
+        return;
+    };
+    let engine = &mut engine_res.0;
+
+    if engine.phase != TurnPhase::Battle || engine.is_game_over() {
+        return;
+    }
+
+    // Only act when the AI (index 1) is defending.
+    if engine.inactive_player() != 1 {
+        return;
+    }
+
+    let attacker_card = attacker_res.0.clone();
+    let defender_hand_len = engine.players[1].hand.len();
+
+    if defender_hand_len == 0 {
+        apply_battle_result(engine, &attacker_card, &Card::new(EMPTY_HAND_CARD, 0));
+        commands.remove_resource::<AttackerCardResource>();
+        return;
+    }
+
+    let idx = choose_defense_card(&engine.players[1].hand, attacker_card.value);
+    let Some(defender_card) = engine.players[1].play_card(idx) else {
+        return;
+    };
+    info!(
+        "CPU defends with {} (value: {})",
+        defender_card.name, defender_card.value
+    );
+    apply_battle_result(engine, &attacker_card, &defender_card);
+    commands.remove_resource::<AttackerCardResource>();
+}
+
+/// Handles AI actions during the End phase.
+///
+/// When the AI is the active player (index 1), it automatically ends its turn.
+fn ai_handle_end_phase(
+    engine_res: Option<ResMut<RulesEngineResource>>,
+    ai: Option<Res<AiOpponent>>,
+) {
+    let (Some(_ai), Some(mut engine_res)) = (ai, engine_res) else {
+        return;
+    };
+    let engine = &mut engine_res.0;
+
+    if engine.phase != TurnPhase::End || engine.is_game_over() || engine.active_player != 1 {
+        return;
+    }
+
+    if let Err(e) = engine.end_turn() {
+        warn!("AI end_turn failed: {e}");
+    }
 }
 
 /// Spawns the game UI when entering the InGame state.
@@ -443,7 +631,7 @@ fn spawn_game_ui(mut commands: Commands) {
         .with_children(|root| {
             // Title
             root.spawn(TextBundle::from_section(
-                "Controlled Chaos — Player vs Player",
+                "Controlled Chaos — Player vs CPU",
                 TextStyle {
                     font_size: 28.0,
                     color: Color::WHITE,
@@ -738,11 +926,15 @@ fn update_game_ui(
     }
 }
 
-/// Updates the hand display and instructions text for the current PvP turn.
+/// Updates the hand display and instructions text for the current turn.
+///
+/// In single-player mode the AI's hand is hidden and AI turns display a
+/// "CPU is acting…" status message instead of player instructions.
 fn update_pvp_ui(
     engine_res: Option<Res<RulesEngineResource>>,
     deck_res: Option<Res<ActionDeckResource>>,
     attacker_res: Option<Res<AttackerCardResource>>,
+    ai: Option<Res<AiOpponent>>,
     mut hand_query: Query<&mut Text, (With<HandDisplayText>, Without<InstructionsText>)>,
     mut instr_query: Query<&mut Text, (With<InstructionsText>, Without<HandDisplayText>)>,
 ) {
@@ -751,6 +943,7 @@ fn update_pvp_ui(
     };
     let engine = &res.0;
 
+    let is_ai_present = ai.is_some();
     let deck_remaining = deck_res.as_ref().map(|d| d.0.remaining()).unwrap_or(0);
 
     // Determine which player's hand to display.
@@ -770,29 +963,42 @@ fn update_pvp_ui(
         }
     };
 
-    let hand = &engine.players[hand_player_idx].hand;
-    let hand_text = if hand.is_empty() {
-        format!("{hand_label}\n  (empty)")
+    // In single-player mode the AI's hand is hidden.
+    let hand_text = if is_ai_present && hand_player_idx == 1 {
+        format!("{hand_label}\n  (hidden)")
     } else {
-        let cards: Vec<String> = hand
-            .iter()
-            .enumerate()
-            .map(|(i, c)| {
-                format!(
-                    "  [{}] {} — {} ({})",
-                    i + 1,
-                    c.name,
-                    c.category.label(),
-                    c.value
-                )
-            })
-            .collect();
-        format!("{hand_label}\n{}", cards.join("\n"))
+        let hand = &engine.players[hand_player_idx].hand;
+        if hand.is_empty() {
+            format!("{hand_label}\n  (empty)")
+        } else {
+            let cards: Vec<String> = hand
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    format!(
+                        "  [{}] {} — {} ({})",
+                        i + 1,
+                        c.name,
+                        c.category.label(),
+                        c.value
+                    )
+                })
+                .collect();
+            format!("{hand_label}\n{}", cards.join("\n"))
+        }
     };
 
     if let Ok(mut text) = hand_query.get_single_mut() {
         text.sections[0].value = hand_text;
     }
+
+    // Determine whether the AI is currently acting.
+    let ai_is_acting = is_ai_present
+        && !engine.is_game_over()
+        && match engine.phase {
+            TurnPhase::Battle => engine.inactive_player() == 1,
+            _ => engine.active_player == 1,
+        };
 
     // Build the instruction string based on current phase.
     let instructions = if engine.is_game_over() {
@@ -822,6 +1028,8 @@ fn update_pvp_ui(
             }
             None => "GAME OVER — It's a draw!".to_string(),
         }
+    } else if ai_is_acting {
+        "CPU is taking its turn…".to_string()
     } else {
         match engine.phase {
             TurnPhase::Draw => format!(
@@ -1014,5 +1222,28 @@ mod tests {
         let res = AttackerCardResource(card.clone());
         assert_eq!(res.0.name, card.name);
         assert_eq!(res.0.value, card.value);
+    }
+
+    // ── AiOpponent ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn setup_inserts_ai_opponent_resource() {
+        let mut app = make_test_app();
+        app.world_mut().run_system_once(setup);
+        assert!(
+            app.world().get_resource::<AiOpponent>().is_some(),
+            "setup should insert AiOpponent resource"
+        );
+    }
+
+    #[test]
+    fn setup_names_player_two_cpu() {
+        let mut app = make_test_app();
+        app.world_mut().run_system_once(setup);
+        let engine = app
+            .world()
+            .get_resource::<RulesEngineResource>()
+            .expect("RulesEngineResource should be present after setup");
+        assert_eq!(engine.0.players[1].name, "CPU");
     }
 }
