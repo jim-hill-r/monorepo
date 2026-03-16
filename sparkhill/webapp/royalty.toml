@@ -1,0 +1,3 @@
+[project]
+name = "sparkhill_webapp"
+description = "A Dioxus web app replicating the functionality of the blue.eel.education website for reading instruction and support."
