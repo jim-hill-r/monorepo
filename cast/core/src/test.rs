@@ -39,7 +39,7 @@ pub fn run(working_directory: impl AsRef<Path>, coverage: bool) -> Result<(), Te
 
 /// Run cargo test for a Rust project
 fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestError> {
-    run_cargo_test_with_options(working_directory, coverage, true)
+    run_cargo_test_with_options(working_directory, coverage, true, None)
 }
 
 /// Returns true if cargo-llvm-cov is available.
@@ -95,14 +95,18 @@ fn run_regular_cargo_test(working_directory: &Path) -> Result<(), TestError> {
 /// if `cargo-llvm-cov` is not already available.  This is primarily useful
 /// for tests that want to exercise the fallback path without triggering a
 /// potentially long-running installation.
+///
+/// The `is_installed_override` parameter allows tests to simulate whether
+/// cargo-llvm-cov is installed without actually checking the system.
 fn run_cargo_test_with_options(
     working_directory: &Path,
     coverage: bool,
     attempt_install: bool,
+    is_installed_override: Option<bool>,
 ) -> Result<(), TestError> {
     if coverage {
         // Use cargo-llvm-cov for code coverage if available.
-        let is_installed = is_llvm_cov_installed();
+        let is_installed = is_installed_override.unwrap_or_else(is_llvm_cov_installed);
 
         if !is_installed {
             let install_succeeded = if attempt_install {
@@ -395,9 +399,10 @@ mod tests {
         )
         .unwrap();
 
-        // Disable installation so the fallback path is exercised immediately without
-        // running `cargo install cargo-llvm-cov` (which can take several minutes).
-        let result = run_cargo_test_with_options(tmp_dir.path(), true, false);
+        // Simulate cargo-llvm-cov being unavailable by passing Some(false) as is_installed_override.
+        // This exercises the fallback path without actually checking the system or attempting
+        // to install cargo-llvm-cov (which can take several minutes).
+        let result = run_cargo_test_with_options(tmp_dir.path(), true, false, Some(false));
         // Should succeed by falling back to regular cargo test.
         assert!(result.is_ok());
     }
