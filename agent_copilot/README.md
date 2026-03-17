@@ -1,10 +1,8 @@
 # Agent Copilot
 
-A Rust binary that calls GitHub Copilot to start an agent task directly using the GitHub API.
+## agent_copilot
 
-## Description
-
-This tool automates the creation of GitHub Copilot agent tasks using the GitHub Copilot API. It reads agent prompt files and creates jobs programmatically using the same API endpoint that the `gh agent-task create` command uses.
+A Rust binary that automates the creation of GitHub Copilot agent tasks using the GitHub Copilot API.
 
 ## Building
 

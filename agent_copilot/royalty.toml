@@ -1,0 +1,3 @@
+[project]
+name = "agent_copilot"
+description = "A Rust binary that automates the creation of GitHub Copilot agent tasks using the GitHub Copilot API."
