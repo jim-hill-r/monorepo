@@ -1,5 +1,5 @@
 [package]
-name = "agent-copilot"
+name = "agent_copilot"
 version = "0.1.0"
 edition = "2024"
 

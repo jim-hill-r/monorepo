@@ -21,7 +21,7 @@ This document describes the organization and structure of this monorepo to help 
 │   └── binary/          # Exemplar project for binaries
 ├── docs/                # Documentation and learning resources
 ├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
-├── agent-copilot/       # Binary for creating GitHub Copilot agent tasks
+├── agent_copilot/       # Binary for creating GitHub Copilot agent tasks
 │   └── prompts/         # Prompts for GitHub Copilot agents
 ├── [other projects]     # Various projects and applications
 ├── ISSUES.md            # Project-wide TODO and issue tracking
