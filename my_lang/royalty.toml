@@ -1,0 +1,3 @@
+[project]
+name = "my_lang"
+description = "A programming language implementation that compiles to LLVM IR, with support for pure functions and controlled side effects."
