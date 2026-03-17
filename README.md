@@ -1,3 +1,5 @@
+[![Nightly CI](https://github.com/jim-hill-r/monorepo/actions/workflows/nightly-ci.yml/badge.svg)](https://github.com/jim-hill-r/monorepo/actions/workflows/nightly-ci.yml)
+
 # Monorepo
 
 Monorepo for all projects
