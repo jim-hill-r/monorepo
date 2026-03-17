@@ -154,12 +154,10 @@ impl AppState {
                     self.stable_queue.push(expr);
                 }
                 self.next_expression();
-            } else {
-                if history.attempts >= self.retry_limit {
-                    self.consecutive_fails += 1;
-                    history.attempts = 0;
-                    self.next_expression();
-                }
+            } else if history.attempts >= self.retry_limit {
+                self.consecutive_fails += 1;
+                history.attempts = 0;
+                self.next_expression();
             }
         }
     }
