@@ -39,49 +39,81 @@ pub fn run(working_directory: impl AsRef<Path>, coverage: bool) -> Result<(), Te
 
 /// Run cargo test for a Rust project
 fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestError> {
-    if coverage {
-        // Use cargo-llvm-cov for code coverage
-        // First check if cargo-llvm-cov is installed
-        let check = Command::new("cargo")
-            .arg("llvm-cov")
-            .arg("--version")
-            .output();
+    run_cargo_test_with_options(working_directory, coverage, true)
+}
 
-        let is_installed = match check {
-            Ok(output) => output.status.success(),
-            Err(_) => false,
-        };
+/// Returns true if cargo-llvm-cov is available.
+fn is_llvm_cov_installed() -> bool {
+    match Command::new("cargo")
+        .args(["llvm-cov", "--version"])
+        .output()
+    {
+        Ok(output) => output.status.success(),
+        Err(_) => false,
+    }
+}
+
+/// Attempts to install cargo-llvm-cov. Returns true if installation succeeded.
+fn try_install_llvm_cov() -> bool {
+    eprintln!("Warning: cargo-llvm-cov is not installed. Installing it now...");
+    eprintln!("Run: cargo install cargo-llvm-cov");
+    match Command::new("cargo")
+        .args(["install", "cargo-llvm-cov"])
+        .status()
+    {
+        Ok(status) => status.success(),
+        Err(_) => false,
+    }
+}
+
+/// Run regular `cargo test` without coverage for a Rust project.
+///
+/// Used both when coverage is not requested and as a fallback when
+/// cargo-llvm-cov is unavailable or installation fails.
+fn run_regular_cargo_test(working_directory: &Path) -> Result<(), TestError> {
+    let mut cmd = Command::new("cargo");
+    cmd.arg("test").current_dir(working_directory);
+
+    for (var_name, var_value) in install::detect_llvm_env() {
+        cmd.env(var_name, var_value);
+    }
+
+    let status = cmd.status()?;
+    if !status.success() {
+        return Err(TestError::TestFailed);
+    }
+    Ok(())
+}
+
+/// Run cargo test for a Rust project with optional coverage support.
+///
+/// When `coverage` is true, the function uses `cargo llvm-cov` if it is
+/// available.  When `attempt_install` is true and `cargo-llvm-cov` is not
+/// found, the function will first attempt to install it before falling back
+/// to regular `cargo test`.  When `attempt_install` is false the function
+/// skips the install step and falls back to regular `cargo test` immediately
+/// if `cargo-llvm-cov` is not already available.  This is primarily useful
+/// for tests that want to exercise the fallback path without triggering a
+/// potentially long-running installation.
+fn run_cargo_test_with_options(
+    working_directory: &Path,
+    coverage: bool,
+    attempt_install: bool,
+) -> Result<(), TestError> {
+    if coverage {
+        // Use cargo-llvm-cov for code coverage if available.
+        let is_installed = is_llvm_cov_installed();
 
         if !is_installed {
-            eprintln!("Warning: cargo-llvm-cov is not installed. Installing it now...");
-            eprintln!("Run: cargo install cargo-llvm-cov");
-
-            let install = Command::new("cargo")
-                .args(["install", "cargo-llvm-cov"])
-                .status();
-
-            let install_success = match install {
-                Ok(status) => status.success(),
-                Err(_) => false,
+            let install_succeeded = if attempt_install {
+                try_install_llvm_cov()
+            } else {
+                false
             };
 
-            if !install_success {
+            if !install_succeeded {
                 eprintln!("Failed to install cargo-llvm-cov. Falling back to regular cargo test.");
-                // Fall back to regular cargo test
-                let mut cmd = Command::new("cargo");
-                cmd.arg("test").current_dir(working_directory);
-
-                // Configure LLVM environment if needed
-                for (var_name, var_value) in install::detect_llvm_env() {
-                    cmd.env(var_name, var_value);
-                }
-
-                let status = cmd.status()?;
-
-                if !status.success() {
-                    return Err(TestError::TestFailed);
-                }
-                return Ok(());
+                return run_regular_cargo_test(working_directory);
             }
         }
 
@@ -110,20 +142,7 @@ fn run_cargo_test(working_directory: &Path, coverage: bool) -> Result<(), TestEr
 
         println!("Coverage report generated: lcov.info");
     } else {
-        // Regular cargo test without coverage
-        let mut cmd = Command::new("cargo");
-        cmd.arg("test").current_dir(working_directory);
-
-        // Configure LLVM environment if needed
-        for (var_name, var_value) in install::detect_llvm_env() {
-            cmd.env(var_name, var_value);
-        }
-
-        let status = cmd.status()?;
-
-        if !status.success() {
-            return Err(TestError::TestFailed);
-        }
+        run_regular_cargo_test(working_directory)?;
     }
 
     Ok(())
@@ -360,9 +379,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: This test attempts to install cargo-llvm-cov which can take minutes and cause timeouts
-    fn test_run_cargo_coverage_without_cargo_llvm_cov() {
-        let tmp_dir = TempDir::new("test_coverage").unwrap();
+    fn test_run_cargo_coverage_falls_back_when_llvm_cov_unavailable() {
+        let tmp_dir = TempDir::new("test_coverage_fallback").unwrap();
 
         // Create a simple Cargo project with a passing test
         fs::write(
@@ -377,9 +395,10 @@ mod tests {
         )
         .unwrap();
 
-        // Coverage should fall back to regular tests if cargo-llvm-cov is not installed
-        let result = run(tmp_dir.path(), true);
-        // Should succeed (either with coverage or falling back to regular tests)
+        // Disable installation so the fallback path is exercised immediately without
+        // running `cargo install cargo-llvm-cov` (which can take several minutes).
+        let result = run_cargo_test_with_options(tmp_dir.path(), true, false);
+        // Should succeed by falling back to regular cargo test.
         assert!(result.is_ok());
     }
 }
