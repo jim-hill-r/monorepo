@@ -44,12 +44,12 @@ pub fn get_start_a_new_task_workflow_path() -> PathBuf {
 
 /// Get the path to the agent prompt file
 pub fn get_agent_prompt_path() -> PathBuf {
-    get_repo_root().join("agent-copilot/prompts/start-a-new-task.md")
+    get_repo_root().join("agent_copilot/prompts/start-a-new-task.md")
 }
 
 /// Get the path to the agent-copilot binary
 pub fn get_agent_binary_path() -> PathBuf {
-    get_repo_root().join("agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot")
+    get_repo_root().join("agent_copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot")
 }
 
 /// Get the path to the cast_cli Cargo.toml
