@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  detect-and-run-ci:
+  run-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -29,7 +29,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
@@ -38,21 +38,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
 
-      - name: Build cast CLI
+      - name: Run CI release on changed projects
         run: |
-          cd cast/cli
-          cargo build --release
-
-      - name: Run CI and build release artifacts on changed projects
-        run: |
-          # Use absolute path to cast binary
-          CAST_BIN="$GITHUB_WORKSPACE/cast/target/release/cast"
-          
-          # Run cast ci with --release to build and publish artifacts for changed projects
-          # --only-changed: check only projects with changes
-          # --release: build in release mode and publish artifacts
-          # --recursive 2: find all Cast projects up to 2 levels deep
-          "$CAST_BIN" ci --only-changed --release --recursive 2
+          cargo install --path ./cast/cli
+          cast ci --only-changed --release --recursive 2
 
       - name: Commit and push artifacts
         run: |
