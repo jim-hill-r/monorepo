@@ -3,5 +3,5 @@
 # client-side code, rather than your engine-side code. Code that runs on both sides will be
 # linted no matter what, and these settings only affect your IDE. The `perseus` CLI will ignore
 # them.
-rustflags = [ "--cfg", "engine" ]
+rustflags = [ "--cfg", "engine", "--check-cfg", "cfg(engine)", "--check-cfg", "cfg(client)" ]
 rustdocflags = [ "--cfg", "engine" ]

@@ -1,0 +1,4 @@
+# Cast configuration file
+# A Dioxus web app replicating the blue.eel.education website functionality
+
+framework = "dioxus"
