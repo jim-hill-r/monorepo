@@ -1,5 +1,5 @@
 ---
-name: Trunk CI
+name: Push Main CI
 
 'on':
   push:
