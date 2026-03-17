@@ -1,5 +1,5 @@
 ---
-name: CodeQL Security Scanning
+name: All CodeQL Security Scanning
 
 # This workflow replaces GitHub's default CodeQL setup to exclude Rust scanning.
 # Rust analysis takes ~26 minutes per scan, which is impractical for this monorepo.
