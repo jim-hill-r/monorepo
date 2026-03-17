@@ -24,6 +24,7 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+          cache: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
