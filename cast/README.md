@@ -43,6 +43,7 @@ The Cast CLI is the primary tool for developers working with Cast-enabled monore
     - With clean repository (no uncommitted changes anywhere):
       - On default branch: Compares HEAD to HEAD~1 (previous commit)
       - On feature branch: Compares HEAD to origin's default branch (PR-style diff)
+  - `cast ci --headless` - Run in headless mode for CI environments (installs xvfb, Playwright, and wraps GUI tests with virtual display)
 - `cast dev` - Start development server (auto-detects framework)
 - `cast serve` - Serve static files for testing
 - `cast build` - Build projects
@@ -279,6 +280,9 @@ Cast provides tool management to help install and uninstall framework-specific t
 # Install all required tools for a project
 cast install
 
+# Install tools for headless testing (includes xvfb and Playwright)
+cast install --headless
+
 # Uninstall cast-managed tools
 cast uninstall --all
 
@@ -298,7 +302,11 @@ Different frameworks require different tools:
 - **Cloudflare Pages**: Requires Wrangler CLI
 - **Pure Rust**: Only requires Rust
 
-**Note**: Cast can only uninstall tools that it installed via cargo or npm (e.g., dx, playwright, wrangler). System-level tools like Node.js, rustc, and git-lfs must be managed separately.
+**Headless Mode**: The `--headless` flag installs additional tools for running GUI tests in CI environments:
+- **Xvfb**: Virtual framebuffer for running GUI applications without a display
+- **Playwright**: Installs browsers with system dependencies using `npx playwright install --with-deps`
+
+**Note**: Cast can only uninstall tools that it installed via cargo or npm (e.g., dx, playwright, wrangler). System-level tools like Node.js, rustc, git-lfs, and xvfb must be managed separately.
 
 See [core/README.md](core/README.md) for complete tool management documentation.
 

@@ -1,4 +1,5 @@
 use crate::build;
+use crate::command_util;
 use crate::install;
 use crate::publish;
 use crate::test;
@@ -98,19 +99,44 @@ pub fn run(
     mode: CiMode,
     recursive_depth: Option<usize>,
     only_changed: bool,
+    headless: bool,
 ) -> Result<(), CiError> {
+    // Setup headless environment if requested
+    if headless {
+        // Install headless tools (xvfb, playwright with system deps)
+        let install_options = install::InstallOptions {
+            specific_tools: Some(vec![install::Tool::Xvfb, install::Tool::Playwright]),
+            skip_tools: Vec::new(),
+            dry_run: false,
+            force: false,
+            headless: true,
+        };
+
+        if let Err(e) = install::install_tools(working_directory.as_ref(), install_options) {
+            eprintln!("Warning: Failed to install headless tools: {}", e);
+            eprintln!("Continuing without full headless support...");
+        }
+    }
+
     // Create a cache for git diff results to improve performance with --only-changed
     let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
 
     // If recursive_depth is specified, use run_ci_recursively to handle the entire tree
     if let Some(depth) = recursive_depth {
-        return run_ci_recursively(working_directory.as_ref(), mode, depth, only_changed);
+        return run_ci_recursively(
+            working_directory.as_ref(),
+            mode,
+            depth,
+            only_changed,
+            headless,
+        );
     }
 
     run_internal(
         working_directory.as_ref(),
         mode,
         only_changed,
+        headless,
         git_diff_cache,
     )
     .map(|_| ()) // Convert CiRunResult to () for public API
@@ -123,6 +149,7 @@ fn run_internal(
     working_directory: &Path,
     mode: CiMode,
     only_changed: bool,
+    headless: bool,
     git_diff_cache: GitDiffCache,
 ) -> Result<CiRunResult, CiError> {
     // Install required tools before running CI checks
@@ -132,6 +159,7 @@ fn run_internal(
         skip_tools: Vec::new(), // Don't skip any tools
         dry_run: false,         // Actually install
         force: false,           // Only install if not already installed
+        headless,               // Pass through headless flag
     };
 
     // Run the installation
@@ -183,14 +211,14 @@ fn run_internal(
 
     // Run Rust CI if Cargo.toml exists
     if has_cargo_toml {
-        run_rust_ci(working_directory, mode)?;
+        run_rust_ci(working_directory, mode, headless)?;
         ran_ci_checks = true;
     }
 
     // Run TypeScript CI if package.json exists (can run in addition to Rust CI)
     // Pass has_cargo_toml so we can avoid running tests twice, and mode for fix behavior
     if has_package_json {
-        run_typescript_ci(working_directory, has_cargo_toml, mode)?;
+        run_typescript_ci(working_directory, has_cargo_toml, mode, headless)?;
         ran_ci_checks = true;
     }
 
@@ -217,7 +245,7 @@ fn run_internal(
 /// - Check mode: cargo fmt --check, clippy, build (debug), test
 /// - Fix mode: cargo fmt (auto-fix only)
 /// - Release mode: cargo fmt --check, clippy, build --release, test, publish
-fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
+fn run_rust_ci(working_directory: &Path, mode: CiMode, headless: bool) -> Result<(), CiError> {
     // Handle formatting based on mode
     match mode {
         CiMode::Check | CiMode::Release => {
@@ -246,8 +274,8 @@ fn run_rust_ci(working_directory: &Path, mode: CiMode) -> Result<(), CiError> {
         CiMode::Fix => unreachable!(), // Fix mode returns early
     }
 
-    // Run cast test (without coverage in CI)
-    test::run(working_directory, false)?;
+    // Run cast test (without coverage in CI, with headless mode)
+    test::run(working_directory, false, headless)?;
 
     // For Release mode, also run publish
     if mode == CiMode::Release {
@@ -272,6 +300,7 @@ fn run_typescript_ci(
     working_directory: &Path,
     skip_tests: bool,
     mode: CiMode,
+    headless: bool,
 ) -> Result<(), CiError> {
     // Run npm ci to ensure dependencies are installed from lockfile
     run_npm_install(working_directory).map_err(|_| CiError::NpmInstallError)?;
@@ -283,18 +312,19 @@ fn run_typescript_ci(
 
     // Run npm run lint if it exists
     if npm_script_exists(working_directory, "lint") {
-        run_npm_command(working_directory, "lint").map_err(|_| CiError::NpmLintError)?;
+        run_npm_command(working_directory, "lint", headless).map_err(|_| CiError::NpmLintError)?;
     }
 
     // Run npm run compile if it exists
     if npm_script_exists(working_directory, "compile") {
-        run_npm_command(working_directory, "compile").map_err(|_| CiError::NpmCompileError)?;
+        run_npm_command(working_directory, "compile", headless)
+            .map_err(|_| CiError::NpmCompileError)?;
     }
 
     // Run npm test if it exists (e.g., Playwright tests)
     // Skip if this is a hybrid project (tests already run by test::run())
     if !skip_tests && npm_script_exists(working_directory, "test") {
-        run_npm_command(working_directory, "test").map_err(|_| CiError::NpmTestError)?;
+        run_npm_command(working_directory, "test", headless).map_err(|_| CiError::NpmTestError)?;
     }
 
     Ok(())
@@ -314,13 +344,27 @@ fn npm_script_exists(working_directory: &Path, script: &str) -> bool {
 }
 
 /// Run an npm command
-fn run_npm_command(working_directory: &Path, command: &str) -> Result<(), std::io::Error> {
-    let status = Command::new("npm")
-        .arg("run")
-        .arg(command)
-        .current_dir(working_directory)
-        .stdin(std::process::Stdio::null()) // Prevent blocking on user input (e.g., Playwright HTML reporter)
-        .status()?;
+fn run_npm_command(
+    working_directory: &Path,
+    command: &str,
+    headless: bool,
+) -> Result<(), std::io::Error> {
+    let mut cmd = if headless {
+        command_util::wrap_with_xvfb_if_headless(
+            "npm",
+            &["run", command],
+            working_directory,
+            headless,
+        )
+    } else {
+        let mut c = Command::new("npm");
+        c.arg("run").arg(command).current_dir(working_directory);
+        c
+    };
+
+    cmd.stdin(std::process::Stdio::null()); // Prevent blocking on user input (e.g., Playwright HTML reporter)
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(std::io::Error::other(format!("npm run {} failed", command)));
@@ -501,7 +545,25 @@ pub fn run_ci_recursively(
     mode: CiMode,
     max_depth: usize,
     only_changed: bool,
+    headless: bool,
 ) -> Result<(), CiError> {
+    // Setup headless environment if requested
+    if headless {
+        // Install headless tools (xvfb, playwright with system deps)
+        let install_options = install::InstallOptions {
+            specific_tools: Some(vec![install::Tool::Xvfb, install::Tool::Playwright]),
+            skip_tools: Vec::new(),
+            dry_run: false,
+            force: false,
+            headless: true,
+        };
+
+        if let Err(e) = install::install_tools(working_directory, install_options) {
+            eprintln!("Warning: Failed to install headless tools: {}", e);
+            eprintln!("Continuing without full headless support...");
+        }
+    }
+
     // Create a cache for git diff results to improve performance with --only-changed
     let git_diff_cache = Rc::new(RefCell::new(HashMap::new()));
 
@@ -517,6 +579,7 @@ pub fn run_ci_recursively(
         mode,
         max_depth,
         only_changed,
+        headless,
         git_diff_cache,
         &mut results,
     )?;
@@ -559,6 +622,7 @@ fn run_ci_recursively_internal(
     mode: CiMode,
     max_depth: usize,
     only_changed: bool,
+    headless: bool,
     git_diff_cache: GitDiffCache,
     results: &mut CiResults,
 ) -> Result<(), CiError> {
@@ -581,7 +645,13 @@ fn run_ci_recursively_internal(
         };
 
         // Run CI on the child project with the shared cache
-        match run_internal(&project_path, mode, only_changed, git_diff_cache.clone()) {
+        match run_internal(
+            &project_path,
+            mode,
+            only_changed,
+            headless,
+            git_diff_cache.clone(),
+        ) {
             Ok(CiRunResult::Ran) => {
                 println!("✓ CI passed for {}", project_path.display());
                 results.successes.push(project_path.clone());
@@ -605,6 +675,7 @@ fn run_ci_recursively_internal(
                     mode,
                     remaining,
                     only_changed,
+                    headless,
                     git_diff_cache.clone(),
                     results,
                 );
@@ -845,6 +916,18 @@ fn get_default_branch(working_directory: &Path) -> Result<String, CiError> {
     )))
 }
 
+/// Wrapper function for args.rs that allows calling recursively with headless support
+/// This is used when CI is invoked with --recursive from a directory without Cast.toml
+pub fn run_ci_recursively_with_headless(
+    working_directory: &Path,
+    mode: CiMode,
+    max_depth: usize,
+    only_changed: bool,
+    headless: bool,
+) -> Result<(), CiError> {
+    run_ci_recursively(working_directory, mode, max_depth, only_changed, headless)
+}
+
 /// Find Cast projects within a given depth below the working directory
 /// Returns a vector of (project_path, depth_found) tuples
 /// Skips common build directories like target, node_modules, .git, etc.
@@ -930,7 +1013,7 @@ mod tests {
     fn test_run_ci_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_ci").unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false, false);
         // Should succeed silently for directories without Cargo.toml or package.json
         // Publish should not run since no CI checks were performed
         assert!(result.is_ok());
@@ -1006,7 +1089,7 @@ mod tests {
             .output()
             .unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false, false);
         assert!(
             result.is_ok(),
             "CI should succeed in Check mode: {:?}",
@@ -1060,7 +1143,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false, false);
         assert!(result.is_err(), "CI should fail when build fails");
 
         // Verify that artifacts directory was NOT created
@@ -1125,7 +1208,7 @@ mod tests {
             .unwrap();
 
         // CI in Fix mode should auto-format and succeed
-        let result = run(tmp_dir.path(), CiMode::Fix, None, false);
+        let result = run(tmp_dir.path(), CiMode::Fix, None, false, false);
         assert!(
             result.is_ok(),
             "CI Fix mode should succeed after auto-formatting: {:?}",
@@ -1201,7 +1284,7 @@ mod tests {
             .unwrap();
 
         // CI in Release mode should build in release and publish
-        let result = run(tmp_dir.path(), CiMode::Release, None, false);
+        let result = run(tmp_dir.path(), CiMode::Release, None, false, false);
         assert!(
             result.is_ok(),
             "CI Release mode should succeed: {:?}",
@@ -1651,7 +1734,7 @@ mod tests {
             .unwrap();
 
         // Run CI with recursive depth 1
-        let result = run(tmp_dir.path(), CiMode::Check, Some(1), false);
+        let result = run(tmp_dir.path(), CiMode::Check, Some(1), false, false);
 
         // Should succeed
         assert!(
@@ -1758,7 +1841,7 @@ mod tests {
 
         // Run CI with only_changed=true
         // Since there are no changes, CI should skip
-        let result = run(tmp_dir.path(), CiMode::Check, None, true);
+        let result = run(tmp_dir.path(), CiMode::Check, None, true, false);
 
         // Should succeed without running CI
         assert!(result.is_ok(), "CI should succeed: {:?}", result.err());
@@ -1882,7 +1965,7 @@ mod tests {
 
         // Run CI with only_changed=true
         // Since there are changes, CI should run
-        let result = run(tmp_dir.path(), CiMode::Check, None, true);
+        let result = run(tmp_dir.path(), CiMode::Check, None, true, false);
 
         // Should succeed and run CI
         assert!(result.is_ok(), "CI should succeed: {:?}", result.err());
@@ -2269,7 +2352,7 @@ mod tests {
             .unwrap();
 
         // Run CI
-        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false, false);
         assert!(
             result.is_ok(),
             "CI should succeed for hybrid project: {:?}",
@@ -2351,7 +2434,7 @@ mod tests {
             .unwrap();
 
         // Run CI
-        let result = run(tmp_dir.path(), CiMode::Check, None, false);
+        let result = run(tmp_dir.path(), CiMode::Check, None, false, false);
         assert!(
             result.is_ok(),
             "CI should succeed for pure TypeScript project: {:?}",
@@ -2449,7 +2532,7 @@ mod tests {
 
         // Run CI recursively
         // The function should continue even if child2 fails
-        let result = run_ci_recursively(tmp_dir.path(), CiMode::Check, 1, false);
+        let result = run_ci_recursively(tmp_dir.path(), CiMode::Check, 1, false, false);
 
         // The result should be an error because child2 failed
         assert!(

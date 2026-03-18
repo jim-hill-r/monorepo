@@ -57,6 +57,7 @@ pub fn create_command(
             skip,
             dry_run,
             force,
+            headless,
         } => match subcommand {
             Some(InstallSubcommands::Check { verbose, json }) => {
                 Ok(Box::new(commands::install::CheckCommand {
@@ -78,6 +79,7 @@ pub fn create_command(
                 skip: skip.clone(),
                 dry_run: *dry_run,
                 force: *force,
+                headless: *headless,
             })),
         },
         Commands::Uninstall {
@@ -117,6 +119,7 @@ pub fn create_command(
             release,
             recursive,
             only_changed,
+            headless,
         } => {
             let mode = if *release {
                 crate::ci::CiMode::Release
@@ -130,6 +133,7 @@ pub fn create_command(
                 mode,
                 recursive_depth: *recursive,
                 only_changed: *only_changed,
+                headless: *headless,
             }))
         }
         Commands::Build => Ok(Box::new(commands::build::BuildCommand)),
@@ -199,6 +203,7 @@ mod tests {
             release: false,
             recursive: None,
             only_changed: false,
+            headless: false,
         };
         let result = create_command(&cmd, true);
         assert!(result.is_ok());
@@ -212,6 +217,7 @@ mod tests {
             release: false,
             recursive: None,
             only_changed: false,
+            headless: false,
         };
         let result = create_command(&cmd, true);
         assert!(result.is_ok());
@@ -225,6 +231,7 @@ mod tests {
             release: true,
             recursive: Some(2),
             only_changed: true,
+            headless: false,
         };
         let result = create_command(&cmd, true);
         assert!(result.is_ok());
@@ -280,6 +287,7 @@ mod tests {
             skip: None,
             dry_run: false,
             force: false,
+            headless: false,
         };
         let result = create_command(&cmd, false);
         assert!(result.is_ok());
@@ -296,6 +304,7 @@ mod tests {
             skip: None,
             dry_run: false,
             force: false,
+            headless: false,
         };
         let result = create_command(&cmd, false);
         assert!(result.is_ok());
@@ -313,6 +322,7 @@ mod tests {
             skip: None,
             dry_run: false,
             force: false,
+            headless: false,
         };
         let result = create_command(&cmd, false);
         assert!(result.is_ok());
@@ -379,6 +389,7 @@ mod tests {
             skip: None,
             dry_run: false,
             force: false,
+            headless: false,
         };
         assert!(!requires_cast_config(&cmd));
     }

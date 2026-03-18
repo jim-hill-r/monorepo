@@ -45,6 +45,8 @@ pub enum Tool {
     GitLfs,
     /// LLVM compiler infrastructure
     Llvm,
+    /// Xvfb virtual display server (for headless GUI testing)
+    Xvfb,
 }
 
 impl Tool {
@@ -64,6 +66,7 @@ impl Tool {
             Tool::Wrangler => "wrangler",
             Tool::GitLfs => "git-lfs",
             Tool::Llvm => "llvm",
+            Tool::Xvfb => "xvfb",
         }
     }
 
@@ -83,6 +86,7 @@ impl Tool {
             "wrangler" => Some(Tool::Wrangler),
             "git-lfs" | "gitlfs" | "lfs" => Some(Tool::GitLfs),
             "llvm" => Some(Tool::Llvm),
+            "xvfb" => Some(Tool::Xvfb),
             _ => None,
         }
     }
@@ -214,6 +218,7 @@ pub fn check_tool(tool: &Tool) -> Result<ToolStatus, InstallError> {
         Tool::GitLfs => ("git", vec!["lfs", "version"]),
         // LLVM handled above via check_llvm_with_libraries(), this is unreachable
         Tool::Llvm => ("llvm-config-18", vec!["--version"]),
+        Tool::Xvfb => ("xvfb-run", vec!["--help"]),
     };
 
     // Try to run the command
@@ -860,6 +865,8 @@ pub struct InstallOptions {
     pub dry_run: bool,
     /// Force reinstall even if already installed
     pub force: bool,
+    /// Install headless dependencies (xvfb, Playwright with --with-deps)
+    pub headless: bool,
 }
 
 /// Result of an installation attempt
@@ -879,7 +886,16 @@ pub fn install_tools(
     let working_directory = working_directory.as_ref();
 
     // Determine which tools to install
-    let required_tools = detect_required_tools(working_directory)?;
+    let mut required_tools = detect_required_tools(working_directory)?;
+
+    // Add headless-specific tools if requested
+    if options.headless {
+        required_tools.push(Tool::Xvfb);
+        // Ensure Playwright is included for headless testing
+        if !required_tools.contains(&Tool::Playwright) {
+            required_tools.push(Tool::Playwright);
+        }
+    }
 
     let tools_to_install = if let Some(specific) = options.specific_tools {
         specific
@@ -949,6 +965,7 @@ fn install_single_tool(
         Tool::Dx => install_dx(dry_run),
         Tool::Node | Tool::Npm => install_node(tool, dry_run),
         Tool::Playwright => install_playwright(working_directory, dry_run),
+        Tool::Xvfb => install_xvfb(dry_run),
         Tool::Wrangler => install_wrangler(dry_run),
         Tool::GitLfs => install_git_lfs(dry_run),
         Tool::Llvm => install_llvm(dry_run),
@@ -1204,6 +1221,71 @@ fn install_playwright(
     } else {
         Err(InstallError::InstallationError(
             "Failed to install Playwright. Check the output above for details.".to_string(),
+        ))
+    }
+}
+
+/// Install Xvfb (X Virtual Framebuffer) for headless GUI testing
+fn install_xvfb(dry_run: bool) -> Result<InstallResult, InstallError> {
+    use std::process::Command;
+
+    // Only support Linux - xvfb is not needed on macOS/Windows
+    if !cfg!(target_os = "linux") {
+        return Ok(InstallResult {
+            tool: Tool::Xvfb,
+            success: true,
+            message: "Xvfb is only needed on Linux. Skipping.".to_string(),
+            skipped: true,
+        });
+    }
+
+    // Detect Linux package manager
+    let package_manager = if Command::new("apt-get").arg("--version").output().is_ok() {
+        "apt-get"
+    } else if Command::new("yum").arg("--version").output().is_ok() {
+        "yum"
+    } else {
+        return Err(InstallError::InstallationError(
+            "Unsupported package manager. Please install xvfb manually.".to_string(),
+        ));
+    };
+
+    let install_args = if package_manager == "apt-get" {
+        vec!["install", "-y", "xvfb"]
+    } else {
+        vec!["install", "-y", "xorg-x11-server-Xvfb"]
+    };
+
+    if dry_run {
+        let install_cmd = format!("sudo {} {}", package_manager, install_args.join(" "));
+        return Ok(InstallResult {
+            tool: Tool::Xvfb,
+            success: true,
+            message: format!("Would install: {}", install_cmd),
+            skipped: false,
+        });
+    }
+
+    println!("Installing Xvfb for headless GUI testing...");
+
+    let status = Command::new("sudo")
+        .arg(package_manager)
+        .args(&install_args)
+        .status()
+        .map_err(|e| {
+            InstallError::InstallationError(format!("Failed to run {}: {}", package_manager, e))
+        })?;
+
+    if status.success() {
+        Ok(InstallResult {
+            tool: Tool::Xvfb,
+            success: true,
+            message: "Installed successfully".to_string(),
+            skipped: false,
+        })
+    } else {
+        Err(InstallError::InstallationError(
+            "Failed to install Xvfb. Check the output above for details.".to_string(),
         ))
     }
 }
@@ -2094,6 +2176,7 @@ mod install_tests {
             skip_tools: Vec::new(),
             dry_run: true,
             force: false,
+            headless: false,
         };
 
         let result = install_tools(temp_dir.path(), options);
@@ -2119,6 +2202,7 @@ mod install_tests {
             skip_tools: vec![Tool::Dx, Tool::Playwright],
             dry_run: true,
             force: false,
+            headless: false,
         };
 
         let result = install_tools(temp_dir.path(), options);
@@ -2151,6 +2235,7 @@ mod install_tests {
             skip_tools: Vec::new(),
             dry_run: true,
             force: false,
+            headless: false,
         };
 
         let result = install_tools(temp_dir.path(), options);

@@ -39,6 +39,10 @@ pub enum Commands {
         /// Force reinstall even if tools are already installed
         #[arg(long)]
         force: bool,
+
+        /// Install headless testing tools (xvfb, playwright with system deps)
+        #[arg(long)]
+        headless: bool,
     },
     /// Uninstall cast-managed tools
     Uninstall {
@@ -81,6 +85,10 @@ pub enum Commands {
         /// Only run CI if the project has changes compared to the origin's default branch
         #[arg(long)]
         only_changed: bool,
+
+        /// Run in headless mode (installs xvfb and Playwright, wraps GUI tests with virtual display)
+        #[arg(long)]
+        headless: bool,
     },
     /// Run CD (Continuous Deployment)
     Cd {
@@ -189,6 +197,7 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
         release,
         recursive: Some(depth),
         only_changed,
+        headless,
     } = &args.cmd
     {
         if find_cast_toml(entry_directory).is_none() {
@@ -200,9 +209,15 @@ pub fn execute(args: Args, entry_directory: &Path) -> Result<String, ExecuteErro
                 crate::ci::CiMode::Check
             };
 
-            return crate::ci::run_ci_recursively(entry_directory, mode, *depth, *only_changed)
-                .map(|_| "CI passed".to_string())
-                .map_err(|e| ExecuteError::CommandError(e.to_string()));
+            return crate::ci::run_ci_recursively_with_headless(
+                entry_directory,
+                mode,
+                *depth,
+                *only_changed,
+                *headless,
+            )
+            .map(|_| "CI passed".to_string())
+            .map_err(|e| ExecuteError::CommandError(e.to_string()));
         }
     }
 
@@ -433,6 +448,7 @@ mod tests {
                     release: false,
                     recursive: None,
                     only_changed: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -705,6 +721,7 @@ mod tests {
                     skip: None,
                     dry_run: true,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -730,6 +747,7 @@ mod tests {
                     skip: None,
                     dry_run: true,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -755,6 +773,7 @@ mod tests {
                     skip: None,
                     dry_run: true,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -783,6 +802,7 @@ mod tests {
                     skip: None,
                     dry_run: false,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -825,6 +845,7 @@ mod tests {
                     skip: None,
                     dry_run: false,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -867,6 +888,7 @@ mod tests {
                     skip: None,
                     dry_run: false,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -896,6 +918,7 @@ mod tests {
                     skip: None,
                     dry_run: false,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -935,6 +958,7 @@ mod tests {
                     skip: None,
                     dry_run: false,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -967,6 +991,7 @@ mod tests {
                     skip: None,
                     dry_run: false,
                     force: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),
@@ -1136,6 +1161,7 @@ mod tests {
                     release: false,
                     recursive: Some(1),
                     only_changed: false,
+                    headless: false,
                 },
             },
             tmp_dir.path(),

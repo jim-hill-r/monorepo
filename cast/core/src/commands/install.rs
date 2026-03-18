@@ -8,6 +8,7 @@ pub struct InstallCommand {
     pub skip: Option<String>,
     pub dry_run: bool,
     pub force: bool,
+    pub headless: bool,
 }
 
 impl Command for InstallCommand {
@@ -36,6 +37,7 @@ impl Command for InstallCommand {
             skip_tools,
             dry_run: self.dry_run,
             force: self.force,
+            headless: self.headless,
         };
 
         let results = install::install_tools(working_directory, options)?;
@@ -202,6 +204,7 @@ mod tests {
             skip: None,
             dry_run: true,
             force: false,
+            headless: false,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
@@ -219,6 +222,7 @@ mod tests {
             skip: None,
             dry_run: true,
             force: false,
+            headless: false,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok());
@@ -236,6 +240,7 @@ mod tests {
             skip: None,
             dry_run: true,
             force: false,
+            headless: false,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_err());

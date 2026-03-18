@@ -41,7 +41,7 @@ jobs:
       - name: Run CI release on changed projects
         run: |
           cargo install --path ./cast/cli
-          cast ci --only-changed --release --recursive 2
+          cast ci --only-changed --release --recursive 2  --headless
 
       - name: Commit and push artifacts
         run: |

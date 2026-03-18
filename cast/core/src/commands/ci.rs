@@ -7,6 +7,7 @@ pub struct CiCommand {
     pub mode: ci::CiMode,
     pub recursive_depth: Option<usize>,
     pub only_changed: bool,
+    pub headless: bool,
 }
 
 impl Command for CiCommand {
@@ -16,6 +17,7 @@ impl Command for CiCommand {
             self.mode,
             self.recursive_depth,
             self.only_changed,
+            self.headless,
         )?;
         Ok("CI passed".to_string())
     }
@@ -85,6 +87,7 @@ mod tests {
             mode: ci::CiMode::Check,
             recursive_depth: None,
             only_changed: false,
+            headless: false,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_ok(), "CI failed: {:?}", result.err());
@@ -113,6 +116,7 @@ mod tests {
             mode: ci::CiMode::Check,
             recursive_depth: None,
             only_changed: false,
+            headless: false,
         };
         let result = cmd.execute(tmp_dir.path());
         assert!(result.is_err());

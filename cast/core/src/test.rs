@@ -1,3 +1,4 @@
+use crate::command_util;
 use crate::install;
 use std::path::Path;
 use std::process::Command;
@@ -18,7 +19,11 @@ pub enum TestError {
 /// - For Rust projects (has Cargo.toml): cargo test (or cargo llvm-cov if coverage is requested)
 /// - For TypeScript/Node.js projects (has package.json with test script): npm test (with --coverage if supported)
 /// - Projects can have both (e.g., Dioxus web apps with Playwright tests)
-pub fn run(working_directory: impl AsRef<Path>, coverage: bool) -> Result<(), TestError> {
+pub fn run(
+    working_directory: impl AsRef<Path>,
+    coverage: bool,
+    headless: bool,
+) -> Result<(), TestError> {
     let working_directory = working_directory.as_ref();
 
     let has_cargo_toml = working_directory.join("Cargo.toml").exists();
@@ -31,7 +36,7 @@ pub fn run(working_directory: impl AsRef<Path>, coverage: bool) -> Result<(), Te
 
     // Run npm tests if package.json exists and has a test script
     if has_package_json && npm_script_exists(working_directory, "test") {
-        run_npm_test(working_directory, coverage)?;
+        run_npm_test(working_directory, coverage, headless)?;
     }
 
     Ok(())
@@ -153,7 +158,7 @@ fn run_cargo_test_with_options(
 }
 
 /// Run npm test for a Node.js project
-fn run_npm_test(working_directory: &Path, coverage: bool) -> Result<(), TestError> {
+fn run_npm_test(working_directory: &Path, coverage: bool, headless: bool) -> Result<(), TestError> {
     let mut args = vec!["test"];
 
     // Add --coverage flag if coverage is requested
@@ -163,11 +168,17 @@ fn run_npm_test(working_directory: &Path, coverage: bool) -> Result<(), TestErro
         args.push("--coverage");
     }
 
-    let status = Command::new("npm")
-        .args(&args)
-        .current_dir(working_directory)
-        .stdin(std::process::Stdio::null()) // Prevent blocking on user input (e.g., Playwright HTML reporter)
-        .status()?;
+    let mut cmd = if headless {
+        command_util::wrap_with_xvfb_if_headless("npm", &args, working_directory, headless)
+    } else {
+        let mut c = Command::new("npm");
+        c.args(&args).current_dir(working_directory);
+        c
+    };
+
+    cmd.stdin(std::process::Stdio::null()); // Prevent blocking on user input (e.g., Playwright HTML reporter)
+
+    let status = cmd.status()?;
 
     if !status.success() {
         return Err(TestError::NpmTestFailed);
@@ -203,7 +214,7 @@ mod tests {
     #[test]
     fn test_run_succeeds_without_cargo_or_package_json() {
         let tmp_dir = TempDir::new("test_run_no_project").unwrap();
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         // Should succeed silently for directories without Cargo.toml or package.json
         assert!(result.is_ok());
     }
@@ -225,7 +236,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         assert!(result.is_ok());
     }
 
@@ -246,7 +257,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         assert!(result.is_err());
         if let Err(TestError::TestFailed) = result {
             // Expected error type
@@ -301,7 +312,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         assert!(result.is_ok());
     }
 
@@ -316,7 +327,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         assert!(result.is_err());
         if let Err(TestError::NpmTestFailed) = result {
             // Expected error type
@@ -349,7 +360,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         assert!(result.is_ok());
     }
 
@@ -377,7 +388,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = run(tmp_dir.path(), false);
+        let result = run(tmp_dir.path(), false, false);
         // Should succeed (only cargo test runs, npm test is skipped)
         assert!(result.is_ok());
     }

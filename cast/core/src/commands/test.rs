@@ -9,7 +9,7 @@ pub struct TestCommand {
 
 impl Command for TestCommand {
     fn execute(&self, working_directory: &Path) -> Result<String, Box<dyn std::error::Error>> {
-        test::run(working_directory, self.coverage)?;
+        test::run(working_directory, self.coverage, false)?;
         Ok("Tests passed".to_string())
     }
 }

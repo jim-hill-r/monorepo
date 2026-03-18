@@ -41,4 +41,4 @@ jobs:
       - name: Run CI checks on all projects
         run: |
           cargo install --path ./cast/cli
-          cast ci --check --recursive 2
+          cast ci --check --recursive 2 --headless
