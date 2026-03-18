@@ -15,8 +15,8 @@
 //! ## Type System
 //!
 //! All values are currently represented as 64-bit signed integers (`i64`).
-//! String literals are not yet supported by the code generator (they are
-//! accepted by the parser but will produce a `CodegenError` at this stage).
+//! String literals are compiled as global byte-array constants; the address
+//! of the first byte is returned as an `i64` via a `ptrtoint` instruction.
 //!
 //! ## LLVM Setup
 //!
@@ -63,8 +63,6 @@ pub enum CodegenError {
     UndefinedVariable(String),
     /// A call to an unknown function was encountered.
     UndefinedFunction(String),
-    /// String literals are not yet supported in the code generator.
-    UnsupportedStringLiteral,
     /// A `return` statement was found inside an `input` declaration.
     ReturnInInputDeclaration,
     /// An expression statement that produces no value was found where a value
@@ -80,12 +78,6 @@ impl std::fmt::Display for CodegenError {
             }
             CodegenError::UndefinedFunction(name) => {
                 write!(f, "undefined function: '{name}'")
-            }
-            CodegenError::UnsupportedStringLiteral => {
-                write!(
-                    f,
-                    "string literals are not yet supported in code generation"
-                )
             }
             CodegenError::ReturnInInputDeclaration => {
                 write!(
@@ -109,6 +101,8 @@ pub struct CodeGenerator<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
+    /// Counter used to generate unique names for global string constants.
+    string_counter: usize,
 }
 
 impl<'ctx> CodeGenerator<'ctx> {
@@ -123,6 +117,7 @@ impl<'ctx> CodeGenerator<'ctx> {
             context,
             module,
             builder,
+            string_counter: 0,
         }
     }
 
@@ -272,7 +267,17 @@ impl<'ctx> CodeGenerator<'ctx> {
                 // Use sign_extend = true so negative values are handled correctly.
                 Ok(i64_type.const_int(*n as u64, true))
             }
-            Expression::StringLiteral(_) => Err(CodegenError::UnsupportedStringLiteral),
+            Expression::StringLiteral(s) => {
+                let name = format!("str_{}", self.string_counter);
+                self.string_counter += 1;
+                let global_str = self.builder.build_global_string_ptr(s, &name).unwrap();
+                let i64_type = self.context.i64_type();
+                let ptr_name = format!("{name}_ptr");
+                Ok(self
+                    .builder
+                    .build_ptr_to_int(global_str.as_pointer_value(), i64_type, &ptr_name)
+                    .unwrap())
+            }
             Expression::Identifier(name) => {
                 let alloca = locals
                     .get(name)
@@ -766,20 +771,31 @@ mod tests {
     }
 
     #[test]
-    fn test_string_literal_unsupported() {
+    fn test_string_literal_as_pointer() {
+        // String literals are compiled as global constants; the address is
+        // returned as an i64 via a ptrtoint instruction.
         let program = Program {
             declarations: vec![Declaration::Function(FunctionDecl {
-                name: "string_fn".to_string(),
+                name: "get_greeting".to_string(),
                 parameters: vec![],
                 body: vec![Statement::Return(Expression::StringLiteral(
                     "hello".to_string(),
                 ))],
             })],
         };
-        let context = Context::create();
-        let mut codegen = CodeGenerator::new(&context, "test_module");
-        let result = codegen.compile_program(&program);
-        assert_eq!(result, Err(CodegenError::UnsupportedStringLiteral));
+        let ir = compile_program_to_ir(&program).unwrap();
+        assert!(
+            ir.contains("get_greeting"),
+            "IR should define 'get_greeting'"
+        );
+        assert!(
+            ir.contains("ptrtoint"),
+            "IR should convert string pointer to i64"
+        );
+        assert!(
+            ir.contains("hello"),
+            "IR should contain the string literal data"
+        );
     }
 
     // ------------------------------------------------------------------

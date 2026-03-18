@@ -99,3 +99,37 @@ fn test_e2e_comparison() {
     assert!(ir.contains("define i64 @is_zero"));
     assert!(ir.contains("icmp eq i64"));
 }
+
+#[test]
+fn test_e2e_string_literal() {
+    // String literals compile as global byte-array constants; the address is
+    // returned as an i64 via a ptrtoint constant expression.
+    let src = r#"function greeting() { "hello" }"#;
+    let ir = compile(src);
+    assert!(
+        ir.contains("define i64 @greeting"),
+        "IR should define 'greeting'"
+    );
+    assert!(
+        ir.contains("hello"),
+        "IR should contain the string literal data as a global constant"
+    );
+}
+
+#[test]
+fn test_e2e_string_literal_as_argument() {
+    // A string literal passed as an argument to another function should compile.
+    // The callee is declared first so the call is valid.
+    let src = r#"
+        output log(msg) { msg }
+        output run() { log("hello world") }
+    "#;
+    let ir = compile(src);
+    assert!(ir.contains("define i64 @log"), "IR should define 'log'");
+    assert!(ir.contains("define i64 @run"), "IR should define 'run'");
+    assert!(ir.contains("call i64 @log"), "IR should call 'log'");
+    assert!(
+        ir.contains("hello world"),
+        "IR should contain the string literal data"
+    );
+}
