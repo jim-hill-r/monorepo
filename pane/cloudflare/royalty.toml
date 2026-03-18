@@ -1,0 +1,3 @@
+[project]
+name = "cloudflare"
+description = "Handles deployment of the pane Dioxus web application to Cloudflare Pages."
