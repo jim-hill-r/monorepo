@@ -1,6 +1,8 @@
-# Pane
+# pane_web
 
 A Dioxus web application built with Rust.
+
+"Pane" evokes a window pane — a transparent surface through which you view the world — making it an apt metaphor for a web interface that presents information clearly and directly to the user.
 
 ## Prerequisites
 
