@@ -1,4 +1,4 @@
-# Cahokia Web Cloudflare Pages Deployment
+# cloudflare
 
 This project handles the deployment of the `cahokia/web` Dioxus web application build artifacts to Cloudflare Pages.
 
