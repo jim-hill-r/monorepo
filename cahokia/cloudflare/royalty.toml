@@ -1,0 +1,3 @@
+[project]
+name = "cloudflare"
+description = "Handles deployment of the cahokia web application to Cloudflare Pages."
