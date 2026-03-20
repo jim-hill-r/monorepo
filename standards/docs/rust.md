@@ -8,7 +8,10 @@ All Rust projects must enforce strict clippy lints to prevent common errors and 
 
 ### Required Lints
 
-The following lints must be configured in every Rust project's `Cargo.toml`:
+The following lints must be configured in every Rust project's `Cargo.toml`. These are enforced by the standards audit tool with the following standard IDs:
+
+- **LIN-001**: `unwrap_used = "warn"` and `expect_used = "warn"` in `[lints.clippy]`
+- **LIN-002**: `unsafe_code = "forbid"` in `[lints.rust]`
 
 ```toml
 [lints.clippy]
@@ -72,3 +75,23 @@ unsafe_code = "forbid"
 ```
 
 For workspace projects, you can also define lints at the workspace level using `[workspace.lints]` and inherit them in member crates with `lints.workspace = true`.
+
+```toml
+# workspace Cargo.toml
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+```
+
+```toml
+# member Cargo.toml
+[lints]
+workspace = true
+```
+
+## Enforcement
+
+The standards audit tool (`standards audit-to-issues`) checks all Rust projects for LIN-001 and LIN-002 compliance and writes violations to each project's `ISSUES.md` file.

@@ -1077,6 +1077,457 @@ pub mod documentation {
     }
 }
 
+/// Linting standards audit module
+pub mod linting {
+    use super::*;
+    use std::path::Path;
+
+    /// Lint configuration found in a Cargo.toml file
+    #[derive(Debug, Default)]
+    struct CargoLintConfig {
+        /// Whether `[lints] workspace = true` is set
+        inherits_workspace: bool,
+        /// Whether `unwrap_used = "warn"` is present in clippy lints
+        has_unwrap_used_warn: bool,
+        /// Whether `expect_used = "warn"` is present in clippy lints
+        has_expect_used_warn: bool,
+        /// Whether `unsafe_code = "forbid"` is present in rust lints
+        has_unsafe_code_forbid: bool,
+    }
+
+    /// Sections that can appear in a Cargo.toml relevant to lints
+    #[derive(Debug, PartialEq)]
+    enum LintSection {
+        None,
+        LintsWorkspace,
+        LintsClippy,
+        LintsRust,
+        WorkspaceLintsClippy,
+        WorkspaceLintsRust,
+    }
+
+    /// Parse a Cargo.toml file and extract lint configuration
+    fn parse_cargo_lint_config(path: &Path) -> CargoLintConfig {
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(_) => return CargoLintConfig::default(),
+        };
+
+        let mut config = CargoLintConfig::default();
+        let mut current_section = LintSection::None;
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            // Detect section headers
+            if trimmed == "[lints]" {
+                current_section = LintSection::LintsWorkspace;
+                continue;
+            }
+            if trimmed == "[lints.clippy]" {
+                current_section = LintSection::LintsClippy;
+                continue;
+            }
+            if trimmed == "[lints.rust]" {
+                current_section = LintSection::LintsRust;
+                continue;
+            }
+            if trimmed == "[workspace.lints.clippy]" {
+                current_section = LintSection::WorkspaceLintsClippy;
+                continue;
+            }
+            if trimmed == "[workspace.lints.rust]" {
+                current_section = LintSection::WorkspaceLintsRust;
+                continue;
+            }
+            // Any other section header resets
+            if trimmed.starts_with('[') {
+                current_section = LintSection::None;
+                continue;
+            }
+
+            match current_section {
+                LintSection::LintsWorkspace => {
+                    if trimmed.starts_with("workspace") && trimmed.contains('=') {
+                        let value_part =
+                            trimmed.split_once('=').map(|(_, v)| v).unwrap_or("").trim();
+                        if value_part == "true" {
+                            config.inherits_workspace = true;
+                        }
+                    }
+                }
+                LintSection::LintsClippy | LintSection::WorkspaceLintsClippy => {
+                    if trimmed.starts_with("unwrap_used") && trimmed.contains('=') {
+                        let value_part =
+                            trimmed.split_once('=').map(|(_, v)| v).unwrap_or("").trim();
+                        let value = value_part.trim_matches('"').trim_matches('\'');
+                        if value == "warn" {
+                            config.has_unwrap_used_warn = true;
+                        }
+                    }
+                    if trimmed.starts_with("expect_used") && trimmed.contains('=') {
+                        let value_part =
+                            trimmed.split_once('=').map(|(_, v)| v).unwrap_or("").trim();
+                        let value = value_part.trim_matches('"').trim_matches('\'');
+                        if value == "warn" {
+                            config.has_expect_used_warn = true;
+                        }
+                    }
+                }
+                LintSection::LintsRust | LintSection::WorkspaceLintsRust => {
+                    if trimmed.starts_with("unsafe_code") && trimmed.contains('=') {
+                        let value_part =
+                            trimmed.split_once('=').map(|(_, v)| v).unwrap_or("").trim();
+                        let value = value_part.trim_matches('"').trim_matches('\'');
+                        if value == "forbid" {
+                            config.has_unsafe_code_forbid = true;
+                        }
+                    }
+                }
+                LintSection::None => {}
+            }
+        }
+
+        config
+    }
+
+    /// Find the workspace Cargo.toml for a given project by searching parent directories
+    fn find_workspace_cargo_toml(project_path: &Path) -> Option<std::path::PathBuf> {
+        let mut current = project_path.parent()?;
+        loop {
+            let cargo_toml = current.join("Cargo.toml");
+            if cargo_toml.exists() {
+                // Check if this is a workspace Cargo.toml (contains [workspace])
+                if let Ok(content) = std::fs::read_to_string(&cargo_toml) {
+                    if content.lines().any(|l| l.trim() == "[workspace]") {
+                        return Some(cargo_toml);
+                    }
+                }
+            }
+            current = current.parent()?;
+        }
+    }
+
+    /// Audit projects for linting standards compliance
+    ///
+    /// Checks:
+    /// - LIN-001: All Rust projects MUST configure clippy lints: `unwrap_used = "warn"` and
+    ///   `expect_used = "warn"`, either directly or via workspace lint inheritance.
+    /// - LIN-002: All Rust projects MUST configure `unsafe_code = "forbid"` in rust lints,
+    ///   either directly or via workspace lint inheritance.
+    pub fn audit_linting_standards(projects: &[Project]) -> AuditResult {
+        let mut result = AuditResult::new();
+
+        for project in projects {
+            if project.project_type != ProjectType::Rust {
+                continue;
+            }
+
+            let cargo_toml = project.path.join("Cargo.toml");
+            if !cargo_toml.exists() {
+                continue;
+            }
+
+            let config = parse_cargo_lint_config(&cargo_toml);
+
+            // Resolve effective lint config: if workspace inheritance is used,
+            // look up the workspace Cargo.toml
+            let effective = if config.inherits_workspace {
+                if let Some(ws_path) = find_workspace_cargo_toml(&project.path) {
+                    let ws_config = parse_cargo_lint_config(&ws_path);
+                    CargoLintConfig {
+                        inherits_workspace: true,
+                        has_unwrap_used_warn: ws_config.has_unwrap_used_warn,
+                        has_expect_used_warn: ws_config.has_expect_used_warn,
+                        has_unsafe_code_forbid: ws_config.has_unsafe_code_forbid,
+                    }
+                } else {
+                    // Workspace not found; treat as if no lints configured
+                    CargoLintConfig::default()
+                }
+            } else {
+                CargoLintConfig {
+                    inherits_workspace: false,
+                    has_unwrap_used_warn: config.has_unwrap_used_warn,
+                    has_expect_used_warn: config.has_expect_used_warn,
+                    has_unsafe_code_forbid: config.has_unsafe_code_forbid,
+                }
+            };
+
+            // LIN-001: Check clippy lints
+            if !effective.has_unwrap_used_warn || !effective.has_expect_used_warn {
+                let missing: Vec<&str> = [
+                    (!effective.has_unwrap_used_warn).then_some("unwrap_used = \"warn\""),
+                    (!effective.has_expect_used_warn).then_some("expect_used = \"warn\""),
+                ]
+                .into_iter()
+                .flatten()
+                .collect();
+
+                result.add_violation(Violation::new(
+                    StandardType::Rust,
+                    "LIN-001".to_string(),
+                    project.name.clone(),
+                    project.path.display().to_string(),
+                    Severity::Warning,
+                    format!(
+                        "Project '{}' Cargo.toml is missing required clippy lints: {}. \
+                        Add these to [lints.clippy] or use workspace lint inheritance.",
+                        project.name,
+                        missing.join(", ")
+                    ),
+                ));
+            }
+
+            // LIN-002: Check rust lints
+            if !effective.has_unsafe_code_forbid {
+                result.add_violation(Violation::new(
+                    StandardType::Rust,
+                    "LIN-002".to_string(),
+                    project.name.clone(),
+                    project.path.display().to_string(),
+                    Severity::Warning,
+                    format!(
+                        "Project '{}' Cargo.toml is missing required rust lint: \
+                        unsafe_code = \"forbid\". \
+                        Add this to [lints.rust] or use workspace lint inheritance.",
+                        project.name
+                    ),
+                ));
+            }
+        }
+
+        result
+    }
+
+    #[cfg(test)]
+    #[allow(clippy::unwrap_used, clippy::expect_used)]
+    mod tests {
+        use super::*;
+        use crate::discovery::ProjectType;
+
+        fn make_project(dir: &std::path::Path) -> Project {
+            Project::new(
+                dir.to_path_buf(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            )
+        }
+
+        #[test]
+        fn test_project_with_direct_lints_passes() {
+            let temp_dir = std::env::temp_dir().join("test_lin_direct_lints");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n\n\
+                 [lints.clippy]\nunwrap_used = \"warn\"\nexpect_used = \"warn\"\n\n\
+                 [lints.rust]\nunsafe_code = \"forbid\"\n",
+            )
+            .expect("Failed to write Cargo.toml");
+
+            let result = audit_linting_standards(&[make_project(&temp_dir)]);
+            assert!(
+                !result.has_violations(),
+                "Expected no violations but got: {:?}",
+                result.violations
+            );
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_project_missing_clippy_lints_fails() {
+            let temp_dir = std::env::temp_dir().join("test_lin_missing_clippy");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n\n\
+                 [lints.rust]\nunsafe_code = \"forbid\"\n",
+            )
+            .expect("Failed to write Cargo.toml");
+
+            let result = audit_linting_standards(&[make_project(&temp_dir)]);
+            assert!(result.has_violations());
+            assert!(result.violations.iter().any(|v| v.standard_id == "LIN-001"));
+            assert!(!result.violations.iter().any(|v| v.standard_id == "LIN-002"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_project_missing_rust_lints_fails() {
+            let temp_dir = std::env::temp_dir().join("test_lin_missing_rust");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n\n\
+                 [lints.clippy]\nunwrap_used = \"warn\"\nexpect_used = \"warn\"\n",
+            )
+            .expect("Failed to write Cargo.toml");
+
+            let result = audit_linting_standards(&[make_project(&temp_dir)]);
+            assert!(result.has_violations());
+            assert!(!result.violations.iter().any(|v| v.standard_id == "LIN-001"));
+            assert!(result.violations.iter().any(|v| v.standard_id == "LIN-002"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_project_missing_all_lints_fails() {
+            let temp_dir = std::env::temp_dir().join("test_lin_missing_all");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n",
+            )
+            .expect("Failed to write Cargo.toml");
+
+            let result = audit_linting_standards(&[make_project(&temp_dir)]);
+            assert!(result.has_violations());
+            assert_eq!(result.violations.len(), 2);
+            assert!(result.violations.iter().any(|v| v.standard_id == "LIN-001"));
+            assert!(result.violations.iter().any(|v| v.standard_id == "LIN-002"));
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_project_with_workspace_lints_passes() {
+            let temp_dir = std::env::temp_dir().join("test_lin_workspace_lints");
+            std::fs::remove_dir_all(&temp_dir).ok();
+
+            // Create workspace Cargo.toml
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[workspace]\nmembers = [\"member\"]\n\n\
+                 [workspace.lints.clippy]\nunwrap_used = \"warn\"\nexpect_used = \"warn\"\n\n\
+                 [workspace.lints.rust]\nunsafe_code = \"forbid\"\n",
+            )
+            .expect("Failed to write workspace Cargo.toml");
+
+            // Create member project with workspace lint inheritance
+            let member_dir = temp_dir.join("member");
+            std::fs::create_dir_all(&member_dir).expect("Failed to create member dir");
+            std::fs::write(
+                member_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n\n\
+                 [lints]\nworkspace = true\n",
+            )
+            .expect("Failed to write member Cargo.toml");
+
+            let project = Project::new(
+                member_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            );
+            let result = audit_linting_standards(&[project]);
+            assert!(
+                !result.has_violations(),
+                "Expected no violations but got: {:?}",
+                result.violations
+            );
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_project_with_workspace_lints_missing_in_workspace_fails() {
+            let temp_dir = std::env::temp_dir().join("test_lin_workspace_missing");
+            std::fs::remove_dir_all(&temp_dir).ok();
+
+            // Create workspace Cargo.toml without required lints
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[workspace]\nmembers = [\"member\"]\n",
+            )
+            .expect("Failed to write workspace Cargo.toml");
+
+            // Create member project with workspace lint inheritance
+            let member_dir = temp_dir.join("member");
+            std::fs::create_dir_all(&member_dir).expect("Failed to create member dir");
+            std::fs::write(
+                member_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n\n\
+                 [lints]\nworkspace = true\n",
+            )
+            .expect("Failed to write member Cargo.toml");
+
+            let project = Project::new(
+                member_dir.clone(),
+                ProjectType::Rust,
+                "test_project".to_string(),
+            );
+            let result = audit_linting_standards(&[project]);
+            assert!(result.has_violations());
+            assert_eq!(result.violations.len(), 2);
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_typescript_project_skipped() {
+            let temp_dir = std::env::temp_dir().join("test_lin_typescript_skip");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+
+            let project = Project::new(
+                temp_dir.clone(),
+                ProjectType::TypeScript,
+                "ts_project".to_string(),
+            );
+            let result = audit_linting_standards(&[project]);
+            assert!(!result.has_violations());
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+
+        #[test]
+        fn test_only_unwrap_used_missing() {
+            let temp_dir = std::env::temp_dir().join("test_lin_only_unwrap_missing");
+            std::fs::remove_dir_all(&temp_dir).ok();
+            std::fs::create_dir_all(&temp_dir).expect("Failed to create dir");
+
+            std::fs::write(
+                temp_dir.join("Cargo.toml"),
+                "[package]\nname = \"test_project\"\nversion = \"0.1.0\"\n\n\
+                 [lints.clippy]\nexpect_used = \"warn\"\n\n\
+                 [lints.rust]\nunsafe_code = \"forbid\"\n",
+            )
+            .expect("Failed to write Cargo.toml");
+
+            let result = audit_linting_standards(&[make_project(&temp_dir)]);
+            assert!(result.has_violations());
+            let lin001 = result
+                .violations
+                .iter()
+                .find(|v| v.standard_id == "LIN-001")
+                .expect("Should have LIN-001");
+            assert!(
+                lin001.message.contains("unwrap_used"),
+                "Message should mention unwrap_used"
+            );
+            assert!(
+                !lin001.message.contains("expect_used"),
+                "Message should not mention expect_used"
+            );
+
+            std::fs::remove_dir_all(&temp_dir).ok();
+        }
+    }
+}
+
 /// Convert a violation to a TODO string for ISSUES.md
 ///
 /// Creates a formatted TODO entry with the standard ID, project name, and message.

@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use standards::{
-    audit::{configuration, documentation, naming},
+    audit::{configuration, documentation, linting, naming},
     discovery,
     issues::IssuesFile,
 };
@@ -165,10 +165,34 @@ fn audit(cmd: AuditCommand) -> Result<String, String> {
         report.push_str("✓ All documentation standards checks passed\n\n");
     }
 
+    // Run linting standards audit
+    let lint_result = linting::audit_linting_standards(&projects);
+
+    if lint_result.has_violations() {
+        report.push_str("=== Linting Standards Violations ===\n\n");
+
+        for violation in &lint_result.violations {
+            report.push_str(&format!(
+                "[{}] {} - {}\n",
+                violation.standard_id, violation.project_name, violation.message
+            ));
+            report.push_str(&format!("  Path: {}\n", violation.project_path));
+            report.push_str(&format!("  Severity: {:?}\n\n", violation.severity));
+        }
+
+        report.push_str(&format!(
+            "Total violations: {}\n\n",
+            lint_result.violations.len()
+        ));
+    } else {
+        report.push_str("✓ All linting standards checks passed\n\n");
+    }
+
     // Summary
     let total_violations = naming_result.violations.len()
         + config_result.violations.len()
-        + doc_result.violations.len();
+        + doc_result.violations.len()
+        + lint_result.violations.len();
     report.push_str("=== Summary ===\n");
     report.push_str(&format!("Total violations found: {}\n", total_violations));
 
@@ -235,11 +259,13 @@ fn audit_to_issues(cmd: AuditToIssuesCommand) -> Result<String, String> {
     let naming_result = naming::audit_naming_standards(&projects);
     let config_result = configuration::audit_configuration_standards(&projects);
     let doc_result = documentation::audit_documentation_standards(&projects);
+    let lint_result = linting::audit_linting_standards(&projects);
 
     // Combine all violations
     let mut all_violations = naming_result.violations.clone();
     all_violations.extend(config_result.violations.clone());
     all_violations.extend(doc_result.violations.clone());
+    all_violations.extend(lint_result.violations.clone());
 
     if all_violations.is_empty() {
         return Ok(format!(
