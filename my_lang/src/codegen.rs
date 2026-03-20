@@ -126,6 +126,14 @@ impl<'ctx> CodeGenerator<'ctx> {
         &self.module
     }
 
+    /// Consume the code generator and return the underlying LLVM [`Module`].
+    ///
+    /// Use this when you need to pass the module to another component (e.g.,
+    /// a JIT execution engine) that requires ownership.
+    pub fn take_module(self) -> Module<'ctx> {
+        self.module
+    }
+
     /// Compile a complete [`Program`] into LLVM IR.
     ///
     /// Each declaration is compiled into an LLVM function.  The generated

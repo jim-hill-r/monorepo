@@ -31,5 +31,6 @@
 //! - ✅ Code Generator: Implemented — compiles AST to LLVM IR (integer arithmetic, comparisons, functions, assignments)
 
 pub mod codegen;
+pub mod jit;
 pub mod lexer;
 pub mod parser;

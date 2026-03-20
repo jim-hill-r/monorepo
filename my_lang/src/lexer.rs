@@ -6,10 +6,11 @@
 //! ## Token Types
 //!
 //! The lexer supports the following token types:
-//! - **Keywords**: `function`, `input`, `output`
+//! - **Keywords**: `function`, `input`, `output`, `return`
 //!   - `function`: Defines a pure function (single segment, must return a single value, cannot be void)
 //!   - `input`: Allows side effects, does not allow return
 //!   - `output`: Allows side effects, allows return
+//!   - `return`: Returns a value from the current function
 //! - **Identifiers**: Function and variable names (starting with letter or underscore)
 //! - **Literals**: Integer and string literals
 //! - **Operators**: `+`, `-`, `*`, `/`, `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`
@@ -22,6 +23,7 @@ pub enum Token {
     Function,
     Input,
     Output,
+    Return,
 
     // Identifiers and literals
     Identifier(String),
@@ -204,6 +206,7 @@ impl Lexer {
             "function" => Token::Function,
             "input" => Token::Input,
             "output" => Token::Output,
+            "return" => Token::Return,
             _ => Token::Identifier(identifier),
         }
     }
