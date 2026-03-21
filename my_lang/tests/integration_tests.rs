@@ -1,10 +1,12 @@
 //! Integration tests for my_lang: lexer → parser → codegen pipeline.
 //!
 //! These tests verify that a complete source string can be lexed, parsed,
-//! and compiled to LLVM IR end-to-end.
+//! and compiled to LLVM IR end-to-end, and that the JIT runner can execute
+//! compiled functions.
 
 use inkwell::context::Context;
 use my_lang::codegen::CodeGenerator;
+use my_lang::jit::JitRunner;
 use my_lang::lexer::Lexer;
 use my_lang::parser::Parser;
 
@@ -132,4 +134,49 @@ fn test_e2e_string_literal_as_argument() {
         ir.contains("hello world"),
         "IR should contain the string literal data"
     );
+}
+
+// ------------------------------------------------------------------
+// JIT execution integration tests
+// ------------------------------------------------------------------
+
+/// Helper: compile source with the JIT runner, panicking on failure.
+///
+/// The LLVM `Context` is intentionally leaked here because:
+/// - Integration test processes are short-lived; the OS reclaims memory.
+/// - It avoids threading lifetime parameters through every test helper.
+/// This pattern is acceptable only in tests.
+fn jit_run(source: &str) -> JitRunner<'static> {
+    let context = Box::leak(Box::new(Context::create()));
+    JitRunner::new(context, source).expect("JitRunner::new should succeed")
+}
+
+#[test]
+fn test_jit_e2e_add() {
+    let runner = jit_run("function add(a, b) { return a + b }");
+    assert_eq!(runner.call("add", &[10, 32]).unwrap(), 42);
+}
+
+#[test]
+fn test_jit_e2e_multi_function_call() {
+    // Verify that the JIT runner correctly executes a program containing
+    // multiple functions where one calls another.
+    let src = r#"
+        function add(a, b) { return a + b }
+        function sum3(a, b, c) { return add(add(a, b), c) }
+    "#;
+    let runner = jit_run(src);
+    assert_eq!(runner.call("sum3", &[1, 2, 3]).unwrap(), 6);
+}
+
+#[test]
+fn test_jit_e2e_return_keyword_in_output() {
+    let runner = jit_run("output identity(x) { return x }");
+    assert_eq!(runner.call("identity", &[99]).unwrap(), 99);
+}
+
+#[test]
+fn test_jit_e2e_return_keyword_in_function() {
+    let runner = jit_run("function double(n) { return n + n }");
+    assert_eq!(runner.call("double", &[21]).unwrap(), 42);
 }

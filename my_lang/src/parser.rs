@@ -356,6 +356,13 @@ impl Parser {
 
     /// Parse a statement
     fn parse_statement(&mut self) -> ParseResult<Statement> {
+        // Check for explicit `return` statement
+        if self.current_token == Token::Return {
+            self.advance(); // consume 'return'
+            let expr = self.parse_expression()?;
+            return Ok(Statement::Return(expr));
+        }
+
         // Check for assignment: identifier = expression
         if let Token::Identifier(name) = &self.current_token
             && self.peek_token == Token::Assign

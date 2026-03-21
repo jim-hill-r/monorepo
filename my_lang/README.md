@@ -24,13 +24,18 @@ This project provides the foundation for building a new programming language wit
   - DOES allow return statements
   - Used for writing external state
 
+- **`return`**: Returns a value from the current function
+  - Allowed in `function` and `output` declarations
+  - Not allowed in `input` declarations
+
 ## Architecture
 
-The language implementation consists of three main phases:
+The language implementation consists of four main phases:
 
 1. **Lexer** (`src/lexer.rs`): ✅ **Implemented** - Tokenizes source code into a stream of tokens
 2. **Parser** (`src/parser.rs`): ✅ **Implemented** - Builds an Abstract Syntax Tree (AST) from tokens using recursive descent parsing
 3. **Code Generator** (`src/codegen.rs`): ✅ **Implemented** - Compiles the AST to LLVM IR using [inkwell](https://github.com/TheDan64/inkwell)
+4. **JIT Runner** (`src/jit.rs`): ✅ **Implemented** - Executes compiled functions directly in-process via LLVM's JIT engine
 
 ## Code Generator
 
@@ -72,12 +77,41 @@ codegen.compile_program(&program).unwrap();
 println!("{}", codegen.module().print_to_string());
 ```
 
+## JIT Runner
+
+The JIT runner (`src/jit.rs`) executes compiled my_lang functions directly in-process
+using LLVM's JIT compilation engine.
+
+### Usage Example
+
+```rust
+use inkwell::context::Context;
+use my_lang::jit::JitRunner;
+
+let context = Context::create();
+let runner = JitRunner::new(&context, "function add(a, b) { return a + b }")
+    .expect("compile should succeed");
+
+let result = runner.call("add", &[3, 4]).expect("call should succeed");
+assert_eq!(result, 7);
+```
+
+### API
+
+- **`JitRunner::new(context, source)`** — Compiles `source` (lexer → parser → codegen → JIT engine).
+- **`runner.call(name, args)`** — Calls the named function with up to 8 `i64` arguments and returns an `i64` result.
+
+### Limitations
+
+- All values are `i64` (64-bit signed integer).
+- Up to 8 function arguments are supported.
+
 ## Lexer Features
 
 The lexer supports the following token types:
 
 ### Keywords
-- `function`, `input`, `output`
+- `function`, `input`, `output`, `return`
 
 ### Identifiers
 - Function and variable names (starting with letter or underscore)
@@ -116,9 +150,10 @@ while let token = lexer.next_token() {
 
 ## Current Status
 
-- ✅ Lexer: Fully implemented with correct language keywords
-- ✅ Parser: Fully implemented with recursive descent parsing for function declarations, expressions, and statements
+- ✅ Lexer: Fully implemented with correct language keywords (including `return`)
+- ✅ Parser: Fully implemented with recursive descent parsing for function declarations, expressions, statements, and `return`
 - ✅ Code Generator: Implemented — compiles AST to LLVM IR via inkwell (integer arithmetic, comparisons, function calls, variable assignments)
+- ✅ JIT Runner: Implemented — executes compiled functions directly in-process via LLVM JIT
 
 ## Getting Started
 
