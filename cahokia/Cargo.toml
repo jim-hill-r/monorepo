@@ -11,7 +11,7 @@ expect_used = "warn"
 unsafe_code = "forbid"
 
 [workspace.dependencies]
-dioxus = { version = "0.7.2" }
+dioxus = { version = "0.7.4" }
 thiserror = "2.0.18"
 tracing = "0.1.44"
 auth_sdk = { path = "../auth_sdk" }
