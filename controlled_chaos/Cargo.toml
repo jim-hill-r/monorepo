@@ -12,7 +12,7 @@ unsafe_code = "forbid"
 
 [dependencies]
 bevy = "0.14.2"
-rand = { version = "0.8", features = ["small_rng"] }
+rand = { version = "0.9", features = ["small_rng"] }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
