@@ -227,3 +227,17 @@ The workflow requires:
 - `security-events: write` - To upload CodeQL results
 - `actions: read` - To read workflow information
 
+
+## all-delete-branches.yml
+
+Deletes remote branches without needing a local clone. Run it manually from the Actions tab (or the `workflow_dispatch` API) with:
+
+- `branches`: branch names separated by spaces or newlines.
+- `dry_run`: defaults to `true`, which only reports what would be deleted. Set it to `false` to delete.
+
+The workflow never deletes the default branch and skips any branch that is the head of an open pull request. Branches that no longer exist are reported as not found. The run summary lists how many branches were deleted, skipped, missing, or failed.
+
+### Permissions
+
+- `contents: write` - To delete branch refs
+- `pull-requests: read` - To find branches with open pull requests
