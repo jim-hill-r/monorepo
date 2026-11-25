@@ -71,3 +71,8 @@ pub fn get_codeql_workflow_path() -> PathBuf {
 pub fn get_standards_audit_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/nightly-standards-audit.yml")
 }
+
+/// Get the path to the all-delete-branches.yml workflow file
+pub fn get_delete_branches_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/all-delete-branches.yml")
+}
