@@ -17,7 +17,11 @@ fn test_workflow_is_manual_only() {
         "Workflow must be triggered by workflow_dispatch"
     );
     let triggers = on.as_mapping().expect("'on' must be a mapping");
-    assert_eq!(triggers.len(), 1, "Workflow must only run on workflow_dispatch");
+    assert_eq!(
+        triggers.len(),
+        1,
+        "Workflow must only run on workflow_dispatch"
+    );
 }
 
 #[test]
@@ -32,8 +36,14 @@ fn test_dry_run_defaults_to_true() {
 #[test]
 fn test_permissions_are_minimal() {
     let (_, yaml) = workflow();
-    let perms = yaml["permissions"].as_mapping().expect("permissions must be set");
-    assert_eq!(perms.len(), 2, "Only contents and pull-requests permissions expected");
+    let perms = yaml["permissions"]
+        .as_mapping()
+        .expect("permissions must be set");
+    assert_eq!(
+        perms.len(),
+        2,
+        "Only contents and pull-requests permissions expected"
+    );
     assert_eq!(yaml["permissions"]["contents"], "write");
     assert_eq!(yaml["permissions"]["pull-requests"], "read");
 }
@@ -41,8 +51,14 @@ fn test_permissions_are_minimal() {
 #[test]
 fn test_protects_default_branch_and_open_prs() {
     let (content, _) = workflow();
-    assert!(content.contains("DEFAULT_BRANCH"), "Must guard the default branch");
-    assert!(content.contains("state=open"), "Must skip branches with open PRs");
+    assert!(
+        content.contains("DEFAULT_BRANCH"),
+        "Must guard the default branch"
+    );
+    assert!(
+        content.contains("state=open"),
+        "Must skip branches with open PRs"
+    );
 }
 
 #[test]
