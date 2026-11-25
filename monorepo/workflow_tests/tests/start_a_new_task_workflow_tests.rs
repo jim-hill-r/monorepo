@@ -64,13 +64,13 @@ fn test_workflow_does_not_use_gh_issue_create() {
 }
 
 #[test]
-fn test_workflow_trigger_is_pull_request_closed() {
+fn test_workflow_does_not_trigger_on_pull_request() {
     let content = fs::read_to_string(get_start_a_new_task_workflow_path())
         .expect("Failed to read workflow file");
 
     assert!(
-        content.contains("pull_request:") && content.contains("types: [closed]"),
-        "Workflow trigger is not configured correctly (should include pull_request closed)"
+        !content.contains("pull_request:"),
+        "Workflow should not run automatically on pull_request (manual workflow_dispatch only)"
     );
 }
 

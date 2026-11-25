@@ -69,7 +69,7 @@ All projects live in the root directory. Each project may have:
 ### `.github/workflows/`
 Contains GitHub Actions workflows:
 - `cast-ci.yml` - Automatically runs `cast ci` for projects with changes
-- `start-a-new-task.yml` - Creates new agent tasks after PR merges
+- `start-a-new-task.yml` - Creates a new Copilot agent task (manual trigger only)
 
 See `.github/workflows/README.md` and `.github/WORKFLOW_CONVENTIONS.md` for details.
 
