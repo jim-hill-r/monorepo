@@ -1,0 +1,85 @@
+name: All Delete Branches
+
+# Maintenance workflow: deletes the named remote branches so cleanup never
+# needs a local clone. Run manually (Actions tab, or the workflow_dispatch API)
+# with a whitespace- or newline-separated list of branch names.
+#
+# Safety rules:
+# - The default branch is never deleted.
+# - A branch that is the head of an open pull request is skipped.
+# - dry_run defaults to true and only reports what would be deleted.
+on:
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: "Branch names to delete, separated by spaces or newlines"
+        required: true
+        type: string
+      dry_run:
+        description: "Only report what would be deleted"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: delete-branches
+  cancel-in-progress: false
+
+jobs:
+  delete-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          BRANCHES: ${{ inputs.branches }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          open_pr_heads=$(gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" --jq '.[] | select(.head.repo.full_name == env.REPO) | .head.ref')
+
+          deleted=0; skipped=0; missing=0; failed=0
+          for branch in $BRANCHES; do
+            if [ "$branch" = "$DEFAULT_BRANCH" ]; then
+              echo "::warning::Skipping $branch: it is the default branch"
+              skipped=$((skipped + 1)); continue
+            fi
+            if printf '%s\n' "$open_pr_heads" | grep -qxF -- "$branch"; then
+              echo "::warning::Skipping $branch: it has an open pull request"
+              skipped=$((skipped + 1)); continue
+            fi
+            encoded=$(jq -rn --arg b "$branch" '$b | @uri')
+            if ! gh api "repos/$REPO/git/ref/heads/$encoded" --silent 2>/dev/null; then
+              echo "Not found: $branch"
+              missing=$((missing + 1)); continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Would delete: $branch"
+              deleted=$((deleted + 1)); continue
+            fi
+            if gh api -X DELETE "repos/$REPO/git/refs/heads/$encoded" --silent; then
+              echo "Deleted: $branch"
+              deleted=$((deleted + 1))
+            else
+              echo "::error::Failed to delete $branch"
+              failed=$((failed + 1))
+            fi
+          done
+
+          verb=$([ "$DRY_RUN" = "true" ] && echo "Would delete" || echo "Deleted")
+          {
+            echo "### Delete branches"
+            echo "- $verb: $deleted"
+            echo "- Skipped (default branch or open PR): $skipped"
+            echo "- Not found: $missing"
+            echo "- Failed: $failed"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          [ "$failed" -eq 0 ]
