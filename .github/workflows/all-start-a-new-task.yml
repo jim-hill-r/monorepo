@@ -1,8 +1,8 @@
 name: All Start New AI Agent Task
 
+# Automatic runs on PR merge are disabled; Claude scheduled tasks now pick up work.
+# Run manually via workflow_dispatch if needed.
 on:
-  pull_request:
-    types: [closed]
   workflow_dispatch:
 
 permissions:
