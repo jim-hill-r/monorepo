@@ -4,6 +4,8 @@
 use bear_down_core::{Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds};
 use serde::Serialize;
 
+use crate::why::{self, Goal};
+
 /// The whole file.
 #[derive(Debug, Serialize)]
 pub struct Guide {
@@ -86,6 +88,9 @@ pub struct SwingEntry {
     pub swing: f64,
     /// The team to root for, or `None` when the swing is within the noise.
     pub root_for: Option<String>,
+    /// Plain-language reasons the pick helps (empty when `root_for` is
+    /// `None`): the rivalry, tiebreakers and seeding odds it moves.
+    pub why: Vec<String>,
 }
 
 impl Guide {
@@ -95,6 +100,7 @@ impl Guide {
         simulation: &Simulation,
         standings: &Standings,
         latest: Option<&Game>,
+        games: &[Game],
         generated_at: String,
     ) -> Self {
         let focus = simulation.focus;
@@ -109,7 +115,15 @@ impl Guide {
                 odds: odds(simulation.odds(focus)),
             },
             nfc_north_divisional: simulation.nfc_north,
-            games: simulation.games.iter().map(GameEntry::new).collect(),
+            games: simulation
+                .games
+                .iter()
+                .map(|impact| {
+                    GameEntry::new(impact, standings, games, &|team| {
+                        simulation.odds(team).playoffs
+                    })
+                })
+                .collect(),
         }
     }
 }
@@ -129,12 +143,18 @@ impl LatestGame {
 }
 
 impl GameEntry {
-    fn new(impact: &GameImpact) -> Self {
-        let swing = |swing: &Swing| SwingEntry {
+    fn new(
+        impact: &GameImpact,
+        standings: &Standings,
+        games: &[Game],
+        playoff_odds: &dyn Fn(Team) -> f64,
+    ) -> Self {
+        let swing = |swing: &Swing, goal: Goal| SwingEntry {
             if_home_wins: swing.if_home_wins,
             if_away_wins: swing.if_away_wins,
             swing: swing.swing(),
             root_for: impact.root_for(swing).map(|team| team.abbr().to_string()),
+            why: why::reasons(impact, goal, swing, standings, games, playoff_odds),
         };
         GameEntry {
             id: impact.game_id.clone(),
@@ -142,9 +162,9 @@ impl GameEntry {
             away: team(impact.away),
             home: team(impact.home),
             home_win_probability: impact.home_win_probability,
-            champion: swing(&impact.champion),
-            playoffs: swing(&impact.playoffs),
-            nfc_north: swing(&impact.nfc_north),
+            champion: swing(&impact.champion, Goal::Champion),
+            playoffs: swing(&impact.playoffs, Goal::Playoffs),
+            nfc_north: swing(&impact.nfc_north, Goal::NfcNorth),
         }
     }
 }

@@ -27,5 +27,8 @@ only reliable for the coming week and good sources usually need a paid API.
 
 - No API keys and no paid data.
 - Elo ignores injuries and quarterback changes, so it is weaker than the
-  betting market for the current week. Using the spreads already in
-  `games.csv` for this week's games is a backlog item.
+  betting market for the current week.
+- Amended 2026-11-26 (Jim: "we are leaning too heavily on Elo"): every
+  remaining game with a betting line in `games.csv` (nflverse publishes
+  them about two weeks ahead) uses the line instead, as
+  `Φ(spread_line / 13.45)`. Elo covers later games and the playoffs.

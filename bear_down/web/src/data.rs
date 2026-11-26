@@ -69,6 +69,9 @@ pub struct Swing {
     pub swing: f64,
     /// The team to root for, or `None` when the swing is within noise.
     pub root_for: Option<String>,
+    /// Plain-language reasons the pick helps. Missing in older files.
+    #[serde(default)]
+    pub why: Vec<String>,
 }
 
 /// What the rankings optimize.
