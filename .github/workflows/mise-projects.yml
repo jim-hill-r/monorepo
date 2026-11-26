@@ -53,7 +53,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.ref }}
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v5
         with:
           install: false
 
@@ -126,7 +126,7 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v5
         with:
           working_directory: ${{ matrix.project }}
 
