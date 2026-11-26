@@ -151,6 +151,7 @@ Eval kinds:
 | `fault` | A Playwright test run with a fault injected | `fault` name from the catalogue below plus a `@req:` tag |
 | `judge` | An agent grades the live product against a rubric | `rubric` inline; see Judge evals |
 | `human` | Jim's rating in pane | Every requirement gets this implicitly; no entry needed |
+| `human-check` | Jim checks a hand-configured setting in a dashboard | `setting` names an entry in `standards/settings.toml`; see Human checks |
 
 `mise run //:audit` checks the files (Phase 0): every eval names a
 requirement that exists and isn't retired, every ID is unique, every
@@ -169,6 +170,7 @@ first and becomes an error in Phase 4.
 | `observe` | Daily at 4:00 AM Pacific over the trailing window, and 1 hour after each deploy | Analytics Engine, Web Analytics, PostHog, GitHub | Nothing; files a `FIX` |
 | `judge` | Weekly, Claude scheduled task | Production plus the latest UAT report | Advisory only |
 | `human` | Whenever Jim rates in pane | His own use | Overrides `judge`; see Verdicts |
+| `human-check` | When a check is due (its `every`), through the weekly human issues digest | The dashboard or account itself | Nothing; a "not ok" answer files a `FIX` |
 
 All schedules are GitHub Actions `schedule` triggers, so none uses one of the
 5 Cloudflare Cron Triggers.
@@ -557,7 +559,46 @@ A `judge` eval gives an agent a rubric and the evidence, and it grades.
   agreement rate per rubric. A rubric under 80% agreement over its last 10
   ratings gets a `TODO (agent-generated)` to rewrite it.
 
-### Closing the loop
+### Human checks: settings made by hand
+
+Some of what the products rely on is set up by hand in a dashboard
+("clickops") and lives in no file an eval can read: Claude MCP connectors
+and scheduled tasks, repo and Worker secrets, Auth0 application settings,
+Cloudflare API token scopes, Access policies, Web Analytics, PostHog
+project settings, and free-plan billing settings. Jim asked on 2026-11-26
+for the eval loop to cover them too (they break silently: an expired
+connector sign-in, a token missing a scope, a callback URL dropped).
+
+- **A manifest**, `standards/settings.toml`, lists each hand-made setting
+  once: `id`, `vendor`, `where` (the dashboard page or a link to it),
+  `expect` (what it must be, in words Jim can check in under a minute),
+  `why` (what breaks without it) and `every` (how often to check, such as
+  `30d` or `90d`). It never holds a secret's value, only that the secret
+  exists and what it is for. Adding a setting by hand without adding it
+  here is the thing to avoid; `HUMAN_ISSUES.md` items that create a
+  setting add its manifest entry in the same PR.
+- **Evals of kind `human-check`** in a project's `evals.toml` (or the
+  `monorepo` project's, for repo-wide settings such as Claude connectors)
+  point a requirement at a setting: `kind = "human-check"`,
+  `setting = "<id>"`, `stages = ["human"]`. `evals check` reports a
+  `setting` that isn't in the manifest (EVL-001 widened) and a manifest
+  entry no eval uses (a warning).
+- **Due checks become human issues.** `evals verdicts` lists every
+  `human-check` whose latest result is older than its `every`. The weekly
+  `human-issues-digest` run (Mondays) adds each due one to
+  `HUMAN_ISSUES.md` as a periodic line, `TODO (human): Check <setting>:
+  <expect> (<where>). Reply ok or what is wrong. (Periodic, every 30d.
+  Covers COOK-003.)`, in one PR with the rest of its changes, and brings it
+  to Jim with the rest of the digest.
+- **Jim's answer is the result.** When Jim answers in the project ("ok", or
+  what is wrong), the agent that reads it records a result with
+  `by = "jim"`, `stage = "human"`, `status` `pass` or `fail` and his words
+  as `evidence` through `evals publish`, and removes the line. A `fail`
+  also files a `FIX` (or a `TODO (human)` if only Jim can fix it).
+- **Verdicts.** A failed human check makes its requirement not met, like a
+  production eval. A check past twice its `every` with no answer makes it
+  at risk, never met: an unchecked setting is unknown, not fine.
+
 
 The deploy-feedback plan already has a scheduled agent task after the
 nightly run that files `FIX` items for failed projects. This plan widens it
@@ -706,6 +747,8 @@ that needs them, not before:
   `EVALS_CHAOS=on` when he is happy with the first manual runs.
 - Phase 6: nothing new; the toolbar uses pane's existing Access policy.
 - Phase 7: schedule the weekly `judge-requirements` Claude task.
+- Human checks: answer each due "Check <setting>" line in the weekly
+  digest with "ok" or what is wrong.
 
 ## Cost
 
