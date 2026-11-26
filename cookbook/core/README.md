@@ -23,6 +23,7 @@ The cookbook uses a UUID-based architecture where each recipe is uniquely identi
 - `Plan`: Weekly meal plan that references recipes by UUID
 - `PlanReader`: Trait for reading plans from a data source
 - `PlanWriter`: Trait for writing plans to a data source
+- `markdown`: A small Markdown parser (paragraphs, `#` headings, `**strong**` and `*emphasis*`) that turns prose such as `content/intro.md` into blocks the web app renders as elements, never as injected HTML
 
 ## Usage
 

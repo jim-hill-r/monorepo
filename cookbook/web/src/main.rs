@@ -1,5 +1,6 @@
 use chrono::NaiveDate;
 use chrono::prelude::*;
+use cookbook_core::markdown::{self, Block, Inline};
 use cookbook_core::{PlanReader, RecipeReader};
 use cookbook_data_md::embedded::{EmbeddedPlanStore, EmbeddedRecipeStore};
 use dioxus::prelude::*;
@@ -487,6 +488,39 @@ fn Sidebar() -> Element {
     }
 }
 
+/// Renders the inline spans of one Markdown block.
+fn render_inlines(spans: &[Inline]) -> Element {
+    rsx! {
+        for span in spans.iter() {
+            match span {
+                Inline::Text(text) => rsx! { "{text}" },
+                Inline::Emphasis(text) => rsx! { em { "{text}" } },
+                Inline::Strong(text) => rsx! { strong { "{text}" } },
+            }
+        }
+    }
+}
+
+/// Renders Markdown prose (see `cookbook_core::markdown`) as elements, never
+/// as injected HTML.
+#[component]
+fn MarkdownBlocks(markdown: &'static str) -> Element {
+    let blocks = markdown::parse(markdown);
+    rsx! {
+        for block in blocks.iter() {
+            match block {
+                Block::Paragraph(spans) => rsx! { p { {render_inlines(spans)} } },
+                Block::Heading { level: 1, content } => rsx! { h1 { {render_inlines(content)} } },
+                Block::Heading { level: 2, content } => rsx! { h2 { {render_inlines(content)} } },
+                Block::Heading { level: 3, content } => rsx! { h3 { {render_inlines(content)} } },
+                Block::Heading { level: 4, content } => rsx! { h4 { {render_inlines(content)} } },
+                Block::Heading { level: 5, content } => rsx! { h5 { {render_inlines(content)} } },
+                Block::Heading { content, .. } => rsx! { h6 { {render_inlines(content)} } },
+            }
+        }
+    }
+}
+
 #[component]
 fn Home() -> Element {
     let today = get_current_day_of_year();
@@ -499,7 +533,7 @@ fn Home() -> Element {
 
             div {
                 class: "intro-description",
-                p { "{INTRO_MD}" }
+                MarkdownBlocks { markdown: INTRO_MD }
             }
 
             div {
@@ -798,6 +832,30 @@ mod tests {
             INTRO_MD.contains("Engineer's 365 Cookbook"),
             "INTRO_MD should contain the cookbook title"
         );
+    }
+
+    #[test]
+    fn test_intro_md_renders_as_paragraphs_with_emphasised_title() {
+        let blocks = markdown::parse(INTRO_MD);
+        assert_eq!(blocks.len(), 3, "intro should have three paragraphs");
+        let Some(Block::Paragraph(first)) = blocks.first() else {
+            panic!("intro should start with a paragraph");
+        };
+        assert_eq!(
+            first.first(),
+            Some(&Inline::Emphasis("The Engineer's 365 Cookbook".to_string()))
+        );
+        for block in &blocks {
+            let Block::Paragraph(spans) = block else {
+                panic!("intro should only have paragraphs");
+            };
+            for span in spans {
+                if let Inline::Text(text) = span {
+                    assert!(!text.contains('*'), "literal Markdown marker in {text:?}");
+                    assert!(!text.contains('\n'), "unjoined line break in {text:?}");
+                }
+            }
+        }
     }
 
     #[test]

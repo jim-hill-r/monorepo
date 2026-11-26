@@ -24,6 +24,9 @@
 //! - [`Plan`]: Weekly meal plan that references recipes by UUID
 //! - [`PlanReader`]: Trait for reading plans from a data source
 //! - [`PlanWriter`]: Trait for writing plans to a data source
+//! - [`markdown`]: A small Markdown parser for prose such as the home page intro
+
+pub mod markdown;
 
 use std::fmt;
 use uuid::Uuid;

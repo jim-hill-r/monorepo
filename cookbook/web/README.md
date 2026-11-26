@@ -75,7 +75,7 @@ dx serve --verbose
 
 The application provides the following routes:
 
-- `/` - Home page with navigation information
+- `/` - Home page: the intro from `../content/intro.md`, rendered as Markdown with `cookbook_core::markdown`, and navigation cards
 - `/recipe/{day}` - Recipe for a specific day (1-365)
 - `/plan/{week}` - Meal plan for a specific week (1-52)
 
