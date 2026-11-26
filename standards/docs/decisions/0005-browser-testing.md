@@ -1,6 +1,7 @@
 # 0005. Keep Playwright, but run it on a browser we already have
 
-- Status: Proposed (needs Jim's sign-off)
+- Status: Accepted
+- Decided by: Jim (approved and merged PR #616, 2026-11-26)
 - Date: 2026-11-26
 - Asked by: Jim ("The downloading of chrome has always been a challenge. It
   depends on node which I don't really like.")
@@ -92,7 +93,7 @@ Vendors and cost: every option is free and open source and adds no service
 vendor. Playwright's browser builds come from Microsoft's CDN, Chrome for
 Testing from Google's; neither is an account or a paid plan.
 
-## Decision (proposed)
+## Decision
 
 Choose **B**: keep Playwright and stop depending on its Chromium download.
 
@@ -127,7 +128,6 @@ Choose **B**: keep Playwright and stop depending on its Chromium download.
 ## Migration TODOs
 
 These are in `standards/ISSUES.md` under "Browser tests on a system browser".
-They land with this record, so they only exist once Jim accepts it.
 
 1. In `cookbook/web/playwright.config.ts` and `cahokia/web/playwright.config.ts`,
    launch the Chromium and Pixel 5 projects with
