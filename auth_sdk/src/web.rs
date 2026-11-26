@@ -11,6 +11,7 @@ use crate::provider::{
     AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, CsrfTokenWrapper, NonceWrapper,
     PkceVerifierWrapper, ProviderConfig,
 };
+use crate::redirect::{safe_return_path, strip_authorization_response};
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
@@ -37,6 +38,7 @@ pub struct WebAuthProvider {
     _provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
+    return_to: Option<String>,
 }
 
 impl WebAuthProvider {
@@ -51,12 +53,21 @@ impl WebAuthProvider {
         let (client, provider_metadata) =
             Self::create_client_from_discovery(issuer_url, &config).await?;
 
-        let (access_token, id_token_claims) =
+        let (access_token, id_token_claims, return_to) =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
-                let (token, claims) = handle_redirect(&client, authorization_code, state).await?;
-                (Some(token), claims)
+                let result = handle_redirect(&client, authorization_code, state).await;
+                // The code is single-use: take it (and the state) out of the
+                // address bar and drop the stored login state whether or not
+                // the exchange worked, so a reload doesn't replay it.
+                clear_authorization_response_from_browser();
+                let app_state = fetch_app_state_from_browser().ok();
+                remove_app_state_from_browser();
+                let (token, claims) = result?;
+                let return_to =
+                    safe_return_path(app_state.as_ref().and_then(|s| s.return_to.as_deref()));
+                (Some(token), claims, Some(return_to))
             } else {
-                (None, None)
+                (None, None, None)
             };
 
         Ok(WebAuthProvider {
@@ -64,7 +75,17 @@ impl WebAuthProvider {
             _provider_metadata: provider_metadata,
             access_token,
             id_token_claims,
+            return_to,
         })
+    }
+
+    /// The same-origin path the user was on when they clicked Login.
+    ///
+    /// `Some` only on the page load that completed a sign-in redirect. The
+    /// redirect URI is always the site root, so the app navigates here to
+    /// put the user back where they started.
+    pub fn return_to(&self) -> Option<&str> {
+        self.return_to.as_deref()
     }
 
     /// Create a CoreClient using OIDC discovery
@@ -165,7 +186,7 @@ impl AuthProvider for WebAuthProvider {
         tracing::debug!("Generated CSRF token and nonce for login");
 
         store_app_state_in_browser(&AppState {
-            return_to: fetch_current_location_from_browser(),
+            return_to: fetch_current_path_from_browser(),
             csrf_token: Some(CsrfTokenWrapper::new(csrf_token.secret().to_string())),
             pkce_verifier: Some(PkceVerifierWrapper::new(pkce_verifier.secret().to_string())),
             nonce: Some(NonceWrapper::new(nonce.secret().to_string())),
@@ -211,6 +232,53 @@ pub fn fetch_current_location_from_browser() -> Option<String> {
     }
     None
 }
+/// The site origin, such as `https://cahokia-web.pages.dev`.
+///
+/// Pass it to [`crate::redirect::redirect_url_for_origin`] for a stable
+/// `redirect_url`.
+pub fn fetch_origin_from_browser() -> Option<String> {
+    web_sys::window()?.location().origin().ok()
+}
+
+/// The current page as a same-origin path: pathname, query and hash.
+fn fetch_current_path_from_browser() -> Option<String> {
+    let location = web_sys::window()?.location();
+    Some(format!(
+        "{}{}{}",
+        location.pathname().ok()?,
+        location.search().ok()?,
+        location.hash().ok()?
+    ))
+}
+
+/// Replace the current history entry with the same URL minus the
+/// authorization response (`code`, `state`, `error`, `error_description`).
+fn clear_authorization_response_from_browser() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let location = window.location();
+    let (Ok(pathname), Ok(search), Ok(hash)) =
+        (location.pathname(), location.search(), location.hash())
+    else {
+        return;
+    };
+    let url = format!("{pathname}{}{hash}", strip_authorization_response(&search));
+    if let Ok(history) = window.history()
+        && history
+            .replace_state_with_url(&web_sys::wasm_bindgen::JsValue::NULL, "", Some(&url))
+            .is_err()
+    {
+        tracing::warn!("failed to clear the authorization response from the URL");
+    }
+}
+
+fn remove_app_state_from_browser() {
+    if let Some(Ok(Some(storage))) = web_sys::window().map(|w| w.session_storage()) {
+        let _ = storage.remove_item(DEFAULT_APP_STATE_STORAGE_KEY);
+    }
+}
+
 fn fetch_code_and_state_from_browser() -> Result<(AuthorizationCode, CsrfTokenState), AuthError> {
     let window = web_sys::window()
         .ok_or_else(|| AuthError::BrowserApiError("window object not available".to_string()))?;
