@@ -15,7 +15,7 @@ pub use games::{Date, Game, GameType, Outcome, Schedule, Score, Season, Week};
 pub use relevance::{Link, Relevance, relevance};
 pub use sim::{
     Cause, Channel, ChannelImpact, Contribution, GameImpact, NEGLIGIBLE_SWING, SimConfig,
-    Simulation, Swing, TeamOdds, Tier, simulate, spread_win_probability,
+    Simulation, Swing, TeamOdds, Tier, simulate, spread_win_probability, tier_against,
 };
 pub use standings::{
     Conference, Division, Procedure, Record, Region, Standings, Step, Team, Tiebreak,

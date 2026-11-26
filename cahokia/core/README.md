@@ -195,7 +195,7 @@ The crate uses `FamilyTreeResult<T>` which can return:
 
 ## Future Enhancements
 
-See `ISSUES.md` for planned features including:
+See the issue files in `issues/` for planned features including:
 - Divorce event handling
 - Ancestor/descendant traversal queries
 - Family tree visualization

@@ -1,0 +1,10 @@
+---
+kind: todo
+priority: priority
+tags: [agent-ignore]
+epic: Big epic
+order: 10
+added: 2026-11-20
+---
+
+Epic item.

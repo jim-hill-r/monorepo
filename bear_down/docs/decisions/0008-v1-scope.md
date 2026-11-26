@@ -18,6 +18,6 @@ the regular season left.
 
 ## Consequences
 
-- Playoff-week guides and a weekly archive are backlog items in `ISSUES.md`.
+- Playoff-week guides and a weekly archive are backlog items in `ISSUES.md` (now `issues/`).
 - The simulator still simulates the playoffs, because Super Bowl odds depend
   on them.
