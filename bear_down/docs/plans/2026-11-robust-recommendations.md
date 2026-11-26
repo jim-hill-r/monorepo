@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: accepted (Jim, 2026-11-26); steps 1 to 5 done
+- Status: done (2026-11-26); accepted by Jim the same day
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -141,7 +141,12 @@ Each is one PR, in this order:
    change. A pick now needs a tier of matters or small, so a clear but
    negligible edge reads "doesn't matter" (BEAR-005). The old rule-of-thumb
    head-to-head and strength lines are gone (BEAR-006).
-6. Golden-week evals.
+6. Golden-week evals. Done: `golden_week_2018_week_17` (the Bears' bye
+   came down to head-to-head with the Rams, and the text says so) and
+   `golden_week_2020_week_17` (Cardinals at Rams decided the 8-7 Bears'
+   wild card), plus `bear_down/evals.toml`, which ties these and the
+   earlier tests to BEAR-001 to BEAR-008 and checks the live
+   `rooting.json` after each deploy.
 
 ## Open questions for Jim
 
