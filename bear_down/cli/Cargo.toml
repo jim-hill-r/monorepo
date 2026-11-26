@@ -1,0 +1,15 @@
+[package]
+name = "bear_down_cli"
+description = "Downloads nflverse data, runs the bear_down simulation and writes rooting.json"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "bear_down"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+bear_down_core.workspace = true

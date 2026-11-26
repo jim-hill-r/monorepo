@@ -17,6 +17,7 @@ config_roots = [
   "athenaeum",
   "auth_sdk",
   "bear_down",
+  "bear_down/web",
   "blueeel",
   "bogan",
   "cahokia",

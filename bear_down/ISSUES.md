@@ -2,7 +2,6 @@
 
 Build v1 in this order. Each item links the decision that explains it.
 
-- TODO: Create the Cargo workspace (`core`, `cli`, `web` crates) and a `mise.toml` using the shared Rust/Dioxus task file. ([0001](docs/decisions/0001-static-site-rebuilt-weekly.md))
 - TODO: In `core`, load and parse nflverse `games.csv` into seasons, weeks, games and results, with fixture-based tests. ([0006](docs/decisions/0006-nflverse-data.md))
 - TODO: In `core`, compute Elo ratings from the historical results, including the season-to-season regression, and turn a matchup into a win probability. ([0004](docs/decisions/0004-elo-win-probabilities.md))
 - TODO: In `core`, implement NFL standings, division winners, wild cards and seeding with the tiebreaker steps listed in the decision, tested against real past final standings. ([0005](docs/decisions/0005-tiebreakers.md))
