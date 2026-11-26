@@ -116,6 +116,12 @@ repo, rather than in any one agent tool's settings.
   as major) release notes with no breaking change that CI wouldn't catch
   (Jim, 2026-11-26). It reads this file for extra pins, so list
   any new pins here.
+- **Never idle without saying why (Jim, 2026-11-26).** Before an agent's
+  thread goes quiet, it posts a short message saying what it is waiting on
+  (a hook or CI run, a review, an answer) and roughly when it expects to
+  continue. A thread with nothing running is either resolved as done or
+  asks Jim a question that says why it can't close, so it shows as waiting
+  on him. A checklist update alone doesn't count.
 - **Starting new work.** There is no scheduled job for new work. Whenever no
   agent PRs or agent tasks are in flight, the coordinating agent starts a new
   task by running the `start-a-new-task` skill.
