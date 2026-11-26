@@ -35,10 +35,10 @@ repo, rather than in any one agent tool's settings.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
   or closed). The policy is in `standards/docs/pull-requests.md`. An hourly
   scheduled agent task, "Hourly PR triage", acts as `jimhillr-agt` on every
-  open PR: it approves and squash-merges safe dependabot bumps, asks dependabot
-  to rebase conflicts, closes superseded or pinned bumps, approves safe human
-  PRs (never merging them), adopts orphaned agent PRs, and labels anything that
-  needs Jim `needs-jim`. Safe means green checks, no conflict, patch or minor
+  open PR: it approves and squash-merges safe dependabot and human PRs,
+  merges agent PRs once a human has approved them, asks dependabot to rebase
+  conflicts, closes superseded or pinned bumps, adopts orphaned agent PRs, and
+  labels anything that needs Jim `needs-jim`. Safe means green checks, no conflict, patch or minor
   bumps only (a 0.x minor bump counts as major), never the pinned bumps above,
   and no workflow, auth or secrets changes unless trivially safe. It reads
   this file for extra pins, so list any new pins here.
