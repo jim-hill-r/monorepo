@@ -26,6 +26,12 @@ Called by the three workflows below.
 Runs on every pull request against the projects it changes. Never deploys.
 `workflow_dispatch` runs every project on a branch.
 
+A second job, **CI result**, always runs after the projects and passes only
+when every project passed. It is the one check the `main` ruleset should
+require, so GitHub auto-merge waits for green CI (see the Auto-merge section
+of `standards/docs/pull-requests.md`). Rename it only together with that
+ruleset.
+
 ### push-main.yml
 
 Runs on every push to `main`: `mise run ci` then `mise run deploy` in each

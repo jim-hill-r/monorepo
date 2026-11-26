@@ -30,7 +30,10 @@ A swing object has `if_home_wins` and `if_away_wins` (the goal's odds after
 each result), `swing` (`if_home_wins - if_away_wins`; negative means root for
 the away team) and `root_for` (the team to root for, or null when the swing
 is within two standard errors of the simulation's noise, shown as "doesn't
-matter").
+matter") and `why` (plain-language reasons the pick helps: the rivalry, the
+head-to-head, strength of victory and strength of schedule tiebreakers it
+touches, and how it moves the Bears' NFC North title, No. 1 seed and playoff
+odds; empty when `root_for` is null).
 
 ## Example
 
@@ -50,9 +53,9 @@ matter").
     {
       "id": "2026_12_CHI_DET", "gameday": "2026-11-26", "away": "CHI", "home": "DET",
       "home_win_probability": 0.569,
-      "champion": { "if_home_wins": 0.055, "if_away_wins": 0.086, "swing": -0.031, "root_for": "CHI" },
-      "playoffs": { "if_home_wins": 0.864, "if_away_wins": 0.963, "swing": -0.099, "root_for": "CHI" },
-      "nfc_north": { "if_home_wins": 0.0007, "if_away_wins": 0.0005, "swing": 0.0002, "root_for": null }
+      "champion": { "if_home_wins": 0.055, "if_away_wins": 0.086, "swing": -0.031, "root_for": "CHI", "why": ["The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race."] },
+      "playoffs": { "if_home_wins": 0.864, "if_away_wins": 0.963, "swing": -0.099, "root_for": "CHI", "why": [] },
+      "nfc_north": { "if_home_wins": 0.0007, "if_away_wins": 0.0005, "swing": 0.0002, "root_for": null, "why": [] }
     }
   ]
 }
@@ -68,5 +71,5 @@ cargo run --release -p bear_down_cli -- --out web/public/rooting.json
 
 It downloads nflverse `games.csv` (decision 0006) unless `--games` gives a
 local path or another URL, and runs 100,000 simulations unless
-`--simulations` says otherwise. A weekly build takes a few seconds in a
+`--simulations` says otherwise. A weekly build takes under a minute in a
 release build.

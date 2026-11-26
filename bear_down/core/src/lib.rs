@@ -11,7 +11,9 @@ pub mod standings;
 
 pub use elo::{EloParams, Ratings};
 pub use games::{Date, Game, GameType, Outcome, Schedule, Score, Season, Week};
-pub use sim::{GameImpact, SimConfig, Simulation, Swing, TeamOdds, simulate};
+pub use sim::{
+    GameImpact, SimConfig, Simulation, Swing, TeamOdds, simulate, spread_win_probability,
+};
 pub use standings::{Conference, Division, Record, Region, Standings, Team};
 
 /// The Bears' team abbreviation in nflverse data.

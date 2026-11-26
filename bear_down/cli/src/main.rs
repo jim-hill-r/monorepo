@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bear_down_core::{EloParams, Ratings, Schedule, SimConfig, Standings, simulate};
 
 mod rooting;
+mod why;
 
 /// Where nflverse publishes `games.csv` (decision 0006).
 const GAMES_URL: &str = "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv";
@@ -118,10 +119,12 @@ fn build(
     }
     let simulation = simulate(&season, &ratings, &config)?;
     let standings = Standings::from_season(&season)?;
+    let games: Vec<_> = season.regular_season().cloned().collect();
     Ok(rooting::Guide::new(
         &simulation,
         &standings,
         season.latest_played(),
+        &games,
         generated_at,
     ))
 }
@@ -274,7 +277,7 @@ mod tests {
         );
         let game = &json["games"][0];
         for goal in ["champion", "playoffs", "nfc_north"] {
-            for key in ["if_home_wins", "if_away_wins", "swing", "root_for"] {
+            for key in ["if_home_wins", "if_away_wins", "swing", "root_for", "why"] {
                 assert!(game[goal].get(key).is_some(), "{goal} should have {key}");
             }
         }

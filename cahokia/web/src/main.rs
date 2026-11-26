@@ -23,8 +23,10 @@ use views::home::Home;
 
 mod views;
 
+/// Auth0 issuer. The trailing slash is required: OIDC discovery compares it
+/// to the issuer Auth0 publishes as an exact string.
 #[cfg(any(target_arch = "wasm32", test))]
-const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com";
+const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
 #[cfg(any(target_arch = "wasm32", test))]
@@ -243,10 +245,31 @@ mod tests {
     #[test]
     fn test_auth0_domain_constant_used() {
         // Verify AUTH0_DOMAIN constant is properly defined
-        assert_eq!(AUTH0_DOMAIN, "https://dev-jdadpn4pckxevrv5.us.auth0.com");
+        assert_eq!(AUTH0_DOMAIN, "https://dev-jdadpn4pckxevrv5.us.auth0.com/");
         // Verify it's used in AUTH_URL and TOKEN_URL
         assert!(AUTH_URL.starts_with(AUTH0_DOMAIN));
         assert!(TOKEN_URL.starts_with(AUTH0_DOMAIN));
+    }
+
+    #[test]
+    fn test_auth0_domain_has_trailing_slash() {
+        // Auth0 publishes its issuer with a trailing slash, and openidconnect
+        // compares the configured issuer_url to it as an exact string, so
+        // OIDC discovery fails on every page load without the slash.
+        assert!(
+            AUTH0_DOMAIN.ends_with('/'),
+            "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
+        );
+    }
+
+    #[test]
+    fn test_auth0_endpoint_urls_have_no_double_slash() {
+        for url in [AUTH_URL, TOKEN_URL] {
+            let path = url.trim_start_matches("https://");
+            assert!(!path.contains("//"), "{url} must not contain '//'");
+        }
+        assert_eq!(AUTH_URL, format!("{AUTH0_DOMAIN}authorize"));
+        assert_eq!(TOKEN_URL, format!("{AUTH0_DOMAIN}oauth/token"));
     }
 
     #[test]

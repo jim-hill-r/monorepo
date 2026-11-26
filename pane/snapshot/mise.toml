@@ -1,5 +1,6 @@
 # pane/snapshot: rust project. Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
+# affected-by: ../web
 
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy" }

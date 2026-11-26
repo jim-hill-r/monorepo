@@ -11,3 +11,14 @@ includes = ["../../standards/tasks/dioxus-web.toml"]
 
 [env]
 DX_PACKAGE = "pane_web"  # app inside a Cargo workspace; see standards/tasks/dioxus-web.toml
+
+[tasks.release]
+description = "Build the repo snapshot into public/data/, then the release bundle into dist/"
+# pane_snapshot reads the whole checkout (see pane/snapshot/README.md) and
+# writes public/data/snapshot.json, which dx copies into the bundle as
+# /data/snapshot.json. public/ is gitignored, so the snapshot is never
+# committed (standards/docs/mise.md: no committed build artifacts).
+run = [
+  "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json",
+  "dx bundle --platform web --release --out-dir dist --package $DX_PACKAGE",
+]
