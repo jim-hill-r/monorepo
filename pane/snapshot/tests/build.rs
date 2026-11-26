@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use pane_model::{ProjectStatus, Snapshot, WorkKind};
+use pane_model::{DeliverableKind, ProjectStatus, Snapshot, WorkKind};
 use pane_snapshot::repo;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -32,6 +32,10 @@ impl FixtureRepo {
             fs::write(
                 dir.join(skipped).join("ISSUES.md"),
                 "# Priority Issues\n\n- TODO: Must be skipped.\n",
+            )?;
+            fs::write(
+                dir.join(skipped).join("gen.rs"),
+                "// TODO: Must be skipped.\n",
             )?;
         }
         Ok(Self(dir))
@@ -116,8 +120,69 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
             ("app/ISSUES.md", Some("app"), WorkKind::Todo, "Epic item."),
             ("app/ISSUES.md", Some("app"), WorkKind::Fix, "Phase item."),
             ("app/ISSUES.md", Some("app"), WorkKind::Todo, "Later."),
+            (
+                "app/src/main.rs",
+                Some("app"),
+                WorkKind::Todo,
+                "Line comment."
+            ),
+            (
+                "app/src/main.rs",
+                Some("app"),
+                WorkKind::Fix,
+                "Trailing comment."
+            ),
+            (
+                "app/src/main.rs",
+                Some("app"),
+                WorkKind::Todo,
+                "Block comment."
+            ),
+            (
+                "app/src/main.rs",
+                Some("app"),
+                WorkKind::Todo,
+                "After commented-out code."
+            ),
         ]
     );
+    Ok(())
+}
+
+#[test]
+fn collects_human_issues_docs_and_retros() -> TestResult {
+    let repo_dir = FixtureRepo::new("docs")?;
+    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    assert_eq!(s.human_issues.len(), 2);
+    assert_eq!(s.human_issues[0].file, "HUMAN_ISSUES.md");
+
+    let docs: Vec<_> = s
+        .deliverables
+        .iter()
+        .map(|d| (d.kind, d.path.as_deref(), d.project.as_deref()))
+        .collect();
+    assert_eq!(
+        docs,
+        [
+            (
+                DeliverableKind::Decision,
+                Some("app/docs/decisions/0001-pick-a-thing.md"),
+                Some("app")
+            ),
+            (
+                DeliverableKind::Plan,
+                Some("app/docs/plans/2026-11-big-plan.md"),
+                Some("app")
+            ),
+            (
+                DeliverableKind::Retro,
+                Some("app/docs/retros/2026-11-20-launch.md"),
+                Some("app")
+            ),
+        ]
+    );
+    assert_eq!(s.retros.len(), 1);
+    assert_eq!(s.retros[0].actions.len(), 2);
     Ok(())
 }
 

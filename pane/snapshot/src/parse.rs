@@ -1,7 +1,10 @@
 //! Pure parsers over file contents. Nothing here touches the file system, so
 //! each one is tested against strings and fixture files.
 
-use pane_model::{ProjectStatus, WorkItem, WorkKind, WorkSource};
+use pane_model::{
+    Deliverable, DeliverableKind, HumanIssue, ProjectStatus, Retro, RetroAction, WorkItem,
+    WorkKind, WorkSource,
+};
 
 /// The project paths in the root `mise.toml`'s `[monorepo].config_roots`.
 pub fn config_roots(root_mise: &str) -> Result<Vec<String>, String> {
@@ -226,6 +229,256 @@ pub fn owning_project<'a>(path: &str, roots: &'a [String]) -> Option<&'a str> {
         .map(String::as_str)
 }
 
+/// Every open `TODO (human)` line under `# Open` in `HUMAN_ISSUES.md`. The
+/// trailing `(Added <date>. Unblocks ...)` note gives `added` and
+/// `unblocks`, and is left out of `text`.
+pub fn human_issues(file: &str, contents: &str) -> Vec<HumanIssue> {
+    let mut issues = Vec::new();
+    let mut in_open = false;
+    for (i, line) in contents.lines().enumerate() {
+        if let Some(h) = line.strip_prefix("# ") {
+            in_open = h.trim() == "Open";
+            continue;
+        }
+        if !in_open {
+            continue;
+        }
+        let Some(item) = line.trim_start().strip_prefix("- ") else {
+            continue;
+        };
+        let Some((WorkKind::Todo, tags, text)) = parse_marker(item.trim_start()) else {
+            continue;
+        };
+        if !tags.iter().any(|t| t == "human") {
+            continue;
+        }
+        let (text, note) = split_trailing_note(&text);
+        let note = note.unwrap_or_default();
+        issues.push(HumanIssue {
+            text: text.to_owned(),
+            file: file.to_owned(),
+            line: u32::try_from(i + 1).unwrap_or(u32::MAX),
+            added: note
+                .find("Added ")
+                .and_then(|at| leading_date(&note[at + "Added ".len()..]))
+                .map(str::to_owned),
+            unblocks: note.find("Unblocks ").map(|at| {
+                note[at + "Unblocks ".len()..]
+                    .trim()
+                    .trim_end_matches('.')
+                    .to_owned()
+            }),
+        });
+    }
+    issues
+}
+
+/// Splits `text (Added ...)` into the text and the note inside the final
+/// parentheses, when that note starts with `Added`.
+fn split_trailing_note(text: &str) -> (&str, Option<&str>) {
+    let trimmed = text.trim_end();
+    if let Some(body) = trimmed.strip_suffix(')')
+        && let Some(open) = body.rfind("(Added ")
+    {
+        return (body[..open].trim_end(), Some(&body[open + 1..]));
+    }
+    (trimmed, None)
+}
+
+/// A `YYYY-MM-DD` date at the start of `s`.
+fn leading_date(s: &str) -> Option<&str> {
+    let date = s.get(..10)?;
+    let ok = date.char_indices().all(|(i, c)| match i {
+        4 | 7 => c == '-',
+        _ => c.is_ascii_digit(),
+    });
+    ok.then_some(date)
+}
+
+/// A `YYYY-MM-DD` or `YYYY-MM` date at the start of `s`.
+fn leading_date_or_month(s: &str) -> Option<&str> {
+    leading_date(s).or_else(|| {
+        let month = s.get(..7)?;
+        let ok = month.char_indices().all(|(i, c)| match i {
+            4 => c == '-',
+            _ => c.is_ascii_digit(),
+        }) && !s[7..].starts_with(|c: char| c.is_ascii_digit());
+        ok.then_some(month)
+    })
+}
+
+/// File extensions scanned for `TODO`/`FIX` comments.
+pub const CODE_EXTENSIONS: &[&str] = &[
+    "rs", "toml", "sh", "bash", "yml", "yaml", "ts", "tsx", "js", "mjs", "py", "css", "scss",
+    "html", "sql",
+];
+
+/// Comment openers a `TODO`/`FIX` may follow.
+const COMMENT_MARKERS: &[&str] = &["//", "#", "/*", "<!--", "--", ";", "*"];
+
+/// Every `TODO`/`FIX` that follows a comment opener on a line of code, such
+/// as `// TODO (agent-generated): ...` or `x = 1 # FIX: ...`.
+pub fn code_comments(file: &str, project: Option<&str>, contents: &str) -> Vec<WorkItem> {
+    let mut items = Vec::new();
+    for (i, line) in contents.lines().enumerate() {
+        if let Some((kind, tags, text)) = comment_marker(line) {
+            items.push(WorkItem {
+                kind,
+                text,
+                project: project.map(str::to_owned),
+                file: file.to_owned(),
+                line: u32::try_from(i + 1).unwrap_or(u32::MAX),
+                source: WorkSource::CodeComment,
+                section: None,
+                epic: None,
+                tags,
+            });
+        }
+    }
+    items
+}
+
+fn comment_marker(line: &str) -> Option<(WorkKind, Vec<String>, String)> {
+    // Openers inside a "string" or `code span` don't start a comment.
+    let mut in_string = false;
+    let mut in_code = false;
+    let mut escaped = false;
+    for (at, c) in line.char_indices() {
+        if in_string {
+            match (escaped, c) {
+                (false, '\\') => escaped = true,
+                (false, '"') => in_string = false,
+                _ => escaped = false,
+            }
+            continue;
+        }
+        match c {
+            '"' if !in_code => {
+                in_string = true;
+                continue;
+            }
+            '`' => {
+                in_code = !in_code;
+                continue;
+            }
+            _ if in_code => continue,
+            _ => {}
+        }
+        let rest = &line[at..];
+        let Some(marker) = COMMENT_MARKERS.iter().find(|m| rest.starts_with(**m)) else {
+            continue;
+        };
+        let after = rest[marker.len()..]
+            .trim_start_matches(['/', '!', '*', '#', '-'])
+            .trim_start();
+        if let Some((kind, tags, text)) = parse_marker(after) {
+            let text = text.trim_end_matches("*/").trim_end_matches("-->").trim();
+            return Some((kind, tags, text.to_owned()));
+        }
+    }
+    None
+}
+
+/// A plan, decision or retro file: its kind comes from the folder it is in
+/// (`docs/plans`, `docs/decisions`, `docs/retros`).
+pub fn doc_kind(path: &str) -> Option<DeliverableKind> {
+    let mut parts = path.rsplit('/');
+    let name = parts.next()?;
+    let folder = parts.next()?;
+    let docs = parts.next()?;
+    if docs != "docs" || !name.ends_with(".md") || name == "README.md" {
+        return None;
+    }
+    match folder {
+        "plans" => Some(DeliverableKind::Plan),
+        "decisions" => Some(DeliverableKind::Decision),
+        "retros" => Some(DeliverableKind::Retro),
+        _ => None,
+    }
+}
+
+/// A plan, decision or retro as a deliverable: title from its first `# `
+/// heading (else the file name), status from a `- Status:` line, and date
+/// from a `- Date:` line, a `Started <date>` line, or the file name.
+pub fn doc_deliverable(
+    kind: DeliverableKind,
+    path: &str,
+    project: Option<&str>,
+    contents: &str,
+) -> Deliverable {
+    let name = path.rsplit('/').next().unwrap_or(path);
+    let title = contents
+        .lines()
+        .find_map(|l| l.strip_prefix("# "))
+        .map(|t| t.trim().to_owned())
+        .unwrap_or_else(|| name.trim_end_matches(".md").to_owned());
+    let field = |key: &str| {
+        contents.lines().find_map(|l| {
+            l.trim_start()
+                .strip_prefix("- ")
+                .and_then(|l| l.strip_prefix(key))
+                .map(|v| v.trim().to_owned())
+        })
+    };
+    let date = field("Date:")
+        .and_then(|d| leading_date(&d).map(str::to_owned))
+        .or_else(|| {
+            contents.lines().find_map(|l| {
+                l.strip_prefix("Started ")
+                    .and_then(leading_date)
+                    .map(str::to_owned)
+            })
+        })
+        .or_else(|| leading_date_or_month(name).map(str::to_owned));
+    Deliverable {
+        kind,
+        title,
+        project: project.map(str::to_owned),
+        path: Some(path.to_owned()),
+        url: None,
+        date,
+        status: field("Status:"),
+    }
+}
+
+/// A retro's actions: the `- [ ]` and `- [x]` items under `## Actions`.
+pub fn retro(path: &str, project: Option<&str>, contents: &str) -> Retro {
+    let doc = doc_deliverable(DeliverableKind::Retro, path, project, contents);
+    let mut actions = Vec::new();
+    let mut in_actions = false;
+    for line in contents.lines() {
+        if line.starts_with('#') {
+            in_actions = line.trim_start_matches('#').trim() == "Actions";
+            continue;
+        }
+        if !in_actions {
+            continue;
+        }
+        let item = line.trim_start();
+        let (done, text) = if let Some(t) = item.strip_prefix("- [ ]") {
+            (false, t)
+        } else if let Some(t) = item
+            .strip_prefix("- [x]")
+            .or_else(|| item.strip_prefix("- [X]"))
+        {
+            (true, t)
+        } else {
+            continue;
+        };
+        actions.push(RetroAction {
+            text: text.trim().to_owned(),
+            done,
+        });
+    }
+    Retro {
+        project: doc.project,
+        title: doc.title,
+        date: doc.date.unwrap_or_default(),
+        path: path.to_owned(),
+        actions,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -236,6 +489,163 @@ mod tests {
     const APP_WEB_MISE: &str = include_str!("../tests/fixtures/repo/app/web/mise.toml.fixture");
     const APP_README: &str = include_str!("../tests/fixtures/repo/app/README.md.fixture");
     const APP_ISSUES: &str = include_str!("../tests/fixtures/repo/app/ISSUES.md.fixture");
+
+    const HUMAN: &str = include_str!("../tests/fixtures/repo/HUMAN_ISSUES.md.fixture");
+    const CODE: &str = include_str!("../tests/fixtures/repo/app/src/main.rs.fixture");
+    const PLAN: &str =
+        include_str!("../tests/fixtures/repo/app/docs/plans/2026-11-big-plan.md.fixture");
+    const DECISION: &str =
+        include_str!("../tests/fixtures/repo/app/docs/decisions/0001-pick-a-thing.md.fixture");
+    const RETRO: &str =
+        include_str!("../tests/fixtures/repo/app/docs/retros/2026-11-20-launch.md.fixture");
+
+    #[test]
+    fn reads_open_human_issues() {
+        let issues = human_issues("HUMAN_ISSUES.md", HUMAN);
+        assert_eq!(issues.len(), 2, "{issues:?}");
+        assert_eq!(issues[0].text, "Do the dashboard thing.");
+        assert_eq!(issues[0].added.as_deref(), Some("2026-11-20"));
+        assert_eq!(issues[0].unblocks.as_deref(), Some("the app deploy"));
+        assert_eq!(issues[0].line, 7);
+        assert_eq!(issues[1].text, "No note on this one.");
+        assert_eq!(issues[1].added, None);
+        assert_eq!(issues[1].unblocks, None);
+    }
+
+    #[test]
+    fn human_issue_note_without_unblocks() {
+        let issues = human_issues(
+            "H.md",
+            "# Open\n\n- TODO (human): Text (with parens). (Added 2026-11-01, PR #5.)\n",
+        );
+        assert_eq!(issues[0].text, "Text (with parens).");
+        assert_eq!(issues[0].added.as_deref(), Some("2026-11-01"));
+        assert_eq!(issues[0].unblocks, None);
+    }
+
+    #[test]
+    fn reads_code_comments() {
+        let items = code_comments("app/src/main.rs", Some("app"), CODE);
+        let got: Vec<_> = items
+            .iter()
+            .map(|i| (i.line, i.kind, i.text.as_str(), i.tags.clone()))
+            .collect();
+        assert_eq!(
+            got,
+            vec![
+                (
+                    1,
+                    WorkKind::Todo,
+                    "Line comment.",
+                    vec!["agent-ignore".to_owned()]
+                ),
+                (
+                    4,
+                    WorkKind::Fix,
+                    "Trailing comment.",
+                    vec!["agent-ignore".to_owned()]
+                ),
+                (
+                    5,
+                    WorkKind::Todo,
+                    "Block comment.",
+                    vec!["agent-ignore".to_owned()]
+                ),
+                (
+                    6,
+                    WorkKind::Todo,
+                    "After commented-out code.",
+                    vec!["agent-ignore".to_owned()]
+                ),
+            ]
+        );
+        assert!(items.iter().all(|i| i.source == WorkSource::CodeComment));
+    }
+
+    #[test]
+    fn code_comments_in_other_languages() {
+        let items = code_comments("x.sh", None, "# TODO (agent-ignore): Shell.\necho hi\n");
+        assert_eq!(items[0].text, "Shell.");
+        let items = code_comments("x.html", None, "<!-- FIX (agent-ignore): Page. -->\n");
+        assert_eq!(items[0].text, "Page.");
+        assert!(code_comments("x.rs", None, "#[derive(Debug)]\nlet todo = 1;\n").is_empty());
+        assert!(code_comments("x.rs", None, "let s = \"// TODO: in a string\";\n").is_empty());
+        assert!(code_comments("x.rs", None, "/// Like `// TODO: example` in docs.\n").is_empty());
+        let items = code_comments(
+            "x.rs",
+            None,
+            "f(\"a\\\"b\"); // TODO (agent-ignore): After.\n",
+        );
+        assert_eq!(items[0].text, "After.");
+    }
+
+    #[test]
+    fn classifies_doc_folders() {
+        assert_eq!(doc_kind("app/docs/plans/x.md"), Some(DeliverableKind::Plan));
+        assert_eq!(
+            doc_kind("standards/docs/decisions/0001-x.md"),
+            Some(DeliverableKind::Decision)
+        );
+        assert_eq!(
+            doc_kind("a/docs/retros/2026-11-01-x.md"),
+            Some(DeliverableKind::Retro)
+        );
+        assert_eq!(doc_kind("a/docs/decisions/README.md"), None);
+        assert_eq!(doc_kind("a/plans/x.md"), None);
+        assert_eq!(doc_kind("a/docs/plans/x.txt"), None);
+        assert_eq!(doc_kind("x.md"), None);
+    }
+
+    #[test]
+    fn reads_plan_and_decision() {
+        let plan = doc_deliverable(
+            DeliverableKind::Plan,
+            "app/docs/plans/2026-11-big-plan.md",
+            Some("app"),
+            PLAN,
+        );
+        assert_eq!(plan.title, "Plan: a big plan");
+        assert_eq!(plan.date.as_deref(), Some("2026-11-18"));
+        assert_eq!(plan.status, None);
+        let decision = doc_deliverable(
+            DeliverableKind::Decision,
+            "app/docs/decisions/0001-pick-a-thing.md",
+            Some("app"),
+            DECISION,
+        );
+        assert_eq!(decision.title, "0001. Pick a thing");
+        assert_eq!(decision.date.as_deref(), Some("2026-11-19"));
+        assert_eq!(decision.status.as_deref(), Some("Accepted"));
+    }
+
+    #[test]
+    fn doc_date_falls_back_to_the_file_name() {
+        let d = doc_deliverable(DeliverableKind::Plan, "a/docs/plans/2026-10-x.md", None, "");
+        assert_eq!(d.date.as_deref(), Some("2026-10"));
+        assert_eq!(d.title, "2026-10-x");
+        let d = doc_deliverable(DeliverableKind::Plan, "a/docs/plans/x.md", None, "# X\n");
+        assert_eq!(d.date, None);
+    }
+
+    #[test]
+    fn reads_retro_actions() {
+        let r = retro("app/docs/retros/2026-11-20-launch.md", Some("app"), RETRO);
+        assert_eq!(r.title, "Retro: launch");
+        assert_eq!(r.date, "2026-11-20");
+        assert_eq!(
+            r.actions,
+            vec![
+                RetroAction {
+                    text: "Write the runbook.".to_owned(),
+                    done: true
+                },
+                RetroAction {
+                    text: "Add a smoke test.".to_owned(),
+                    done: false
+                },
+            ]
+        );
+    }
 
     #[test]
     fn reads_config_roots() {

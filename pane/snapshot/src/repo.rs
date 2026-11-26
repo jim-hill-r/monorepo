@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use pane_model::{Project, Snapshot};
+use pane_model::{DeliverableKind, Project, Snapshot};
 
 use crate::parse;
 
@@ -30,19 +30,42 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
         });
     }
 
-    for file in issues_files(root)? {
+    for file in all_files(root)? {
         let rel = relative(root, &file)?;
         let project = parse::owning_project(&rel, &roots);
-        snapshot
-            .work_items
-            .extend(parse::issues_items(&rel, project, &read(&file)?));
+        let name = rel.rsplit('/').next().unwrap_or(&rel);
+        let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
+        if name == "ISSUES.md" {
+            snapshot
+                .work_items
+                .extend(parse::issues_items(&rel, project, &read(&file)?));
+        } else if rel == "HUMAN_ISSUES.md" {
+            snapshot
+                .human_issues
+                .extend(parse::human_issues(&rel, &read(&file)?));
+        } else if let Some(kind) = parse::doc_kind(&rel) {
+            let contents = read(&file)?;
+            if kind == DeliverableKind::Retro {
+                snapshot.retros.push(parse::retro(&rel, project, &contents));
+            }
+            snapshot
+                .deliverables
+                .push(parse::doc_deliverable(kind, &rel, project, &contents));
+        } else if parse::CODE_EXTENSIONS.contains(&ext) {
+            // Skip files that aren't UTF-8 rather than failing the snapshot.
+            if let Ok(contents) = fs::read_to_string(&file) {
+                snapshot
+                    .work_items
+                    .extend(parse::code_comments(&rel, project, &contents));
+            }
+        }
     }
     Ok(snapshot)
 }
 
-/// Every `ISSUES.md` under `root`, sorted, skipping hidden directories and
+/// Every file under `root`, sorted, skipping hidden directories and
 /// [`SKIP_DIRS`].
-pub fn issues_files(root: &Path) -> Result<Vec<PathBuf>, String> {
+pub fn all_files(root: &Path) -> Result<Vec<PathBuf>, String> {
     let mut found = Vec::new();
     let mut stack = vec![root.to_path_buf()];
     while let Some(dir) = stack.pop() {
@@ -59,7 +82,7 @@ pub fn issues_files(root: &Path) -> Result<Vec<PathBuf>, String> {
                 if !name.starts_with('.') && !SKIP_DIRS.contains(&name.as_ref()) {
                     stack.push(path);
                 }
-            } else if file_type.is_file() && name == "ISSUES.md" {
+            } else if file_type.is_file() {
                 found.push(path);
             }
         }

@@ -29,10 +29,14 @@ It exits non-zero, writing nothing, if the root `mise.toml` has no
 | `projects[].deploy_url` | `DEPLOY_URL` in the project's `[env]` |
 | `projects[].summary` | The first prose paragraph of the project's README (headings, badges, quotes, lists, tables and code skipped) |
 | `projects[].status` | `# Priority Projects` and `# On Hold Projects` in the root `ISSUES.md`; a sub-project takes its top-level project's status, and on hold wins |
-| `work_items` | Every `- TODO` / `- FIX` list item in every `ISSUES.md`, with its file, line, `#` section, `##`/`###` epic (joined as `Epic / Phase`), tags and owning project (the longest config root containing the file). `target/`, `node_modules/`, `dist/` and hidden directories are skipped. |
+| `work_items` (from `ISSUES.md`) | Every `- TODO` / `- FIX` list item in every `ISSUES.md`, with its file, line, `#` section, `##`/`###` epic (joined as `Epic / Phase`), tags and owning project (the longest config root containing the file). |
+| `work_items` (from code) | Every `TODO` / `FIX` that follows a comment opener (`//`, `#`, `/*`, `<!--`, `--`, `;`) in `.rs`, `.toml`, `.sh`, `.yml`, `.ts`, `.js`, `.py`, `.css`, `.html`, `.sql` and similar files. Openers inside a `"string"` or a `` `code span` `` are ignored. |
+| `human_issues` | Each `- TODO (human)` line under `# Open` in the root `HUMAN_ISSUES.md`, with the date after `Added` and the text after `Unblocks` from its trailing note. Pane works out the age from `taken_at`. |
+| `deliverables` | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, and date from `- Date:`, `Started <date>`, or the file name. |
+| `retros` | Each retro again, with its `- [ ]` / `- [x]` items under `## Actions`. |
+
+Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are
+skipped, as are code blocks in Markdown.
 
 The types are in [`pane_model`](../model). The parsers in `src/parse.rs` are
 pure functions over file contents; `src/repo.rs` walks the checkout.
-
-Human issues, code comments, plans, decisions and retros come next (see
-[pane/ISSUES.md](../ISSUES.md)).
