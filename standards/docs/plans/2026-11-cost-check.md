@@ -10,8 +10,8 @@ Started 2026-11-26 from Jim's request:
 
 Status: **approved** by Jim (PR #644, 2026-11-26), with the recommended
 answer to every question (see "Decisions" at the end). The work items are
-`TODO (agent-generated)` lines in the root [ISSUES.md](../../../ISSUES.md)
-under "Cost check", one group per phase.
+issue files in the root [issues/](../../../issues/) with `epic: Cost check`,
+one group per phase.
 
 ## Goal
 
@@ -44,7 +44,7 @@ people and tools can read it.
 | Static guards | `free-tiers.sh check` (FT-001 to FT-005) in every `//:audit`: standard runners only, no RapidAPI key in workflows, Pages, Workers and Cron Trigger counts within budget, no paid-only wrangler settings. Repo-wide, not per project. |
 | Live usage | `free-tiers.sh usage`, weekly in `all-free-tier-usage.yml`. |
 | Per-project cost data | None. pane's plan proposes a `<project>/finance.toml` (revenue and project-only costs), not built yet. |
-| Cost process TODOs | Root ISSUES.md: cost approval process, cost ledger (`standards/docs/costs.md`), monthly `review-costs` skill. |
+| Cost process TODOs | Root `issues/`: cost approval process, cost ledger (`standards/docs/costs.md`), monthly `review-costs` skill. |
 | Hooks and PR CI | `hooks.sh` runs `//:audit` and `mise run ci` in affected projects only (PR #627); PR CI does the same once PR #642 merges (`AFFECTED_CHANGED_ONLY`). |
 | Requirements | `<project>/docs/requirements.md` and `evals.toml`, checked by `evals check` as warnings (eval engine phase 0). |
 
@@ -270,7 +270,7 @@ Cost becomes evidence like any other:
 - `cost check` writes its results in the eval engine's results format, so
   the engine doesn't need to call it twice.
 
-### Existing cost TODOs in the root ISSUES.md
+### Existing cost TODOs in the root issues/
 
 - **Cost approval process:** COST-004 is that check, using decision records
   with a `decision` link instead of parsing `Cost:` lines.
@@ -296,7 +296,7 @@ Phase 1 rewrites those three TODOs to match.
   only** (the eval engine's phase 0 pattern), with unit tests for each rule.
 - `docs/cost.toml` for the projects that deploy or call a vendor first
   (bear_down, cahokia, cookbook, homer, pane), then the rest.
-- Reword the pane and root ISSUES.md TODOs as described under Reuse.
+- Reword the pane and root `issues/` TODOs as described under Reuse.
 
 ### Phase 2: detectors and the PR summary
 
@@ -343,7 +343,7 @@ Jim, 2026-11-26: "Yes to all, use default guesses."
 
 - Reading real bills. Agents can't see billing pages, and the free plans
   have no payment method; Jim's checks in
-  [HUMAN_ISSUES.md](../../../HUMAN_ISSUES.md) cover that.
+  [issues/human/](../../../issues/human/) cover that.
 - Pricing paid plans or forecasting "what would it cost if we outgrew the
   free tier". Rule 2 in free-tiers.md says stop, don't pay; a decision
   record does that maths when it is needed.

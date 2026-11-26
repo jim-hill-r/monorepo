@@ -16,8 +16,8 @@ And, later the same day:
 
 Status: **approved** by Jim (PR #657, 2026-11-26), with the recommended
 answer to every question (see [Decisions](#decisions)). The work items are
-`TODO (agent-generated)` lines in the root [ISSUES.md](../../../ISSUES.md)
-under "Design system", one group per phase.
+issue files in the root [issues/](../../../issues/) with `epic: Design
+system`, one group per phase.
 
 ## Goal
 
@@ -268,7 +268,7 @@ right to, and the design system never ships them.
 ### Files
 
 A new project, `design_system/`, with the usual `mise.toml`, `royalty.toml`,
-`ISSUES.md`, README and CONTRIBUTING:
+`issues/` folder, README and CONTRIBUTING:
 
 ```text
 design_system/

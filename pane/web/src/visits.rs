@@ -160,7 +160,7 @@ mod tests {
             kind: WorkKind::Todo,
             text: text.into(),
             project: Some(project.into()),
-            file: format!("{project}/ISSUES.md"),
+            file: format!("{project}/issues/x.md"),
             line,
             source: WorkSource::IssuesFile,
             section: Some("Priority Issues".into()),
@@ -172,7 +172,7 @@ mod tests {
     fn human(text: &str) -> HumanIssue {
         HumanIssue {
             text: text.into(),
-            file: "HUMAN_ISSUES.md".into(),
+            file: "issues/human/x.md".into(),
             line: 1,
             added: None,
             unblocks: None,

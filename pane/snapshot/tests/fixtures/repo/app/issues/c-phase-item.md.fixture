@@ -1,0 +1,14 @@
+---
+kind: fix
+priority: priority
+tags: [agent-ignore]
+epic: "Big epic / Phase 1: start"
+order: 20
+added: 2026-11-20
+---
+
+Phase item.
+
+```markdown
+- TODO (agent-ignore): Inside a code block, part of the text.
+```
