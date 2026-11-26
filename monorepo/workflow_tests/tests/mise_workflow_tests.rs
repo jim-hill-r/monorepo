@@ -1,5 +1,6 @@
 //! Tests for the mise-based CI/CD workflows: pull-request-ci.yml,
-//! push-main.yml and nightly-ci.yml, which all call mise-projects.yml.
+//! push-main.yml, nightly-ci.yml and nightly-cd.yml, which all call
+//! mise-projects.yml.
 
 use std::fs;
 use workflow_tests::*;
@@ -103,8 +104,9 @@ fn test_push_main_runs_ci_and_deploy() {
 }
 
 #[test]
-fn test_nightly_checks_and_deploys_every_project() {
+fn test_nightly_ci_checks_every_project() {
     let (_, parsed) = load("nightly-ci.yml");
+    assert_eq!(parsed["name"].as_str(), Some("Nightly CI"));
     assert!(!parsed["on"]["schedule"].is_null());
     let job = calls_mise_projects(&parsed);
     assert_eq!(
@@ -112,10 +114,24 @@ fn test_nightly_checks_and_deploys_every_project() {
         Some(""),
         "empty base runs all"
     );
+    assert!(
+        job["with"]["deploy"].is_null(),
+        "deploys belong to nightly-cd.yml"
+    );
+}
+
+#[test]
+fn test_nightly_cd_redeploys_every_deploying_project() {
+    let (_, parsed) = load("nightly-cd.yml");
+    assert_eq!(parsed["name"].as_str(), Some("Nightly CD"));
+    assert!(!parsed["on"]["schedule"].is_null());
+    let job = calls_mise_projects(&parsed);
+    assert_eq!(job["with"]["base"].as_str(), Some(""));
+    assert_eq!(job["with"]["deploy"].as_bool(), Some(true));
     assert_eq!(
-        job["with"]["deploy"].as_bool(),
+        job["with"]["deploy_only"].as_bool(),
         Some(true),
-        "nightly runs CD as well as CI (decision 0001)"
+        "only projects with DEPLOY_URL"
     );
     for secret in ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"] {
         assert!(
@@ -123,6 +139,35 @@ fn test_nightly_checks_and_deploys_every_project() {
                 .as_str()
                 .is_some_and(|v| v.contains(secret)),
             "nightly deploy needs the {secret} secret"
+        );
+    }
+
+    let (content, projects) = load("mise-projects.yml");
+    assert!(!projects["on"]["workflow_call"]["inputs"]["deploy_only"].is_null());
+    assert!(
+        content.contains("DEPLOY_ONLY"),
+        "the plan job should narrow the list to deploying projects"
+    );
+}
+
+#[test]
+fn test_readme_has_nightly_ci_and_cd_badges() {
+    let readme = fs::read_to_string(get_repo_root().join("README.md"))
+        .unwrap_or_else(|e| panic!("read README.md: {e}"));
+    for (label, file) in [
+        ("Nightly CI", "nightly-ci.yml"),
+        ("Nightly CD", "nightly-cd.yml"),
+    ] {
+        let badge = format!(
+            "[![{label}](https://github.com/jimhillr/monorepo/actions/workflows/{file}/badge.svg)]"
+        );
+        assert!(
+            readme.contains(&badge),
+            "README should have the {label} badge"
+        );
+        assert!(
+            get_workflow_path(file).exists(),
+            "{file} should exist for its badge"
         );
     }
 }

@@ -90,8 +90,8 @@ check in a minute without a local clone.
    the PR, which replaces taking screenshots by hand.
 8. **Every project runs full CI and CD every night, even when nothing
    changed** (Jim, 2026-11-26; this replaced a monthly run the same day).
-   The nightly workflow runs `ci` and then `deploy` for every project (the
-   deploy task runs `release` where a project deploys), and `smoke` once
+   Nightly CI runs `ci` for every project, and Nightly CD runs `ci` and then
+   `deploy` for every project that deploys (the deploy task runs `release`), and `smoke` once
    projects have one, and publishes the recorded UAT report. Toolchain drift,
    expired secrets, dead dependencies and broken deploys then show up within
    a day instead of when someone next touches the project. A project whose

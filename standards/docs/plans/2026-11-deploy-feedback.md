@@ -173,8 +173,9 @@ Every project runs full CI and CD every night, even with no changes (Jim,
 2026-11-26, replacing the monthly run planned earlier that day). Only the
 latest version of main that passed CI is deployed.
 
-- Done: `nightly-ci.yml` runs `ci` then `deploy` for every project at 2 AM
-  Pacific through `mise-projects.yml`. Each deploy first runs
+- Done: `nightly-ci.yml` runs `ci` for every project at 2 AM Pacific, and
+  `nightly-cd.yml` runs `ci` then `deploy` for every deploying project at
+  2:30 AM, both through `mise-projects.yml`, with a README badge each. Each deploy first runs
   `standards/scripts/deploy-check.sh`, which skips it when a newer commit on
   main changes the project.
 - Add a `smoke` step after `deploy` once projects have smoke tests, and
