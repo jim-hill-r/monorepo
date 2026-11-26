@@ -34,6 +34,12 @@ repo, rather than in any one agent tool's settings.
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
   - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
     0.8, which `perseus` 0.4.2 requires.
+- **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
+  plan. Never turn on a paid plan, add a payment method or raise a spending
+  or cache limit, and when a limit is near, stop rather than pay. Anything
+  automation creates on demand goes through `standards/scripts/free-tiers.sh`.
+  Limits, budgets and guards are in
+  [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
