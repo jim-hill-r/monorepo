@@ -2,9 +2,10 @@
 #
 # The project holds wrangler.toml, whose pages_build_output_dir points at the
 # web app's release output. Override [tasks.release] in the project's
-# mise.toml to build that web app. deploy needs CLOUDFLARE_API_TOKEN and
-# CLOUDFLARE_ACCOUNT_ID in the environment, and creates the Pages project
-# named in wrangler.toml if it does not exist yet.
+# mise.toml to build that web app, and set the production URL as DEPLOY_URL
+# in its [env] (CI links it from the GitHub deployment). deploy needs
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment, and
+# creates the Pages project named in wrangler.toml if it does not exist yet.
 # Needs in [tools]: rust, node, "npm:wrangler".
 
 [fmt-check]

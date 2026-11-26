@@ -1,5 +1,14 @@
-# bear_down: docs project for now. Standard tasks: ci, fix, build, test, dev, release, deploy.
-# PR 563 turns this into a rust project when the Cargo workspace lands.
+# bear_down: rust project (the whole Cargo workspace). Standard tasks: ci, fix,
+# build, test, dev, release, deploy. Run with: mise run <task>
+# The web app has its own mise.toml in web/ for dx serve and release bundles.
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
 
 [task_config]
-includes = ["../standards/tasks/docs.toml"]
+includes = ["../standards/tasks/rust.toml"]
+
+[tasks.dev]
+description = "Serve the web app with hot reload"
+dir = "{{config_root}}/web"
+run = "mise run dev"

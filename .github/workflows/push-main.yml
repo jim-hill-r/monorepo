@@ -9,7 +9,18 @@ name: Push Main CI/CD
   push:
     branches:
       - main
-  workflow_dispatch: # Checks and deploys every project
+  # Run by hand with no inputs to check and deploy every project. To roll
+  # back, give one project and the ref (commit SHA or tag) to redeploy.
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project to redeploy, for example cookbook/cloudflare. Empty runs every project.
+        type: string
+        default: ''
+      ref:
+        description: Commit SHA, tag or branch to deploy. Empty deploys the branch the run is on.
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -25,6 +36,8 @@ jobs:
     with:
       base: ${{ github.event_name == 'push' && github.event.before || '' }}
       deploy: true
+      project: ${{ inputs.project || '' }}
+      ref: ${{ inputs.ref || '' }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

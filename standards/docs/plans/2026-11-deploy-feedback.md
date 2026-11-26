@@ -71,6 +71,9 @@ PostHog (real-user replay only).
 
 ## Phase 1: clean up CD
 
+Done on 2026-11-26 except the sparkhill and bear_down wiring, which waits for
+their first deploy. How it works is in [../mise.md](../mise.md#deploys).
+
 - Give each deploying project a `production` GitHub environment with its URL,
   so every deploy shows on the commit and in the repo's Deployments list.
 - Each deploy job writes the deployed URL, commit and project to the job

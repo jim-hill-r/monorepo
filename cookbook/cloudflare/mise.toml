@@ -7,6 +7,10 @@ rust = { version = "stable", components = "rustfmt,clippy" }
 node = "24"
 "npm:wrangler" = "4"
 
+[env]
+# Production URL. CI shows it on the GitHub deployment and in the job summary.
+DEPLOY_URL = "https://jimhillr-cookbook.pages.dev"
+
 [task_config]
 includes = ["../../standards/tasks/cloudflare-pages.toml"]
 

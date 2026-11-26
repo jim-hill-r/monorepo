@@ -16,6 +16,14 @@ The name comes from "Bear Down, Chicago Bears", the team's fight song.
 
 ## Status
 
-Planning. The initial decisions are recorded in
-[docs/decisions](docs/decisions/README.md) and the work to build v1 is listed
-in [ISSUES.md](ISSUES.md).
+Early development. The Cargo workspace is set up but nothing is simulated yet.
+The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
+the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
+
+## Layout
+
+| Crate | Package | Does |
+| --- | --- | --- |
+| `core/` | `bear_down_core` | Data parsing, Elo, standings, simulation and rooting analysis. No I/O. |
+| `cli/` | `bear_down_cli` (binary `bear_down`) | Downloads the data, runs the simulation, writes `rooting.json`. |
+| `web/` | `bear_down_web` | The Dioxus page that renders `rooting.json`. |
