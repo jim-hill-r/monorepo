@@ -8,10 +8,10 @@ Started 2026-11-26 from Jim's request:
 > budget and standards. Therefore if a pr might impact cost we have a check
 > for it.
 
-Status: **proposed**, waiting for Jim's review. No work items are filed yet;
-once Jim approves (with any changes to the questions at the end), each phase
-below becomes a group of `TODO (agent-generated)` lines in the root
-[ISSUES.md](../../../ISSUES.md).
+Status: **approved** by Jim (PR #644, 2026-11-26), with the recommended
+answer to every question (see "Decisions" at the end). The work items are
+`TODO (agent-generated)` lines in the root [ISSUES.md](../../../ISSUES.md)
+under "Cost check", one group per phase.
 
 ## Goal
 
@@ -325,20 +325,19 @@ Nothing new: Rust on standard GitHub-hosted runners, files in the repo, the
 existing weekly usage run. The hook gets one more step that takes well under
 a second after the first build.
 
-## Questions for Jim
+## Decisions
 
-1. **File and place.** `<project>/docs/cost.toml` (machine-checked), with
-   an optional `docs/cost.md` for prose. OK, or would you rather it be
-   Markdown with a fixed table that the check parses?
-2. **One money file.** Fold pane's planned `finance.toml` (revenue and
-   project-only costs) into `docs/cost.toml`? Recommended, so each project
-   has one place for money.
-3. **When to block.** Warnings first, failures once every project has a
-   file (phase 3)? Or fail from day one for projects that deploy?
-4. **Who decides.** Any cost above $0, new vendor, or budget change gets
-   `needs-human` and waits for you; everything else (usage estimates,
-   new free services already approved on the radar) merges on green checks.
-   Is that the right line?
+Jim, 2026-11-26: "Yes to all, use default guesses."
+
+1. **File and place:** `<project>/docs/cost.toml`, machine-checked, with an
+   optional `docs/cost.md` for prose.
+2. **One money file:** pane's planned `finance.toml` is folded into
+   `docs/cost.toml`.
+3. **When to block:** warnings first; failures in phase 3, once every
+   project has a file.
+4. **Who decides:** any cost above $0, a new vendor for a project, or a
+   budget change gets `needs-human` and waits for Jim; usage estimates and
+   already-approved free services merge on green checks.
 
 ## Not doing (yet)
 
