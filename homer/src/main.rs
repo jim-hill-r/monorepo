@@ -124,32 +124,48 @@ impl ZillowClient {
     }
 }
 
+/// Read a JSON number as a non-negative whole number.
+///
+/// Accepts integers (`1600`) and whole-number floats (`1600.0`). Returns
+/// `None` for negative or fractional values, non-finite or out-of-range
+/// floats, and non-numbers.
+fn json_whole_number(value: &serde_json::Value) -> Option<u64> {
+    if let Some(n) = value.as_u64() {
+        return Some(n);
+    }
+    let f = value.as_f64()?;
+    // 2^64 is exactly representable as f64; anything at or above it overflows u64.
+    const U64_LIMIT: f64 = 18_446_744_073_709_551_616.0;
+    if f >= 0.0 && f.fract() == 0.0 && f < U64_LIMIT {
+        // The checks above make this cast exact.
+        Some(f as u64)
+    } else {
+        None
+    }
+}
+
+/// Read a JSON number as a `u32`, or `None` if it isn't a whole number that fits.
+fn json_u32(value: &serde_json::Value) -> Option<u32> {
+    json_whole_number(value).and_then(|n| u32::try_from(n).ok())
+}
+
 /// Parse property details from the raw Zillow API JSON response
 pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<PropertyDetails> {
     let price = raw
         .get("price")
-        .and_then(|v| v.as_u64())
-        .or_else(|| raw.get("zestimate").and_then(|v| v.as_u64()));
+        .and_then(json_whole_number)
+        .or_else(|| raw.get("zestimate").and_then(json_whole_number));
 
-    let bedrooms = raw
-        .get("bedrooms")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32);
+    let bedrooms = raw.get("bedrooms").and_then(json_u32);
 
     let bathrooms = raw
         .get("bathrooms")
         .and_then(|v| v.as_f64())
         .map(|v| v as f32);
 
-    let living_area = raw
-        .get("livingArea")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32);
+    let living_area = raw.get("livingArea").and_then(json_u32);
 
-    let year_built = raw
-        .get("yearBuilt")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32);
+    let year_built = raw.get("yearBuilt").and_then(json_u32);
 
     let home_type = raw
         .get("homeType")
@@ -514,6 +530,88 @@ mod tests {
         assert_eq!(details.address, "789 Oak Ave");
         assert!(details.price.is_none());
         assert!(details.bedrooms.is_none());
+    }
+
+    #[test]
+    fn test_parse_property_details_accepts_whole_number_floats() {
+        let raw = json!({
+            "price": 750000.0,
+            "bedrooms": 3.0,
+            "livingArea": 1600.0,
+            "yearBuilt": 1985.0
+        });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert_eq!(details.price, Some(750_000));
+        assert_eq!(details.bedrooms, Some(3));
+        assert_eq!(details.living_area, Some(1600));
+        assert_eq!(details.year_built, Some(1985));
+    }
+
+    #[test]
+    fn test_parse_property_details_float_zestimate_used_when_no_price() {
+        let raw = json!({ "zestimate": 600000.0 });
+        let details = parse_property_details(&raw, "456 Elm St").unwrap();
+        assert_eq!(details.price, Some(600_000));
+    }
+
+    #[test]
+    fn test_parse_property_details_rejects_fractional_and_invalid_numbers() {
+        let raw = json!({
+            "price": 750000.5,
+            "bedrooms": 2.5,
+            "livingArea": -1600.0,
+            "yearBuilt": -1985
+        });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert!(details.price.is_none());
+        assert!(details.bedrooms.is_none());
+        assert!(details.living_area.is_none());
+        assert!(details.year_built.is_none());
+    }
+
+    #[test]
+    fn test_parse_property_details_u32_overflow_is_none_not_truncated() {
+        // 2^32 + 3 would truncate to 3 with an `as u32` cast.
+        let too_big = u64::from(u32::MAX) + 4;
+        let raw = json!({
+            "bedrooms": too_big,
+            "livingArea": too_big as f64,
+            "yearBuilt": too_big
+        });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert!(details.bedrooms.is_none());
+        assert!(details.living_area.is_none());
+        assert!(details.year_built.is_none());
+    }
+
+    #[test]
+    fn test_parse_property_details_u32_max_is_kept() {
+        let raw = json!({ "bedrooms": u32::MAX, "livingArea": f64::from(u32::MAX) });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert_eq!(details.bedrooms, Some(u32::MAX));
+        assert_eq!(details.living_area, Some(u32::MAX));
+    }
+
+    #[test]
+    fn test_property_details_float_numbers_from_mock_server() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"price": 650000.0, "bedrooms": 3.0, "livingArea": 1600.0, "yearBuilt": 1985.0}"#)
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let details = client
+            .property_details("123 Main St")
+            .expect("mock server returns valid property JSON");
+
+        assert_eq!(details.price, Some(650_000));
+        assert_eq!(details.bedrooms, Some(3));
+        assert_eq!(details.living_area, Some(1600));
+        assert_eq!(details.year_built, Some(1985));
     }
 
     #[test]

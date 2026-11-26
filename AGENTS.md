@@ -34,6 +34,22 @@ repo, rather than in any one agent tool's settings.
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
   - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
     0.8, which `perseus` 0.4.2 requires.
+- **Vendors (Jim, 2026-11-26).** When designing a system, use as few vendors
+  as possible, but cost always comes first: if a non-approved vendor is
+  clearly cheaper (including free tiers), cost wins over vendor count.
+  - **Approved vendors:** GitHub (including Actions and Dependabot),
+    Cloudflare and Squarespace. Reach for these first.
+  - **Any other vendor needs Jim's sign-off.** Propose it in a decision record
+    in `standards/docs/decisions/` (or the PR description for a small
+    change), saying what it costs, why no approved vendor fits, and what a
+    switch would take. Label the PR `needs-jim` and don't merge it until Jim
+    approves.
+  - **Approved exceptions:**
+    - PostHog, for real-user session replay (decision 0001).
+    - Auth0, used by `auth_sdk` and `cahokia` for sign-in.
+    - RapidAPI (Zillow data), used by `homer`, **only on its free plan**. It
+      must never cost money: don't add a paid plan, scheduled runs or anything
+      else that could push usage past the free quota.
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
