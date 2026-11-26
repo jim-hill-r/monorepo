@@ -114,21 +114,30 @@ fn App() -> Element {
     }
 }
 
-#[derive(Clone, Routable, Debug, PartialEq)]
-enum Route {
-    #[layout(Header)]
-    #[route("/")]
-    Home {},
+// dioxus 0.7.10's Routable derive generates code that rustc 1.100 flags as
+// unreachable. The allow has to cover the generated impls, so the enum sits
+// in its own module.
+mod route {
+    #![allow(unreachable_code)]
+    use super::*;
 
-    #[route("/recipe/:day")]
-    Recipe { day: u32 },
+    #[derive(Clone, Routable, Debug, PartialEq)]
+    pub enum Route {
+        #[layout(Header)]
+        #[route("/")]
+        Home {},
 
-    #[route("/plan/:week")]
-    Plan { week: u32 },
+        #[route("/recipe/:day")]
+        Recipe { day: u32 },
 
-    #[route("/:..route")]
-    PageNotFound { route: Vec<String> },
+        #[route("/plan/:week")]
+        Plan { week: u32 },
+
+        #[route("/:..route")]
+        PageNotFound { route: Vec<String> },
+    }
 }
+use route::Route;
 
 #[component]
 fn Header() -> Element {

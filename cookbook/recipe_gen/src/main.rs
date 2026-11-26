@@ -931,11 +931,11 @@ fn generate_additional_recipes(
 
         let instructions = vec![
             format!("Prepare {} by cutting into bite-sized pieces", protein),
-            format!("Heat olive oil in a large pan"),
+            "Heat olive oil in a large pan".to_string(),
             format!("Cook {} until golden", protein),
             format!("Add {} and garlic, sauté until tender", vegetable),
             format!("Meanwhile, cook {} according to package directions", grain),
-            format!("Combine everything and season with salt and pepper"),
+            "Combine everything and season with salt and pepper".to_string(),
             "Serve hot and enjoy".to_string(),
         ];
 

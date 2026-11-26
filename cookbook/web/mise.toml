@@ -9,3 +9,6 @@ node = "24"
 
 [task_config]
 includes = ["../../standards/tasks/dioxus-web.toml"]
+
+[env]
+DX_PACKAGE = "web"  # app inside a Cargo workspace; see standards/tasks/dioxus-web.toml
