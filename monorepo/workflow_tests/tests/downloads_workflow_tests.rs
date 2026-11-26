@@ -121,7 +121,7 @@ fn test_downloads_list_names_controlled_chaos() {
     assert!(
         stdout.contains(r#""project": "controlled_chaos""#)
             && stdout.contains(r#""tag": "controlled_chaos-nightly""#)
-            && stdout.contains(r#""deploy_url": "https://controlled-chaos.pages.dev""#),
+            && stdout.contains(r#""deploy_url": "https://controlled-chaos-5v4.pages.dev""#),
         "unexpected list: {stdout}"
     );
 }
@@ -164,4 +164,56 @@ fn test_bevy_release_rejects_unknown_platforms() {
         .unwrap_or_else(|e| panic!("run bevy-release.sh: {e}"));
     assert!(!out.status.success());
     assert!(String::from_utf8_lossy(&out.stderr).contains("usage"));
+}
+
+fn git(dir: &std::path::Path, args: &[&str]) -> String {
+    let out = Command::new("git")
+        .args(args)
+        .current_dir(dir)
+        .env("GIT_AUTHOR_NAME", "t")
+        .env("GIT_AUTHOR_EMAIL", "t@example.com")
+        .env("GIT_COMMITTER_NAME", "t")
+        .env("GIT_COMMITTER_EMAIL", "t@example.com")
+        .output()
+        .unwrap_or_else(|e| panic!("git {args:?}: {e}"));
+    assert!(out.status.success(), "git {args:?} failed");
+    String::from_utf8_lossy(&out.stdout).trim().to_string()
+}
+
+#[test]
+fn test_tag_target_skips_commits_that_change_workflows() {
+    let dir = std::env::temp_dir().join(format!("downloads-tag-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.join(".github/workflows")).unwrap_or_else(|e| panic!("{e}"));
+    git(&dir, &["init", "-q"]);
+    fs::write(dir.join("game.txt"), "1").unwrap_or_else(|e| panic!("{e}"));
+    git(&dir, &["add", "-A"]);
+    git(&dir, &["commit", "-q", "-m", "game"]);
+    let plain = git(&dir, &["rev-parse", "HEAD"]);
+    fs::write(dir.join(".github/workflows/a.yml"), "on: push").unwrap_or_else(|e| panic!("{e}"));
+    git(&dir, &["add", "-A"]);
+    git(&dir, &["commit", "-q", "-m", "workflow"]);
+    let workflow = git(&dir, &["rev-parse", "HEAD"]);
+
+    let run = |sha: &str| -> String {
+        let out = Command::new("bash")
+            .arg(script("downloads.sh"))
+            .args(["tag-target", sha])
+            .current_dir(&dir)
+            .output()
+            .unwrap_or_else(|e| panic!("run downloads.sh: {e}"));
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8_lossy(&out.stdout).trim().to_string()
+    };
+    assert_eq!(
+        run(&workflow),
+        plain,
+        "a commit that changes workflows is skipped"
+    );
+    assert_eq!(run(&plain), plain, "a commit that doesn't is used as is");
+    let _ = fs::remove_dir_all(&dir);
 }

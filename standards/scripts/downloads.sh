@@ -14,7 +14,12 @@
 #       names stay the same every night, so this link always serves the
 #       newest build:
 #         https://github.com/<repo>/releases/download/TAG/<asset>
-#       Needs gh, GH_TOKEN (contents: write), GITHUB_REPOSITORY, GITHUB_SHA.
+#       Needs gh, GH_TOKEN (contents: write), GITHUB_REPOSITORY, GITHUB_SHA
+#       and git history (the tag skips commits that change workflows, which
+#       the workflow token may not tag).
+#
+#   downloads.sh tag-target SHA
+#       The commit the tag goes on for SHA (see tag_target).
 set -euo pipefail
 
 die() { echo "downloads: $*" >&2; exit 1; }
@@ -41,6 +46,19 @@ print(json.dumps(out))
 EOF
 }
 
+# The newest commit at or before $1 (within 200) that doesn't change
+# .github/workflows; $1 itself when none is found. Needs the history fetched.
+tag_target() {
+  local c
+  for c in $(git rev-list --max-count=200 "$1" 2>/dev/null); do
+    if ! git diff-tree --no-commit-id --name-only -r --root "$c" | grep -q '^\.github/workflows/'; then
+      echo "$c"
+      return
+    fi
+  done
+  echo "$1"
+}
+
 publish() {
   local tag=${1:?usage: downloads.sh publish TAG DIR [PROJECT]}
   local dir=${2:?usage: downloads.sh publish TAG DIR [PROJECT]}
@@ -64,15 +82,24 @@ publish() {
     notes+="- Play in the browser: $DEPLOY_URL"$'\n'
   fi
 
+  # GitHub refuses (403) to let the workflow token create or move a tag onto
+  # a commit that changes .github/workflows, so tag the newest commit at or
+  # before GITHUB_SHA that doesn't. The notes name the commit actually built.
+  local target
+  target=$(tag_target "$GITHUB_SHA")
+  [ "$target" = "$GITHUB_SHA" ] ||
+    echo "downloads: $GITHUB_SHA changes workflows, so the tag goes on $target"
+
   if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-    # Move the tag to this commit, then replace the assets.
+    # Move the tag (best effort), then replace the assets.
     gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" \
-      -f sha="$GITHUB_SHA" -F force=true >/dev/null
+      -f sha="$target" -F force=true >/dev/null ||
+      echo "::warning::could not move tag $tag to $target; uploading the new builds anyway"
     gh release edit "$tag" --repo "$GITHUB_REPOSITORY" \
       --title "$project (nightly)" --notes "$notes" --prerelease --latest=false
     gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
   else
-    gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+    gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$target" \
       --title "$project (nightly)" --notes "$notes" --prerelease --latest=false \
       "${files[@]}"
   fi
@@ -89,6 +116,7 @@ publish() {
 
 case "${1:-}" in
   list) list ;;
+  tag-target) tag_target "${2:?usage: downloads.sh tag-target SHA}" ;;
   publish) shift; publish "$@" ;;
   *) die "usage: downloads.sh list | publish TAG DIR [PROJECT]" ;;
 esac
