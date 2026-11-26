@@ -20,6 +20,14 @@ See `standards/docs/rust.md` for complete Rust coding standards and proper error
 
 See `standards/docs/issue-management.md` for complete issue management standards and conventions.
 
+### Fixing Standards Violations (CFG-001, DOC-002, DOC-003)
+Many agent-generated issues are standards-compliance items for a single project. They are usually fixed together in one PR per project (see `cahokia/cloudflare` for an example):
+- `royalty.toml` with a `[project]` table containing `name` and `description`
+- `README.md` with a markdown header matching the package name exactly (e.g. `# desktop`), followed by a short description
+- `CONTRIBUTING.md` with a `## Getting Started` section covering toolchain install, build, and test
+
+Verify with `cargo run --bin standards -- audit --path ..` from the `standards/` directory (requires network access to fetch crates).
+
 ## Branching Requirements
 All branches should have unique names to prevent collisions.
 

@@ -1,0 +1,3 @@
+[project]
+name = "desktop"
+description = "Desktop platform entry point for the Cahokia genealogy application, built with Dioxus."
