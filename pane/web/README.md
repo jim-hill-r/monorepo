@@ -1,6 +1,30 @@
 # pane_web
 
-A Dioxus web application built with Rust.
+Pane's web app: one place to review the monorepo (see the
+[review dashboard plan](../docs/plans/2026-11-review-dashboard.md)). It loads
+`/data/snapshot.json`, which the release builds with
+[`pane_snapshot`](../snapshot), and shows it with a left nav that folds into
+one column under 720 px.
+
+| Route | Page |
+| --- | --- |
+| `/` | Today: counts of projects, open TODOs and FIXes, and human issues |
+| `/projects` | Every project, priority first, with type, status, README summary and open items |
+| `/projects/<path>` | One project, such as `/projects/pane/web` |
+| `/health`, `/deliverables`, `/reviews`, `/human-issues`, `/work`, `/add` | Placeholders naming the phase that fills them in |
+
+The footer shows the snapshot's commit and how long ago it was taken. Pure
+helpers for the pages (dates, ages, sorting, counts) are in `src/view.rs`
+with unit tests.
+
+To try it locally with real data, run `mise run release` (it builds the
+snapshot into `public/data/` first), or run `pane_snapshot` once and then
+`dx serve`:
+
+```bash
+cargo run -p pane_snapshot -- --out public/data/snapshot.json
+dx serve --platform web --package pane_web
+```
 
 "Pane" evokes a window pane — a transparent surface through which you view the world — making it an apt metaphor for a web interface that presents information clearly and directly to the user.
 
