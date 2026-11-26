@@ -371,6 +371,23 @@
     "budget": 0
   },
   {
+    "name": "cargo-deny",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "RustSec advisories and crate sources for every Cargo.lock (SEC-003), as warnings: in the hooks and PR CI where a lockfile changed, and nightly over all of them. Pinned in standards/scripts/deps-check.sh; config in standards/deny.toml. Licence checks come later.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/security.md",
+      "standards/deny.toml"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Playwright",
     "ring": "Adopt",
     "quadrant": "Tools",

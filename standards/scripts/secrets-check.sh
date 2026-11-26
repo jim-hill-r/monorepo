@@ -25,7 +25,9 @@ cd "$root"
 say() { printf 'secrets-check: %s\n' "$*" >&2; }
 
 gitleaks_cmd=()
-if command -v gitleaks >/dev/null 2>&1; then
+# `gitleaks version`, not `command -v`: a mise shim on PATH with no version
+# set for this directory is found but can't run.
+if gitleaks version >/dev/null 2>&1; then
   gitleaks_cmd=(gitleaks)
 elif command -v mise >/dev/null 2>&1 \
   && mise exec "gitleaks@$GITLEAKS_VERSION" -- gitleaks version >/dev/null 2>&1; then

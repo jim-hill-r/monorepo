@@ -21,7 +21,8 @@ git_() {
 
 mkdir -p "$repo/standards/scripts"
 cp "$root/standards/scripts/hooks.sh" "$root/standards/scripts/affected.sh" \
-  "$root/standards/scripts/secrets-check.sh" "$repo/standards/scripts/"
+  "$root/standards/scripts/secrets-check.sh" "$root/standards/scripts/deps-check.sh" \
+  "$repo/standards/scripts/"
 cp "$root/.gitleaks.toml" "$root/.gitleaksignore" "$repo/"
 cat >"$repo/mise.toml" <<'TOML'
 monorepo_root = true

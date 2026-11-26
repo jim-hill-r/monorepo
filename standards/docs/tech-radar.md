@@ -123,6 +123,7 @@ Total budget: **$25 a month** (Claude Code $25). Everything else is $0: free pla
 
 | Blip | Ring | Kind | Budget a month | Exemplar projects | Why | Claude support | Sources |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| cargo-deny (new) | Adopt | technology | $0 | [standards](../../standards) | RustSec advisories and crate sources for every Cargo.lock (SEC-003), as warnings: in the hooks and PR CI where a lockfile changed, and nightly over all of them. Pinned in standards/scripts/deps-check.sh; config in standards/deny.toml. Licence checks come later. | - | [security.md](../../standards/docs/security.md), [deny.toml](../../standards/deny.toml) |
 | Claude Code (new) | Adopt | vendor | $25 | [.agents/skills](../../.agents/skills) | Our AI coding platform (Jim, 2026-11-26): agents work the ISSUES.md backlog, open and triage PRs, and run the scheduled reviews and digests. Its support shapes other choices: prefer technologies and vendors Claude knows well or that have a Claude plugin or MCP server we can enable read-only. The one paid service: budget $25 a month (Jim, 2026-11-26). | It is Claude. Skills, plugins and MCP servers extend it. | [AGENTS.md](../../AGENTS.md), [CLAUDE.md](../../CLAUDE.md) |
 | criterion | Adopt | technology | $0 | none yet | Benchmarks and regression reports. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
 | cross | Adopt | technology | $0 | none yet | Always use it for cross compilation. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |

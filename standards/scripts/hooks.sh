@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Git hook checks, run by lefthook (see lefthook.yml). Runs what PR CI runs:
-# `mise run //:audit`, the secret scan (secrets-check.sh, SEC-001), then
-# `mise run ci` in every affected project.
+# `mise run //:audit`, the secret scan (secrets-check.sh, SEC-001), the
+# dependency audits where a lockfile changed (deps-check.sh, SEC-003/SEC-004,
+# warnings only), then `mise run ci` in every affected project.
 #
 #   hooks.sh pre-commit   projects touched by the staged and unstaged changes;
 #                         while a merge is being committed, the projects the
@@ -75,6 +76,7 @@ case "$stage" in
     projects=$(bash standards/scripts/affected.sh --changed-only "$base")
     tree=$(git rev-parse 'HEAD^{tree}')
     secrets=(range "$base")
+    changed=$(git diff --name-only "$base...HEAD" 2>/dev/null || git diff --name-only "$base")
     ;;
   *)
     say "unknown stage '$stage' (want pre-commit or pre-push)"
@@ -92,6 +94,9 @@ skipped=()
 # are cleared (a `git commit -a` stages into a temporary GIT_INDEX_FILE).
 say "scanning for secrets (${secrets[*]})"
 bash standards/scripts/secrets-check.sh "${secrets[@]}" || failed+=("secrets")
+
+# SEC-003, SEC-004: only for lockfiles this change touches. Warnings only.
+bash standards/scripts/deps-check.sh --files <<<"$changed"
 
 # The hook runs with GIT_DIR and GIT_INDEX_FILE (a temporary index during
 # `git commit -a`) set for this repo. Tests that run git in their own temp

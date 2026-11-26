@@ -22,7 +22,9 @@ This installs lefthook through mise (`mise exec lefthook@<version>`, the
 Both hooks run `standards/scripts/hooks.sh`, which runs `mise run //:audit`,
 scans for secrets with gitleaks (SEC-001, `standards/scripts/secrets-check.sh`:
 the staged diff in pre-commit, the commits being pushed in pre-push; see
-[security.md](./security.md)), and then `mise run ci` in each affected project (installing its tools with
+[security.md](./security.md)), runs cargo-deny and `npm audit` for any
+lockfile the change touches (SEC-003 and SEC-004, warnings only,
+`standards/scripts/deps-check.sh`), and then `mise run ci` in each affected project (installing its tools with
 `mise install` first). Projects are picked by
 `standards/scripts/affected.sh --changed-only`, the same list PR CI checks.
 

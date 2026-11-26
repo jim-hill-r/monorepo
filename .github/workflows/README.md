@@ -30,6 +30,10 @@ A **Secret scan** job runs gitleaks over the PR's commits
 (`standards/scripts/secrets-check.sh range`, SEC-001 in
 [standards/docs/security.md](../../standards/docs/security.md)).
 
+A **Dependency audit** job runs cargo-deny and `npm audit` for the lockfiles
+the PR changes (`standards/scripts/deps-check.sh`, SEC-003 and SEC-004).
+Warnings only for now, so CI result doesn't wait for it.
+
 A last job, **CI result**, always runs after the projects and the secret scan
 and passes only when every project passed and no secret was found. It is the one check the `main` ruleset should
 require, so GitHub auto-merge waits for green CI (see the Auto-merge section
@@ -94,6 +98,14 @@ Builds every review deck to HTML and PDF with the Marp CLI through
 `standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
 uploads them as the `review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
+
+## all-dependency-audit.yml
+
+Nightly (2:30 AM Pacific) or by hand: runs `standards/scripts/deps-check.sh
+--all`, cargo-deny over every `Cargo.lock` and `npm audit` over every
+`package-lock.json` (SEC-003, SEC-004 in
+[standards/docs/security.md](../../standards/docs/security.md)). Warnings
+only for now, so it stays green; findings are in the log.
 
 ## all-free-tier-usage.yml
 
