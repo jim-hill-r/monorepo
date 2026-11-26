@@ -118,6 +118,20 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
+    directory: "/cost"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
     directory: "/homer"
     schedule:
       interval: "weekly"
