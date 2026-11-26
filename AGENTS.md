@@ -14,6 +14,11 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   them, the standards win; fix this file.
 - **Work is tracked in `ISSUES.md` files**, not GitHub issues. See
   `standards/docs/issue-management.md`.
+- **Tasks only a person can do** (dashboards, accounts, secrets, billing,
+  sign-offs) go in the root `HUMAN_ISSUES.md` as `TODO (human): ...` lines,
+  never in an `ISSUES.md` and never only in a chat thread. Agents don't work
+  them. A weekly Claude scheduled task, "Weekly human issues digest", reports
+  them to Jim with the `human-issues-digest` skill (decision 0002).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
@@ -117,6 +122,7 @@ each changed project; pushes to `main` also run `mise run deploy`.
 | --- | --- |
 | `start-a-new-task` | Pick one TODO from the `ISSUES.md` files and complete it end to end. |
 | `code-review` | Review one project against the standards and record five TODOs. |
+| `human-issues-digest` | Report the open `HUMAN_ISSUES.md` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

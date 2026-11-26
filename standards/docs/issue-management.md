@@ -66,6 +66,12 @@ Mark TODOs with `(agent-ignore)` if they should not be worked on by automated ag
 // TODO (agent-ignore): This requires manual architecture review
 ```
 
+### Human TODOs
+
+Tasks only a person can do go in the root `HUMAN_ISSUES.md` as
+`TODO (human): ...` lines, never in a project's `ISSUES.md`. See
+[Human issues](#human-issues).
+
 ### Removing Completed TODOs
 
 **Always remove** TODO and FIX comments when the work is completed. Completed work should not leave behind TODO markers.
@@ -153,3 +159,45 @@ When working on an issue:
 3. **Prioritize appropriately** - Use Priority Issues for important work, Backlog for nice-to-haves
 4. **Keep issues up-to-date** - Mark completed items, remove obsolete issues
 5. **Use consistent formatting** - Follow the ISSUES.md format conventions
+
+## Human issues
+
+Some tasks only a person can do: anything in a vendor dashboard (Auth0,
+Cloudflare, PostHog), creating an account or a secret, payment and billing
+checks, and sign-offs an agent may not give itself. Agents can't do these, so
+they must reach Jim rather than sit in an `ISSUES.md` or a chat thread
+(decision [0002](decisions/0002-human-issues.md)).
+
+### Where they live
+
+- **One file.** Every such task is a line in the root
+  [`HUMAN_ISSUES.md`](../../HUMAN_ISSUES.md) under `# Open`:
+
+  ```markdown
+  - TODO (human): In the Auth0 dashboard, add ... (Added 2026-11-25. Unblocks ...)
+  ```
+
+  Say what to do, where, and why, then when it was added and what it
+  unblocks. `mise run //:audit` fails (HUM-001) if a `TODO (human)` line
+  appears in any `ISSUES.md`.
+- **PRs that need a person** get the `needs-human` label instead (see
+  [pull-requests.md](pull-requests.md)). They are not copied into the file;
+  the digest reads the label.
+- **Questions in chat.** An agent that is blocked on something only Jim can
+  do adds a `TODO (human)` line in its PR as well as asking in its thread, so
+  the task survives the thread. A plain question Jim can answer in words
+  stays in the thread.
+
+### How they reach Jim
+
+A weekly scheduled task in the Claude project runs the
+[`human-issues-digest`](../../.agents/skills/human-issues-digest/SKILL.md)
+skill. It posts one message listing the open `HUMAN_ISSUES.md` lines and the
+open `needs-human` PRs, oldest first, with what each one unblocks and what
+was added since the last digest.
+
+### Closing one
+
+Do the task, then remove its line in a PR (an agent will do this when told a
+task is done). If the task unblocks a `TODO (agent-generated)` item, that item
+becomes workable as usual.
