@@ -34,6 +34,13 @@ build their web app and publish it with `wrangler pages deploy`, which needs
 the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
 Runs are queued, never cancelled, so a deploy is not cut short.
 
+A project with `DEPLOY_URL` in its `mise.toml` `[env]` deploys in the
+`production` environment, so the deploy is listed under Deployments with its
+URL, and the job summary shows the production URL, this deployment's URL and
+the commit. `workflow_dispatch` with no inputs checks and deploys every
+project; with `project` and `ref` it redeploys that one project at that ref,
+which is how to roll back (see `standards/docs/mise.md`).
+
 ### nightly-ci.yml
 
 Runs `mise run ci` in every project at 2 AM Pacific, so new toolchain or

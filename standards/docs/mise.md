@@ -45,6 +45,22 @@ project sits in); and every project whose `mise.toml` has an
 The cloudflare projects use `# affected-by: ../web`, so a change to a web app
 redeploys it.
 
+### Deploys
+
+A project that deploys sets its production URL as `DEPLOY_URL` in the
+`[env]` table of its `mise.toml`. In `push-main.yml`, the job of each such
+project runs in the `production` GitHub environment with that URL, so every
+deploy shows on its commit and in the repo's Deployments list, and the job
+summary lists the production URL, the URL of that exact deployment and the
+commit. Smoke tests and PR comments read the same `DEPLOY_URL`.
+
+To roll back, or to redeploy one project, run **Push Main CI/CD** by hand
+(Actions tab, or `workflow_dispatch` through the API) with `project` set to
+the project directory, for example `cookbook/cloudflare`, and `ref` set to
+the commit SHA or tag to deploy. The run checks out that ref, runs
+`mise run ci` and then `mise run deploy` for that project only. A ref from
+before `DEPLOY_URL` existed still deploys, but without the environment link.
+
 ## Decisions
 
 | Date | Decision |
@@ -55,3 +71,4 @@ redeploys it.
 | 2026-11-26 | Keep per-project Cargo workspaces; no root workspace. |
 | 2026-11-26 | Replace the nightly standards audit (ISSUES.md PRs) with the `//:audit` PR check. |
 | 2026-11-26 | Deploy from the `push-main.yml` run with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, rather than from committed artifacts. |
+| 2026-11-26 | Record each deploying project's production URL as `DEPLOY_URL` in its `mise.toml`, deploy in a `production` GitHub environment, and roll back by redeploying one project at a ref ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |
