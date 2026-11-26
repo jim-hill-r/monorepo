@@ -16,13 +16,7 @@ unmaintained = "workspace"
 # Each ignore says why it is safe and when to look again. Adding one gets the
 # PR the needs-human label. Fixable advisories are FIX lines in the project's
 # ISSUES.md instead.
-ignore = [
-  # rsa: Marvin timing attack on RSA decryption and signing with a private
-  # key. auth_sdk and cahokia only verify Auth0 tokens with Auth0's public
-  # key (through jsonwebtoken), which the attack doesn't apply to, and no
-  # fixed rsa release exists. Review 2027-05-26.
-  { id = "RUSTSEC-2023-0071", reason = "only RSA public-key verification; no fix released (review 2027-05-26)" },
-]
+ignore = []
 
 [licenses]
 # Not checked yet: deps-check.sh runs advisories and sources only, because our
