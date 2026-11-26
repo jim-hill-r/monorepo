@@ -132,9 +132,11 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
+| `human-check` | Jim checks a setting made by hand | `setting`: an `id` in `standards/settings.toml` (see [Human checks](#human-checks)) | Declared inline, `stages = ["human"]` |
 
 A `human` eval (Jim's rating in pane) exists implicitly for every
-requirement and is never listed.
+requirement and is never listed. Only `human-check` evals list the `human`
+stage.
 
 ### Stages
 
@@ -145,6 +147,7 @@ requirement and is never listed.
 | `chaos` | Nightly, after that night's `cd` evals passed | Production, with a fault injected |
 | `observe` | Daily, and one hour after each deploy | Observability data over the eval's `window` |
 | `judge` | Weekly | Production and the latest UAT report |
+| `human` | When Jim rates in pane, or answers a due human check | His own use, or the dashboard itself |
 
 `cd`, `chaos` and `observe` are the **production stages**. Every `must`
 requirement needs at least one eval in a production stage.
@@ -162,7 +165,7 @@ error, and the rest follow once every shipping project has its files.
 
 | Code | Finding |
 | --- | --- |
-| EVL-001 | An eval names a requirement that doesn't exist or is retired. |
+| EVL-001 | An eval names a requirement that doesn't exist or is retired, or a `human-check` names a setting that isn't in `standards/settings.toml`. |
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
@@ -173,8 +176,125 @@ path ends with its `glob`. `target/`, `node_modules/` and hidden folders
 are not searched.
 
 Malformed files (a heading that isn't `<PREFIX>-<nnn>: <title>`, a missing
-field, an unknown priority, stage or kind, or an `evals.toml` whose `prefix`
-doesn't match the project's prefix) are reported too.
+field, an unknown priority, stage or kind, an `evals.toml` whose `prefix`
+doesn't match the project's prefix, a bad `standards/settings.toml` entry,
+or an answer line naming an unknown setting) are reported too.
+
+## In CI
+
+Stage `ci` runs in every project job of `mise-projects.yml` (PR CI, pushes
+to `main` and nightly CI), through the shared tasks and
+`standards/scripts/evals.sh`:
+
+1. The `ci` task saves what the tests print: `cargo test` output to
+   `target/evals-reports/cargo-test.log` (`evals.sh report cargo-test ...`),
+   and in Dioxus web apps Playwright's JSON report to
+   `target/evals-reports/playwright.json` (the `e2e` task adds
+   `--reporter=list,json`). `target/` is ignored by git.
+2. The `evals` task (`mise run evals`) runs `evals run` for the top-level
+   project's `evals.toml` with those reports, appending to
+   `$EVALS_RESULTS`. A project with no `evals.toml` collects nothing. A
+   sub-project's job (`cookbook/web`), or a top-level project that has
+   sub-projects, passes `--partial`, so it reports only the evals its own
+   tests cover; each part's job reports its share.
+3. The workflow then writes the job summary table (`evals.sh publish`) and
+   uploads the results file as a 14-day `evals-results-<project>` artifact.
+
+The eval step runs even when `ci` failed, so failing evals show, and it
+never fails the job itself: failing tests already fail `ci`, and a bug in
+the engine must not block a pull request. Run the same steps locally with
+`mise run ci && mise run evals && bash ../standards/scripts/evals.sh publish`
+from a project directory.
+
+## Human checks
+
+Some settings are made by hand in a dashboard and live in no file an eval
+can read: Claude connectors and scheduled tasks, repo secrets, Auth0
+applications, Cloudflare token scopes, free-plan billing. They break
+silently (an expired connector sign-in, a token missing a scope, a dropped
+callback URL), so Jim checks each one on a schedule. The design is in the
+plan's [Human checks](./plans/2026-11-eval-engine.md#human-checks-settings-made-by-hand)
+section.
+
+### The manifest
+
+`standards/settings.toml` lists every hand-made setting once:
+
+```toml
+[[setting]]
+id = "cloudflare-api-token-scopes"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > My Profile > API Tokens"
+expect = "The token in CLOUDFLARE_API_TOKEN has Cloudflare Pages: Edit."
+why = "A token missing a scope fails every deploy."
+every = "90d"
+```
+
+| Field | Value |
+| --- | --- |
+| `id` | Unique, kebab-case, stable: answers are keyed by it. |
+| `vendor` | Who hosts it: `GitHub`, `Claude`, `Cloudflare`, ... |
+| `where` | The dashboard page, as a click path or a link. |
+| `expect` | What it must be, in words Jim can check in under a minute. |
+| `why` | What breaks without it. |
+| `every` | How often to check it, in whole days: `30d`, `90d`. |
+
+It never holds a secret's value, only that the secret exists and what it
+is for; `evals check` rejects any other field. A human task
+(`issues/human/`) that creates a setting adds its entry here in the same PR.
+
+### Answers
+
+Jim's answers are his own judgment, so like pane ratings they live on
+`main`: one JSON line per answer in `standards/settings-checks.jsonl`,
+appended by `evals human-checks answer` and never edited by hand.
+
+```json
+{"setting":"claude-connectors","status":"pass","note":"ok","at":"2026-12-07T15:02:00Z","by":"jim"}
+```
+
+### The loop
+
+1. **Due.** `evals human-checks due` (in `evals/`:
+   `cargo run -q -p evals_cli -- human-checks due`) lists each setting that
+   was never checked, whose last answer is older than its `every`, or whose
+   last answer was "not ok":
+
+   ```text
+   Check claude-connectors: GitHub and Cloudflare are connected ... (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Last checked 2026-11-02.)
+   ```
+
+2. **Asked.** The weekly `human-issues-digest` run (Mondays) runs it with
+   `--write`, which writes a human task, `issues/human/settings-check-<id>.md`, for
+   up to five due checks that have none yet (`--limit`), opens one PR with
+   them, and lists every open check in the digest under "Checks due".
+3. **Answered.** When Jim replies "ok", or says what is wrong, the agent
+   that reads it runs `evals human-checks answer <id> --ok` or
+   `evals human-checks answer <id> --not-ok "<his words>"`, which appends
+   the answer and deletes the task file, and opens one PR. A "not ok" also
+   files a `kind: fix` issue in the owning project's `issues/`, or a new
+   human task when only Jim can fix it, and the check comes up again until
+   a newer "ok".
+
+### Linking a requirement
+
+An eval of kind `human-check` ties a requirement to a setting, so the
+requirement's verdict can use the answer:
+
+```toml
+[[eval]]
+id = "auth0-callbacks"
+requirement = "CAHO-004"
+stages = ["human"]
+kind = "human-check"
+setting = "auth0-cahokia-app"
+```
+
+A `human-check` eval runs in stage `human` only, and only it may list that
+stage. A `setting` that isn't in the manifest is EVL-001. A setting no eval
+names is fine: most are repo-wide and have no requirement yet. Folding the
+answers into the verdicts comes with `evals verdicts`: a "not ok" makes the
+requirement not met, and a check past twice its `every` makes it at risk.
 
 ## Results and verdicts
 

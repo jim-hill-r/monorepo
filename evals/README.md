@@ -37,6 +37,13 @@ cargo run -p evals_cli -- run --stage ci --project cookbook \
 
 # Write the job summary table ($GITHUB_STEP_SUMMARY, or stdout).
 cargo run -p evals_cli -- publish
+
+# Settings made by hand (standards/settings.toml): list the checks that are
+# due (--write adds their issues/human/settings-check-<id>.md tasks), and record
+# Jim's answer (which deletes the task).
+cargo run -p evals_cli -- human-checks due --write
+cargo run -p evals_cli -- human-checks answer claude-connectors --ok
+cargo run -p evals_cli -- human-checks answer claude-connectors --not-ok "GitHub needs reconnecting"
 ```
 
 Each result says `pass`, `fail`, `error` (an eval matched no test) or
@@ -44,6 +51,12 @@ Each result says `pass`, `fail`, `error` (an eval matched no test) or
 short note. In GitHub Actions the commit, run id and run link come from the
 `GITHUB_*` variables.
 
-Wiring `run` and `publish` into the shared tasks and workflows, and
-committing results to the `evals-results` branch, come in phase 1 (see the
-root `issues/`, `epic: Eval engine`). Results are files, never a database.
+`--partial` is for a run whose reports cover only part of a project (one
+sub-project's CI job, such as `cookbook/web`): an eval with no matching test
+then gets no result instead of `skip` or `error`.
+
+In CI the shared `ci` and `evals` tasks call these for you through
+`standards/scripts/evals.sh`; see "In CI" in
+[standards/docs/evals.md](../standards/docs/evals.md#in-ci). Committing
+results to the `evals-results` branch comes later in phase 1 (see the root
+`issues/`, `epic: Eval engine`). Results are files, never a database.

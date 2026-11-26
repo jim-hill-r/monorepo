@@ -24,6 +24,11 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   project's `issues/` and never only in a chat thread. Agents don't work
   them. A weekly Claude scheduled task, "Weekly human issues digest", reports
   them to Jim with the `human-issues-digest` skill (decision 0002).
+- **Settings made by hand** (connectors, secrets, Auth0, Cloudflare tokens,
+  billing) are listed in `standards/settings.toml`, never with a secret's
+  value. A change that makes or needs one adds its entry in the same PR; the
+  weekly digest asks Jim to re-check each one on its schedule ("Human
+  checks" in `standards/docs/evals.md`).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
@@ -176,10 +181,11 @@ Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
 
 Every project has the same tasks (`ci`, `fix`, `build`, `test`, `dev`,
-`release`, `deploy`), from one shared file in `standards/tasks/`. The rules
-and decisions (no root Rust workspace, no committed build artifacts) are in
-[standards/docs/mise.md](standards/docs/mise.md). CI runs `mise run ci` in
-each changed project; pushes to `main` also run `mise run deploy`.
+`release`, `deploy`, `evals`), from one shared file in `standards/tasks/`.
+The rules and decisions (no root Rust workspace, no committed build
+artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
+`mise run ci` and then `mise run evals` in each changed project; pushes to
+`main` also run `mise run deploy`.
 
 ## Skills
 

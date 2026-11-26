@@ -590,10 +590,18 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   COOK-003), in one PR with the rest of its changes, and brings it
   to Jim with the rest of the digest.
 - **Jim's answer is the result.** When Jim answers in the project ("ok", or
-  what is wrong), the agent that reads it records a result with
-  `by = "jim"`, `stage = "human"`, `status` `pass` or `fail` and his words
-  as `evidence` through `evals publish`, and removes the line. A `fail`
-  also files a `FIX` (or a `TODO (human)` if only Jim can fix it).
+  what is wrong), the agent that reads it records an answer with
+  `by = "jim"`, `status` `pass` or `fail` and his words, and deletes the
+  task file. A `fail` also files a `FIX` (or a `TODO (human)` if only Jim can fix
+  it). As built (2026-11-26), answers are Jim's judgment like pane ratings,
+  so they live on `main` in `standards/settings-checks.jsonl`, keyed by
+  setting and appended by `evals human-checks answer` (which also deletes
+  `issues/human/settings-check-<id>.md`), rather than on the `evals-results` branch, which agents
+  can't push to from a thread. Due checks come from
+  `evals human-checks due --write`; `evals verdicts` will read the same
+  file. A
+  manifest entry that no eval names is not a warning: most settings are
+  repo-wide and have no requirement until the `MONO-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
   production eval. A check past twice its `every` with no answer makes it
   at risk, never met: an unchecked setting is unknown, not fine.

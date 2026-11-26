@@ -16,7 +16,7 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-standard_tasks=(ci fix build test dev release deploy)
+standard_tasks=(ci fix build test dev release deploy evals)
 errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
 

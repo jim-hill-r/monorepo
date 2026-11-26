@@ -52,13 +52,13 @@ run = "cargo build"
 run = "if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi"
 
 [ci]
-description = "Everything CI checks; makes no artifacts"
+description = "Everything CI checks; makes no artifacts (test reports go in target/evals-reports)"
 depends = ["ci:deps"]
 run = [
   "cargo fmt --all --check",
   "cargo clippy -- -D warnings",
   "cargo build",
-  "if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test sh -c 'if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi'",
 ]
 
 [fix]
@@ -96,3 +96,7 @@ mise run release:web
 bash "$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh" pages-project
 wrangler pages deploy
 '''
+
+[evals]
+description = "Turn the reports ci saved into eval results (standards/docs/evals.md)"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" run"

@@ -42,7 +42,10 @@ skip() {
 npm ci || skip "couldn't install the npm packages"
 command -v dx >/dev/null 2>&1 || skip "dx (dioxus-cli) is not installed"
 npx playwright install --with-deps || skip "couldn't install Playwright's browsers"
-npm test
+# Also save the JSON report for the evals task (standards/docs/evals.md).
+mkdir -p target/evals-reports
+rm -f target/evals-reports/playwright.json
+PLAYWRIGHT_JSON_OUTPUT_FILE="$PWD/target/evals-reports/playwright.json" npm test -- --reporter=list,json
 """
 
 ["ci:deps"]
@@ -50,13 +53,13 @@ description = "System packages CI needs; override in a project's mise.toml"
 run = "true"
 
 [ci]
-description = "Everything CI checks; makes no artifacts"
+description = "Everything CI checks; makes no artifacts (test reports go in target/evals-reports)"
 depends = ["ci:deps"]
 run = [
   "cargo fmt --all --check",
   "cargo clippy -- -D warnings",
   "cargo build",
-  "cargo test",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
   "mise run e2e",
 ]
 
@@ -77,3 +80,7 @@ run = "dx bundle --platform web --release --out-dir dist ${DX_PACKAGE:+--package
 [deploy]
 description = "Web apps deploy through their cloudflare/ project"
 run = "echo 'deploy: this app is deployed by its cloudflare project, if it has one'"
+
+[evals]
+description = "Turn the reports ci saved into eval results (standards/docs/evals.md)"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" run"
