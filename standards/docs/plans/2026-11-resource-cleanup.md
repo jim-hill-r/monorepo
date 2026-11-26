@@ -16,10 +16,9 @@ And later the same day:
 
 Status: **approved** by Jim (PR #669, 2026-11-26), with the recommended
 answer to every question (see "Decisions" near the end). The work items
-become `TODO (agent-generated)` items under "Resource cleanup", one group
-per phase, and the steps only Jim can do become human issues, filed in the
-issue format of [issue-management.md](../issue-management.md) once the
-one-file-per-issue change (PR #655) lands. Part 6 (onboarding every live
+are issue files in the root [issues/](../../../issues/) under the epic
+"Resource cleanup", one group per phase, and the steps only Jim can do are
+in [issues/human/](../../../issues/human/). Part 6 (onboarding every live
 resource to infrastructure as code) was added after approval and is
 **proposed** until Jim approves the PR that adds it.
 
@@ -213,9 +212,9 @@ someone else could claim:
    DNS records and custom domains; PostHog allowed hosts; links in the
    repo (RES-002 already blocks those). Auth0 and DNS are checked by the
    workflow, which refuses step 3 while any reference remains; until the
-   Auth0 read in phase 4 exists, the retirement PR adds a `TODO (human)`
-   to `HUMAN_ISSUES.md` for Jim to remove the Auth0 URLs, and the workflow
-   waits until that line has been removed (lines are removed once done).
+   Auth0 read in phase 4 exists, the retirement PR adds a human issue in
+   `issues/human/` for Jim to remove the Auth0 URLs, and the workflow waits
+   until that file has been deleted (files are deleted once done).
 3. **Delete the resource.** For Pages, delete the project, which removes
    every deployment and preview alias with it. For data stores (D1, KV),
    export a dump to a workflow artifact first, kept 90 days.
@@ -226,7 +225,7 @@ someone else could claim:
 
 The deploy token already has Pages edit, which is all step 3 needs today.
 A Workers, D1 or DNS deletion needs that permission on the token; that is a
-`TODO (human)` added when the first such resource exists, not now.
+human issue added when the first such resource exists, not now.
 
 **Old `*.pages.dev` names: delete, don't stub.** An alternative is to keep
 the old project with a redirect page, which holds the subdomain so nobody
@@ -251,7 +250,7 @@ them without asking, and each run lists what it deleted in its summary:
 | Dependabot entries for missing folders | Already planned as SEC-006 in the threat check. | - |
 
 GitHub's own **"Automatically delete head branches"** setting removes most
-merged branches at merge time for free; turning it on is a `TODO (human)`.
+merged branches at merge time for free; turning it on is a human issue.
 
 ## Part 6: every live resource is in IaC
 
@@ -351,7 +350,7 @@ input when a kind is onboarded to IaC.
   order, with the guards and a dry run by default.
 - First use: the rename PR for `cahokia-web`, `pane` and
   `controlled-chaos` adds their retirement entries (with the Auth0
-  `TODO (human)` for cahokia's callback URLs). If the rename merges before
+  human issue for cahokia's callback URLs). If the rename merges before
   this phase, an agent adds those entries in a separate `needs-human` PR
   and the old projects wait, still claimed by nothing and flagged by the
   sweep, until the workflow exists.
@@ -362,8 +361,8 @@ input when a kind is onboarded to IaC.
   with a Management API token limited to `read:clients` (about 4 of the
   free plan's 1,000 machine tokens a month). Any URL not claimed by a
   `threat.toml` is an orphan; step 2 of the safe order checks it
-  automatically instead of waiting on a `TODO (human)`. Jim creates the
-  token, so this is a `TODO (human)`; removing a URL stays a dashboard step
+  automatically instead of waiting on a human issue. Jim creates the
+  token, so this is a human issue; removing a URL stays a dashboard step
   for Jim, because a write token for Auth0 is more access than this needs.
 - Dangling DNS: once a zone exists, any record pointing at a `*.pages.dev`
   or `*.workers.dev` name we don't own is an error (the classic subdomain
@@ -419,7 +418,7 @@ recommended answers.
    task.
 8. **Jim turns on "Automatically delete head branches"** in the repo
    settings, and later creates the read-only Auth0 token (phase 4). Both go
-   in `HUMAN_ISSUES.md`.
+   in `issues/human/`.
 
 Proposed with Part 6, for Jim's approval:
 

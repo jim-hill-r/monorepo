@@ -58,3 +58,9 @@ See [standards/docs/plans/2026-11-threat-check.md](../standards/docs/plans/2026-
 
 See [standards/docs/plans/2026-11-design-system.md](../standards/docs/plans/2026-11-design-system.md)
 (approved by Jim, 2026-11-26). One group per phase.
+
+## Resource cleanup
+
+See [standards/docs/plans/2026-11-resource-cleanup.md](../standards/docs/plans/2026-11-resource-cleanup.md)
+(approved by Jim, 2026-11-26; Part 6 and phase 5, onboarding every live
+resource to IaC, added in PR #674). One group per phase.
