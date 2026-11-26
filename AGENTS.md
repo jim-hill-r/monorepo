@@ -44,10 +44,10 @@ repo, rather than in any one agent tool's settings.
     change), saying what it costs, why no approved vendor fits, and what a
     switch would take. Label the PR `needs-jim` and don't merge it until Jim
     approves.
-  - **Existing exceptions, pending Jim's confirmation:**
+  - **Approved exceptions:**
     - PostHog, for real-user session replay (decision 0001).
     - Auth0, used by `auth_sdk` and `cahokia` for sign-in.
-    - RapidAPI (Zillow data), used by `homer`.
+  - **Pending Jim's confirmation:** RapidAPI (Zillow data), used by `homer`.
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
