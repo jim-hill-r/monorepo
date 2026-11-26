@@ -1,4 +1,5 @@
 pub mod layout;
+pub mod sample;
 pub mod tree_layout;
 
 pub use layout::{GenerationLayout, Placement};

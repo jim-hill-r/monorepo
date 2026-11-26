@@ -1,6 +1,7 @@
 # 0003. Evaluate product requirements at every stage, on free tiers
 
-- Status: Proposed (accepted when Jim approves the PR that adds it)
+- Status: Accepted
+- Decided by: Jim (approved PR #612, 2026-11-26)
 - Date: 2026-11-26
 - Plan: [../plans/2026-11-eval-engine.md](../plans/2026-11-eval-engine.md)
 

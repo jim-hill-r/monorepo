@@ -15,6 +15,8 @@ use views::about::About;
 #[cfg(target_arch = "wasm32")]
 use views::explore::Explore;
 #[cfg(target_arch = "wasm32")]
+use views::family_tree::FamilyTree;
+#[cfg(target_arch = "wasm32")]
 use views::history::History;
 #[cfg(target_arch = "wasm32")]
 use views::home::Home;
@@ -43,6 +45,8 @@ enum Route {
     History {},
     #[route("/explore")]
     Explore {},
+    #[route("/family-tree")]
+    FamilyTree {},
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -174,6 +178,18 @@ fn WebNavbar() -> Element {
             is_open: sidebar_open,
             h2 { "Controls" }
             p { "Future controls will be added here." }
+            nav {
+                class: "sidebar-links",
+                ul {
+                    li {
+                        Link {
+                            to: Route::FamilyTree {},
+                            onclick: move |_| sidebar_open.set(false),
+                            "Family Tree"
+                        }
+                    }
+                }
+            }
             button {
                 onclick: move |_| sidebar_open.set(false),
                 "Close"
