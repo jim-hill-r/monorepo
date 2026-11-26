@@ -38,7 +38,8 @@ own job.
 | --- | --- | --- |
 | `pull-request-ci.yml` | changed since the PR base | `ci` |
 | `push-main.yml` | changed by the push | `ci`, then `deploy` |
-| `nightly-ci.yml` | all | `ci`, then `deploy` |
+| `nightly-ci.yml` | all | `ci` |
+| `nightly-cd.yml` | those with `DEPLOY_URL` | `ci`, then `deploy` |
 
 `standards/scripts/affected.sh` decides what a change touches: the deepest
 project holding a changed file; every project including a changed

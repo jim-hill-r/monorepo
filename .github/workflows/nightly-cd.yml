@@ -1,0 +1,30 @@
+---
+# Each night: rebuild and republish every project that deploys (those with
+# DEPLOY_URL in their mise.toml), even when nothing changed, so expired
+# secrets and broken deploys show up within a day (Jim, 2026-11-26; decision
+# 0001). Each job runs `mise run ci` first and deploys only if it passed, and
+# deploy-check.sh skips the deploy when a newer commit on main changes the
+# project, so only the latest passing version of main is deployed. Direct
+# uploads use no Pages builds, and standard runners are free on this public
+# repo.
+name: Nightly CD
+
+'on':
+  schedule:
+    # 2:30 AM Pacific Time (10:30 AM UTC), after Nightly CI has started
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cd:
+    uses: ./.github/workflows/mise-projects.yml
+    with:
+      base: ''
+      deploy: true
+      deploy_only: true
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

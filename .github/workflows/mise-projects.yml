@@ -1,7 +1,7 @@
 ---
 # Reusable workflow: list the projects to check, then run mise tasks in each
 # one, one job per project. Called by pull-request-ci.yml, push-main.yml and
-# nightly-ci.yml. Every project is a directory with a mise.toml that includes
+# nightly-ci.yml and nightly-cd.yml. Every project is a directory with a mise.toml that includes
 # one standards/tasks/<type>.toml, so every project has the same tasks.
 name: mise projects
 
@@ -16,6 +16,12 @@ name: mise projects
         default: ''
       deploy:
         description: Run `mise run deploy` after `mise run ci`
+        type: boolean
+        default: false
+      deploy_only:
+        description: >-
+          Run only the listed projects that deploy (those with DEPLOY_URL in
+          their mise.toml [env]).
         type: boolean
         default: false
       project:
@@ -45,7 +51,7 @@ jobs:
   plan:
     runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
     outputs:
-      projects: ${{ steps.affected.outputs.projects }}
+      projects: ${{ steps.urls.outputs.projects || steps.affected.outputs.projects }}
       deploy_urls: ${{ steps.urls.outputs.deploy_urls }}
     steps:
       - uses: actions/checkout@v6
@@ -88,6 +94,7 @@ jobs:
         id: urls
         env:
           PROJECTS: ${{ steps.affected.outputs.projects }}
+          DEPLOY_ONLY: ${{ inputs.deploy_only }}
         shell: python3 {0}
         run: |
           import json, os, tomllib
@@ -99,6 +106,8 @@ jobs:
                   urls[p] = url
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               out.write(f"deploy_urls={json.dumps(urls)}\n")
+              if os.environ["DEPLOY_ONLY"] == "true":
+                  out.write(f"projects={json.dumps(sorted(urls))}\n")
           print("Deploy URLs:", urls)
 
   project:
