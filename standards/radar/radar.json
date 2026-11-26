@@ -1029,5 +1029,19 @@
     ],
     "claude": "HashiCorp Terraform MCP server.",
     "budget": 0
+  },
+  {
+    "name": "terrars",
+    "ring": "Assess",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Proposed in decision 0007 as the typed layer under the infra crate's constructs, pending a phase 1 spike on build time; hand-written structs are the fallback.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "",
+    "budget": 0
   }
 ]
