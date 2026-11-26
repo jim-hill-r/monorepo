@@ -60,6 +60,16 @@ newer deploy.
 Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
 `deploy_check_tests.rs`.
 
+<<<<<<< HEAD
+
+## pull-request-review-decks.yml (Review decks)
+
+Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).
+Builds every review deck to HTML and PDF with the Marp CLI through
+`standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
+uploads them as the `review-decks` artifact. See
+[docs/reviews/README.md](../../docs/reviews/README.md).
+=======
 ## all-free-tier-usage.yml
 
 Weekly (Mondays, 7 AM Pacific), by hand, or called from another workflow:
@@ -71,6 +81,7 @@ anything reaches its budget in
 reads.
 
 Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+>>>>>>> origin/main
 
 ## codeql.yml
 
