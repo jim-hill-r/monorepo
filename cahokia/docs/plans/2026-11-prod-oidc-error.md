@@ -1,6 +1,6 @@
 # Plan: fix the OIDC error on Cahokia production
 
-Status: proposed, 2026-11-26. Reported by Jim: <https://cahokia-web.pages.dev>
+Status: steps 1 and 2 and the Playwright check from step 4 done, 2026-11-26. Reported by Jim: <https://cahokia-web.pages.dev>
 shows an OIDC error.
 
 ## What is wrong

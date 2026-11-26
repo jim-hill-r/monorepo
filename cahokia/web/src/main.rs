@@ -2,8 +2,10 @@
 use auth_sdk::provider::ProviderConfig;
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
+#[cfg(any(target_arch = "wasm32", test))]
+use auth_sdk::redirect::redirect_url_for_origin;
 #[cfg(target_arch = "wasm32")]
-use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
+use auth_sdk::web::{WebAuthProvider, fetch_origin_from_browser};
 
 #[cfg(target_arch = "wasm32")]
 use dioxus::prelude::*;
@@ -93,7 +95,11 @@ fn App() -> Element {
             client_id: CLIENT_ID.into(),
             auth_url: AUTH_URL.into(),
             token_url: TOKEN_URL.into(),
-            redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
+            // Always the site root, so it matches Auth0's Allowed Callback
+            // URLs from any page; the user is sent back to their page after.
+            redirect_url: fetch_origin_from_browser()
+                .map(|origin| redirect_url_for_origin(&origin))
+                .unwrap_or_default(),
             issuer_url: Some(AUTH0_DOMAIN.into()),
         })
         .await
@@ -126,6 +132,16 @@ fn WebNavbar() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
     let auth_state = auth.read();
     let mut sidebar_open = use_signal(|| false);
+
+    // After a sign-in redirect the app loads at `/`; put the user back on the
+    // page they clicked Login from.
+    use_effect(move || {
+        if let Some(Ok(provider)) = &*auth.read()
+            && let Some(route) = provider.return_to().and_then(return_route)
+        {
+            navigator().replace(route);
+        }
+    });
 
     rsx! {
         // Header bar with Cahokia title and navigation links
@@ -202,6 +218,17 @@ fn WebNavbar() -> Element {
     }
 }
 
+/// The route for a sign-in return path, or `None` when it is unknown or is
+/// the home page the redirect already landed on.
+#[cfg(target_arch = "wasm32")]
+fn return_route(path: &str) -> Option<Route> {
+    // No route takes a query or hash, so match on the path alone.
+    let path = path.split(['?', '#']).next().unwrap_or("/");
+    path.parse::<Route>()
+        .ok()
+        .filter(|route| *route != Route::Home {})
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -270,6 +297,21 @@ mod tests {
         }
         assert_eq!(AUTH_URL, format!("{AUTH0_DOMAIN}authorize"));
         assert_eq!(TOKEN_URL, format!("{AUTH0_DOMAIN}oauth/token"));
+    }
+
+    #[test]
+    fn test_redirect_url_matches_auth0_callback_urls() {
+        // These must stay in Auth0's Allowed Callback URLs (HUMAN_ISSUES.md):
+        // the redirect URI is the site root from every page, never the
+        // current page URL.
+        assert_eq!(
+            redirect_url_for_origin("https://cahokia-web.pages.dev"),
+            "https://cahokia-web.pages.dev/"
+        );
+        assert_eq!(
+            redirect_url_for_origin("http://localhost:8080"),
+            "http://localhost:8080/"
+        );
     }
 
     #[test]
