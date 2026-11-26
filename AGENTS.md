@@ -73,6 +73,13 @@ repo, rather than in any one agent tool's settings.
     technologies Claude knows well and vendors with a Claude Code plugin or
     MCP server, enabled read-only for context. The tech radar notes which
     have one.
+  - **Cost in every decision question (Jim, 2026-11-26).** "Always include
+    cost in a question like this." Every decision put to Jim (a decision
+    card, an option list, a decision record) gives each option's money cost
+    (usually $0 on the free tier), how close it gets to its free-tier
+    limits ([standards/docs/free-tiers.md](standards/docs/free-tiers.md)
+    and the budgets in the tech radar), and the Claude Code build effort,
+    which counts against the $25 a month budget.
   - **Tech radar.** [standards/docs/tech-radar.md](standards/docs/tech-radar.md)
     lists every approved, evaluated and held technology and vendor, with its
     exemplar projects. A PR that approves, rejects or drops one, or adds the
