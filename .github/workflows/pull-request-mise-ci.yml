@@ -23,7 +23,7 @@ env:
 
 jobs:
   plan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
     outputs:
       projects: ${{ steps.affected.outputs.projects }}
     steps:
@@ -54,7 +54,7 @@ jobs:
   ci:
     needs: plan
     if: needs.plan.outputs.projects != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
     strategy:
       fail-fast: false
       matrix:
