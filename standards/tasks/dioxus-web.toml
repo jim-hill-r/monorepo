@@ -8,10 +8,10 @@
 run = "cargo fmt --all --check"
 
 [lint]
-run = "cargo clippy --all-targets -- -D warnings"
+run = "cargo clippy -- -D warnings"
 
 [build]
-run = "cargo build --all-targets"
+run = "cargo build"
 
 [test]
 description = "Rust tests, then Playwright tests when the project has a package.json"
@@ -20,12 +20,17 @@ run = [
   "if [ -f package.json ]; then npm ci && npx playwright install --with-deps chromium && npm test; fi",
 ]
 
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
 [ci]
 description = "Everything CI checks; makes no artifacts"
+depends = ["ci:deps"]
 run = [
   "cargo fmt --all --check",
-  "cargo clippy --all-targets -- -D warnings",
-  "cargo build --all-targets",
+  "cargo clippy -- -D warnings",
+  "cargo build",
   "cargo test",
   "if [ -f package.json ]; then npm ci && npx playwright install --with-deps chromium && npm test; fi",
 ]

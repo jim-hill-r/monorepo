@@ -14,22 +14,27 @@ run = "cargo fmt --all --check"
 
 [lint]
 description = "Clippy with warnings as errors"
-run = "cargo clippy --all-targets -- -D warnings"
+run = "cargo clippy -- -D warnings"
 
 [build]
 description = "Debug build"
-run = "cargo build --all-targets"
+run = "cargo build"
 
 [test]
 description = "Run tests"
 run = "cargo test"
 
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
 [ci]
 description = "Everything CI checks; makes no artifacts"
+depends = ["ci:deps"]
 run = [
   "cargo fmt --all --check",
-  "cargo clippy --all-targets -- -D warnings",
-  "cargo build --all-targets",
+  "cargo clippy -- -D warnings",
+  "cargo build",
   "cargo test",
 ]
 

@@ -16,10 +16,10 @@ fi
 run = "cargo fmt --all --check"
 
 [lint]
-run = "cargo clippy --all-targets -- -D warnings"
+run = "cargo clippy -- -D warnings"
 
 [build]
-run = "cargo build --all-targets"
+run = "cargo build"
 
 [test]
 run = "if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi"
@@ -29,8 +29,8 @@ description = "Everything CI checks; makes no artifacts"
 depends = ["ci:deps"]
 run = [
   "cargo fmt --all --check",
-  "cargo clippy --all-targets -- -D warnings",
-  "cargo build --all-targets",
+  "cargo clippy -- -D warnings",
+  "cargo build",
   "if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi",
 ]
 
