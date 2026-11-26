@@ -1,0 +1,13 @@
+[package]
+name = "design_system_cli"
+description = "Render the design system's CSS, JSON and Rust outputs, and check them."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+design_system_model = { workspace = true }
+serde_json = { workspace = true }

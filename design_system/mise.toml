@@ -1,0 +1,39 @@
+# design_system: rust project (a Cargo workspace). Standard tasks: ci, fix,
+# build, test, dev, release, deploy. Run with: mise run <task>
+# The contrast check runs in ci; apps that read the tokens list this
+# directory on an `# affected-by:` line so their CI reruns when it changes.
+# affected-by: ../standards/docs/reset.css
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+
+[task_config]
+includes = ["../standards/tasks/rust.toml"]
+
+[tasks.ci]
+description = "Everything CI checks, plus the contrast check and that generated files are up to date"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "cargo test",
+  "cargo run --quiet -p design_system_cli -- check",
+]
+
+[tasks.render]
+description = "Regenerate dist/, palette/src/generated.rs, docs/contrast.md and every app's design/theme.css"
+run = "cargo run --quiet -p design_system_cli -- render"
+
+[tasks.check]
+description = "Contrast check across every theme, scheme and mode, and generated files up to date"
+run = "cargo run --quiet -p design_system_cli -- check"
+
+[tasks.fix]
+description = "Format, apply safe clippy fixes and regenerate outputs"
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+  "cargo run --quiet -p design_system_cli -- render",
+]
+
