@@ -1,2 +1,5 @@
+[env]
+RELEASE_TAG = "tool-nightly"
+
 [task_config]
 includes = ["../standards/tasks/rust.toml"]

@@ -16,7 +16,10 @@
 //!
 //! Each pair is also sorted into a [`Channel`] (how the result reached the
 //! focus team) and, when its seeding changed, a [`Cause`], so the playoff
-//! and Super Bowl swings split into shares that add up to the whole.
+//! and Super Bowl swings split into shares that add up to the whole. A game
+//! too close to the "doesn't matter" line ([`NEGLIGIBLE_SWING`]) to call
+//! gets more pairs, and a game the relevance pass shows can't reach the focus
+//! team isn't simulated at all; [`GameImpact::tier`] sorts the result.
 
 use std::collections::HashMap;
 
@@ -24,10 +27,44 @@ use crate::NFC_NORTH;
 use crate::elo::{Ratings, win_probability};
 use crate::games::Outcome;
 use crate::games::{Date, Game, Season};
+use crate::relevance::{Relevance, relevance};
 use crate::standings::{Conference, Procedure, Record, Standings, Step, Team, wild_cards};
 
 /// How many seasons a weekly build simulates (decision 0003).
 pub const DEFAULT_SIMULATIONS: u32 = 100_000;
+
+/// The "doesn't matter" line on a game's Super Bowl swing: 0.05 percentage
+/// points (BEAR-005). A game is negligible only when its swing is below this
+/// with confidence.
+pub const NEGLIGIBLE_SWING: f64 = 0.0005;
+
+/// The most pairs a game gets, as a multiple of the simulations, when its
+/// swing is too close to [`NEGLIGIBLE_SWING`] to call.
+pub const MAX_PAIR_FACTOR: u32 = 4;
+
+/// Whether `swing` is too close to [`NEGLIGIBLE_SWING`] to call: its
+/// two-standard-error range spans the line and is still wider than the
+/// plan's target (a standard error over a fifth of the line).
+fn near_the_line(swing: &Swing) -> bool {
+    let (size, margin) = (swing.swing().abs(), 2.0 * swing.std_error);
+    size - margin < NEGLIGIBLE_SWING
+        && size + margin > NEGLIGIBLE_SWING
+        && swing.std_error > NEGLIGIBLE_SWING / 5.0
+}
+
+/// How much a game matters for one goal, from its swing and whether it can
+/// reach the focus team at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Tier {
+    /// The swing is at least [`NEGLIGIBLE_SWING`], with confidence.
+    Matters,
+    /// Neither clearly above nor clearly below the line: a small effect.
+    Small,
+    /// Below [`NEGLIGIBLE_SWING`] with confidence: doesn't matter.
+    Negligible,
+    /// The game can't reach the focus team in any season.
+    None,
+}
 
 /// How a simulation run is set up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +131,28 @@ impl Swing {
         self.swing().abs() > 2.0 * self.std_error
     }
 
+    /// No swing at all, known exactly (no noise).
+    fn none() -> Self {
+        Swing {
+            if_home_wins: 0.0,
+            if_away_wins: 0.0,
+            std_error: 0.0,
+        }
+    }
+
+    /// The swing's tier against [`NEGLIGIBLE_SWING`], for a game that can
+    /// reach the focus team.
+    pub fn tier(&self) -> Tier {
+        let (size, margin) = (self.swing().abs(), 2.0 * self.std_error);
+        if size + margin < NEGLIGIBLE_SWING {
+            Tier::Negligible
+        } else if size - margin >= NEGLIGIBLE_SWING {
+            Tier::Matters
+        } else {
+            Tier::Small
+        }
+    }
+
     /// Builds a swing from `runs` paired seasons: how often the goal
     /// happened with a home win and with an away win, and how many pairs
     /// reached it only with a home win or only with an away win. The
@@ -148,9 +207,25 @@ pub struct GameImpact {
     /// biggest Super Bowl share first. Only pairs whose seasons differ in
     /// some way are counted, so a game that changes nothing has none.
     pub channels: Vec<ChannelImpact>,
+    /// How many paired seasons measured this game: the simulations, more
+    /// for a game near the "doesn't matter" line, or none for a game that
+    /// can't reach the focus team.
+    pub pairs: u32,
+    /// Which links the game has to the focus team, from the schedule alone.
+    pub relevance: Relevance,
 }
 
 impl GameImpact {
+    /// How much the game matters for `swing`'s goal: [`Tier::None`] when no
+    /// link can reach the focus team, otherwise [`Swing::tier`].
+    pub fn tier(&self, swing: &Swing) -> Tier {
+        if self.relevance.can_matter() {
+            swing.tier()
+        } else {
+            Tier::None
+        }
+    }
+
     /// The team to root for to help `swing`'s goal, or `None` when the swing
     /// is within the noise.
     pub fn root_for(&self, swing: &Swing) -> Option<Team> {
@@ -619,56 +694,85 @@ pub fn simulate(
     // Each game's swing: every season is played twice, once with each
     // result, from the same seed (common random numbers). The difference
     // then comes from this game alone, which makes even small swings clear.
+    // Games whose Super Bowl swing is too close to the "doesn't matter" line
+    // to call get more pairs, a batch at a time, up to a cap.
     let runs = config.simulations;
+    let pair_cap = runs.saturating_mul(MAX_PAIR_FACTOR);
+    let links = relevance(season, &base, config.focus)?;
     let games = tracked
         .iter()
         .zip(&tracked_games)
-        .map(|(&index, game)| {
+        .map(|(&index, game)| -> Result<GameImpact, String> {
+            let (home_team, away_team) = (remaining[index].home, remaining[index].away);
+            let Some(relevance) = links
+                .iter()
+                .find(|relevance| relevance.home == home_team && relevance.away == away_team)
+                .cloned()
+            else {
+                return Err(format!("{} is missing from the relevance pass", game.id));
+            };
             let mut pairs = [PairedCounts::default(); 5];
             let mut channels: Vec<ChannelCounts> = Vec::new();
-            for run in 0..runs {
-                let seed = run_seed(run);
-                let home_played = play_season(seed, Some((index, true)));
-                let away_played = play_season(seed, Some((index, false)));
-                let home = goals(&home_played);
-                let away = goals(&away_played);
-                for ((counts, home), away) in pairs.iter_mut().zip(home).zip(away) {
-                    counts.add(home, away);
-                }
-                let Some((channel, cause, home_better)) =
-                    classify(&home_played, &away_played, config.focus)
-                else {
-                    continue;
-                };
-                let position = channels
-                    .iter()
-                    .position(|counts| counts.channel == channel && counts.cause == cause);
-                let counts = match position {
-                    Some(position) => &mut channels[position],
-                    None => {
-                        channels.push(ChannelCounts {
-                            channel,
-                            cause,
-                            pairs: 0,
-                            home_better: 0,
-                            away_better: 0,
-                            playoffs: PairedCounts::default(),
-                            champion: PairedCounts::default(),
-                        });
-                        let last = channels.len() - 1;
-                        &mut channels[last]
+            // A game that can't reach the focus team in any season can't
+            // move anyone's seeding, so its swings are exactly zero.
+            let mut target = if relevance.can_matter() { runs } else { 0 };
+            let mut done = 0;
+            while done < target {
+                for run in done..target {
+                    let seed = run_seed(run);
+                    let home_played = play_season(seed, Some((index, true)));
+                    let away_played = play_season(seed, Some((index, false)));
+                    let home = goals(&home_played);
+                    let away = goals(&away_played);
+                    for ((counts, home), away) in pairs.iter_mut().zip(home).zip(away) {
+                        counts.add(home, away);
                     }
-                };
-                counts.pairs += 1;
-                if channel.is_seeding() {
-                    counts.home_better += u32::from(home_better);
-                    counts.away_better += u32::from(!home_better);
+                    let Some((channel, cause, home_better)) =
+                        classify(&home_played, &away_played, config.focus)
+                    else {
+                        continue;
+                    };
+                    let position = channels
+                        .iter()
+                        .position(|counts| counts.channel == channel && counts.cause == cause);
+                    let counts = match position {
+                        Some(position) => &mut channels[position],
+                        None => {
+                            channels.push(ChannelCounts {
+                                channel,
+                                cause,
+                                pairs: 0,
+                                home_better: 0,
+                                away_better: 0,
+                                playoffs: PairedCounts::default(),
+                                champion: PairedCounts::default(),
+                            });
+                            let last = channels.len() - 1;
+                            &mut channels[last]
+                        }
+                    };
+                    counts.pairs += 1;
+                    if channel.is_seeding() {
+                        counts.home_better += u32::from(home_better);
+                        counts.away_better += u32::from(!home_better);
+                    }
+                    counts.playoffs.add(home[0], away[0]);
+                    counts.champion.add(home[1], away[1]);
                 }
-                counts.playoffs.add(home[0], away[0]);
-                counts.champion.add(home[1], away[1]);
+                done = target;
+                if near_the_line(&pairs[1].swing(done)) {
+                    target = done.saturating_add(runs).min(pair_cap);
+                }
             }
-            let [playoffs, champion, nfc_north, division, top_seed] =
-                pairs.map(|counts| counts.swing(runs));
+            let runs = done;
+            let exact = |counts: PairedCounts| {
+                if runs == 0 {
+                    Swing::none()
+                } else {
+                    counts.swing(runs)
+                }
+            };
+            let [playoffs, champion, nfc_north, division, top_seed] = pairs.map(exact);
             let mut channels: Vec<ChannelImpact> = channels
                 .into_iter()
                 .map(|counts| ChannelImpact {
@@ -698,7 +802,7 @@ pub fn simulate(
                     .then(a.channel.cmp(&b.channel))
                     .then(b.pairs.cmp(&a.pairs))
             });
-            GameImpact {
+            Ok(GameImpact {
                 game_id: game.id.clone(),
                 gameday: game.gameday,
                 home: remaining[index].home,
@@ -710,9 +814,11 @@ pub fn simulate(
                 division,
                 top_seed,
                 channels,
-            }
+                pairs: runs,
+                relevance,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, String>>()?;
 
     let share = |count: u32| {
         if runs == 0 {
@@ -1159,7 +1265,7 @@ mod tests {
             close(sum(|c| c.champion.swing), game.champion.swing());
             for channel in &game.channels {
                 assert!(channel.pairs > 0);
-                assert!(channel.pairs <= simulation.simulations);
+                assert!(channel.pairs <= game.pairs);
                 assert_eq!(channel.cause.is_some(), channel.channel.is_seeding());
                 if channel.channel.is_seeding() {
                     assert_eq!(channel.home_better + channel.away_better, channel.pairs);
@@ -1239,6 +1345,94 @@ mod tests {
         }
     }
 
+    /// A game with every link open, for hand-built impacts.
+    fn open_game(home: &str, away: &str) -> Relevance {
+        Relevance {
+            home: team(home),
+            away: team(away),
+            focus_alive: true,
+            alive: [true, true],
+            links: vec![crate::relevance::Link::Race(team(home))],
+        }
+    }
+
+    #[test]
+    fn tiers_follow_the_line_with_confidence() {
+        let swing = |home_only: u32, away_only: u32, runs: u32| {
+            Swing::from_pairs(home_only, away_only, home_only, away_only, runs)
+        };
+        // 1 point, clearly above the 0.05-point line.
+        assert_eq!(swing(1_000, 0, 100_000).tier(), Tier::Matters);
+        // 0.01 points, clearly below it.
+        assert_eq!(swing(10, 0, 100_000).tier(), Tier::Negligible);
+        assert_eq!(swing(0, 0, 100_000).tier(), Tier::Negligible);
+        // 0.05 points from 100,000 pairs: too close to call.
+        assert_eq!(swing(50, 0, 100_000).tier(), Tier::Small);
+        // Too few pairs to say anything.
+        assert_eq!(swing(1, 0, 100).tier(), Tier::Small);
+        // The same swing from 10,000 pairs is near the line and gets more;
+        // from 100,000 it is already as precise as the plan asks.
+        assert!(near_the_line(&swing(5, 0, 10_000)));
+        assert!(!near_the_line(&swing(50, 0, 100_000)));
+        assert!(!near_the_line(&swing(1_000, 0, 100_000)));
+        assert!(!near_the_line(&swing(10, 0, 100_000)));
+        // A game that can't reach the focus team is in no tier but None,
+        // whatever its swing says.
+        let mut game = GameImpact {
+            game_id: "x".to_owned(),
+            gameday: Date {
+                year: 2026,
+                month: 11,
+                day: 26,
+            },
+            home: team("DET"),
+            away: team("GB"),
+            home_win_probability: 0.5,
+            playoffs: swing(1_000, 0, 100_000),
+            champion: swing(1_000, 0, 100_000),
+            nfc_north: Swing::none(),
+            division: Swing::none(),
+            top_seed: Swing::none(),
+            channels: Vec::new(),
+            pairs: 100_000,
+            relevance: open_game("DET", "GB"),
+        };
+        assert_eq!(game.tier(&game.champion), Tier::Matters);
+        game.relevance.links.clear();
+        assert_eq!(game.tier(&game.champion), Tier::None);
+    }
+
+    #[test]
+    fn close_calls_get_more_pairs_and_closed_games_none() {
+        let schedule = schedule(2023, before_week_18);
+        let simulation = run(&schedule, 2023, &config(2_000, "GB"));
+        let cap = 2_000 * MAX_PAIR_FACTOR;
+        for game in &simulation.games {
+            assert!(game.relevance.can_matter());
+            assert!((2_000..=cap).contains(&game.pairs), "{}", game.pairs);
+            assert!(game.pairs % 2_000 == 0 || game.pairs == cap);
+            // A game that got extra pairs was near the line before them.
+            if game.pairs < cap {
+                assert!(!near_the_line(&game.champion), "{}", game.game_id);
+            }
+        }
+        assert!(
+            simulation.games.iter().any(|game| game.pairs > 2_000),
+            "some game should be close enough to the line for more pairs"
+        );
+
+        // The 2-14 Panthers were out: no game can reach them, so none is
+        // simulated and every swing is exactly zero.
+        let simulation = run(&schedule, 2023, &config(500, "CAR"));
+        for game in &simulation.games {
+            assert_eq!(game.pairs, 0);
+            assert_eq!(game.champion, Swing::none());
+            assert_eq!(game.playoffs, Swing::none());
+            assert!(game.channels.is_empty());
+            assert_eq!(game.tier(&game.champion), Tier::None);
+        }
+    }
+
     #[test]
     fn swing_noise_comes_from_the_pairs() {
         // Every pair agrees: no swing and no noise.
@@ -1293,6 +1487,8 @@ mod tests {
             division: Swing::from_pairs(1, 1, 0, 0, 100),
             top_seed: Swing::from_pairs(1, 1, 0, 0, 100),
             channels: Vec::new(),
+            pairs: 100,
+            relevance: open_game("DET", "GB"),
         };
         assert_eq!(game.root_for(&game.playoffs), Some(team("GB")));
         assert_eq!(game.root_for(&game.champion), Some(team("DET")));

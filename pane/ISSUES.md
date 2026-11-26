@@ -11,10 +11,7 @@ Work the phases in order; within a phase, top to bottom.
 
 ### Phase 1: read-only from the repo
 
-- TODO (agent-generated): Build the Work page: every `TODO` and `FIX` across the repo, filterable by project, kind, priority or backlog, and tag, each linking to its line on GitHub.
-- TODO (agent-generated): Build the Human issues page (read only): each open human issue line with what it unblocks and its age, oldest first, linking to the line on GitHub.
 - TODO (agent-generated): Build the Project page: README summary, type, status, deliverables, open TODOs and FIXes, latest plan, decision and retro links.
-- TODO (agent-generated): Build the Deliverables page for live sites (`DEPLOY_URL`), plans, decisions and retros, rendering Markdown in page with `pulldown-cmark` and linking each file on GitHub.
 - TODO (agent-generated): Build the Today page from the snapshot: open human issues oldest first and items added since the last visit (last visit kept in `localStorage`, page works without it).
 - TODO (agent-generated): Deploy pane on every push to `main`, not only pushes under `pane/`, since its snapshot reads the whole repo. Do it in `push-main.yml` or `mise-projects.yml` without changing how other projects are picked.
 
