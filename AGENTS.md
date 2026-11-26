@@ -38,6 +38,9 @@ repo, rather than in any one agent tool's settings.
   and no conflicts, approves only patch or minor dependency bumps (a 0.x minor
   bump counts as major), never approves the pinned bumps above, and never
   approves changes to workflows, auth code or secrets.
+- **Starting new work.** There is no scheduled job for new work. Whenever no
+  agent PRs or agent tasks are in flight, the coordinating agent starts a new
+  task by running the `start-a-new-task` skill.
 - **CI on `main` may be red.** Judge a PR by whether the projects it changes
   pass, not by the overall status.
 
