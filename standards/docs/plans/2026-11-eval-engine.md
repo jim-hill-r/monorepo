@@ -205,10 +205,11 @@ keep dev work as files in the monorepo). Records go three places:
    verdicts.json                       current verdict per requirement
    ```
 
-   Each run ends with `evals publish`, which checks out that branch,
-   appends its records, recomputes `verdicts.json`, and pushes one commit
-   (`evals: <stage> <project> <run>`), retrying on a race with another run.
-   The workflow gets `contents: write` for that step only, and the push is
+   Each run ends with a `store-evals` job (`evals.sh store`, which runs
+   `evals store`), which checks out that branch, appends its records,
+   recomputes `verdicts.json`, and pushes one commit
+   (`evals: <stage> <projects> run <id>`), retrying on a race with another run.
+   The workflow gets `contents: write` for that job only, and the push is
    to `evals-results` only; `main` is never written. At our scale (about 20
    projects, a few hundred evals, a handful of runs a day) that is well under
    1 MB a day before git's compression. Once a year a step moves months
@@ -268,8 +269,10 @@ Commands:
   wrote (Cargo's JSON test output, Playwright's JSON reporter, trycmd's
   output), so tests run once. For `http`, `metric` and `fault` it does the
   work.
-- `evals publish` — write the job summary and the JSONL artifact, and
-  commit the results and `verdicts.json` to the `evals-results` branch.
+- `evals publish` — write the job summary from the JSONL results.
+- `evals store` — add results to a checkout of the `evals-results` branch
+  and rewrite its `verdicts.json`; `standards/scripts/evals.sh store` does
+  the checkout, commit and push (built in phase 1).
 - `evals verdicts [--project <p>]` — print the current verdicts from the
   `evals-results` files
   (used by the triage skill and by people).

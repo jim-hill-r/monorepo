@@ -41,6 +41,13 @@ name: mise projects
         description: Git ref to check out. Empty checks out the triggering commit.
         type: string
         default: ''
+      store_evals:
+        description: >-
+          Commit the eval results to the evals-results data branch (pushes to
+          main and nightly CI, never pull requests). The caller's job must
+          grant contents: write; only the store-evals job uses it.
+        type: boolean
+        default: false
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: false
@@ -236,3 +243,38 @@ jobs:
             [ -z "$version" ] || echo "| This deployment | $version |"
             echo "| Commit | \`$(git rev-parse HEAD)\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Commits this run's eval results to the long-lived evals-results data
+  # branch (results/<project>/<yyyy-mm>.jsonl and verdicts.json, see
+  # standards/docs/evals.md), one commit per run. The only job with
+  # contents: write, and its only push is to evals-results (SEC-007); main
+  # is never written. Like the evals step, it never fails the run.
+  store-evals:
+    needs: project
+    if: ${{ !cancelled() && inputs.store_evals && needs.project.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: evals
+          key: evals-audit
+          save-if: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: evals-results-*
+          path: ${{ runner.temp }}/evals
+
+      - name: Store eval results
+        env:
+          EVALS_STAGE: ci
+        run: |
+          shopt -s nullglob
+          bash standards/scripts/evals.sh store "$RUNNER_TEMP"/evals/*/evals-results.jsonl

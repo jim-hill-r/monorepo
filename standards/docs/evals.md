@@ -199,6 +199,10 @@ to `main` and nightly CI), through the shared tasks and
    tests cover; each part's job reports its share.
 3. The workflow then writes the job summary table (`evals.sh publish`) and
    uploads the results file as a 14-day `evals-results-<project>` artifact.
+4. On pushes to `main` and nightly CI (never pull requests, whose results
+   are for unmerged code), a last job, `store-evals`, commits every
+   project's results to the `evals-results` branch (`evals.sh store`; see
+   [Results and verdicts](#results-and-verdicts)).
 
 The eval step runs even when `ci` failed, so failing evals show, and it
 never fails the job itself: failing tests already fail `ci`, and a bug in
@@ -292,19 +296,56 @@ setting = "auth0-cahokia-app"
 
 A `human-check` eval runs in stage `human` only, and only it may list that
 stage. A `setting` that isn't in the manifest is EVL-001. A setting no eval
-names is fine: most are repo-wide and have no requirement yet. Folding the
-answers into the verdicts comes with `evals verdicts`: a "not ok" makes the
-requirement not met, and a check past twice its `every` makes it at risk.
+names is fine: most are repo-wide and have no requirement yet.
+
+The verdicts read the answers from `main`, not from the results:
+
+- Jim's latest answer for the setting is "not ok": the requirement is
+  **not met** (amber for a `should` or `could`, like any failure), until a
+  newer "ok".
+- The setting was never checked, or its latest "ok" is at least twice its
+  `every` old: the requirement is **at risk**, never met, even before it
+  has any production results.
 
 ## Results and verdicts
 
 Results are files, never a database: JSONL in the job summary artifact and
-on the long-lived `evals-results` branch (`results/<project>/<yyyy-mm>.jsonl`
-and `verdicts.json`). Each requirement gets one verdict (met, at risk, not
-met, unknown) computed by the `evals/model` crate, with thresholds in
-`evals/verdicts.toml`. The rules are in the plan's
+on the long-lived `evals-results` branch, which shares no history with
+`main`:
+
+```text
+results/<project>/<yyyy-mm>.jsonl       one line per result, appended
+results/<project>/archive/<yyyy>.jsonl.gz  months older than 12
+verdicts.json                           every active requirement's verdict
+```
+
+`standards/scripts/evals.sh store <results.jsonl...>` (CI's `store-evals`
+job) checks the branch out in a worktree, appends the results
+(`evals store`), moves months older than 12 into their year's archive,
+rewrites `verdicts.json` from the requirements, evals and human-check
+answers on `main`, and pushes one commit, `evals: <stage> <projects> run
+<id>`, retrying up to five times when another run pushed first. Its first
+run creates the branch.
+
+Each requirement gets one verdict (met, at risk, not met, unknown) computed
+by the `evals/model` crate, with thresholds in `evals/verdicts.toml`. The
+rules are in the plan's
 [Results](./plans/2026-11-eval-engine.md#results) and
-[Verdicts](./plans/2026-11-eval-engine.md#verdicts) sections.
+[Verdicts](./plans/2026-11-eval-engine.md#verdicts) sections, plus the
+human-check rules above. `verdicts.json` lists each project's requirements
+with their verdict and reasons, and its coverage: how many active `must`
+requirements it has and how many have an eval in a production stage.
+
+To see the current verdicts, run
+`bash standards/scripts/evals.sh verdicts` from the repo (it fetches the
+branch), with `--project <p>` for one project or `--json` for the same
+shape as `verdicts.json`:
+
+```text
+cookbook: 4 met, 1 at risk, 0 not met, 4 unknown (3 of 3 musts evaluated in production)
+  COOK-001 met      There is a recipe for every day of the year (must)
+  COOK-004 at-risk  The cookbook is easy to use on a phone (should): mobile-layout is failing in ci
+```
 
 The `evals-results` branch is never merged into `main` and must never be
 deleted, by `all-delete-branches.yml` or by hand.

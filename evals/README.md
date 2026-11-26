@@ -44,6 +44,14 @@ cargo run -p evals_cli -- publish
 cargo run -p evals_cli -- human-checks due --write
 cargo run -p evals_cli -- human-checks answer claude-connectors --ok
 cargo run -p evals_cli -- human-checks answer claude-connectors --not-ok "GitHub needs reconnecting"
+
+# Add results to a checkout of the evals-results branch and rewrite its
+# verdicts.json (standards/scripts/evals.sh store does the git part).
+cargo run -p evals_cli -- store --results evals-results.jsonl --dir ../evals-results
+
+# Every requirement's current verdict, from a checkout of that branch
+# (standards/scripts/evals.sh verdicts fetches it for you).
+cargo run -p evals_cli -- verdicts --dir ../evals-results --project cookbook
 ```
 
 Each result says `pass`, `fail`, `error` (an eval matched no test) or
@@ -57,6 +65,7 @@ then gets no result instead of `skip` or `error`.
 
 In CI the shared `ci` and `evals` tasks call these for you through
 `standards/scripts/evals.sh`; see "In CI" in
-[standards/docs/evals.md](../standards/docs/evals.md#in-ci). Committing
-results to the `evals-results` branch comes later in phase 1 (see the root
-`issues/`, `epic: Eval engine`). Results are files, never a database.
+[standards/docs/evals.md](../standards/docs/evals.md#in-ci). Pushes to
+`main` and nightly CI commit the results to the long-lived `evals-results`
+branch; see "Results and verdicts" there. Results are files, never a
+database.
