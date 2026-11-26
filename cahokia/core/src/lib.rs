@@ -1,3 +1,7 @@
+pub mod layout;
+
+pub use layout::{GenerationLayout, Placement};
+
 /// Represents a person's sex in a family tree.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Sex {
