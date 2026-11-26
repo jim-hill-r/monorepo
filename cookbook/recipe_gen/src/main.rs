@@ -983,6 +983,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\nWriting recipes to markdown files...");
     let mut store = MarkdownRecipeStore::new(content_dir)?;
+    for error in store.load_errors() {
+        eprintln!("  Warning: skipped {}", error);
+    }
 
     let mut created_count = 0;
     let mut skipped_count = 0;

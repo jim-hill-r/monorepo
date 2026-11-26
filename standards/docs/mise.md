@@ -23,6 +23,10 @@ It replaced Cast in November 2026. Shared task files live in
   (`auth_sdk` in cahokia and cookbook).
 - **Standards are checked on pull requests**, not by a nightly job that opens
   PRs.
+- **Checks run before code leaves the machine.** lefthook git hooks
+  (`mise run //:hooks`) run `//:audit` and `mise run ci` in every affected
+  project on each commit and push, so PR CI is a double check. See
+  [git-hooks.md](git-hooks.md).
 
 ## CI/CD
 
@@ -79,6 +83,7 @@ before `DEPLOY_URL` existed still deploys, but without the environment link.
 | 2026-11-26 | Keep `auth_sdk` as a path dependency rather than a tagged git dependency. |
 | 2026-11-26 | Keep per-project Cargo workspaces; no root workspace. |
 | 2026-11-26 | Replace the nightly standards audit (ISSUES.md PRs) with the `//:audit` PR check. |
+| 2026-11-26 | Run the CI checks locally in lefthook pre-commit and pre-push hooks, installed through mise ([git-hooks.md](git-hooks.md)). |
 | 2026-11-26 | Deploy from the `push-main.yml` run with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, rather than from committed artifacts. |
 | 2026-11-26 | Run CI and CD for every project every night, and deploy only the latest version of main that passed CI ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |
 | 2026-11-26 | Record each deploying project's production URL as `DEPLOY_URL` in its `mise.toml`, deploy in a `production` GitHub environment, and roll back by redeploying one project at a ref ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |

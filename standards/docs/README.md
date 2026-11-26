@@ -8,6 +8,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Decisions](./decisions/README.md) - Repo-wide decision records
 - [Documentation](./documentation.md) - Documentation standards
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
+- [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Naming](./naming.md) - Naming conventions
 - [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md)
