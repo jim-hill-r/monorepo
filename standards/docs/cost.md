@@ -74,9 +74,8 @@ List a service when the project's own files use it: a `wrangler.toml`
 (Cloudflare Pages or Workers), an Auth0 or PostHog SDK, a vendor API it
 calls, a GitHub Release it publishes to, or a scheduled workflow of its own.
 Plain open-source dependencies and the shared PR and nightly CI every
-project gets cost nothing and are not listed. Phase 2 of the plan adds
-detectors that warn when a project's files use a service its `cost.toml`
-doesn't list (COST-007).
+project gets cost nothing and are not listed. The detectors below warn when
+a project's files use a service its `cost.toml` doesn't list (COST-007).
 
 Shared free resources are counted where they are used: two projects that
 each deploy a Pages site each list `pages_projects = 1`. A resource two
@@ -97,9 +96,75 @@ hook and CI run sees it. Until phase 3 of the plan every finding is a
 | COST-004 | `plan` isn't `free` for a blip whose budget is $0, or a `[[cost]]` with `cents > 0` has no `decision` pointing at an existing, accepted decision record. |
 | COST-005 | Expected usage is over our budget for a limit (or the free limit, where we have no budget). Limits with `scope = "account"` are summed across every project. |
 | COST-006 | This month's money for a vendor blip, summed over every project (yearly costs spread over twelve months), is over that blip's radar budget. |
+| COST-007 | **Drift:** the project's files use a service its `[[service]]` list doesn't name, or more of a counted limit (Pages projects, Workers, Cron Triggers, D1 databases) than its `[service.usage]` expects. See "Detectors" below. |
 | COST-008 | `reviewed` is more than 180 days old. A warning even after phase 3. |
+| COST-009 | An `https://` (or `wss://`) host in the project's source or config that no detector or allow entry knows. A warning even after phase 3, until the allowlist settles. |
 
-Run it yourself:
+The per-project rules (COST-001 to COST-004 and COST-007 to COST-009) run
+only for the affected projects in the git hooks and PR CI: `hooks.sh` and
+the PR's audit step pass the list in `COST_PROJECTS`. The account-wide rules
+read every project's file every time, which takes milliseconds.
+
+### Detectors
+
+[`standards/radar/detectors.toml`](../radar/detectors.toml) maps what is in
+a project's files to the vendor blip it implies, and sometimes to a limit it
+counts. The detectors read the project's whole tree (git's tracked files,
+skipping `docs/`, `issues/`, build output and lockfiles), not the diff, so a
+hook, PR CI and `main` get the same answer, and a project can't drift
+through a series of small PRs. Comment lines don't count.
+
+| In the project's files | Implies |
+| --- | --- |
+| a `wrangler.toml` with `pages_build_output_dir` | Cloudflare Pages, `pages_projects` +1 |
+| a `wrangler.toml` with `main` | Cloudflare Workers, `workers` +1 |
+| `[triggers] crons` in a `wrangler.toml` | Cloudflare Workers, `cron_triggers` + the number of crons |
+| `d1_databases`, `kv_namespaces`, `r2_buckets`, `analytics_engine_datasets` bindings | Cloudflare D1 (`d1_databases` + the count), Workers (KV, Analytics Engine), R2 |
+| `posthog-js` or `posthog` in a manifest, or a `posthog.com` host | PostHog |
+| an `@auth0/` package or `auth0` crate, an `auth0.com` host or an `AUTH0_` name | Auth0 |
+| a `rapidapi.com` host, a `RAPIDAPI_` name or an `X-RapidAPI-` header | RapidAPI (Zillow data) |
+| a workflow named `<project>.yml` or `<project>-*.yml` with a `schedule:` | GitHub Actions minutes |
+| any other `https://` host | COST-009 |
+
+Links a person follows (an HTML or rsx `href`, a Markdown link) are not
+services, so they never raise COST-009. When a host costs nothing (a docs
+site, a registry, a free CDN), add it to `[[allow]]` with a `why`. When a
+detector matches a file that doesn't use the service (a guard that searches
+for a key, a test fixture), add an `[[exempt]]` for that file. Both need a
+reason, and review checks it.
+
+### The PR cost summary
+
+PR CI's **Cost summary** job runs `cost summary --base origin/<base>`,
+which compares the PR with its merge base and writes to the job summary:
+
+- **Cost files changed:** any `docs/cost.toml`, `limits.toml`,
+  `radar.json`, `detectors.toml` or `wrangler.toml`; a workflow line with
+  `schedule:`, `cron:` or `runs-on:`; a `Cargo.toml` or `package.json`
+  line a detector matches.
+- **What moved:** per project, services added or dropped, usage and its own
+  money this month before and after; account-wide usage against each budget
+  with the headroom left; radar budgets and rings, and `limits.toml` budgets
+  and free limits.
+
+It labels the PR:
+
+- `cost` when anything above changed. Nothing more is needed when the
+  check passes; the job takes the label off again if a later push undoes it.
+- `needs-human` when the PR adds a vendor blip to a project (in its
+  `cost.toml`, or in code its `cost.toml` doesn't list), adds or raises a
+  `[[cost]]`, moves a service to a `paid` plan, raises a budget in
+  `radar.json` or `limits.toml`, or moves a vendor into Adopt or Trial.
+  These are Jim's decisions (see "Cost approval" below), so PR triage won't
+  merge the PR on green checks alone. The job never removes `needs-human`.
+
+Run it yourself before pushing:
+
+```bash
+cargo run --quiet --manifest-path cost/Cargo.toml -p cost_cli -- summary --base origin/main
+```
+
+Run the check yourself:
 
 ```bash
 bash standards/scripts/cost-check.sh                        # every project
