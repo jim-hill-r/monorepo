@@ -16,7 +16,7 @@ number, and update this page in the same PR when one moves.
    limit.** No agent, workflow or script may upgrade a plan, enter a card,
    buy an add-on, or raise a GitHub budget or cache limit. Only Jim does
    that, and only after a decision record in [decisions/](decisions/README.md).
-   A PR that needs one is labelled `needs-jim`.
+   A PR that needs one is labelled `needs-human`.
 2. **Stop, don't pay.** When a limit is near, automation fails loudly and
    does nothing more. It never works around a limit by creating a second
    account, project or key.
@@ -143,7 +143,7 @@ script clamps them.
    unused Pages project, an old Worker, a cache that grew.
 2. Remove what is unused through a workflow or a PR, never by hand.
 3. If the budget really is too small, propose a new one in a PR that
-   updates this page and the script, and label it `needs-jim`.
+   updates this page and the script, and label it `needs-human`.
 
 ## Things only Jim can check
 
