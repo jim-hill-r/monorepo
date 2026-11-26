@@ -899,6 +899,20 @@
     "budget": 0
   },
   {
+    "name": "Shared design tokens (design_system)",
+    "ring": "Assess",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Proposed: one TOML source of colour, type and spacing tokens for five themes (earthy, airy, professional, colorful, gamey) in light, dark and accessible modes, generated as CSS custom properties for web apps and Rust constants for Bevy games, with WCAG contrast checked in CI. Moves to Adopt when pane/web uses it.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/plans/2026-11-design-system.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Shell scripts",
     "ring": "Hold",
     "quadrant": "Techniques",
