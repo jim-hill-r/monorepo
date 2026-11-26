@@ -19,6 +19,11 @@ It replaced Cast in November 2026. Shared task files live in
   `mise.toml`.
 - **No build artifacts in git.** Web apps deploy straight from CI. A binary
   that needs publishing goes to a GitHub Release.
+  One exception: `infra/out/`, the Terraform JSON the `infra` crate
+  synthesizes, is committed, because it is the reviewed file OpenTofu applies
+  (decision 0007, item 3). `infra`'s CI fails when it differs from a fresh
+  synth. Its generated bindings in `infra/src/tfschema/` are source, not
+  build output.
 - **Shared code between projects** uses relative path dependencies for now
   (`auth_sdk` in cahokia and cookbook).
 - **Standards are checked on pull requests**, not by a nightly job that opens

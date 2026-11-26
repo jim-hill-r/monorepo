@@ -4,6 +4,7 @@
 - Decided by: Jim (approved PR #676, 2026-11-26, with every default below)
 - Date: 2026-11-26
 - Asked by: Jim
+- Follow-up: [terrars spike](0007-terrars-spike.md) (2026-11-26): adopt `terrars`
 
 ## Context
 
