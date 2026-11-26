@@ -57,7 +57,7 @@ pane.
 ## Concepts
 
 ```
-requirements.md            evals.toml                 results (D1)          verdicts
+requirements.md            evals.toml                 results (files)       verdicts
 COOK-001 "readable   ──►  recipe-mobile (ci, cd)  ──► pass @ abc123 cd  ──► COOK-001: Met
  on a phone" (must)       recipe-lcp (observe)        2310 ms ≤ 2500         (5 evals, 2 h old)
                           recipe-offline (chaos)      pass                       │
@@ -187,22 +187,44 @@ Every eval run produces one record per eval:
 | `run`, `at` | Workflow run id, UTC time |
 | `by` | `ci`, `agent` (judge) or `jim` (human) |
 
-Records go three places:
+No database (Jim, 2026-11-26: avoid databases for as long as possible and
+keep dev work as files in the monorepo). Records go three places:
 
 1. **The job summary**, as a table per project: requirement, eval, status,
    evidence. This works from Phase 0 with nothing else set up.
 2. **A results file**, `evals-results.jsonl`, uploaded as a 14-day Actions
    artifact for debugging.
-3. **Cloudflare D1**, database `evals`, table `results`, written with
-   `wrangler d1 execute --remote` at the end of each run. This is the
-   history pane and the triage skill read. At our scale (about 20 projects,
-   a few hundred evals, a handful of runs a day) that is under 5,000 rows a
-   day against D1's free 100,000 writes. A weekly step deletes raw rows
-   older than 180 days after rolling them up into a `daily` table (one row
-   per eval per day).
+3. **Files committed to the monorepo**, on a long-lived data branch,
+   `evals-results`, so the history is in git without a nightly PR or a
+   commit on `main` for every run:
 
-Human feedback is the exception: it is Jim's own judgment, so it lives in the
-repo (see Human feedback) and the nightly run copies it into D1.
+   ```
+   results/<project>/<yyyy-mm>.jsonl   one line per result, appended
+   verdicts.json                       current verdict per requirement
+   ```
+
+   Each run ends with `evals publish`, which checks out that branch,
+   appends its records, recomputes `verdicts.json`, and pushes one commit
+   (`evals: <stage> <project> <run>`), retrying on a race with another run.
+   The workflow gets `contents: write` for that step only, and the push is
+   to `evals-results` only; `main` is never written. At our scale (about 20
+   projects, a few hundred evals, a handful of runs a day) that is well under
+   1 MB a day before git's compression. Once a year a step moves months
+   older than 12 into `results/<project>/archive/<yyyy>.jsonl.gz`.
+
+   Pane, the triage skill and people all read these files: pane's snapshot
+   fetches the branch at build time, and anyone can open the files on
+   GitHub. The branch is never merged into `main` and must not be offered
+   to `all-delete-branches.yml`.
+
+Human feedback lives on `main` instead: it is Jim's own judgment, written by
+pane's `pane-edit` PRs (see Human feedback), and the verdicts read it from
+there.
+
+**If a real query engine is ever needed** (for example for process evals over
+a year of history), the next step is a SQLite file built from these JSONL
+files and committed beside them, not a hosted database. A hosted database
+comes only after the repo-wide database evaluation and its decision record.
 
 ### Verdicts
 
@@ -244,9 +266,10 @@ Commands:
   wrote (Cargo's JSON test output, Playwright's JSON reporter, trycmd's
   output), so tests run once. For `http`, `metric` and `fault` it does the
   work.
-- `evals publish` — write the job summary, the JSONL artifact and the D1
-  rows.
-- `evals verdicts [--project <p>]` — print the current verdicts from D1
+- `evals publish` — write the job summary and the JSONL artifact, and
+  commit the results and `verdicts.json` to the `evals-results` branch.
+- `evals verdicts [--project <p>]` — print the current verdicts from the
+  `evals-results` files
   (used by the triage skill and by people).
 
 Each shared task file in `standards/tasks/` gains an `evals` task
@@ -336,7 +359,7 @@ stays the source of truth. Ratings and disputes are appended as JSON lines to
 {"at":"2026-12-02T18:05:00Z","by":"jim","eval":"recipe-lcp","dispute":"threshold too strict for a cold cache"}
 ```
 
-The nightly run loads these into D1. A "not met" rating files a `FIX` with
+The verdicts read these from `main`. A "not met" rating files a `FIX` with
 Jim's note; a dispute files a `TODO (agent-generated)` to fix or remove the
 eval. Pane's Today page lists requirements that have never been rated by
 Jim and changed since his last rating, a few at a time, so feedback is a
@@ -469,7 +492,7 @@ pane page or a `FIX` that an agent then works.
 - The `evals` project with `model` and `cli` crates, `evals check` in
   `//:audit` (warnings only at first).
 - `evals run`/`publish` for `cargo` and `playwright` with the job summary
-  and JSONL artifact (no D1 yet).
+  and JSONL artifact (nothing committed yet).
 - Draft `requirements.md` and `evals.toml` for cookbook, as a `needs-human`
   PR, tagging its existing Playwright and Rust tests.
 
@@ -477,9 +500,8 @@ pane page or a `FIX` that an agent then works.
 
 - The `evals` task in each shared task file, run after `ci` in
   `mise-projects.yml` for PRs, pushes and nightly CI.
-- The D1 `evals` database, its schema migrations in the `evals` project, and
-  `evals publish` writing to it (needs D1 permission on the Cloudflare
-  token).
+- The `evals-results` data branch, `evals publish` committing results and
+  `verdicts.json` to it, and the yearly archive step.
 - Requirements and evals drafted for pane and cahokia (`needs-human` PRs).
 - The requirement list in the sticky PR comment, once previews exist.
 
@@ -520,12 +542,14 @@ phases 4 and 5.
 
 Needs pane phases 3 to 5 (Worker, Health page, `pane-edit` writes).
 
-- Pane's Requirements view and Requirements health signal, reading D1
-  through the pane Worker and using `evals/model` for verdicts.
+- Pane's Requirements view and Requirements health signal, reading the
+  `evals-results` files into its snapshot at build time and using
+  `evals/model` for verdicts. Pane is redeployed after each eval run so the
+  page is never more than one run behind.
 - Rate, Dispute and Propose actions through `pane-edit` PRs into
   `feedback.jsonl` and `requirements.md`.
 - "Rate these" on the Today page.
-- The nightly load of `feedback.jsonl` into D1.
+- Ratings from `feedback.jsonl` counted in the verdicts.
 
 ### Phase 6: judge evals
 
@@ -544,7 +568,6 @@ that needs them, not before:
 
 - Phase 0 onward: approve each project's `requirements.md` PR (they carry
   `needs-human`). These define what "working" means, so they are his call.
-- Phase 1: add D1 Edit to the `CLOUDFLARE_API_TOKEN` permissions.
 - Phase 2: schedule the `eval-triage` Claude task (daily, after 4:00 AM
   Pacific).
 - Phase 3: a read-only PostHog personal API key as a repo secret, and
@@ -562,7 +585,7 @@ All on approved vendors and free plans. Limits from
 | Piece | Free limit | Our use |
 | --- | --- | --- |
 | GitHub Actions (eval steps, chaos, observe workflows) | Unlimited standard runner minutes on a public repo | A few minutes per project per night |
-| D1 (`evals` database) | 5 GB, 5M rows read and 100,000 written a day | Under 5,000 writes a day; reads by pane cached |
+| Results files on the `evals-results` branch | Free on a public repo (keep the repo well under GitHub's 1 GB guidance) | Under 1 MB a day uncompressed; archived yearly |
 | Workers requests from chaos | 100,000 a day (shared) | Capped at 500 a night by the runner |
 | Static asset requests from chaos and `cd` evals | Unlimited | - |
 | Analytics Engine queries | 10,000 a day | Under 200 a day |
@@ -571,9 +594,9 @@ All on approved vendors and free plans. Limits from
 | Cron Triggers | 5 per account (budget 3) | None: all schedules are GitHub Actions |
 | Claude scheduled tasks | Existing plan | One daily (`eval-triage`), one weekly (`judge-requirements`) |
 
-The engine adds no vendor and nothing that bills. If D1 or Analytics Engine
-hits a limit, the run still writes the job summary and the JSONL artifact
-and marks its results `error`, so a limit shows as amber, never as a pass.
+The engine adds no vendor, no database and nothing that bills. If Analytics
+Engine or PostHog hits a limit, the run still commits its results with those
+evals marked `error`, so a limit shows as amber, never as a pass.
 
 ## Decisions for Jim
 
@@ -583,8 +606,9 @@ Approving the PR that adds this plan approves these (recorded in decision
 1. Requirements live in `<project>/docs/requirements.md` with stable IDs,
    evals in `<project>/evals.toml`, and requirement changes need Jim's
    approval.
-2. Results are stored in Cloudflare D1 (new to us, but on Cloudflare and
-   free), with the job summary as the always-available fallback.
+2. Results are JSONL files committed to the monorepo on an `evals-results`
+   data branch, not in a database (Jim, 2026-11-26). If one is ever needed,
+   a committed SQLite file comes first.
 3. Production chaos is limited to faults injected in our own browser
    sessions and, with a signed header, in our own Workers: no load tests, a
    500-request nightly cap, a kill switch that starts `off`.

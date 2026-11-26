@@ -35,12 +35,16 @@ the source of truth.
    `chaos`, `observe`, `judge` and `human`. It computes one verdict per
    requirement (met, at risk, not met, unknown) with the same code pane
    uses.
-3. **Results go to Cloudflare D1**, database `evals`, plus each run's job
-   summary and a JSONL artifact. D1 is new to the repo but is on an approved
-   vendor and free at our scale (under 5,000 writes a day of 100,000).
-   Human feedback is the exception: it lives in the repo
-   (`<project>/evals/feedback.jsonl`, written by pane's `pane-edit` PRs) and
-   is copied into D1.
+3. **Results are files in the monorepo, not a database** (Jim,
+   2026-11-26: avoid databases for as long as possible; dev work stays as
+   files in the repo). Each run writes its job summary and a JSONL artifact,
+   and commits its records as `results/<project>/<yyyy-mm>.jsonl` plus a
+   recomputed `verdicts.json` to a long-lived `evals-results` data branch
+   that is never merged into `main`. Human feedback lives on `main`
+   (`<project>/evals/feedback.jsonl`, written by pane's `pane-edit` PRs).
+   If a query engine is ever needed, a SQLite file committed next to the
+   JSONL comes first; a hosted database only after the repo-wide database
+   evaluation.
 4. **Production chaos is narrow and capped.** Faults are injected only in
    our own browser sessions (Playwright against production) and, with an
    HMAC-signed header, in our own Workers for that one request. No load
@@ -62,12 +66,15 @@ the source of truth.
 
 ## Alternatives considered
 
+- **Cloudflare D1.** Free and on an approved vendor, and the first draft of
+  this plan used it. Dropped at Jim's request: no database while files will
+  do.
 - **Results in Analytics Engine.** Already planned for `telemetry`, but it
   keeps data for 3 months and is built for metrics, not per-requirement
   records with evidence links. Kept for the metrics evals read.
-- **Results committed to the repo.** Fits "repo as source of truth", but a
-  few hundred rows a night would bury real changes in noise. Only Jim's own
-  feedback, which is low volume and is a decision, is committed.
+- **Results committed to `main`.** A few hundred lines a night would need a
+  PR or a direct push to `main` every run and bury real changes in noise.
+  The data branch keeps the history in the same repo without that.
 - **A hosted eval or chaos service** (Gremlin, Datadog Synthetics,
   Checkly). All paid past small free tiers or add a vendor; the browser and
   our Workers are enough for the faults that matter to our products.
@@ -83,7 +90,9 @@ the source of truth.
 - Low-traffic apps get few observability results (`min_samples` turns those
   into `skip`), so `cd` and chaos evals carry most of the weight until there
   are real users.
-- The Cloudflare API token needs D1 Edit, and later Analytics Engine read and
-  a PostHog read key: `TODO (human)` lines when those phases start.
+- Eval workflows need `contents: write` to push to `evals-results`. The
+  repo check should make sure they push nowhere else.
+- The Cloudflare API token needs Analytics Engine read, and a PostHog read
+  key is needed, when Phase 3 starts: `TODO (human)` lines then.
 - Pane's Health page gains a Requirements signal, and pane's write path
   gains feedback lines, so pane's later phases and this plan move together.

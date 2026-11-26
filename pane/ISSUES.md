@@ -67,11 +67,11 @@ Needs the `telemetry` Worker and Web Analytics from the deploy-feedback TODOs in
 
 ### Eval engine: requirements and feedback
 
-Needs Phases 3 to 5 above and the eval engine's D1 results (root
+Needs Phases 3 to 5 above and the eval engine's `evals-results` files (root
 `ISSUES.md`, eval engine phase 1). The plan is
 [../standards/docs/plans/2026-11-eval-engine.md](../standards/docs/plans/2026-11-eval-engine.md).
 
-- TODO (agent-generated): Add a Requirements view to each Project page: each requirement's verdict (from `evals/model`), each eval's latest result with its evidence link, and its history, read from the eval engine's D1 database through a cached `/api/evals/*` route. Add a Requirements signal (worst `must` verdict, with requirement coverage) to the Health page.
+- TODO (agent-generated): Add a Requirements view to each Project page: each requirement's verdict (from `evals/model`), each eval's latest result with its evidence link, and its history, read into the snapshot at build time from the `evals-results` branch (`verdicts.json` and `results/`), and redeploy pane after each eval run. Add a Requirements signal (worst `must` verdict, with requirement coverage) to the Health page.
 - TODO (agent-generated): Add Rate (met, not met, not sure, with a note), Dispute an eval and Propose a requirement actions, written through the `pane-edit` PR as JSON lines in `<project>/evals/feedback.jsonl` (and a draft entry in `requirements.md` for proposals), and name `evals/feedback.jsonl` as safe for PR triage to approve alongside `ISSUES.md` in `standards/docs/pull-requests.md`.
 - TODO (agent-generated): List requirements that Jim has not rated since their last change or deploy on the Today page, a few at a time, and show judge agreement per rubric once judge evals exist.
 
