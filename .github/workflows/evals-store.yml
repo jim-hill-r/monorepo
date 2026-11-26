@@ -1,0 +1,53 @@
+---
+# Reusable workflow: commit a run's eval results to the long-lived
+# evals-results data branch (results/<project>/<yyyy-mm>.jsonl and
+# verdicts.json, see standards/docs/evals.md), one commit per run. Called by
+# push-main.yml and nightly-ci.yml after mise-projects.yml, never by pull
+# requests, whose results are for unmerged code.
+#
+# Its one job is the only CI job with contents: write, which the caller
+# grants on the calling job, and its only push is to evals-results
+# (SEC-007); main is never written. Like the evals step, it never fails the
+# run.
+name: evals store
+
+'on':
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref the results are for. Empty checks out the triggering commit.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  store:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: evals
+          key: evals-audit
+          save-if: false
+
+      # Every project job's evals-results-<project> artifact from this run.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: evals-results-*
+          path: ${{ runner.temp }}/evals
+
+      - name: Store eval results
+        env:
+          EVALS_STAGE: ci
+        run: |
+          shopt -s nullglob
+          bash standards/scripts/evals.sh store "$RUNNER_TEMP"/evals/*/evals-results.jsonl

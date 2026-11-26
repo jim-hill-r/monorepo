@@ -367,7 +367,7 @@ pub fn find_root(start: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
-fn read_optional(path: &Path) -> Result<Option<String>> {
+pub fn read_optional(path: &Path) -> Result<Option<String>> {
     match fs::read_to_string(path) {
         Ok(text) => Ok(Some(text)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -375,7 +375,7 @@ fn read_optional(path: &Path) -> Result<Option<String>> {
     }
 }
 
-fn top_level_dirs(root: &Path) -> Result<Vec<String>> {
+pub fn top_level_dirs(root: &Path) -> Result<Vec<String>> {
     let mut dirs = Vec::new();
     for entry in fs::read_dir(root).with_context(|| format!("listing {}", root.display()))? {
         let entry = entry?;

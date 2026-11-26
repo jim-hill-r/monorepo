@@ -5,6 +5,7 @@ mod human_checks;
 mod publish;
 mod reports;
 mod run;
+mod store;
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -85,6 +86,45 @@ enum Command {
         /// or standard output when that isn't set.
         #[arg(long)]
         summary: Option<PathBuf>,
+    },
+    /// Add results to a checkout of the `evals-results` branch: append each
+    /// to results/<project>/<yyyy-mm>.jsonl and rewrite verdicts.json.
+    /// `standards/scripts/evals.sh store` commits and pushes it.
+    Store {
+        /// JSONL results files. Repeat for several.
+        #[arg(long, required = true)]
+        results: Vec<PathBuf>,
+        /// The checkout of the `evals-results` branch.
+        #[arg(long)]
+        dir: PathBuf,
+        /// Repo root (main), for the requirements, evals and human-check
+        /// answers. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// Print every requirement's current verdict, from the results in a
+    /// checkout of the `evals-results` branch and the requirements, evals and
+    /// human-check answers on main. `standards/scripts/evals.sh verdicts`
+    /// fetches the branch for you.
+    Verdicts {
+        /// The checkout of the `evals-results` branch.
+        #[arg(long)]
+        dir: PathBuf,
+        /// Only this top-level project, such as `cookbook`.
+        #[arg(long)]
+        project: Option<String>,
+        /// Print verdicts.json instead of text.
+        #[arg(long)]
+        json: bool,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
     },
 }
 
@@ -309,6 +349,55 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             match target {
                 Some(path) => append(&path, &markdown)?,
                 None => print!("{markdown}"),
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Store {
+            results,
+            dir,
+            root,
+            now,
+        } => {
+            let root = resolve_root(root)?;
+            let mut new = Vec::new();
+            for path in &results {
+                let text = fs::read_to_string(path)
+                    .with_context(|| format!("reading {}", path.display()))?;
+                new.extend(publish::parse_results(&text)?);
+            }
+            let files = store::append_results(&dir, &new)?;
+            for file in &files {
+                println!("evals store: appended to {file}");
+            }
+            let all = store::read_results(&dir)?;
+            let verdicts = store::compute(&root, &all, None, now.unwrap_or_else(chrono::Utc::now))?;
+            store::write_verdicts(&dir, &verdicts)?;
+            println!(
+                "evals store: {} result(s) added, {} written",
+                new.len(),
+                store::VERDICTS_FILE
+            );
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Verdicts {
+            dir,
+            project,
+            json,
+            root,
+            now,
+        } => {
+            let root = resolve_root(root)?;
+            let all = store::read_results(&dir)?;
+            let verdicts = store::compute(
+                &root,
+                &all,
+                project.as_deref(),
+                now.unwrap_or_else(chrono::Utc::now),
+            )?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&verdicts)?);
+            } else {
+                print!("{}", store::render(&verdicts));
             }
             Ok(ExitCode::SUCCESS)
         }

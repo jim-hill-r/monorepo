@@ -7,6 +7,9 @@
 #   SEC-006  Every tracked Cargo.lock and package-lock.json has a
 #            .github/dependabot.yml entry for its directory, and every entry's
 #            directory exists (and, for cargo and npm, holds that lockfile).
+#   SEC-007  CI's only git push is evals.sh's push of eval results to the
+#            evals-results data branch: no other `git push` in a workflow,
+#            shared script or shared task file, and never to main.
 #
 # SEC-001 (gitleaks) is secrets-check.sh, run by the hooks and PR CI.
 set -euo pipefail
@@ -75,6 +78,21 @@ else
       || err SEC-006 "$lock has no $eco entry in $dependabot; add one for /$d"
   done < <(git ls-files -- ':(glob)**/Cargo.lock' ':(glob)**/package-lock.json')
 fi
+
+# SEC-007: the eval workflows push only to evals-results. Comment lines are
+# skipped; every other line running `git ... push` must be evals.sh's one
+# push, which names its target ref in full. This file holds the pattern.
+allowed='git -C "$work" push --quiet origin HEAD:refs/heads/evals-results'
+while IFS=: read -r file line text; do
+  [ -n "$file" ] || continue
+  [[ "$text" =~ ^[[:space:]]*# ]] && continue
+  [ "$file" = standards/scripts/security-check.sh ] && continue
+  if [ "$file" = standards/scripts/evals.sh ] && [[ "$text" == *"$allowed"* ]]; then
+    continue
+  fi
+  err SEC-007 "$file:$line runs git push; CI may push only eval results to evals-results, through standards/scripts/evals.sh store"
+done < <(git grep -nE 'git( +-[cC] +[^ ]+)* +push( |$)' -- '.github/workflows/*.yml' '.github/workflows/*.yaml' \
+  'standards/scripts/*.sh' 'standards/tasks/*.toml' || true)
 
 if [ "$errors" -gt 0 ]; then
   echo "security-check: $errors error(s)"
