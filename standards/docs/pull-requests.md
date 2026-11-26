@@ -90,7 +90,8 @@ Triage never comments `@dependabot ...` itself: Claude's GitHub safety
 filter rewrites bot commands in agent comments so they don't run. Triage
 also never merges `main` into a Dependabot branch except to re-run outdated
 checks, because any commit from someone else stops Dependabot from rebasing
-that PR.
+that PR. When it does, it converts the PR to draft first and marks it
+ready again once the re-run checks are green (see "Working on an existing PR").
 
 ### Human PRs
 
@@ -108,7 +109,8 @@ it is mergeable, without waiting for triage.
 
 Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
 
-- If it conflicts or is behind `main`, update the branch from `main`.
+- If it conflicts or is behind `main`, convert it to draft, then update the
+  branch from `main`. Mark it ready again once its checks are green.
 - If `main` already contains the change, or a newer PR replaces it, close it
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
@@ -121,6 +123,16 @@ Each run reports once in the Claude project, and only when it merged, closed or
 flagged something. The report lists each PR with its number, title and the one
 reason for what happened. Every GitHub comment or review ends with the Claude
 Code footer.
+
+## Working on an existing PR
+
+Any agent that starts work on an existing PR (pushing a fix, answering a
+review with a change, merging `main` into it, or any other push) first
+converts the PR to draft, and marks it ready for review again only once its
+checks are green on the new head commit (Jim, 2026-11-26). The draft tells
+reviewers and triage that the PR is changing under them, so nobody approves
+or merges a head that is about to move. Agents never push to human PRs, so
+this never touches them.
 
 ## Limits
 

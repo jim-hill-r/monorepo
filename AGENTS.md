@@ -23,6 +23,12 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
+  starts any work on an existing PR (a fix, a review answer, a merge from
+  `main`, any push), it first converts the PR to draft, and marks it ready for
+  review again only once its checks are green and it meets the
+  `open-pull-request` checklist. This applies to every PR an agent works on,
+  including in PR triage.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the
@@ -55,8 +61,20 @@ repo, rather than in any one agent tool's settings.
     - RapidAPI (Zillow data), used by `homer`, **only on its free plan**. It
       must never cost money: don't add a paid plan, scheduled runs or anything
       else that could push usage past the free quota.
+    - Anthropic's Claude Code, our AI coding platform (Jim, 2026-11-26).
+      It is the one paid service, with a budget of $25 a month.
+  - **Prefer what Claude supports (Jim, 2026-11-26).** After cost, prefer
+    technologies Claude knows well and vendors with a Claude Code plugin or
+    MCP server, enabled read-only for context. The tech radar notes which
+    have one.
+  - **Tech radar.** [standards/docs/tech-radar.md](standards/docs/tech-radar.md)
+    lists every approved, evaluated and held technology and vendor, with its
+    exemplar projects. A PR that approves, rejects or drops one, or adds the
+    first project to use one, updates `standards/radar/radar.json` in the
+    same PR.
 - **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
-  plan. Never turn on a paid plan, add a payment method or raise a spending
+  plan, except Claude Code (budget $25 a month). Each technology's monthly
+  budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method or raise a spending
   or cache limit, and when a limit is near, stop rather than pay. Anything
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in

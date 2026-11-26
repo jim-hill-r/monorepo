@@ -17,6 +17,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Rust](./rust.md) - Rust coding standards
 - [Testing](./testing.md) - Testing standards and requirements
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
+- [Tech radar](./tech-radar.md) - Every approved, evaluated and held technology and vendor, with exemplar projects
 - [TypeScript](./typescript.md) - TypeScript coding standards
 
 ---
@@ -81,7 +82,7 @@ Always use: Auth0
 
 # Databases
 
-For general purpose: SurrealDB
+For general purpose: committed files first, then committed SQLite read with rusqlite, then Cloudflare D1 when a deployed service must write at runtime ([decision 0004](./decisions/0004-database-engine.md)). SurrealDB is on hold (see the [tech radar](./tech-radar.md)).
 For realtime stateful sync: SpacetimeDB
 
 # CLIs

@@ -88,3 +88,5 @@ Needs Phase 1 for the pages, Phase 3 for free-tier usage and Phase 5 for the for
 - TODO (agent-generated): Add "Add revenue" and "Add a cost" forms that append a `finance.toml` entry through the `pane-edit` PR, and name `finance.toml` as safe for PR triage to approve in `standards/docs/pull-requests.md` only when the PR is a `pane-edit` PR.
 
 # Backlog
+
+- TODO (agent-generated): Add a Tech radar page to pane: read `standards/radar/radar.json` into the snapshot and draw the four quadrants and four rings (Adopt, Trial, Assess, Hold) with a blip per entry, "(new)" blips marked, and a list beside it with each blip's description, exemplar projects (linking to their Project pages) and sources. See `standards/docs/tech-radar.md` for the fields.

@@ -1,6 +1,6 @@
 ---
 name: deep-project-review
-description: Pick the next project in this monorepo's review rotation, study it in depth (purpose, goals, features, user experience, architecture, security, performance, testing, operations) and deliver a detailed Marp slide deck in docs/reviews/ as a pull request for Jim's review. Use for the weekly deep project review or when asked for a deep review of one project.
+description: Pick the next project in this monorepo's review rotation, study it in depth (purpose, goals, features, user experience, architecture, security, performance, testing, operations, tech selection against the tech radar) and deliver a detailed Marp slide deck in docs/reviews/ as a pull request for Jim's review. Use for the weekly deep project review or when asked for a deep review of one project.
 ---
 
 # Deep project review
@@ -12,7 +12,8 @@ holds the rotation record and the deck format.
 
 This skill writes a review, not fixes. Don't change the project's code. The
 only files a run changes are its deck folder, the rotation table in
-`docs/reviews/README.md`, and the project's `ISSUES.md` (step 6).
+`docs/reviews/README.md`, the project's `ISSUES.md` (step 6), and the tech
+radar (step 6).
 
 ## 1. Pick the project
 
@@ -76,6 +77,25 @@ commit or PR link. Say plainly when something is a guess.
 - **Operations and cost.** How it is built, deployed and observed, what
   vendors it uses, what it costs, and whether that matches the vendor rule in
   `AGENTS.md`.
+- **Tech selection against the tech radar.** Read
+  [`standards/docs/tech-radar.md`](../../../standards/docs/tech-radar.md) and
+  `standards/radar/radar.json`, then re-review every technology and vendor
+  the project uses (from its manifests, lockfiles, `mise.toml`, workflows and
+  config), and every decision record that chose one for it. For each, record:
+  - its radar ring, or "not on the radar";
+  - whether the project uses it the way the radar and its decision say
+    (for example a Hold blip in new code, a Trial blip outside its
+    conditions, a vendor without sign-off, or a version behind what the rest
+    of the repo uses);
+  - whether the decision still holds today. Check what changed since it was
+    made: new releases or deprecations, free-tier limits or pricing, a
+    better-fitting approved vendor, how well Claude supports it (a Claude
+    Code plugin or MCP server we could enable read-only, per the radar's
+    selection criteria), and lessons from this review. Look these up at the
+    source (release notes, pricing and limits pages) and cite them with the
+    date read;
+  - whether the project should be an exemplar for a blip that has none, or
+    has stopped being a good one.
 
 ## 3. Judge the state against the goals
 
@@ -97,9 +117,9 @@ these sections, one or more slides each, in this order:
 1. **Title**: project, date, reviewer, why this project was picked this week.
 2. **Executive summary**: what the project is in one sentence, its state
    against its goals, the three biggest blockers, a scorecard (one row each
-   for goals, UX, architecture, security, performance, quality, operations,
-   rated Good, Fair or Poor with a few words of why), and the top five
-   recommendations.
+   for goals, UX, architecture, security, performance, quality, operations
+   and tech selection, rated Good, Fair or Poor with a few words of why),
+   and the top five recommendations.
 3. **Purpose and long-term goals**: who it is for, what problem it solves,
    the goals and where they are written down.
 4. **Progress against goals and what is holding it up** (step 3).
@@ -114,11 +134,16 @@ these sections, one or more slides each, in this order:
 10. **Code quality and testing**: CI result, coverage of tests, gaps against
     the standards.
 11. **Operations and cost**: build, deploy, observability, vendors, cost.
-12. **Risks and technical debt**.
-13. **Recommendations**: a prioritized table with impact, effort (S, M, L)
+12. **Tech selection against the radar**: a table of every technology and
+    vendor the project uses, with its ring, whether its use fits the radar,
+    whether the decision behind it still holds (and what changed, with
+    sources), and the recommended radar change if any (move ring, add or
+    drop a blip, add or drop this project as an exemplar).
+13. **Risks and technical debt**.
+14. **Recommendations**: a prioritized table with impact, effort (S, M, L)
     and the area each one moves forward.
-14. **Questions for Jim**: decisions or facts only Jim can give.
-15. **Appendix**: method, commands run with their results, and evidence
+15. **Questions for Jim**: decisions or facts only Jim can give.
+16. **Appendix**: method, commands run with their results, and evidence
     links.
 
 Aim for 25 to 45 slides. Keep each slide to what fits on one screen: split a
@@ -147,12 +172,23 @@ in the shape the `code-review` skill uses), each linking back to the deck.
 Merging the review PR accepts them; Jim can strike any he disagrees with in
 review. Don't add a TODO that duplicates an existing one.
 
+Apply the radar changes from section 12 in the same PR: edit
+`standards/radar/radar.json` (ring, description, exemplars, sources, and
+`isNew` set to `"TRUE"` for a blip that moved), then run
+`bash standards/scripts/radar.sh render`. List each change in the PR
+description. A change that approves a new vendor, or moves a vendor into
+Adopt or Trial, needs Jim's sign-off: label the PR `needs-human`. A decision
+that no longer holds gets a `TODO (agent-generated):` in
+`standards/ISSUES.md` to write a superseding decision record, not a rewrite
+of the old one.
+
 ## 7. Open the pull request
 
 Deliver with the `open-pull-request` skill, with these differences:
 
 - A review PR only adds docs, so it doesn't wait for other agent PRs to
-  close, and there is no project CI to run. The `Review decks` check builds
+  close, and there is no project CI to run beyond `standards` when the radar
+  changed. The `Review decks` check builds
   the deck to HTML and PDF and attaches them to the run.
 - Title: `<project>: deep review <YYYY-MM-DD>`.
 - The description opens with the executive summary (state against goals,
@@ -162,5 +198,6 @@ Deliver with the `open-pull-request` skill, with these differences:
 - Request a review from `jimhillr`, and mark the PR ready for review once the
   `Review decks` check is green.
 
-When Jim leaves feedback, answer each comment in the deck (or reply on the PR
-saying why not), and keep the PR ready for review.
+When Jim leaves feedback, convert the PR to draft before changing anything,
+answer each comment in the deck (or reply on the PR saying why not), and mark
+it ready for review again once the `Review decks` check is green.
