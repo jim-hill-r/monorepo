@@ -153,10 +153,12 @@ requirement needs at least one eval in a production stage.
 
 `evals check` (the `evals` project, `cargo run -p evals_cli -- check` in
 `evals/`) checks every top-level project with an `evals.toml` or
-`docs/requirements.md`. It will run from `mise run //:audit`. Until Phase 4
-of the plan the findings are warnings (`--strict` makes them fail); then
-EVL-004 becomes an error, and the rest follow once every shipping project
-has its files.
+`docs/requirements.md`. `mise run //:audit` runs it through
+`standards/scripts/evals-check.sh` once any project has one of those files
+(so it builds nothing before then), and so do the git hooks and PR CI.
+Until Phase 4 of the plan the findings are warnings and never fail the
+audit (`--strict` makes the command itself fail); then EVL-004 becomes an
+error, and the rest follow once every shipping project has its files.
 
 | Code | Finding |
 | --- | --- |

@@ -8,6 +8,7 @@
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
 #   NAM-001  Project directory names are snake_case.
 #   HUM-001  TODO (human) lines live only in the root HUMAN_ISSUES.md.
+#   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -56,6 +57,9 @@ for t in standards/tasks/*.toml; do
     grep -qE "^\[\"?$task\"?\]" "$t" || err STD-003 "$t does not define task '$task'"
   done
 done
+
+# EVL-*: requirements and evals. Warnings only; never fails the audit.
+bash standards/scripts/evals-check.sh
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))
