@@ -9,3 +9,6 @@ pub use sidebar::Sidebar;
 
 mod family_tree;
 pub use family_tree::FamilyTreeView;
+
+mod family_tree_page;
+pub use family_tree_page::FamilyTreePage;
