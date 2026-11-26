@@ -2,17 +2,17 @@
 
 Every pull request in this repo, from any author, is driven to closure: it is
 either merged or closed. Nothing is left open without someone owning the next
-step. This page is the policy that the "Hourly PR triage" scheduled agent task
+step. This page is the policy that the "PR triage" scheduled agent task
 and every agent thread follow.
 
 ## Who owns a PR
 
 | Author | Owner | Who merges |
 | --- | --- | --- |
-| `dependabot[bot]` | Hourly PR triage | Hourly PR triage, when safe (see below) |
+| `dependabot[bot]` | PR triage | PR triage, when safe (see below) |
 | A human (including `jimhillr`) | The author | Any agent, once it is mergeable. Drafts are left alone. |
 | An agent account (login ends in `-agt`) | The agent thread that opened it | Any agent, including the thread that opened it, once it is mergeable. Agents never approve their own PRs. |
-| An agent account whose thread is gone | Hourly PR triage (adopted) | Any agent, once it is mergeable |
+| An agent account whose thread is gone | PR triage (adopted) | Any agent, once it is mergeable |
 
 An agent PR is **orphaned** when the thread that opened it is resolved or no
 longer exists and the PR has had no activity for 24 hours. Triage adopts it.
@@ -45,9 +45,10 @@ projects it covers. This covers checks that are red on `main` for unrelated
 reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
-## Hourly PR triage
+## PR triage
 
-The scheduled task runs at 43 minutes past every hour as `jimhillr-agt`. Each
+The scheduled task runs three times a day, at 7:50, 12:50 and 17:50
+America/New_York, as `jimhillr-agt` (Jim, 2026-11-26: hourly was too often). Each
 run lists every open PR and puts it on exactly one path.
 
 ### Safe-to-approve rules
