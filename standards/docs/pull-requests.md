@@ -45,6 +45,33 @@ projects it covers. This covers checks that are red on `main` for unrelated
 reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
+## Auto-merge
+
+GitHub auto-merge is on for this repo (squash only). An agent turns it on for
+its own PR when it marks the PR ready for review (Jim, 2026-11-26), with
+`gh api -X PUT repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge -f merge_method=SQUASH`
+(Claude sessions can't use GraphQL, so `gh pr merge --auto` fails there). It does so only when all of
+these hold:
+
+- The PR meets the `open-pull-request` ready checklist: complete, every check
+  finished and green on the head commit, and nothing left for a human to
+  decide. A PR labelled `needs-human` never gets auto-merge.
+- No check is red, not even one also failing on `main`. Auto-merge can't
+  apply the "also failing on `main`" exception, so that PR is merged by hand
+  under the merge rule instead.
+
+Auto-merge doesn't replace the approval: `jimhillr-agt` can't approve its
+own PRs, so an agent PR still waits for a reviewer (normally Jim). Auto-merge
+means Jim's approval is the last step: GitHub squash-merges as soon as the
+approval lands, with no agent run in between.
+
+The ruleset on `main` dismisses an approval when new commits are pushed, so a
+push always needs a fresh approval. Once Jim adds the `CI result` check from
+`pull-request-ci.yml` as a required status check on that ruleset (see
+`HUMAN_ISSUES.md`), GitHub also waits for green CI on the new head before
+auto-merging. Until then, an agent turns auto-merge on only while every check
+is green, and turns it off before any push (see "Working on an existing PR").
+
 ## PR triage
 
 The scheduled task runs three times a day, at 7:50, 12:50 and 17:50
@@ -114,7 +141,9 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
 - If `main` already contains the change, or a newer PR replaces it, close it
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
-  for review and flag it.
+  for review, turn on auto-merge (see "Auto-merge") and flag it.
+- If it's ready for review, green, not `needs-human` and auto-merge is off,
+  turn auto-merge on.
 - Otherwise add `needs-human` and flag it.
 
 ### Reporting
@@ -128,8 +157,10 @@ Code footer.
 
 Any agent that starts work on an existing PR (pushing a fix, answering a
 review with a change, merging `main` into it, or any other push) first
-converts the PR to draft, and marks it ready for review again only once its
-checks are green on the new head commit (Jim, 2026-11-26). The draft tells
+converts the PR to draft and turns off its auto-merge
+(`gh api -X DELETE repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge`), and marks it ready for review and turns
+auto-merge back on only once its checks are green on the new head commit
+(Jim, 2026-11-26). The draft tells
 reviewers and triage that the PR is changing under them, so nobody approves
 or merges a head that is about to move. Agents never push to human PRs, so
 this never touches them.
