@@ -14,3 +14,14 @@ were picked to cover the cases the parser handles:
 - week 11 listed after week 12, to test sorting
 
 To refresh, copy the same game ids out of a new download.
+
+## seasons.csv
+
+`seasons.csv` holds every 2002 to 2025 game, regular season and playoffs,
+from the same download. It keeps only the 13 columns the parser reads, in
+their original order, to stay small. The standings tests replay each season
+and check the seeds against the real playoff games. 2002 is the first season
+with today's divisions.
+
+To refresh or add a season, filter a new download to those seasons and
+columns.
