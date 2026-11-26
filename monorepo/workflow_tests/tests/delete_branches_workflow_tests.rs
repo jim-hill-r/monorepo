@@ -59,6 +59,10 @@ fn test_protects_default_branch_and_open_prs() {
         content.contains("state=open"),
         "Must skip branches with open PRs"
     );
+    assert!(
+        content.contains(r#"if [ "$branch" = evals-results ]"#),
+        "Must never delete the evals-results data branch"
+    );
 }
 
 #[test]
