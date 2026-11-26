@@ -1098,7 +1098,7 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, InstallError> {
             tool: Tool::Dx,
             success: true,
             message: format!(
-                "Would install: cargo install dioxus-cli --version {}",
+                "Would install: cargo install dioxus-cli --version {} --locked",
                 version
             ),
             skipped: false,
@@ -1109,7 +1109,7 @@ fn install_dx(dry_run: bool) -> Result<InstallResult, InstallError> {
     println!("This may take several minutes to compile. Progress will be shown below.");
 
     let status = Command::new("cargo")
-        .args(["install", "dioxus-cli", "--version", version])
+        .args(["install", "dioxus-cli", "--version", version, "--locked"])
         .status()
         .map_err(|e| InstallError::InstallationError(format!("Failed to run cargo: {}", e)))?;
 

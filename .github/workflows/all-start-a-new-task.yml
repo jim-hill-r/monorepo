@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           # For workflow_dispatch: checkout default branch
-          # For pull_request: checkout the merge commit to access the merged changes
+          # For pull request merges: checkout the merge commit to access the merged changes
           ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.pull_request.merge_commit_sha }}
       
       - name: Check for running agent tasks
