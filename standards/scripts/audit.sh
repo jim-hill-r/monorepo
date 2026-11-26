@@ -16,7 +16,7 @@ errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
 
 # Top-level directories that are not projects.
-skip_top='^(\.[^/]*|cast|agent_copilot)$'  # cast goes away with Cast; agent_copilot is handled separately
+skip_top='^(\.[^/]*|cast|agent_copilot|docs)$'  # cast goes away with Cast; agent_copilot is handled separately; docs holds review decks (docs/reviews)
 
 for d in $(git ls-files | cut -d/ -f1 | sort -u); do
   [ -d "$d" ] || continue
