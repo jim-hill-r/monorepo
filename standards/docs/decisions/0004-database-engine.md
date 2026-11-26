@@ -1,8 +1,8 @@
-# 0004. Files first, committed SQLite next, Neon when a hosted database is needed
+# 0004. Files first, committed SQLite next, D1 when a hosted database is needed
 
-- Status: Proposed (needs Jim's sign-off: Neon is not an approved vendor)
+- Status: Accepted
 - Date: 2026-11-26
-- Decided by: Jim (pending)
+- Decided by: Jim
 
 ## Context
 
@@ -117,6 +117,9 @@ long as nobody upgrades, so cost does not separate them; limits and fit do.
 
 ## Decision
 
+Jim (2026-11-26), after comparing Neon and D1: "Lets go with d1 until a need
+arises that it doesn't solve for."
+
 1. **Files first.** Data and results are committed files, as AGENTS.md says.
    This is the default for every project and covers the eval engine (its
    plan is being changed to drop D1 for committed files).
@@ -124,33 +127,32 @@ long as nobody upgrades, so cost does not separate them; limits and fit do.
    in the repo, it commits a SQLite `.sql` dump (or a small `.sqlite` file)
    and reads it with `rusqlite` (feature `bundled`). No account, no vendor,
    nothing to run out of.
-3. **Neon for the first hosted database**, when a deployed service must
-   write data at runtime, with these conditions:
-   - Neon becomes an approved vendor exception once Jim accepts this record.
-   - Free plan only, no card. Add a Neon section to
-     [free-tiers.md](../free-tiers.md) (100 CU-hours and 5 GB egress per
-     project a month, 1 GB storage, 10 branches) and a Hyperdrive row, and
-     extend `free-tiers.sh` so preview branches are created and deleted only
-     through the guard.
-   - Use one Neon project per service, a branch per pull request deleted
-     when the PR closes, and Hyperdrive to reach it from Workers.
-   - Write migrations and queries in plain SQL with `sqlx`, so the database
-     can move with a `pg_dump`.
+3. **Cloudflare D1 for the first hosted database**, when a deployed service
+   must write data at runtime:
+   - No new vendor: D1 is part of the approved Cloudflare account, on the
+     Workers Free plan, within the limits in
+     [free-tiers.md](../free-tiers.md) (10 databases of up to 500 MB, 5M
+     rows read and 100,000 written a day).
+   - Reach it through the `workers-rs` D1 binding. Develop locally with
+     `wrangler dev`, which runs D1 against a local SQLite file.
+   - Seed and migrate it from the same `.sql` files the repo commits; keep
+     SQL plain so it stays portable.
+   - Create databases only through a `free-tiers.sh` guard (added with the
+     first D1 database), as Pages projects are today.
+4. **Neon is the candidate to revisit** when a need comes up that D1 doesn't
+   solve for, such as a database per pull request, access from outside
+   Workers, Postgres features, more than 500 MB in one database, or daily
+   limits that a service keeps hitting. Adding Neon then needs a new decision
+   record and Jim's sign-off, as for any vendor outside the approved list.
 
-### Why Neon and not D1
+### Why D1 for now
 
-The vendor rule says that when cost is equal, fewer vendors wins, and D1 is
-already approved. D1 is the right answer if the only need is a small table
-behind one Worker. Neon is still recommended because:
-
-- per-PR branches are the dev workflow we want, and D1 has nothing like it;
-- standard Postgres has the least lock-in and works from any Rust code, not
-  only inside a Worker;
-- monthly CU-hours with scale to zero suit bursty hobby traffic better than
-  D1's daily caps, and nothing is paused when idle.
-
-If Jim prefers to keep the vendor count down, D1 is the fallback: same
-SQLite dialect as the committed files, no new vendor, but no branching.
+Cost is equal (both free), so the vendor rule's tie-break applies: fewer
+vendors wins, and D1 is already approved. D1 also shares the SQLite dialect
+with the committed files, so moving data from the repo to D1 is loading a
+`.sql` file, and its 7-day Time Travel beats Neon's 6-hour restore window.
+What we give up is Neon's per-PR branching, access from outside Workers and
+Postgres; none of those is needed today.
 
 Turso and Supabase are not recommended: Turso's whole-account block on any
 one limit and its pending acquisition make it a riskier free tier, and
@@ -159,12 +161,13 @@ Supabase's two projects, weekly pausing and paid-only branching fit worst.
 ## Consequences
 
 - No database is created now. The next PR that needs a hosted database
-  adds the Neon free-tier section, the guard and its first project.
-- Jim signs off by merging this PR (labelled `needs-human`). The same PR
-  lists Neon under the approved exceptions in AGENTS.md, so merging it
-  approves the vendor.
-- Moving from committed SQLite to Neon needs a SQLite-to-Postgres
-  conversion; keeping SQL plain keeps it cheap.
+  adds the D1 guard to `free-tiers.sh` and its first database.
+- No new vendor; AGENTS.md's approved list is unchanged.
+- D1 is reachable only from Workers. Code outside a Worker (CLIs, GitHub
+  Actions) works with the committed SQLite files, or Cloudflare's REST API
+  for occasional admin tasks.
+- If D1 stops fitting, moving to Neon means converting SQLite SQL to
+  Postgres; keeping SQL plain keeps that cheap.
 
 ## Sources
 

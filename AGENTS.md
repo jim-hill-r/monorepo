@@ -52,8 +52,6 @@ repo, rather than in any one agent tool's settings.
   - **Approved exceptions:**
     - PostHog, for real-user session replay (decision 0001).
     - Auth0, used by `auth_sdk` and `cahokia` for sign-in.
-    - Neon, on its free plan, as the hosted database once a service needs
-      one (decision 0004). Files and committed SQLite come first.
     - RapidAPI (Zillow data), used by `homer`, **only on its free plan**. It
       must never cost money: don't add a paid plan, scheduled runs or anything
       else that could push usage past the free quota.
