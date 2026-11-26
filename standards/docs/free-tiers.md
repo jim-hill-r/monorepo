@@ -13,7 +13,9 @@ number, and update this page in the same PR when one moves.
 ## Rules
 
 1. **Never turn on a paid plan, add a payment method or raise a spending
-   limit.** No agent, workflow or script may upgrade a plan, enter a card,
+   limit.** The one paid service is Claude Code, with a budget Jim set of
+   $25 a month; every technology's budget is in the
+   [tech radar](tech-radar.md), and every other budget is $0. No agent, workflow or script may upgrade a plan, enter a card,
    buy an add-on, or raise a GitHub budget or cache limit. Only Jim does
    that, and only after a decision record in [decisions/](decisions/README.md).
    A PR that needs one is labelled `needs-human`.
@@ -120,6 +122,12 @@ stop before going past it.
 
 Jim's existing account, not used by automation. Nothing here creates or
 changes anything in it.
+
+### Claude Code (Anthropic)
+
+Our AI coding platform and the one paid service: budget $25 a month (Jim,
+2026-11-26). Jim's own subscription; no agent, workflow or script changes
+its plan or adds usage-based billing.
 
 ## Guards
 

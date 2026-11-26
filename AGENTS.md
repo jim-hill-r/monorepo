@@ -56,6 +56,7 @@ repo, rather than in any one agent tool's settings.
       must never cost money: don't add a paid plan, scheduled runs or anything
       else that could push usage past the free quota.
     - Anthropic's Claude Code, our AI coding platform (Jim, 2026-11-26).
+      It is the one paid service, with a budget of $25 a month.
   - **Prefer what Claude supports (Jim, 2026-11-26).** After cost, prefer
     technologies Claude knows well and vendors with a Claude Code plugin or
     MCP server, enabled read-only for context. The tech radar notes which
@@ -66,7 +67,8 @@ repo, rather than in any one agent tool's settings.
     first project to use one, updates `standards/radar/radar.json` in the
     same PR.
 - **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
-  plan. Never turn on a paid plan, add a payment method or raise a spending
+  plan, except Claude Code (budget $25 a month). Each technology's monthly
+  budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method or raise a spending
   or cache limit, and when a limit is near, stop rather than pay. Anything
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in

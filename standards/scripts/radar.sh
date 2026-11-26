@@ -7,8 +7,8 @@
 #
 #   RAD-001  radar.json is a JSON array.
 #   RAD-002  Every blip has name, ring, quadrant, isNew, kind, description,
-#            exemplars, sources and claude, with the right types and allowed
-#            values.
+#            exemplars, sources, claude and budget, with the right types and
+#            allowed values.
 #   RAD-003  Blip names are unique.
 #   RAD-004  Every exemplar and every repo-relative source path exists.
 #   RAD-005  Every Assess blip has at least one source (its evaluation).
@@ -33,18 +33,19 @@ tables() {
       else "[\(split("/") | last)](../../\(.))" end;
     def cell: gsub("\\|"; "\\|");
     ["Adopt", "Trial", "Assess", "Hold"] as $rings
-    | ["Techniques", "Tools", "Platforms", "Languages & Frameworks"][] as $q
+    | "Total budget: **$\([.[].budget] | add) a month** (\([.[] | select(.budget > 0) | "\(.name) $\(.budget)"] | join(", "))). Everything else is $0: free plans and open source.\n",
+      (["Techniques", "Tools", "Platforms", "Languages & Frameworks"][] as $q
     | "### \($q)\n",
-      "| Blip | Ring | Kind | Exemplar projects | Why | Claude support | Sources |",
-      "| --- | --- | --- | --- | --- | --- | --- |",
+      "| Blip | Ring | Kind | Budget a month | Exemplar projects | Why | Claude support | Sources |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- |",
       ([.[] | select(.quadrant == $q)]
         | sort_by((.ring as $r | $rings | index($r)), (.name | ascii_downcase))[]
-        | "| \(.name | cell)\(if .isNew == "TRUE" then " (new)" else "" end) | \(.ring) | \(.kind) | \(
+        | "| \(.name | cell)\(if .isNew == "TRUE" then " (new)" else "" end) | \(.ring) | \(.kind) | $\(.budget) | \(
             if (.exemplars | length) == 0 then "none yet"
             else [.exemplars[] | "[\(.)](../../\(.))"] | join(", ") end) | \(.description | cell) | \(
             if .claude == "" then "-" else (.claude | cell) end) | \(
             [.sources[] | link] | join(", ")) |"),
-      ""
+      "")
   ' "$data"
 }
 
@@ -61,6 +62,7 @@ check() {
       (if (.description | type) != "string" or .description == "" then "\($n): description must be a non-empty string" else empty end),
       (if (.exemplars | type) != "array" then "\($n): exemplars must be an array" else empty end),
       (if (.sources | type) != "array" then "\($n): sources must be an array" else empty end),
+      (if (.budget | type) != "number" or .budget < 0 then "\($n): budget must be a number of US dollars a month, 0 or more" else empty end),
       (if (.claude | type) != "string" then "\($n): claude must be a string (empty when Claude has no plugin or MCP server for it)" else empty end)
   ' "$data")
 
