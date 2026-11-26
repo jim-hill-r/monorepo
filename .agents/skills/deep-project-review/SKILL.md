@@ -130,7 +130,7 @@ Build the deck locally before pushing, and fix anything that overflows or
 fails to render:
 
 ```sh
-npx --yes @marp-team/marp-cli@4.5.1 --html --allow-local-files \
+npx --yes @marp-team/marp-cli@4.5.1 --no-stdin --html --allow-local-files \
   docs/reviews/<folder>/deck.md -o /tmp/deck.html
 ```
 

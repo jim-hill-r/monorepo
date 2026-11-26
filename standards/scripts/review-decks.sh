@@ -27,7 +27,7 @@ for deck in "${decks[@]}"; do
   folder="$(basename "$(dirname "$deck")")"
   cp -r "docs/reviews/$folder" "$out/$folder"
   for format in html pdf; do
-    npx --yes "@marp-team/marp-cli@$marp_version" --html --allow-local-files \
+    npx --yes "@marp-team/marp-cli@$marp_version" --no-stdin --html --allow-local-files \
       "--$format" "$out/$folder/deck.md" -o "$out/$folder/deck.$format"
   done
   rm "$out/$folder/deck.md"
