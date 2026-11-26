@@ -1,9 +1,32 @@
-# Dependabot configuration for monorepo
+# Dependabot version updates: one entry per lockfile.
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# //:audit checks this file (SEC-006, standards/docs/security.md): every
+# tracked Cargo.lock and package-lock.json has an entry for its directory, and
+# every entry's directory exists and holds that lockfile. A Cargo workspace has
+# one entry, at the workspace root that holds the Cargo.lock. Keep the
+# `package-ecosystem:` line directly above `directory:`; the check reads them
+# as a pair.
+#
+# Pinned dependencies (AGENTS.md, "Pinned dependencies") are ignored here so
+# Dependabot never opens a bump for them.
 
 version: 2
 updates:
-  # Cargo/Rust dependencies for Auth SDK
+  - package-ecosystem: "cargo"
+    directory: "/athenaeum/learning/computer_science/algorithms/neet_code_150"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
   - package-ecosystem: "cargo"
     directory: "/auth_sdk"
     schedule:
@@ -17,11 +40,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "auth_sdk"
 
-  # Cargo/Rust dependencies for Luggage
   - package-ecosystem: "cargo"
-    directory: "/luggage"
+    directory: "/bear_down"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -33,9 +54,7 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "luggage"
 
-  # Cargo/Rust dependencies for Cahokia
   - package-ecosystem: "cargo"
     directory: "/cahokia"
     schedule:
@@ -49,11 +68,15 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cahokia"
+    ignore:
+      # Deliberately pinned to an older dioxus (AGENTS.md).
+      - dependency-name: "dioxus"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "dioxus-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
-  # Cargo/Rust dependencies for Cahokia Web
   - package-ecosystem: "cargo"
-    directory: "/cahokia/web"
+    directory: "/controlled_chaos"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -65,11 +88,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cahokia"
 
-  # Cargo/Rust dependencies for Cahokia Desktop
   - package-ecosystem: "cargo"
-    directory: "/cahokia/desktop"
+    directory: "/design_system"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -81,11 +102,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cahokia"
 
-  # Cargo/Rust dependencies for Cahokia Mobile
   - package-ecosystem: "cargo"
-    directory: "/cahokia/mobile"
+    directory: "/evals"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -97,11 +116,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cahokia"
 
-  # Cargo/Rust dependencies for Cahokia UI
   - package-ecosystem: "cargo"
-    directory: "/cahokia/ui"
+    directory: "/cost"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -113,11 +130,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cahokia"
 
-  # Cargo/Rust dependencies for Cahokia Core
   - package-ecosystem: "cargo"
-    directory: "/cahokia/core"
+    directory: "/homer"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -129,11 +144,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "cahokia"
 
-  # Cargo/Rust dependencies for Starcraft
   - package-ecosystem: "cargo"
-    directory: "/starcraft"
+    directory: "/luggage"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -145,11 +158,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "starcraft"
 
-  # Cargo/Rust dependencies for Sparkhill Website
   - package-ecosystem: "cargo"
-    directory: "/sparkhill/website"
+    directory: "/monorepo"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -161,11 +172,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "sparkhill"
 
-  # Cargo/Rust dependencies for CIAM
   - package-ecosystem: "cargo"
-    directory: "/ciam"
+    directory: "/monorepo/workflow_tests"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -177,11 +186,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "ciam"
 
-  # Cargo/Rust dependencies for Profiles - jimhillr
   - package-ecosystem: "cargo"
-    directory: "/profiles/jimhillr"
+    directory: "/my_lang"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -193,9 +200,21 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "profiles"
 
-  # Cargo/Rust dependencies for Profiles - content_provider
+  - package-ecosystem: "cargo"
+    directory: "/pane"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
   - package-ecosystem: "cargo"
     directory: "/profiles/content_provider"
     schedule:
@@ -209,11 +228,9 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "profiles"
 
-  # Cargo/Rust dependencies for Luggage webapp example
   - package-ecosystem: "cargo"
-    directory: "/luggage/examples/webapp"
+    directory: "/profiles/jimhillr"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -225,11 +242,13 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "luggage"
+    ignore:
+      # perseus 0.4.2 needs sycamore 0.8 (AGENTS.md).
+      - dependency-name: "sycamore"
+        versions: [">= 0.9"]
 
-  # Cargo/Rust dependencies for Dioxus SSG proof of concept
   - package-ecosystem: "cargo"
-    directory: "/dioxus_ssg"
+    directory: "/sparkhill/website"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -241,11 +260,13 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "proof-of-concept"
+    ignore:
+      # perseus 0.4.2 needs sycamore 0.8 (AGENTS.md).
+      - dependency-name: "sycamore"
+        versions: [">= 0.9"]
 
-  # Cargo/Rust dependencies for Dioxus static website proof of concept
   - package-ecosystem: "cargo"
-    directory: "/dioxus_static_website"
+    directory: "/starcraft"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -257,57 +278,49 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-      - "proof-of-concept"
 
-  # Cargo/Rust dependencies for NeetCode150
-  - package-ecosystem: "cargo"
-    directory: "/athenaeum/learning/computer_science/algorithms/NeetCode150"
+  - package-ecosystem: "npm"
+    directory: "/cahokia/web"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
     groups:
-      rust-dependencies:
+      javascript-dependencies:
         patterns:
           - "*"
     labels:
       - "dependencies"
-      - "rust"
-      - "learning"
+      - "javascript"
 
-  # Example - Binary
-  - package-ecosystem: "cargo"
-    directory: "/example/binary"
+  - package-ecosystem: "npm"
+    directory: "/cookbook/web"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
     groups:
-      rust-dependencies:
+      javascript-dependencies:
         patterns:
           - "*"
     labels:
       - "dependencies"
-      - "rust"
-      - "example"
+      - "javascript"
 
-  # Example - Rust Library
-  - package-ecosystem: "cargo"
-    directory: "/example/example_rust_library"
+  - package-ecosystem: "npm"
+    directory: "/pane/web"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
     groups:
-      rust-dependencies:
+      javascript-dependencies:
         patterns:
           - "*"
     labels:
       - "dependencies"
-      - "rust"
-      - "example"
+      - "javascript"
 
-  # GitHub Actions workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

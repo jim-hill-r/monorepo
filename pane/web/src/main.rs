@@ -66,6 +66,7 @@ fn App() -> Element {
     use_context_provider(|| loaded);
     rsx! {
         document::Title { "Pane" }
+        design_system_dioxus::Stylesheets { default_theme: "professional" }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         Router::<Route> {}
     }
@@ -142,7 +143,10 @@ fn Shell() -> Element {
                 }
             }
             main { class: "page", Outlet::<Route> {} }
-            footer { class: "footer", "data-testid": "snapshot-footer", "{footer}" }
+            footer { class: "footer",
+                p { "data-testid": "snapshot-footer", "{footer}" }
+                design_system_dioxus::ThemePicker {}
+            }
         }
     }
 }

@@ -11,6 +11,8 @@
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
+#   SEC-*    Secret files ignored and Dependabot covering every lockfile
+#            (security-check.sh, standards/docs/security.md).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -63,6 +65,9 @@ bash standards/scripts/evals-check.sh
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.
 bash standards/scripts/cost-check.sh
+
+# SEC-002, SEC-006: repo-wide security guards (see standards/docs/security.md).
+bash standards/scripts/security-check.sh || errors=$((errors + 1))
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))

@@ -28,8 +28,16 @@ Called by the three workflows below.
 Runs on every pull request against the projects it changes. Never deploys.
 `workflow_dispatch` runs every project on a branch.
 
-A second job, **CI result**, always runs after the projects and passes only
-when every project passed. It is the one check the `main` ruleset should
+A **Secret scan** job runs gitleaks over the PR's commits
+(`standards/scripts/secrets-check.sh range`, SEC-001 in
+[standards/docs/security.md](../../standards/docs/security.md)).
+
+A **Dependency audit** job runs cargo-deny and `npm audit` for the lockfiles
+the PR changes (`standards/scripts/deps-check.sh`, SEC-003 and SEC-004).
+Warnings only for now, so CI result doesn't wait for it.
+
+A last job, **CI result**, always runs after the projects and the secret scan
+and passes only when every project passed and no secret was found. It is the one check the `main` ruleset should
 require, so GitHub auto-merge waits for green CI (see the Auto-merge section
 of `standards/docs/pull-requests.md`). Rename it only together with that
 ruleset.
@@ -93,6 +101,14 @@ Builds every review deck to HTML and PDF with the Marp CLI through
 uploads them as the `review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
 
+## all-dependency-audit.yml
+
+Nightly (2:30 AM Pacific) or by hand: runs `standards/scripts/deps-check.sh
+--all`, cargo-deny over every `Cargo.lock` and `npm audit` over every
+`package-lock.json` (SEC-003, SEC-004 in
+[standards/docs/security.md](../../standards/docs/security.md)). Warnings
+only for now, so it stays green; findings are in the log.
+
 ## all-free-tier-usage.yml
 
 Weekly (Mondays, 7 AM Pacific), by hand, or called from another workflow:
@@ -102,6 +118,10 @@ storage the repo uses, writes a table to the run summary, and fails when
 anything reaches its budget in
 [standards/docs/free-tiers.md](../../standards/docs/free-tiers.md). It only
 reads.
+
+A second job, **Secret scan (full history)**, runs gitleaks over every commit
+(`standards/scripts/secrets-check.sh history`), so a new rule catches an old
+commit within a week.
 
 Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
 

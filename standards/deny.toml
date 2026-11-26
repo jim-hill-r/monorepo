@@ -1,0 +1,55 @@
+# cargo-deny config for SEC-003 (standards/docs/security.md), shared by every
+# Cargo project. Run through standards/scripts/deps-check.sh, never directly.
+# A project can add its own deny.toml next to its Cargo.lock; it is then used
+# instead of this one, so copy this file's contents into it first.
+#
+# SEC-003 is a warning until phase 4 of the threat check plan
+# (standards/docs/plans/2026-11-threat-check.md).
+
+[graph]
+all-features = false
+
+[advisories]
+# Vulnerable and unsound crates always fail; also flag yanked ones.
+yanked = "deny"
+unmaintained = "workspace"
+# Each ignore says why it is safe and when to look again. Adding one gets the
+# PR the needs-human label. Fixable advisories are FIX lines in the project's
+# issue files instead.
+ignore = []
+
+[licenses]
+# Not checked yet: deps-check.sh runs advisories and sources only, because our
+# own crates have no `license` or `publish = false` and so fail as unlicensed.
+# issues/threat-check-cargo-deny-licences.md turns this on.
+# Permissive licences and weak copyleft that doesn't spread to our code.
+allow = [
+  "0BSD",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "BSL-1.0",
+  "CC0-1.0",
+  "CDLA-Permissive-2.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "OpenSSL",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "Unlicense",
+  "Zlib",
+]
+confidence-threshold = 0.8
+
+[licenses.private]
+# Our own crates have no licence field and are never published.
+ignore = true
+
+[sources]
+# Crates come from crates.io or this repo (path dependencies) only.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
