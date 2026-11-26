@@ -17,10 +17,14 @@ permissions:
 jobs:
   ci:
     uses: ./.github/workflows/mise-projects.yml
-    # Only mise-projects.yml's store-evals job uses write, to push eval
-    # results to the evals-results branch; every other job reads.
+    with:
+      base: ''
+
+  # Commit the eval results to the evals-results branch, even when a
+  # project failed, so failing evals are kept too.
+  store-evals:
+    needs: ci
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/evals-store.yml
     permissions:
       contents: write
-    with:
-      store_evals: true
-      base: ''

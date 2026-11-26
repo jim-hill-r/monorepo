@@ -200,7 +200,7 @@ to `main` and nightly CI), through the shared tasks and
 3. The workflow then writes the job summary table (`evals.sh publish`) and
    uploads the results file as a 14-day `evals-results-<project>` artifact.
 4. On pushes to `main` and nightly CI (never pull requests, whose results
-   are for unmerged code), a last job, `store-evals`, commits every
+   are for unmerged code), a last job, `store-evals` (`evals-store.yml`), commits every
    project's results to the `evals-results` branch (`evals.sh store`; see
    [Results and verdicts](#results-and-verdicts)).
 
@@ -319,8 +319,8 @@ results/<project>/archive/<yyyy>.jsonl.gz  months older than 12
 verdicts.json                           every active requirement's verdict
 ```
 
-`standards/scripts/evals.sh store <results.jsonl...>` (CI's `store-evals`
-job) checks the branch out in a worktree, appends the results
+`standards/scripts/evals.sh store <results.jsonl...>` (the
+`evals-store.yml` job) checks the branch out in a worktree, appends the results
 (`evals store`), moves months older than 12 into their year's archive,
 rewrites `verdicts.json` from the requirements, evals and human-check
 answers on `main`, and pushes one commit, `evals: <stage> <projects> run

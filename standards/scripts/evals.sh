@@ -20,8 +20,8 @@
 #       appends them to results/<project>/<yyyy-mm>.jsonl, moves months
 #       older than 12 into results/<project>/archive/<yyyy>.jsonl.gz,
 #       rewrites verdicts.json, and pushes one commit, retrying when another
-#       run pushed first. Creates the branch on its first run. CI's
-#       store-evals job runs it with contents: write; it is the only push CI
+#       run pushed first. Creates the branch on its first run. The
+#       evals-store.yml workflow runs it with contents: write; it is the only push CI
 #       makes, and only to evals-results (SEC-007), never to main.
 #   evals.sh verdicts [--project <p>] [--json]
 #       Fetches the evals-results branch and prints every requirement's
