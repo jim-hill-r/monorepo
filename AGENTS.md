@@ -32,16 +32,16 @@ repo, rather than in any one agent tool's settings.
     requires.
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
-- **PR review automation.** An hourly scheduled agent task, "Hourly PR
-  review", reviews every open PR not opened by an agent account (any GitHub
-  login ending in `-agt`, such as `jimhillr-agt`). That covers humans,
-  dependabot and other bots. It reviews as `jimhillr-agt` and approves PRs it
-  judges safe. It only approves: it never merges, comments or requests changes.
-  It requires green checks and no conflicts, approves only patch or minor
-  dependency bumps (a 0.x minor bump counts as major), never approves the
-  pinned bumps above, and never approves changes to workflows, auth code or
-  secrets unless they're trivially safe. It reads this file for extra pins, so
-  list any new pins here.
+- **PR lifecycle.** Every PR, from any author, is driven to closure (merged
+  or closed). The policy is in `standards/docs/pull-requests.md`. An hourly
+  scheduled agent task, "Hourly PR triage", acts as `jimhillr-agt` on every
+  open PR: it approves and squash-merges safe dependabot bumps, asks dependabot
+  to rebase conflicts, closes superseded or pinned bumps, approves safe human
+  PRs (never merging them), adopts orphaned agent PRs, and labels anything that
+  needs Jim `needs-jim`. Safe means green checks, no conflict, patch or minor
+  bumps only (a 0.x minor bump counts as major), never the pinned bumps above,
+  and no workflow, auth or secrets changes unless trivially safe. It reads
+  this file for extra pins, so list any new pins here.
 - **Starting new work.** There is no scheduled job for new work. Whenever no
   agent PRs or agent tasks are in flight, the coordinating agent starts a new
   task by running the `start-a-new-task` skill.
