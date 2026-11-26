@@ -11,4 +11,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 
 | # | Decision | Status |
 | --- | --- | --- |
-| [0001](0001-deploy-feedback-loop.md) | Preview deploys, recorded smoke UAT and real-user review on free tiers | Accepted |
+| [0001](0001-deploy-feedback-loop.md) | Preview builds, recorded smoke UAT and real-user review on free tiers | Accepted |

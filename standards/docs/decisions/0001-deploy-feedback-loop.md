@@ -1,4 +1,4 @@
-# 0001. Preview deploys, recorded smoke UAT and real-user review on free tiers
+# 0001. Preview builds, recorded smoke UAT and real-user review on free tiers
 
 - Status: Accepted
 - Date: 2026-11-26
@@ -10,8 +10,20 @@ Jim wants better feedback on every change: a cleaner CD, a UAT step after each
 deploy, observability, and above all a way to watch how real people use the
 apps as part of the development workflow. It has to stay cheap.
 
-The web apps (cookbook, pane, cahokia, sparkhill, and bear_down soon) are
-Dioxus apps served as static files from Cloudflare Pages or Workers. Until the
+The repo ships several kinds of deliverable, and each needs checking in its
+own way. The full inventory is in the plan; the ones users touch are:
+
+- **Websites:** Dioxus web apps (cookbook, pane, cahokia, sparkhill/webapp,
+  blueeel, and bear_down soon) and Perseus sites (sparkhill/website,
+  profiles/jimhillr).
+- **Native apps:** cahokia's Dioxus desktop and mobile apps.
+- **CLIs:** homer, cookbook's recipe_gen and the my_lang compiler.
+- **Bevy games:** controlled_chaos (starcraft is on hold).
+- **An HTTP API:** luggage (on hold).
+
+Libraries, docs and content are checked by their consumers and by CI only.
+
+The websites are Dioxus apps served as static files from Cloudflare Pages or Workers. Until the
 mise migration, CD only ran when CI committed build artifacts to main, so a
 deploy left no trace on the PR that caused it and nobody looked at the result.
 [PR #570](https://github.com/jimhillr/monorepo/pull/570) replaces that with
@@ -45,12 +57,36 @@ check in a minute without a local clone.
 4. **Honeycomb is the observability backend**, on its free tier: CI/CD traces
    first, then a deploy marker per production deploy, then browser
    instrumentation and `tracing` exports from any Rust services.
-5. **Everything stays inside free tiers** and runs from GitHub Actions or an
+5. **CLIs and Bevy games get the same three checkpoints in their own form.**
+   - Before merge: CLIs run scripted user sessions against the built binary
+     with transcript tests (`trycmd`), and a PR that changes user-facing
+     output gets a terminal recording (a `vhs` GIF). Bevy games build for the
+     web (`wasm32`) where the game supports it, so the PR gets a playable
+     preview like a website, and a scripted headless run under xvfb captures
+     screenshots at fixed frames and a short video.
+   - After release: CLIs publish binaries to a GitHub Release, and the smoke
+     session runs again against the released binary. Games publish their web
+     build to Cloudflare Pages and native builds to a GitHub Release.
+   - Real use: games send a few gameplay events (session start, level
+     reached, quit, crash) to PostHog from the web build. CLIs send nothing
+     unless the user opts in with an environment variable, in which case
+     errors and command timings go to Honeycomb through `tracing`.
+6. **Native apps and the API are covered more lightly.** cahokia desktop gets
+   a recorded launch under xvfb; cahokia mobile is checked through its shared
+   `ui` crate in the web build, with an Android emulator run only nightly.
+   iOS needs macOS runners and is not covered. luggage gets an HTTP smoke
+   test against its OpenAPI routes and `tracing` export to Honeycomb once it
+   is deployed.
+7. **Playwright screenshots and video are the default evidence on PRs.** Jim
+   asked for this on 2026-11-26. Every UI change links the recorded report in
+   the PR, which replaces taking screenshots by hand.
+8. **Everything stays inside free tiers** and runs from GitHub Actions or an
    agent skill, never from a local clone.
 
 ## Consequences
 
-- Reviewers get a link, screenshots and a video for every UI change, which
+- Reviewers get a link, screenshots and a video (or a terminal recording) for
+  every user-facing change, which
   also covers the screenshot rule in
   [../documentation.md](../documentation.md#ui-changes-documentation).
 - PRs from forks and from dependabot get no preview, because they have no
@@ -61,6 +97,11 @@ check in a minute without a local clone.
   added to their allowed callback URLs, or sign-in only works in production.
 - Session replay sends visitor behaviour to a third party, so each site needs
   a short privacy note and strict input masking.
+- Bevy games need a deterministic scripted mode (fixed timestep, seeded RNG,
+  a list of inputs) before a recorded run means anything. Games that cannot
+  build for `wasm32` get only the recorded native run.
+- CLI telemetry is opt-in only, so most real-use feedback for CLIs comes from
+  Jim's own runs and the transcript tests.
 - The smoke suite must stay short (about a minute per app) to keep Actions
   minutes low, and must not depend on seeded data in production.
 - New secrets: `HONEYCOMB_API_KEY` for CI and deploy markers, and a PostHog

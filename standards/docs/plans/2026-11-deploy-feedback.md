@@ -17,6 +17,23 @@ person, at three moments:
 3. **After people use it:** recordings of real sessions, reviewed every week,
    turned into `FIX` and `TODO` items.
 
+## Deliverable types
+
+Inventory of every project with a `mise.toml`, 2026-11-26.
+
+| Type | Projects | Before merge | After release | Real use |
+| --- | --- | --- | --- | --- |
+| Dioxus web app | cookbook/web, pane/web, cahokia/web, sparkhill/webapp, blueeel, bear_down (coming) | Preview URL, Playwright `@smoke` with screenshots and video | `@smoke` against production | PostHog replay, Honeycomb browser telemetry |
+| Perseus site | sparkhill/website, profiles/jimhillr (not deployed yet) | Same as web apps once deployed (`perseus export` is static, so Pages works) | Same | Same |
+| Dioxus desktop app | cahokia/desktop | Launch under xvfb, screenshot and video of the window | Smoke run against the release bundle | None yet |
+| Dioxus mobile app | cahokia/mobile | Covered by cahokia/web through the shared `ui` crate | Nightly Android emulator run with a screenshot; iOS not covered | None yet |
+| CLI | homer, cookbook/recipe_gen, my_lang (compiles and runs sample programs) | `trycmd` transcript tests, `vhs` GIF when output changes | Smoke session against the released binary | Opt-in `tracing` export to Honeycomb |
+| Bevy game | controlled_chaos (starcraft on hold) | Playable web preview if it builds for `wasm32`, scripted xvfb run with screenshots and video | Scripted run against the release build | PostHog gameplay events from the web build |
+| HTTP API | luggage (on hold, not deployed) | HTTP smoke test of the OpenAPI routes against `cargo run` | Same test against the deployed URL | Honeycomb traces through `tracing` |
+| Library | auth_sdk, cahokia/ui, cookbook/core, profiles/content_provider, luggage crates | Unit tests plus the consumers' CI (`affected-by`) | Nothing to release | Through the apps that use it |
+| Content and docs | cookbook/content and data_md, athenaeum, bogan, psy_ents, royalty, bear_down docs | Markdown and link checks; cookbook content is checked by building and smoke testing the site | Nothing to release | None |
+| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, monorepo/workflow_tests | Existing CI until removed | None | None |
+
 Honeycomb adds the numbers (CI times, errors, page performance) next to those
 recordings.
 
@@ -58,7 +75,7 @@ recordings.
 - Add the preview domains to the Auth0 allowed callback URLs for cookbook and
   cahokia, or sign-in fails on previews.
 
-## Phase 3: recorded smoke UAT
+## Phase 3a: website smoke UAT
 
 - Tag a handful of existing Playwright tests `@smoke` in each web app: the
   home page loads, main navigation works, one core flow per app, no console
@@ -74,12 +91,60 @@ recordings.
   Cloudflare Pages project, branch `pr-<n>` for PRs and `main` for
   production. The sticky PR comment links to it; the Actions artifact is kept
   for 14 days as a backup.
+- Playwright screenshots and video become the standard evidence on every PR
+  that changes UI (Jim, 2026-11-26). `documentation.md` changes from "take
+  screenshots" to "link the recorded UAT report", and the sticky PR comment
+  embeds the key screenshots inline from the `uat-reports` site so reviewers
+  see them without clicking.
 - The PR template and `open-pull-request` skill gain a short **UAT** section:
   what changed for the user and what the reviewer should click on the
   preview. A reviewer approves only after opening the preview and the report.
 - A failed production smoke run fails `push-main.yml`. The hourly PR triage
   task, or the next agent to see it, adds a `FIX` to the project's
   `ISSUES.md` and offers a rollback.
+
+## Phase 3b: CLI UAT
+
+- Add `trycmd` transcript tests to each CLI: `--help`, one happy path per
+  main command on fixture data, and one common mistake with its error
+  message. These run in `mise run ci`, so they gate every PR.
+- Add a `smoke` task to `standards/tasks/rust.toml` for projects that ship a
+  binary: build in release mode and run the same transcripts against it.
+- When a PR changes user-facing output, render a `vhs` tape kept in the
+  project (`docs/demo.tape`) to a GIF, publish it with the UAT report and
+  link it from the sticky PR comment.
+- Replace committed artifacts with a release workflow: on a version tag (or a
+  `workflow_dispatch`), build Linux, macOS and Windows binaries and attach
+  them to a GitHub Release, then run the smoke task against the Linux
+  binary.
+
+## Phase 3c: Bevy game UAT
+
+- Add a scripted mode to controlled_chaos, behind a `--script <file>` flag or
+  environment variable: fixed timestep, seeded RNG, a list of timed inputs,
+  screenshots at named frames with Bevy's screenshot API, then exit with a
+  non-zero code on a panic or a failed check.
+- Add a `smoke` task to `standards/tasks/bevy-game.toml` that runs the
+  script under `xvfb-run`, records the virtual display with `ffmpeg`, and
+  writes screenshots and the video next to the UAT report.
+- Check whether controlled_chaos builds for `wasm32-unknown-unknown`. If it
+  does, deploy the web build as a Pages preview per PR and to production on
+  main, so the PR comment has a playable link.
+- Native builds go to a GitHub Release, as for CLIs.
+
+## Phase 3d: native apps and the API
+
+- cahokia/desktop: a `smoke` task that launches the release build under
+  `xvfb-run`, waits for the window, takes a screenshot and records a short
+  `ffmpeg` video, and fails if the process exits early.
+- cahokia/mobile: rely on cahokia/web for shared UI. Add a nightly job that
+  builds the Android target and runs it in the free Android emulator action
+  for one screenshot. Skip iOS until there is a reason to pay for macOS
+  minutes.
+- luggage (when it comes off hold): an HTTP smoke test that walks the
+  OpenAPI routes against `cargo run`, then against the deployed URL.
+- Perseus sites: when sparkhill/website or profiles/jimhillr first deploys,
+  give it a Pages project and reuse the website path above.
 
 ## Phase 4: real user sessions (PostHog)
 
@@ -100,6 +165,11 @@ Jim chose PostHog Cloud on its free tier on 2026-11-26.
   of the week goes into the PR body so Jim can watch the two or three
   recordings that matter.
 - When a PR fixes something found this way, its body links the recording.
+- Games: the web build sends a few PostHog events (session start, level or
+  turn reached, quit, panic message). Replay of the game canvas is not
+  attempted; the review skill reads these events alongside the web sessions.
+- CLIs: no tracking by default. Setting `HONEYCOMB_API_KEY` in the
+  environment opts in to sending errors and command timings (Phase 5).
 
 ## Phase 5: Honeycomb
 
@@ -110,6 +180,10 @@ Jim chose PostHog Cloud on its free tier on 2026-11-26.
 - Browser telemetry: add Honeycomb's OpenTelemetry web SDK to each web app
   for page loads, Core Web Vitals and uncaught errors, with an ingest-only
   key.
+- CLIs: an opt-in `tracing` OTLP exporter, on only when the user sets
+  `HONEYCOMB_API_KEY`, for errors and command timings.
+- Games: frame-time and load-time spans from the scripted CI run, so a slow
+  change shows up as a regression.
 - Rust services: any server code (for example `auth_sdk` users with a
   backend) exports its `tracing` spans over OTLP with `tracing-opentelemetry`.
 - One trigger: alert Jim if browser errors jump after a deploy marker.
@@ -121,6 +195,8 @@ Free tier limits as of 2026-11; check them before relying on them.
 | Piece | Tool | Cost at our traffic |
 | --- | --- | --- |
 | Previews and report hosting | Cloudflare Pages | Free |
+| CLI and game releases | GitHub Releases | Free |
+| Terminal recordings | `vhs`, `trycmd` | Free (open source) |
 | Smoke runs | GitHub Actions | Free on public repos; about a minute per app per run otherwise |
 | Session replay | PostHog Cloud | Free up to 5,000 recordings and 1M events a month |
 | Observability | Honeycomb | Free up to 20M events a month |
