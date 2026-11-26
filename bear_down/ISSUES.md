@@ -4,7 +4,7 @@ Build v1 in this order. Each item links the decision that explains it.
 
 - TODO: After the first deploy, check <https://jimhillr-bear-down.pages.dev> shows this week's guide and that Nightly CD redeploys it the next night (the `cloudflare/` deploy itself is in place). ([0009](docs/decisions/0009-cloudflare-pages-nightly-cd.md))
 
-- TODO: Robust, explained recommendations, per [the plan](docs/plans/2026-11-robust-recommendations.md) (BEAR-003 to BEAR-006). Steps 1 (tiebreaker trace, `Standings::seeds_traced`) and 2 (channel shares, `GameImpact::channels`) are done; next is step 3, the static relevance pass.
+- TODO: Robust, explained recommendations, per [the plan](docs/plans/2026-11-robust-recommendations.md) (BEAR-003 to BEAR-006). Steps 1 (tiebreaker trace, `Standings::seeds_traced`), 2 (channel shares, `GameImpact::channels`) and 3 (static relevance pass, `relevance`) are done; next is step 4, adaptive pair counts and tiers.
 
 # Backlog
 

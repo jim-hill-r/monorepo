@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: accepted (Jim, 2026-11-26); steps 1 and 2 done
+- Status: accepted (Jim, 2026-11-26); steps 1 to 3 done
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -118,7 +118,12 @@ Each is one PR, in this order:
    tiebreaker step whose result differed between the two seasons. The
    shares add up to the swing exactly. It added about 5% to the weekly
    build (15 to 16 seconds locally).
-3. Static relevance pass and exact "can't matter" cases.
+3. Static relevance pass and exact "can't matter" cases. Done:
+   `relevance` lists each game's open links (the Bears play, a team in the
+   race, a possible Super Bowl opponent, a team on contenders' schedules).
+   A game with none can't matter in any season. The elimination check uses
+   records only, so it errs toward "still alive" (the 2023 Bears, out only
+   on tiebreakers, still count as alive); in week 12 every game is open.
 4. Adaptive pair counts and the tiers.
 5. `channels` in `rooting.json`, explanation text and the page.
 6. Golden-week evals.
