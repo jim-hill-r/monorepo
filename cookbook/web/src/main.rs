@@ -11,11 +11,13 @@ use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
-const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 const RECIPE_CSS: Asset = asset!("/assets/styling/recipe.css");
 const PLAN_CSS: Asset = asset!("/assets/styling/plan.css");
+
+/// The design system theme the cookbook uses until the reader picks another.
+const DEFAULT_THEME: &str = "earthy";
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
@@ -105,8 +107,10 @@ fn App() -> Element {
                 content: CONTENT_SECURITY_POLICY,
             }
         }
+        // The design system's tokens, base sheet and theme script, before
+        // the app's own sheets so they can use the tokens.
+        design_system_dioxus::Stylesheets { default_theme: DEFAULT_THEME }
         document::Link { rel: "stylesheet", href: HEADER_CSS }
-        document::Link { rel: "stylesheet", href: NAVBAR_CSS }
         document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
         document::Link { rel: "stylesheet", href: HOME_CSS }
         document::Link { rel: "stylesheet", href: RECIPE_CSS }
@@ -483,6 +487,11 @@ fn Sidebar() -> Element {
                 for (week, formatted_date) in plan_weeks {
                     Link { to: Route::Plan { week }, "Week {week}: {formatted_date}" }
                 }
+            }
+
+            div {
+                class: "sidebar-appearance",
+                design_system_dioxus::ThemePicker {}
             }
         }
     }
