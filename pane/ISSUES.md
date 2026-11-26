@@ -11,7 +11,6 @@ Work the phases in order; within a phase, top to bottom.
 
 ### Phase 0: foundations
 
-- TODO (agent-generated): Add Playwright `@smoke` tests for pane/web (home loads, nav works, a project page opens, no console errors), in the same shape the deploy-feedback plan sets for cookbook/web and cahokia/web, and run them in pane/web's CI.
 - TODO (agent-generated): Add the retro convention to `standards/docs/documentation.md`: `standards/docs/retros/` and `<project>/docs/retros/`, files named `YYYY-MM-DD-<topic>.md`, sections What happened / What went well / What to change / Actions (checkbox list, each open action also a TODO in an `ISSUES.md`).
 
 ### Phase 1: read-only from the repo

@@ -5,12 +5,22 @@
 rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
 cargo-binstall = "latest"
 "cargo:dioxus-cli" = "0.7.3"  # must match dioxus in Cargo.lock
+node = "24"  # Playwright smoke tests (package.json)
 
 [task_config]
 includes = ["../../standards/tasks/dioxus-web.toml"]
 
 [env]
 DX_PACKAGE = "pane_web"  # app inside a Cargo workspace; see standards/tasks/dioxus-web.toml
+
+[tasks.dev]
+description = "Build the repo snapshot into public/data/, then serve with hot reload"
+# The pages need /data/snapshot.json, so dev (and the Playwright tests, which
+# start the app with `mise run dev`) builds it first, as release does.
+run = [
+  "cargo run --quiet --package pane_snapshot -- --out public/data/snapshot.json",
+  "dx serve --platform web --port 8080 --package $DX_PACKAGE",
+]
 
 [tasks.release]
 description = "Build the repo snapshot into public/data/, then the release bundle into dist/"
