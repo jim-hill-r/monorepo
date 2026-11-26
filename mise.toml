@@ -29,6 +29,8 @@ config_roots = [
   "cookbook/cloudflare",
   "cookbook/web",
   "cost",
+  "design_system",
+  "design_system/preview",
   "evals",
   "homer",
   "luggage",

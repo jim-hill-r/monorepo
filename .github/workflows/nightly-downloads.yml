@@ -131,6 +131,9 @@ jobs:
     name: publish (${{ matrix.game.project }})
     steps:
       - uses: actions/checkout@v7
+        with:
+          # downloads.sh looks back for a commit it may tag
+          fetch-depth: 200
 
       - uses: actions/download-artifact@v4
         with:

@@ -1,0 +1,3 @@
+[project]
+name = "design_system"
+description = "One design system for every app: five themes, light, dark and accessible modes, tokens in TOML generating CSS custom properties and Rust constants, checked for WCAG contrast in CI."

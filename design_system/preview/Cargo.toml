@@ -1,0 +1,12 @@
+[package]
+name = "design_system_preview"
+description = "Builds the design system's preview site: every token in every theme, scheme and mode."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+design_system_model = { workspace = true }
