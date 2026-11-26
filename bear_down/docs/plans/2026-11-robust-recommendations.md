@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: accepted (Jim, 2026-11-26); steps 1 to 4 done
+- Status: accepted (Jim, 2026-11-26); steps 1 to 5 done
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -132,7 +132,15 @@ Each is one PR, in this order:
    negligible or none. In week 12, four games got extra pairs and the build
    went from about 16 to 20.5 seconds locally. The page doesn't use the
    tiers yet; step 5 does.
-5. `channels` in `rooting.json`, explanation text and the page.
+5. `channels` in `rooting.json`, explanation text and the page. Done:
+   every game's `why` is written from the measured channels (biggest
+   first, with the team each favors, its size and, for a tiebreaker, the
+   share of seasons it decided), with a net line when they disagree. A
+   "doesn't matter" game names itself and how small its difference is,
+   then the channels or open links; a closed game says why nothing can
+   change. A pick now needs a tier of matters or small, so a clear but
+   negligible edge reads "doesn't matter" (BEAR-005). The old rule-of-thumb
+   head-to-head and strength lines are gone (BEAR-006).
 6. Golden-week evals.
 
 ## Open questions for Jim

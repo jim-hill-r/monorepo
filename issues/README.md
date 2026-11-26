@@ -48,3 +48,8 @@ See [standards/docs/free-tiers.md](../standards/docs/free-tiers.md).
 
 See [standards/docs/plans/2026-11-cost-check.md](../standards/docs/plans/2026-11-cost-check.md)
 (approved by Jim, 2026-11-26). One group per phase.
+
+## Threat check
+
+See [standards/docs/plans/2026-11-threat-check.md](../standards/docs/plans/2026-11-threat-check.md)
+(approved by Jim, 2026-11-26). One group per phase.

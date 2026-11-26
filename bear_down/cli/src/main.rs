@@ -119,12 +119,10 @@ fn build(
     }
     let simulation = simulate(&season, &ratings, &config)?;
     let standings = Standings::from_season(&season)?;
-    let games: Vec<_> = season.regular_season().cloned().collect();
     Ok(rooting::Guide::new(
         &simulation,
         &standings,
         season.latest_played(),
-        &games,
         generated_at,
     ))
 }
@@ -277,7 +275,15 @@ mod tests {
         );
         let game = &json["games"][0];
         for goal in ["champion", "playoffs", "nfc_north"] {
-            for key in ["if_home_wins", "if_away_wins", "swing", "root_for", "why"] {
+            for key in [
+                "if_home_wins",
+                "if_away_wins",
+                "swing",
+                "root_for",
+                "tier",
+                "why",
+                "channels",
+            ] {
                 assert!(game[goal].get(key).is_some(), "{goal} should have {key}");
             }
         }
@@ -290,6 +296,63 @@ mod tests {
                 + record["ties"].as_u64().unwrap_or(0),
             16
         );
+    }
+
+    #[test]
+    fn every_game_is_explained_from_what_was_measured() {
+        let guide = match build(&before_week_18(), Some(2_000), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        let mut negligible = Vec::new();
+        for game in &guide.games {
+            for (goal, swing) in [("champion", &game.champion), ("playoffs", &game.playoffs)] {
+                // BEAR-001, BEAR-003, BEAR-005: a verdict and an explanation
+                // for every game.
+                assert!(
+                    !swing.why.is_empty(),
+                    "{} {goal} has no explanation",
+                    game.id
+                );
+                match swing.tier {
+                    "matters" => assert!(swing.root_for.is_some(), "{} {goal}", game.id),
+                    "negligible" | "none" => {
+                        assert!(swing.root_for.is_none(), "{} {goal}", game.id)
+                    }
+                    "small" => {}
+                    other => panic!("unknown tier {other}"),
+                }
+                if swing.root_for.is_none() && goal == "champion" {
+                    negligible.push(swing.why[0].clone());
+                }
+                // BEAR-006: a tiebreaker step named in the text is one the
+                // simulation measured deciding the Bears' seeding.
+                for line in &swing.why {
+                    let Some((_, after)) = line.split_once("decided by ") else {
+                        continue;
+                    };
+                    let step = after.split(" in ").next().unwrap_or_default();
+                    assert!(
+                        swing
+                            .channels
+                            .iter()
+                            .any(|channel| channel.cause.as_deref() == Some(step)),
+                        "{} {goal}: {line}",
+                        game.id
+                    );
+                }
+                for channel in &swing.channels {
+                    assert!(channel.share > 2.0 * channel.std_error);
+                    assert!(channel.favors == game.home || channel.favors == game.away);
+                }
+            }
+            assert!(game.champion.channels.len() <= game.champion.why.len() + 20);
+        }
+        // BEAR-005: no two "doesn't matter" games share their headline.
+        let mut unique = negligible.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), negligible.len(), "{negligible:#?}");
     }
 
     #[test]
