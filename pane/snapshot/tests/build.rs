@@ -11,7 +11,7 @@ use pane_snapshot::repo;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 /// A temporary copy of `tests/fixtures/repo` with `.fixture` stripped from
-/// every file name, plus `ISSUES.md` files the walk must skip.
+/// every file name, plus issue files the walk must skip.
 struct FixtureRepo(PathBuf);
 
 impl FixtureRepo {
@@ -28,10 +28,10 @@ impl FixtureRepo {
             ".git",
             "app/dist",
         ] {
-            fs::create_dir_all(dir.join(skipped))?;
+            fs::create_dir_all(dir.join(skipped).join("issues"))?;
             fs::write(
-                dir.join(skipped).join("ISSUES.md"),
-                "# Priority Issues\n\n- TODO: Must be skipped.\n",
+                dir.join(skipped).join("issues/skip.md"),
+                "---\nkind: todo\npriority: priority\n---\n\nMust be skipped.\n",
             )?;
             fs::write(
                 dir.join(skipped).join("gen.rs"),
@@ -115,11 +115,30 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
     assert_eq!(
         items,
         [
-            ("ISSUES.md", None, WorkKind::Todo, "Repo-wide item."),
-            ("app/ISSUES.md", Some("app"), WorkKind::Todo, "Flat item."),
-            ("app/ISSUES.md", Some("app"), WorkKind::Todo, "Epic item."),
-            ("app/ISSUES.md", Some("app"), WorkKind::Fix, "Phase item."),
-            ("app/ISSUES.md", Some("app"), WorkKind::Todo, "Later."),
+            (
+                "app/issues/a-flat-item.md",
+                Some("app"),
+                WorkKind::Todo,
+                "Flat item."
+            ),
+            (
+                "app/issues/b-epic-item.md",
+                Some("app"),
+                WorkKind::Todo,
+                "Epic item."
+            ),
+            (
+                "app/issues/c-phase-item.md",
+                Some("app"),
+                WorkKind::Fix,
+                "Phase item. ```markdown - TODO (agent-ignore): Inside a code block, part of the text. ```"
+            ),
+            (
+                "app/issues/d-later.md",
+                Some("app"),
+                WorkKind::Todo,
+                "Later."
+            ),
             (
                 "app/src/main.rs",
                 Some("app"),
@@ -144,6 +163,12 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
                 WorkKind::Todo,
                 "After commented-out code."
             ),
+            (
+                "issues/repo-wide-item.md",
+                None,
+                WorkKind::Todo,
+                "Repo-wide item."
+            ),
         ]
     );
     Ok(())
@@ -154,7 +179,10 @@ fn collects_human_issues_docs_and_retros() -> TestResult {
     let repo_dir = FixtureRepo::new("docs")?;
     let s = repo::build(&repo_dir.0, "abc", "t")?;
     assert_eq!(s.human_issues.len(), 2);
-    assert_eq!(s.human_issues[0].file, "HUMAN_ISSUES.md");
+    assert_eq!(
+        s.human_issues[0].file,
+        "issues/human/do-the-dashboard-thing.md"
+    );
 
     let docs: Vec<_> = s
         .deliverables

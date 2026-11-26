@@ -15,7 +15,7 @@ const SKIP_DIRS: &[&str] = &["target", "node_modules", "dist"];
 pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, String> {
     let root_mise = read(&root.join("mise.toml"))?;
     let roots = parse::config_roots(&root_mise)?;
-    let lists = parse::root_lists(&read_optional(&root.join("ISSUES.md")));
+    let lists = parse::root_lists(&read_optional(&root.join("issues/README.md")));
 
     let mut snapshot = Snapshot::new(commit, taken_at);
     for path in &roots {
@@ -35,14 +35,15 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
         let project = parse::owning_project(&rel, &roots);
         let name = rel.rsplit('/').next().unwrap_or(&rel);
         let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
-        if name == "ISSUES.md" {
+        let issue_kind = parse::issue_file_kind(&rel);
+        if issue_kind == Some(parse::IssueFile::Work) {
             snapshot
                 .work_items
-                .extend(parse::issues_items(&rel, project, &read(&file)?));
-        } else if rel == "HUMAN_ISSUES.md" {
+                .extend(parse::issue_file(&rel, project, &read(&file)?));
+        } else if issue_kind == Some(parse::IssueFile::Human) {
             snapshot
                 .human_issues
-                .extend(parse::human_issues(&rel, &read(&file)?));
+                .extend(parse::human_issue_file(&rel, &read(&file)?));
         } else if let Some(kind) = parse::doc_kind(&rel) {
             let contents = read(&file)?;
             if kind == DeliverableKind::Retro {

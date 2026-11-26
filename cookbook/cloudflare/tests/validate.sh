@@ -16,7 +16,6 @@ required_files=(
     "$PROJECT_DIR/mise.toml"
     "$PROJECT_DIR/wrangler.toml"
     "$PROJECT_DIR/README.md"
-    "$PROJECT_DIR/ISSUES.md"
 )
 
 for file in "${required_files[@]}"; do

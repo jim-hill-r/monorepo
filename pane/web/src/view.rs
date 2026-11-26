@@ -130,7 +130,7 @@ mod tests {
             kind,
             text: "x".to_owned(),
             project: Some(project.to_owned()),
-            file: format!("{project}/ISSUES.md"),
+            file: format!("{project}/issues/x.md"),
             line: 1,
             source: WorkSource::IssuesFile,
             section: None,

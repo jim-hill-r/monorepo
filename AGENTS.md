@@ -12,11 +12,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
 - **Standards are the source of truth.** Coding, testing, documentation, naming
   and workflow rules live in `standards/docs/`. If this file disagrees with
   them, the standards win; fix this file.
-- **Work is tracked in `ISSUES.md` files**, not GitHub issues. See
+- **Work is tracked as one file per issue** in `issues/` folders (the root
+  `issues/` for repo-wide work, `<project>/issues/` for a project's), not in
+  GitHub issues and not in `ISSUES.md` files, which are retired so parallel
+  PRs stop conflicting (decision 0006). Add an issue by adding a file, close
+  it by deleting the file, and see the list with `mise run //:issues`; never
+  commit a generated index. The format is in
   `standards/docs/issue-management.md`.
 - **Tasks only a person can do** (dashboards, accounts, secrets, billing,
-  sign-offs) go in the root `HUMAN_ISSUES.md` as `TODO (human): ...` lines,
-  never in an `ISSUES.md` and never only in a chat thread. Agents don't work
+  sign-offs) go in the root `issues/human/`, one file each, never in a
+  project's `issues/` and never only in a chat thread. Agents don't work
   them. A weekly Claude scheduled task, "Weekly human issues digest", reports
   them to Jim with the `human-issues-digest` skill (decision 0002).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
@@ -157,6 +162,7 @@ and the PR must say which checks didn't run.
 - Run only tests: `mise run test`
 - Fix formatting and lints: `mise run fix`
 - List the project's tasks: `mise tasks`
+- List the open issues: `mise run //:issues` (`-- --human` for human tasks)
 - Check the repo standards: `mise run //:audit`
 
 Skills refer to this section instead of naming commands directly, so when the
@@ -172,9 +178,9 @@ each changed project; pushes to `main` also run `mise run deploy`.
 
 | Skill | Use it to |
 | --- | --- |
-| `start-a-new-task` | Pick one TODO from the `ISSUES.md` files and complete it end to end. |
+| `start-a-new-task` | Pick one issue from the `issues/` folders and complete it end to end. |
 | `code-review` | Review one project against the standards and record five TODOs. |
-| `human-issues-digest` | Report the open `HUMAN_ISSUES.md` tasks and `needs-human` PRs to Jim. |
+| `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 

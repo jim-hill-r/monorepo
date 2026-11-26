@@ -85,7 +85,7 @@ pub fn readme_summary(readme: &str) -> Option<String> {
 }
 
 /// Projects listed under `# Priority Projects` and `# On Hold Projects` in
-/// the root `ISSUES.md`.
+/// the root `issues/README.md`.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct RootLists {
     pub priority: Vec<String>,
@@ -162,61 +162,134 @@ pub fn parse_marker(text: &str) -> Option<(WorkKind, Vec<String>, String)> {
     Some((kind, tags, rest.to_owned()))
 }
 
-/// Every `TODO`/`FIX` list item in an `ISSUES.md`, with its section (the
-/// last `#` heading) and epic (the last `##` or `###` heading inside that
-/// section, joined as `Epic / Phase` when both are present).
-pub fn issues_items(file: &str, project: Option<&str>, contents: &str) -> Vec<WorkItem> {
-    let mut items = Vec::new();
-    let mut section: Option<String> = None;
-    let mut h2: Option<String> = None;
-    let mut h3: Option<String> = None;
-    let mut in_code = false;
-    for (i, line) in contents.lines().enumerate() {
-        if line.trim_start().starts_with("```") {
-            in_code = !in_code;
-            continue;
-        }
-        if in_code {
-            continue;
-        }
-        if let Some(h) = line.strip_prefix("### ") {
-            h3 = Some(h.trim().to_owned());
-            continue;
-        }
-        if let Some(h) = line.strip_prefix("## ") {
-            h2 = Some(h.trim().to_owned());
-            h3 = None;
-            continue;
-        }
-        if let Some(h) = line.strip_prefix("# ") {
-            section = Some(h.trim().to_owned());
-            h2 = None;
-            h3 = None;
-            continue;
-        }
-        let Some(item) = line.trim_start().strip_prefix("- ") else {
-            continue;
-        };
-        let Some((kind, tags, text)) = parse_marker(item.trim_start()) else {
-            continue;
-        };
-        let epic = match (&h2, &h3) {
-            (Some(a), Some(b)) => Some(format!("{a} / {b}")),
-            (a, b) => a.clone().or_else(|| b.clone()),
-        };
-        items.push(WorkItem {
-            kind,
-            text,
-            project: project.map(str::to_owned),
-            file: file.to_owned(),
-            line: u32::try_from(i + 1).unwrap_or(u32::MAX),
-            source: WorkSource::IssuesFile,
-            section: section.clone(),
-            epic,
-            tags,
-        });
+/// What kind of issue file a repo path is, if any: a file in an `issues/`
+/// folder (`issues/<slug>.md` or `<project>/issues/<slug>.md`), or a human
+/// task in the root `issues/human/`. Each folder's `README.md` is notes, not
+/// an issue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IssueFile {
+    Work,
+    Human,
+}
+
+pub fn issue_file_kind(rel: &str) -> Option<IssueFile> {
+    let (dir, name) = rel.rsplit_once('/')?;
+    if name == "README.md" || !name.ends_with(".md") {
+        return None;
     }
-    items
+    if dir == "issues/human" {
+        Some(IssueFile::Human)
+    } else if dir == "issues" || dir.ends_with("/issues") {
+        Some(IssueFile::Work)
+    } else {
+        None
+    }
+}
+
+/// An issue file split into its front matter and body.
+#[derive(Debug, PartialEq, Eq)]
+pub struct FrontMatter {
+    /// The `key: value` lines, with quotes taken off quoted values.
+    pub fields: Vec<(String, String)>,
+    /// The text after the front matter, whitespace collapsed to single spaces.
+    pub body: String,
+    /// The 1-based line the body starts on.
+    pub line: u32,
+}
+
+/// Split an issue file into the `key: value` lines between a `---` first
+/// line and the next `---`, and the body after them. `None` when the file
+/// has no front matter.
+pub fn front_matter(contents: &str) -> Option<FrontMatter> {
+    let mut lines = contents.lines().enumerate();
+    if lines.next()?.1.trim_end() != "---" {
+        return None;
+    }
+    let mut fields = Vec::new();
+    let mut body_start = None;
+    for (i, line) in lines.by_ref() {
+        if line.trim_end() == "---" {
+            body_start = Some(i + 1);
+            break;
+        }
+        if let Some((key, value)) = line.split_once(':') {
+            fields.push((key.trim().to_owned(), unquote(value.trim())));
+        }
+    }
+    let body_start = body_start?;
+    let mut body_line = None;
+    let mut words = Vec::new();
+    for (i, line) in lines {
+        if body_line.is_none() && !line.trim().is_empty() {
+            body_line = Some(i + 1);
+        }
+        words.extend(line.split_whitespace());
+    }
+    let line = body_line.unwrap_or(body_start + 1);
+    Some(FrontMatter {
+        fields,
+        body: words.join(" "),
+        line: u32::try_from(line).unwrap_or(u32::MAX),
+    })
+}
+
+fn unquote(value: &str) -> String {
+    match value.strip_prefix('"').and_then(|v| v.strip_suffix('"')) {
+        Some(inner) => inner.replace("\\\"", "\"").replace("\\\\", "\\"),
+        None => value.to_owned(),
+    }
+}
+
+fn field<'a>(fields: &'a [(String, String)], key: &str) -> Option<&'a str> {
+    fields
+        .iter()
+        .find(|(k, _)| k == key)
+        .map(|(_, v)| v.as_str())
+        .filter(|v| !v.is_empty())
+}
+
+/// One agent issue file (`<project>/issues/<slug>.md`). Its front matter
+/// gives the kind (`todo` or `fix`), the section (`priority` is "Priority
+/// Issues", `backlog` is "Backlog"), the epic and the tags (`[a, b]`); the
+/// body is the text. `None` when the front matter is missing or its kind is
+/// not `todo` or `fix`.
+pub fn issue_file(file: &str, project: Option<&str>, contents: &str) -> Option<WorkItem> {
+    let FrontMatter {
+        fields,
+        body: text,
+        line,
+    } = front_matter(contents)?;
+    let kind = match field(&fields, "kind")? {
+        "todo" => WorkKind::Todo,
+        "fix" => WorkKind::Fix,
+        _ => return None,
+    };
+    let section = field(&fields, "priority").map(|p| match p {
+        "priority" => "Priority Issues".to_owned(),
+        "backlog" => "Backlog".to_owned(),
+        other => other.to_owned(),
+    });
+    let tags = field(&fields, "tags")
+        .map(|t| {
+            t.trim_start_matches('[')
+                .trim_end_matches(']')
+                .split(',')
+                .map(|t| t.trim().to_owned())
+                .filter(|t| !t.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+    Some(WorkItem {
+        kind,
+        text,
+        project: project.map(str::to_owned),
+        file: file.to_owned(),
+        line,
+        source: WorkSource::IssuesFile,
+        section,
+        epic: field(&fields, "epic").map(str::to_owned),
+        tags,
+    })
 }
 
 /// The project a repo path belongs to: the longest config root that
@@ -229,60 +302,24 @@ pub fn owning_project<'a>(path: &str, roots: &'a [String]) -> Option<&'a str> {
         .map(String::as_str)
 }
 
-/// Every open `TODO (human)` line under `# Open` in `HUMAN_ISSUES.md`. The
-/// trailing `(Added <date>. Unblocks ...)` note gives `added` and
-/// `unblocks`, and is left out of `text`.
-pub fn human_issues(file: &str, contents: &str) -> Vec<HumanIssue> {
-    let mut issues = Vec::new();
-    let mut in_open = false;
-    for (i, line) in contents.lines().enumerate() {
-        if let Some(h) = line.strip_prefix("# ") {
-            in_open = h.trim() == "Open";
-            continue;
-        }
-        if !in_open {
-            continue;
-        }
-        let Some(item) = line.trim_start().strip_prefix("- ") else {
-            continue;
-        };
-        let Some((WorkKind::Todo, tags, text)) = parse_marker(item.trim_start()) else {
-            continue;
-        };
-        if !tags.iter().any(|t| t == "human") {
-            continue;
-        }
-        let (text, note) = split_trailing_note(&text);
-        let note = note.unwrap_or_default();
-        issues.push(HumanIssue {
-            text: text.to_owned(),
-            file: file.to_owned(),
-            line: u32::try_from(i + 1).unwrap_or(u32::MAX),
-            added: note
-                .find("Added ")
-                .and_then(|at| leading_date(&note[at + "Added ".len()..]))
-                .map(str::to_owned),
-            unblocks: note.find("Unblocks ").map(|at| {
-                note[at + "Unblocks ".len()..]
-                    .trim()
-                    .trim_end_matches('.')
-                    .to_owned()
-            }),
-        });
-    }
-    issues
-}
-
-/// Splits `text (Added ...)` into the text and the note inside the final
-/// parentheses, when that note starts with `Added`.
-fn split_trailing_note(text: &str) -> (&str, Option<&str>) {
-    let trimmed = text.trim_end();
-    if let Some(body) = trimmed.strip_suffix(')')
-        && let Some(open) = body.rfind("(Added ")
-    {
-        return (body[..open].trim_end(), Some(&body[open + 1..]));
-    }
-    (trimmed, None)
+/// One human task file (`issues/human/<slug>.md`): the body is the text,
+/// and the front matter's `added` (a `YYYY-MM-DD` date) and `unblocks` give
+/// its age and what it unblocks. `None` without front matter.
+pub fn human_issue_file(file: &str, contents: &str) -> Option<HumanIssue> {
+    let FrontMatter {
+        fields,
+        body: text,
+        line,
+    } = front_matter(contents)?;
+    Some(HumanIssue {
+        text,
+        file: file.to_owned(),
+        line,
+        added: field(&fields, "added")
+            .and_then(leading_date)
+            .map(str::to_owned),
+        unblocks: field(&fields, "unblocks").map(|u| u.trim_end_matches('.').to_owned()),
+    })
 }
 
 /// A `YYYY-MM-DD` date at the start of `s`.
@@ -484,13 +521,21 @@ mod tests {
     use super::*;
 
     const ROOT_MISE: &str = include_str!("../tests/fixtures/repo/mise.toml.fixture");
-    const ROOT_ISSUES: &str = include_str!("../tests/fixtures/repo/ISSUES.md.fixture");
+    const ROOT_ISSUES: &str = include_str!("../tests/fixtures/repo/issues/README.md.fixture");
     const APP_MISE: &str = include_str!("../tests/fixtures/repo/app/mise.toml.fixture");
     const APP_WEB_MISE: &str = include_str!("../tests/fixtures/repo/app/web/mise.toml.fixture");
     const APP_README: &str = include_str!("../tests/fixtures/repo/app/README.md.fixture");
-    const APP_ISSUES: &str = include_str!("../tests/fixtures/repo/app/ISSUES.md.fixture");
+    const FLAT: &str = include_str!("../tests/fixtures/repo/app/issues/a-flat-item.md.fixture");
+    const EPIC: &str = include_str!("../tests/fixtures/repo/app/issues/b-epic-item.md.fixture");
+    const PHASE: &str = include_str!("../tests/fixtures/repo/app/issues/c-phase-item.md.fixture");
+    const LATER: &str = include_str!("../tests/fixtures/repo/app/issues/d-later.md.fixture");
+    const NO_FRONT: &str =
+        include_str!("../tests/fixtures/repo/app/issues/e-no-front-matter.md.fixture");
 
-    const HUMAN: &str = include_str!("../tests/fixtures/repo/HUMAN_ISSUES.md.fixture");
+    const HUMAN: &str =
+        include_str!("../tests/fixtures/repo/issues/human/do-the-dashboard-thing.md.fixture");
+    const HUMAN_NO_NOTE: &str =
+        include_str!("../tests/fixtures/repo/issues/human/no-note.md.fixture");
     const CODE: &str = include_str!("../tests/fixtures/repo/app/src/main.rs.fixture");
     const PLAN: &str =
         include_str!("../tests/fixtures/repo/app/docs/plans/2026-11-big-plan.md.fixture");
@@ -500,27 +545,57 @@ mod tests {
         include_str!("../tests/fixtures/repo/app/docs/retros/2026-11-20-launch.md.fixture");
 
     #[test]
-    fn reads_open_human_issues() {
-        let issues = human_issues("HUMAN_ISSUES.md", HUMAN);
-        assert_eq!(issues.len(), 2, "{issues:?}");
-        assert_eq!(issues[0].text, "Do the dashboard thing.");
-        assert_eq!(issues[0].added.as_deref(), Some("2026-11-20"));
-        assert_eq!(issues[0].unblocks.as_deref(), Some("the app deploy"));
-        assert_eq!(issues[0].line, 7);
-        assert_eq!(issues[1].text, "No note on this one.");
-        assert_eq!(issues[1].added, None);
-        assert_eq!(issues[1].unblocks, None);
+    fn reads_human_issue_files() -> Result<(), String> {
+        let issue = human_issue_file("issues/human/d.md", HUMAN).ok_or("no issue")?;
+        assert_eq!(issue.text, "Do the dashboard thing.");
+        assert_eq!(issue.added.as_deref(), Some("2026-11-20"));
+        assert_eq!(issue.unblocks.as_deref(), Some("the app deploy: step 2"));
+        assert_eq!(issue.line, 6);
+        assert_eq!(issue.file, "issues/human/d.md");
+
+        let bare = human_issue_file("issues/human/n.md", HUMAN_NO_NOTE).ok_or("no issue")?;
+        assert_eq!(bare.text, "No note on this one.");
+        assert_eq!(bare.added, None);
+        assert_eq!(bare.unblocks, None);
+
+        assert_eq!(
+            human_issue_file("issues/human/x.md", "No front matter.\n"),
+            None
+        );
+        Ok(())
     }
 
     #[test]
-    fn human_issue_note_without_unblocks() {
-        let issues = human_issues(
-            "H.md",
-            "# Open\n\n- TODO (human): Text (with parens). (Added 2026-11-01, PR #5.)\n",
+    fn classifies_issue_files() {
+        assert_eq!(issue_file_kind("issues/a.md"), Some(IssueFile::Work));
+        assert_eq!(
+            issue_file_kind("app/web/issues/a.md"),
+            Some(IssueFile::Work)
         );
-        assert_eq!(issues[0].text, "Text (with parens).");
-        assert_eq!(issues[0].added.as_deref(), Some("2026-11-01"));
-        assert_eq!(issues[0].unblocks, None);
+        assert_eq!(issue_file_kind("issues/human/a.md"), Some(IssueFile::Human));
+        assert_eq!(issue_file_kind("issues/README.md"), None);
+        assert_eq!(issue_file_kind("issues/human/README.md"), None);
+        assert_eq!(issue_file_kind("app/issues/notes.txt"), None);
+        assert_eq!(issue_file_kind("app/myissues/a.md"), None);
+        assert_eq!(issue_file_kind("app/issues/deeper/a.md"), None);
+        assert_eq!(issue_file_kind("ISSUES.md"), None);
+    }
+
+    #[test]
+    fn unquotes_front_matter_values() -> Result<(), String> {
+        let FrontMatter { fields, body, line } =
+            front_matter("---\nepic: \"A / B: \\\"c\\\"\"\nkey: plain\n---\nBody\n")
+                .ok_or("none")?;
+        assert_eq!(
+            fields,
+            vec![
+                ("epic".to_owned(), "A / B: \"c\"".to_owned()),
+                ("key".to_owned(), "plain".to_owned())
+            ]
+        );
+        assert_eq!((body.as_str(), line), ("Body", 5));
+        assert_eq!(front_matter("---\nkind: todo\n"), None, "unclosed");
+        Ok(())
     }
 
     #[test]
@@ -743,8 +818,11 @@ mod tests {
     }
 
     #[test]
-    fn reads_issues_items_with_sections_and_epics() {
-        let items = issues_items("app/ISSUES.md", Some("app"), APP_ISSUES);
+    fn reads_issue_files_with_sections_and_epics() {
+        let items: Vec<_> = [FLAT, EPIC, PHASE, LATER]
+            .into_iter()
+            .filter_map(|c| issue_file("app/issues/x.md", Some("app"), c))
+            .collect();
         let summary: Vec<_> = items
             .iter()
             .map(|i| {
@@ -762,26 +840,26 @@ mod tests {
             vec![
                 (
                     WorkKind::Todo,
-                    3,
+                    8,
                     Some("Priority Issues"),
                     None,
                     "Flat item."
                 ),
                 (
                     WorkKind::Todo,
-                    7,
+                    10,
                     Some("Priority Issues"),
                     Some("Big epic"),
                     "Epic item."
                 ),
                 (
                     WorkKind::Fix,
-                    11,
+                    10,
                     Some("Priority Issues"),
                     Some("Big epic / Phase 1: start"),
-                    "Phase item."
+                    "Phase item. ```markdown - TODO (agent-ignore): Inside a code block, part of the text. ```"
                 ),
-                (WorkKind::Todo, 20, Some("Backlog"), None, "Later."),
+                (WorkKind::Todo, 8, Some("Backlog"), None, "Later."),
             ]
         );
         assert_eq!(
@@ -790,16 +868,25 @@ mod tests {
         );
         assert_eq!(items[2].tags, vec!["agent-ignore".to_owned()]);
         assert!(items.iter().all(|i| i.project.as_deref() == Some("app")
-            && i.file == "app/ISSUES.md"
+            && i.file == "app/issues/x.md"
             && i.source == WorkSource::IssuesFile));
+        assert_eq!(issue_file("app/issues/e.md", Some("app"), NO_FRONT), None);
+        assert_eq!(
+            issue_file("a/issues/k.md", None, "---\nkind: idea\n---\nText\n"),
+            None,
+            "unknown kind"
+        );
     }
 
     #[test]
     fn owning_project_picks_the_longest_root() {
         let roots = vec!["app".to_owned(), "app/web".to_owned()];
-        assert_eq!(owning_project("app/web/ISSUES.md", &roots), Some("app/web"));
-        assert_eq!(owning_project("app/ISSUES.md", &roots), Some("app"));
-        assert_eq!(owning_project("application/ISSUES.md", &roots), None);
-        assert_eq!(owning_project("ISSUES.md", &roots), None);
+        assert_eq!(
+            owning_project("app/web/issues/a.md", &roots),
+            Some("app/web")
+        );
+        assert_eq!(owning_project("app/issues/a.md", &roots), Some("app"));
+        assert_eq!(owning_project("application/issues/a.md", &roots), None);
+        assert_eq!(owning_project("issues/a.md", &roots), None);
     }
 }

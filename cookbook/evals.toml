@@ -64,7 +64,7 @@ path = "/plan/1"
 
 # COOK-003: The shopping list adds up
 # No eval yet: the existing shopping list tests check sorting and
-# de-duplication only. The ISSUES.md TODO that fixes the sums adds one.
+# de-duplication only. The issue that fixes the sums adds one.
 
 # COOK-004: The cookbook is easy to use on a phone
 
