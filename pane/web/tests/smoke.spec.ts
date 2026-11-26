@@ -83,6 +83,61 @@ test('a project page opens directly by its path', async ({ page }) => {
   await expect(page.getByText(/open TODOs and \d+ FIXes/)).toBeVisible();
 });
 
+test('the work page lists items and filters them @smoke', async ({ page }) => {
+  await page.goto('/work');
+
+  const count = page.getByTestId('work-count');
+  await expect(count).toHaveText(/^Showing \d+ of \d+$/);
+  const [, shown, total] = /Showing (\d+) of (\d+)/.exec((await count.textContent()) ?? '') ?? [];
+  expect(Number(total)).toBeGreaterThan(0);
+  expect(shown).toBe(total);
+  await expect(
+    page.getByTestId('work-items').getByRole('link', { name: /ISSUES\.md:\d+$/ }).first(),
+  ).toHaveAttribute('href', /^https:\/\/github\.com\/jimhillr\/monorepo\/blob\/[0-9a-f]+\/.+#L\d+$/);
+
+  await page.getByLabel('Project').selectOption('pane');
+  await page.getByLabel('Kind').selectOption('todo');
+  const filtered = Number(/Showing (\d+)/.exec((await count.textContent()) ?? '')?.[1]);
+  expect(filtered).toBeGreaterThan(0);
+  expect(filtered).toBeLessThan(Number(total));
+  for (const meta of await page.getByTestId('work-items').locator('.meta > span:first-child').all()) {
+    await expect(meta).toHaveText('pane');
+  }
+});
+
+test('the human issues page lists open issues with GitHub links @smoke', async ({ page }) => {
+  await page.goto('/human-issues');
+
+  const issues = page.getByTestId('human-issues').locator('li');
+  await expect(issues.first()).toBeVisible();
+  await expect(
+    issues.first().getByRole('link', { name: 'Open on GitHub' }),
+  ).toHaveAttribute('href', /HUMAN_ISSUES\.md#L\d+$/);
+});
+
+test('deliverables list live sites and render a plan in the page @smoke', async ({ page }) => {
+  await page.goto('/deliverables');
+
+  await expect(
+    page.getByTestId('deliverables-live-sites').getByRole('link').first(),
+  ).toHaveAttribute('href', /^https:\/\//);
+  const plan = page.getByTestId('deliverables-plans').locator('a.row-title').first();
+  await plan.click();
+  await expect(page).toHaveURL(/\/docs\/.+\.md$/);
+  await expect(page.getByTestId('doc').getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open on GitHub' })).toHaveAttribute(
+    'href',
+    /^https:\/\/github\.com\/jimhillr\/monorepo\/blob\//,
+  );
+});
+
+test('a document opens directly by its path', async ({ page }) => {
+  await page.goto('/docs/pane/docs/plans/2026-11-review-dashboard.md');
+
+  await expect(page.getByTestId('doc').locator('h1')).toContainText('pane');
+  await expect(page.getByTestId('doc').locator('table').first()).toBeVisible();
+});
+
 test('an unknown path shows the not found page', async ({ page }) => {
   await page.goto('/no-such-page');
 

@@ -32,7 +32,9 @@ It exits non-zero, writing nothing, if the root `mise.toml` has no
 | `work_items` (from `ISSUES.md`) | Every `- TODO` / `- FIX` list item in every `ISSUES.md`, with its file, line, `#` section, `##`/`###` epic (joined as `Epic / Phase`), tags and owning project (the longest config root containing the file). |
 | `work_items` (from code) | Every `TODO` / `FIX` that follows a comment opener (`//`, `#`, `/*`, `<!--`, `--`, `;`) in `.rs`, `.toml`, `.sh`, `.yml`, `.ts`, `.js`, `.py`, `.css`, `.html`, `.sql` and similar files. Openers inside a `"string"` or a `` `code span` `` are ignored. |
 | `human_issues` | Each `- TODO (human)` line under `# Open` in the root `HUMAN_ISSUES.md`, with the date after `Added` and the text after `Unblocks` from its trailing note. Pane works out the age from `taken_at`. |
-| `deliverables` | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, and date from `- Date:`, `Started <date>`, or the file name. |
+| `deliverables` (live sites) | Each project with a `DEPLOY_URL` in its `[env]`. |
+| `deliverables` (downloads) | Each project with a `RELEASE_TAG` in its `[env]` (see "Game builds" in `standards/docs/mise.md`): its GitHub Release, and the macOS and Android assets `<package>-macos.zip` and `<package>-android.apk`, where `<package>` is `[package].name` in its `Cargo.toml`. |
+| `deliverables` (documents) | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, date from `- Date:`, `Started <date>`, or the file name, and the whole file as `body` for pane to render. |
 | `retros` | Each retro again, with its `- [ ]` / `- [x]` items under `## Actions`. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are
