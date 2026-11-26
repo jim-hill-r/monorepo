@@ -18,11 +18,32 @@ run = "cargo clippy -- -D warnings"
 run = "cargo build"
 
 [test]
-description = "Rust tests, then Playwright tests when the project has a package.json"
+description = "Rust tests, then the Playwright tests (e2e)"
 run = [
   "cargo test",
-  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps && npm test; fi",
+  "mise run e2e",
 ]
+
+[e2e]
+description = "Playwright tests when the project has a package.json"
+# In CI (CI is set) every step must pass. Anywhere else, such as an agent's
+# cloud sandbox, a tool that can't be installed there (npm packages, dx or
+# Playwright's browsers) skips the tests with a note instead of failing, since
+# PR CI runs them. Tested by
+# standards/tests/e2e-task.test.sh; see standards/docs/git-hooks.md.
+run = """
+[ -f package.json ] || exit 0
+skip() {
+  echo "e2e: $1" >&2
+  if [ -n "${CI:-}" ]; then exit 1; fi
+  echo "e2e: Playwright tests not checked here; PR CI runs them" >&2
+  exit 0
+}
+npm ci || skip "couldn't install the npm packages"
+command -v dx >/dev/null 2>&1 || skip "dx (dioxus-cli) is not installed"
+npx playwright install --with-deps || skip "couldn't install Playwright's browsers"
+npm test
+"""
 
 ["ci:deps"]
 description = "System packages CI needs; override in a project's mise.toml"
@@ -36,7 +57,7 @@ run = [
   "cargo clippy -- -D warnings",
   "cargo build",
   "cargo test",
-  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps && npm test; fi",
+  "mise run e2e",
 ]
 
 [fix]

@@ -11,7 +11,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Naming](./naming.md) - Naming conventions
-- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md)
+- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md) and the [eval engine](./plans/2026-11-eval-engine.md)
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Rust](./rust.md) - Rust coding standards
 - [Testing](./testing.md) - Testing standards and requirements

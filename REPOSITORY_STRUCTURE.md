@@ -17,6 +17,11 @@ This document describes the organization and structure of this monorepo to help 
 │   └── content_provider/ # Content provider library
 ├── standards/           # Standards (standards/docs/), shared mise tasks (standards/tasks/) and repo scripts
 ├── athenaeum/           # Learning resources (algorithms, system design, etc.)
+<<<<<<< HEAD
+├── docs/reviews/        # Weekly deep project review decks (Marp), see docs/reviews/README.md
+├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
+=======
+>>>>>>> origin/main
 ├── [other projects]     # Various projects and applications
 ├── mise.toml            # mise monorepo root: lists projects, //:audit and //:affected tasks
 ├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
@@ -44,7 +49,12 @@ Contains the repository's standards and conventions in `standards/docs/` (Rust, 
 ### `/athenaeum/`
 Contains learning resources (algorithms, system design, language notes, etc.).
 
+<<<<<<< HEAD
+### `/docs/reviews/`
+Deep project review decks, one folder per review, written weekly by the `deep-project-review` skill. The top-level `docs/` folder holds only these reviews: standards live in `standards/docs/`, and project-specific docs live inside each project (for example `cast/core/docs/`).
+=======
 There is no top-level `docs/` folder. The root `README.md` is a regular file, and project-specific docs live inside each project (for example `cookbook/README.md`).
+>>>>>>> origin/main
 
 ### Project Directories
 All projects live in the root directory. Each project may have:
@@ -87,8 +97,13 @@ See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` f
 ## Important Notes for Agents
 
 1. **Project structure**: All projects are located in the root directory, not under a "projects/" subdirectory
+<<<<<<< HEAD
+2. **Docs location**: The root `/docs/` folder holds only project review decks (`/docs/reviews/`). Standards live in `/standards/docs/`; project docs live inside each project
+3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
+=======
 2. **Docs location**: There is no root `/docs/` folder. Standards live in `/standards/docs/`; project docs live inside each project
 3. **Minimal workflow logic**: GitHub workflows should call mise tasks, not contain complex logic
+>>>>>>> origin/main
 4. **No project templates**: There are no exemplar/template projects, and they are intentionally not being restored. Create new projects by hand
 5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
 6. **Concurrency**: Only one automated agent task should be open at a time (an open agent PR means wait)

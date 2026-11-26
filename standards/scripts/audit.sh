@@ -17,7 +17,7 @@ errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
 
 # Top-level directories that are not projects.
-skip_top='^\.'  # hidden directories are not projects
+skip_top='^(\.[^/]*|docs)$'  # hidden directories are not projects; docs/ holds only review decks (docs/reviews)
 
 for d in $(git ls-files | cut -d/ -f1 | sort -u); do
   [ -d "$d" ] || continue

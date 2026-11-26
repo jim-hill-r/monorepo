@@ -1,0 +1,43 @@
+# Builds the project review decks in docs/reviews/ to HTML and PDF with Marp
+# (standards/scripts/review-decks.sh) and uploads them as the `review-decks`
+# artifact, so a reviewer can read the slides without a local clone. See
+# docs/reviews/README.md.
+name: Review decks
+
+'on':
+  pull_request:
+    paths:
+      - 'docs/reviews/**'
+      - 'standards/scripts/review-decks.sh'
+      - '.github/workflows/pull-request-review-decks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-decks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build decks
+        run: bash standards/scripts/review-decks.sh build/reviews
+
+      - name: Upload decks
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-decks
+          path: build/reviews
+          if-no-files-found: ignore
+          retention-days: 90
