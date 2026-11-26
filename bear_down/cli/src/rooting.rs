@@ -2,7 +2,7 @@
 //! `docs/rooting-json.md`; change both together.
 
 use bear_down_core::{
-    Cause, Channel, Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds, Tier,
+    Cause, Channel, Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds,
 };
 use serde::Serialize;
 
@@ -88,6 +88,9 @@ pub struct SwingEntry {
     pub if_away_wins: f64,
     /// `if_home_wins - if_away_wins`.
     pub swing: f64,
+    /// The standard error of `swing`, so the page can apply its own
+    /// "doesn't matter" line with the same rule (`bear_down_core::tier_against`).
+    pub std_error: f64,
     /// The team to root for, or `None` for "doesn't matter".
     pub root_for: Option<String>,
     /// How much the game matters: `matters`, `small`, `negligible` or
@@ -174,8 +177,9 @@ impl GameEntry {
                 if_home_wins: swing.if_home_wins,
                 if_away_wins: swing.if_away_wins,
                 swing: swing.swing(),
+                std_error: swing.std_error,
                 root_for: root.map(team),
-                tier: tier_name(tier),
+                tier: tier.name(),
                 why: why::reasons(impact, goal, swing, standings, playoff_odds),
                 channels: why::shown_channels(impact, goal)
                     .into_iter()
@@ -216,15 +220,6 @@ impl GameEntry {
 
 fn team(team: Team) -> String {
     team.abbr().to_string()
-}
-
-fn tier_name(tier: Tier) -> &'static str {
-    match tier {
-        Tier::Matters => "matters",
-        Tier::Small => "small",
-        Tier::Negligible => "negligible",
-        Tier::None => "none",
-    }
 }
 
 fn channel_name(channel: Channel) -> &'static str {

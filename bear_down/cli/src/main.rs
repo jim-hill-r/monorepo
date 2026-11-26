@@ -332,6 +332,16 @@ mod tests {
                     "small" => {}
                     other => panic!("unknown tier {other}"),
                 }
+                // The page applies its A/B arm's line with the same shared
+                // rule, so at the CLI's line it must give the CLI's tier.
+                if swing.tier != "none" {
+                    let tier = bear_down_core::tier_against(
+                        swing.swing,
+                        swing.std_error,
+                        bear_down_core::NEGLIGIBLE_SWING,
+                    );
+                    assert_eq!(tier.name(), swing.tier, "{} {goal}", game.id);
+                }
                 if swing.root_for.is_none() && goal == "champion" {
                     negligible.push(swing.why[0].clone());
                 }

@@ -68,6 +68,11 @@ description = "Check every project follows the repo standards"
 dir = "{{config_root}}"
 run = "bash standards/scripts/audit.sh"
 
+[tasks."issues"]
+description = "List the open issues from the issue files (--human for human tasks, --check to validate)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/issues.sh"
+
 [tasks."review-decks"]
 description = "Build the review decks in docs/reviews to HTML and PDF"
 dir = "{{config_root}}"

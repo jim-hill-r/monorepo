@@ -66,6 +66,42 @@ pub enum Tier {
     None,
 }
 
+impl Tier {
+    /// The tier's name in `rooting.json`: `matters`, `small`, `negligible`
+    /// or `none`.
+    pub fn name(self) -> &'static str {
+        match self {
+            Tier::Matters => "matters",
+            Tier::Small => "small",
+            Tier::Negligible => "negligible",
+            Tier::None => "none",
+        }
+    }
+
+    /// The tier with this `rooting.json` name, if any.
+    pub fn from_name(name: &str) -> Option<Tier> {
+        [Tier::Matters, Tier::Small, Tier::Negligible, Tier::None]
+            .into_iter()
+            .find(|tier| tier.name() == name)
+    }
+}
+
+/// The tier of a `swing` with standard error `std_error` against a
+/// "doesn't matter" `line`, for a game that can reach the focus team. The
+/// CLI uses it with [`NEGLIGIBLE_SWING`]; the page uses it with its A/B
+/// arm's line (`docs/plans/2026-11-fan-feedback.md`), so both sort games the
+/// same way.
+pub fn tier_against(swing: f64, std_error: f64, line: f64) -> Tier {
+    let (size, margin) = (swing.abs(), 2.0 * std_error);
+    if size + margin < line {
+        Tier::Negligible
+    } else if size - margin >= line {
+        Tier::Matters
+    } else {
+        Tier::Small
+    }
+}
+
 /// How a simulation run is set up.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SimConfig {
@@ -143,14 +179,7 @@ impl Swing {
     /// The swing's tier against [`NEGLIGIBLE_SWING`], for a game that can
     /// reach the focus team.
     pub fn tier(&self) -> Tier {
-        let (size, margin) = (self.swing().abs(), 2.0 * self.std_error);
-        if size + margin < NEGLIGIBLE_SWING {
-            Tier::Negligible
-        } else if size - margin >= NEGLIGIBLE_SWING {
-            Tier::Matters
-        } else {
-            Tier::Small
-        }
+        tier_against(self.swing(), self.std_error, NEGLIGIBLE_SWING)
     }
 
     /// Builds a swing from `runs` paired seasons: how often the goal

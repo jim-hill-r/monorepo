@@ -92,7 +92,7 @@ test('the work page lists items and filters them @smoke', async ({ page }) => {
   expect(Number(total)).toBeGreaterThan(0);
   expect(shown).toBe(total);
   await expect(
-    page.getByTestId('work-items').getByRole('link', { name: /ISSUES\.md:\d+$/ }).first(),
+    page.getByTestId('work-items').getByRole('link', { name: /issues\/[^/]+\.md:\d+$/ }).first(),
   ).toHaveAttribute('href', /^https:\/\/github\.com\/jimhillr\/monorepo\/blob\/[0-9a-f]+\/.+#L\d+$/);
 
   await page.getByLabel('Project').selectOption('pane');
@@ -112,7 +112,7 @@ test('the human issues page lists open issues with GitHub links @smoke', async (
   await expect(issues.first()).toBeVisible();
   await expect(
     issues.first().getByRole('link', { name: 'Open on GitHub' }),
-  ).toHaveAttribute('href', /HUMAN_ISSUES\.md#L\d+$/);
+  ).toHaveAttribute('href', /issues\/human\/[^/]+\.md#L\d+$/);
 });
 
 test('deliverables list live sites and render a plan in the page @smoke', async ({ page }) => {

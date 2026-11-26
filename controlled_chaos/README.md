@@ -18,7 +18,7 @@ cargo run
 | --- | --- |
 | Browser | <https://controlled-chaos-5v4.pages.dev>. Click the page once so it gets the keyboard. Redeployed on every merge to `main` that changes the game, and every night. |
 | macOS | [controlled_chaos-macos.zip](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-macos.zip). Unzip and open "Controlled Chaos". It isn't notarized, so the first time macOS refuses: open System Settings > Privacy & Security, click **Open Anyway**, and confirm. (Or run `xattr -dr com.apple.quarantine "Controlled Chaos.app"`.) |
-| Android | [controlled_chaos-android.apk](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-android.apk). Open the link on the phone and allow your browser to install unknown apps. Until a release key is set up, uninstall the old build before installing a new one. The game needs a keyboard for now (see ISSUES.md). |
+| Android | [controlled_chaos-android.apk](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-android.apk). Open the link on the phone and allow your browser to install unknown apps. Until a release key is set up, uninstall the old build before installing a new one. The game needs a keyboard for now (see [issues/](issues/)). |
 | Your computer | `mise run dev` (or `cargo run`) in this folder. |
 
 The macOS and Android builds come from the
