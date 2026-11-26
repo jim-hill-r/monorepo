@@ -23,6 +23,7 @@ Recipe markdown files follow this structure:
 Optional description text goes here.
 
 UUID: 550e8400-e29b-41d4-a716-446655440000
+ID: day-1
 Prep Time: 10 minutes
 Cook Time: 20 minutes
 Servings: 4
@@ -43,12 +44,11 @@ Tags: tag1, tag2, tag3
 
 ### Required Fields
 - **Title**: First `# ` heading in the file
-- **UUID**: `UUID: <uuid-string>` format (RFC 4122 compliant UUID). Used as the primary identifier.
-- **ID**: Derived from the filename (without `.md` extension). Typically the same as the UUID for consistency.
+- **UUID**: `UUID: <uuid-string>` format (RFC 4122 compliant UUID). Used as the primary identifier. A file whose `UUID:` line is missing or invalid is not loaded (see below).
 
 ### Optional Fields
-- **UUID**: `UUID: <uuid-string>` format (RFC 4122 compliant UUID). If not provided, a new UUID is automatically generated when the recipe is loaded.
-- **Description**: Text between title and first section heading
+- **ID**: `ID: <legacy-id>`, the recipe's legacy ID. Without it the ID is the file name without `.md`, which for `{uuid}.md` files is the UUID. `MarkdownRecipeStore` writes this line whenever the ID differs from the UUID, so an ID such as `day-1` survives a save and reload.
+- **Description**: Text between title and first section heading, leaving out the `UUID:`, `ID:`, `Prep Time:`, `Cook Time:`, `Servings:` and `Tags:` lines
 - **Prep Time**: `Prep Time: X minutes` format
 - **Cook Time**: `Cook Time: X minutes` format
 - **Servings**: `Servings: X` format
@@ -59,9 +59,10 @@ Tags: tag1, tag2, tag3
 ### UUID Support
 
 Recipes support UUIDs as unique identifiers:
-- If a recipe file contains a valid `UUID:` field in the frontmatter, that UUID will be used
-- If no UUID is present or the UUID is invalid, a new UUID is automatically generated
-- This provides backward compatibility with existing recipes while enabling UUID-based features
+- Every recipe file must have a valid `UUID:` line. A recipe never gets a new random UUID on load, because plans reference recipes by UUID.
+- `MarkdownRecipeStore::new` skips any recipe or plan file that fails to parse, or that reuses another recipe's UUID or ID. It logs a warning for each and lists them in `load_errors()`.
+- `get_by_id`, `exists` and `delete` accept either a UUID string or a legacy ID.
+- `update` and `save` match a recipe by UUID, or else by legacy ID; in the second case the stored UUID is kept, so plans still resolve.
 - UUIDs allow recipes to be renamed and moved without breaking references
 
 ## Usage

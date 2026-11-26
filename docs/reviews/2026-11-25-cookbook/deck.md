@@ -20,7 +20,7 @@ style: |
 Reviewer: Claude (deep-project-review skill, first run)
 
 Why this project: it is the first rotation pick. No project has been reviewed
-yet, `cast` is skipped because the Cast to mise migration is removing it, and
+yet, `cast` was skipped because the Cast to mise migration was removing it, and
 `cookbook` is next in the root `ISSUES.md` Priority Projects list.
 
 ---
@@ -49,7 +49,7 @@ staples) doesn't exist yet. Sign-in is wired up but does nothing useful.
 | Area | Rating | Why |
 | --- | --- | --- |
 | Goals | Poor | Shell built; the actual cookbook (real recipes, themes, staples) not started |
-| User experience | Fair | Clean, warm design and fast; but metadata leaks into descriptions, raw intro text, wrong shopping quantities, mobile header overflow |
+| User experience | Fair | Clean, warm design and fast; but raw intro text, wrong shopping quantities, mobile header overflow |
 | Architecture | Fair | Sensible core / data / web split; but 1,800-line `main.rs`, half-finished UUID migration, data compiled into the wasm |
 | Security | Good | Static site, PKCE + nonce + CSRF in the OIDC flow, CSP present; small gaps (no headers file, code left in URL) |
 | Performance | Fair | Loads in under 1 s locally; 3.4 MB wasm (925 KB gzip) with no size tuning |
@@ -63,7 +63,7 @@ staples) doesn't exist yet. Sign-in is wired up but does nothing useful.
 | # | Recommendation | Impact | Effort |
 | --- | --- | --- | --- |
 | 1 | Fix week 53 and make plans calendar-independent (plan = recipes for Mon..Sun of an ISO week, not 2024 day numbers) **before 2026-12-28** | High | S |
-| 2 | Fix the recipe page: stop metadata lines leaking into the description, render `intro.md` as Markdown | High | S |
+| 2 | Render `intro.md` as Markdown on the home page (the description leak found here was fixed by #584 after the review) | Medium | S |
 | 3 | Make the shopping list add up quantities (and split out "staples" like oil, salt, garlic) | High | M |
 | 4 | Decide what sign-in is for; until then hide the Login button | Medium | S |
 | 5 | Replace placeholder recipes with real ones, one week at a time, with a simple authoring path | High | L |
@@ -174,7 +174,7 @@ commits in total; the last product feature (shopping list) landed on
 | Feature | Where | Status |
 | --- | --- | --- |
 | Home page with intro and two entry cards | `/` | Works; intro shows as one raw paragraph with literal quotes |
-| Recipe of the day | `/recipe/:day` (1..365) | Works; description shows metadata (`UUID: ... Prep Time ... Tags ...`) |
+| Recipe of the day | `/recipe/:day` (1..365) | Works; at review time the description showed metadata (`UUID: ... Tags ...`), fixed since by #584 |
 | Weekly meal plan | `/plan/:week` (1..53) | Works for 1..52; **week 53 empty** |
 | Shopping list per week | on plan page | Works, but merges identical lines instead of adding them |
 | Sidebar: this week's recipes, next 4 plans | all pages | Works; days start on the wrong weekday outside 2024 |
@@ -240,7 +240,7 @@ shopping list, try an invalid day, an unknown URL, and the mobile sidebar.
 
 # Recipe page: findings
 
-- **Metadata leaks into the description.** `data_md/src/parse.rs` `description()` collects every line between the title and `## Ingredients`, which includes `UUID:`, `Prep Time:`, `Cook Time:`, `Servings:` and `Tags:`. Every one of the 365 recipes shows this. A code comment already notes it; it is not in `ISSUES.md`.
+- **Metadata leaked into the description** (screenshot above). `description()` in `data_md/src/parse.rs` collected the `UUID:`, `Prep Time:`, `Cook Time:`, `Servings:` and `Tags:` lines. **Fixed by #584**, merged a few hours after this review, which also added a test.
 - **Content quality:** "spanish shrimp Breakfast Bowl" tagged *vegetarian*, lower-case cuisine words in titles, the same six-line ingredient pattern almost everywhere.
 - Tags show `day-330`, an internal id.
 - No previous / next day links: the only way on is the sidebar or "Back to Home".
@@ -339,9 +339,9 @@ content/*.md ──build.rs──▶ embedded_recipes.rs / embedded_plans.rs (in
 # Architecture findings
 
 - **One 1,795-line `web/src/main.rs`** holds routing, layout, date logic, data access and 55 tests. Date and plan logic belongs in `core` where it can be tested without the UI.
-- **Half-finished UUID migration.** `Recipe.id` (deprecated "day-N") and `Plan.recipe_days` (deprecated) are still read; `get_by_uuid` scans all 365 recipes; `MarkdownRecipeStore` ids don't survive a save and reload (already in `ISSUES.md`).
+- **Half-finished UUID migration.** `Recipe.id` (deprecated "day-N") and `Plan.recipe_days` (deprecated) are still read; `EmbeddedRecipeStore::get_by_uuid` scans all 365 recipes (in `ISSUES.md`). #584 made `MarkdownRecipeStore` ids stable across save and reload.
 - **Panics in library code.** `Plan::new` and `EmbeddedRecipeStore::load_embedded_recipes` `assert_eq!`; a bad content file crashes the app at startup (already in `ISSUES.md`).
-- **Missing UUIDs get a random one** on every load (already in `ISSUES.md`).
+- Missing UUIDs used to get a random one on every load; #584 made that an error.
 - **Content compiled in** is simple and free to host, but every recipe edit needs a rebuild and redeploy; fine for now, limiting for signed-in editing (goal 6).
 - `recipe_gen` carries four one-off migration binaries that have done their job.
 
@@ -425,7 +425,7 @@ malicious page. Trust boundaries: browser ↔ Cloudflare Pages, browser ↔ Auth
 
 - `mise run ci` equivalent run locally on `main` at `3ca0d3d`: `cargo fmt --check` ✅, `cargo clippy -D warnings` ✅, `cargo build` ✅, `cargo test` ✅ (189 passed). CI on PR #585 is green for `cookbook`, `cookbook/web` and `cookbook/cloudflare`.
 - Playwright: 76 tests across 10 specs × 5 browser projects (Chromium, Firefox, WebKit, Pixel 5, iPhone 12), including axe accessibility checks.
-- **Gaps where the bugs are:** no test checks that a recipe description excludes metadata, that shopping quantities add up, that every plan file parses (week 53), or that a plan's days are Monday to Sunday in the current year.
+- **Gaps where the bugs are:** no test checks that shopping quantities add up, that every plan file parses (week 53), or that a plan's days are Monday to Sunday in the current year.
 - **Low-value tests:** several `web` tests assert constants, for example `test_recipe_valid_day_in_range` checks `(1..=365).contains(&1)` without touching app code.
 - `cloudflare` is not in the workspace's `default-members`, so `cargo test` at the root skips it.
 
@@ -492,7 +492,7 @@ stale READMEs, `Cast.toml` files.
 | # | Recommendation | Impact | Effort | Moves |
 | --- | --- | --- | --- | --- |
 | 1 | Give week 53 seven recipes, and map plans to the Mon..Sun dates of the ISO week in the current year (drop 2024 day numbers). Add a test that every plan file parses. | High | S | Goal 2 |
-| 2 | Fix `parse::description` to stop at the metadata block; render `intro.md` with a Markdown renderer. Add tests. | High | S | UX |
+| 2 | Render `intro.md` with a Markdown renderer instead of a raw `<p>`. | Medium | S | UX |
 | 3 | Shopping list: parse quantity + unit + item, sum by item, and list staples separately. | High | M | Goals 2, 3 |
 | 4 | Hide Login until a signed-in feature exists; then clear the code from the URL, drop unused scopes, use one callback route. | Medium | S | Security, perf |
 | 5 | Add `_headers` for Pages with CSP, `frame-ancestors 'none'`, `Referrer-Policy`. | Low | S | Security |
@@ -567,7 +567,7 @@ benefits `cahokia` too.
 
 # Evidence links
 
-- Recipe description bug: `cookbook/data_md/src/parse.rs`, `fn description`
+- Recipe description bug (fixed by #584): `cookbook/data_md/src/parse.rs`, `fn description`
 - Shopping list dedup: `cookbook/web/src/main.rs`, `fn get_week_shopping_list`
 - Week 53 plan: `cookbook/content/week-53.md` (`Days: 365, 1`, 2 UUIDs)
 - 2024-pinned plans: `cookbook/content/week-48.md` (`Year: 2024`, `Days: 330..336`)

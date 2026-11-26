@@ -14,7 +14,10 @@ Complete exactly one issue in this repo. Read `AGENTS.md` at the repo root first
 Be eager: take the first issue that qualifies under these rules.
 
 1. An issue is a line or comment starting with `TODO` or `FIX`.
-2. Skip anything marked `(agent-ignore)`.
+2. Skip anything marked `(agent-ignore)` or `(human)`, and never take work
+   from `HUMAN_ISSUES.md`: those tasks need a person. If an issue turns out to
+   need one (a dashboard, a secret, a sign-off), add a `TODO (human)` line to
+   `HUMAN_ISSUES.md` for that part (see `standards/docs/issue-management.md`).
 3. Never work in a project listed under `# On Hold Projects` in any `ISSUES.md`.
 4. Search in this order and stop at the first hit:
    1. `# Priority Issues` in the root `ISSUES.md`, top to bottom. Items may sit

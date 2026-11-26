@@ -42,21 +42,16 @@ This will create build artifacts in `../web/dist/` directory.
 
 ## Deploying to Cloudflare Pages
 
-### Deploy with Cast
-
-The recommended way to deploy is using the Cast CLI:
+### Deploy with mise
 
 ```bash
-cast deploy
+mise run deploy
 ```
 
-This command will:
-1. Verify the project is properly configured as an IAC project
-2. Check that wrangler is installed
-3. Load environment variables from `.env` file if present
-4. Deploy using `wrangler pages deploy`
-
-The Cast deploy command reads configuration from `wrangler.toml` and automatically uses the correct build output directory.
+This runs `mise run release` in `../web` (a `dx bundle` into `../web/dist`)
+and then `wrangler pages deploy`, which reads `wrangler.toml` for the project
+name and output directory. Pushes to `main` that touch this project or its
+web app deploy automatically; see `.github/workflows/push-main.yml`.
 
 ### Deploy with Wrangler Directly
 
@@ -68,14 +63,14 @@ wrangler pages deploy ../web/dist --project-name=cahokia-web
 
 ### Automated Deployment
 
-For CI/CD pipelines, you can use Cast deploy with environment variables:
+CI deploys with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+repository secrets. To deploy from your machine without `wrangler login`, set
+the same variables:
 
 ```bash
-# Set your Cloudflare API token in .env file or environment
 export CLOUDFLARE_API_TOKEN=<your-token>
-
-# Deploy using Cast
-cast deploy
+export CLOUDFLARE_ACCOUNT_ID=<your-account-id>
+mise run deploy
 ```
 
 ## Project Structure
@@ -83,7 +78,7 @@ cast deploy
 ```
 cahokia/cloudflare/
 ├── wrangler.toml     # Cloudflare Pages configuration
-├── Cast.toml         # Cast monorepo metadata
+├── mise.toml         # Tools and standard tasks (deploy builds ../web first)
 ├── tests/
 │   └── integration_tests.rs   # Validation test suite
 └── README.md         # This file

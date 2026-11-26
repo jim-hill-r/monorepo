@@ -6,7 +6,7 @@ fn test_required_files_exist() {
     let required_files = [
         "README.md",
         "wrangler.toml",
-        "Cast.toml",
+        "mise.toml",
         ".gitignore",
         "ISSUES.md",
     ];
@@ -88,11 +88,11 @@ fn test_readme_does_not_recommend_cargo_install_wrangler() {
 }
 
 #[test]
-fn test_cast_toml_has_framework_field() {
-    let content = fs::read_to_string("Cast.toml").expect("Failed to read Cast.toml");
+fn test_mise_toml_uses_cloudflare_pages_tasks() {
+    let content = fs::read_to_string("mise.toml").expect("Failed to read mise.toml");
 
     assert!(
-        content.contains("framework = \"cloudflare-pages\""),
-        "Cast.toml missing framework = \"cloudflare-pages\""
+        content.contains("standards/tasks/cloudflare-pages.toml"),
+        "mise.toml should include standards/tasks/cloudflare-pages.toml"
     );
 }

@@ -16,7 +16,8 @@ The name comes from "Bear Down, Chicago Bears", the team's fight song.
 
 ## Status
 
-Early development. The Cargo workspace is set up but nothing is simulated yet.
+Early development. `core` parses the nflverse schedule and results
+(`bear_down_core::Schedule`), but nothing is simulated yet.
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
 the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
 

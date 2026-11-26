@@ -1,7 +1,7 @@
 ---
 # Reusable workflow: list the projects to check, then run mise tasks in each
 # one, one job per project. Called by pull-request-ci.yml, push-main.yml and
-# nightly-ci.yml. Every project is a directory with a mise.toml that includes
+# nightly-ci.yml and nightly-cd.yml. Every project is a directory with a mise.toml that includes
 # one standards/tasks/<type>.toml, so every project has the same tasks.
 name: mise projects
 
@@ -16,6 +16,12 @@ name: mise projects
         default: ''
       deploy:
         description: Run `mise run deploy` after `mise run ci`
+        type: boolean
+        default: false
+      deploy_only:
+        description: >-
+          Run only the listed projects that deploy (those with DEPLOY_URL in
+          their mise.toml [env]).
         type: boolean
         default: false
       project:
@@ -45,7 +51,7 @@ jobs:
   plan:
     runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
     outputs:
-      projects: ${{ steps.affected.outputs.projects }}
+      projects: ${{ steps.urls.outputs.projects || steps.affected.outputs.projects }}
       deploy_urls: ${{ steps.urls.outputs.deploy_urls }}
     steps:
       - uses: actions/checkout@v6
@@ -88,6 +94,7 @@ jobs:
         id: urls
         env:
           PROJECTS: ${{ steps.affected.outputs.projects }}
+          DEPLOY_ONLY: ${{ inputs.deploy_only }}
         shell: python3 {0}
         run: |
           import json, os, tomllib
@@ -99,6 +106,8 @@ jobs:
                   urls[p] = url
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               out.write(f"deploy_urls={json.dumps(urls)}\n")
+              if os.environ["DEPLOY_ONLY"] == "true":
+                  out.write(f"projects={json.dumps(sorted(urls))}\n")
           print("Deploy URLs:", urls)
 
   project:
@@ -146,8 +155,25 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJECT: ${{ matrix.project }}
           DEPLOY_URL: ${{ fromJSON(needs.plan.outputs.deploy_urls)[matrix.project] }}
+          ROLLBACK_REF: ${{ inputs.ref }}
         run: |
           set -o pipefail
+          # This step only runs once `mise run ci` passed. Deploy only the
+          # latest version of main: skip when a newer commit on main changes
+          # this project (its own run deploys it). A rollback (ref given)
+          # deploys exactly what was asked for.
+          if [ -z "$ROLLBACK_REF" ]; then
+            status=0
+            reason=$(bash "$GITHUB_WORKSPACE/standards/scripts/deploy-check.sh" "$PROJECT") || status=$?
+            echo "$reason"
+            if [ "$status" -eq 3 ]; then
+              echo "### Skipped deploy of $PROJECT" >> "$GITHUB_STEP_SUMMARY"
+              echo "$reason" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            elif [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
+          fi
           mise run deploy 2>&1 | tee "$RUNNER_TEMP/deploy.log"
           [ -n "$DEPLOY_URL" ] || exit 0
           # wrangler prints the URL of this exact deployment, for example

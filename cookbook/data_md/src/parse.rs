@@ -8,6 +8,7 @@
 //! Description text.
 //!
 //! UUID: 550e8400-e29b-41d4-a716-446655440000
+//! ID: day-1
 //! Prep Time: 10 minutes
 //! Cook Time: 20 minutes
 //! Servings: 4
@@ -20,19 +21,39 @@
 //! 1. step
 //! ```
 //!
+//! The `UUID:` line is required. The `ID:` line is optional and holds the recipe's legacy ID
+//! when it differs from the UUID; without it the caller's fallback ID is used.
+//!
 //! Plan files carry a `Recipe UUIDs: a, b, c, d, e, f, g` line.
 
-use cookbook_core::{Plan, PlanError, PlanResult, Recipe};
+use cookbook_core::{Plan, PlanError, PlanResult, Recipe, RecipeError, RecipeResult};
 use uuid::Uuid;
+
+/// Lines above `## Ingredients` that hold a field rather than description text.
+const FIELD_PREFIXES: [&str; 6] = [
+    "UUID:",
+    "ID:",
+    "Prep Time:",
+    "Cook Time:",
+    "Servings:",
+    "Tags:",
+];
 
 /// Builds a recipe from markdown `content`.
 ///
-/// `id` is the recipe's legacy ID, also used as the title when the content has no `# ` heading.
-pub(crate) fn recipe(content: &str, id: String, fallback_title: String) -> Recipe {
+/// The recipe's legacy ID comes from the `ID:` line, or is `fallback_id` when there is none.
+/// `fallback_title` is used when the content has no `# ` heading.
+///
+/// Fails with [`RecipeError::InvalidData`] when the `UUID:` line is missing or invalid, so a
+/// recipe never gets a different UUID each time it is loaded.
+pub(crate) fn recipe(
+    content: &str,
+    fallback_id: String,
+    fallback_title: String,
+) -> RecipeResult<Recipe> {
+    let uuid = uuid(content)?;
+    let id = text_field(content, "ID:").unwrap_or(fallback_id);
     let title = title(content).unwrap_or(fallback_title);
-
-    // TODO (agent-generated): see cookbook/ISSUES.md, a missing UUID should be an error.
-    let uuid = uuid(content).unwrap_or_else(Uuid::new_v4);
 
     let mut recipe = Recipe::new_with_uuid(id, uuid, title);
     recipe.description = description(content);
@@ -42,7 +63,7 @@ pub(crate) fn recipe(content: &str, id: String, fallback_title: String) -> Recip
     recipe.cook_time_minutes = number_field(content, "Cook Time:");
     recipe.servings = number_field(content, "Servings:");
     recipe.tags = tags(content);
-    recipe
+    Ok(recipe)
 }
 
 /// Builds the plan for `week` from markdown `content`, which must list exactly 7 recipe UUIDs.
@@ -70,9 +91,8 @@ fn title(content: &str) -> Option<String> {
         .map(|title| title.trim().to_string())
 }
 
-/// Non-empty lines between the title and the first `## ` section, joined with spaces.
-// TODO (agent-generated): this also picks up the `UUID:`, `Prep Time:`, `Cook Time:`,
-// `Servings:` and `Tags:` lines, which sit above `## Ingredients` in every recipe file.
+/// Non-empty lines between the title and the first `## ` section, joined with spaces,
+/// leaving out field lines such as `UUID:` and `Tags:`.
 fn description(content: &str) -> Option<String> {
     let mut desc_lines = Vec::new();
     let mut in_description = false;
@@ -89,7 +109,11 @@ fn description(content: &str) -> Option<String> {
             break;
         }
 
-        if in_description && !trimmed.is_empty() {
+        let is_field = FIELD_PREFIXES
+            .iter()
+            .any(|prefix| trimmed.starts_with(prefix));
+
+        if in_description && !trimmed.is_empty() && !is_field {
             desc_lines.push(trimmed.to_string());
         }
     }
@@ -153,12 +177,21 @@ fn tags(content: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// The value of the first `UUID:` line, or `None` if it is missing or invalid.
-fn uuid(content: &str) -> Option<Uuid> {
+/// The trimmed value of the first line starting with `field`, or `None` if it is missing or empty.
+fn text_field(content: &str, field: &str) -> Option<String> {
     let value = content
         .lines()
-        .find_map(|line| line.strip_prefix("UUID:"))?;
-    Uuid::parse_str(value.trim()).ok()
+        .find_map(|line| line.strip_prefix(field))?
+        .trim();
+    (!value.is_empty()).then(|| value.to_string())
+}
+
+/// The value of the first `UUID:` line.
+fn uuid(content: &str) -> RecipeResult<Uuid> {
+    let value = text_field(content, "UUID:")
+        .ok_or_else(|| RecipeError::InvalidData("Missing 'UUID:' line".to_string()))?;
+    Uuid::parse_str(&value)
+        .map_err(|e| RecipeError::InvalidData(format!("Invalid UUID '{}': {}", value, e)))
 }
 
 /// The UUIDs on the `Recipe UUIDs:` line.
@@ -214,16 +247,14 @@ Not a list item
 
     #[test]
     fn recipe_parses_every_field() {
-        let recipe = recipe(RECIPE, "day-1".to_string(), "Day 1".to_string());
+        let recipe = recipe(RECIPE, "day-1".to_string(), "Day 1".to_string()).unwrap();
 
         assert_eq!(recipe.id, "day-1");
         assert_eq!(recipe.uuid.to_string(), UUID_A);
         assert_eq!(recipe.title, "Pancakes");
-        assert!(
-            recipe
-                .description
-                .as_deref()
-                .is_some_and(|d| d.starts_with("Fluffy pancakes. Good for breakfast."))
+        assert_eq!(
+            recipe.description.as_deref(),
+            Some("Fluffy pancakes. Good for breakfast.")
         );
         assert_eq!(recipe.ingredients, vec!["2 cups flour", "1 egg"]);
         assert_eq!(recipe.instructions, vec!["Mix.", "Cook.", "Serve."]);
@@ -235,8 +266,14 @@ Not a list item
 
     #[test]
     fn recipe_uses_fallback_title_and_defaults_when_fields_missing() {
-        let recipe = recipe("no heading here", "x".to_string(), "Fallback".to_string());
+        let recipe = recipe(
+            &format!("UUID: {}", UUID_A),
+            "x".to_string(),
+            "Fallback".to_string(),
+        )
+        .unwrap();
 
+        assert_eq!(recipe.id, "x");
         assert_eq!(recipe.title, "Fallback");
         assert_eq!(recipe.description, None);
         assert!(recipe.ingredients.is_empty());
@@ -254,13 +291,55 @@ Not a list item
     }
 
     #[test]
-    fn uuid_returns_none_when_missing_or_invalid() {
-        assert_eq!(uuid("# Title"), None);
-        assert_eq!(uuid("UUID: not-a-uuid"), None);
+    fn recipe_takes_id_from_id_line() {
+        let content = format!("# Soup\n\nUUID: {}\nID: day-7\n", UUID_A);
+        let recipe = recipe(&content, "file-stem".to_string(), "Soup".to_string()).unwrap();
+
+        assert_eq!(recipe.id, "day-7");
+        assert_eq!(recipe.description, None);
+    }
+
+    #[test]
+    fn recipe_rejects_missing_uuid() {
+        assert!(matches!(
+            recipe("# Title\n\nText.\n", "x".to_string(), "X".to_string()),
+            Err(RecipeError::InvalidData(_))
+        ));
+    }
+
+    #[test]
+    fn recipe_rejects_malformed_uuid() {
+        assert!(matches!(
+            recipe(
+                "# Title\n\nUUID: not-a-uuid\n",
+                "x".to_string(),
+                "X".to_string()
+            ),
+            Err(RecipeError::InvalidData(_))
+        ));
+    }
+
+    #[test]
+    fn uuid_errors_when_missing_or_invalid() {
+        assert!(matches!(uuid("# Title"), Err(RecipeError::InvalidData(_))));
+        assert!(matches!(uuid("UUID:   "), Err(RecipeError::InvalidData(_))));
+        assert!(matches!(
+            uuid("UUID: not-a-uuid"),
+            Err(RecipeError::InvalidData(_))
+        ));
         assert_eq!(
-            uuid(&format!("UUID:  {}  ", UUID_A)).map(|u| u.to_string()),
-            Some(UUID_A.to_string())
+            uuid(&format!("UUID:  {}  ", UUID_A)).unwrap().to_string(),
+            UUID_A
         );
+    }
+
+    #[test]
+    fn description_skips_field_lines_in_any_order() {
+        let content = format!(
+            "# T\n\nUUID: {}\n\nFirst.\n\nPrep Time: 1\nSecond.\nTags: a\n\n## Ingredients\n",
+            UUID_A
+        );
+        assert_eq!(description(&content).as_deref(), Some("First. Second."));
     }
 
     fn plan_content(count: usize) -> String {

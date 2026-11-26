@@ -79,3 +79,12 @@ All four went with the recommendation:
   three Playwright browsers, as Cast did.
 - Deploys now need the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
   repository secrets; the Cast CD workflow passed none.
+
+## Learned in PR 3
+
+- The removed `standards` CLI also checked naming, documentation and Cargo
+  lint rules that `audit.sh` does not cover yet. About 20 projects lack a
+  README.md or CONTRIBUTING.md, so those checks come back as a follow-up
+  (`standards/ISSUES.md`) rather than as new failures in this PR.
+- `standards/` is now a docs-type project whose `ci` task checks the scripts
+  parse and runs the audit.

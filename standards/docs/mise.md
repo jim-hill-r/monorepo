@@ -1,7 +1,7 @@
 # Building with mise
 
 Every project is built, tested and deployed with [mise](https://mise.jdx.dev).
-Cast is being retired (CI no longer runs it). Shared task files live in
+It replaced Cast in November 2026. Shared task files live in
 [`standards/tasks/`](../tasks/README.md), and the repo checks live in
 `standards/scripts/`.
 
@@ -23,6 +23,10 @@ Cast is being retired (CI no longer runs it). Shared task files live in
   (`auth_sdk` in cahokia and cookbook).
 - **Standards are checked on pull requests**, not by a nightly job that opens
   PRs.
+- **Checks run before code leaves the machine.** lefthook git hooks
+  (`mise run //:hooks`) run `//:audit` and `mise run ci` in every affected
+  project on each commit and push, so PR CI is a double check. See
+  [git-hooks.md](git-hooks.md).
 
 ## CI/CD
 
@@ -35,6 +39,7 @@ own job.
 | `pull-request-ci.yml` | changed since the PR base | `ci` |
 | `push-main.yml` | changed by the push | `ci`, then `deploy` |
 | `nightly-ci.yml` | all | `ci` |
+| `nightly-cd.yml` | those with `DEPLOY_URL` | `ci`, then `deploy` |
 
 `standards/scripts/affected.sh` decides what a change touches: the deepest
 project holding a changed file; every project including a changed
@@ -54,11 +59,20 @@ deploy shows on its commit and in the repo's Deployments list, and the job
 summary lists the production URL, the URL of that exact deployment and the
 commit. Smoke tests and PR comments read the same `DEPLOY_URL`.
 
+A deploy runs only after `mise run ci` passed in the same job, and only for
+the latest version of main: `standards/scripts/deploy-check.sh` skips it
+(and says so in the job summary) when a newer commit on main changes the
+project, because that commit's own run deploys it. "Changes" is decided by
+`affected.sh`, so path dependencies and `# affected-by:` count. The nightly
+run deploys every project this way, so each site is rebuilt and republished
+from main at least once a day.
+
 To roll back, or to redeploy one project, run **Push Main CI/CD** by hand
 (Actions tab, or `workflow_dispatch` through the API) with `project` set to
 the project directory, for example `cookbook/cloudflare`, and `ref` set to
 the commit SHA or tag to deploy. The run checks out that ref, runs
-`mise run ci` and then `mise run deploy` for that project only. A ref from
+`mise run ci` and then `mise run deploy` for that project only, without the
+latest-version check. A ref from
 before `DEPLOY_URL` existed still deploys, but without the environment link.
 
 ## Decisions
@@ -70,5 +84,7 @@ before `DEPLOY_URL` existed still deploys, but without the environment link.
 | 2026-11-26 | Keep `auth_sdk` as a path dependency rather than a tagged git dependency. |
 | 2026-11-26 | Keep per-project Cargo workspaces; no root workspace. |
 | 2026-11-26 | Replace the nightly standards audit (ISSUES.md PRs) with the `//:audit` PR check. |
+| 2026-11-26 | Run the CI checks locally in lefthook pre-commit and pre-push hooks, installed through mise ([git-hooks.md](git-hooks.md)). |
 | 2026-11-26 | Deploy from the `push-main.yml` run with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, rather than from committed artifacts. |
+| 2026-11-26 | Run CI and CD for every project every night, and deploy only the latest version of main that passed CI ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |
 | 2026-11-26 | Record each deploying project's production URL as `DEPLOY_URL` in its `mise.toml`, deploy in a `production` GitHub environment, and roll back by redeploying one project at a ref ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |

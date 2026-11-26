@@ -88,13 +88,19 @@ check in a minute without a local clone.
 7. **Playwright screenshots and video are the default evidence on PRs.** Jim
    asked for this on 2026-11-26. Every UI change links the recorded report in
    the PR, which replaces taking screenshots by hand.
-8. **Every project is built, released or deployed, and UAT tested at least
-   once a month, even when nothing changed** (Jim, 2026-11-26). A monthly
-   scheduled workflow runs `ci`, `release`, `deploy` where a project deploys,
-   and `smoke` for every project, and publishes the recorded UAT report.
-   Toolchain drift, expired secrets and dead dependencies then show up within
-   a month instead of when someone next touches the project. A project whose
-   last successful UAT is older than 31 days is flagged.
+8. **Every project runs full CI and CD every night, even when nothing
+   changed** (Jim, 2026-11-26; this replaced a monthly run the same day).
+   Nightly CI runs `ci` for every project, and Nightly CD runs `ci` and then
+   `deploy` for every project that deploys (the deploy task runs `release`), and `smoke` once
+   projects have one, and publishes the recorded UAT report. Toolchain drift,
+   expired secrets, dead dependencies and broken deploys then show up within
+   a day instead of when someone next touches the project. A project whose
+   last successful UAT is older than 2 days (one missed night) is flagged.
+   **Only the latest version of main that passed CI is deployed** (Jim,
+   2026-11-26): a deploy runs only after `ci` passed in the same job, and is
+   skipped when a newer commit on main changes the project, because that
+   commit's own run deploys it. A rollback by hand deploys exactly the ref
+   it names.
 9. **Everything stays inside free tiers** and runs from GitHub Actions or an
    agent skill, never from a local clone.
 
@@ -117,10 +123,17 @@ check in a minute without a local clone.
   build for `wasm32` get only the recorded native run.
 - CLI telemetry is opt-in only, so most real-use feedback for CLIs comes from
   Jim's own runs and the transcript tests.
-- The monthly run deploys projects whose code did not change, so a deploy
+- The nightly run deploys projects whose code did not change, so a deploy
   must be safe to repeat, and an on-hold project still has to build. An
   on-hold project that cannot is recorded as a `FIX` in its `ISSUES.md`
   rather than skipped silently.
+- Nightly CD stays free: it runs on standard GitHub-hosted runners (free on
+  this public repo) and deploys with `wrangler pages deploy`, a direct
+  upload that uses none of the 500 monthly Pages builds. Each site gains one
+  deployment a night; Pages keeps the 100 most recent plus 30 days, so
+  older nightly deployments age out on their own.
+- If `ci` fails on main for a project, nothing deploys it, so production
+  stays on the last version that passed until a fix lands.
 - The smoke suite must stay short (about a minute per app) to keep Actions
   minutes low, and must not depend on seeded data in production.
 - Free Workers Observability keeps data for 7 days and stops ingesting at

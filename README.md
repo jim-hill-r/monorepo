@@ -1,4 +1,5 @@
-[![Nightly CI](https://github.com/jim-hill-r/monorepo/actions/workflows/nightly-ci.yml/badge.svg)](https://github.com/jim-hill-r/monorepo/actions/workflows/nightly-ci.yml)
+[![Nightly CI](https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml)
+[![Nightly CD](https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml)
 
 # Monorepo
 
@@ -6,23 +7,23 @@ Monorepo for all projects
 
 # Getting Started
 
-Only Rust and Npm need to be installed system wide. Everything else is managed by the monorepo cli
+Only [mise](https://mise.jdx.dev/getting-started.html) needs to be installed
+system wide. Each project lists its own tools (Rust, Node, dx, wrangler, ...)
+in its `mise.toml`, and every project has the same tasks:
 
-- Install Rust via [online instructions](https://rust-lang.org/tools/install/)
-- Install npm via [nvm online instructions](https://www.nvmnode.com/guide/installation-sh.html)
+```bash
+cd <project>
+mise install      # install the project's tools
+mise run ci       # format check, lint, build and test
+mise run fix      # apply formatting and lint fixes
+mise run dev      # run it locally
+mise run release  # release build
+mise run deploy   # deploy, for projects that deploy
+```
 
-Cast is the CLI tool for this monorepo. All developer commands use Cast.
-
-- Install cast: `cargo install --path ./cast/cli`
-
-Once Cast is installed, you can use it for all other work in this monorepo.
-- To start a work session, use `cast session start`.
-- To create a new project, use `cast project new`.
-- To install dependencies, use `cast install`.
-- To execute ci checks, use `cast ci --check`.
-- To fix ci issues, use `cast ci --fix`.
-- To execute a ci release, use `cast ci --release`.
-- To deploy a project, use `cast cd`.
+From anywhere in the repo, `mise run //:audit` checks the repo standards and
+`mise run '//...:ci'` runs CI in every project. See
+[standards/docs/mise.md](standards/docs/mise.md).
 
 # Contribute
 

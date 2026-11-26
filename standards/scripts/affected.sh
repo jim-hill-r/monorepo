@@ -74,7 +74,7 @@ done
 for f in "${changed[@]}"; do
   [ -n "$f" ] || continue
   case "$f" in
-    mise.toml|standards/scripts/*|.github/workflows/pull-request-ci.yml|.github/workflows/push-main.yml|.github/workflows/nightly-ci.yml|.github/workflows/mise-projects.yml)
+    mise.toml|standards/scripts/*|.github/workflows/pull-request-ci.yml|.github/workflows/push-main.yml|.github/workflows/nightly-ci.yml|.github/workflows/nightly-cd.yml|.github/workflows/mise-projects.yml)
       for p in "${all[@]}"; do hit[$p]=1; done
       continue ;;
     standards/tasks/*.toml)

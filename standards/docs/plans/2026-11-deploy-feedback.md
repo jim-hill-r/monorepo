@@ -167,26 +167,28 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
 - Perseus sites: when sparkhill/website or profiles/jimhillr first deploys,
   give it a Pages project and reuse the website path above.
 
-## Phase 3e: monthly full run
+## Phase 3e: nightly full run
 
-Every project must be built, released or deployed, and UAT tested at least
-once a month, even with no changes (Jim, 2026-11-26).
+Every project runs full CI and CD every night, even with no changes (Jim,
+2026-11-26, replacing the monthly run planned earlier that day). Only the
+latest version of main that passed CI is deployed.
 
-- Add `monthly-uat.yml`, scheduled for the first Tuesday of each month and
-  runnable by hand (`workflow_dispatch`). It reuses `mise-projects.yml` with
-  every project (empty `base`), and runs `ci`, `release`, `deploy` where a
-  project has one, then `smoke`.
-- Publish the combined UAT report (screenshots, videos, transcripts) to the
-  `uat-reports` Pages project under a `monthly-<yyyy-mm>` branch and link it
-  from the run summary.
+- Done: `nightly-ci.yml` runs `ci` for every project at 2 AM Pacific, and
+  `nightly-cd.yml` runs `ci` then `deploy` for every deploying project at
+  2:30 AM, both through `mise-projects.yml`, with a README badge each. Each deploy first runs
+  `standards/scripts/deploy-check.sh`, which skips it when a newer commit on
+  main changes the project.
+- Add a `smoke` step after `deploy` once projects have smoke tests, and
+  publish the combined UAT report (screenshots, videos, transcripts) to the
+  `uat-reports` Pages project under a `nightly` branch, linked from the run
+  summary.
 - Every project needs a real `smoke` task for this to mean anything. Until a
   project has one, the shared task file's default fails with "no smoke test
   yet", so the gap shows in the report instead of passing quietly.
-- A scheduled agent task runs after the monthly workflow: it reads the
+- A scheduled agent task runs after the nightly workflow: it reads the
   results, adds a `FIX` to the `ISSUES.md` of each project that failed, and
   opens one draft PR with those items and a short summary.
-- A check in `//:audit` (or the monthly run itself) lists any project whose
-  last successful UAT is older than 31 days.
+- A check lists any project whose last successful UAT is older than 2 days.
 - On-hold projects are included. If one cannot build, it gets a `FIX`, not a
   skip.
 
@@ -247,7 +249,7 @@ Free tier limits as of 2026-11; check them before relying on them.
 | Previews and report hosting | Cloudflare Pages | Free |
 | CLI and game releases | GitHub Releases | Free |
 | Terminal recordings | `vhs`, `trycmd` | Free (open source) |
-| Monthly full run | GitHub Actions | One full build of every project a month; the largest single use of minutes, still free on public repos |
+| Nightly full run | GitHub Actions, Cloudflare Pages direct upload | One full build and deploy of every project a night; the largest use of minutes, free on standard runners in a public repo, and direct uploads use no Pages builds |
 | Smoke runs | GitHub Actions | Free on public repos; about a minute per app per run otherwise |
 | Session replay | PostHog Cloud | Free up to 5,000 recordings and 1M events a month |
 | Analytics | Cloudflare Web Analytics | Free |

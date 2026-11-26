@@ -25,9 +25,10 @@ name: Push Main CI/CD
 permissions:
   contents: read
 
-concurrency:
-  group: push-main
-  cancel-in-progress: false  # never cut a deploy short
+# No concurrency group: GitHub keeps only one pending run per group and
+# cancels the rest, which silently skipped CI and deploys for quick
+# back-to-back merges. Each run checks and deploys only what its own push
+# changed.
 
 jobs:
   ci-cd:

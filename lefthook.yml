@@ -1,0 +1,16 @@
+# Git hooks: run what PR CI runs before a commit or push leaves your machine,
+# so PR CI is only a double check. Set up with `mise run //:hooks`.
+# Details and the cloud-sandbox fallback: standards/docs/git-hooks.md.
+
+# The version `mise run //:hooks` installs.
+min_version: 2.2.3
+
+pre-commit:
+  jobs:
+    - name: ci (changed projects)
+      run: bash standards/scripts/hooks.sh pre-commit
+
+pre-push:
+  jobs:
+    - name: ci (projects changed since main)
+      run: bash standards/scripts/hooks.sh pre-push

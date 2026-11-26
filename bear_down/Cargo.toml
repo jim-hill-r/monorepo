@@ -15,7 +15,9 @@ unsafe_code = "forbid"
 
 [workspace.dependencies]
 bear_down_core = { path = "core" }
+csv = "1.4.0"
 dioxus = { version = "0.7.2" }
+serde = { version = "1.0.229", features = ["derive"] }
 
 [profile]
 

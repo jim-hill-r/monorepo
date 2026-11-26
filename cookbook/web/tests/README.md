@@ -7,17 +7,17 @@ This directory contains Playwright end-to-end tests for the Cookbook web applica
 - Node.js (>= 18.0.0)
 - npm
 - Dioxus CLI (`dx`)
-- Cast CLI (for toolchain management)
+- [mise](https://mise.jdx.dev) (for toolchain management)
 
 ## Setup
 
 ### Automated Setup (Recommended)
 
-Use the Cast toolchain manager to install all required dependencies:
+Install the toolchain with mise:
 
 ```bash
 cd cookbook/web
-cast install
+mise install
 ```
 
 This will automatically install:
@@ -51,7 +51,7 @@ npm test
 ```
 
 The Playwright configuration will:
-1. Start the dev server using `cast run`
+1. Start the dev server using `mise run dev`
 2. Wait for it to be ready at http://localhost:8080
 3. Run all tests
 4. Shut down the dev server automatically

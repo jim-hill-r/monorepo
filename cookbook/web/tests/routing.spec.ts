@@ -59,6 +59,18 @@ test.describe('Recipe Routes', () => {
     await expect(page.locator('h2', { hasText: 'Ingredients' })).toBeVisible();
   });
 
+  test('recipe description leaves out the metadata lines', async ({ page }) => {
+    await page.goto('/recipe/1');
+    await page.waitForLoadState('networkidle');
+
+    const description = page.locator('.recipe-description');
+    await expect(description).toBeVisible();
+    await expect(description).not.toBeEmpty();
+    for (const field of ['UUID:', 'Prep Time:', 'Cook Time:', 'Servings:', 'Tags:']) {
+      await expect(description).not.toContainText(field);
+    }
+  });
+
   test('should load recipe for day 100', async ({ page }) => {
     await page.goto('/recipe/100');
     await page.waitForLoadState('networkidle');

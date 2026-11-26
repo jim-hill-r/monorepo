@@ -1,6 +1,8 @@
 ---
-# Runs `mise run ci` in every project each night, so breakage from new
-# toolchains or dependency releases shows up even in quiet projects.
+# Each night: `mise run ci` in every project, even quiet ones, so toolchain
+# drift and dependency releases show up within a day. Nightly CD
+# (nightly-cd.yml) redeploys the sites separately, so the README has one badge
+# for each.
 name: Nightly CI
 
 'on':

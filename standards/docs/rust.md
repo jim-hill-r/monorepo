@@ -94,4 +94,4 @@ workspace = true
 
 ## Enforcement
 
-The standards audit tool (`standards audit-to-issues`) checks all Rust projects for LIN-001 and LIN-002 compliance and writes violations to each project's `ISSUES.md` file.
+These rules are not checked automatically yet; porting the LIN-001 and LIN-002 checks to `mise run //:audit` is tracked in `standards/ISSUES.md`.
