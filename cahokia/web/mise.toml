@@ -4,7 +4,7 @@
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
 cargo-binstall = "latest"
-"cargo:dioxus-cli" = "0.7.2"
+"cargo:dioxus-cli" = "0.7.3"  # must match dioxus in Cargo.lock
 node = "24"
 
 [task_config]

@@ -5,6 +5,7 @@
 #   STD-002  Every mise.toml (except the root) includes exactly one
 #            standards/tasks/<type>.toml, and that file exists.
 #   STD-003  Every shared task file defines the standard tasks.
+#   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
 #   NAM-001  Project directory names are snake_case.
 set -euo pipefail
 
@@ -36,6 +37,13 @@ for f in $(git ls-files -- '*/mise.toml'); do
     [[ "$part" =~ ^[a-z][a-z0-9_]*$ ]] || err NAM-001 "$d: '$part' is not snake_case"
   done
 done
+
+# STD-004: the root mise.toml lists every project in [monorepo].config_roots.
+listed=$(sed -n '/^config_roots = \[/,/^\]/p' mise.toml | grep -oE '"[^"]+"' | tr -d '"' | sort)
+actual=$(git ls-files -- '*/mise.toml' | xargs -r -n1 dirname | sort -u)
+if [ "$listed" != "$actual" ]; then
+  err STD-004 "[monorepo].config_roots in mise.toml does not match the project list: $(diff <(echo "$listed") <(echo "$actual") | grep '^[<>]' | tr '\n' ' ')"
+fi
 
 for t in standards/tasks/*.toml; do
   for task in "${standard_tasks[@]}"; do

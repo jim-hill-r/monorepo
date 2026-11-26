@@ -5,10 +5,44 @@
 # or, from anywhere, across every project:
 #   mise run '//...:ci'
 
-experimental_monorepo_root = true
+monorepo_root = true
 
 [settings]
 experimental = true
+
+# Every directory with its own mise.toml is a project. //:audit checks this
+# list matches.
+[monorepo]
+config_roots = [
+  "athenaeum",
+  "auth_sdk",
+  "blueeel",
+  "bogan",
+  "cahokia",
+  "cahokia/cloudflare",
+  "cahokia/web",
+  "controlled_chaos",
+  "cookbook",
+  "cookbook/cloudflare",
+  "cookbook/web",
+  "homer",
+  "luggage",
+  "monorepo",
+  "my_lang",
+  "pane",
+  "pane/cloudflare",
+  "pane/web",
+  "profiles",
+  "profiles/content_provider",
+  "profiles/jimhillr",
+  "psy_ents",
+  "royalty",
+  "sparkhill",
+  "sparkhill/webapp",
+  "sparkhill/website",
+  "standards",
+  "starcraft",
+]
 
 [tasks."affected"]
 description = "List project directories touched by changes since a base ref (JSON array)"
