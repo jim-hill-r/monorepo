@@ -33,6 +33,7 @@ config_roots = [
   "my_lang",
   "pane",
   "pane/cloudflare",
+  "pane/model",
   "pane/web",
   "profiles",
   "profiles/content_provider",

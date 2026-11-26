@@ -11,7 +11,6 @@ Work the phases in order; within a phase, top to bottom.
 
 ### Phase 0: foundations
 
-- TODO (agent-generated): Add a `pane/model` library crate to the pane workspace with the shared serde types (`Snapshot`, `Project`, `WorkItem`, `HumanIssue`, `Deliverable`, `Review`, `Retro`, `Signal`, `Health`) and a snapshot format version.
 - TODO (agent-generated): Add a `pane/snapshot` binary crate that reads a repo checkout and writes `snapshot.json`: projects from `[monorepo].config_roots`, each project's type (its `standards/tasks/<type>.toml` include), `DEPLOY_URL`, README summary, on-hold and priority status from the root `ISSUES.md`, and every `TODO`/`FIX` line in every `ISSUES.md` with its file, line, section, epic heading and tags. Test the parsers against fixture files.
 - TODO (agent-generated): Extend `pane_snapshot` to read `HUMAN_ISSUES.md` (text, added date, what it unblocks, age), `TODO`/`FIX` code comments (skipping `target/` and `node_modules/`), and the plans, decisions and retros folders (title, date, status, path).
 - TODO (agent-generated): Run `pane_snapshot` in pane's `release` task before `dx bundle`, writing into the web app's static assets as `/data/snapshot.json` (never committed), and record the commit and time it was taken.
@@ -64,6 +63,18 @@ Needs the `telemetry` Worker and Web Analytics from the deploy-feedback TODOs in
 - TODO (agent-generated): Add `/api/telemetry/*` routes that query the Analytics Engine SQL API for error counts per app and build and for deploy events, cached for 15 minutes.
 - TODO (agent-generated): Compute the Observability signal for each production app and show its error chart with deploy markers on the app's page, with links to its Web Analytics and PostHog recordings once those exist.
 - TODO (agent-generated): Link each project's latest UAT report from the `uat-reports` Pages project on its Project page and in Deliverables, and use the smoke result in the Deploy and UAT signal.
+
+### Eval engine: requirements and feedback
+
+Needs Phases 3 to 5 above and the eval engine's `evals-results` files (root
+`ISSUES.md`, eval engine phase 1). The plan is
+[../standards/docs/plans/2026-11-eval-engine.md](../standards/docs/plans/2026-11-eval-engine.md).
+
+- TODO (agent-generated): Add a Requirements view to each Project page: each requirement's verdict (from `evals/model`), each eval's latest result with its evidence link, and its history, read into the snapshot at build time from the `evals-results` branch (`verdicts.json` and `results/`), and redeploy pane after each eval run. Add a Requirements signal (worst `must` verdict, with requirement coverage) to the Health page.
+- TODO (agent-generated): Add Rate (met, not met, not sure, with a note), Dispute an eval and Propose a requirement actions, written through the `pane-edit` PR as JSON lines in `<project>/evals/feedback.jsonl` (and a draft entry in `requirements.md` for proposals), and name `evals/feedback.jsonl` as safe for PR triage to approve alongside `ISSUES.md` in `standards/docs/pull-requests.md`.
+- TODO (agent-generated): List requirements that Jim has not rated since their last change or deploy on the Today page, a few at a time, and show judge agreement per rubric once judge evals exist.
+- TODO (agent-generated): For in-app feedback (eval engine phase 6), add `/feedback/sign-in` (behind Access; returns a signed 12-hour token to the opener by `postMessage`, or to a deep link for desktop and mobile), `POST /api/feedback` (checks the token, validates the comment with `feedback/model`, writes the `feedback.jsonl` line and the screenshot into the open `pane-edit` PR) and `GET /api/feedback?project=&url=` (open pins for a page from the snapshot plus the open `pane-edit` PR), with CORS limited to the projects' `DEPLOY_URL`s and preview hosts. Name `evals/feedback/*.webp` as safe for PR triage alongside `feedback.jsonl`.
+- TODO (agent-generated): Add a Feedback page: every comment, filterable by project, kind, status and requirement, with its screenshot and pin, build, replies, and an "Open in app" link that loads the URL with the toolbar on and the pin highlighted. Show open pins on each Project page.
 
 # Backlog
 

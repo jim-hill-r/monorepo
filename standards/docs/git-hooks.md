@@ -58,6 +58,13 @@ mise's version service. Follow these steps there; each one is safe to repeat.
 4. **Shallow clones:** a shallow clone has no merge base with `origin/main`,
    so every file looks changed. The pre-push hook runs
    `git fetch --unshallow origin` once when it sees that.
+5. **Playwright tests:** the `e2e` task of Dioxus web apps
+   (`standards/tasks/dioxus-web.toml`) needs npm packages, `dx` and
+   Playwright's own browser build, which sandboxes usually can't get. Outside
+   CI (when `CI` is unset) it skips the tests with "Playwright tests not
+   checked here; PR CI runs them" instead of failing, so the hooks pass. In CI
+   the same gap fails the task. Say in the PR that the Playwright tests ran
+   only in PR CI.
 
 If a check still fails only because the sandbox lacks a tool (a "command not
 found", not a failure your change caused), commit with `LEFTHOOK=0`, and say

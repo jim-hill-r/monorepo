@@ -75,7 +75,7 @@ Workers Paid, which rule 1 forbids.
 | Cron Triggers | 5 per account | 3 | Deploy fails |
 | Static asset requests | Unlimited | - | - |
 | KV | 100,000 reads and 1,000 writes a day, 1 GB | - | Operation errors |
-| D1 | 5M rows read and 100,000 written a day, 5 GB | - | Operation errors |
+| D1 | 5M rows read and 100,000 written a day; 10 databases of up to 500 MB, 5 GB in total | - | Operation errors |
 | R2 | 10 GB-month, 1M Class A and 10M Class B ops a month | - | R2 bills past this once enabled, so don't enable R2 without a decision record |
 | Workers Logs (until 2026-12-01) | 200,000 events a day, 3 days | - | Stops ingesting |
 | Observability (from 2026-12-01) | 0.5 GB a day, 7 days | - | Stops ingesting until 00:00 UTC |

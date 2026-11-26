@@ -6,10 +6,11 @@
 includes = ["../standards/tasks/docs.toml"]
 
 [tasks.ci]
-description = "Check the repo scripts parse, the repo passes its own audit, and the tech radar is valid"
+description = "Check the repo scripts parse, their tests pass, the repo passes its own audit, and the tech radar is valid"
 dir = "{{config_root}}"
 run = [
-  "for f in scripts/*.sh; do bash -n \"$f\"; done",
+  "for f in scripts/*.sh tests/*.sh; do bash -n \"$f\"; done",
+  "for t in tests/*.test.sh; do bash \"$t\" || exit 1; done",
   "bash scripts/audit.sh",
   "bash scripts/radar.sh check",
 ]

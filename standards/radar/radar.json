@@ -513,10 +513,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "The hosted database for now (Jim, 2026-11-26), used only when a deployed service must write data at runtime. Part of an approved vendor, Free plan only. No project uses it yet. Decision 0004 in PR 615.",
+    "description": "The hosted database (decision 0004, Jim 2026-11-26), used only when a deployed service must write data at runtime, until a need comes up that it can't meet. Part of an approved vendor, Free plan only. No project uses it yet.",
     "exemplars": [],
     "sources": [
-      "https://github.com/jimhillr/monorepo/pull/615"
+      "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
     "budget": 0
@@ -607,27 +607,27 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Hosted Postgres with per-PR branches and scale to zero. Jim chose D1 first (2026-11-26); Neon is revisited only if a need comes up that D1 can't meet. Not an approved vendor.",
+    "description": "Hosted Postgres with per-PR branches and scale to zero. Decision 0004 chose D1 first; Neon is revisited only if a need comes up that D1 can't meet. Not an approved vendor.",
     "exemplars": [],
     "sources": [
-      "https://github.com/jimhillr/monorepo/pull/615"
+      "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "Neon MCP connector in the Claude directory.",
     "budget": 0
   },
   {
     "name": "SurrealDB",
-    "ring": "Trial",
+    "ring": "Hold",
     "quadrant": "Platforms",
     "isNew": "FALSE",
     "kind": "technology",
-    "description": "Named the general-purpose database in the standards README, used only by luggage (on hold). Decision 0004 (PR 615) puts files, committed SQLite and then D1 first, so the README and this blip need revisiting once it merges.",
+    "description": "Used only by luggage (on hold). Decision 0004 puts committed files, committed SQLite and then D1 first, so don't start new work on it.",
     "exemplars": [
       "luggage"
     ],
     "sources": [
       "standards/docs/README.md",
-      "https://github.com/jimhillr/monorepo/pull/615"
+      "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "",
     "budget": 0
@@ -652,10 +652,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Compared in decision 0004 (proposed) and not recommended: Supabase pauses idle projects and has paid-only branching; Turso blocks every database once any one limit is hit and is being acquired.",
+    "description": "Compared in decision 0004 and not chosen: Supabase pauses idle projects and has paid-only branching; Turso blocks every database once any one limit is hit and is being acquired.",
     "exemplars": [],
     "sources": [
-      "https://github.com/jimhillr/monorepo/pull/615"
+      "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "Supabase MCP connector in the Claude directory.",
     "budget": 0
@@ -820,14 +820,15 @@
   },
   {
     "name": "Files before databases",
-    "ring": "Trial",
+    "ring": "Adopt",
     "quadrant": "Techniques",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Jim's rule (2026-11-26): keep data and results as committed Markdown, JSON, JSON Lines, CSV or TOML; when real queries are needed, commit a SQLite .sql dump read with rusqlite; a hosted database (D1) is the last resort. Lands in AGENTS.md with PR 615.",
+    "description": "Keep data and results as committed Markdown, JSON, JSON Lines, CSV or TOML; when real queries are needed, commit a SQLite .sql dump read with rusqlite; a hosted database (D1) is the last resort (AGENTS.md, decision 0004).",
     "exemplars": [],
     "sources": [
-      "https://github.com/jimhillr/monorepo/pull/615"
+      "AGENTS.md",
+      "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "",
     "budget": 0
