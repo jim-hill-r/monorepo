@@ -1,6 +1,7 @@
 # Priority Issues
 
 - TODO: Port the checks the removed `standards` CLI ran into `standards/scripts/audit.sh`: NAM-002 (directory matches package name), NAM-004 (`poc_` prefix), DOC-001 to DOC-004 (README.md and CONTRIBUTING.md with a Getting Started section) and LIN-001/LIN-002 (Cargo lints). About 20 projects miss a README.md or CONTRIBUTING.md today, so add them as warnings first, or fix the projects in the same PR.
+- TODO (agent-generated): Make the git hooks pass in a cloud sandbox for projects with Playwright tests (cookbook/web, cahokia/web). `npx playwright install --with-deps` in `standards/tasks/dioxus-web.toml` can't download its Chromium there, and dioxus-cli can't be installed, so agents must commit with `LEFTHOOK=0`. Options: use the sandbox's preinstalled Chromium (`/opt/pw-browsers`, via `PLAYWRIGHT_BROWSERS_PATH`) when present, or have `hooks.sh` skip just the Playwright step when the browser or `dx` is missing and say so, leaving it to PR CI.
 
 # Backlog
 
