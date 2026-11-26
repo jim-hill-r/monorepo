@@ -75,4 +75,15 @@ Needs Phases 3 to 5 above and the eval engine's `evals-results` files (root
 - TODO (agent-generated): For in-app feedback (eval engine phase 6), add `/feedback/sign-in` (behind Access; returns a signed 12-hour token to the opener by `postMessage`, or to a deep link for desktop and mobile), `POST /api/feedback` (checks the token, validates the comment with `feedback/model`, writes the `feedback.jsonl` line and the screenshot into the open `pane-edit` PR) and `GET /api/feedback?project=&url=` (open pins for a page from the snapshot plus the open `pane-edit` PR), with CORS limited to the projects' `DEPLOY_URL`s and preview hosts. Name `evals/feedback/*.webp` as safe for PR triage alongside `feedback.jsonl`.
 - TODO (agent-generated): Add a Feedback page: every comment, filterable by project, kind, status and requirement, with its screenshot and pin, build, replies, and an "Open in app" link that loads the URL with the toolbar on and the pin highlighted. Show open pins on each Project page.
 
+### Phase 7: revenue and cost
+
+Needs Phase 1 for the pages, Phase 3 for free-tier usage and Phase 5 for the forms. See "Revenue and cost" in the plan.
+
+- TODO (agent-generated): Add `standards/docs/finance.md` with the per-project `finance.toml` convention (`[[revenue]]` by month and `[[cost]]` with `every` = month, year or once, in whole US cents, each with a source or vendor), link it from `standards/docs/README.md`, and add `finance.toml` to the files a project may have.
+- TODO (agent-generated): Add money types to `pane/model` (`Money` in cents, `RevenueLine`, `CostLine`, `ProjectMoney`) and pure functions for a project's monthly revenue, direct cost (spreading yearly costs over twelve months) and net, and for splitting shared costs across projects by their share of PRs merged that month, with unit tests for each edge (no PRs, one project, a PR touching two projects, a once cost).
+- TODO (agent-generated): Read every `finance.toml` and the radar's monthly budgets (`standards/radar/radar.json`, once PR #619's budgets land) into the snapshot in `pane_snapshot`, failing the build on an invalid file, with fixture tests.
+- TODO (agent-generated): Build the Money page (per project: this month's revenue, direct cost, shared-cost share and net, a 12-month chart, a totals row, and shared costs listed with their radar blips) and a Money section on each Project page, each number linking to its source line on GitHub.
+- TODO (agent-generated): Give `free-tiers.sh usage` a JSON output uploaded as the `all-free-tier-usage.yml` run's artifact, and add `/api/free-tiers` to the pane Worker (latest run's JSON, cached for an hour) shown as a headroom table on the Money page.
+- TODO (agent-generated): Add "Add revenue" and "Add a cost" forms that append a `finance.toml` entry through the `pane-edit` PR, and name `finance.toml` as safe for PR triage to approve in `standards/docs/pull-requests.md` only when the PR is a `pane-edit` PR.
+
 # Backlog
