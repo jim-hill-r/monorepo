@@ -37,6 +37,12 @@ cargo run -p evals_cli -- run --stage ci --project cookbook \
 
 # Write the job summary table ($GITHUB_STEP_SUMMARY, or stdout).
 cargo run -p evals_cli -- publish
+
+# Settings made by hand (standards/settings.toml): print a HUMAN_ISSUES.md
+# line for each check that is due, and record Jim's answer.
+cargo run -p evals_cli -- human-checks due
+cargo run -p evals_cli -- human-checks answer claude-connectors --ok
+cargo run -p evals_cli -- human-checks answer claude-connectors --not-ok "GitHub needs reconnecting"
 ```
 
 Each result says `pass`, `fail`, `error` (an eval matched no test) or

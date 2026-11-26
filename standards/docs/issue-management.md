@@ -194,7 +194,9 @@ A weekly scheduled task in the Claude project runs the
 [`human-issues-digest`](../../.agents/skills/human-issues-digest/SKILL.md)
 skill. It posts one message listing the open `HUMAN_ISSUES.md` lines and the
 open `needs-human` PRs, oldest first, with what each one unblocks and what
-was added since the last digest.
+was added since the last digest. It also adds periodic `Check <setting>`
+lines for settings made by hand that are due for Jim to look at, from
+`standards/settings.toml` (see "Human checks" in [evals.md](evals.md#human-checks)).
 
 ### Closing one
 

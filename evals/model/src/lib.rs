@@ -9,12 +9,17 @@ mod evals;
 mod ids;
 mod requirements;
 mod results;
+mod settings;
 mod verdict;
 
 pub use evals::{Eval, EvalsFile, Kind, METRIC_SOURCES, Stage, parse_evals};
 pub use ids::{is_kebab_case, parse_requirement_id, snake_case_id};
 pub use requirements::{Priority, Requirement, Status, parse_requirements};
 pub use results::{By, EvalResult, ResultStatus};
+pub use settings::{
+    DueCheck, DueReason, Setting, SettingCheck, due_checks, human_issue_line, latest_check,
+    parse_every, parse_settings,
+};
 pub use verdict::{Thresholds, Verdict, VerdictReport, requirement_order, verdict};
 
 /// A problem found while parsing a file, with the 1-based line it is on when

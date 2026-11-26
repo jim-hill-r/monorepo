@@ -19,6 +19,11 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   never in an `ISSUES.md` and never only in a chat thread. Agents don't work
   them. A weekly Claude scheduled task, "Weekly human issues digest", reports
   them to Jim with the `human-issues-digest` skill (decision 0002).
+- **Settings made by hand** (connectors, secrets, Auth0, Cloudflare tokens,
+  billing) are listed in `standards/settings.toml`, never with a secret's
+  value. A change that makes or needs one adds its entry in the same PR; the
+  weekly digest asks Jim to re-check each one on its schedule ("Human
+  checks" in `standards/docs/evals.md`).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their

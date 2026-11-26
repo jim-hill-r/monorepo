@@ -132,9 +132,11 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
+| `human-check` | Jim checks a setting made by hand | `setting`: an `id` in `standards/settings.toml` (see [Human checks](#human-checks)) | Declared inline, `stages = ["human"]` |
 
 A `human` eval (Jim's rating in pane) exists implicitly for every
-requirement and is never listed.
+requirement and is never listed. Only `human-check` evals list the `human`
+stage.
 
 ### Stages
 
@@ -145,6 +147,7 @@ requirement and is never listed.
 | `chaos` | Nightly, after that night's `cd` evals passed | Production, with a fault injected |
 | `observe` | Daily, and one hour after each deploy | Observability data over the eval's `window` |
 | `judge` | Weekly | Production and the latest UAT report |
+| `human` | When Jim rates in pane, or answers a due human check | His own use, or the dashboard itself |
 
 `cd`, `chaos` and `observe` are the **production stages**. Every `must`
 requirement needs at least one eval in a production stage.
@@ -162,7 +165,7 @@ error, and the rest follow once every shipping project has its files.
 
 | Code | Finding |
 | --- | --- |
-| EVL-001 | An eval names a requirement that doesn't exist or is retired. |
+| EVL-001 | An eval names a requirement that doesn't exist or is retired, or a `human-check` names a setting that isn't in `standards/settings.toml`. |
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
@@ -173,8 +176,9 @@ path ends with its `glob`. `target/`, `node_modules/` and hidden folders
 are not searched.
 
 Malformed files (a heading that isn't `<PREFIX>-<nnn>: <title>`, a missing
-field, an unknown priority, stage or kind, or an `evals.toml` whose `prefix`
-doesn't match the project's prefix) are reported too.
+field, an unknown priority, stage or kind, an `evals.toml` whose `prefix`
+doesn't match the project's prefix, a bad `standards/settings.toml` entry,
+or an answer line naming an unknown setting) are reported too.
 
 ## In CI
 
@@ -201,6 +205,97 @@ never fails the job itself: failing tests already fail `ci`, and a bug in
 the engine must not block a pull request. Run the same steps locally with
 `mise run ci && mise run evals && bash ../standards/scripts/evals.sh publish`
 from a project directory.
+
+## Human checks
+
+Some settings are made by hand in a dashboard and live in no file an eval
+can read: Claude connectors and scheduled tasks, repo secrets, Auth0
+applications, Cloudflare token scopes, free-plan billing. They break
+silently (an expired connector sign-in, a token missing a scope, a dropped
+callback URL), so Jim checks each one on a schedule. The design is in the
+plan's [Human checks](./plans/2026-11-eval-engine.md#human-checks-settings-made-by-hand)
+section.
+
+### The manifest
+
+`standards/settings.toml` lists every hand-made setting once:
+
+```toml
+[[setting]]
+id = "cloudflare-api-token-scopes"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > My Profile > API Tokens"
+expect = "The token in CLOUDFLARE_API_TOKEN has Cloudflare Pages: Edit."
+why = "A token missing a scope fails every deploy."
+every = "90d"
+```
+
+| Field | Value |
+| --- | --- |
+| `id` | Unique, kebab-case, stable: answers are keyed by it. |
+| `vendor` | Who hosts it: `GitHub`, `Claude`, `Cloudflare`, ... |
+| `where` | The dashboard page, as a click path or a link. |
+| `expect` | What it must be, in words Jim can check in under a minute. |
+| `why` | What breaks without it. |
+| `every` | How often to check it, in whole days: `30d`, `90d`. |
+
+It never holds a secret's value, only that the secret exists and what it
+is for; `evals check` rejects any other field. A `HUMAN_ISSUES.md` task that
+creates a setting adds its entry here in the same PR.
+
+### Answers
+
+Jim's answers are his own judgment, so like pane ratings they live on
+`main`: one JSON line per answer in `standards/settings-checks.jsonl`,
+appended by `evals human-checks answer` and never edited by hand.
+
+```json
+{"setting":"claude-connectors","status":"pass","note":"ok","at":"2026-12-07T15:02:00Z","by":"jim"}
+```
+
+### The loop
+
+1. **Due.** `evals human-checks due` (in `evals/`:
+   `cargo run -q -p evals_cli -- human-checks due`) prints one
+   `HUMAN_ISSUES.md` line for each setting that was never checked, whose
+   last answer is older than its `every`, or whose last answer was "not
+   ok":
+
+   ```text
+   - TODO (human): Check claude-connectors: GitHub and Cloudflare are connected ... (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Last checked 2026-11-02.)
+   ```
+
+2. **Asked.** The weekly `human-issues-digest` run (Mondays) adds each due
+   line that isn't already in `HUMAN_ISSUES.md`, in one PR, and lists them
+   in the digest under "Checks due".
+3. **Answered.** When Jim replies "ok", or says what is wrong, the agent
+   that reads it runs
+   `evals human-checks answer <id> --ok` or
+   `evals human-checks answer <id> --not-ok "<his words>"`, removes the
+   line from `HUMAN_ISSUES.md`, and opens one PR with both. A "not ok"
+   also files a `FIX` in the owning project's `ISSUES.md`, or a new
+   `TODO (human)` line when only Jim can fix it, and the check stays due
+   until a newer "ok".
+
+### Linking a requirement
+
+An eval of kind `human-check` ties a requirement to a setting, so the
+requirement's verdict can use the answer:
+
+```toml
+[[eval]]
+id = "auth0-callbacks"
+requirement = "CAHO-004"
+stages = ["human"]
+kind = "human-check"
+setting = "auth0-cahokia-app"
+```
+
+A `human-check` eval runs in stage `human` only, and only it may list that
+stage. A `setting` that isn't in the manifest is EVL-001. A setting no eval
+names is fine: most are repo-wide and have no requirement yet. Folding the
+answers into the verdicts comes with `evals verdicts`: a "not ok" makes the
+requirement not met, and a check past twice its `every` makes it at risk.
 
 ## Results and verdicts
 

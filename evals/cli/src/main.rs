@@ -1,6 +1,7 @@
 //! The `evals` command. See `evals/README.md`.
 
 mod check;
+mod human_checks;
 mod publish;
 mod reports;
 mod run;
@@ -69,6 +70,12 @@ enum Command {
         #[arg(long)]
         partial: bool,
     },
+    /// Settings made by hand (standards/settings.toml) that Jim checks on a
+    /// schedule, and his answers (standards/settings-checks.jsonl).
+    HumanChecks {
+        #[command(subcommand)]
+        command: HumanChecksCommand,
+    },
     /// Write the job summary for a results file: one table per project.
     Publish {
         /// The JSONL results file.
@@ -78,6 +85,39 @@ enum Command {
         /// or standard output when that isn't set.
         #[arg(long)]
         summary: Option<PathBuf>,
+    },
+}
+
+#[derive(Subcommand)]
+enum HumanChecksCommand {
+    /// Print a HUMAN_ISSUES.md line for each check that is due: never
+    /// checked, last answered longer ago than its `every`, or last answered
+    /// "not ok".
+    Due {
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// Record Jim's answer to a check, appended to
+    /// standards/settings-checks.jsonl.
+    Answer {
+        /// The setting's id in standards/settings.toml.
+        setting: String,
+        /// Jim said it is as expected.
+        #[arg(long, conflicts_with = "not_ok", required_unless_present = "not_ok")]
+        ok: bool,
+        /// Jim said it is wrong: his words on what is wrong.
+        #[arg(long, value_name = "WHAT_IS_WRONG")]
+        not_ok: Option<String>,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// When Jim answered (RFC 3339). Defaults to now.
+        #[arg(long)]
+        at: Option<chrono::DateTime<chrono::Utc>>,
     },
 }
 
@@ -200,6 +240,42 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             );
             Ok(ExitCode::SUCCESS)
         }
+        Command::HumanChecks { command } => match command {
+            HumanChecksCommand::Due { root, now } => {
+                let root = resolve_root(root)?;
+                let lines = human_checks::due(&root, now.unwrap_or_else(chrono::Utc::now))?;
+                if lines.is_empty() {
+                    println!("No human checks are due.");
+                } else {
+                    print!("{lines}");
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+            HumanChecksCommand::Answer {
+                setting,
+                ok,
+                not_ok,
+                root,
+                at,
+            } => {
+                let root = resolve_root(root)?;
+                let (status, note) = match not_ok {
+                    Some(words) if !ok => (ResultStatus::Fail, Some(words)),
+                    _ => (ResultStatus::Pass, Some("ok".to_string())),
+                };
+                let check = human_checks::answer(
+                    &root,
+                    &setting,
+                    status,
+                    note,
+                    at.unwrap_or_else(chrono::Utc::now),
+                )?;
+                let path = root.join(check::SETTING_CHECKS);
+                append(&path, &format!("{}\n", serde_json::to_string(&check)?))?;
+                println!("evals: recorded {setting} as {}", status_word(status));
+                Ok(ExitCode::SUCCESS)
+            }
+        },
         Command::Publish { results, summary } => {
             let text = fs::read_to_string(&results)
                 .with_context(|| format!("reading {}", results.display()))?;
@@ -215,6 +291,14 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             }
             Ok(ExitCode::SUCCESS)
         }
+    }
+}
+
+fn status_word(status: ResultStatus) -> &'static str {
+    if status == ResultStatus::Pass {
+        "ok"
+    } else {
+        "not ok"
     }
 }
 
