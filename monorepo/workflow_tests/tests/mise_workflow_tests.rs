@@ -487,3 +487,19 @@ fn test_every_shared_task_file_has_an_evals_task_and_ci_saves_cargo_test() {
         }
     }
 }
+
+#[test]
+fn test_push_main_deploys_every_push_projects() {
+    let (content, _) = load("mise-projects.yml");
+    assert!(
+        content.contains("AFFECTED_DEPLOY: ${{ inputs.deploy && '1' || '' }}"),
+        "deploy runs should list projects marked `# deploy-on-every-push`"
+    );
+    let pane = fs::read_to_string(get_repo_root().join("pane/cloudflare/mise.toml"))
+        .unwrap_or_else(|e| panic!("read pane/cloudflare/mise.toml: {e}"));
+    assert!(
+        pane.lines()
+            .any(|l| l.starts_with("# deploy-on-every-push")),
+        "pane's snapshot reads the whole repo, so it deploys on every push"
+    );
+}

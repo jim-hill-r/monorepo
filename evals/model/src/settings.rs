@@ -1,5 +1,6 @@
-//! The manifest of settings made by hand (`standards/settings.toml`) and
-//! Jim's answers when he checks them (`standards/settings-checks.jsonl`).
+//! The manifest of settings made by hand (`standards/settings.toml`),
+//! the human tasks that ask Jim to check them (`issues/human/settings-check-<id>.md`)
+//! and his answers (`standards/settings-checks.jsonl`).
 //! See "Human checks" in `standards/docs/evals.md`.
 //!
 //! ```toml
@@ -186,8 +187,24 @@ pub fn due_checks<'a>(
         .collect()
 }
 
-/// The periodic `HUMAN_ISSUES.md` line for a due check. `covers` lists the
-/// requirements whose `human-check` evals name the setting.
+/// The file name of a due check's human task in `issues/human/`.
+pub fn human_issue_file_name(setting: &str) -> String {
+    format!("settings-check-{setting}.md")
+}
+
+/// The human task file (`issues/human/settings-check-<id>.md`) for a due check,
+/// added on `added` (`YYYY-MM-DD`).
+pub fn human_issue_file(due: &DueCheck<'_>, covers: &[String], added: &str) -> String {
+    format!(
+        "---\nadded: {added}\nunblocks: \"an up-to-date check of {} in standards/settings.toml\"\n---\n\n{}\n",
+        due.setting.id,
+        human_issue_line(due, covers)
+    )
+}
+
+/// One sentence asking Jim to check a due setting: the body of its human
+/// task. `covers` lists the requirements whose `human-check` evals name the
+/// setting.
 pub fn human_issue_line(due: &DueCheck<'_>, covers: &[String]) -> String {
     let setting = due.setting;
     let last = match (due.reason, due.last) {
@@ -205,7 +222,7 @@ pub fn human_issue_line(due: &DueCheck<'_>, covers: &[String]) -> String {
         format!(" Covers {}.", covers.join(", "))
     };
     format!(
-        "- TODO (human): Check {}: {} ({}: {}). Reply ok or what is wrong. (Periodic, every {}. {last}.{covers})",
+        "Check {}: {} ({}: {}). Reply ok or what is wrong. (Periodic, every {}. {last}.{covers})",
         setting.id,
         setting.expect.trim_end_matches('.'),
         setting.vendor,
@@ -378,11 +395,25 @@ every = "0d"
         let due = due_checks(&settings, &checks, at(4));
         assert_eq!(
             human_issue_line(&due[0], &["COOK-003".into()]),
-            "- TODO (human): Check cloudflare-api-token: The deploy token has Pages: Edit (Cloudflare: My Profile > API Tokens). Reply ok or what is wrong. (Periodic, every 90d. Last answer 2026-01-03: not ok (token expired). Covers COOK-003.)"
+            "Check cloudflare-api-token: The deploy token has Pages: Edit (Cloudflare: My Profile > API Tokens). Reply ok or what is wrong. (Periodic, every 90d. Last answer 2026-01-03: not ok (token expired). Covers COOK-003.)"
         );
         assert_eq!(
             human_issue_line(&due[1], &[]),
-            "- TODO (human): Check claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)"
+            "Check claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)"
+        );
+    }
+
+    #[test]
+    fn writes_the_human_issue_file() {
+        let settings = settings();
+        let due = due_checks(&settings[1..], &[], at(1));
+        assert_eq!(
+            human_issue_file_name("claude-connectors"),
+            "settings-check-claude-connectors.md"
+        );
+        assert_eq!(
+            human_issue_file(&due[0], &[], "2026-01-01"),
+            "---\nadded: 2026-01-01\nunblocks: \"an up-to-date check of claude-connectors in standards/settings.toml\"\n---\n\nCheck claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)\n"
         );
     }
 

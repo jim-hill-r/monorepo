@@ -29,7 +29,7 @@ Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downlo
 the nflverse schedule, runs the simulation and writes `rooting.json`
 ([format](docs/rooting-json.md)).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
-the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
+the remaining work to build v1 is listed in [issues/](issues/).
 
 ## Layout
 

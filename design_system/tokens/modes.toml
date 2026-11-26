@@ -1,0 +1,30 @@
+# What accessible mode changes in every theme, on top of light or dark.
+# Contrast is raised to WCAG AAA by each theme's [accessible.<scheme>.color]
+# tables, checked against the accessible minimums in pairs.toml. Link
+# underlines, always-visible focus rings and the forced-colors fallback live
+# in the generated CSS (see the cli's render code).
+
+[accessible.type]
+# One step bigger: 18 px body text instead of 16 px.
+base = 1.125
+
+[accessible.fonts]
+# Atkinson Hyperlegible (SIL Open Font License) replaces decorative fonts:
+# the earthy serif, the colorful rounded face and the 8-bit pixel font. The
+# font files are self-hosted from design_system/fonts/; until a page loads
+# them, the system sans stack is used.
+heading = "'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+body = "'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+
+[accessible.tokens]
+leading-body = "1.6"
+focus-width = "3px"
+focus-offset = "3px"
+target-min = "44px"
+border-width = "2px"
+# No motion, no shadows: depth comes from borders instead.
+motion-fast = "0ms"
+motion-slow = "0ms"
+shadow-1 = "none"
+shadow-2 = "none"
+shadow-3 = "none"

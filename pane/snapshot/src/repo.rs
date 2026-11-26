@@ -15,16 +15,29 @@ const SKIP_DIRS: &[&str] = &["target", "node_modules", "dist"];
 pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, String> {
     let root_mise = read(&root.join("mise.toml"))?;
     let roots = parse::config_roots(&root_mise)?;
-    let lists = parse::root_lists(&read_optional(&root.join("ISSUES.md")));
+    let lists = parse::root_lists(&read_optional(&root.join("issues/README.md")));
 
     let mut snapshot = Snapshot::new(commit, taken_at);
     for path in &roots {
         let dir = root.join(path);
         let mise = read_optional(&dir.join("mise.toml"));
+        let deploy_url = parse::deploy_url(&mise);
+        if let Some(url) = &deploy_url {
+            snapshot.deliverables.push(parse::live_site(path, url));
+        }
+        if let Some(tag) = parse::release_tag(&mise) {
+            // Asset names start with the Cargo package name; fall back to
+            // the folder name for a project without one.
+            let package = parse::package_name(&read_optional(&dir.join("Cargo.toml")))
+                .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(path).to_owned());
+            snapshot
+                .deliverables
+                .push(parse::release(path, &tag, &package));
+        }
         snapshot.projects.push(Project {
             path: path.clone(),
             kind: parse::project_kind(&mise).unwrap_or_else(|| "unknown".to_owned()),
-            deploy_url: parse::deploy_url(&mise),
+            deploy_url,
             summary: parse::readme_summary(&read_optional(&dir.join("README.md"))),
             status: lists.status_of(path),
         });
@@ -35,14 +48,15 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
         let project = parse::owning_project(&rel, &roots);
         let name = rel.rsplit('/').next().unwrap_or(&rel);
         let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
-        if name == "ISSUES.md" {
+        let issue_kind = parse::issue_file_kind(&rel);
+        if issue_kind == Some(parse::IssueFile::Work) {
             snapshot
                 .work_items
-                .extend(parse::issues_items(&rel, project, &read(&file)?));
-        } else if rel == "HUMAN_ISSUES.md" {
+                .extend(parse::issue_file(&rel, project, &read(&file)?));
+        } else if issue_kind == Some(parse::IssueFile::Human) {
             snapshot
                 .human_issues
-                .extend(parse::human_issues(&rel, &read(&file)?));
+                .extend(parse::human_issue_file(&rel, &read(&file)?));
         } else if let Some(kind) = parse::doc_kind(&rel) {
             let contents = read(&file)?;
             if kind == DeliverableKind::Retro {

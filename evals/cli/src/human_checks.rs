@@ -8,11 +8,14 @@ use std::path::Path;
 use anyhow::{Context, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use evals_model::{
-    By, Kind, ResultStatus, Setting, SettingCheck, due_checks, human_issue_line, parse_evals,
-    parse_settings,
+    By, Kind, ResultStatus, Setting, SettingCheck, due_checks, human_issue_file,
+    human_issue_file_name, human_issue_line, parse_evals, parse_settings,
 };
 
 use crate::check::{EVALS, SETTING_CHECKS, SETTINGS};
+
+/// Where human tasks live, relative to the repo root.
+pub const HUMAN_ISSUES: &str = "issues/human";
 
 /// Reads and validates the manifest.
 pub fn read_settings(root: &Path) -> Result<Vec<Setting>> {
@@ -70,18 +73,48 @@ pub fn covered_requirements(root: &Path) -> Result<BTreeMap<String, Vec<String>>
     Ok(covers)
 }
 
-/// The `HUMAN_ISSUES.md` lines for every check due at `now`, one per line.
-pub fn due(root: &Path, now: DateTime<Utc>) -> Result<String> {
+/// One line per check due at `now`. With `write`, also writes a human task
+/// file in `issues/human/` for up to `limit` due checks that don't have one
+/// yet, and marks those lines `wrote <path>:`; a check whose file already
+/// exists is marked `open <path>:`.
+pub fn due(root: &Path, now: DateTime<Utc>, write: Option<usize>) -> Result<String> {
     let settings = read_settings(root)?;
     let checks = read_checks(root)?;
     let covers = covered_requirements(root)?;
+    let added = now.format("%Y-%m-%d").to_string();
+    let mut left = write.unwrap_or(0);
     let mut out = String::new();
     for check in due_checks(&settings, &checks, now) {
         let requirements = covers.get(&check.setting.id).cloned().unwrap_or_default();
+        let rel = format!(
+            "{HUMAN_ISSUES}/{}",
+            human_issue_file_name(&check.setting.id)
+        );
+        let path = root.join(&rel);
+        if path.exists() {
+            out.push_str(&format!("open {rel}: "));
+        } else if write.is_some() && left > 0 {
+            fs::create_dir_all(root.join(HUMAN_ISSUES))?;
+            fs::write(&path, human_issue_file(&check, &requirements, &added))
+                .with_context(|| format!("writing {}", path.display()))?;
+            left -= 1;
+            out.push_str(&format!("wrote {rel}: "));
+        }
         out.push_str(&human_issue_line(&check, &requirements));
         out.push('\n');
     }
     Ok(out)
+}
+
+/// Deletes the setting's human task file, if there is one. Returns whether
+/// it existed.
+pub fn close_task(root: &Path, setting: &str) -> Result<bool> {
+    let path = root.join(HUMAN_ISSUES).join(human_issue_file_name(setting));
+    match fs::remove_file(&path) {
+        Ok(()) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(e).with_context(|| format!("deleting {}", path.display())),
+    }
 }
 
 /// Builds the answer line for `setting`, checking it is in the manifest.
@@ -153,10 +186,10 @@ every = "30d"
     fn lists_due_checks_with_the_requirements_they_cover() -> Result<()> {
         let dir = repo()?;
         let root = dir.path();
-        let out = due(root, time("2026-12-01T00:00:00Z"))?;
+        let out = due(root, time("2026-12-01T00:00:00Z"), None)?;
         let lines: Vec<&str> = out.lines().collect();
         assert_eq!(lines.len(), 2);
-        assert!(lines[0].starts_with("- TODO (human): Check auth0-cookbook-app: "));
+        assert!(lines[0].starts_with("Check auth0-cookbook-app: "));
         assert!(lines[0].ends_with("(Periodic, every 90d. Never checked. Covers COOK-004.)"));
         assert!(lines[1].ends_with("(Periodic, every 30d. Never checked.)"));
 
@@ -171,11 +204,36 @@ every = "30d"
             root.join(SETTING_CHECKS),
             format!("{}\n", serde_json::to_string(&ok)?),
         )?;
-        let out = due(root, time("2026-12-15T00:00:00Z"))?;
+        let out = due(root, time("2026-12-15T00:00:00Z"), None)?;
         assert_eq!(out.lines().count(), 1, "{out}");
-        let out = due(root, time("2026-12-31T00:00:00Z"))?;
+        let out = due(root, time("2026-12-31T00:00:00Z"), None)?;
         assert_eq!(out.lines().count(), 2, "{out}");
         assert!(out.contains("Last checked 2026-12-01"));
+        Ok(())
+    }
+
+    #[test]
+    fn writes_task_files_up_to_the_limit_and_closes_them() -> Result<()> {
+        let dir = repo()?;
+        let root = dir.path();
+        let now = time("2026-12-01T00:00:00Z");
+        let out = due(root, now, Some(1))?;
+        let lines: Vec<&str> = out.lines().collect();
+        assert!(
+            lines[0].starts_with("wrote issues/human/settings-check-auth0-cookbook-app.md: Check")
+        );
+        assert!(lines[1].starts_with("Check claude-connectors:"), "{out}");
+        let file =
+            fs::read_to_string(root.join("issues/human/settings-check-auth0-cookbook-app.md"))?;
+        assert!(file.starts_with("---\nadded: 2026-12-01\n"), "{file}");
+
+        // Next run: the first is open, the second gets written.
+        let out = due(root, now, Some(5))?;
+        assert!(out.starts_with("open issues/human/settings-check-auth0-cookbook-app.md: "));
+        assert!(out.contains("wrote issues/human/settings-check-claude-connectors.md: "));
+
+        assert!(close_task(root, "claude-connectors")?);
+        assert!(!close_task(root, "claude-connectors")?);
         Ok(())
     }
 

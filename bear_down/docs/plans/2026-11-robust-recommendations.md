@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: accepted (Jim, 2026-11-26); step 1 done
+- Status: done (2026-11-26); accepted by Jim the same day
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -110,11 +110,43 @@ Each is one PR, in this order:
 1. Tiebreaker trace in `Standings::seeds`, tested against past seasons'
    real tiebreaks. Done: `Standings::seeds_traced` reports each
    `Tiebreak` (step, tied group, survivors).
-2. Channel counts in the paired simulation, with the adding-up test.
-3. Static relevance pass and exact "can't matter" cases.
-4. Adaptive pair counts and the tiers.
-5. `channels` in `rooting.json`, explanation text and the page.
-6. Golden-week evals.
+2. Channel counts in the paired simulation, with the adding-up test. Done:
+   `GameImpact::channels` splits the playoff and Super Bowl swings by
+   channel (division title, wild card, seed, playoff path, Super Bowl
+   opponent, and chance for leftover simulation noise) and, for the seeding
+   channels, by cause: a record change, a coin flip, or the first
+   tiebreaker step whose result differed between the two seasons. The
+   shares add up to the swing exactly. It added about 5% to the weekly
+   build (15 to 16 seconds locally).
+3. Static relevance pass and exact "can't matter" cases. Done:
+   `relevance` lists each game's open links (the Bears play, a team in the
+   race, a possible Super Bowl opponent, a team on contenders' schedules).
+   A game with none can't matter in any season. The elimination check uses
+   records only, so it errs toward "still alive" (the 2023 Bears, out only
+   on tiebreakers, still count as alive); in week 12 every game is open.
+4. Adaptive pair counts and the tiers. Done: a game whose Super Bowl
+   swing's two-standard-error range spans the 0.05-point line, with a
+   standard error over a fifth of it, gets another batch of pairs, up to 4
+   times the simulations. A game the relevance pass closes isn't simulated,
+   so its swings are exactly zero. `GameImpact::tier` gives matters, small,
+   negligible or none. In week 12, four games got extra pairs and the build
+   went from about 16 to 20.5 seconds locally. The page doesn't use the
+   tiers yet; step 5 does.
+5. `channels` in `rooting.json`, explanation text and the page. Done:
+   every game's `why` is written from the measured channels (biggest
+   first, with the team each favors, its size and, for a tiebreaker, the
+   share of seasons it decided), with a net line when they disagree. A
+   "doesn't matter" game names itself and how small its difference is,
+   then the channels or open links; a closed game says why nothing can
+   change. A pick now needs a tier of matters or small, so a clear but
+   negligible edge reads "doesn't matter" (BEAR-005). The old rule-of-thumb
+   head-to-head and strength lines are gone (BEAR-006).
+6. Golden-week evals. Done: `golden_week_2018_week_17` (the Bears' bye
+   came down to head-to-head with the Rams, and the text says so) and
+   `golden_week_2020_week_17` (Cardinals at Rams decided the 8-7 Bears'
+   wild card), plus `bear_down/evals.toml`, which ties these and the
+   earlier tests to BEAR-001 to BEAR-008 and checks the live
+   `rooting.json` after each deploy.
 
 ## Open questions for Jim
 

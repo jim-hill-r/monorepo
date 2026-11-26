@@ -17,8 +17,8 @@ pub use ids::{is_kebab_case, parse_requirement_id, snake_case_id};
 pub use requirements::{Priority, Requirement, Status, parse_requirements};
 pub use results::{By, EvalResult, ResultStatus};
 pub use settings::{
-    DueCheck, DueReason, Setting, SettingCheck, due_checks, human_issue_line, latest_check,
-    parse_every, parse_settings,
+    DueCheck, DueReason, Setting, SettingCheck, due_checks, human_issue_file,
+    human_issue_file_name, human_issue_line, latest_check, parse_every, parse_settings,
 };
 pub use verdict::{Thresholds, Verdict, VerdictReport, requirement_order, verdict};
 

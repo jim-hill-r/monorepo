@@ -186,6 +186,115 @@ h1 {
   border-color: var(--on-hold);
 }
 
+/* Lists of work items, human issues and deliverables. */
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rows li {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.row-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.row-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.meta a {
+  overflow-wrap: anywhere;
+}
+
+.unblocks {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+}
+
+.badge.kind-fix {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.tag {
+  font-family: ui-monospace, monospace;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.filters select {
+  font: inherit;
+  max-width: 100%;
+}
+
+.group h2 {
+  font-size: 1.15rem;
+  margin: 1.5rem 0 0.25rem;
+}
+
+.count {
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.download {
+  font-weight: 600;
+}
+
+.doc-path {
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.doc {
+  overflow-wrap: anywhere;
+}
+
+.doc table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.doc th,
+.doc td {
+  border: 1px solid var(--line);
+  padding: 0.3rem 0.5rem;
+  vertical-align: top;
+}
+
+.doc pre {
+  overflow-x: auto;
+  background: var(--nav-bg);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.doc code {
+  font-size: 0.9em;
+}
+
 /* Phone: one column, nav across the top. */
 @media (max-width: 720px) {
   .shell {
@@ -220,4 +329,18 @@ h1 {
   .footer {
     padding: 0.75rem 1rem;
   }
+}
+
+.group h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.inline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
 }

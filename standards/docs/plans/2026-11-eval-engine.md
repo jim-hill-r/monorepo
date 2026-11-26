@@ -9,10 +9,9 @@ Started 2026-11-26 from Jim's request:
 
 The decision behind this plan is
 [../decisions/0003-eval-engine.md](../decisions/0003-eval-engine.md). The work
-items are `TODO (agent-generated)` lines in the root
-[ISSUES.md](../../../ISSUES.md) under `# Backlog` ("Eval engine"), and in
-[pane/ISSUES.md](../../../pane/ISSUES.md) for the pane pages, one group per
-phase below.
+items are issue files in the root [issues/](../../../issues/) with
+`epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
+pane pages, one group per phase below.
 
 ## Goal
 
@@ -29,7 +28,7 @@ what we shipped do what we said it should?**
 - Every run writes **results** to one place, so each requirement gets a
   verdict (met, at risk, not met, unknown) with a link to the evidence, and a
   history.
-- A failing requirement becomes a `FIX` in the project's `ISSUES.md`, so the
+- A failing requirement becomes a `FIX` issue file in the project's `issues/`, so the
   existing agent loop works it. Nothing new to watch.
 
 Tests already tell us the code does what the code says. Evals tell us the
@@ -42,7 +41,7 @@ production stages, and the verdict.
 
 | Piece | State on 2026-11-26 |
 | --- | --- |
-| Product requirements | None written down. Intent lives in READMEs, `ISSUES.md` epics, plans and the review decks' Goals slide. |
+| Product requirements | None written down. Intent lives in READMEs, issue epics, plans and the review decks' Goals slide. |
 | CI | `mise run ci` per project on every PR (`pull-request-ci.yml`), on push to main, and nightly at 2 AM Pacific (`nightly-ci.yml`). |
 | CD | `push-main.yml` deploys affected projects; `nightly-cd.yml` redeploys the latest green main of every deploying project at 2:30 AM Pacific (PR #583, #595). `DEPLOY_URL` per project. |
 | UAT | Planned: Playwright `@smoke` against previews and production, `trycmd` for CLIs, scripted Bevy runs ([deploy feedback](2026-11-deploy-feedback.md), phases 2 and 3). |
@@ -461,7 +460,7 @@ snapshot of `main` plus the open `pane-edit` PR.
   for that deploy, so it can turn the requirement red (see Verdicts).
   **looks good** counts as a "met" rating.
 - `eval-triage` turns each new **bug** or **not met** into a `FIX` in the
-  project's `ISSUES.md`, and each **idea** into a `TODO`, quoting the
+  project's `issues/`, and each **idea** into a `TODO`, quoting the
   comment and linking its screenshot and anchor. The PR that fixes it
   appends a `reply` and a `resolve` line, so the pin closes itself in the
   app and in pane.
@@ -575,7 +574,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   `why` (what breaks without it) and `every` (how often to check, such as
   `30d` or `90d`). It never holds a secret's value, only that the secret
   exists and what it is for. Adding a setting by hand without adding it
-  here is the thing to avoid; `HUMAN_ISSUES.md` items that create a
+  here is the thing to avoid; human issues that create a
   setting add its manifest entry in the same PR.
 - **Evals of kind `human-check`** in a project's `evals.toml` (or the
   `monorepo` project's, for repo-wide settings such as Claude connectors)
@@ -586,20 +585,21 @@ connector sign-in, a token missing a scope, a callback URL dropped).
 - **Due checks become human issues.** `evals verdicts` lists every
   `human-check` whose latest result is older than its `every`. The weekly
   `human-issues-digest` run (Mondays) adds each due one to
-  `HUMAN_ISSUES.md` as a periodic line, `TODO (human): Check <setting>:
-  <expect> (<where>). Reply ok or what is wrong. (Periodic, every 30d.
-  Covers COOK-003.)`, in one PR with the rest of its changes, and brings it
+  `issues/human/` as a periodic task file, `Check <setting>: <expect>
+  (<where>). Reply ok or what is wrong.` (periodic, every 30d, covers
+  COOK-003), in one PR with the rest of its changes, and brings it
   to Jim with the rest of the digest.
 - **Jim's answer is the result.** When Jim answers in the project ("ok", or
   what is wrong), the agent that reads it records an answer with
-  `by = "jim"`, `status` `pass` or `fail` and his words, and removes the
-  line. A `fail` also files a `FIX` (or a `TODO (human)` if only Jim can fix
+  `by = "jim"`, `status` `pass` or `fail` and his words, and deletes the
+  task file. A `fail` also files a `FIX` (or a `TODO (human)` if only Jim can fix
   it). As built (2026-11-26), answers are Jim's judgment like pane ratings,
   so they live on `main` in `standards/settings-checks.jsonl`, keyed by
-  setting and appended by `evals human-checks answer` in the same PR that
-  removes the line, rather than on the `evals-results` branch, which agents
+  setting and appended by `evals human-checks answer` (which also deletes
+  `issues/human/settings-check-<id>.md`), rather than on the `evals-results` branch, which agents
   can't push to from a thread. Due checks come from
-  `evals human-checks due`; `evals verdicts` will read the same file. A
+  `evals human-checks due --write`; `evals verdicts` will read the same
+  file. A
   manifest entry that no eval names is not a warning: most settings are
   repo-wide and have no requirement until the `MONO-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
@@ -614,7 +614,7 @@ into one skill, `eval-triage`:
 - Reads `evals verdicts` and new feedback each morning after the 4:00 AM
   observe run.
 - For each requirement newly **not met**: adds a `FIX` to the project's
-  `ISSUES.md` naming the requirement ID, the failing evals and the evidence
+  `issues/` naming the requirement ID, the failing evals and the evidence
   links, unless an open `FIX` already names that requirement.
 - For each eval in `error`, or disputed by Jim: adds a `TODO
   (agent-generated)` to fix the eval.
@@ -740,7 +740,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 ## Things Jim does
 
-These become `TODO (human)` lines in `HUMAN_ISSUES.md` in the PR of the phase
+These become human issue files in `issues/human/` in the PR of the phase
 that needs them, not before:
 
 - Phase 0 onward: approve each project's `requirements.md` PR (they carry
@@ -749,7 +749,7 @@ that needs them, not before:
   Pacific).
 - Phase 3: a read-only PostHog personal API key as a repo secret, and
   Analytics Engine read on the Cloudflare token (already asked for in
-  `HUMAN_ISSUES.md`).
+  `issues/human/`).
 - Phase 4: create the `EVALS_CHAOS_KEY` secret (repo and Worker), and set
   `EVALS_CHAOS=on` when he is happy with the first manual runs.
 - Phase 6: nothing new; the toolbar uses pane's existing Access policy.

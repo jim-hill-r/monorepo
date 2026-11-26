@@ -1,0 +1,11 @@
+[package]
+name = "design_system_palette"
+description = "Every design system token value as plain Rust constants, for games and native UI."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]

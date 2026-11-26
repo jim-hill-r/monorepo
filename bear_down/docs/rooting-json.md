@@ -26,14 +26,39 @@ swing object per goal:
 - `playoffs`: the Bears making the playoffs.
 - `nfc_north`: all four NFC North teams reaching the divisional round.
 
-A swing object has `if_home_wins` and `if_away_wins` (the goal's odds after
-each result), `swing` (`if_home_wins - if_away_wins`; negative means root for
-the away team) and `root_for` (the team to root for, or null when the swing
-is within two standard errors of the simulation's noise, shown as "doesn't
-matter") and `why` (plain-language reasons the pick helps: the rivalry, the
-head-to-head, strength of victory and strength of schedule tiebreakers it
-touches, and how it moves the Bears' NFC North title, No. 1 seed and playoff
-odds; empty when `root_for` is null).
+A swing object has:
+
+- `if_home_wins` and `if_away_wins`: the goal's odds after each result.
+- `swing`: `if_home_wins - if_away_wins`; negative means root for the away
+  team.
+- `std_error`: the standard error of `swing` (null if nothing was
+  simulated). The page uses it to apply its A/B arm's "doesn't matter" line
+  with the CLI's rule, `bear_down_core::tier_against`
+  ([fan feedback plan](plans/2026-11-fan-feedback.md)).
+- `root_for`: the team to root for, or null for "doesn't matter". For the
+  Super Bowl and playoff goals a pick needs a clear direction (more than two
+  standard errors) and a swing that isn't confidently under 0.05 points
+  (BEAR-005).
+- `tier`: `matters` (at least 0.05 points, with confidence), `small` (too
+  close to the line to call), `negligible` (under 0.05 points, with
+  confidence) or `none` (the game can't reach the Bears in any season, from
+  the schedule alone). The NFC North goal has no line: it is `matters` for
+  any pick and `negligible` otherwise.
+- `why`: the plain-language explanation, never empty. For a pick, the
+  rivalry, then each measured channel (biggest first, up to four) with the
+  team it favors and its size, then a net line when channels pull opposite
+  ways. For "doesn't matter", a line naming the game and how small the
+  difference is, then the channels that did show up or, if none did, the
+  open links (who is still in the race, who is on the Bears' schedule). For
+  `none`, why nothing can change.
+- `channels`: the measured channels behind `why`, biggest first, each
+  clearly bigger than its noise. Each has `channel` (`division_title`,
+  `wild_card`, `seed`, `playoff_path` or `super_bowl_opponent`), `cause`
+  (for the first three: `record`, `coin flip` or the tiebreaker step whose
+  result differed, such as `strength of victory`; null otherwise),
+  `favors` (the team whose win it helps), `share` (its size, as a
+  probability), `std_error` and `seasons` (the share of simulated seasons
+  in that channel and cause). Empty for `nfc_north`.
 
 ## Example
 
@@ -53,9 +78,18 @@ odds; empty when `root_for` is null).
     {
       "id": "2026_12_CHI_DET", "gameday": "2026-11-26", "away": "CHI", "home": "DET",
       "home_win_probability": 0.569,
-      "champion": { "if_home_wins": 0.055, "if_away_wins": 0.086, "swing": -0.031, "root_for": "CHI", "why": ["The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race."] },
-      "playoffs": { "if_home_wins": 0.864, "if_away_wins": 0.963, "swing": -0.099, "root_for": "CHI", "why": [] },
-      "nfc_north": { "if_home_wins": 0.0007, "if_away_wins": 0.0005, "swing": 0.0002, "root_for": null, "why": [] }
+      "champion": {
+        "if_home_wins": 0.055, "if_away_wins": 0.083, "swing": -0.028, "std_error": 0.001, "root_for": "CHI", "tier": "matters",
+        "why": [
+          "The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race.",
+          "NFC North title, on record: a Bears win helps the Bears by 1.6 Super Bowl points."
+        ],
+        "channels": [
+          { "channel": "division_title", "cause": "record", "favors": "CHI", "share": 0.0157, "std_error": 0.0008, "seasons": 0.363 }
+        ]
+      },
+      "playoffs": { "if_home_wins": 0.864, "if_away_wins": 0.963, "swing": -0.099, "std_error": 0.0009, "root_for": "CHI", "tier": "matters", "why": ["..."], "channels": [] },
+      "nfc_north": { "if_home_wins": 0.0007, "if_away_wins": 0.0005, "swing": 0.0002, "std_error": 0.0001, "root_for": null, "tier": "negligible", "why": ["..."], "channels": [] }
     }
   ]
 }
@@ -71,5 +105,5 @@ cargo run --release -p bear_down_cli -- --out web/public/rooting.json
 
 It downloads nflverse `games.csv` (decision 0006) unless `--games` gives a
 local path or another URL, and runs 100,000 simulations unless
-`--simulations` says otherwise. A weekly build takes under a minute in a
-release build.
+`--simulations` says otherwise. Games close to the 0.05-point line get up to
+four times as many. A weekly build takes under a minute in a release build.

@@ -90,10 +90,16 @@ enum Command {
 
 #[derive(Subcommand)]
 enum HumanChecksCommand {
-    /// Print a HUMAN_ISSUES.md line for each check that is due: never
-    /// checked, last answered longer ago than its `every`, or last answered
-    /// "not ok".
+    /// List each check that is due: never checked, last answered longer
+    /// ago than its `every`, or last answered "not ok". With --write, also
+    /// write its human task, issues/human/settings-check-<id>.md.
     Due {
+        /// Write a task file for each due check that has none yet.
+        #[arg(long)]
+        write: bool,
+        /// With --write, write at most this many new task files.
+        #[arg(long, default_value_t = 5)]
+        limit: usize,
         /// Repo root. Defaults as for `check`.
         #[arg(long)]
         root: Option<PathBuf>,
@@ -102,7 +108,7 @@ enum HumanChecksCommand {
         now: Option<chrono::DateTime<chrono::Utc>>,
     },
     /// Record Jim's answer to a check, appended to
-    /// standards/settings-checks.jsonl.
+    /// standards/settings-checks.jsonl, and delete its human task file.
     Answer {
         /// The setting's id in standards/settings.toml.
         setting: String,
@@ -241,9 +247,18 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             Ok(ExitCode::SUCCESS)
         }
         Command::HumanChecks { command } => match command {
-            HumanChecksCommand::Due { root, now } => {
+            HumanChecksCommand::Due {
+                write,
+                limit,
+                root,
+                now,
+            } => {
                 let root = resolve_root(root)?;
-                let lines = human_checks::due(&root, now.unwrap_or_else(chrono::Utc::now))?;
+                let lines = human_checks::due(
+                    &root,
+                    now.unwrap_or_else(chrono::Utc::now),
+                    write.then_some(limit),
+                )?;
                 if lines.is_empty() {
                     println!("No human checks are due.");
                 } else {
@@ -273,6 +288,12 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 let path = root.join(check::SETTING_CHECKS);
                 append(&path, &format!("{}\n", serde_json::to_string(&check)?))?;
                 println!("evals: recorded {setting} as {}", status_word(status));
+                if human_checks::close_task(&root, &setting)? {
+                    println!(
+                        "evals: deleted its task, {}/settings-check-{setting}.md",
+                        human_checks::HUMAN_ISSUES
+                    );
+                }
                 Ok(ExitCode::SUCCESS)
             }
         },

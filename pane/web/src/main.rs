@@ -2,9 +2,14 @@
 //! (built by `pane_snapshot` in the release) and shows it.
 
 use dioxus::prelude::*;
-use pane_model::Snapshot;
+use pane_model::{Deliverable, DeliverableKind, HumanIssue, Snapshot, WorkItem, WorkKind};
 
+mod markdown;
 mod view;
+mod visits;
+
+use view::{Bucket, WorkFilter};
+use visits::Visits;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const SNAPSHOT_URL: &str = "/data/snapshot.json";
@@ -35,6 +40,23 @@ fn now() -> i64 {
     #[allow(clippy::cast_possible_truncation)]
     let secs = (js_sys::Date::now() / 1000.0) as i64;
     secs
+}
+
+/// The browser's `localStorage`, if it has one and lets pane use it.
+fn storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok()?
+}
+
+/// Read the stored visits, record this one, and return the result, or
+/// `None` when the browser keeps no storage.
+fn record_visit(snapshot: &Snapshot) -> Option<Visits> {
+    let storage = storage()?;
+    let stored = storage.get_item(visits::STORAGE_KEY).ok().flatten();
+    let next = visits::record(visits::parse(stored.as_deref()), snapshot, now());
+    let json = serde_json::to_string(&next).ok()?;
+    // A full or blocked storage only loses "new since last visit".
+    storage.set_item(visits::STORAGE_KEY, &json).ok()?;
+    Some(next)
 }
 
 #[component]
@@ -68,6 +90,8 @@ mod route {
         ProjectPage { path: Vec<String> },
         #[route("/deliverables")]
         Deliverables {},
+        #[route("/docs/:..path")]
+        DocPage { path: Vec<String> },
         #[route("/reviews")]
         Reviews {},
         #[route("/human-issues")]
@@ -154,37 +178,244 @@ fn Planned(title: String, phase: u8, what: String) -> Element {
 fn Today() -> Element {
     rsx! {
         h1 { "Today" }
-        WithSnapshot {
-            body: move |s: Snapshot| {
-                let projects = s.projects.len();
-                let items = s.work_items.len();
-                let human = s.human_issues.len();
-                rsx! {
-                    ul { class: "stats",
-                        li {
-                            Link { to: Route::Projects {},
-                                strong { "{projects}" }
-                                " projects"
-                            }
-                        }
-                        li {
-                            Link { to: Route::Work {},
-                                strong { "{items}" }
-                                " open TODOs and FIXes"
-                            }
-                        }
-                        li {
-                            Link { to: Route::HumanIssues {},
-                                strong { "{human}" }
-                                " human issues"
-                            }
-                        }
-                    }
-                    p { class: "muted",
-                        "What needs you, new since your last visit, comes in Phase 1."
+        WithSnapshot { body: move |s: Snapshot| rsx! { TodayBody { snapshot: s } } }
+    }
+}
+
+/// How many new work items Today lists before linking to Work.
+const TODAY_WORK_LIMIT: usize = 20;
+
+#[component]
+fn TodayBody(snapshot: Snapshot) -> Element {
+    // Record the visit once per mount, not on every render.
+    let stored = use_hook({
+        let s = snapshot.clone();
+        move || record_visit(&s)
+    });
+    let s = snapshot;
+    let projects = s.projects.len();
+    let items = s.work_items.len();
+    let human = s.human_issues.len();
+    let now = now();
+    let waiting: Vec<HumanIssue> = view::sorted_human_issues(&s).into_iter().cloned().collect();
+    let baseline = stored.as_ref().and_then(|v| v.previous.clone());
+    let new = baseline.as_ref().map(|b| visits::new_since(&s, b));
+    let new_count = new.as_ref().map(visits::NewItems::len);
+    let (new_human, new_docs, new_work, more_work) = match &new {
+        Some(n) => (
+            n.human_issues
+                .iter()
+                .map(|i| (*i).clone())
+                .collect::<Vec<_>>(),
+            n.deliverables
+                .iter()
+                .map(|d| (*d).clone())
+                .collect::<Vec<_>>(),
+            n.work_items
+                .iter()
+                .take(TODAY_WORK_LIMIT)
+                .map(|i| (*i).clone())
+                .collect::<Vec<_>>(),
+            n.work_items.len().saturating_sub(TODAY_WORK_LIMIT),
+        ),
+        None => (vec![], vec![], vec![], 0),
+    };
+    let since = baseline.as_ref().map(|b| {
+        format!(
+            "Compared with your visit {} (snapshot {}).",
+            view::age(b.at, now),
+            view::short_commit(&b.commit)
+        )
+    });
+    let commit = s.commit.clone();
+    rsx! {
+        ul { class: "stats",
+            li {
+                Link { to: Route::Projects {},
+                    strong { "{projects}" }
+                    " projects"
+                }
+            }
+            li {
+                Link { to: Route::Work {},
+                    strong { "{items}" }
+                    " open TODOs and FIXes"
+                }
+            }
+            li {
+                Link { to: Route::HumanIssues {},
+                    strong { "{human}" }
+                    " human issues"
+                }
+            }
+            if let Some(n) = new_count {
+                li {
+                    a { href: "#new",
+                        strong { "{n}" }
+                        " new since your last visit"
                     }
                 }
-            },
+            }
+        }
+        section { class: "group", "data-testid": "today-waiting",
+            h2 { "Waiting on you " span { class: "muted count", "{waiting.len()}" } }
+            if waiting.is_empty() {
+                p { "Nothing is waiting on you." }
+            }
+            ul { class: "rows",
+                for issue in waiting {
+                    HumanIssueRow { key: "{issue.file}:{issue.line}", issue, commit: commit.clone(), now }
+                }
+            }
+        }
+        section { class: "group", id: "new", "data-testid": "today-new",
+            h2 {
+                "New since your last visit "
+                if let Some(n) = new_count {
+                    span { class: "muted count", "{n}" }
+                }
+            }
+            match (&stored, &since) {
+                (None, _) => rsx! {
+                    p { class: "muted", "This browser isn't keeping pane's visits, so nothing is marked new." }
+                },
+                (Some(_), None) => rsx! {
+                    p { class: "muted", "Nothing to compare with yet. From your next visit with a newer snapshot, what was added shows here." }
+                },
+                (Some(_), Some(since)) => rsx! {
+                    p { class: "muted", "{since}" }
+                    if new_count == Some(0) {
+                        p { "Nothing new." }
+                    }
+                },
+            }
+            if !new_human.is_empty() {
+                h3 { "Human issues" }
+                ul { class: "rows",
+                    for issue in new_human {
+                        HumanIssueRow { key: "{issue.file}:{issue.line}", issue, commit: commit.clone(), now }
+                    }
+                }
+            }
+            if !new_docs.is_empty() {
+                h3 { "Deliverables" }
+                ul { class: "rows",
+                    for d in new_docs {
+                        DeliverableRow { key: "{d.title}{d.path:?}{d.url:?}", d, commit: commit.clone() }
+                    }
+                }
+            }
+            if !new_work.is_empty() {
+                h3 { "TODOs and FIXes" }
+                ul { class: "rows",
+                    for item in new_work {
+                        WorkRow { key: "{item.file}:{item.line}", item, commit: commit.clone() }
+                    }
+                }
+                if more_work > 0 {
+                    p { class: "muted",
+                        "And {more_work} more on the "
+                        Link { to: Route::Work {}, "Work" }
+                        " page."
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// One human issue: its text, age, date, GitHub link and what it unblocks.
+#[component]
+fn HumanIssueRow(issue: HumanIssue, commit: String, now: i64) -> Element {
+    let age = issue
+        .added
+        .as_deref()
+        .and_then(|d| view::days_since(d, now))
+        .map(view::days_label);
+    let url = view::github_line_url(&commit, &issue.file, issue.line);
+    rsx! {
+        li {
+            p { class: "row-text", "{issue.text}" }
+            div { class: "meta",
+                if let Some(age) = age {
+                    span { class: "badge", "{age}" }
+                }
+                if let Some(added) = &issue.added {
+                    span { "Added {added}" }
+                }
+                a { href: "{url}", "Open on GitHub" }
+            }
+            if let Some(unblocks) = &issue.unblocks {
+                p { class: "muted unblocks", "Unblocks {unblocks}" }
+            }
+        }
+    }
+}
+
+/// One TODO or FIX with its project, list, epic, tags and line on GitHub.
+#[component]
+fn WorkRow(item: WorkItem, commit: String) -> Element {
+    let url = view::github_line_url(&commit, &item.file, item.line);
+    let kind = view::kind_label(item.kind);
+    let kind_class = kind.to_lowercase();
+    rsx! {
+        li {
+            p { class: "row-text",
+                span { class: "badge kind-{kind_class}", "{kind}" }
+                " {item.text}"
+            }
+            div { class: "meta",
+                span { "{view::project_label(item.project.as_deref())}" }
+                span { "{Bucket::of(&item).label()}" }
+                if let Some(epic) = &item.epic {
+                    span { "{epic}" }
+                }
+                for t in item.tags.clone() {
+                    span { class: "tag", "{t}" }
+                }
+                a { href: "{url}", "{item.file}:{item.line}" }
+            }
+        }
+    }
+}
+
+/// One deliverable: a link to it in pane or outside, and its details.
+#[component]
+fn DeliverableRow(d: Deliverable, commit: String) -> Element {
+    let kind = d.kind;
+    rsx! {
+        li {
+            if let Some(path) = d.path.clone() {
+                Link { class: "row-title", to: doc_route(&path), "{d.title}" }
+            } else if let Some(url) = &d.url {
+                a { class: "row-title", href: "{url}", "{d.title}" }
+            } else {
+                span { class: "row-title", "{d.title}" }
+            }
+            if kind == DeliverableKind::LiveSite {
+                if let Some(url) = &d.url {
+                    span { class: "muted", " {url}" }
+                }
+            }
+            div { class: "meta",
+                if let Some(p) = &d.project {
+                    if kind != DeliverableKind::LiveSite {
+                        span { "{p}" }
+                    }
+                }
+                if let Some(date) = &d.date {
+                    span { "{date}" }
+                }
+                if let Some(status) = &d.status {
+                    span { class: "badge", "{status}" }
+                }
+                for link in d.downloads.clone() {
+                    a { class: "download", href: "{link.url}", "Download for {link.label}" }
+                }
+                if let Some(path) = &d.path {
+                    a { href: "{view::github_file_url(&commit, path)}", "On GitHub" }
+                }
+            }
         }
     }
 }
@@ -238,8 +469,24 @@ fn ProjectPage(path: Vec<String>) -> Element {
                         Link { to: Route::Projects {}, "All projects" }
                     };
                 };
-                let (todo, fix) = view::open_counts(&s, &p.path);
+                let subs: Vec<String> = view::sub_projects(&s, &p.path).into_iter().map(|q| q.path.clone()).collect();
+                let work: Vec<WorkItem> = view::project_work(&s, &p.path).into_iter().cloned().collect();
+                let (todo, fix) = view::kind_counts(&work.iter().collect::<Vec<_>>());
+                let latest: Vec<(&str, String, String)> = view::latest_docs(&s, &p.path)
+                    .into_iter()
+                    .filter_map(|(label, d)| Some((label, d.title.clone(), d.path.clone()?)))
+                    .collect();
+                let groups: Vec<(&str, Vec<Deliverable>)> = view::project_deliverables(&s, &p.path)
+                    .into_iter()
+                    .map(|(_, heading, items)| (heading, items.into_iter().cloned().collect()))
+                    .collect();
+                let commit = s.commit.clone();
+                let work_scope = if subs.is_empty() { "" } else { ", including its sub-projects" };
                 rsx! {
+                    p { class: "doc-path",
+                        Link { to: Route::Projects {}, "Projects" }
+                        " / {p.path}"
+                    }
                     h1 { "{p.path}" }
                     p {
                         span { class: "badge status-{view::status_class(p.status)}", "{view::status_label(p.status)}" }
@@ -254,8 +501,59 @@ fn ProjectPage(path: Vec<String>) -> Element {
                             a { href: "{url}", "{url}" }
                         }
                     }
-                    p { "{todo} open TODOs and {fix} FIXes." }
-                    p { class: "muted", "Deliverables, work and health for each project come in Phases 1 and 4." }
+                    p {
+                        a { href: "{view::github_tree_url(&commit, &p.path)}", "Open on GitHub" }
+                    }
+                    if !subs.is_empty() {
+                        section { class: "group", "data-testid": "project-sub-projects",
+                            h2 { "Sub-projects" }
+                            ul { class: "inline-list",
+                                for sub in subs {
+                                    li { key: "{sub}",
+                                        Link { to: Route::ProjectPage { path: sub.split('/').map(str::to_owned).collect() }, "{sub}" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    section { class: "group", "data-testid": "project-latest",
+                        h2 { "Plans, decisions and retros" }
+                        if latest.is_empty() {
+                            p { class: "muted", "None yet." }
+                        }
+                        ul { class: "rows",
+                            for (label , title , doc) in latest {
+                                li { key: "{doc}",
+                                    span { class: "muted", "{label}: " }
+                                    Link { to: doc_route(&doc), "{title}" }
+                                }
+                            }
+                        }
+                    }
+                    section { class: "group", "data-testid": "project-deliverables",
+                        h2 { "Deliverables" }
+                        if groups.is_empty() {
+                            p { class: "muted", "None yet." }
+                        }
+                        for (heading , items) in groups {
+                            h3 { "{heading} " span { class: "muted count", "{items.len()}" } }
+                            ul { class: "rows",
+                                for d in items {
+                                    DeliverableRow { key: "{d.title}{d.path:?}{d.url:?}", d, commit: commit.clone() }
+                                }
+                            }
+                        }
+                    }
+                    section { class: "group", "data-testid": "project-work",
+                        h2 { "Open TODOs and FIXes" }
+                        p { "{todo} open TODOs and {fix} FIXes{work_scope}." }
+                        ul { class: "rows",
+                            for item in work {
+                                WorkRow { key: "{item.file}:{item.line}", item, commit: commit.clone() }
+                            }
+                        }
+                    }
+                    p { class: "muted", "Health, open PRs and the latest review for each project come in Phases 2 to 4." }
                 }
             },
         }
@@ -273,13 +571,74 @@ fn Health() -> Element {
     }
 }
 
+/// A route to a document page from its repo path.
+fn doc_route(path: &str) -> Route {
+    Route::DocPage {
+        path: path.split('/').map(str::to_owned).collect(),
+    }
+}
+
 #[component]
 fn Deliverables() -> Element {
     rsx! {
-        Planned {
-            title: "Deliverables",
-            phase: 1,
-            what: "Live sites, releases, review decks, plans, decisions and retros.",
+        h1 { "Deliverables" }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let groups: Vec<_> = view::DELIVERABLE_GROUPS
+                    .iter()
+                    .map(|(kind, heading)| {
+                        let items: Vec<_> = view::deliverables_of(&s, *kind).into_iter().cloned().collect();
+                        (*kind, *heading, items)
+                    })
+                    .collect();
+                rsx! {
+                    for (kind , heading , items) in groups {
+                        section { class: "group", "data-testid": "deliverables-{view::deliverable_key(kind)}",
+                            h2 { "{heading} " span { class: "muted count", "{items.len()}" } }
+                            if items.is_empty() {
+                                p { class: "muted", "None yet." }
+                            }
+                            ul { class: "rows",
+                                for d in items {
+                                    DeliverableRow { key: "{d.title}{d.path:?}{d.url:?}", d, commit: s.commit.clone() }
+                                }
+                            }
+                        }
+                    }
+                    p { class: "muted",
+                        "Review decks come in Phase 2, and PR previews and UAT reports in Phases 3 and 6."
+                    }
+                }
+            },
+        }
+    }
+}
+
+/// A plan, decision or retro, rendered from its Markdown.
+#[component]
+fn DocPage(path: Vec<String>) -> Element {
+    let path = path.join("/");
+    rsx! {
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let Some(doc) = view::find_doc(&s, &path).cloned() else {
+                    return rsx! {
+                        h1 { "{path}" }
+                        p { "No plan, decision or retro at this path in the snapshot." }
+                        Link { to: Route::Deliverables {}, "All deliverables" }
+                    };
+                };
+                let html = markdown::to_html(doc.body.as_deref().unwrap_or_default(), &path, &s.commit);
+                let github = view::github_file_url(&s.commit, &path);
+                rsx! {
+                    p { class: "doc-path",
+                        Link { to: Route::Deliverables {}, "Deliverables" }
+                        " / {path} · "
+                        a { href: "{github}", "Open on GitHub" }
+                    }
+                    article { class: "doc", "data-testid": "doc", dangerous_inner_html: "{html}" }
+                }
+            },
         }
     }
 }
@@ -298,21 +657,100 @@ fn Reviews() -> Element {
 #[component]
 fn HumanIssues() -> Element {
     rsx! {
-        Planned {
-            title: "Human issues",
-            phase: 1,
-            what: "Tasks only you can do, oldest first, with what each one unblocks.",
+        h1 { "Human issues" }
+        p { class: "muted", "Tasks only you can do, oldest first. Mark done and add a note come in Phase 5." }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let now = now();
+                let issues: Vec<HumanIssue> = view::sorted_human_issues(&s).into_iter().cloned().collect();
+                rsx! {
+                    if issues.is_empty() {
+                        p { "Nothing is waiting on you." }
+                    }
+                    ul { class: "rows", "data-testid": "human-issues",
+                        for issue in issues {
+                            HumanIssueRow { key: "{issue.file}:{issue.line}", issue, commit: s.commit.clone(), now }
+                        }
+                    }
+                }
+            },
         }
     }
 }
 
 #[component]
 fn Work() -> Element {
+    let mut filter = use_signal(WorkFilter::default);
     rsx! {
-        Planned {
-            title: "Work",
-            phase: 1,
-            what: "Every TODO and FIX across the repo, filterable by project, kind and tag.",
+        h1 { "Work" }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let (projects, tags) = view::work_facets(&s.work_items);
+                let current = filter.read().clone();
+                let rows: Vec<WorkItem> = view::filter_work(&s.work_items, &current).into_iter().cloned().collect();
+                let total = s.work_items.len();
+                let shown = rows.len();
+                let some = |v: String| (!v.is_empty()).then_some(v);
+                rsx! {
+                    form { class: "filters", "aria-label": "Filters",
+                        label {
+                            "Project "
+                            select {
+                                name: "project",
+                                onchange: move |e| filter.write().project = some(e.value()),
+                                option { value: "", "Any" }
+                                for p in projects {
+                                    option { value: "{p}", selected: current.project.as_deref() == Some(p.as_str()), "{p}" }
+                                }
+                            }
+                        }
+                        label {
+                            "Kind "
+                            select {
+                                name: "kind",
+                                onchange: move |e| {
+                                    filter.write().kind = match e.value().as_str() {
+                                        "todo" => Some(WorkKind::Todo),
+                                        "fix" => Some(WorkKind::Fix),
+                                        _ => None,
+                                    };
+                                },
+                                option { value: "", "Any" }
+                                option { value: "todo", selected: current.kind == Some(WorkKind::Todo), "TODO" }
+                                option { value: "fix", selected: current.kind == Some(WorkKind::Fix), "FIX" }
+                            }
+                        }
+                        label {
+                            "Where "
+                            select {
+                                name: "bucket",
+                                onchange: move |e| filter.write().bucket = Bucket::from_key(&e.value()),
+                                option { value: "", "Anywhere" }
+                                for b in Bucket::ALL {
+                                    option { value: "{b.key()}", selected: current.bucket == Some(b), "{b.label()}" }
+                                }
+                            }
+                        }
+                        label {
+                            "Tag "
+                            select {
+                                name: "tag",
+                                onchange: move |e| filter.write().tag = some(e.value()),
+                                option { value: "", "Any" }
+                                for t in tags {
+                                    option { value: "{t}", selected: current.tag.as_deref() == Some(t.as_str()), "{t}" }
+                                }
+                            }
+                        }
+                    }
+                    p { class: "muted", "data-testid": "work-count", "Showing {shown} of {total}" }
+                    ul { class: "rows", "data-testid": "work-items",
+                        for item in rows {
+                            WorkRow { key: "{item.file}:{item.line}", item, commit: s.commit.clone() }
+                        }
+                    }
+                }
+            },
         }
     }
 }

@@ -74,7 +74,7 @@ Rules:
 
 Requirements are Jim's product intent. An agent may draft them from the
 project's README, its latest review deck's Goals slide, its plans and its
-`ISSUES.md` epics, but opens the PR with the `needs-human` label and never
+issue epics, but opens the PR with the `needs-human` label and never
 merges it. A requirement PR changes only `docs/requirements.md` (and the
 matching `evals.toml` entries), so Jim can approve it on its own.
 
@@ -240,8 +240,8 @@ every = "90d"
 | `every` | How often to check it, in whole days: `30d`, `90d`. |
 
 It never holds a secret's value, only that the secret exists and what it
-is for; `evals check` rejects any other field. A `HUMAN_ISSUES.md` task that
-creates a setting adds its entry here in the same PR.
+is for; `evals check` rejects any other field. A human task
+(`issues/human/`) that creates a setting adds its entry here in the same PR.
 
 ### Answers
 
@@ -256,26 +256,25 @@ appended by `evals human-checks answer` and never edited by hand.
 ### The loop
 
 1. **Due.** `evals human-checks due` (in `evals/`:
-   `cargo run -q -p evals_cli -- human-checks due`) prints one
-   `HUMAN_ISSUES.md` line for each setting that was never checked, whose
-   last answer is older than its `every`, or whose last answer was "not
-   ok":
+   `cargo run -q -p evals_cli -- human-checks due`) lists each setting that
+   was never checked, whose last answer is older than its `every`, or whose
+   last answer was "not ok":
 
    ```text
-   - TODO (human): Check claude-connectors: GitHub and Cloudflare are connected ... (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Last checked 2026-11-02.)
+   Check claude-connectors: GitHub and Cloudflare are connected ... (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Last checked 2026-11-02.)
    ```
 
-2. **Asked.** The weekly `human-issues-digest` run (Mondays) adds each due
-   line that isn't already in `HUMAN_ISSUES.md`, in one PR, and lists them
-   in the digest under "Checks due".
+2. **Asked.** The weekly `human-issues-digest` run (Mondays) runs it with
+   `--write`, which writes a human task, `issues/human/settings-check-<id>.md`, for
+   up to five due checks that have none yet (`--limit`), opens one PR with
+   them, and lists every open check in the digest under "Checks due".
 3. **Answered.** When Jim replies "ok", or says what is wrong, the agent
-   that reads it runs
-   `evals human-checks answer <id> --ok` or
-   `evals human-checks answer <id> --not-ok "<his words>"`, removes the
-   line from `HUMAN_ISSUES.md`, and opens one PR with both. A "not ok"
-   also files a `FIX` in the owning project's `ISSUES.md`, or a new
-   `TODO (human)` line when only Jim can fix it, and the check stays due
-   until a newer "ok".
+   that reads it runs `evals human-checks answer <id> --ok` or
+   `evals human-checks answer <id> --not-ok "<his words>"`, which appends
+   the answer and deletes the task file, and opens one PR. A "not ok" also
+   files a `kind: fix` issue in the owning project's `issues/`, or a new
+   human task when only Jim can fix it, and the check comes up again until
+   a newer "ok".
 
 ### Linking a requirement
 

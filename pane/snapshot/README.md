@@ -28,11 +28,13 @@ It exits non-zero, writing nothing, if the root `mise.toml` has no
 | `projects[].kind` | The `<type>` of the project's `standards/tasks/<type>.toml` include (`unknown` if none) |
 | `projects[].deploy_url` | `DEPLOY_URL` in the project's `[env]` |
 | `projects[].summary` | The first prose paragraph of the project's README (headings, badges, quotes, lists, tables and code skipped) |
-| `projects[].status` | `# Priority Projects` and `# On Hold Projects` in the root `ISSUES.md`; a sub-project takes its top-level project's status, and on hold wins |
-| `work_items` (from `ISSUES.md`) | Every `- TODO` / `- FIX` list item in every `ISSUES.md`, with its file, line, `#` section, `##`/`###` epic (joined as `Epic / Phase`), tags and owning project (the longest config root containing the file). |
+| `projects[].status` | `# Priority Projects` and `# On Hold Projects` in the root `issues/README.md`; a sub-project takes its top-level project's status, and on hold wins |
+| `work_items` (from issue files) | Every issue file (`issues/<slug>.md` or `<project>/issues/<slug>.md`, not `README.md`) with front matter: `kind` (`todo` or `fix`), the section from `priority` (`Priority Issues` or `Backlog`), `epic`, `tags`, the body as the text, the line the body starts on, and the owning project (the longest config root containing the file). |
 | `work_items` (from code) | Every `TODO` / `FIX` that follows a comment opener (`//`, `#`, `/*`, `<!--`, `--`, `;`) in `.rs`, `.toml`, `.sh`, `.yml`, `.ts`, `.js`, `.py`, `.css`, `.html`, `.sql` and similar files. Openers inside a `"string"` or a `` `code span` `` are ignored. |
-| `human_issues` | Each `- TODO (human)` line under `# Open` in the root `HUMAN_ISSUES.md`, with the date after `Added` and the text after `Unblocks` from its trailing note. Pane works out the age from `taken_at`. |
-| `deliverables` | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, and date from `- Date:`, `Started <date>`, or the file name. |
+| `human_issues` | Each file in the root `issues/human/` (not `README.md`), with its body as the text and `added` and `unblocks` from its front matter. Pane works out the age from `taken_at`. |
+| `deliverables` (live sites) | Each project with a `DEPLOY_URL` in its `[env]`. |
+| `deliverables` (downloads) | Each project with a `RELEASE_TAG` in its `[env]` (see "Game builds" in `standards/docs/mise.md`): its GitHub Release, and the macOS and Android assets `<package>-macos.zip` and `<package>-android.apk`, where `<package>` is `[package].name` in its `Cargo.toml`. |
+| `deliverables` (documents) | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, date from `- Date:`, `Started <date>`, or the file name, and the whole file as `body` for pane to render. |
 | `retros` | Each retro again, with its `- [ ]` / `- [x]` items under `## Actions`. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are

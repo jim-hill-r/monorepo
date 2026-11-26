@@ -1,12 +1,13 @@
 # Settings made by hand in a dashboard ("clickops"), which no file in the
 # repo holds, so no eval can read them. Jim checks each one every `every`
-# days: the weekly human issues digest adds a due check to HUMAN_ISSUES.md as
-# a "Check <id>" line, and his answer is recorded in settings-checks.jsonl.
+# days: the weekly human issues digest writes a due check as a human task,
+# issues/human/settings-check-<id>.md, and his answer is recorded in
+# settings-checks.jsonl.
 # Format and process: "Human checks" in standards/docs/evals.md.
 #
 # Never put a secret's value here: only that it exists and what it is for.
-# A HUMAN_ISSUES.md task that creates a setting adds its entry here in the
-# same PR. `evals check` validates this file.
+# A human task (issues/human/) that creates a setting adds its entry here in
+# the same PR. `evals check` validates this file.
 
 # Claude: the agents' own platform.
 

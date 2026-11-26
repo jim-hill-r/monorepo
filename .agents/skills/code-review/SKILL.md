@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review one project in this monorepo against the standards in standards/docs and record the five most impactful findings as TODO (agent-generated) items in its ISSUES.md. Use for periodic code quality reviews or when asked to review a project and file issues.
+description: Review one project in this monorepo against the standards in standards/docs and record the five most impactful findings as agent-generated issue files in its issues/ folder. Use for periodic code quality reviews or when asked to review a project and file issues.
 metadata:
   replaces: agent_copilot/prompts/code-review.md
 ---
@@ -14,11 +14,11 @@ Review one project and turn the findings into issues that the
 
 1. Candidates are top-level directories containing a `Cargo.toml` or
    `package.json` (not meta folders such as `.github` or `standards`).
-2. Drop any project listed under `# On Hold Projects` in the root `ISSUES.md`
-   or its own `ISSUES.md`.
-3. Prefer the project with the fewest `TODO (agent-generated):` items in its
-   `ISSUES.md`; a project with no `ISSUES.md` counts as zero. Break ties
-   alphabetically.
+2. Drop any project listed under `# On Hold Projects` in the root
+   `issues/README.md`.
+3. Prefer the project with the fewest issue files tagged `agent-generated` in
+   its `issues/` folders (`mise run //:issues` lists them); a project with no
+   `issues/` folder counts as zero. Break ties alphabetically.
 
 ## 2. Read the standards
 
@@ -42,21 +42,20 @@ to run anything. Look at:
 ## 4. Record exactly five findings
 
 Pick the five most impactful. Each one names a file and function or type where
-possible, says exactly what to change, and starts with `TODO (agent-generated):`.
-Add them under `# Priority Issues` in the project's `ISSUES.md`. If the file
-does not exist, create it:
+possible and says exactly what to change. Write each as its own issue file in
+the project's `issues/` folder (format in
+`standards/docs/issue-management.md`), named by a short slug of the finding:
 
 ```markdown
-# Priority Issues
+---
+kind: todo
+priority: priority
+tags: [agent-generated]
+added: <today, YYYY-MM-DD>
+---
 
-- TODO (agent-generated): <finding 1>
-- TODO (agent-generated): <finding 2>
-- TODO (agent-generated): <finding 3>
-- TODO (agent-generated): <finding 4>
-- TODO (agent-generated): <finding 5>
-
-# Backlog
+<finding>
 ```
 
-Re-read the file to confirm all five are present and well formed, then deliver
-with the `open-pull-request` skill.
+Run `mise run //:issues -- --check` to confirm all five are well formed, then
+deliver with the `open-pull-request` skill.
