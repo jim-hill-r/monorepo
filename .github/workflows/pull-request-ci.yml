@@ -20,3 +20,19 @@ jobs:
     uses: ./.github/workflows/mise-projects.yml
     with:
       base: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+
+  # One check that always runs and passes only when every project passed, so
+  # the ruleset on main can require it and GitHub auto-merge waits for green
+  # CI. Project jobs have per-PR names, so they can't be required directly.
+  ci-result:
+    name: CI result
+    needs: ci
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail unless every project passed
+        env:
+          RESULT: ${{ needs.ci.result }}
+        run: |
+          echo "Pull Request CI: $RESULT"
+          test "$RESULT" = success

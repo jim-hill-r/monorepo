@@ -29,6 +29,12 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   review again only once its checks are green and it meets the
   `open-pull-request` checklist. This applies to every PR an agent works on,
   including in PR triage.
+- **Auto-merge on ready (Jim, 2026-11-26).** When an agent marks its PR
+  ready for review (checklist met, checks green, nothing for a human to
+  decide), it turns on GitHub auto-merge with squash, and turns it off
+  whenever it moves the PR back to draft. Agents still never approve their
+  own PRs, so the PR merges when a reviewer (normally Jim) approves it.
+  Details are under "Auto-merge" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the
@@ -109,7 +115,7 @@ repo, rather than in any one agent tool's settings.
   every open PR: it approves safe dependabot and human PRs, squash-merges every
   mergeable PR (per the merge rule above), closes superseded or pinned bumps
   (and conflicting ones Dependabot can't rebase, so it recreates them), adopts
-  orphaned agent PRs, hands bumps that break the build to an agent to fix, and
+  orphaned agent PRs, turns on auto-merge for ready agent PRs, hands bumps that break the build to an agent to fix, and
   labels only real decisions for a person `needs-human`. Safe to approve means
   green checks, no conflict, never the pinned bumps above, no auth or secrets
   changes unless trivially safe, and for a major bump (a 0.x minor bump counts

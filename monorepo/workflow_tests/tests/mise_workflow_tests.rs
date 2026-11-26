@@ -71,13 +71,44 @@ fn test_no_workflow_uses_cast() {
 fn test_pull_request_ci_checks_affected_projects() {
     let (_, parsed) = load("pull-request-ci.yml");
     assert!(!parsed["on"]["pull_request"].is_null());
-    let job = calls_mise_projects(&parsed);
+    let job = parsed["jobs"]["ci"].clone();
+    assert_eq!(
+        job["uses"].as_str(),
+        Some("./.github/workflows/mise-projects.yml"),
+        "the ci job should call mise-projects.yml"
+    );
     let base = job["with"]["base"].as_str().unwrap_or_default();
     assert!(
         base.contains("github.base_ref"),
         "should diff against the PR base"
     );
     assert!(job["with"]["deploy"].is_null(), "PRs must never deploy");
+}
+
+#[test]
+fn test_pull_request_ci_has_one_requirable_result_check() {
+    let (_, parsed) = load("pull-request-ci.yml");
+    let jobs = parsed["jobs"]
+        .as_mapping()
+        .unwrap_or_else(|| panic!("no jobs"));
+    assert_eq!(jobs.len(), 2, "expected the ci job and the CI result gate");
+    let gate = &parsed["jobs"]["ci-result"];
+    assert_eq!(
+        gate["name"].as_str(),
+        Some("CI result"),
+        "the ruleset on main requires this check name; rename both together"
+    );
+    assert_eq!(gate["needs"].as_str(), Some("ci"));
+    assert_eq!(
+        gate["if"].as_str(),
+        Some("always()"),
+        "the gate must report even when a project fails"
+    );
+    let steps = serde_yaml::to_string(&gate["steps"]).unwrap_or_default();
+    assert!(
+        steps.contains("needs.ci.result") && steps.contains("= success"),
+        "the gate should fail unless the ci job succeeded"
+    );
 }
 
 #[test]
