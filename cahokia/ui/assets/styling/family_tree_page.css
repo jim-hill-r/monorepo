@@ -1,11 +1,32 @@
-/* The family tree is drawn at its natural size; wide trees scroll sideways
-   inside the page instead of widening it. */
-.family-tree-scroll {
-    overflow-x: auto;
+/* The family tree fills the page width; FamilyTreeView handles panning and
+   zooming inside it, so the frame itself never scrolls. */
+.family-tree-frame {
     max-width: 100%;
+    overflow: hidden;
     border-radius: 8px;
 }
 
-.family-tree-scroll svg {
+.family-tree-frame svg {
     display: block;
+    border-radius: 8px;
+}
+
+.family-tree-frame svg:focus-visible,
+.family-tree-frame .family-tree-person:focus-visible {
+    outline: 2px solid #ffd27f;
+    outline-offset: 2px;
+}
+
+.family-tree-frame svg:active {
+    cursor: grabbing;
+}
+
+.family-tree-toolbar button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+}
+
+.family-tree-status {
+    margin-top: 8px;
+    font-size: 0.9rem;
 }
