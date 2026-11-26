@@ -1,44 +1,9 @@
-:root {
-  color-scheme: light dark;
-  --bg: #ffffff;
-  --fg: #1d1f23;
-  --muted: #5c6370;
-  --line: #e3e5e8;
-  --nav-bg: #f6f7f9;
-  --accent: #2557d6;
-  --error: #b3261e;
-  --priority: #1f7a3d;
-  --on-hold: #8a5a00;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.5;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15171a;
-    --fg: #e6e8eb;
-    --muted: #9aa1ad;
-    --line: #2c3036;
-    --nav-bg: #1c1f23;
-    --accent: #7ea6ff;
-    --error: #ff8a80;
-    --priority: #6fd394;
-    --on-hold: #f0b44c;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
+/* Colours, fonts and spacing come from the design system's professional
+ * theme (design_system/dist/tokens.css, loaded by design_system_dioxus).
+ * This file uses only --ds- tokens. */
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-a {
-  color: var(--accent);
 }
 
 h1 {
@@ -58,8 +23,8 @@ h1 {
 
 .nav {
   grid-area: nav;
-  background: var(--nav-bg);
-  border-right: 1px solid var(--line);
+  background: var(--ds-color-surface);
+  border-right: 1px solid var(--ds-color-border);
   padding: 1rem;
 }
 
@@ -67,7 +32,7 @@ h1 {
   display: block;
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--fg);
+  color: var(--ds-color-text);
   text-decoration: none;
   margin-bottom: 1rem;
 }
@@ -82,17 +47,17 @@ h1 {
   display: block;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
-  color: var(--fg);
+  color: var(--ds-color-text);
   text-decoration: none;
 }
 
 .nav li a:hover {
-  background: var(--line);
+  background: var(--ds-color-border);
 }
 
 .nav li a.active {
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--ds-color-accent);
+  color: var(--ds-color-on-accent);
 }
 
 .page {
@@ -105,20 +70,20 @@ h1 {
 .footer {
   grid-area: footer;
   padding: 0.75rem 1.5rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
+  border-top: 1px solid var(--ds-color-border);
+  color: var(--ds-color-text-muted);
   font-size: 0.875rem;
 }
 
 .muted {
-  color: var(--muted);
+  color: var(--ds-color-text-muted);
 }
 
 .error {
-  border: 1px solid var(--error);
+  border: 1px solid var(--ds-color-danger);
   border-radius: 6px;
   padding: 0.75rem 1rem;
-  color: var(--error);
+  color: var(--ds-color-danger);
 }
 
 .stats {
@@ -133,10 +98,10 @@ h1 {
 .stats a {
   display: block;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--ds-color-border);
   border-radius: 8px;
   text-decoration: none;
-  color: var(--fg);
+  color: var(--ds-color-text);
 }
 
 .stats strong {
@@ -152,7 +117,7 @@ h1 {
 
 .projects li {
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--ds-color-border);
 }
 
 .projects p {
@@ -172,18 +137,18 @@ h1 {
   display: inline-block;
   font-size: 0.75rem;
   padding: 0.05rem 0.45rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--ds-color-border);
   border-radius: 999px;
 }
 
 .badge.status-priority {
-  color: var(--priority);
-  border-color: var(--priority);
+  color: var(--ds-color-success);
+  border-color: var(--ds-color-success);
 }
 
 .badge.status-on-hold {
-  color: var(--on-hold);
-  border-color: var(--on-hold);
+  color: var(--ds-color-warning);
+  border-color: var(--ds-color-warning);
 }
 
 /* Lists of work items, human issues and deliverables. */
@@ -195,7 +160,7 @@ h1 {
 
 .rows li {
   padding: 0.6rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--ds-color-border);
 }
 
 .row-text {
@@ -214,7 +179,7 @@ h1 {
   gap: 0.25rem 0.75rem;
   margin-top: 0.2rem;
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--ds-color-text-muted);
 }
 
 .meta a {
@@ -227,8 +192,8 @@ h1 {
 }
 
 .badge.kind-fix {
-  color: var(--error);
-  border-color: var(--error);
+  color: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
 }
 
 .tag {
@@ -263,7 +228,7 @@ h1 {
 
 .doc-path {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--ds-color-text-muted);
   overflow-wrap: anywhere;
 }
 
@@ -279,14 +244,14 @@ h1 {
 
 .doc th,
 .doc td {
-  border: 1px solid var(--line);
+  border: 1px solid var(--ds-color-border);
   padding: 0.3rem 0.5rem;
   vertical-align: top;
 }
 
 .doc pre {
   overflow-x: auto;
-  background: var(--nav-bg);
+  background: var(--ds-color-surface);
   padding: 0.75rem;
   border-radius: 6px;
 }
@@ -308,7 +273,7 @@ h1 {
 
   .nav {
     border-right: none;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--ds-color-border);
     padding: 0.75rem 1rem;
   }
 
@@ -343,4 +308,29 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
+}
+
+.footer {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2) var(--ds-space-5);
+  justify-content: space-between;
+}
+
+/* The reset in design_system/dist/base.css removes default margins; give
+ * rendered Markdown its spacing back. */
+.doc > * + * {
+  margin-top: var(--ds-space-3);
+}
+
+.doc ul,
+.doc ol {
+  padding-left: var(--ds-space-5);
+}
+
+.doc h1,
+.doc h2,
+.doc h3 {
+  margin-top: var(--ds-space-5);
 }

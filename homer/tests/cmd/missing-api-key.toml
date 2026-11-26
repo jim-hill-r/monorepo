@@ -1,0 +1,5 @@
+# Common error: no API key from the flag or the environment.
+bin.name = "homer"
+args = ["--address", "123 Main St, Seattle, WA 98101"]
+env.remove = ["RAPIDAPI_KEY", "HOMER_QUOTA_FILE"]
+status.code = 2
