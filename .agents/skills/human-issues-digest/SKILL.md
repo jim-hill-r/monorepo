@@ -17,7 +17,7 @@ and reports; it changes nothing in the repo or on GitHub.
 2. Find the lines added in the last 7 days:
    `git log --since="7 days ago" -p -- HUMAN_ISSUES.md`, keeping added lines
    that start with `- TODO (human)`.
-3. List open pull requests labelled `needs-human`. Until Hourly PR triage has
+3. List open pull requests labelled `needs-human`. Until PR triage has
    renamed it, also include PRs still labelled `needs-jim`. For each, note the
    number, title, how many days it has been open, and the reason it needs a
    person (from the latest triage comment or the PR description).

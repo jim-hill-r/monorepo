@@ -66,9 +66,9 @@ repo, rather than in any one agent tool's settings.
   still never approve their own PRs. Details are in
   `standards/docs/pull-requests.md`.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
-  or closed). The policy is in `standards/docs/pull-requests.md`. An hourly
-  scheduled agent task, "Hourly PR triage", acts as `jimhillr-agt` on every
-  open PR: it approves safe dependabot and human PRs, squash-merges every
+  or closed). The policy is in `standards/docs/pull-requests.md`. A scheduled
+  agent task, "PR triage", runs three times a day as `jimhillr-agt` on
+  every open PR: it approves safe dependabot and human PRs, squash-merges every
   mergeable PR (per the merge rule above), asks dependabot to rebase
   conflicts, closes superseded or pinned bumps, adopts orphaned agent PRs, and
   labels anything that needs Jim `needs-jim`. Safe to approve means green
