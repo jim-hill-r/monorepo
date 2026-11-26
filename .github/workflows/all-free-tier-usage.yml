@@ -1,0 +1,40 @@
+name: All Free Tier Usage
+
+# Checks the live usage of the services the repo runs on (Cloudflare Pages
+# and Workers counts, GitHub Actions cache and artifact storage) against the
+# budgets in standards/docs/free-tiers.md, and goes red when anything reaches
+# its warning level. It only reads; it never creates, deletes or upgrades
+# anything. The nightly run is to call it first and stop if it fails.
+on:
+  schedule:
+    # Mondays at 3 PM UTC (7 AM Pacific)
+    - cron: '0 15 * * 1'
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
+
+permissions:
+  contents: read
+  actions: read  # cache usage and artifact sizes
+
+concurrency:
+  group: free-tier-usage
+  cancel-in-progress: false
+
+jobs:
+  usage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check usage against free tier budgets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash standards/scripts/free-tiers.sh usage

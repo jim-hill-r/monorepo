@@ -12,7 +12,7 @@ recorded in three places and nothing collected them:
 
 - `TODO (agent-ignore): ... Needs Jim.` lines in `ISSUES.md` files, mixed in
   with agent work.
-- The `needs-jim` label that Hourly PR triage puts on PRs.
+- The `needs-jim` label that PR triage puts on PRs.
 - Questions in Claude chat threads, which are lost once the thread ends.
 
 Options considered: a pinned GitHub issue kept up to date by a workflow, with
@@ -26,7 +26,7 @@ issues: work is tracked in the repo, not in GitHub issues.
   `HUMAN_ISSUES.md`. Agents never work them and never put them in an
   `ISSUES.md` (the audit checks this, HUM-001).
 - PRs that need a person get the label `needs-human`, which replaces
-  `needs-jim` (Jim, 2026-11-26: "make it more generic"). Hourly PR triage
+  `needs-jim` (Jim, 2026-11-26: "make it more generic"). PR triage
   renames the old label on its next run, so the open PRs keep it.
 - A weekly Claude scheduled task, "Weekly human issues digest", runs the
   `human-issues-digest` skill and posts the open lines and `needs-human` PRs
