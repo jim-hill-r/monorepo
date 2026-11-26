@@ -53,3 +53,8 @@ See [standards/docs/plans/2026-11-cost-check.md](../standards/docs/plans/2026-11
 
 See [standards/docs/plans/2026-11-threat-check.md](../standards/docs/plans/2026-11-threat-check.md)
 (approved by Jim, 2026-11-26). One group per phase.
+
+## Design system
+
+See [standards/docs/plans/2026-11-design-system.md](../standards/docs/plans/2026-11-design-system.md)
+(approved by Jim, 2026-11-26). One group per phase.

@@ -1,6 +1,8 @@
 # pane/cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
 # affected-by: ../web
+# deploy-on-every-push: pane's snapshot reads the whole repo, so redeploy it
+# on every push to main (push-main.yml), not only pushes under pane/.
 
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy" }

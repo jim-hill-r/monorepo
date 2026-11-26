@@ -14,10 +14,10 @@ And, later the same day:
 > would typically to match another companies branding such as Chicago bears
 > theme.
 
-Status: **proposed**, waiting for Jim. Every open question has a recommended
-answer under [Decisions](#decisions), so "yes to all" approves the plan as
-written. The work items go into issue files in `issues/` once it is approved, as the
-[cost check plan](2026-11-cost-check.md) did.
+Status: **approved** by Jim (PR #657, 2026-11-26), with the recommended
+answer to every question (see [Decisions](#decisions)). The work items are
+issue files in the root [issues/](../../../issues/) with `epic: Design
+system`, one group per phase.
 
 ## Goal
 
@@ -474,9 +474,9 @@ Fonts are self-hosted from `design_system/fonts/`, not loaded from a font
 CDN, so no new vendor is involved and pages work offline. Both fonts are
 under the SIL Open Font License.
 
-This PR adds one Assess blip, "Shared design tokens (design_system)", under
-Techniques, sourced from this plan. It moves to Adopt, with `pane/web` as
-its exemplar, when phase 2 lands.
+The tech radar has a Trial blip, "Shared design tokens (design_system)",
+under Techniques, sourced from this plan (Assess while it was proposed). It
+moves to Adopt, with `pane/web` as its exemplar, when phase 2 lands.
 
 ## Cost of this plan
 
@@ -489,7 +489,7 @@ web app's Playwright run.
 
 ## Decisions
 
-Recommended answers, so "yes to all" approves the plan:
+Jim, 2026-11-26: "Yes to all" to these recommended answers.
 
 1. **Accessible mode is a modifier**, available in light and dark for every
    theme (20 combinations), not a single separate high-contrast theme.

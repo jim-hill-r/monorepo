@@ -118,6 +118,11 @@ pub fn github_file_url(commit: &str, file: &str) -> String {
     format!("{REPO_URL}/blob/{commit}/{file}")
 }
 
+/// A directory on GitHub at the snapshot's commit.
+pub fn github_tree_url(commit: &str, dir: &str) -> String {
+    format!("{REPO_URL}/tree/{commit}/{dir}")
+}
+
 /// A line of a file on GitHub at the snapshot's commit.
 pub fn github_line_url(commit: &str, file: &str, line: u32) -> String {
     format!("{}#L{line}", github_file_url(commit, file))
@@ -322,6 +327,80 @@ pub fn find_doc<'a>(snapshot: &'a Snapshot, path: &str) -> Option<&'a Deliverabl
         .deliverables
         .iter()
         .find(|d| d.path.as_deref() == Some(path))
+}
+
+/// Whether `item_project` is `path` or one of its sub-projects
+/// (`pane/web` is in `pane`).
+pub fn in_project(item_project: Option<&str>, path: &str) -> bool {
+    item_project.is_some_and(|p| {
+        p.strip_prefix(path)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+    })
+}
+
+/// The projects inside `path`, such as `pane/web` for `pane`, by path.
+pub fn sub_projects<'a>(snapshot: &'a Snapshot, path: &str) -> Vec<&'a Project> {
+    let mut found: Vec<&Project> = snapshot
+        .projects
+        .iter()
+        .filter(|p| p.path != path && in_project(Some(&p.path), path))
+        .collect();
+    found.sort_by(|a, b| a.path.cmp(&b.path));
+    found
+}
+
+/// The open `TODO`s and `FIX`es of a project and its sub-projects, in the
+/// Work page's order (FIXes first, then priority, backlog, other, code).
+pub fn project_work<'a>(snapshot: &'a Snapshot, path: &str) -> Vec<&'a WorkItem> {
+    filter_work(&snapshot.work_items, &WorkFilter::default())
+        .into_iter()
+        .filter(|i| in_project(i.project.as_deref(), path))
+        .collect()
+}
+
+/// `(TODO, FIX)` counts of a list of work items.
+pub fn kind_counts(items: &[&WorkItem]) -> (usize, usize) {
+    items.iter().fold((0, 0), |(todo, fix), i| match i.kind {
+        WorkKind::Todo => (todo + 1, fix),
+        WorkKind::Fix => (todo, fix + 1),
+    })
+}
+
+/// A project's deliverables (its sub-projects' too), grouped as on the
+/// Deliverables page, leaving out empty groups.
+pub fn project_deliverables<'a>(
+    snapshot: &'a Snapshot,
+    path: &str,
+) -> Vec<(DeliverableKind, &'static str, Vec<&'a Deliverable>)> {
+    DELIVERABLE_GROUPS
+        .iter()
+        .map(|(kind, heading)| {
+            let items: Vec<&Deliverable> = deliverables_of(snapshot, *kind)
+                .into_iter()
+                .filter(|d| in_project(d.project.as_deref(), path))
+                .collect();
+            (*kind, *heading, items)
+        })
+        .filter(|(_, _, items)| !items.is_empty())
+        .collect()
+}
+
+/// The newest plan, decision and retro of a project (or its sub-projects),
+/// with a label for each, skipping kinds it has none of.
+pub fn latest_docs<'a>(snapshot: &'a Snapshot, path: &str) -> Vec<(&'static str, &'a Deliverable)> {
+    [
+        (DeliverableKind::Plan, "Latest plan"),
+        (DeliverableKind::Decision, "Latest decision"),
+        (DeliverableKind::Retro, "Latest retro"),
+    ]
+    .into_iter()
+    .filter_map(|(kind, label)| {
+        deliverables_of(snapshot, kind)
+            .into_iter()
+            .find(|d| d.path.is_some() && in_project(d.project.as_deref(), path))
+            .map(|d| (label, d))
+    })
+    .collect()
 }
 
 #[cfg(test)]
@@ -660,5 +739,120 @@ mod tests {
         assert_eq!(deliverables_of(&s, DeliverableKind::Retro).len(), 0);
         assert!(find_doc(&s, "docs/d.md").is_some());
         assert!(find_doc(&s, "docs/nope.md").is_none());
+    }
+
+    fn doc_of(
+        kind: DeliverableKind,
+        project: Option<&str>,
+        path: &str,
+        date: Option<&str>,
+    ) -> Deliverable {
+        Deliverable {
+            kind,
+            title: path.to_owned(),
+            project: project.map(str::to_owned),
+            path: Some(path.to_owned()),
+            url: None,
+            date: date.map(str::to_owned),
+            status: None,
+            downloads: vec![],
+            body: None,
+        }
+    }
+
+    #[test]
+    fn a_project_holds_its_sub_projects_but_not_lookalikes() {
+        assert!(in_project(Some("pane"), "pane"));
+        assert!(in_project(Some("pane/web"), "pane"));
+        assert!(!in_project(Some("pane_old"), "pane"));
+        assert!(!in_project(Some("pan"), "pane"));
+        assert!(!in_project(None, "pane"));
+        let mut s = Snapshot::new("a", "t");
+        s.projects = vec![
+            project("pane/web", ProjectStatus::Active),
+            project("pane", ProjectStatus::Active),
+            project("pane/cloudflare", ProjectStatus::Active),
+            project("panel", ProjectStatus::Active),
+        ];
+        let subs: Vec<_> = sub_projects(&s, "pane")
+            .iter()
+            .map(|p| p.path.as_str())
+            .collect();
+        assert_eq!(subs, ["pane/cloudflare", "pane/web"]);
+        assert!(sub_projects(&s, "pane/web").is_empty());
+    }
+
+    #[test]
+    fn project_work_includes_sub_projects_fixes_first() {
+        let mut s = Snapshot::new("a", "t");
+        s.work_items = vec![
+            item("pane", WorkKind::Todo),
+            item("pane/web", WorkKind::Fix),
+            item("panel", WorkKind::Fix),
+            item("other", WorkKind::Todo),
+        ];
+        let work = project_work(&s, "pane");
+        let order: Vec<_> = work.iter().map(|i| i.project.as_deref()).collect();
+        assert_eq!(order, [Some("pane/web"), Some("pane")]);
+        assert_eq!(kind_counts(&work), (1, 1));
+        assert_eq!(kind_counts(&project_work(&s, "pane/web")), (0, 1));
+    }
+
+    #[test]
+    fn project_deliverables_skip_empty_groups_and_other_projects() {
+        let mut s = Snapshot::new("a", "t");
+        s.deliverables = vec![
+            doc_of(
+                DeliverableKind::Plan,
+                Some("pane"),
+                "pane/docs/plans/a.md",
+                Some("2026-11-01"),
+            ),
+            doc_of(
+                DeliverableKind::Plan,
+                Some("pane"),
+                "pane/docs/plans/b.md",
+                Some("2026-11-20"),
+            ),
+            doc_of(
+                DeliverableKind::Retro,
+                Some("pane/web"),
+                "pane/web/docs/retros/r.md",
+                Some("2026-11-21"),
+            ),
+            doc_of(
+                DeliverableKind::Decision,
+                Some("cookbook"),
+                "cookbook/docs/decisions/d.md",
+                None,
+            ),
+            doc_of(
+                DeliverableKind::Decision,
+                None,
+                "standards/docs/decisions/0001.md",
+                None,
+            ),
+        ];
+        let groups: Vec<_> = project_deliverables(&s, "pane")
+            .iter()
+            .map(|(_, heading, items)| (*heading, items.len()))
+            .collect();
+        assert_eq!(groups, [("Plans", 2), ("Retros", 1)]);
+        let latest: Vec<_> = latest_docs(&s, "pane")
+            .iter()
+            .map(|(label, d)| (*label, d.path.as_deref().unwrap_or_default()))
+            .collect();
+        assert_eq!(
+            latest,
+            [
+                ("Latest plan", "pane/docs/plans/b.md"),
+                ("Latest retro", "pane/web/docs/retros/r.md"),
+            ]
+        );
+        assert!(latest_docs(&s, "nothing").is_empty());
+        assert_eq!(
+            github_tree_url("abc", "pane/web"),
+            "https://github.com/jimhillr/monorepo/tree/abc/pane/web"
+        );
     }
 }
