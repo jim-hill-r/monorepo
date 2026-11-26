@@ -1,0 +1,58 @@
+# Shared mise tasks for Dioxus web apps.
+#
+# Needs in the project's [tools]: rust (with the wasm32-unknown-unknown target)
+# and "cargo:dioxus-cli" pinned to the project's dioxus version. Projects with a
+# package.json (Playwright end-to-end tests) also need node.
+#
+# An app inside a Cargo workspace sets DX_PACKAGE in its [env]: dx resolves
+# the workspace's default-members against the current directory and fails
+# unless --package is given.
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = "cargo clippy -- -D warnings"
+
+[build]
+run = "cargo build"
+
+[test]
+description = "Rust tests, then Playwright tests when the project has a package.json"
+run = [
+  "cargo test",
+  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps && npm test; fi",
+]
+
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
+[ci]
+description = "Everything CI checks; makes no artifacts"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "cargo test",
+  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps && npm test; fi",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+description = "Serve with hot reload"
+run = "dx serve --platform web --port 8080 ${DX_PACKAGE:+--package $DX_PACKAGE}"
+
+[release]
+description = "Release bundle into dist/"
+run = "dx bundle --platform web --release --out-dir dist ${DX_PACKAGE:+--package $DX_PACKAGE}"
+
+[deploy]
+description = "Web apps deploy through their cloudflare/ project"
+run = "echo 'deploy: this app is deployed by its cloudflare project, if it has one'"

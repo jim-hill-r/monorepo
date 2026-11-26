@@ -1,0 +1,58 @@
+# Shared mise tasks for Rust crates and Rust workspaces.
+#
+# Include from a project's mise.toml:
+#   [task_config]
+#   includes = ["<relative path>/standards/tasks/rust.toml"]
+#
+# Every project type answers the same task names:
+#   ci, fix, build, test, dev, release, deploy
+# See standards/docs/build-and-ci.md.
+
+[fmt-check]
+description = "Check formatting"
+run = "cargo fmt --all --check"
+
+[lint]
+description = "Clippy with warnings as errors"
+run = "cargo clippy -- -D warnings"
+
+[build]
+description = "Debug build"
+run = "cargo build"
+
+[test]
+description = "Run tests"
+run = "cargo test"
+
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
+[ci]
+description = "Everything CI checks; makes no artifacts"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "cargo test",
+]
+
+[fix]
+description = "Format and apply safe clippy fixes"
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+description = "Run the default binary"
+run = "cargo run"
+
+[release]
+description = "Release build"
+run = "cargo build --release"
+
+[deploy]
+description = "Nothing to deploy for a plain Rust crate"
+run = "echo 'deploy: nothing to deploy for this project'"

@@ -1,0 +1,4 @@
+# sparkhill: docs project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+
+[task_config]
+includes = ["../standards/tasks/docs.toml"]

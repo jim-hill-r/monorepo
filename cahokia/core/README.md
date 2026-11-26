@@ -8,6 +8,7 @@ This crate provides core data structures and functionality for managing genealog
 - **Relationship Tracking**: Model family relationships (Parent, Child, Spouse, Sibling)
 - **Ancestry Events**: Track significant life events (Birth, Death, Marriage, Divorce, Adoption, etc.)
 - **Family Tree**: Build and query a graph-based family tree structure
+- **Layout**: Arrange a family tree into generation rows for drawing
 
 ## Usage
 
@@ -81,6 +82,33 @@ The FamilyTree provides several helper methods for querying relationships:
 - `get_children(person_id)` - Get all children of a person
 - `get_spouses(person_id)` - Get all spouses of a person
 - `get_siblings(person_id)` - Get all siblings of a person (people who share at least one parent)
+
+### Laying Out the Tree for Drawing
+
+`FamilyTree::generation_layout()` places everyone in a row (their generation,
+parents above children) and at a position within that row, so renderers never
+walk relationships themselves:
+
+```rust
+use core::{FamilyTree, Person, Placement, Sex};
+
+let mut tree = FamilyTree::new();
+for id in ["dad", "mom", "kid"] {
+    tree.add_person(Person::new(id.to_string(), id.to_string(), Sex::Unknown, None, None)).unwrap();
+}
+tree.add_spouse_relationship("dad".to_string(), "mom".to_string()).unwrap();
+tree.add_parent_child_relationship("dad".to_string(), "kid".to_string()).unwrap();
+
+let layout = tree.generation_layout();
+assert_eq!(layout.rows()[0], vec!["dad", "mom"]);
+assert_eq!(layout.placement("kid"), Some(Placement { generation: 1, position: 0 }));
+```
+
+Spouses sit next to each other in the same row, children follow the order of
+their parents and then birth date, and the result is the same on every run.
+Disconnected people get their own place, and relationship cycles in bad data
+are broken instead of panicking. See the `layout` module docs for the full
+rules.
 
 ## Data Structures
 

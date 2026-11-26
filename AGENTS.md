@@ -18,6 +18,10 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Plans, decisions and retros live in the repo**, not in chat tools or
+  hosted docs. Write them as Markdown next to what they are about (a project's
+  own folder, or `standards/docs/` for repo-wide work) and commit them with the
+  related PR.
 
 ## Project rules and notes
 
@@ -28,20 +32,30 @@ repo, rather than in any one agent tool's settings.
   run by default), not by deleting branches by hand or with a local script.
 - **Pinned dependencies — do not bump:**
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
-  - `sycamore` in `sparkhill/website` must stay on 0.8, which `perseus` 0.4.2
-    requires.
+  - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
+    0.8, which `perseus` 0.4.2 requires.
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
+- **Merge rule.** Any agent may squash-merge any PR, including one its own
+  thread opened, once it is mergeable: not a draft, no merge conflict, at
+  least one approving review on the current head commit and no outstanding
+  "changes requested", and green checks. Green means every check has finished
+  and passed, except a check that is also failing on the latest `main` commit
+  for reasons the PR didn't cause (today, the old Cast `run-ci` check until
+  the mise migration replaces it). A pending check is never green. Agents
+  still never approve their own PRs. Details are in
+  `standards/docs/pull-requests.md`.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
   or closed). The policy is in `standards/docs/pull-requests.md`. An hourly
   scheduled agent task, "Hourly PR triage", acts as `jimhillr-agt` on every
-  open PR: it approves and squash-merges safe dependabot and human PRs,
-  merges agent PRs once a human has approved them, asks dependabot to rebase
+  open PR: it approves safe dependabot and human PRs, squash-merges every
+  mergeable PR (per the merge rule above), asks dependabot to rebase
   conflicts, closes superseded or pinned bumps, adopts orphaned agent PRs, and
-  labels anything that needs Jim `needs-jim`. Safe means green checks, no conflict, patch or minor
-  bumps only (a 0.x minor bump counts as major), never the pinned bumps above,
-  and no workflow, auth or secrets changes unless trivially safe. It reads
-  this file for extra pins, so list any new pins here.
+  labels anything that needs Jim `needs-jim`. Safe to approve means green
+  checks, no conflict, patch or minor bumps only (a 0.x minor bump counts as
+  major), never the pinned bumps above, and no workflow, auth or secrets
+  changes unless trivially safe. It reads this file for extra pins, so list
+  any new pins here.
 - **Starting new work.** There is no scheduled job for new work. Whenever no
   agent PRs or agent tasks are in flight, the coordinating agent starts a new
   task by running the `start-a-new-task` skill.
@@ -62,6 +76,13 @@ opening or readying a PR.
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
+
+The repo is moving from Cast to [mise](https://mise.jdx.dev). Each project
+already has a `mise.toml`, and `mise run ci` runs the same checks as `cast ci`
+in a non-blocking CI job. The rules and decisions for that move (no root Rust
+workspace, the same tasks in every project, no committed build artifacts) are in
+[standards/docs/mise.md](standards/docs/mise.md). This section switches to mise
+once Cast is removed.
 
 ## Skills
 

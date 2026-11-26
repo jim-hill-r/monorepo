@@ -40,4 +40,7 @@ Ready for review hands the PR to a human; it is not approval. If a reviewer
 requests changes, address them and re-check the list above. Move the PR back to
 draft if it stops meeting it.
 
-Never approve or merge your own PR.
+Never approve your own PR. Once it is mergeable as defined in
+`standards/docs/pull-requests.md` (not a draft, no conflict, an approving
+review on the head commit, green checks), you may squash-merge it yourself
+instead of waiting for the hourly triage.
