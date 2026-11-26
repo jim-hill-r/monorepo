@@ -62,11 +62,11 @@ impl EmbeddedRecipeStore {
 
     /// Parses recipe data from markdown content
     fn parse_recipe_markdown(content: &str, day: u32) -> RecipeResult<Recipe> {
-        Ok(crate::parse::recipe(
+        crate::parse::recipe(
             content,
             format!("day-{}", day),
             format!("Day {} Recipe", day),
-        ))
+        )
     }
 }
 

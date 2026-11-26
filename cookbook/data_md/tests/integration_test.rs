@@ -7,6 +7,19 @@ fn test_load_example_recipes() {
 
     let store = MarkdownRecipeStore::new(content_dir).expect("Should load content directory");
 
+    // Every recipe file must load. week-53.md lists only 2 recipes and is a known gap
+    // (see cookbook/ISSUES.md).
+    let unexpected: Vec<&String> = store
+        .load_errors()
+        .iter()
+        .filter(|e| !e.contains("week-53.md"))
+        .collect();
+    assert!(
+        unexpected.is_empty(),
+        "Unexpected load errors: {:?}",
+        unexpected
+    );
+
     // Test plan loading first to get UUID for day-1
     let plan_1 = store.get_by_week(1).expect("Should find plan for week 1");
     assert_eq!(plan_1.week, 1);
@@ -32,7 +45,7 @@ fn test_load_example_recipes() {
 
     // Test get_all includes many recipes
     let all_recipes = RecipeReader::get_all(&store).expect("Should get all recipes");
-    assert!(all_recipes.len() >= 365, "Should have at least 365 recipes");
+    assert_eq!(all_recipes.len(), 365, "Should have one recipe per day");
 
     // Check that intro.md was not loaded as a recipe
     assert!(
