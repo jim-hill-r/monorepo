@@ -182,7 +182,7 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
         match details.bedrooms {
             Some(beds) if beds <= max_beds => {}
             Some(beds) => unmet_criteria.push(format!("Bedrooms: {} (max is {})", beds, max_beds)),
-            None => {}
+            None => unmet_criteria.push(format!("Bedrooms: unknown (max is {})", max_beds)),
         }
     }
 
@@ -429,6 +429,29 @@ mod tests {
         };
         let eval = evaluate_property(&details, &prefs);
         assert!(!eval.meets_preferences);
+    }
+
+    #[test]
+    fn test_evaluate_missing_data_fails_max_bedrooms() {
+        let details = make_property(None, None, None, None);
+        let prefs = HomePreferences {
+            max_bedrooms: Some(4),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert!(!eval.meets_preferences);
+        assert_eq!(eval.unmet_criteria, vec!["Bedrooms: unknown (max is 4)"]);
+    }
+
+    #[test]
+    fn test_evaluate_max_bedrooms_at_limit_passes() {
+        let details = make_property(None, Some(4), None, None);
+        let prefs = HomePreferences {
+            max_bedrooms: Some(4),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert!(eval.meets_preferences);
     }
 
     #[test]
