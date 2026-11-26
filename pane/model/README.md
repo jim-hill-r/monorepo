@@ -11,8 +11,8 @@ holds: pane's data model.
 | --- | --- |
 | `Snapshot` | Everything read from one checkout of the repo: the format version, commit, time taken, and the lists below. |
 | `Project` | One entry from `[monorepo].config_roots`: path, type, `DEPLOY_URL`, README summary, priority or on-hold status. |
-| `WorkItem` | One `TODO` or `FIX`, from an `ISSUES.md` line or a code comment, with its file, line, section, epic and tags. |
-| `HumanIssue` | One `TODO (human)` line in `HUMAN_ISSUES.md`, with its added date and what it unblocks. |
+| `WorkItem` | One `TODO` or `FIX`, from an issue file or a code comment, with its file, line, section, epic and tags. |
+| `HumanIssue` | One task file in `issues/human/`, with its added date and what it unblocks. |
 | `Deliverable` | A live site, plan, decision, retro, review deck, release or UAT report, with its download links and, for documents, its Markdown `body`. New fields default, so the format version stays 1. |
 | `Review` | An executive review deck and its scorecard rows. |
 | `Retro` | A retro and its actions. |

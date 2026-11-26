@@ -28,6 +28,8 @@ config_roots = [
   "cookbook",
   "cookbook/cloudflare",
   "cookbook/web",
+  "design_system",
+  "design_system/preview",
   "evals",
   "homer",
   "luggage",
@@ -64,6 +66,11 @@ run = "bash standards/scripts/affected.sh --all"
 description = "Check every project follows the repo standards"
 dir = "{{config_root}}"
 run = "bash standards/scripts/audit.sh"
+
+[tasks."issues"]
+description = "List the open issues from the issue files (--human for human tasks, --check to validate)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/issues.sh"
 
 [tasks."review-decks"]
 description = "Build the review decks in docs/reviews to HTML and PDF"

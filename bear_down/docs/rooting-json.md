@@ -31,6 +31,10 @@ A swing object has:
 - `if_home_wins` and `if_away_wins`: the goal's odds after each result.
 - `swing`: `if_home_wins - if_away_wins`; negative means root for the away
   team.
+- `std_error`: the standard error of `swing` (null if nothing was
+  simulated). The page uses it to apply its A/B arm's "doesn't matter" line
+  with the CLI's rule, `bear_down_core::tier_against`
+  ([fan feedback plan](plans/2026-11-fan-feedback.md)).
 - `root_for`: the team to root for, or null for "doesn't matter". For the
   Super Bowl and playoff goals a pick needs a clear direction (more than two
   standard errors) and a swing that isn't confidently under 0.05 points
@@ -75,7 +79,7 @@ A swing object has:
       "id": "2026_12_CHI_DET", "gameday": "2026-11-26", "away": "CHI", "home": "DET",
       "home_win_probability": 0.569,
       "champion": {
-        "if_home_wins": 0.055, "if_away_wins": 0.083, "swing": -0.028, "root_for": "CHI", "tier": "matters",
+        "if_home_wins": 0.055, "if_away_wins": 0.083, "swing": -0.028, "std_error": 0.001, "root_for": "CHI", "tier": "matters",
         "why": [
           "The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race.",
           "NFC North title, on record: a Bears win helps the Bears by 1.6 Super Bowl points."
@@ -84,8 +88,8 @@ A swing object has:
           { "channel": "division_title", "cause": "record", "favors": "CHI", "share": 0.0157, "std_error": 0.0008, "seasons": 0.363 }
         ]
       },
-      "playoffs": { "if_home_wins": 0.864, "if_away_wins": 0.963, "swing": -0.099, "root_for": "CHI", "tier": "matters", "why": ["..."], "channels": [] },
-      "nfc_north": { "if_home_wins": 0.0007, "if_away_wins": 0.0005, "swing": 0.0002, "root_for": null, "tier": "negligible", "why": ["..."], "channels": [] }
+      "playoffs": { "if_home_wins": 0.864, "if_away_wins": 0.963, "swing": -0.099, "std_error": 0.0009, "root_for": "CHI", "tier": "matters", "why": ["..."], "channels": [] },
+      "nfc_north": { "if_home_wins": 0.0007, "if_away_wins": 0.0005, "swing": 0.0002, "std_error": 0.0001, "root_for": null, "tier": "negligible", "why": ["..."], "channels": [] }
     }
   ]
 }

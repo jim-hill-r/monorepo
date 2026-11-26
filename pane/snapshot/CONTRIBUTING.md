@@ -33,7 +33,7 @@ mise run ci
 
 `tests/fixtures/repo` is a tiny fake monorepo. Its files end in `.fixture`
 and every `TODO`/`FIX` in it is tagged `agent-ignore`, so agents and repo
-tools looking for real `ISSUES.md` and `mise.toml` files don't pick them up.
+tools looking for real issue files and `mise.toml` files don't pick them up.
 The integration tests in `tests/build.rs` copy it into a temporary directory
 under the real names. Add a parser test against a fixture file for every new
 source the snapshot reads.

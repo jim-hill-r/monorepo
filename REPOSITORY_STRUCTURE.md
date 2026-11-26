@@ -17,16 +17,11 @@ This document describes the organization and structure of this monorepo to help 
 │   └── content_provider/ # Content provider library
 ├── standards/           # Standards (standards/docs/), shared mise tasks (standards/tasks/) and repo scripts
 ├── athenaeum/           # Learning resources (algorithms, system design, etc.)
-<<<<<<< HEAD
 ├── docs/reviews/        # Weekly deep project review decks (Marp), see docs/reviews/README.md
-├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
-=======
->>>>>>> origin/main
+├── issues/              # Repo-wide issues, one file each; issues/human/ for tasks only a person can do
 ├── [other projects]     # Various projects and applications
 ├── mise.toml            # mise monorepo root: lists projects, //:audit and //:affected tasks
 ├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
-├── ISSUES.md            # Project-wide TODO and issue tracking
-├── HUMAN_ISSUES.md      # Tasks only a person can do (TODO (human))
 ├── REPOSITORY_STRUCTURE.md # This file
 └── README.md            # Main README
 ```
@@ -76,9 +71,9 @@ See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` f
 
 ## Finding Issues/TODOs
 
-1. Check `ISSUES.md` in the repository root and in each project
+1. Run `mise run //:issues` to list the issue files (`issues/` at the root and in each project, one file per issue)
 2. Use the TODO Tree extension to find TODOs in code
-3. AI agents work on TODOs from ISSUES.md using the `start-a-new-task` skill in `.agents/skills/`
+3. AI agents work on issues using the `start-a-new-task` skill in `.agents/skills/`
 
 ## Project Dependencies
 
@@ -97,14 +92,9 @@ See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` f
 ## Important Notes for Agents
 
 1. **Project structure**: All projects are located in the root directory, not under a "projects/" subdirectory
-<<<<<<< HEAD
 2. **Docs location**: The root `/docs/` folder holds only project review decks (`/docs/reviews/`). Standards live in `/standards/docs/`; project docs live inside each project
-3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
-=======
-2. **Docs location**: There is no root `/docs/` folder. Standards live in `/standards/docs/`; project docs live inside each project
 3. **Minimal workflow logic**: GitHub workflows should call mise tasks, not contain complex logic
->>>>>>> origin/main
 4. **No project templates**: There are no exemplar/template projects, and they are intentionally not being restored. Create new projects by hand
-5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
+5. **TODO tracking**: Delete an issue's file (or its TODO comment) when it is completed
 6. **Concurrency**: Only one automated agent task should be open at a time (an open agent PR means wait)
 7. **mise**: Every project has a `mise.toml` that includes one shared task file; `mise run //:audit` enforces this.

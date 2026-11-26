@@ -3,13 +3,7 @@ use std::path::Path;
 
 #[test]
 fn test_required_files_exist() {
-    let required_files = [
-        "README.md",
-        "wrangler.toml",
-        "mise.toml",
-        ".gitignore",
-        "ISSUES.md",
-    ];
+    let required_files = ["README.md", "wrangler.toml", "mise.toml", ".gitignore"];
 
     for file in &required_files {
         assert!(

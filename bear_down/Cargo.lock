@@ -160,6 +160,7 @@ dependencies = [
 name = "bear_down_web"
 version = "0.1.0"
 dependencies = [
+ "bear_down_core",
  "dioxus",
  "serde",
  "serde_json",

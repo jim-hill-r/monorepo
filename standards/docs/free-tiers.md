@@ -158,7 +158,7 @@ script clamps them.
 ## Things only Jim can check
 
 Agents can't see billing pages. Jim checks these; open checks are
-`TODO (human)` lines in the root [HUMAN_ISSUES.md](../../HUMAN_ISSUES.md):
+files in the root [issues/human/](../../issues/human/):
 
 - No payment method on the Cloudflare, PostHog, Auth0 or RapidAPI accounts,
   and GitHub's Actions budget is $0 with "stop usage" on.
