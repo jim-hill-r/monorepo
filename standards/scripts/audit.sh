@@ -7,8 +7,6 @@
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
 #   NAM-001  Project directory names are snake_case.
-#   FT-*     Free tier guards, from free-tiers.sh check
-#            (see standards/docs/free-tiers.md).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -53,6 +51,7 @@ for t in standards/tasks/*.toml; do
   done
 done
 
+# FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))
 
 if [ "$errors" -gt 0 ]; then
