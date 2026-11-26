@@ -8,9 +8,17 @@ mod teams;
 
 use bear_down_core::NEGLIGIBLE_SWING;
 use data::{Game, Goal, Rooting, no_pick_label, percent, swing_percent, timestamp};
+use design_system_dioxus::{Stylesheets, ThemePicker};
 use dioxus::prelude::*;
 
 const STYLE: &str = include_str!("style.css");
+/// The generated "bears" theme (`design_system_cli render`).
+const THEME_CSS: &str = include_str!("../../design/theme.css");
+
+/// bear_down's own theme, offered first in the picker.
+fn bears() -> Option<(String, String)> {
+    Some(("bears".into(), "Chicago Bears".into()))
+}
 
 fn main() {
     dioxus::launch(App);
@@ -27,6 +35,7 @@ fn App() -> Element {
         Some(Ok(r)) => rsx! { Guide { rooting: r.clone() } },
     };
     rsx! {
+        Stylesheets { default_theme: "bears", app_css: Some(THEME_CSS.into()), custom: bears() }
         style { {STYLE} }
         main {
             header {
@@ -34,6 +43,7 @@ fn App() -> Element {
                 p { class: "tagline", "Which NFL games to root for this week, for Bears fans." }
             }
             {body}
+            footer { class: "appearance", ThemePicker { custom: bears() } }
         }
     }
 }
