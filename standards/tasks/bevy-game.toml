@@ -1,0 +1,50 @@
+# Shared mise tasks for Bevy games.
+#
+# On Linux CI the system libraries Bevy links against are installed first,
+# and tests run under xvfb so window-creating tests have a display.
+
+["ci:deps"]
+description = "Install Bevy's Linux system libraries on CI"
+run = '''
+if [ -n "${CI:-}" ] && command -v apt-get >/dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev xvfb
+fi
+'''
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = "cargo clippy -- -D warnings"
+
+[build]
+run = "cargo build"
+
+[test]
+run = "if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi"
+
+[ci]
+description = "Everything CI checks; makes no artifacts"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "if command -v xvfb-run >/dev/null; then xvfb-run -a cargo test; else cargo test; fi",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+run = "cargo run"
+
+[release]
+run = "cargo build --release"
+
+[deploy]
+run = "echo 'deploy: games are not deployed yet'"

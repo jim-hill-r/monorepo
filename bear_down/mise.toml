@@ -1,0 +1,5 @@
+# bear_down: docs project for now. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# PR 563 turns this into a rust project when the Cargo workspace lands.
+
+[task_config]
+includes = ["../standards/tasks/docs.toml"]

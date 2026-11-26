@@ -1,0 +1,45 @@
+# Shared mise tasks for Perseus (Sycamore) web apps.
+# Needs in [tools]: rust (with wasm32-unknown-unknown) and "cargo:perseus-cli"
+# pinned to the project's perseus version.
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = "cargo clippy -- -D warnings"
+
+[build]
+run = "cargo build"
+
+[test]
+run = "cargo test"
+
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
+[ci]
+description = "Everything CI checks; makes no artifacts"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "cargo test",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+run = "perseus serve -w"
+
+[release]
+description = "Static export (output in dist/exported)"
+run = "perseus export --release"
+
+[deploy]
+run = "echo 'deploy: not deployed yet'"

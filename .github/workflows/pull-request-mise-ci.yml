@@ -1,0 +1,83 @@
+---
+# Runs `mise run ci` in every project a pull request touches, one job per
+# project. Runs beside the Cast-based Pull Request CI while the repo moves from
+# Cast to mise; it is not a required check yet.
+name: Pull Request mise CI
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      all:
+        description: Run every project, not only changed ones
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mise-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+  MISE_YES: '1'
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
+    outputs:
+      projects: ${{ steps.affected.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@v2
+        with:
+          install: false
+
+      - name: Audit standards
+        run: mise run //:audit
+
+      - name: List affected projects
+        id: affected
+        env:
+          AFFECTED_BASE: origin/${{ github.base_ref || 'main' }}
+        run: |
+          if [ "${{ inputs.all }}" = "true" ]; then
+            projects=$(mise run --quiet //:projects)
+          else
+            projects=$(mise run --quiet //:affected)
+          fi
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          echo "Projects: $projects"
+
+  ci:
+    needs: plan
+    if: needs.plan.outputs.projects != '[]'
+    runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.plan.outputs.projects) }}
+    name: ci (${{ matrix.project }})
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v2
+        with:
+          working_directory: ${{ matrix.project }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.project }}
+          key: ${{ matrix.project }}
+
+      - name: mise run ci
+        run: mise run ci
