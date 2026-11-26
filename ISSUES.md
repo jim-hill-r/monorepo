@@ -37,6 +37,7 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 - controlled_chaos
 - royalty
 - sparkhill
+- pane
 
 # On Hold Projects
 - luggage
