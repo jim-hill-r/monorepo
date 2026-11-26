@@ -340,7 +340,7 @@ content/*.md ──build.rs──▶ embedded_recipes.rs / embedded_plans.rs (in
 
 - **One 1,795-line `web/src/main.rs`** holds routing, layout, date logic, data access and 55 tests. Date and plan logic belongs in `core` where it can be tested without the UI.
 - **Half-finished UUID migration.** `Recipe.id` (deprecated "day-N") and `Plan.recipe_days` (deprecated) are still read; `EmbeddedRecipeStore::get_by_uuid` scans all 365 recipes (in `ISSUES.md`). #584 made `MarkdownRecipeStore` ids stable across save and reload.
-- **Panics in library code.** `Plan::new` and `EmbeddedRecipeStore::load_embedded_recipes` `assert_eq!`; a bad content file crashes the app at startup (already in `ISSUES.md`).
+- **Panics in library code.** `Plan::new` and `EmbeddedRecipeStore::load_embedded_recipes` `assert_eq!`; a bad content file crashed the app at startup. **Fixed by #602** after the review.
 - Missing UUIDs used to get a random one on every load; #584 made that an error.
 - **Content compiled in** is simple and free to host, but every recipe edit needs a rebuild and redeploy; fine for now, limiting for signed-in editing (goal 6).
 - `recipe_gen` carries four one-off migration binaries that have done their job.
@@ -436,7 +436,7 @@ malicious page. Trust boundaries: browser ↔ Cloudflare Pages, browser ↔ Auth
 | Standard | Status |
 | --- | --- |
 | Lints `unwrap_used`, `expect_used` warn; `unsafe_code` forbid | ✅ set at workspace level |
-| No panics in library code (`rust.md`) | ❌ `assert_eq!` in `Plan::new`, embedded store |
+| No panics in library code (`rust.md`) | ❌ at review time (`assert_eq!` in `Plan::new`, embedded store); fixed by #602 |
 | README, CONTRIBUTING, ISSUES per crate | ✅ present |
 | README accuracy (`documentation.md`) | ❌ `web/README.md` still says weeks 1-52 and tells you to use Cast |
 | E2E for web apps (`testing.md`) | ✅ Playwright |
@@ -472,7 +472,7 @@ malicious page. Trust boundaries: browser ↔ Cloudflare Pages, browser ↔ Auth
 | --- | --- | --- | --- |
 | Empty plan and sidebar during week 53 (from 2026-12-28) | Certain | High | Visible to every visitor for a week |
 | Wrong shopping quantities | Certain | High | Breaks the core promise |
-| A malformed content file crashes the app | Medium | High | `assert_eq!` on 365 recipes at startup |
+| A malformed content file crashes the app | Low | High | Was `assert_eq!` at startup; fixed by #602 |
 | Auth0 tenant changes break login | Low | Low | Feature unused |
 | Dioxus 0.7 upgrades | Medium | Medium | `Routable` derive already needed a workaround (`mod route`) |
 
@@ -573,5 +573,5 @@ benefits `cahokia` too.
 - 2024-pinned plans: `cookbook/content/week-48.md` (`Year: 2024`, `Days: 330..336`)
 - Auth todo!s: `auth_sdk/src/web.rs`, `is_authenticated`, `is_loading`, `error`, `logout`
 - Code left in URL: `auth_sdk/src/web.rs`, `fetch_code_and_state_from_browser`, `handle_redirect`
-- Panics: `cookbook/core/src/lib.rs` `Plan::new`; `cookbook/data_md/src/embedded.rs` `load_embedded_recipes`
+- Panics (fixed by #602): `cookbook/core/src/lib.rs` `Plan::new`; `cookbook/data_md/src/embedded.rs` `load_embedded_recipes`
 - Goals history: commits `1bd5a7f`, `ec9c353`; root `ISSUES.md` Priority Projects

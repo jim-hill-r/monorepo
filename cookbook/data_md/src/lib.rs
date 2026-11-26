@@ -1525,7 +1525,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan = Plan::new(10, uuids.clone());
+        let plan = Plan::new(10, uuids.clone()).unwrap();
 
         let result = PlanWriter::create(&mut store, plan.clone());
         assert!(result.is_ok());
@@ -1570,7 +1570,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(20, uuids1);
+        let plan1 = Plan::new(20, uuids1).unwrap();
         PlanWriter::create(&mut store, plan1).unwrap();
 
         // Create updated plan with different UUIDs
@@ -1583,7 +1583,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan2 = Plan::new(20, uuids2.clone());
+        let plan2 = Plan::new(20, uuids2.clone()).unwrap();
 
         let result = PlanWriter::update(&mut store, plan2.clone());
         assert!(result.is_ok());
@@ -1602,7 +1602,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let nonexistent = Plan::new(99, uuids3);
+        let nonexistent = Plan::new(52, uuids3).unwrap();
         let result = PlanWriter::update(&mut store, nonexistent);
         assert!(result.is_err());
         match result {
@@ -1636,8 +1636,8 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(30, uuids1);
-        let plan2 = Plan::new(31, uuids2);
+        let plan1 = Plan::new(30, uuids1).unwrap();
+        let plan2 = Plan::new(31, uuids2).unwrap();
         PlanWriter::create(&mut store, plan1).unwrap();
         PlanWriter::create(&mut store, plan2.clone()).unwrap();
 
@@ -1679,7 +1679,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan = Plan::new(40, uuids.clone());
+        let plan = Plan::new(40, uuids.clone()).unwrap();
 
         let result = PlanWriter::save(&mut store, plan.clone());
         assert!(result.is_ok());
@@ -1710,7 +1710,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(50, uuids1);
+        let plan1 = Plan::new(50, uuids1).unwrap();
         PlanWriter::create(&mut store, plan1).unwrap();
 
         // Save updated plan
@@ -1723,7 +1723,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan2 = Plan::new(50, uuids2.clone());
+        let plan2 = Plan::new(50, uuids2.clone()).unwrap();
 
         let result = PlanWriter::save(&mut store, plan2.clone());
         assert!(result.is_ok());
@@ -1771,7 +1771,7 @@ Tags: test
             }
         }
 
-        let plan = Plan::new(15, recipe_uuids.clone());
+        let plan = Plan::new(15, recipe_uuids.clone()).unwrap();
         PlanWriter::create(&mut store, plan).unwrap();
 
         // Verify file content is human-readable
@@ -1807,7 +1807,7 @@ Tags: test
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan = Plan::new(25, uuids.clone());
+        let plan = Plan::new(25, uuids.clone()).unwrap();
 
         // Write plan
         PlanWriter::create(&mut store, plan.clone()).unwrap();

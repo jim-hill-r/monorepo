@@ -78,7 +78,7 @@ pub(crate) fn plan(content: &str, week: u32) -> PlanResult<Plan> {
         )));
     }
 
-    Plan::new_checked(week, recipe_uuids).map_err(|e| {
+    Plan::new(week, recipe_uuids).map_err(|e| {
         PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
     })
 }

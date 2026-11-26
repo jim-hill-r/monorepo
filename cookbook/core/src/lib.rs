@@ -717,70 +717,53 @@ impl Plan {
     /// * `week` - ISO 8601 week number (1-53)
     /// * `recipe_uuids` - Vector of 7 recipe UUIDs for Mon-Sun
     ///
-    /// # Panics
-    /// Panics if recipe_uuids doesn't contain exactly 7 values.
-    /// Use `new_checked` for a non-panicking alternative.
-    pub fn new(week: u32, recipe_uuids: Vec<Uuid>) -> Self {
-        assert_eq!(
-            recipe_uuids.len(),
-            7,
-            "Plan must have exactly 7 recipe UUIDs, got {}",
-            recipe_uuids.len()
-        );
-        #[allow(deprecated)]
-        Self {
-            week,
-            recipe_uuids,
-            recipe_days: None,
-        }
-    }
-
-    /// Creates a new plan with legacy day-of-year references (deprecated).
-    ///
-    /// This method is provided for backward compatibility during migration.
-    /// Use `new()` with recipe UUIDs for new code.
-    #[deprecated(note = "Use new() with recipe UUIDs instead")]
-    #[allow(deprecated)]
-    pub fn new_with_days(week: u32, recipe_days: Vec<u32>) -> Self {
-        assert_eq!(
-            recipe_days.len(),
-            7,
-            "Plan must have exactly 7 recipe days, got {}",
-            recipe_days.len()
-        );
-        Self {
-            week,
-            recipe_uuids: vec![Uuid::nil(); 7], // Placeholder UUIDs
-            recipe_days: Some(recipe_days),
-        }
-    }
-
-    /// Creates a new plan with validation.
-    ///
-    /// Returns an error if:
-    /// - Week number is not in range 1-53
-    /// - recipe_uuids doesn't contain exactly 7 values
-    pub fn new_checked(week: u32, recipe_uuids: Vec<Uuid>) -> PlanResult<Self> {
-        if !(1..=53).contains(&week) {
-            return Err(PlanError::InvalidData(format!(
-                "Week must be between 1 and 53, got {}",
-                week
-            )));
-        }
-
-        if recipe_uuids.len() != 7 {
-            return Err(PlanError::InvalidData(format!(
-                "Plan must have exactly 7 recipe UUIDs, got {}",
-                recipe_uuids.len()
-            )));
-        }
-
+    /// # Errors
+    /// Returns [`PlanError::InvalidData`] if `week` is not in 1-53 or
+    /// `recipe_uuids` doesn't contain exactly 7 values.
+    pub fn new(week: u32, recipe_uuids: Vec<Uuid>) -> PlanResult<Self> {
+        Self::validate(week, recipe_uuids.len(), "recipe UUIDs")?;
         #[allow(deprecated)]
         Ok(Self {
             week,
             recipe_uuids,
             recipe_days: None,
         })
+    }
+
+    /// Creates a new plan with legacy day-of-year references (deprecated).
+    ///
+    /// This method is provided for backward compatibility during migration.
+    /// Use `new()` with recipe UUIDs for new code.
+    ///
+    /// # Errors
+    /// Returns [`PlanError::InvalidData`] if `week` is not in 1-53 or
+    /// `recipe_days` doesn't contain exactly 7 values.
+    #[deprecated(note = "Use new() with recipe UUIDs instead")]
+    #[allow(deprecated)]
+    pub fn new_with_days(week: u32, recipe_days: Vec<u32>) -> PlanResult<Self> {
+        Self::validate(week, recipe_days.len(), "recipe days")?;
+        Ok(Self {
+            week,
+            recipe_uuids: vec![Uuid::nil(); 7], // Placeholder UUIDs
+            recipe_days: Some(recipe_days),
+        })
+    }
+
+    /// Checks that `week` is an ISO week (1-53) and that the plan has 7 recipes.
+    fn validate(week: u32, recipe_count: usize, what: &str) -> PlanResult<()> {
+        if !(1..=53).contains(&week) {
+            return Err(PlanError::InvalidData(format!(
+                "Week must be between 1 and 53, got {}",
+                week
+            )));
+        }
+        if recipe_count != 7 {
+            return Err(PlanError::InvalidData(format!(
+                "Plan must have exactly 7 {}, got {}",
+                what, recipe_count
+            )));
+        }
+        Ok(())
     }
 
     /// Get the recipe UUID for a specific weekday (0=Monday, 6=Sunday)
@@ -870,20 +853,13 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan = Plan::new(1, uuids.clone());
+        let plan = Plan::new(1, uuids.clone()).unwrap();
         assert_eq!(plan.week, 1);
         assert_eq!(plan.recipe_uuids, uuids);
     }
 
     #[test]
-    #[should_panic(expected = "Plan must have exactly 7 recipe UUIDs")]
-    fn test_plan_new_wrong_length_panics() {
-        let uuids = vec![Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()]; // Only 3 UUIDs
-        Plan::new(1, uuids);
-    }
-
-    #[test]
-    fn test_plan_new_checked_valid() {
+    fn test_plan_new_valid() {
         let uuids = vec![
             Uuid::new_v4(),
             Uuid::new_v4(),
@@ -893,7 +869,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let result = Plan::new_checked(1, uuids.clone());
+        let result = Plan::new(1, uuids.clone());
         assert!(result.is_ok());
         let plan = result.unwrap();
         assert_eq!(plan.week, 1);
@@ -901,7 +877,7 @@ mod plan_tests {
     }
 
     #[test]
-    fn test_plan_new_checked_invalid_week_zero() {
+    fn test_plan_new_invalid_week_zero() {
         let uuids = vec![
             Uuid::new_v4(),
             Uuid::new_v4(),
@@ -911,7 +887,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let result = Plan::new_checked(0, uuids);
+        let result = Plan::new(0, uuids);
         assert!(result.is_err());
         match result {
             Err(PlanError::InvalidData(msg)) => {
@@ -922,7 +898,7 @@ mod plan_tests {
     }
 
     #[test]
-    fn test_plan_new_checked_invalid_week_too_high() {
+    fn test_plan_new_invalid_week_too_high() {
         let uuids = vec![
             Uuid::new_v4(),
             Uuid::new_v4(),
@@ -932,7 +908,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let result = Plan::new_checked(54, uuids);
+        let result = Plan::new(54, uuids);
         assert!(result.is_err());
         match result {
             Err(PlanError::InvalidData(msg)) => {
@@ -943,9 +919,9 @@ mod plan_tests {
     }
 
     #[test]
-    fn test_plan_new_checked_wrong_length() {
+    fn test_plan_new_wrong_length() {
         let uuids = vec![Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()]; // Only 3 UUIDs
-        let result = Plan::new_checked(1, uuids);
+        let result = Plan::new(1, uuids);
         assert!(result.is_err());
         match result {
             Err(PlanError::InvalidData(msg)) => {
@@ -957,9 +933,27 @@ mod plan_tests {
 
     #[test]
     #[allow(deprecated)]
+    fn test_plan_new_with_days_wrong_length() {
+        let result = Plan::new_with_days(1, vec![1, 2, 3]);
+        match result {
+            Err(PlanError::InvalidData(msg)) => {
+                assert!(msg.contains("Plan must have exactly 7 recipe days"));
+            }
+            _ => panic!("Expected InvalidData error"),
+        }
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_plan_new_with_days_invalid_week() {
+        assert!(Plan::new_with_days(54, vec![1, 2, 3, 4, 5, 6, 7]).is_err());
+    }
+
+    #[test]
+    #[allow(deprecated)]
     fn test_plan_new_with_days_legacy() {
         let days = vec![1, 2, 3, 4, 5, 6, 7];
-        let plan = Plan::new_with_days(1, days.clone());
+        let plan = Plan::new_with_days(1, days.clone()).unwrap();
         assert_eq!(plan.week, 1);
         assert_eq!(plan.recipe_days, Some(days));
     }
@@ -975,7 +969,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan = Plan::new(2, uuids.clone());
+        let plan = Plan::new(2, uuids.clone()).unwrap();
 
         // Monday (0)
         assert_eq!(plan.get_uuid_for_weekday(0), Some(uuids[0]));
@@ -991,7 +985,7 @@ mod plan_tests {
     #[allow(deprecated)]
     fn test_plan_get_day_for_weekday_legacy() {
         let days = vec![10, 11, 12, 13, 14, 15, 16];
-        let plan = Plan::new_with_days(2, days.clone());
+        let plan = Plan::new_with_days(2, days.clone()).unwrap();
 
         // Monday (0)
         assert_eq!(plan.get_day_for_weekday(0), Some(10));
@@ -1014,7 +1008,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan = Plan::new(1, uuids);
+        let plan = Plan::new(1, uuids).unwrap();
         let cloned = plan.clone();
         assert_eq!(plan, cloned);
     }
@@ -1029,12 +1023,12 @@ mod plan_tests {
         let uuid6 = Uuid::new_v4();
         let uuid7 = Uuid::new_v4();
 
-        let plan1 = Plan::new(1, vec![uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]);
-        let plan2 = Plan::new(1, vec![uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]);
+        let plan1 = Plan::new(1, vec![uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]).unwrap();
+        let plan2 = Plan::new(1, vec![uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]).unwrap();
         assert_eq!(plan1, plan2);
 
         let uuid8 = Uuid::new_v4();
-        let plan3 = Plan::new(1, vec![uuid8, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]);
+        let plan3 = Plan::new(1, vec![uuid8, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7]).unwrap();
         assert_ne!(plan1, plan3);
     }
 
@@ -1081,8 +1075,8 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids1);
-        let plan2 = Plan::new(2, uuids2);
+        let plan1 = Plan::new(1, uuids1).unwrap();
+        let plan2 = Plan::new(2, uuids2).unwrap();
         let reader = MockPlanReader {
             plans: vec![plan1.clone(), plan2],
         };
@@ -1121,8 +1115,8 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids1);
-        let plan2 = Plan::new(2, uuids2);
+        let plan1 = Plan::new(1, uuids1).unwrap();
+        let plan2 = Plan::new(2, uuids2).unwrap();
         let reader = MockPlanReader {
             plans: vec![plan1.clone(), plan2.clone()],
         };
@@ -1146,7 +1140,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids);
+        let plan1 = Plan::new(1, uuids).unwrap();
         let reader = MockPlanReader { plans: vec![plan1] };
 
         assert!(reader.exists(1));
@@ -1215,7 +1209,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids);
+        let plan1 = Plan::new(1, uuids).unwrap();
         let result = writer.create(plan1.clone());
         assert!(result.is_ok());
         assert_eq!(writer.plans.len(), 1);
@@ -1243,7 +1237,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids1);
+        let plan1 = Plan::new(1, uuids1).unwrap();
         let mut writer = MockPlanWriter { plans: vec![plan1] };
 
         let uuids2 = vec![
@@ -1255,7 +1249,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let updated = Plan::new(1, uuids2);
+        let updated = Plan::new(1, uuids2).unwrap();
         let result = writer.update(updated.clone());
         assert!(result.is_ok());
         assert_eq!(writer.plans[0], updated);
@@ -1270,12 +1264,12 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let nonexistent = Plan::new(99, uuids3);
+        let nonexistent = Plan::new(52, uuids3).unwrap();
         let result = writer.update(nonexistent);
         assert!(result.is_err());
         match result {
             Err(PlanError::NotFound(msg)) => {
-                assert!(msg.contains("week 99"));
+                assert!(msg.contains("week 52"));
             }
             _ => panic!("Expected NotFound error"),
         }
@@ -1301,8 +1295,8 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids1);
-        let plan2 = Plan::new(2, uuids2);
+        let plan1 = Plan::new(1, uuids1).unwrap();
+        let plan2 = Plan::new(2, uuids2).unwrap();
         let mut writer = MockPlanWriter {
             plans: vec![plan1, plan2.clone()],
         };
@@ -1336,7 +1330,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids);
+        let plan1 = Plan::new(1, uuids).unwrap();
         let result = writer.save(plan1.clone());
         assert!(result.is_ok());
         assert_eq!(writer.plans.len(), 1);
@@ -1354,7 +1348,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let plan1 = Plan::new(1, uuids1);
+        let plan1 = Plan::new(1, uuids1).unwrap();
         let mut writer = MockPlanWriter { plans: vec![plan1] };
 
         let uuids2 = vec![
@@ -1366,7 +1360,7 @@ mod plan_tests {
             Uuid::new_v4(),
             Uuid::new_v4(),
         ];
-        let updated = Plan::new(1, uuids2);
+        let updated = Plan::new(1, uuids2).unwrap();
         let result = writer.save(updated.clone());
         assert!(result.is_ok());
         assert_eq!(writer.plans.len(), 1);

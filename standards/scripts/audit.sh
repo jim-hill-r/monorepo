@@ -57,6 +57,9 @@ for t in standards/tasks/*.toml; do
   done
 done
 
+# FT-*: free tier guards (see standards/docs/free-tiers.md).
+bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))
+
 if [ "$errors" -gt 0 ]; then
   echo "audit: $errors error(s)"
   exit 1

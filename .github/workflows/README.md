@@ -60,6 +60,7 @@ newer deploy.
 Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
 `deploy_check_tests.rs`.
 
+<<<<<<< HEAD
 
 ## pull-request-review-decks.yml (Review decks)
 
@@ -68,6 +69,19 @@ Builds every review deck to HTML and PDF with the Marp CLI through
 `standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
 uploads them as the `review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
+=======
+## all-free-tier-usage.yml
+
+Weekly (Mondays, 7 AM Pacific), by hand, or called from another workflow:
+runs `standards/scripts/free-tiers.sh usage`, which reads how many Cloudflare
+Pages projects and Workers exist and how much Actions cache and artifact
+storage the repo uses, writes a table to the run summary, and fails when
+anything reaches its budget in
+[standards/docs/free-tiers.md](../../standards/docs/free-tiers.md). It only
+reads.
+
+Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+>>>>>>> origin/main
 
 ## codeql.yml
 

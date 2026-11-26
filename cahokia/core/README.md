@@ -112,7 +112,11 @@ rules.
 
 `FamilyTree::tree_layout()` turns those rows into what a renderer draws: a box
 with coordinates for every person and a line for every parent-child and spouse
-link, with its start and end points already worked out:
+link, with its route already worked out. Parent-child lines are routed per
+family: a couple's children hang from the middle of their spouse line, and a
+single parent's from the bottom of their box. Each family gets its own bar in
+the gap above the children, and families whose bars would overlap get
+different bar heights, so neighbouring families never merge into one line:
 
 ```rust
 use core::{EdgeKind, FamilyTree, Person, Point, Sex};
@@ -131,6 +135,7 @@ let edge = &layout.edges()[0];
 assert_eq!(edge.kind, EdgeKind::ParentChild);
 assert_eq!(edge.start, Point { x: 90.0, y: 60.0 }); // bottom middle of dad's box
 assert_eq!(edge.end, Point { x: 90.0, y: 140.0 }); // top middle of kid's box
+assert_eq!(edge.route, vec![edge.start, edge.end]); // corners to draw through
 ```
 
 Coordinates use SVG's convention (origin top left, `y` down), and

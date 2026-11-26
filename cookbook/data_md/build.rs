@@ -49,18 +49,23 @@ fn main() {
         }
     }
 
+    // The web app embeds one recipe per day, so a missing day fails the build
+    // instead of leaving a gap the running app would only find at startup.
+    let missing = missing_days(&recipes);
+    assert!(
+        missing.is_empty(),
+        "No recipe found in ../content for day(s) {:?}: every day 1-365 needs a recipe tagged day-N",
+        missing
+    );
+
     // Generate entries for day 1 through 365 based on discovered recipes
-    for day in 1..=365 {
-        if let Some(uuid) = recipes.get(&day) {
-            writeln!(
-                f,
-                "    ({}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/../content/{}.md\"))),",
-                day, uuid
-            )
-            .expect("Failed to write to embedded_recipes.rs");
-        } else {
-            eprintln!("Warning: No recipe found for day {}", day);
-        }
+    for (day, uuid) in recipes.range(1..=365) {
+        writeln!(
+            f,
+            "    ({}, include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/../content/{}.md\"))),",
+            day, uuid
+        )
+        .expect("Failed to write to embedded_recipes.rs");
     }
 
     writeln!(f, "]").expect("Failed to write to embedded_recipes.rs");
@@ -85,6 +90,11 @@ fn main() {
     }
 
     writeln!(f, "]").expect("Failed to write to embedded_plans.rs");
+}
+
+/// Days 1-365 that have no recipe in `recipes`.
+fn missing_days(recipes: &BTreeMap<u32, String>) -> Vec<u32> {
+    (1..=365).filter(|day| !recipes.contains_key(day)).collect()
 }
 
 /// Extract the day number from recipe content by looking for "day-X" tag

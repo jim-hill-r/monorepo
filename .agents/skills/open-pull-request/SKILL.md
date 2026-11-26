@@ -48,4 +48,4 @@ draft if it stops meeting it.
 Never approve your own PR. Once it is mergeable as defined in
 `standards/docs/pull-requests.md` (not a draft, no conflict, an approving
 review on the head commit, green checks), you may squash-merge it yourself
-instead of waiting for the hourly triage.
+instead of waiting for the PR triage task.

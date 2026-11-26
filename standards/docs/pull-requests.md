@@ -2,17 +2,17 @@
 
 Every pull request in this repo, from any author, is driven to closure: it is
 either merged or closed. Nothing is left open without someone owning the next
-step. This page is the policy that the "Hourly PR triage" scheduled agent task
+step. This page is the policy that the "PR triage" scheduled agent task
 and every agent thread follow.
 
 ## Who owns a PR
 
 | Author | Owner | Who merges |
 | --- | --- | --- |
-| `dependabot[bot]` | Hourly PR triage | Hourly PR triage, when safe (see below) |
+| `dependabot[bot]` | PR triage | PR triage, when safe (see below) |
 | A human (including `jimhillr`) | The author | Any agent, once it is mergeable. Drafts are left alone. |
 | An agent account (login ends in `-agt`) | The agent thread that opened it | Any agent, including the thread that opened it, once it is mergeable. Agents never approve their own PRs. |
-| An agent account whose thread is gone | Hourly PR triage (adopted) | Any agent, once it is mergeable |
+| An agent account whose thread is gone | PR triage (adopted) | Any agent, once it is mergeable |
 
 An agent PR is **orphaned** when the thread that opened it is resolved or no
 longer exists and the PR has had no activity for 24 hours. Triage adopts it.
@@ -45,9 +45,10 @@ projects it covers. This covers checks that are red on `main` for unrelated
 reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
-## Hourly PR triage
+## PR triage
 
-The scheduled task runs at 43 minutes past every hour as `jimhillr-agt`. Each
+The scheduled task runs three times a day, at 7:50, 12:50 and 17:50
+America/New_York, as `jimhillr-agt` (Jim, 2026-11-26: hourly was too often). Each
 run lists every open PR and puts it on exactly one path.
 
 ### Safe-to-approve rules
@@ -75,13 +76,13 @@ A PR is safe only if all of these hold:
 | Conflicting or behind `main` | Comment `@dependabot rebase`. |
 | `main` already has the same or a newer version, or another open PR supersedes it | Close with a one-line comment saying which. |
 | Bumps a pinned dependency | Close with a comment naming the pin. |
-| Major bump, failing check, or anything else not safe | Add the `needs-jim` label and leave it open. |
+| Major bump, failing check, or anything else not safe | Add the `needs-human` label and leave it open. |
 
 ### Human PRs
 
 Skip drafts. Squash-merge one that is already mergeable. Otherwise approve
 when safe, then squash-merge. Never close or push to them.
-If a PR isn't safe, add `needs-jim` and say why in the report. Flag any that
+If a PR isn't safe, add `needs-human` and say why in the report. Flag any that
 have been open for more than 7 days without activity.
 
 ### Agent PRs
@@ -98,7 +99,7 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
   for review and flag it.
-- Otherwise add `needs-jim` and flag it.
+- Otherwise add `needs-human` and flag it.
 
 ### Reporting
 

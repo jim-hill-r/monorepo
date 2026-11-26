@@ -120,7 +120,7 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
 - The PR template and `open-pull-request` skill gain a short **UAT** section:
   what changed for the user and what the reviewer should click on the
   preview. A reviewer approves only after opening the preview and the report.
-- A failed production smoke run fails `push-main.yml`. The hourly PR triage
+- A failed production smoke run fails `push-main.yml`. The PR triage
   task, or the next agent to see it, adds a `FIX` to the project's
   `ISSUES.md` and offers a rollback.
 
