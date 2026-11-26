@@ -16,6 +16,7 @@ experimental = true
 config_roots = [
   "athenaeum",
   "auth_sdk",
+  "bear_down",
   "blueeel",
   "bogan",
   "cahokia",
