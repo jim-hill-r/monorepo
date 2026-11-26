@@ -35,6 +35,7 @@ config_roots = [
   "pane",
   "pane/cloudflare",
   "pane/model",
+  "pane/snapshot",
   "pane/web",
   "profiles",
   "profiles/content_provider",

@@ -1,0 +1,3 @@
+[project]
+name = "pane_snapshot"
+description = "Reads a checkout of the monorepo and writes pane's snapshot.json."

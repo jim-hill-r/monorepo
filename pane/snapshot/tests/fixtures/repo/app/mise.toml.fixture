@@ -1,0 +1,3 @@
+# app: rust project.
+[task_config]
+includes = ["../standards/tasks/rust.toml"]
