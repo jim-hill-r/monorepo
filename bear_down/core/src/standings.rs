@@ -530,7 +530,7 @@ impl Standings {
         )
     }
 
-    fn seeds_inner(
+    pub(crate) fn seeds_inner(
         &self,
         conference: Conference,
         wild_cards: usize,

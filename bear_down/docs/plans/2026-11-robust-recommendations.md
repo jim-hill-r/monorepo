@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: accepted (Jim, 2026-11-26); step 1 done
+- Status: accepted (Jim, 2026-11-26); steps 1 and 2 done
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -110,7 +110,14 @@ Each is one PR, in this order:
 1. Tiebreaker trace in `Standings::seeds`, tested against past seasons'
    real tiebreaks. Done: `Standings::seeds_traced` reports each
    `Tiebreak` (step, tied group, survivors).
-2. Channel counts in the paired simulation, with the adding-up test.
+2. Channel counts in the paired simulation, with the adding-up test. Done:
+   `GameImpact::channels` splits the playoff and Super Bowl swings by
+   channel (division title, wild card, seed, playoff path, Super Bowl
+   opponent, and chance for leftover simulation noise) and, for the seeding
+   channels, by cause: a record change, a coin flip, or the first
+   tiebreaker step whose result differed between the two seasons. The
+   shares add up to the swing exactly. It added about 5% to the weekly
+   build (15 to 16 seconds locally).
 3. Static relevance pass and exact "can't matter" cases.
 4. Adaptive pair counts and the tiers.
 5. `channels` in `rooting.json`, explanation text and the page.
