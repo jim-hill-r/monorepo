@@ -9,10 +9,6 @@ rules and costs, is
 [docs/plans/2026-11-review-dashboard.md](docs/plans/2026-11-review-dashboard.md).
 Work the phases in order; within a phase, top to bottom.
 
-### Phase 0: foundations
-
-- TODO (agent-generated): Add the retro convention to `standards/docs/documentation.md`: `standards/docs/retros/` and `<project>/docs/retros/`, files named `YYYY-MM-DD-<topic>.md`, sections What happened / What went well / What to change / Actions (checkbox list, each open action also a TODO in an `ISSUES.md`).
-
 ### Phase 1: read-only from the repo
 
 - TODO (agent-generated): Build the Work page: every `TODO` and `FIX` across the repo, filterable by project, kind, priority or backlog, and tag, each linking to its line on GitHub.
