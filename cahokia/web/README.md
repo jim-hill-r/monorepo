@@ -10,7 +10,7 @@ The Cahokia web app, built with Dioxus.
 | `/about` | About Cahokia. |
 | `/history` | History of Cahokia. |
 | `/explore` | Things to explore. |
-| `/family-tree` | The sample family from `core::sample`, drawn with `ui::FamilyTreeView`. Linked from the sidebar. |
+| `/family-tree` | `ui::FamilyTreePage`: the sample family from `core::sample`, drawn with `ui::FamilyTreeView`. Linked from the sidebar. The desktop and mobile apps route the same path to the same page. |
 
 ## Notes
 
