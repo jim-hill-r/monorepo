@@ -112,6 +112,10 @@ Option B. Each item is a default, so Jim can answer "yes to all".
 
    Plans on PRs keep using read-only tokens (0007, item 9). Jim creates and
    rotates all of these by hand, as now; none is made by IaC.
+   The state store's key (R2, decision 0009) is needed by every plan and
+   apply, so it can't sit in `infra-credentials` alone. It is scoped to the
+   state bucket only, read-only for PR plans and read and write for apply,
+   and, like every token, it is made and rotated by Jim, never by IaC.
 4. **Jim approves the exact plan.** On a push to `main`, the plan job (read
    tokens) writes the saved plan as a workflow artifact and puts its SHA-256
    and a readable summary of each credential change (resource, what changes,
