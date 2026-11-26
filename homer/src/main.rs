@@ -69,27 +69,42 @@ pub struct PropertyEvaluation {
     pub unmet_criteria: Vec<String>,
 }
 
+/// RapidAPI host for the Zillow API, sent as the `x-rapidapi-host` header.
+const RAPIDAPI_HOST: &str = "zillow-com1.p.rapidapi.com";
+
+/// Default base URL for the Zillow API on RapidAPI.
+pub const DEFAULT_BASE_URL: &str = "https://zillow-com1.p.rapidapi.com";
+
 /// Zillow API client backed by RapidAPI
 pub struct ZillowClient {
     client: Client,
     api_key: String,
+    base_url: String,
 }
 
 impl ZillowClient {
+    /// Create a client that talks to the real Zillow API on RapidAPI.
     pub fn new(api_key: String) -> Self {
+        Self::with_base_url(api_key, DEFAULT_BASE_URL.to_string())
+    }
+
+    /// Create a client that sends requests to `base_url` instead of RapidAPI,
+    /// for example a local mock server in tests.
+    pub fn with_base_url(api_key: String, base_url: String) -> Self {
         Self {
             client: Client::new(),
             api_key,
+            base_url: base_url.trim_end_matches('/').to_string(),
         }
     }
 
     /// Look up property details for a given address
     pub fn property_details(&self, address: &str) -> Result<PropertyDetails> {
-        let url = "https://zillow-com1.p.rapidapi.com/property";
+        let url = format!("{}/property", self.base_url);
         let response = self
             .client
             .get(url)
-            .header("x-rapidapi-host", "zillow-com1.p.rapidapi.com")
+            .header("x-rapidapi-host", RAPIDAPI_HOST)
             .header("x-rapidapi-key", &self.api_key)
             .query(&[("address", address)])
             .send()
@@ -527,5 +542,105 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         let output = format_property(&eval);
         assert!(output.contains("✗"));
+    }
+
+    #[test]
+    fn test_property_details_success_against_mock_server() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "address".into(),
+                "123 Main St".into(),
+            ))
+            .match_header("x-rapidapi-key", "test-key")
+            .match_header("x-rapidapi-host", "zillow-com1.p.rapidapi.com")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                json!({
+                    "price": 650000,
+                    "bedrooms": 3,
+                    "bathrooms": 2.0,
+                    "livingArea": 1600
+                })
+                .to_string(),
+            )
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let details = client
+            .property_details("123 Main St")
+            .expect("mock server returns valid property JSON");
+
+        mock.assert();
+        assert_eq!(details.address, "123 Main St");
+        assert_eq!(details.price, Some(650_000));
+        assert_eq!(details.bedrooms, Some(3));
+        assert_eq!(details.living_area, Some(1600));
+    }
+
+    #[test]
+    fn test_property_details_non_2xx_status_is_error() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(429)
+            .with_body("rate limited")
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let err = client
+            .property_details("123 Main St")
+            .expect_err("a 429 response must be an error");
+
+        let message = err.to_string();
+        assert!(message.contains("429"), "unexpected error: {message}");
+        assert!(
+            message.contains("rate limited"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn test_property_details_non_json_body_is_error() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("<html>not json</html>")
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let err = client
+            .property_details("123 Main St")
+            .expect_err("a non-JSON body must be an error");
+
+        assert!(
+            err.to_string()
+                .contains("Failed to parse Zillow API response"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_with_base_url_tolerates_trailing_slash() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("{}")
+            .create();
+
+        let client =
+            ZillowClient::with_base_url("test-key".to_string(), format!("{}/", server.url()));
+        client
+            .property_details("123 Main St")
+            .expect("trailing slash in base URL still reaches /property");
+
+        mock.assert();
     }
 }
