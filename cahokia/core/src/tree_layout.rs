@@ -41,10 +41,11 @@ pub struct Spacing {
 }
 
 impl Default for Spacing {
-    /// Room for a name and birth and death years on two lines.
+    /// Room for a name of about 19 characters above birth and death years,
+    /// as `ui`'s `FamilyTreeView` draws them. Longer names are shortened.
     fn default() -> Self {
         Spacing {
-            node_width: 160.0,
+            node_width: 180.0,
             node_height: 60.0,
             column_gap: 40.0,
             row_gap: 80.0,
@@ -161,8 +162,8 @@ pub struct Edge {
 /// let edge = &layout.edges()[0];
 /// assert_eq!(edge.kind, EdgeKind::ParentChild);
 /// assert_eq!((edge.from.as_str(), edge.to.as_str()), ("dad", "kid"));
-/// assert_eq!(edge.start, Point { x: 80.0, y: 60.0 });
-/// assert_eq!(edge.end, Point { x: 80.0, y: 140.0 });
+/// assert_eq!(edge.start, Point { x: 90.0, y: 60.0 });
+/// assert_eq!(edge.end, Point { x: 90.0, y: 140.0 });
 /// ```
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct TreeLayout {
@@ -378,10 +379,10 @@ mod tests {
         let node = layout.node("solo").unwrap();
         assert_eq!(
             (node.x, node.y, node.width, node.height),
-            (0.0, 0.0, 160.0, 60.0)
+            (0.0, 0.0, 180.0, 60.0)
         );
-        assert_eq!((layout.width(), layout.height()), (160.0, 60.0));
-        assert_eq!(node.center(), Point { x: 80.0, y: 30.0 });
+        assert_eq!((layout.width(), layout.height()), (180.0, 60.0));
+        assert_eq!(node.center(), Point { x: 90.0, y: 30.0 });
     }
 
     #[test]
@@ -407,12 +408,12 @@ mod tests {
         let layout = three_generations().tree_layout();
         // Every row holds two people, so no row is shifted.
         assert_eq!(top_left(&layout, "grandma"), (0.0, 0.0));
-        assert_eq!(top_left(&layout, "grandpa"), (200.0, 0.0));
+        assert_eq!(top_left(&layout, "grandpa"), (220.0, 0.0));
         assert_eq!(top_left(&layout, "dad"), (0.0, 140.0));
-        assert_eq!(top_left(&layout, "mom"), (200.0, 140.0));
+        assert_eq!(top_left(&layout, "mom"), (220.0, 140.0));
         assert_eq!(top_left(&layout, "anna"), (0.0, 280.0));
-        assert_eq!(top_left(&layout, "ben"), (200.0, 280.0));
-        assert_eq!((layout.width(), layout.height()), (360.0, 340.0));
+        assert_eq!(top_left(&layout, "ben"), (220.0, 280.0));
+        assert_eq!((layout.width(), layout.height()), (400.0, 340.0));
     }
 
     #[test]
@@ -445,8 +446,8 @@ mod tests {
             .iter()
             .find(|e| e.from == "mom" && e.to == "ben")
             .unwrap();
-        assert_eq!(edge.start, Point { x: 280.0, y: 200.0 });
-        assert_eq!(edge.end, Point { x: 280.0, y: 280.0 });
+        assert_eq!(edge.start, Point { x: 310.0, y: 200.0 });
+        assert_eq!(edge.end, Point { x: 310.0, y: 280.0 });
     }
 
     #[test]
@@ -460,8 +461,8 @@ mod tests {
         // grandma sits left of grandpa, so she is `from` even though the
         // pair is sorted by id.
         assert_eq!(edge.from, "grandma");
-        assert_eq!(edge.start, Point { x: 160.0, y: 30.0 });
-        assert_eq!(edge.end, Point { x: 200.0, y: 30.0 });
+        assert_eq!(edge.start, Point { x: 180.0, y: 30.0 });
+        assert_eq!(edge.end, Point { x: 220.0, y: 30.0 });
     }
 
     #[test]
@@ -471,9 +472,9 @@ mod tests {
         parent(&mut tree, "a", "kid");
         let layout = tree.tree_layout();
         assert_eq!(top_left(&layout, "a"), (0.0, 0.0));
-        assert_eq!(top_left(&layout, "b"), (200.0, 0.0));
-        assert_eq!(top_left(&layout, "kid"), (100.0, 140.0));
-        assert_eq!(layout.width(), 360.0);
+        assert_eq!(top_left(&layout, "b"), (220.0, 0.0));
+        assert_eq!(top_left(&layout, "kid"), (110.0, 140.0));
+        assert_eq!(layout.width(), 400.0);
     }
 
     #[test]
