@@ -7,7 +7,6 @@ It does not need to be platform specific: desktop and mobile render Dioxus
 through a webview, so one SVG component in the shared `ui` crate can serve web,
 desktop and mobile. Keep the layout maths in `core` so every renderer shares it.
 
-- TODO (agent-generated): [Phase 2] core - Return a `TreeLayout` with node coordinates plus the edges to draw (parent-child and spouse links), so renderers only draw and never walk relationships themselves. Unit-test the edges for a three-generation sample tree.
 - TODO (agent-generated): [Phase 3] ui - Add a shared `FamilyTreeView` Dioxus component that renders a `TreeLayout` as inline SVG (boxes with name and birth/death years, lines for edges). Add `core` as a dependency of `ui`.
 - TODO (agent-generated): [Phase 4] web - Add a family tree route that shows `FamilyTreeView` with a sample tree, link it from the sidebar, and add a Playwright test that checks people and links render.
 - TODO (agent-generated): [Phase 5] desktop, mobile - Add the same family tree route to the desktop and mobile apps.
