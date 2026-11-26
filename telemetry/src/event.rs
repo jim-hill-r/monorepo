@@ -220,7 +220,9 @@ impl Event {
 
 const ARMS: &[&str] = &["a", "b"];
 const TABS: &[&str] = &["super_bowl", "playoffs", "nfc_north"];
-const VOTES: &[&str] = &["yes", "no", "confusing"];
+/// `note` marks the follow-up event that carries the optional note on a
+/// vote just cast, so the weekly export counts each vote once.
+const VOTES: &[&str] = &["yes", "no", "confusing", "note"];
 
 /// A short identifier: letters, digits, `_`, `-` and `.`, at most `max`
 /// bytes.

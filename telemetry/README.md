@@ -29,7 +29,7 @@ are refused, so nothing unexpected is ever stored.
 | `kind` | Fields |
 | --- | --- |
 | `exposure` | `arm` (`a` or `b`), `season`, `week` (1 to 22), `tab` (`super_bowl`, `playoffs` or `nfc_north`) |
-| `feedback` | the `exposure` fields, plus `game` (a game id), `verdict` (what the page showed, such as `CHI` or `doesnt_matter`), `vote` (`yes`, `no` or `confusing`) and an optional `note` |
+| `feedback` | the `exposure` fields, plus `game` (a game id), `verdict` (what the page showed, such as `CHI` or `doesnt_matter`), `vote` (`yes`, `no` or `confusing`; or `note` for the follow-up event that carries the optional note on a vote just cast, so each vote counts once) and an optional `note` |
 | `error` | `page` (at most 200 characters) and `message` |
 | `game` | `name` and an optional number `value` |
 | `cli` | `command`, `ms` and an optional `error` |
