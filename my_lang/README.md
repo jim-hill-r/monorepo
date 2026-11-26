@@ -212,7 +212,7 @@ mise run ci
 
 ## Future Work
 
-See [ISSUES.md](./ISSUES.md) for planned features and improvements.
+See [issues/](./issues/) for planned features and improvements.
 
 ## Project Type
 

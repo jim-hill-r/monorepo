@@ -9,9 +9,9 @@ Started 2026-11-26 from Jim's request:
 
 Status: **approved** by Jim (PR #654, 2026-11-26), with the recommended
 answer to every question (see "Decisions" near the end). The work items are
-`TODO (agent-generated)` lines in the root [ISSUES.md](../../../ISSUES.md)
-under "Threat check", one group per phase, and the GitHub settings only Jim
-can switch are in [HUMAN_ISSUES.md](../../../HUMAN_ISSUES.md).
+issue files in the root [issues/](../../../issues/) with `epic: Threat
+check`, one group per phase, and the GitHub settings only Jim can switch are
+in [issues/human/](../../../issues/human/).
 
 This plan is the security twin of the
 [cost check](2026-11-cost-check.md): the same shape (a structured file per
@@ -91,7 +91,7 @@ Notes:
   exception get `needs-human` on the PR that adds them.
 - **A secret that was committed is rotated, not hidden.** History isn't
   rewritten (the repo is public, so the secret is already out). The fix is a
-  `TODO (human)` in `HUMAN_ISSUES.md` to revoke and replace it, and the
+  human task in `issues/human/` to revoke and replace it, and the
   fingerprint goes in `.gitleaksignore` once it is dead.
 - **CodeQL stays as it is.** It is already a PR check. The threat check
   doesn't re-run it; it reads its result only to show it in the PR summary.
@@ -253,8 +253,8 @@ read-only Cloudflare token, so no new secret):
 
 - Lists every Pages project and Worker on the account and flags any no
   `threat.toml` claims (an orphan like `pane-dbc.pages.dev`), with a
-  `FIX (agent-generated)` line in the root ISSUES.md to either claim it or
-  delete it (deleting is a `TODO (human)`).
+  `FIX` issue file in the root `issues/` to either claim it or
+  delete it (deleting is a human task).
 - Requests each declared URL and one preview URL per Pages project: a
   `cloudflare-access` surface must redirect to Cloudflare Access, an `auth0`
   API must answer `401` without a token, and every public site must send the
@@ -358,7 +358,7 @@ recommended answers.
 4. **GitHub's free security settings are turned on:** secret
    scanning, push protection, Dependabot alerts and security updates, and
    private vulnerability reporting. They are repo settings only you can
-   switch, so they are in `HUMAN_ISSUES.md`.
+   switch, so they are in `issues/human/`.
 5. **A separate `threat` project sharing the cost detectors,** rather than adding crates to `cost`, so a security rule change
    doesn't re-run cost CI and the other way round.
 

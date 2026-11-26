@@ -8,6 +8,7 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
+bear_down_core = { workspace = true }
 dioxus = { workspace = true, features = ["web"] }
 serde = { workspace = true }
 serde_json = "1.0.154"
