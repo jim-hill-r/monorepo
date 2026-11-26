@@ -7,6 +7,7 @@
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
 #   NAM-001  Project directory names are snake_case.
+#   HUM-001  TODO (human) lines live only in the root HUMAN_ISSUES.md.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -44,6 +45,11 @@ actual=$(git ls-files -- '*/mise.toml' | xargs -r -n1 dirname | sort -u)
 if [ "$listed" != "$actual" ]; then
   err STD-004 "[monorepo].config_roots in mise.toml does not match the project list: $(diff <(echo "$listed") <(echo "$actual") | grep '^[<>]' | tr '\n' ' ')"
 fi
+
+# HUM-001: tasks for a person live in HUMAN_ISSUES.md, not in an ISSUES.md.
+while IFS= read -r hit; do
+  err HUM-001 "$hit: move this TODO (human) line to HUMAN_ISSUES.md"
+done < <(git grep -n -F 'TODO (human)' -- '*ISSUES.md' ':!HUMAN_ISSUES.md' || true)
 
 for t in standards/tasks/*.toml; do
   for task in "${standard_tasks[@]}"; do

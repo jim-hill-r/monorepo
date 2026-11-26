@@ -8,7 +8,7 @@ This document describes the organization and structure of this monorepo to help 
 /
 ├── .agents/skills/       # Agent Skills (agentskills.io) for AI agents; .claude/skills links here
 ├── .github/              # GitHub Actions workflows and repo configuration
-│   ├── workflows/        # CI/CD and maintenance workflows (pull-request-ci.yml, push-main.yml, nightly-ci.yml, ...)
+│   ├── workflows/        # CI/CD and maintenance workflows (pull-request-ci.yml, push-main.yml, nightly-ci.yml, nightly-cd.yml, ...)
 │   └── dependabot.yml    # Dependency update configuration
 ├── monorepo/            # High-level monorepo functionality workspace
 │   └── workflow_tests/  # Tests for GitHub Actions workflows
@@ -21,6 +21,7 @@ This document describes the organization and structure of this monorepo to help 
 ├── mise.toml            # mise monorepo root: lists projects, //:audit and //:affected tasks
 ├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
 ├── ISSUES.md            # Project-wide TODO and issue tracking
+├── HUMAN_ISSUES.md      # Tasks only a person can do (TODO (human))
 ├── REPOSITORY_STRUCTURE.md # This file
 └── README.md            # Main README
 ```
@@ -56,6 +57,7 @@ Contains GitHub Actions workflows, including:
 - `pull-request-ci.yml` - Runs `mise run ci` for projects changed in a pull request
 - `push-main.yml` - CI and deploy for projects changed on main
 - `nightly-ci.yml` - Runs `mise run ci` in every project each night
+- `nightly-cd.yml` - Runs `mise run ci` then `mise run deploy` in every deploying project each night
 - `mise-projects.yml` - The reusable workflow the three above call
 - `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default)
 - `all-codeql.yml` - CodeQL code scanning

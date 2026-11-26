@@ -22,7 +22,7 @@ One test file per workflow:
 
 | File | Workflow |
 | --- | --- |
-| `mise_workflow_tests.rs` | `mise-projects.yml`, `pull-request-ci.yml`, `push-main.yml`, `nightly-ci.yml` |
+| `mise_workflow_tests.rs` | `mise-projects.yml`, `pull-request-ci.yml`, `push-main.yml`, `nightly-ci.yml`, `nightly-cd.yml` |
 | `codeql_workflow_tests.rs` | `all-codeql.yml` |
 | `delete_branches_workflow_tests.rs` | `all-delete-branches.yml` |
 | `agent_skills_workflow_tests.rs` | `pull-request-agent-skills.yml` |
