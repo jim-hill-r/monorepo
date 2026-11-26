@@ -2,6 +2,19 @@
 #
 # On Linux CI the system libraries Bevy links against are installed first,
 # and tests run under xvfb so window-creating tests have a display.
+#
+# Builds for players (standards/scripts/bevy-release.sh, and "Game builds"
+# in standards/docs/mise.md):
+#   release:web      dist/web, a WebAssembly build. Needs in [tools] the
+#                    wasm32-unknown-unknown rust target and
+#                    "cargo:wasm-bindgen-cli" matching Cargo.lock.
+#   release:macos    dist/<name>-macos.zip (on macOS only).
+#   release:android  dist/<name>-android.apk. Needs the aarch64-linux-android
+#                    rust target and "cargo:cargo-apk".
+# A game with a wrangler.toml deploys its web build to Cloudflare Pages (set
+# DEPLOY_URL in [env], and add node and "npm:wrangler" to [tools]). A game
+# with RELEASE_TAG in [env] gets its macOS and Android builds published to
+# that GitHub Release every night by nightly-downloads.yml.
 
 ["ci:deps"]
 description = "Install Bevy's Linux system libraries on CI"
@@ -60,5 +73,26 @@ run = "cargo run"
 [release]
 run = "cargo build --release"
 
+["release:web"]
+description = "WebAssembly build for the browser, in dist/web"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/bevy-release.sh\" web"
+
+["release:macos"]
+description = "Universal macOS app, zipped, in dist/ (macOS only)"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/bevy-release.sh\" macos"
+
+["release:android"]
+description = "Android APK in dist/"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/bevy-release.sh\" android"
+
 [deploy]
-run = "echo 'deploy: games are not deployed yet'"
+description = "Publish the web build to Cloudflare Pages when the game has a wrangler.toml"
+run = '''
+if [ ! -f wrangler.toml ]; then
+  echo "deploy: no wrangler.toml, so this game has no web build to deploy"
+  exit 0
+fi
+mise run release:web
+bash "$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh" pages-project
+wrangler pages deploy
+'''

@@ -66,7 +66,22 @@ newer deploy.
 Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
 `deploy_check_tests.rs`.
 
-<<<<<<< HEAD
+### nightly-downloads.yml
+
+**Nightly downloads** runs at 2:30 AM Pacific, with Nightly CD, for every
+game with `RELEASE_TAG` in its `mise.toml` (`mise run //:downloads`). It runs
+`mise run ci`, then `mise run release:macos` on a `macos-15` runner and
+`mise run release:android` on Ubuntu, and publishes both to the game's
+GitHub prerelease with `standards/scripts/downloads.sh publish`, moving the
+tag to the commit built and replacing the assets, so the download links never
+change. Pull requests that change the game or its build run the same builds
+without publishing; `workflow_dispatch` publishes on demand. Only the publish
+job gets `contents: write`. The optional `ANDROID_KEYSTORE_BASE64` and
+`ANDROID_KEYSTORE_PASSWORD` secrets sign the APK. See "Game builds" in
+`standards/docs/mise.md`.
+
+Tests: `monorepo/workflow_tests/tests/downloads_workflow_tests.rs`.
+
 
 ## pull-request-review-decks.yml (Review decks)
 
@@ -75,7 +90,7 @@ Builds every review deck to HTML and PDF with the Marp CLI through
 `standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
 uploads them as the `review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
-=======
+
 ## all-free-tier-usage.yml
 
 Weekly (Mondays, 7 AM Pacific), by hand, or called from another workflow:
@@ -87,7 +102,6 @@ anything reaches its budget in
 reads.
 
 Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
->>>>>>> origin/main
 
 ## codeql.yml
 

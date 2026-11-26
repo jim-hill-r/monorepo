@@ -3,12 +3,18 @@ name = "controlled_chaos"
 version = "0.1.0"
 edition = "2024"
 
+# The library holds the game. Android loads it as a shared library (cdylib);
+# the desktop binary in src/main.rs links it as an rlib.
+[lib]
+crate-type = ["rlib", "cdylib"]
+
 [lints.clippy]
 unwrap_used = "warn"
 expect_used = "warn"
 
 [lints.rust]
-unsafe_code = "forbid"
+# deny, not forbid: android_main in src/lib.rs needs one #[unsafe(no_mangle)].
+unsafe_code = "deny"
 
 [dependencies]
 bevy = "0.14.2"
@@ -26,3 +32,34 @@ opt-level = 3
 [profile.release]
 codegen-units = 1
 lto = "thin"
+
+# Android build (`mise run release:android`, with cargo-apk).
+[package.metadata.android]
+package = "com.jimhillr.controlled_chaos"
+apk_name = "controlled_chaos"
+strip = "strip"
+build_targets = ["aarch64-linux-android"]
+
+[package.metadata.android.sdk]
+min_sdk_version = 26
+target_sdk_version = 34
+
+[package.metadata.android.application]
+label = "Controlled Chaos"
+
+[package.metadata.android.application.activity]
+orientation = "landscape"
+
+# The web build (wasm32-unknown-unknown) gets its randomness from the browser.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+uuid = { version = "1", features = ["js"] }
+
+# The web build: Cloudflare Pages serves files up to 25 MiB, so optimise for
+# size. Used by `mise run release:web`.
+[profile.web]
+inherits = "release"
+opt-level = "s"
+lto = "fat"
+strip = "debuginfo"
