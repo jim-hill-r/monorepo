@@ -63,6 +63,13 @@ opening or readying a PR.
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
 
+The repo is moving from Cast to [mise](https://mise.jdx.dev). Each project
+already has a `mise.toml`, and `mise run ci` runs the same checks as `cast ci`
+in a non-blocking CI job. The rules and decisions for that move (no root Rust
+workspace, the same tasks in every project, no committed build artifacts) are in
+[standards/docs/mise.md](standards/docs/mise.md). This section switches to mise
+once Cast is removed.
+
 ## Skills
 
 | Skill | Use it to |
