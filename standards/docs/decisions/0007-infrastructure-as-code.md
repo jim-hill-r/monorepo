@@ -1,6 +1,7 @@
 # 0007. Infrastructure as code: Rust synthesizes Terraform JSON, OpenTofu applies it
 
-- Status: Proposed
+- Status: Accepted
+- Decided by: Jim (approved PR #676, 2026-11-26, with every default below)
 - Date: 2026-11-26
 - Asked by: Jim
 
@@ -30,9 +31,9 @@ And, on how this relates to the orphaned resources plan:
 
 | Vendor | Settings made in a dashboard | Where it is tracked now |
 | --- | --- | --- |
-| Auth0 | Applications for cookbook and cahokia: callback, web origin and logout URLs, application type | Three `TODO (human)` lines in `HUMAN_ISSUES.md` |
+| Auth0 | Applications for cookbook and cahokia: callback, web origin and logout URLs, application type | Two human issues in `issues/human/` |
 | Cloudflare | 5 Pages projects (created on first deploy by `free-tiers.sh pages-project`), API token scopes, Access policies (planned for pane), later Workers, D1 and DNS | `wrangler.toml` names; token scopes nowhere |
-| GitHub | Repo settings ("Automatically delete head branches" is a `TODO (human)`), branch protection, labels such as `needs-human`, environments, Actions secrets | Nowhere |
+| GitHub | Repo settings ("Automatically delete head branches", a human task in the cleanup plan), branch protection, labels such as `needs-human`, environments, Actions secrets | Nowhere |
 | Claude | Project MCP connectors (read-only), cloud environment network hosts and setup script, scheduled tasks (PR triage, digest, deep review) | Prose in AGENTS.md and project memory |
 
 The eval engine plan (decision 0003, phase 2) adds a `standards/settings.toml`
@@ -166,7 +167,7 @@ Free-tier impact of option A:
 - **H** splits one job across three tools and has no single plan to
   review.
 
-## Decision (proposed)
+## Decision
 
 Option A. Each item is a default, so Jim can answer "yes to all".
 
@@ -246,9 +247,9 @@ Option A. Each item is a default, so Jim can answer "yes to all".
     (exit code 2) turns the run red and goes into the sweep's report.
     Fixing drift is a PR: either change the code to match a deliberate
     dashboard change, or re-apply.
-11. **Order of work.** Auth0 first (it closes the three Auth0 lines in
-    `HUMAN_ISSUES.md`), then GitHub repo settings (it closes the "delete
-    head branches" line), then Cloudflare (import the Pages projects, then
+11. **Order of work.** Auth0 first (it closes the two Auth0 human issues
+    in `issues/human/`), then GitHub repo settings (delete head branches on
+    merge, and the `main` ruleset's required checks), then Cloudflare (import the Pages projects, then
     Access for pane). Every existing resource is brought in with `import`
     blocks, and the first apply of each stack must plan zero changes
     other than the intended ones.
@@ -314,7 +315,7 @@ onboarded to IaC.
   a dashboard go into `infra` when a provider covers them").
 - Human tasks (Jim, one time): create a read-only and a write Auth0
   machine-to-machine application for the Management API, and set
-  `TOFU_STATE_PASSPHRASE`. These replace the three Auth0 dashboard tasks.
+  `TOFU_STATE_PASSPHRASE`. These replace the Auth0 dashboard tasks.
 
 ### Phase 2: GitHub (about 2 PRs)
 
@@ -348,7 +349,7 @@ work. Each phase can stop where it is and still be useful.
 
 ## Consequences
 
-- Three Auth0 dashboard tasks and one GitHub settings task become code,
+- The Auth0 dashboard tasks and the GitHub settings tasks become code,
   in exchange for a one-time set of tokens Jim creates per vendor.
 - Dashboard changes to managed settings show up as drift within a week
   and are reverted unless the code is changed to match.

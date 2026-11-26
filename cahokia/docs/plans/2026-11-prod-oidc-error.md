@@ -72,7 +72,7 @@ dashboard.
    `https://cahokia-web.pages.dev` and `http://localhost:8080` to Allowed Web
    Origins and Allowed Logout URLs, and check the application type is Single
    Page Application (token endpoint authentication: None). Tracked in
-   `HUMAN_ISSUES.md`.
+   `issues/human/`.
 4. **Stop it coming back (agent).** Give `auth_sdk` one Auth0 helper that
    builds the issuer, authorize and token URLs from a domain, and use it in
    cahokia and cookbook, so the slash can't drift again. Add a Playwright
@@ -83,5 +83,5 @@ to end once all three are done. They touch `cahokia/web/src/main.rs`, which
 the family tree work is also changing, so whoever picks them up should rebase
 on that work first.
 
-The TODOs are in `cahokia/ISSUES.md` and `auth_sdk/ISSUES.md`; the Auth0 step
-is in `HUMAN_ISSUES.md`.
+The TODOs are in `cahokia/issues/` and `auth_sdk/issues/`; the Auth0 step
+is in `issues/human/`.

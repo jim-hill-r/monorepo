@@ -46,4 +46,4 @@ short note. In GitHub Actions the commit, run id and run link come from the
 
 Wiring `run` and `publish` into the shared tasks and workflows, and
 committing results to the `evals-results` branch, come in phase 1 (see the
-root `ISSUES.md`). Results are files, never a database.
+root `issues/`, `epic: Eval engine`). Results are files, never a database.

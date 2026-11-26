@@ -74,7 +74,7 @@ Rules:
 
 Requirements are Jim's product intent. An agent may draft them from the
 project's README, its latest review deck's Goals slide, its plans and its
-`ISSUES.md` epics, but opens the PR with the `needs-human` label and never
+issue epics, but opens the PR with the `needs-human` label and never
 merges it. A requirement PR changes only `docs/requirements.md` (and the
 matching `evals.toml` entries), so Jim can approve it on its own.
 

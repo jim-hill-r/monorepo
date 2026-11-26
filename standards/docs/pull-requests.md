@@ -68,7 +68,7 @@ approval lands, with no agent run in between.
 The ruleset on `main` dismisses an approval when new commits are pushed, so a
 push always needs a fresh approval. Once Jim adds the `CI result` check from
 `pull-request-ci.yml` as a required status check on that ruleset (see
-`HUMAN_ISSUES.md`), GitHub also waits for green CI on the new head before
+`issues/human/`), GitHub also waits for green CI on the new head before
 auto-merging. Until then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
 

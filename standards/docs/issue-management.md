@@ -1,50 +1,84 @@
 # Issue Management Standards
 
-This document defines the standards for managing issues, tasks, and TODOs within this monorepo.
+This document defines how issues, tasks and TODOs are tracked in this
+monorepo. Work is tracked in the repo, not in GitHub issues.
 
 ## Issue Tracking Locations
 
-Issues in this monorepo are tracked in multiple locations:
+1. **Issue files** - one Markdown file per issue, in an `issues/` folder
+   (decision [0006](decisions/0006-one-file-per-issue.md)):
+   - `issues/` at the repo root for repo-wide work.
+   - `<project>/issues/` for a project's own work (any project or
+     sub-project folder, such as `pane/` or `cahokia/web/`).
+   - `issues/human/` for tasks only a person can do (see
+     [Human issues](#human-issues)).
+2. **TODO comments** - in-code markers for specific issues
+3. **FIX comments** - in-code markers for bugs or problems
 
-1. **ISSUES.md files** - Organized task lists in markdown format
-2. **TODO comments** - In-code markers for specific issues
-3. **FIX comments** - In-code markers for bugs or problems
+There are no `ISSUES.md` or `HUMAN_ISSUES.md` files any more. Many agent PRs
+run in parallel, and when they all edited the same few list files they kept
+conflicting. Adding an issue now adds a file, and closing one deletes it, so
+two PRs only conflict when they change the same issue. `mise run //:audit`
+fails (ISS-001) if an `ISSUES.md` or `HUMAN_ISSUES.md` comes back.
 
-## Finding Issues
+## Seeing the list
 
-When looking for work to do, check these locations in priority order:
+The list of issues is generated, never committed (a committed index would
+conflict just like the old files):
 
-1. **Root `/ISSUES.md`** - Check for priority issues and priority projects list
-2. **Priority project ISSUES.md** - Check ISSUES.md files in priority projects (as listed in root ISSUES.md)
-3. **Other ISSUES.md files** - Search for other ISSUES.md files throughout the repository
-4. **TODO/FIX comments in code** - Search the codebase for TODO and FIX comments (skip items marked with `(agent-ignore)`)
-
-### Note on Priority Issues with Subsections
-
-Issues may be organized under subsections (using `##` or `###` headers) for complex epics. Look for TODO/FIX items within these subsections as well.
-
-## ISSUES.md File Format
-
-All ISSUES.md files should follow this structure:
-
-```markdown
-# Priority Issues
-
-[List priority issues here]
-
-# Backlog
-
-[List backlog issues here]
-
-# Priority Projects
-- [project-name]
-- [another-project]
-
-# On Hold Projects
-- [project-name]
+```bash
+mise run //:issues               # agent issues: priority first, then backlog
+mise run //:issues -- --human    # human tasks, oldest first
+mise run //:issues -- --check    # validate every issue file (part of the audit)
 ```
 
-**Important**: ISSUES.md files should have at least a `# Priority Issues` header even when empty.
+The same script is `bash standards/scripts/issues.sh`. Pane's snapshot reads
+the same files for its Work and Human issues pages.
+
+## Issue file format
+
+The file name is a short kebab-case slug of the issue, unique in its folder:
+`issues/<slug>.md`, for example
+`cahokia/issues/auth-003-playwright-test-home-page-never-shows.md`. Don't
+number files: two PRs picking the same next number would clash.
+
+The file starts with front matter, then the issue's text in Markdown:
+
+```markdown
+---
+kind: todo
+priority: priority
+tags: [agent-generated]
+epic: "Review dashboard epic / Phase 1: read-only from the repo"
+order: 30
+added: 2026-11-26
+---
+
+Build the Work page: every `TODO` and `FIX` across the repo, filterable by
+project, kind, priority or backlog, and tag.
+```
+
+| Field | Required | Values |
+| --- | --- | --- |
+| `kind` | yes | `todo` (work to do) or `fix` (something broken) |
+| `priority` | yes | `priority` (work it first) or `backlog` |
+| `added` | yes | the date it was added, `YYYY-MM-DD` |
+| `tags` | no | `[agent-generated]` if an agent wrote it, `[agent-ignore]` if agents must not work it, or both |
+| `epic` | no | the epic, and phase, it belongs to: `Epic` or `"Epic / Phase N: name"` |
+| `order` | no | a whole number that orders the issues of one epic (use steps of 10 so an issue can go between two) |
+
+Front matter is plain `key: value` lines. Quote a value that has a `:`, `#`
+or quote in it. Links in the text are relative to the issue file, so a link
+to the project's `docs/` is `../docs/...`.
+
+### Notes and project lists
+
+Prose that isn't one issue, such as an epic's goal, its plan link or what a
+phase needs first, goes in the folder's `README.md` under a heading named
+after the epic. `README.md` is never an issue.
+
+The root [`issues/README.md`](../../issues/README.md) also holds the
+`# Priority Projects` and `# On Hold Projects` lists.
 
 ## TODO Comment Conventions
 
@@ -68,13 +102,28 @@ Mark TODOs with `(agent-ignore)` if they should not be worked on by automated ag
 
 ### Human TODOs
 
-Tasks only a person can do go in the root `HUMAN_ISSUES.md` as
-`TODO (human): ...` lines, never in a project's `ISSUES.md`. See
-[Human issues](#human-issues).
+Tasks only a person can do go in `issues/human/`, never in a project's
+`issues/` folder or a code comment. See [Human issues](#human-issues).
 
 ### Removing Completed TODOs
 
-**Always remove** TODO and FIX comments when the work is completed. Completed work should not leave behind TODO markers.
+**Always remove** TODO and FIX comments when the work is completed, and
+delete the issue file of a completed issue. Completed work should not leave
+behind TODO markers.
+
+## Finding Issues
+
+When looking for work to do, check these in priority order:
+
+1. **Root `issues/`** with `priority: priority`, then the priority projects
+   listed in `issues/README.md`.
+2. **Priority projects' `issues/`** with `priority: priority`.
+3. **Other `issues/` folders**, then backlog issues.
+4. **TODO/FIX comments in code** (skip items marked `(agent-ignore)`).
+
+`mise run //:issues` lists them in that order apart from the priority
+projects, which you pick out by path. Within an epic, work the phases and
+`order` in order.
 
 ## Searching for References
 
@@ -110,36 +159,11 @@ find . -name "Cargo.toml" -exec grep -l "pattern" {} \;
 
 When creating issues that are too complex to tackle immediately:
 
-1. Break the issue into smaller, manageable tasks
-2. Document the tasks in the appropriate ISSUES.md file
-3. Mark new TODOs with `(agent-generated)` if created by an agent
-4. Use a flat list of TODO items under `# Priority Issues` in the root ISSUES.md
-5. Only use subsections (`##`, `###`) if documenting a multi-phase epic in a project-specific ISSUES.md
-
-### Example: Flat List Format (Root ISSUES.md)
-
-```markdown
-# Priority Issues
-- TODO: Implement user authentication
-- TODO: Add error handling to API endpoints
-- TODO: Update documentation for new features
-```
-
-### Example: Epic Format (Project-Specific ISSUES.md)
-
-```markdown
-# Priority Issues
-
-## Authentication System Epic
-
-### Phase 1: Basic Auth
-- TODO: Implement login endpoint
-- TODO: Add JWT token generation
-
-### Phase 2: OAuth Integration
-- TODO: Add OAuth2 provider support
-- TODO: Implement token refresh
-```
+1. Break the issue into smaller, manageable tasks.
+2. Write one issue file per task in the right `issues/` folder.
+3. Tag new issues `[agent-generated]` if created by an agent.
+4. Give the tasks of a multi-phase epic the same `epic` (with the phase) and
+   an `order`, and put the epic's notes in the folder's `README.md`.
 
 ## Working on Issues
 
@@ -149,42 +173,48 @@ When working on an issue:
 2. **Start with tests** - Use Test-Driven Development when possible
 3. **Make minimal changes** - Only change what's necessary to fix the issue
 4. **Update documentation** - Update relevant docs for your changes
-5. **Add out-of-scope TODOs** - If you find improvements that are out of scope, add a `TODO (agent-generated)` comment
-6. **Remove completed TODOs** - Always remove the TODO/FIX comment when the work is done
+5. **Add out-of-scope issues** - If you find improvements that are out of scope, add an issue file (or a `TODO (agent-generated)` comment next to the code)
+6. **Close the issue** - Delete its issue file (and any TODO/FIX comment) in the PR that does the work
 
 ## Best Practices
 
-1. **Be specific** - Write clear, actionable TODO comments that explain what needs to be done
+1. **Be specific** - Write clear, actionable issues that explain what needs to be done
 2. **Link to context** - Reference related issues, PRs, or documentation when helpful
-3. **Prioritize appropriately** - Use Priority Issues for important work, Backlog for nice-to-haves
-4. **Keep issues up-to-date** - Mark completed items, remove obsolete issues
-5. **Use consistent formatting** - Follow the ISSUES.md format conventions
+3. **Prioritize appropriately** - Use `priority` for important work, `backlog` for nice-to-haves
+4. **Keep issues up-to-date** - Delete completed or obsolete issue files
+5. **One issue per file** - Never list several tasks in one issue file
 
 ## Human issues
 
 Some tasks only a person can do: anything in a vendor dashboard (Auth0,
 Cloudflare, PostHog), creating an account or a secret, payment and billing
 checks, and sign-offs an agent may not give itself. Agents can't do these, so
-they must reach Jim rather than sit in an `ISSUES.md` or a chat thread
+they must reach Jim rather than sit in a project's issues or a chat thread
 (decision [0002](decisions/0002-human-issues.md)).
 
 ### Where they live
 
-- **One file.** Every such task is a line in the root
-  [`HUMAN_ISSUES.md`](../../HUMAN_ISSUES.md) under `# Open`:
+- **One file per task** in the root [`issues/human/`](../../issues/human/):
 
   ```markdown
-  - TODO (human): In the Auth0 dashboard, add ... (Added 2026-11-25. Unblocks ...)
+  ---
+  added: 2026-11-25
+  unblocks: "sign-in on PR previews (the preview deploys issue)"
+  ---
+
+  In the Auth0 dashboard, add the Cloudflare Pages preview domains to the
+  allowed callback URLs for cookbook and cahokia.
   ```
 
-  Say what to do, where, and why, then when it was added and what it
-  unblocks. `mise run //:audit` fails (HUM-001) if a `TODO (human)` line
-  appears in any `ISSUES.md`.
+  Say what to do, where, and why; `added` (required) says when, and
+  `unblocks` what it unblocks. `kind` and `priority` aren't used here.
+  `mise run //:audit` fails (ISS-003) if an issue elsewhere is tagged
+  `human`.
 - **PRs that need a person** get the `needs-human` label instead (see
-  [pull-requests.md](pull-requests.md)). They are not copied into the file;
+  [pull-requests.md](pull-requests.md)). They are not copied into a file;
   the digest reads the label.
 - **Questions in chat.** An agent that is blocked on something only Jim can
-  do adds a `TODO (human)` line in its PR as well as asking in its thread, so
+  do adds a human issue file in its PR as well as asking in its thread, so
   the task survives the thread. A plain question Jim can answer in words
   stays in the thread.
 
@@ -192,12 +222,20 @@ they must reach Jim rather than sit in an `ISSUES.md` or a chat thread
 
 A weekly scheduled task in the Claude project runs the
 [`human-issues-digest`](../../.agents/skills/human-issues-digest/SKILL.md)
-skill. It posts one message listing the open `HUMAN_ISSUES.md` lines and the
-open `needs-human` PRs, oldest first, with what each one unblocks and what
-was added since the last digest.
+skill. It posts one message listing the open human issues and the open
+`needs-human` PRs, oldest first, with what each one unblocks and what was
+added since the last digest.
 
 ### Closing one
 
-Do the task, then remove its line in a PR (an agent will do this when told a
-task is done). If the task unblocks a `TODO (agent-generated)` item, that item
-becomes workable as usual.
+Do the task, then delete its file in a PR (an agent will do this when told a
+task is done). If the task unblocks an agent issue, that issue becomes
+workable as usual.
+
+## Open PRs from before the change
+
+A PR opened before decision 0006 that edits an old `ISSUES.md` or
+`HUMAN_ISSUES.md` gets a modify/delete conflict once it merges `main`.
+Resolve it by deleting the old file again (`git rm`) and writing each line
+the PR added as an issue file, and deleting the issue file of each line the
+PR removed.

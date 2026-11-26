@@ -10,8 +10,8 @@ Started 2026-11-26 from Jim's request:
 > observability, reviews, retros, open issues, and standards. It should have
 > the ability to add a todo to the monorepo.
 
-The work items are the `TODO (agent-generated)` lines in
-[../../ISSUES.md](../../ISSUES.md), one section per phase below. Each phase
+The work items are the issue files in [../issues/](../issues/) with
+`epic: Review dashboard epic / Phase N`, one section per phase below. Each phase
 ends with something Jim can open and use.
 
 ## Goal
@@ -47,17 +47,17 @@ change pane makes is a pull request.
 | --- | --- | --- |
 | Projects and their type | `[monorepo].config_roots` in the root `mise.toml`, the `standards/tasks/<type>.toml` each project includes, each project's `README.md` | On main |
 | Production URLs | `DEPLOY_URL` in each `*/cloudflare/mise.toml` `[env]` | On main (cookbook, pane, cahokia) |
-| Work items | `TODO` and `FIX` lines in every `ISSUES.md`; `TODO`/`FIX` comments in code | On main |
-| Human issues | `TODO (human)` lines in the root `HUMAN_ISSUES.md`; PRs labelled `needs-human` | On main (decision 0002) |
+| Work items | issue files in every `issues/` folder; `TODO`/`FIX` comments in code | On main |
+| Human issues | files in the root `issues/human/`; PRs labelled `needs-human` | On main (decision 0002) |
 | Executive reviews | Marp decks in `docs/reviews/<date>-<project>/deck.md`, rotation table in `docs/reviews/README.md`, built to HTML and PDF by `standards/scripts/review-decks.sh` | [PR #585](https://github.com/jimhillr/monorepo/pull/585), open |
 | Plans and decisions | `standards/docs/plans/`, `standards/docs/decisions/`, `<project>/docs/decisions/` | On main |
 | Retros | Nowhere yet | No convention; this plan adds one |
-| Standards | `mise run //:audit` (`standards/scripts/audit.sh`), `code-review` skill findings in `ISSUES.md` | On main |
+| Standards | `mise run //:audit` (`standards/scripts/audit.sh`), `code-review` skill findings as issue files | On main |
 | CI and deploys | `nightly-ci.yml`, `nightly-cd.yml`, `push-main.yml` runs; GitHub deployments to `production` | On main |
 | UAT evidence | `uat-reports` Pages project, smoke tests | Planned in [deploy feedback](../../../standards/docs/plans/2026-11-deploy-feedback.md) |
 | Observability | `telemetry` Worker and Analytics Engine, Cloudflare Web Analytics, PostHog replay | Planned in deploy feedback, phases 4 and 5 |
 | Free-tier usage | `standards/docs/free-tiers.md`, weekly `all-free-tier-usage.yml` | [PR #582](https://github.com/jimhillr/monorepo/pull/582), open |
-| Downloads | GitHub Releases for CLIs and games, review deck PDFs | Planned (CLI releases TODO in the root `ISSUES.md`); decks in PR #585 |
+| Downloads | GitHub Releases for CLIs and games, review deck PDFs | Planned (CLI releases issue in the root `issues/`); decks in PR #585 |
 
 So pane is built in the order its sources become real: repo files first,
 then GitHub, then observability as the deploy-feedback plan lands it.
@@ -82,7 +82,7 @@ then GitHub, then observability as the deploy-feedback plan lands it.
 
 - **Snapshot (from repo files).** A Rust CLI, `pane_snapshot`, walks a
   checkout of the repo and writes one `snapshot.json`: projects, types,
-  `DEPLOY_URL`s, every `ISSUES.md` item, human issues, plans, decisions,
+  `DEPLOY_URL`s, every issue file, human issues, plans, decisions,
   retros, review rotation and scorecards, audit results. It runs in pane's
   `release` task, so the JSON is built fresh into the static assets on every
   deploy and is never committed (standards/docs/mise.md: no committed build
@@ -139,7 +139,7 @@ too, so the shared task file for that kind of project should serve both.
   requests read and write, stored as a Worker secret. It has to be Jim's
   account, not `jimhillr-agt`: PR triage runs as `jimhillr-agt` and never
   approves its own PRs, and a pane edit is Jim's own change. The token
-  expires after a year; its renewal is a `HUMAN_ISSUES.md` line.
+  expires after a year; its renewal is a human issue file.
 
 ## The site
 
@@ -154,7 +154,7 @@ Phone-first layout (Jim often reviews from his phone), one column under
 | **Deliverables** | Every deliverable by type: live sites (production and PR previews), releases with download links, review decks (HTML and PDF), UAT reports, plans, decisions, retros. | 1 to 3 |
 | **Reviews** | The rotation table, and each deck rendered as slides in the page (arrow keys, full screen), with its PDF download and its PR link for feedback. | 2 |
 | **Human issues** | Each open `TODO (human)` line with what it unblocks and its age, plus `needs-human` PRs. Actions: "Mark done", "Add a note", "Open on GitHub". | 1 (read), 5 (actions) |
-| **Work** | Every `TODO` and `FIX` across all `ISSUES.md` files and code comments, filterable by project, kind, priority or backlog, and tag (`agent-generated`, `agent-ignore`). | 1 |
+| **Work** | Every `TODO` and `FIX` across all issue files and code comments, filterable by project, kind, priority or backlog, and tag (`agent-generated`, `agent-ignore`). | 1 |
 | **Add** | A form to add a `TODO` or `FIX` to any project, or a `TODO (human)` line. | 5 |
 
 ### Deliverables and downloads
@@ -163,7 +163,7 @@ Phone-first layout (Jim often reviews from his phone), one column under
 | --- | --- | --- |
 | Web apps | `DEPLOY_URL` | Link, last deploy time and commit, latest UAT report |
 | PR previews | Sticky PR comment / `pr-<n>` Pages alias (deploy feedback, phase 2) | Link on the PR row |
-| CLI and game binaries | GitHub Releases (CLI releases TODO in the root `ISSUES.md`) | Download per OS, straight from GitHub's asset URL (no copy kept in Cloudflare) |
+| CLI and game binaries | GitHub Releases (CLI releases issue in the root `issues/`) | Download per OS, straight from GitHub's asset URL (no copy kept in Cloudflare) |
 | Desktop and mobile builds | GitHub Releases once cahokia releases | Same |
 | Review decks | `docs/reviews/*/deck.md`, built to HTML and PDF in pane's release | View in page, download PDF |
 | UAT reports | `uat-reports` Pages project | Link per project, PR and nightly run |
@@ -182,7 +182,7 @@ it to `standards/docs/documentation.md`:
   `<project>/docs/retros/`, one file per retro named `YYYY-MM-DD-<topic>.md`.
 - Sections: `## What happened`, `## What went well`, `## What to change`,
   and `## Actions`, a list of `- [ ]` / `- [x]` items. Each open action
-  should also be a `TODO` in the right `ISSUES.md`, which the retro links.
+  should also be an issue file in the right `issues/` folder, which the retro links.
 
 ## Health: the traffic lights
 
@@ -220,7 +220,7 @@ is shown in coverage, and the review rotation already fixes it.
 | Push to main | Latest `push-main.yml` runs | - | Latest run failed |
 | Free tiers | Latest `all-free-tier-usage.yml` run (PR #582) | Over our budget | Over a vendor limit |
 | PR queue | Open PRs | Oldest open more than 7 days, or more than 15 open | Any open more than 30 days |
-| Human queue | `HUMAN_ISSUES.md` | Any line older than 14 days | Any line older than 30 days |
+| Human queue | `issues/human/` | Any task older than 14 days | Any task older than 30 days |
 | Agent tasks | Recent PRs and commits by `jimhillr-agt` (PR triage, review rotation, digest) | No triage activity in a day | No agent activity in 3 days |
 | Review rotation | `docs/reviews/README.md` | No new review in 8 days | No new review in 15 days |
 | Security scans | Latest `all-codeql.yml` run, Dependabot alerts | Open moderate alert | Open high or critical alert |
@@ -229,7 +229,7 @@ is shown in coverage, and the review rotation already fixes it.
 
 Clicking a light opens the project or system page scrolled to that signal.
 Every signal shows: the colour and the rule that produced it, the raw numbers,
-links to the evidence (the run, the deck slide, the `ISSUES.md` line on
+links to the evidence (the run, the deck slide, the issue file on
 GitHub, the Analytics Engine chart), and the history of that signal for the
 last 14 snapshots where the data allows it.
 
@@ -238,22 +238,21 @@ last 14 snapshots where the data allows it.
 The **Add** form asks for:
 
 - **Where**: a project (from `config_roots`), or "Human issue" for
-  `HUMAN_ISSUES.md`.
-- **Kind**: `TODO` or `FIX`.
-- **Section**: `# Priority Issues` or `# Backlog`, or an existing epic
-  heading in that file.
-- **Text**: one line, checked against the format in
+  `issues/human/`.
+- **Kind**: `todo` or `fix`.
+- **Priority**: `priority` or `backlog`, and optionally an existing epic.
+- **Text**: checked against the format in
   `standards/docs/issue-management.md` before it is sent.
 
-A TODO added through pane is Jim's, so it is not tagged `(agent-generated)`.
-A human issue line gets `(Added <date>. Unblocks ...)` filled in from the
-form. The Worker inserts the line in the right section of the file at the
-tip of `main` and commits it to the open `pane-edit` PR (or a new one), then
-shows the PR link. "Mark done" on a human issue removes its line the same
-way, and "Add a note" appends `(Note <date>: ...)` to it.
+An issue added through pane is Jim's, so it is not tagged `agent-generated`.
+A human issue gets `added` and `unblocks` filled in from the form. The
+Worker writes a new issue file (one file per issue, decision 0006) in the
+right `issues/` folder at the tip of `main` and commits it to the open
+`pane-edit` PR (or a new one), then shows the PR link. "Mark done" on a
+human issue deletes its file the same way, and "Add a note" appends a
+`Note <date>: ...` paragraph to it.
 
-Because the PR is ready, not draft, and touches only `ISSUES.md` or
-`HUMAN_ISSUES.md`, `standards/docs/pull-requests.md` should name
+Because the PR is ready, not draft, and touches only issue files, `standards/docs/pull-requests.md` should name
 `pane-edit` PRs as safe for PR triage to approve. AGENTS.md's draft rule is
 for PRs agents open; this one is Jim's. Phase 5 makes that change.
 
@@ -328,7 +327,7 @@ decision record.
 ### Phase 0: foundations
 
 - `pane/model` and `pane/snapshot` crates. The snapshot covers projects,
-  types, `DEPLOY_URL`s, READMEs and every `ISSUES.md` item, with parsers
+  types, `DEPLOY_URL`s, READMEs and every issue file, with parsers
   tested against fixture files.
 - The web app loads `snapshot.json`, has the nav and the phone-first layout,
   and shows the projects list.
@@ -386,7 +385,7 @@ Needs PR #585.
 ### Phase 6: observability
 
 Needs the `telemetry` Worker and Web Analytics from the deploy-feedback plan
-(root `ISSUES.md` backlog).
+(root `issues/` backlog).
 
 - `/api/telemetry/*`: error counts per app and build from the Analytics
   Engine SQL API, cached 15 minutes, and deploy events to line them up with.
@@ -409,7 +408,7 @@ the forms. Can start after Phase 1.
 
 ## Things Jim does
 
-These become `TODO (human)` lines in `HUMAN_ISSUES.md` in the PR of the phase
+These become human issue files in `issues/human/` in the PR of the phase
 that needs them, not before, so the digest only shows what is actionable:
 
 - Phase 3: create the fine-grained token (Contents and Pull requests write on
@@ -418,7 +417,7 @@ that needs them, not before, so the digest only shows what is actionable:
   give the Cloudflare deploy token permission to deploy Workers if it lacks
   it.
 - Phase 6: the Analytics Engine read permission already asked for in
-  `HUMAN_ISSUES.md`.
+  `issues/human/`.
 
 ## Cost
 

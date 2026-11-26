@@ -25,7 +25,8 @@ description: Branch, commit, and open a pull request in this monorepo the way it
 
 Always open the PR as a **draft**, against `main`. The description says:
 
-- which issue it addresses (quote the `TODO`/`FIX` line and its `ISSUES.md`),
+- which issue it addresses (the issue file it deletes, or the `TODO`/`FIX`
+  comment, quoting its text),
 - what changed and why,
 - how it was tested (the hooks passed, or which commands you ran by hand and
   their result, and any check you couldn't run),
@@ -36,7 +37,8 @@ Always open the PR as a **draft**, against `main`. The description says:
 Mark the PR ready for review once **all** of these hold:
 
 - The change is complete for the issue; nothing is left as "follow-up" unless
-  it's recorded as a `TODO (agent-generated)` in an `ISSUES.md`.
+  it's recorded as an issue file tagged `[agent-generated]` in an `issues/`
+  folder.
 - CI for the changed projects passes on the PR's head commit.
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
 - You've re-read the full diff and would be comfortable with a human reviewing it.

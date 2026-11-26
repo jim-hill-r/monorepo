@@ -2,6 +2,7 @@
 //! uses to rank and describe games. Probabilities are 0..1 floats and teams
 //! are nflverse abbreviations.
 
+use bear_down_core::{Tier, tier_against};
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -67,6 +68,10 @@ pub struct Swing {
     pub if_away_wins: f64,
     /// `if_home_wins - if_away_wins`.
     pub swing: f64,
+    /// The standard error of `swing`. Missing in older files, and null when
+    /// nothing was simulated.
+    #[serde(default)]
+    pub std_error: Option<f64>,
     /// The team to root for, or `None` when the swing is within noise.
     pub root_for: Option<String>,
     /// How much the game matters: `matters`, `small`, `negligible` or
@@ -79,13 +84,39 @@ pub struct Swing {
 }
 
 impl Swing {
-    /// The verdict shown when there is no team to root for.
-    pub fn no_pick_label(&self) -> &'static str {
-        match self.tier.as_str() {
-            "none" => "Can't matter",
-            "small" => "Too close to call",
-            _ => "Doesn't matter",
-        }
+    /// The verdict against another "doesn't matter" `line`, for an A/B arm
+    /// (`docs/plans/2026-11-fan-feedback.md`): the team to root for and the
+    /// tier, by the CLI's rule ([`tier_against`], and a pick needs a swing
+    /// more than two standard errors from zero and a tier of matters or
+    /// small). A game that can't matter, or a file without `std_error`,
+    /// keeps the published verdict. Only for the Super Bowl and playoff
+    /// goals; the NFC North goal has no line.
+    pub fn verdict_at(&self, game: &Game, line: f64) -> (Option<String>, Tier) {
+        let published = Tier::from_name(&self.tier).unwrap_or(Tier::Negligible);
+        let std_error = match self.std_error {
+            Some(std_error) if published != Tier::None => std_error,
+            _ => return (self.root_for.clone(), published),
+        };
+        let tier = tier_against(self.swing, std_error, line);
+        let clear = self.swing.abs() > 2.0 * std_error;
+        let root = match tier {
+            Tier::Matters | Tier::Small if clear => Some(if self.swing > 0.0 {
+                game.home.clone()
+            } else {
+                game.away.clone()
+            }),
+            _ => None,
+        };
+        (root, tier)
+    }
+}
+
+/// The verdict shown when there is no team to root for.
+pub fn no_pick_label(tier: Tier) -> &'static str {
+    match tier {
+        Tier::None => "Can't matter",
+        Tier::Small => "Too close to call",
+        Tier::Matters | Tier::Negligible => "Doesn't matter",
     }
 }
 
@@ -111,6 +142,20 @@ impl Goal {
     }
 
     /// The label after a swing, as in "+1.8% Super Bowl odds".
+    /// The game's verdict for this goal against a "doesn't matter" `line`:
+    /// the team to root for and the tier. The NFC North goal has no line, so
+    /// it keeps the published verdict.
+    pub fn verdict(self, game: &Game, line: f64) -> (Option<String>, Tier) {
+        let swing = self.swing(game);
+        match self {
+            Goal::NfcNorth => (
+                swing.root_for.clone(),
+                Tier::from_name(&swing.tier).unwrap_or(Tier::Negligible),
+            ),
+            Goal::SuperBowl | Goal::Playoffs => swing.verdict_at(game, line),
+        }
+    }
+
     pub fn odds_label(self) -> &'static str {
         match self {
             Goal::SuperBowl => "Super Bowl odds",
@@ -257,20 +302,77 @@ mod tests {
     }
 
     #[test]
+    fn verdicts_at_the_cli_line_match_the_published_ones() {
+        let rooting = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting,
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        let line = bear_down_core::NEGLIGIBLE_SWING;
+        for game in &rooting.games {
+            for swing in [&game.champion, &game.playoffs] {
+                assert!(swing.std_error.is_some(), "{} has no std_error", game.id);
+                let (root, tier) = swing.verdict_at(game, line);
+                assert_eq!(root, swing.root_for, "{}", game.id);
+                assert_eq!(tier.name(), swing.tier, "{}", game.id);
+            }
+        }
+    }
+
+    #[test]
+    fn a_lower_line_turns_small_swings_into_picks() {
+        let first = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting.games[0].clone(),
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        let game = |swing: f64, std_error: f64| Game {
+            champion: Swing {
+                if_home_wins: 0.0,
+                if_away_wins: 0.0,
+                swing,
+                std_error: Some(std_error),
+                root_for: None,
+                tier: "negligible".to_string(),
+                why: Vec::new(),
+            },
+            ..first.clone()
+        };
+        // 0.03 points with a 0.002-point standard error: under 0.05, over 0.02.
+        let small = game(-0.0003, 0.00002);
+        assert_eq!(
+            small.champion.verdict_at(&small, 0.0005),
+            (None, Tier::Negligible)
+        );
+        assert_eq!(
+            small.champion.verdict_at(&small, 0.0002),
+            (Some(small.away.clone()), Tier::Matters)
+        );
+        // A game that can't matter stays that way at any line.
+        let mut closed = game(0.0, 0.0);
+        closed.champion.tier = "none".to_string();
+        assert_eq!(closed.champion.verdict_at(&closed, 0.0), (None, Tier::None));
+    }
+
+    #[test]
     fn no_pick_labels_follow_the_tier() {
         let swing = |tier: &str| Swing {
             if_home_wins: 0.5,
             if_away_wins: 0.5,
             swing: 0.0,
+            std_error: None,
             root_for: None,
             tier: tier.to_string(),
             why: Vec::new(),
         };
-        assert_eq!(swing("none").no_pick_label(), "Can't matter");
-        assert_eq!(swing("small").no_pick_label(), "Too close to call");
-        assert_eq!(swing("negligible").no_pick_label(), "Doesn't matter");
+        let first = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting.games[0].clone(),
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        let label = |tier: &str| no_pick_label(swing(tier).verdict_at(&first, 0.0005).1);
+        assert_eq!(label("none"), "Can't matter");
+        assert_eq!(label("small"), "Too close to call");
+        assert_eq!(label("negligible"), "Doesn't matter");
         // Older files have no tier.
-        assert_eq!(swing("").no_pick_label(), "Doesn't matter");
+        assert_eq!(label(""), "Doesn't matter");
     }
 
     #[test]
