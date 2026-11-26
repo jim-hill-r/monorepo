@@ -22,6 +22,10 @@ export default defineConfig({
   
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
+
+  /* The unoptimised dev build loads slowly on CI runners; tests that visit
+     several pages need more than the default 30s there. */
+  timeout: process.env.CI ? 60 * 1000 : 30 * 1000,
   
   /* Use a limited number of workers on CI to balance speed and stability. */
   workers: process.env.CI ? 2 : 4,
