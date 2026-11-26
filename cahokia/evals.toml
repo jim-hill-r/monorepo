@@ -160,5 +160,34 @@ stages = ["ci"]
 kind = "playwright"
 grep = "is linked from the sidebar"
 
-# CAHO-006 and CAHO-007 have no evals yet: they come with the family tree
-# epic's phases 5 and 6 (core/issues/).
+# CAHO-006 has no evals yet: it came with the family tree epic's phase 5.
+
+# CAHO-007: A person can explore the tree around one relative
+
+[[eval]]
+id = "zoom-keeps-anchor"
+requirement = "CAHO-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "zoom_keeps_the_anchor_over_the_same_layout_point"
+
+[[eval]]
+id = "lineage-lines-highlighted"
+requirement = "CAHO-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "only_lines_along_the_lineage_are_highlighted"
+
+[[eval]]
+id = "focus-person-highlighted"
+requirement = "CAHO-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "focus_person_highlights_ancestors_and_descendants_and_dims_the_rest"
+
+[[eval]]
+id = "pan-zoom-focus-in-browser"
+requirement = "CAHO-007"
+stages = ["ci"]
+kind = "playwright"
+description = "Drag to pan, zoom with buttons, wheel, pinch and Fit, and pick a focus person by click or from the list."
