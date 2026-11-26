@@ -21,6 +21,7 @@ This document describes the organization and structure of this monorepo to help 
 ├── mise.toml            # mise monorepo root: lists projects, //:audit and //:affected tasks
 ├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
 ├── ISSUES.md            # Project-wide TODO and issue tracking
+├── HUMAN_ISSUES.md      # Tasks only a person can do (TODO (human))
 ├── REPOSITORY_STRUCTURE.md # This file
 └── README.md            # Main README
 ```
