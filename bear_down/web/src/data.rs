@@ -1,0 +1,273 @@
+//! The `rooting.json` model the `cli` writes, and the pure logic the page
+//! uses to rank and describe games. Probabilities are 0..1 floats and teams
+//! are nflverse abbreviations.
+
+use serde::Deserialize;
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct Rooting {
+    pub generated_at: String,
+    pub season: u16,
+    pub week: Option<u8>,
+    pub simulations: u32,
+    pub latest_game: Option<LatestGame>,
+    pub bears: Bears,
+    pub nfc_north_divisional: f64,
+    pub games: Vec<Game>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct LatestGame {
+    pub id: String,
+    pub gameday: String,
+    pub away: String,
+    pub home: String,
+    pub away_score: u16,
+    pub home_score: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct Bears {
+    pub record: Record,
+    pub odds: Odds,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct Record {
+    pub wins: u8,
+    pub losses: u8,
+    pub ties: u8,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct Odds {
+    pub playoffs: f64,
+    pub divisional_round: f64,
+    pub conference_game: f64,
+    pub super_bowl: f64,
+    pub champion: f64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct Game {
+    pub id: String,
+    pub gameday: String,
+    pub away: String,
+    pub home: String,
+    pub home_win_probability: f64,
+    pub champion: Swing,
+    pub playoffs: Swing,
+    pub nfc_north: Swing,
+}
+
+/// One goal's odds conditioned on a game's result.
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct Swing {
+    pub if_home_wins: f64,
+    pub if_away_wins: f64,
+    /// `if_home_wins - if_away_wins`.
+    pub swing: f64,
+    /// The team to root for, or `None` when the swing is within noise.
+    pub root_for: Option<String>,
+}
+
+/// What the rankings optimize.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Goal {
+    /// The Bears winning the Super Bowl (decision 0002).
+    #[default]
+    SuperBowl,
+    /// All four NFC North teams reaching the divisional round (decision 0007).
+    NfcNorth,
+}
+
+impl Goal {
+    pub fn swing(self, game: &Game) -> &Swing {
+        match self {
+            Goal::SuperBowl => &game.champion,
+            Goal::NfcNorth => &game.nfc_north,
+        }
+    }
+
+    /// The label after a swing, as in "+1.8% Super Bowl odds".
+    pub fn odds_label(self) -> &'static str {
+        match self {
+            Goal::SuperBowl => "Super Bowl odds",
+            Goal::NfcNorth => "NFC North odds",
+        }
+    }
+}
+
+impl Rooting {
+    pub fn parse(json: &str) -> Result<Self, String> {
+        serde_json::from_str(json).map_err(|e| format!("rooting.json is not valid: {e}"))
+    }
+
+    /// The week's games, biggest swing for `goal` first. Ties keep schedule
+    /// order.
+    pub fn ranked(&self, goal: Goal) -> Vec<&Game> {
+        let mut games: Vec<&Game> = self.games.iter().collect();
+        games.sort_by(|a, b| {
+            let (a, b) = (goal.swing(a).swing.abs(), goal.swing(b).swing.abs());
+            b.total_cmp(&a)
+        });
+        games
+    }
+
+    /// True when the Bears can no longer make the playoffs.
+    pub fn bears_eliminated(&self) -> bool {
+        self.bears.odds.playoffs <= 0.0
+    }
+}
+
+impl Record {
+    /// "8-4" or "8-3-1".
+    pub fn display(&self) -> String {
+        if self.ties == 0 {
+            format!("{}-{}", self.wins, self.losses)
+        } else {
+            format!("{}-{}-{}", self.wins, self.losses, self.ties)
+        }
+    }
+}
+
+/// A probability as a percentage, with more decimals as it gets smaller so
+/// tiny NFC North odds still show (decision 0007).
+pub fn percent(p: f64) -> String {
+    let pct = p * 100.0;
+    let a = pct.abs();
+    if a == 0.0 {
+        "0%".to_string()
+    } else if a >= 10.0 {
+        format!("{pct:.0}%")
+    } else if a >= 1.0 {
+        format!("{pct:.1}%")
+    } else if a >= 0.1 {
+        format!("{pct:.2}%")
+    } else if a >= 0.001 {
+        format!("{pct:.3}%")
+    } else if pct > 0.0 {
+        "<0.001%".to_string()
+    } else {
+        "-<0.001%".to_string()
+    }
+}
+
+/// A swing in favor of the team to root for: always shown as a gain, as in
+/// "+1.8%".
+pub fn swing_percent(swing: f64) -> String {
+    format!("+{}", percent(swing.abs()))
+}
+
+/// "2026-11-24T13:05:00Z" as "2026-11-24 13:05 UTC". Anything unexpected is
+/// shown as given.
+pub fn timestamp(rfc3339: &str) -> String {
+    match (rfc3339.get(..10), rfc3339.get(11..16)) {
+        (Some(date), Some(time)) if rfc3339.as_bytes().get(10) == Some(&b'T') => {
+            let zone = rfc3339.get(19..).unwrap_or("");
+            let zone = zone.trim_start_matches(|c: char| c == '.' || c.is_ascii_digit());
+            let zone = if zone.is_empty() || zone == "Z" || zone == "+00:00" {
+                "UTC"
+            } else {
+                zone
+            };
+            format!("{date} {time} {zone}")
+        }
+        _ => rfc3339.to_string(),
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    const SAMPLE: &str = include_str!("../public/rooting.json");
+
+    #[test]
+    fn parses_the_sample() {
+        let r = Rooting::parse(SAMPLE).expect("sample parses");
+        assert!(!r.games.is_empty());
+        assert_eq!(
+            r.games
+                .iter()
+                .filter(|g| g.home == "CHI" || g.away == "CHI")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn sample_swings_are_consistent() {
+        let r = Rooting::parse(SAMPLE).expect("sample parses");
+        for g in &r.games {
+            for s in [&g.champion, &g.playoffs, &g.nfc_north] {
+                assert!(
+                    (s.if_home_wins - s.if_away_wins - s.swing).abs() < 1e-9,
+                    "{}",
+                    g.id
+                );
+                if let Some(team) = &s.root_for {
+                    let favored = if s.swing > 0.0 { &g.home } else { &g.away };
+                    assert_eq!(team, favored, "{}", g.id);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ranks_by_absolute_swing_for_the_goal() {
+        let r = Rooting::parse(SAMPLE).expect("sample parses");
+        for goal in [Goal::SuperBowl, Goal::NfcNorth] {
+            let swings: Vec<f64> = r
+                .ranked(goal)
+                .iter()
+                .map(|g| goal.swing(g).swing.abs())
+                .collect();
+            assert!(swings.windows(2).all(|w| w[0] >= w[1]), "{goal:?}");
+        }
+        // The Bears' own game leads the Super Bowl ranking.
+        let top = r.ranked(Goal::SuperBowl)[0];
+        assert!(top.home == "CHI" || top.away == "CHI");
+    }
+
+    #[test]
+    fn formats_percentages() {
+        assert_eq!(percent(0.0), "0%");
+        assert_eq!(percent(0.42), "42%");
+        assert_eq!(percent(0.018), "1.8%");
+        assert_eq!(percent(0.0042), "0.42%");
+        assert_eq!(percent(0.00042), "0.042%");
+        assert_eq!(percent(0.000_000_1), "<0.001%");
+        assert_eq!(swing_percent(-0.018), "+1.8%");
+    }
+
+    #[test]
+    fn formats_records_and_timestamps() {
+        let r = Record {
+            wins: 8,
+            losses: 3,
+            ties: 1,
+        };
+        assert_eq!(r.display(), "8-3-1");
+        assert_eq!(Record { ties: 0, ..r }.display(), "8-3");
+        assert_eq!(timestamp("2026-11-24T13:05:00Z"), "2026-11-24 13:05 UTC");
+        assert_eq!(
+            timestamp("2026-11-24T13:05:00.123+00:00"),
+            "2026-11-24 13:05 UTC"
+        );
+        assert_eq!(
+            timestamp("2026-11-24T08:05:00-05:00"),
+            "2026-11-24 08:05 -05:00"
+        );
+        assert_eq!(timestamp("soon"), "soon");
+    }
+
+    #[test]
+    fn eliminated_when_playoff_odds_are_zero() {
+        let mut r = Rooting::parse(SAMPLE).expect("sample parses");
+        assert!(!r.bears_eliminated());
+        r.bears.odds.playoffs = 0.0;
+        assert!(r.bears_eliminated());
+    }
+}

@@ -1,0 +1,431 @@
+{
+  "generated_at": "2026-11-24T14:12:08Z",
+  "season": 2026,
+  "week": 13,
+  "simulations": 20000,
+  "latest_game": {
+    "id": "2026_12_SF_LA",
+    "gameday": "2026-11-23",
+    "away": "SF",
+    "home": "LA",
+    "away_score": 24,
+    "home_score": 27
+  },
+  "bears": {
+    "record": {
+      "wins": 8,
+      "losses": 3,
+      "ties": 0
+    },
+    "odds": {
+      "playoffs": 0.78,
+      "divisional_round": 0.41,
+      "conference_game": 0.212,
+      "super_bowl": 0.118,
+      "champion": 0.071
+    }
+  },
+  "nfc_north_divisional": 0.0123,
+  "games": [
+    {
+      "id": "2026_13_GB_DET",
+      "gameday": "2026-11-26",
+      "away": "GB",
+      "home": "DET",
+      "home_win_probability": 0.58,
+      "champion": {
+        "if_home_wins": 0.072764,
+        "if_away_wins": 0.068564,
+        "swing": 0.0042,
+        "root_for": "DET"
+      },
+      "playoffs": {
+        "if_home_wins": 0.79302,
+        "if_away_wins": 0.76202,
+        "swing": 0.031,
+        "root_for": "DET"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.012132,
+        "if_away_wins": 0.012532,
+        "swing": -0.0004,
+        "root_for": "GB"
+      }
+    },
+    {
+      "id": "2026_13_KC_DAL",
+      "gameday": "2026-11-26",
+      "away": "KC",
+      "home": "DAL",
+      "home_win_probability": 0.41,
+      "champion": {
+        "if_home_wins": 0.070351,
+        "if_away_wins": 0.071451,
+        "swing": -0.0011,
+        "root_for": "KC"
+      },
+      "playoffs": {
+        "if_home_wins": 0.77292,
+        "if_away_wins": 0.78492,
+        "swing": -0.012,
+        "root_for": "KC"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.012418,
+        "if_away_wins": 0.012218,
+        "swing": 0.0002,
+        "root_for": null
+      }
+    },
+    {
+      "id": "2026_13_CIN_BAL",
+      "gameday": "2026-11-26",
+      "away": "CIN",
+      "home": "BAL",
+      "home_win_probability": 0.66,
+      "champion": {
+        "if_home_wins": 0.071102,
+        "if_away_wins": 0.070802,
+        "swing": 0.0003,
+        "root_for": null
+      },
+      "playoffs": {
+        "if_home_wins": 0.78,
+        "if_away_wins": 0.78,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0123,
+        "if_away_wins": 0.0123,
+        "swing": 0.0,
+        "root_for": null
+      }
+    },
+    {
+      "id": "2026_13_CHI_PHI",
+      "gameday": "2026-11-27",
+      "away": "CHI",
+      "home": "PHI",
+      "home_win_probability": 0.61,
+      "champion": {
+        "if_home_wins": 0.063707,
+        "if_away_wins": 0.082407,
+        "swing": -0.0187,
+        "root_for": "CHI"
+      },
+      "playoffs": {
+        "if_home_wins": 0.73632,
+        "if_away_wins": 0.84832,
+        "swing": -0.112,
+        "root_for": "CHI"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.011091,
+        "if_away_wins": 0.014191,
+        "swing": -0.0031,
+        "root_for": "CHI"
+      }
+    },
+    {
+      "id": "2026_13_ARI_TB",
+      "gameday": "2026-11-29",
+      "away": "ARI",
+      "home": "TB",
+      "home_win_probability": 0.63,
+      "champion": {
+        "if_home_wins": 0.070667,
+        "if_away_wins": 0.071567,
+        "swing": -0.0009,
+        "root_for": "ARI"
+      },
+      "playoffs": {
+        "if_home_wins": 0.77667,
+        "if_away_wins": 0.78567,
+        "swing": -0.009,
+        "root_for": "ARI"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.012078,
+        "if_away_wins": 0.012678,
+        "swing": -0.0006,
+        "root_for": "ARI"
+      }
+    },
+    {
+      "id": "2026_13_ATL_NYJ",
+      "gameday": "2026-11-29",
+      "away": "ATL",
+      "home": "NYJ",
+      "home_win_probability": 0.45,
+      "champion": {
+        "if_home_wins": 0.07177,
+        "if_away_wins": 0.07037,
+        "swing": 0.0014,
+        "root_for": "NYJ"
+      },
+      "playoffs": {
+        "if_home_wins": 0.78825,
+        "if_away_wins": 0.77325,
+        "swing": 0.015,
+        "root_for": "NYJ"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.012685,
+        "if_away_wins": 0.011985,
+        "swing": 0.0007,
+        "root_for": "NYJ"
+      }
+    },
+    {
+      "id": "2026_13_HOU_IND",
+      "gameday": "2026-11-29",
+      "away": "HOU",
+      "home": "IND",
+      "home_win_probability": 0.52,
+      "champion": {
+        "if_home_wins": 0.071096,
+        "if_away_wins": 0.070896,
+        "swing": 0.0002,
+        "root_for": null
+      },
+      "playoffs": {
+        "if_home_wins": 0.78,
+        "if_away_wins": 0.78,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0123,
+        "if_away_wins": 0.0123,
+        "swing": 0.0,
+        "root_for": null
+      }
+    },
+    {
+      "id": "2026_13_JAX_TEN",
+      "gameday": "2026-11-29",
+      "away": "JAX",
+      "home": "TEN",
+      "home_win_probability": 0.39,
+      "champion": {
+        "if_home_wins": 0.071061,
+        "if_away_wins": 0.070961,
+        "swing": 0.0001,
+        "root_for": null
+      },
+      "playoffs": {
+        "if_home_wins": 0.78,
+        "if_away_wins": 0.78,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0123,
+        "if_away_wins": 0.0123,
+        "swing": 0.0,
+        "root_for": null
+      }
+    },
+    {
+      "id": "2026_13_NO_MIA",
+      "gameday": "2026-11-29",
+      "away": "NO",
+      "home": "MIA",
+      "home_win_probability": 0.57,
+      "champion": {
+        "if_home_wins": 0.071344,
+        "if_away_wins": 0.070544,
+        "swing": 0.0008,
+        "root_for": "MIA"
+      },
+      "playoffs": {
+        "if_home_wins": 0.78258,
+        "if_away_wins": 0.77658,
+        "swing": 0.006,
+        "root_for": "MIA"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.012472,
+        "if_away_wins": 0.012072,
+        "swing": 0.0004,
+        "root_for": "MIA"
+      }
+    },
+    {
+      "id": "2026_13_LA_CAR",
+      "gameday": "2026-11-29",
+      "away": "LA",
+      "home": "CAR",
+      "home_win_probability": 0.33,
+      "champion": {
+        "if_home_wins": 0.073077,
+        "if_away_wins": 0.069977,
+        "swing": 0.0031,
+        "root_for": "CAR"
+      },
+      "playoffs": {
+        "if_home_wins": 0.79608,
+        "if_away_wins": 0.77208,
+        "swing": 0.024,
+        "root_for": "CAR"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.013037,
+        "if_away_wins": 0.011937,
+        "swing": 0.0011,
+        "root_for": "CAR"
+      }
+    },
+    {
+      "id": "2026_13_MIN_SEA",
+      "gameday": "2026-11-29",
+      "away": "MIN",
+      "home": "SEA",
+      "home_win_probability": 0.64,
+      "champion": {
+        "if_home_wins": 0.071936,
+        "if_away_wins": 0.069336,
+        "swing": 0.0026,
+        "root_for": "SEA"
+      },
+      "playoffs": {
+        "if_home_wins": 0.78684,
+        "if_away_wins": 0.76784,
+        "swing": 0.019,
+        "root_for": "SEA"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.01104,
+        "if_away_wins": 0.01454,
+        "swing": -0.0035,
+        "root_for": "MIN"
+      }
+    },
+    {
+      "id": "2026_13_CLE_SF",
+      "gameday": "2026-11-29",
+      "away": "CLE",
+      "home": "SF",
+      "home_win_probability": 0.79,
+      "champion": {
+        "if_home_wins": 0.070601,
+        "if_away_wins": 0.072501,
+        "swing": -0.0019,
+        "root_for": "CLE"
+      },
+      "playoffs": {
+        "if_home_wins": 0.77706,
+        "if_away_wins": 0.79106,
+        "swing": -0.014,
+        "root_for": "CLE"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.012111,
+        "if_away_wins": 0.013011,
+        "swing": -0.0009,
+        "root_for": "CLE"
+      }
+    },
+    {
+      "id": "2026_13_PIT_BUF",
+      "gameday": "2026-11-29",
+      "away": "PIT",
+      "home": "BUF",
+      "home_win_probability": 0.71,
+      "champion": {
+        "if_home_wins": 0.071,
+        "if_away_wins": 0.071,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "playoffs": {
+        "if_home_wins": 0.78,
+        "if_away_wins": 0.78,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0123,
+        "if_away_wins": 0.0123,
+        "swing": 0.0,
+        "root_for": null
+      }
+    },
+    {
+      "id": "2026_13_DEN_LV",
+      "gameday": "2026-11-29",
+      "away": "DEN",
+      "home": "LV",
+      "home_win_probability": 0.3,
+      "champion": {
+        "if_home_wins": 0.07128,
+        "if_away_wins": 0.07088,
+        "swing": 0.0004,
+        "root_for": null
+      },
+      "playoffs": {
+        "if_home_wins": 0.7807,
+        "if_away_wins": 0.7797,
+        "swing": 0.001,
+        "root_for": null
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0123,
+        "if_away_wins": 0.0123,
+        "swing": 0.0,
+        "root_for": null
+      }
+    },
+    {
+      "id": "2026_13_NYG_WAS",
+      "gameday": "2026-11-30",
+      "away": "NYG",
+      "home": "WAS",
+      "home_win_probability": 0.55,
+      "champion": {
+        "if_home_wins": 0.07001,
+        "if_away_wins": 0.07221,
+        "swing": -0.0022,
+        "root_for": "NYG"
+      },
+      "playoffs": {
+        "if_home_wins": 0.77235,
+        "if_away_wins": 0.78935,
+        "swing": -0.017,
+        "root_for": "NYG"
+      },
+      "nfc_north": {
+        "if_home_wins": 0.01194,
+        "if_away_wins": 0.01274,
+        "swing": -0.0008,
+        "root_for": "NYG"
+      }
+    },
+    {
+      "id": "2026_13_NE_LAC",
+      "gameday": "2026-11-30",
+      "away": "NE",
+      "home": "LAC",
+      "home_win_probability": 0.48,
+      "champion": {
+        "if_home_wins": 0.071,
+        "if_away_wins": 0.071,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "playoffs": {
+        "if_home_wins": 0.78,
+        "if_away_wins": 0.78,
+        "swing": 0.0,
+        "root_for": null
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0123,
+        "if_away_wins": 0.0123,
+        "swing": 0.0,
+        "root_for": null
+      }
+    }
+  ]
+}
