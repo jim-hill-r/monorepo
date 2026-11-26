@@ -186,8 +186,11 @@ name = "evals_cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "clap",
  "evals_model",
+ "serde",
+ "serde_json",
  "tempfile",
 ]
 

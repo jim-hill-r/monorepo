@@ -1,6 +1,6 @@
 [package]
 name = "evals_cli"
-description = "The evals command: checks requirements.md and evals.toml files."
+description = "The evals command: checks, collects and publishes evals."
 version.workspace = true
 edition.workspace = true
 
@@ -14,7 +14,10 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
+chrono = { workspace = true }
 evals_model = { path = "../model" }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.27.0"

@@ -28,8 +28,22 @@ failures make an eval flaky, how fresh a production result must be) are in
 # Check every project's requirements.md and evals.toml (EVL-001 to EVL-004).
 cargo run -p evals_cli -- check            # warnings, exit 0
 cargo run -p evals_cli -- check --strict   # exit 1 on any finding
+
+# Turn saved test reports into one result per eval (cargo and playwright
+# kinds), appended to evals-results.jsonl. Runs no tests itself.
+cargo test 2>&1 | tee cargo-test.log
+cargo run -p evals_cli -- run --stage ci --project cookbook \
+  --cargo-output cargo-test.log --playwright-report web/results.json
+
+# Write the job summary table ($GITHUB_STEP_SUMMARY, or stdout).
+cargo run -p evals_cli -- publish
 ```
 
-`evals run` and `evals publish` come next (see the phase 0 TODOs in the
-root `ISSUES.md`). Results are files, never a database: JSONL on the
-`evals-results` branch.
+Each result says `pass`, `fail`, `error` (an eval matched no test) or
+`skip` (no report of its kind, or every matching test was skipped), with a
+short note. In GitHub Actions the commit, run id and run link come from the
+`GITHUB_*` variables.
+
+Wiring `run` and `publish` into the shared tasks and workflows, and
+committing results to the `evals-results` branch, come in phase 1 (see the
+root `ISSUES.md`). Results are files, never a database.
