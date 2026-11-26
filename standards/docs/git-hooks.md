@@ -19,8 +19,10 @@ This installs lefthook through mise (`mise exec lefthook@<version>`, the
 
 ## What runs
 
-Both hooks run `standards/scripts/hooks.sh`, which runs `mise run //:audit`
-and then `mise run ci` in each affected project (installing its tools with
+Both hooks run `standards/scripts/hooks.sh`, which runs `mise run //:audit`,
+scans for secrets with gitleaks (SEC-001, `standards/scripts/secrets-check.sh`:
+the staged diff in pre-commit, the commits being pushed in pre-push; see
+[security.md](./security.md)), and then `mise run ci` in each affected project (installing its tools with
 `mise install` first). Projects are picked by
 `standards/scripts/affected.sh --changed-only`, the same list PR CI checks.
 
@@ -78,7 +80,14 @@ mise's version service. Follow these steps there; each one is safe to repeat.
    the same gap fails the task. Say in the PR that the Playwright tests ran
    only in PR CI.
 
-6. **System libraries and downloads:** a project whose build needs something
+6. **gitleaks:** it is a GitHub release download, so a sandbox often can't
+   get it. The secret scan then prints `warning[SEC-001]` and the hook
+   carries on; PR CI's **Secret scan** job runs it. Say so in the PR, or
+   install it through the Go module proxy first:
+   `go install github.com/zricethezav/gitleaks/v8@v8.30.1` (then put
+   `~/go/bin` on `PATH`).
+
+7. **System libraries and downloads:** a project whose build needs something
    a sandbox can't install defines a `ci:check-tools` task that fails,
    naming what is missing. The hook runs it first and, when it fails, skips
    the project with "not checked here, PR CI checks it" instead of failing

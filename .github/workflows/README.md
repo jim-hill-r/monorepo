@@ -26,8 +26,12 @@ Called by the three workflows below.
 Runs on every pull request against the projects it changes. Never deploys.
 `workflow_dispatch` runs every project on a branch.
 
-A second job, **CI result**, always runs after the projects and passes only
-when every project passed. It is the one check the `main` ruleset should
+A **Secret scan** job runs gitleaks over the PR's commits
+(`standards/scripts/secrets-check.sh range`, SEC-001 in
+[standards/docs/security.md](../../standards/docs/security.md)).
+
+A last job, **CI result**, always runs after the projects and the secret scan
+and passes only when every project passed and no secret was found. It is the one check the `main` ruleset should
 require, so GitHub auto-merge waits for green CI (see the Auto-merge section
 of `standards/docs/pull-requests.md`). Rename it only together with that
 ruleset.
@@ -100,6 +104,10 @@ storage the repo uses, writes a table to the run summary, and fails when
 anything reaches its budget in
 [standards/docs/free-tiers.md](../../standards/docs/free-tiers.md). It only
 reads.
+
+A second job, **Secret scan (full history)**, runs gitleaks over every commit
+(`standards/scripts/secrets-check.sh history`), so a new rule catches an old
+commit within a week.
 
 Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
 

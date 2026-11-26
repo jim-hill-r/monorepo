@@ -354,6 +354,23 @@
     "budget": 0
   },
   {
+    "name": "gitleaks",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Secret scanning (SEC-001): the staged diff in pre-commit, the pushed commits in pre-push, the PR's commits in PR CI and the whole history weekly. Pinned in standards/scripts/secrets-check.sh; our rules in .gitleaks.toml.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/security.md",
+      "standards/docs/plans/2026-11-threat-check.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Playwright",
     "ring": "Adopt",
     "quadrant": "Tools",

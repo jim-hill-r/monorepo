@@ -91,14 +91,28 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
     let jobs = parsed["jobs"]
         .as_mapping()
         .unwrap_or_else(|| panic!("no jobs"));
-    assert_eq!(jobs.len(), 2, "expected the ci job and the CI result gate");
+    assert_eq!(
+        jobs.len(),
+        3,
+        "expected the ci job, the secret scan and the CI result gate"
+    );
     let gate = &parsed["jobs"]["ci-result"];
     assert_eq!(
         gate["name"].as_str(),
         Some("CI result"),
         "the ruleset on main requires this check name; rename both together"
     );
-    assert_eq!(gate["needs"].as_str(), Some("ci"));
+    let needs: Vec<&str> = gate["needs"]
+        .as_sequence()
+        .unwrap_or_else(|| panic!("the gate should need a list of jobs"))
+        .iter()
+        .filter_map(|v| v.as_str())
+        .collect();
+    assert_eq!(
+        needs,
+        ["ci", "secrets"],
+        "the gate waits for CI and the scan"
+    );
     assert_eq!(
         gate["if"].as_str(),
         Some("always()"),
@@ -106,8 +120,25 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
     );
     let steps = serde_yaml::to_string(&gate["steps"]).unwrap_or_default();
     assert!(
-        steps.contains("needs.ci.result") && steps.contains("= success"),
-        "the gate should fail unless the ci job succeeded"
+        steps.contains("needs.ci.result")
+            && steps.contains("needs.secrets.result")
+            && steps.contains("= success"),
+        "the gate should fail unless the ci job and the secret scan succeeded"
+    );
+}
+
+#[test]
+fn test_pull_request_ci_scans_the_pr_commits_for_secrets() {
+    let (_, parsed) = load("pull-request-ci.yml");
+    let job = &parsed["jobs"]["secrets"];
+    let steps = serde_yaml::to_string(&job["steps"]).unwrap_or_default();
+    assert!(
+        steps.contains("fetch-depth: 0"),
+        "the scan needs the PR's commits, so a full clone"
+    );
+    assert!(
+        steps.contains("secrets-check.sh range \"origin/$BASE_REF\""),
+        "PRs scan only their own commits (SEC-001)"
     );
 }
 

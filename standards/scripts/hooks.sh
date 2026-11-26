@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Git hook checks, run by lefthook (see lefthook.yml). Runs what PR CI runs:
-# `mise run //:audit`, then `mise run ci` in every affected project.
+# `mise run //:audit`, the secret scan (secrets-check.sh, SEC-001), then
+# `mise run ci` in every affected project.
 #
 #   hooks.sh pre-commit   projects touched by the staged and unstaged changes;
 #                         while a merge is being committed, the projects the
@@ -56,6 +57,7 @@ case "$stage" in
     projects=$(bash standards/scripts/affected.sh --changed-only --files <<<"$changed")
     # The committed tree, if nothing unstaged changes what CI sees.
     if git diff --quiet; then tree=$(git write-tree); else tree=""; fi
+    secrets=(staged)
     ;;
   pre-push)
     base=${AFFECTED_BASE:-origin/main}
@@ -72,6 +74,7 @@ case "$stage" in
     fi
     projects=$(bash standards/scripts/affected.sh --changed-only "$base")
     tree=$(git rev-parse 'HEAD^{tree}')
+    secrets=(range "$base")
     ;;
   *)
     say "unknown stage '$stage' (want pre-commit or pre-push)"
@@ -82,13 +85,18 @@ esac
 mapfile -t list < <(jq -r '.[]' <<<"$projects")
 say "$stage: ${#list[@]} project(s): ${list[*]:-none}"
 
+failed=()
+skipped=()
+
+# SEC-001: the staged diff or the pushed commits, before the git variables
+# are cleared (a `git commit -a` stages into a temporary GIT_INDEX_FILE).
+say "scanning for secrets (${secrets[*]})"
+bash standards/scripts/secrets-check.sh "${secrets[@]}" || failed+=("secrets")
+
 # The hook runs with GIT_DIR and GIT_INDEX_FILE (a temporary index during
 # `git commit -a`) set for this repo. Tests that run git in their own temp
 # repos would use them too, so clear them now that git work here is done.
 unset $(git rev-parse --local-env-vars)
-
-failed=()
-skipped=()
 
 # Install the project's tools, then run its ci task. When the install fails
 # even offline, run ci with the tools already on PATH (for example a system

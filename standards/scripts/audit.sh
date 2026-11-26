@@ -9,6 +9,8 @@
 #   NAM-001  Project directory names are snake_case.
 #   HUM-001  TODO (human) lines live only in the root HUMAN_ISSUES.md.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
+#   SEC-*    Secret files ignored and Dependabot covering every lockfile
+#            (security-check.sh, standards/docs/security.md).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -60,6 +62,9 @@ done
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.
 bash standards/scripts/evals-check.sh
+
+# SEC-002, SEC-006: repo-wide security guards (see standards/docs/security.md).
+bash standards/scripts/security-check.sh || errors=$((errors + 1))
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))

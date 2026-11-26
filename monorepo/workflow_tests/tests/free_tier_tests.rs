@@ -379,6 +379,23 @@ fn test_usage_workflow_only_reads() {
 }
 
 #[test]
+fn test_weekly_run_scans_the_whole_history_for_secrets() {
+    let path = get_workflow_path("all-free-tier-usage.yml");
+    let content = fs::read_to_string(&path).expect("read all-free-tier-usage.yml");
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&content).expect("parse workflow");
+    let steps =
+        serde_yaml::to_string(&yaml["jobs"]["secrets-history"]["steps"]).unwrap_or_default();
+    assert!(
+        steps.contains("fetch-depth: 0"),
+        "a full clone, every commit"
+    );
+    assert!(
+        steps.contains("secrets-check.sh history"),
+        "SEC-001 full-history scan"
+    );
+}
+
+#[test]
 fn test_pages_deploy_goes_through_the_guard() {
     let tasks = fs::read_to_string(get_repo_root().join("standards/tasks/cloudflare-pages.toml"))
         .expect("read cloudflare-pages.toml");
