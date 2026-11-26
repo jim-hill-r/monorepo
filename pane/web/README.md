@@ -88,4 +88,7 @@ This project uses Dioxus 0.7 for building web applications with Rust.
 
 ## Status
 
-This is a placeholder project with basic Dioxus setup.
+This is still a placeholder. Pane is becoming one place to review the whole
+monorepo; see the plan in
+[../docs/plans/2026-11-review-dashboard.md](../docs/plans/2026-11-review-dashboard.md)
+and the phased TODOs in [../ISSUES.md](../ISSUES.md).

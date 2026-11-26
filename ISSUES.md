@@ -49,6 +49,7 @@ Free tiers: see [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
 - controlled_chaos
 - royalty
 - sparkhill
+- pane
 
 # On Hold Projects
 - luggage
