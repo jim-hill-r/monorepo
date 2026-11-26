@@ -7,12 +7,12 @@ Started 2026-11-26 from Jim's request:
 > ensure our live resources are the only ones needed and orphans or
 > temporary resources are cleaned up regularly?
 
-Status: **proposed**. Every open question has a recommended answer under
-"Decisions", so "yes to all" approves the plan as written. Once approved,
-the work items become `TODO (agent-generated)` lines in the root
-[ISSUES.md](../../../ISSUES.md) under "Resource cleanup", one group per
-phase, and the steps only Jim can do go in
-[HUMAN_ISSUES.md](../../../HUMAN_ISSUES.md).
+Status: **approved** by Jim (PR #669, 2026-11-26), with the recommended
+answer to every question (see "Decisions" near the end). The work items
+become `TODO (agent-generated)` items under "Resource cleanup", one group
+per phase, and the steps only Jim can do become human issues, filed in the
+issue format of [issue-management.md](../issue-management.md) once the
+one-file-per-issue change (PR #655) lands.
 
 This plan builds on the [threat check](2026-11-threat-check.md) rather than
 duplicating it. The threat check's phase 3 already plans a weekly live check
@@ -297,7 +297,8 @@ projects frees Pages project slots rather than using them.
 
 ## Decisions
 
-Recommended answers; "yes to all" accepts every one.
+Jim, 2026-11-26: approved PR #669 and chose "yes to all" for the
+recommended answers.
 
 1. **Claims come from existing files** (`wrangler.toml`, `threat.toml`,
    the release matrix, open PRs), plus `standards/resources.toml` only for
