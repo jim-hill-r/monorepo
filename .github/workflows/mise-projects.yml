@@ -78,6 +78,8 @@ jobs:
         env:
           AFFECTED_BASE: ${{ inputs.base }}
           AFFECTED_CHANGED_ONLY: ${{ inputs.changed_only && '1' || '' }}
+          # Deploy runs also list projects marked `# deploy-on-every-push`.
+          AFFECTED_DEPLOY: ${{ inputs.deploy && '1' || '' }}
           ONLY_PROJECT: ${{ inputs.project }}
         run: |
           if [ -n "$ONLY_PROJECT" ]; then

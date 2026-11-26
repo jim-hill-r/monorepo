@@ -75,6 +75,13 @@ project, because that commit's own run deploys it. "Changes" is decided by
 run deploys every project this way, so each site is rebuilt and republished
 from main at least once a day.
 
+A site built from the whole repo, such as pane (its snapshot reads every
+project), has a `# deploy-on-every-push` line in its `mise.toml`. Push runs
+then always list it (`affected.sh --deploy`, set by `AFFECTED_DEPLOY` in
+`mise-projects.yml`), and `deploy-check.sh` deploys it only from main's tip,
+since every newer commit changes what it shows. Pull requests still check it
+only when they touch it.
+
 To roll back, or to redeploy one project, run **Push Main CI/CD** by hand
 (Actions tab, or `workflow_dispatch` through the API) with `project` set to
 the project directory, for example `cookbook/cloudflare`, and `ref` set to

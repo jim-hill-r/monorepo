@@ -1,7 +1,9 @@
 //! The `rooting.json` the web page reads. The format is described in
 //! `docs/rooting-json.md`; change both together.
 
-use bear_down_core::{Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds};
+use bear_down_core::{
+    Cause, Channel, Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds, Tier,
+};
 use serde::Serialize;
 
 use crate::why::{self, Goal};
@@ -86,11 +88,36 @@ pub struct SwingEntry {
     pub if_away_wins: f64,
     /// `if_home_wins - if_away_wins`.
     pub swing: f64,
-    /// The team to root for, or `None` when the swing is within the noise.
+    /// The team to root for, or `None` for "doesn't matter".
     pub root_for: Option<String>,
-    /// Plain-language reasons the pick helps (empty when `root_for` is
-    /// `None`): the rivalry, tiebreakers and seeding odds it moves.
+    /// How much the game matters: `matters`, `small`, `negligible` or
+    /// `none` (it can't reach the Bears).
+    pub tier: &'static str,
+    /// The plain-language explanation, never empty: the channels through
+    /// which the game reaches the Bears, or why it doesn't.
     pub why: Vec<String>,
+    /// The measured channels behind `why`, biggest first. Empty for the
+    /// NFC North goal.
+    pub channels: Vec<ChannelEntry>,
+}
+
+/// One channel's share of a swing.
+#[derive(Debug, Serialize)]
+pub struct ChannelEntry {
+    /// `division_title`, `wild_card`, `seed`, `playoff_path` or
+    /// `super_bowl_opponent`.
+    pub channel: &'static str,
+    /// For the seeding channels, what decided it: `record`, `coin flip` or a
+    /// tiebreaker step such as `strength of victory`. Null otherwise.
+    pub cause: Option<String>,
+    /// The team whose win this channel favors.
+    pub favors: String,
+    /// The size of the share, as a probability.
+    pub share: f64,
+    /// Its standard error.
+    pub std_error: f64,
+    /// The share of simulated seasons in this channel and cause.
+    pub seasons: f64,
 }
 
 impl Guide {
@@ -100,7 +127,6 @@ impl Guide {
         simulation: &Simulation,
         standings: &Standings,
         latest: Option<&Game>,
-        games: &[Game],
         generated_at: String,
     ) -> Self {
         let focus = simulation.focus;
@@ -119,9 +145,7 @@ impl Guide {
                 .games
                 .iter()
                 .map(|impact| {
-                    GameEntry::new(impact, standings, games, &|team| {
-                        simulation.odds(team).playoffs
-                    })
+                    GameEntry::new(impact, standings, &|team| simulation.odds(team).playoffs)
                 })
                 .collect(),
         }
@@ -143,18 +167,39 @@ impl LatestGame {
 }
 
 impl GameEntry {
-    fn new(
-        impact: &GameImpact,
-        standings: &Standings,
-        games: &[Game],
-        playoff_odds: &dyn Fn(Team) -> f64,
-    ) -> Self {
-        let swing = |swing: &Swing, goal: Goal| SwingEntry {
-            if_home_wins: swing.if_home_wins,
-            if_away_wins: swing.if_away_wins,
-            swing: swing.swing(),
-            root_for: impact.root_for(swing).map(|team| team.abbr().to_string()),
-            why: why::reasons(impact, goal, swing, standings, games, playoff_odds),
+    fn new(impact: &GameImpact, standings: &Standings, playoff_odds: &dyn Fn(Team) -> f64) -> Self {
+        let swing = |swing: &Swing, goal: Goal| {
+            let (root, tier) = why::verdict(impact, goal, swing);
+            SwingEntry {
+                if_home_wins: swing.if_home_wins,
+                if_away_wins: swing.if_away_wins,
+                swing: swing.swing(),
+                root_for: root.map(team),
+                tier: tier_name(tier),
+                why: why::reasons(impact, goal, swing, standings, playoff_odds),
+                channels: why::shown_channels(impact, goal)
+                    .into_iter()
+                    .filter_map(|channel| {
+                        let (share, std_error) = why::share(channel, goal)?;
+                        Some(ChannelEntry {
+                            channel: channel_name(channel.channel),
+                            cause: channel.cause.map(cause_name),
+                            favors: team(if share > 0.0 {
+                                impact.home
+                            } else {
+                                impact.away
+                            }),
+                            share: share.abs(),
+                            std_error,
+                            seasons: if impact.pairs == 0 {
+                                0.0
+                            } else {
+                                f64::from(channel.pairs) / f64::from(impact.pairs)
+                            },
+                        })
+                    })
+                    .collect(),
+            }
         };
         GameEntry {
             id: impact.game_id.clone(),
@@ -171,6 +216,34 @@ impl GameEntry {
 
 fn team(team: Team) -> String {
     team.abbr().to_string()
+}
+
+fn tier_name(tier: Tier) -> &'static str {
+    match tier {
+        Tier::Matters => "matters",
+        Tier::Small => "small",
+        Tier::Negligible => "negligible",
+        Tier::None => "none",
+    }
+}
+
+fn channel_name(channel: Channel) -> &'static str {
+    match channel {
+        Channel::DivisionTitle => "division_title",
+        Channel::WildCard => "wild_card",
+        Channel::Seed => "seed",
+        Channel::PlayoffPath => "playoff_path",
+        Channel::SuperBowlOpponent => "super_bowl_opponent",
+        Channel::Chance => "chance",
+    }
+}
+
+fn cause_name(cause: Cause) -> String {
+    match cause {
+        Cause::Record => "record".to_string(),
+        Cause::Tiebreaker(step) => step.name().to_string(),
+        Cause::CoinFlip => "coin flip".to_string(),
+    }
 }
 
 fn record(record: Record) -> RecordEntry {

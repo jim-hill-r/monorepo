@@ -4,8 +4,6 @@ Build v1 in this order. Each item links the decision that explains it.
 
 - TODO: After the first deploy, check <https://jimhillr-bear-down.pages.dev> shows this week's guide and that Nightly CD redeploys it the next night (the `cloudflare/` deploy itself is in place). ([0009](docs/decisions/0009-cloudflare-pages-nightly-cd.md))
 
-- TODO: Robust, explained recommendations, per [the plan](docs/plans/2026-11-robust-recommendations.md) (BEAR-003 to BEAR-006). Step 1 (tiebreaker trace, `Standings::seeds_traced`) is done; next is step 2, channel counts in the paired simulation.
-
 # Backlog
 
 - TODO (agent-generated): Tune the Elo parameters (K, home field, margin multiplier, regression) against past seasons by Brier score. The decision's starting values give 0.219 on 2005 to 2026 games. ([0004](docs/decisions/0004-elo-win-probabilities.md))

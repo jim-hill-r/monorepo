@@ -119,12 +119,10 @@ fn build(
     }
     let simulation = simulate(&season, &ratings, &config)?;
     let standings = Standings::from_season(&season)?;
-    let games: Vec<_> = season.regular_season().cloned().collect();
     Ok(rooting::Guide::new(
         &simulation,
         &standings,
         season.latest_played(),
-        &games,
         generated_at,
     ))
 }
@@ -218,14 +216,24 @@ mod tests {
     /// Every 2002 to 2025 game, with 2025's playoffs dropped and its week 18
     /// not yet played.
     fn before_week_18() -> Schedule {
+        before_week(2025, 18)
+    }
+
+    /// The fixture's seasons up to `year`, with `year`'s playoffs dropped and
+    /// its `week` not yet played.
+    fn before_week(year: u16, week: u8) -> Schedule {
         let full = include_str!("../../core/fixtures/seasons.csv");
+        let (year_text, prefix) = (year.to_string(), format!("{year}_{week:02}_"));
         let mut csv = String::new();
-        for line in full.lines() {
+        for (index, line) in full.lines().enumerate() {
             let cols: Vec<&str> = line.split(',').collect();
-            if cols[1] == "2025" && cols[2] != "REG" {
+            if index > 0 && cols[1].parse::<u16>().is_ok_and(|season| season > year) {
                 continue;
             }
-            if line.starts_with("2025_18_") {
+            if cols[1] == year_text && cols[2] != "REG" {
+                continue;
+            }
+            if line.starts_with(&prefix) {
                 let mut cols = cols;
                 cols[6] = "";
                 cols[8] = "";
@@ -277,7 +285,15 @@ mod tests {
         );
         let game = &json["games"][0];
         for goal in ["champion", "playoffs", "nfc_north"] {
-            for key in ["if_home_wins", "if_away_wins", "swing", "root_for", "why"] {
+            for key in [
+                "if_home_wins",
+                "if_away_wins",
+                "swing",
+                "root_for",
+                "tier",
+                "why",
+                "channels",
+            ] {
                 assert!(game[goal].get(key).is_some(), "{goal} should have {key}");
             }
         }
@@ -290,6 +306,177 @@ mod tests {
                 + record["ties"].as_u64().unwrap_or(0),
             16
         );
+    }
+
+    #[test]
+    fn every_game_is_explained_from_what_was_measured() {
+        let guide = match build(&before_week_18(), Some(2_000), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        let mut negligible = Vec::new();
+        for game in &guide.games {
+            for (goal, swing) in [("champion", &game.champion), ("playoffs", &game.playoffs)] {
+                // BEAR-001, BEAR-003, BEAR-005: a verdict and an explanation
+                // for every game.
+                assert!(
+                    !swing.why.is_empty(),
+                    "{} {goal} has no explanation",
+                    game.id
+                );
+                match swing.tier {
+                    "matters" => assert!(swing.root_for.is_some(), "{} {goal}", game.id),
+                    "negligible" | "none" => {
+                        assert!(swing.root_for.is_none(), "{} {goal}", game.id)
+                    }
+                    "small" => {}
+                    other => panic!("unknown tier {other}"),
+                }
+                if swing.root_for.is_none() && goal == "champion" {
+                    negligible.push(swing.why[0].clone());
+                }
+                // BEAR-006: a tiebreaker step named in the text is one the
+                // simulation measured deciding the Bears' seeding.
+                for line in &swing.why {
+                    let Some((_, after)) = line.split_once("decided by ") else {
+                        continue;
+                    };
+                    let step = after.split(" in ").next().unwrap_or_default();
+                    assert!(
+                        swing
+                            .channels
+                            .iter()
+                            .any(|channel| channel.cause.as_deref() == Some(step)),
+                        "{} {goal}: {line}",
+                        game.id
+                    );
+                }
+                for channel in &swing.channels {
+                    assert!(channel.share > 2.0 * channel.std_error);
+                    assert!(channel.favors == game.home || channel.favors == game.away);
+                }
+            }
+            assert!(game.champion.channels.len() <= game.champion.why.len() + 20);
+        }
+        // BEAR-005: no two "doesn't matter" games share their headline.
+        let mut unique = negligible.clone();
+        unique.sort();
+        unique.dedup();
+        assert_eq!(unique.len(), negligible.len(), "{negligible:#?}");
+    }
+
+    /// A golden week (plan step 6): 2018 week 17, the last regular-season
+    /// week then. The Bears (11-4) had clinched the NFC North and the Saints
+    /// the No. 1 seed. The Bears got the No. 2 seed, the last bye, only by
+    /// beating the Vikings while the 49ers beat the Rams (12-3), which would
+    /// tie them at 12-4 with the Bears ahead on head-to-head (they beat the
+    /// Rams in week 14).
+    #[test]
+    fn golden_week_2018_week_17() {
+        let guide = match build(&before_week(2018, 17), Some(4_000), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!((guide.season, guide.week), (2018, Some(17)));
+        assert_eq!(guide.games.len(), 16);
+        assert!((guide.bears.odds.playoffs - 1.0).abs() < 1e-12);
+        let game = |away: &str, home: &str| match guide
+            .games
+            .iter()
+            .find(|game| game.away == away && game.home == home)
+        {
+            Some(game) => game,
+            None => panic!("{away} at {home} should be in week 17"),
+        };
+        for game in &guide.games {
+            // Already in: no game moves the Bears' playoff odds at all, and
+            // each says so in its own words.
+            assert_eq!(game.playoffs.root_for, None, "{}", game.id);
+            assert_eq!(game.playoffs.tier, "negligible", "{}", game.id);
+            assert!(
+                game.playoffs.why[0].contains("no simulated season came out differently"),
+                "{}: {:?}",
+                game.id,
+                game.playoffs.why
+            );
+            // Already division champions: nothing runs through the division
+            // title or a wild card.
+            for channel in &game.champion.channels {
+                assert!(
+                    channel.channel != "division_title" && channel.channel != "wild_card",
+                    "{}: {}",
+                    game.id,
+                    channel.channel
+                );
+            }
+        }
+        // The Bears' own game decides the bye on record.
+        let own = game("CHI", "MIN");
+        assert_eq!(own.champion.root_for.as_deref(), Some("CHI"));
+        assert_eq!(own.champion.tier, "matters");
+        assert!(own.champion.channels.iter().any(|channel| {
+            channel.channel == "seed" && channel.cause.as_deref() == Some("record")
+        }));
+        // Root for the 49ers: the bye then comes down to head-to-head.
+        let rams = game("SF", "LA");
+        assert_eq!(rams.champion.root_for.as_deref(), Some("SF"));
+        assert_eq!(rams.champion.tier, "matters");
+        let Some(biggest) = rams.champion.channels.first() else {
+            panic!("49ers at Rams should have a channel");
+        };
+        assert_eq!(biggest.channel, "seed");
+        assert_eq!(biggest.cause.as_deref(), Some("head-to-head"));
+        assert_eq!(biggest.favors, "SF");
+        assert!(
+            rams.champion
+                .why
+                .iter()
+                .any(|line| line.starts_with("Seeding, decided by head-to-head")),
+            "{:?}",
+            rams.champion.why
+        );
+    }
+
+    /// A golden week: 2020 week 17. The Packers had clinched the NFC North,
+    /// and the 8-7 Bears were in with a win over the Packers or a Cardinals
+    /// loss to the Rams (they lost, and got in when the Rams won).
+    #[test]
+    fn golden_week_2020_week_17() {
+        let guide = match build(&before_week(2020, 17), Some(4_000), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!((guide.season, guide.week), (2020, Some(17)));
+        let game = |away: &str, home: &str| match guide
+            .games
+            .iter()
+            .find(|game| game.away == away && game.home == home)
+        {
+            Some(game) => game,
+            None => panic!("{away} at {home} should be in week 17"),
+        };
+        let own = game("GB", "CHI");
+        assert_eq!(own.playoffs.root_for.as_deref(), Some("CHI"));
+        assert_eq!(own.playoffs.tier, "matters");
+        let cardinals = game("ARI", "LA");
+        assert_eq!(cardinals.playoffs.root_for.as_deref(), Some("LA"));
+        assert_eq!(cardinals.playoffs.tier, "matters");
+        let Some(biggest) = cardinals.playoffs.channels.first() else {
+            panic!("Cardinals at Rams should have a channel");
+        };
+        assert_eq!(biggest.channel, "wild_card");
+        assert_eq!(biggest.favors, "LA");
+        assert!(
+            cardinals.playoffs.why[1].starts_with("Wild card"),
+            "{:?}",
+            cardinals.playoffs.why
+        );
+        // The Packers had the division: nothing runs through it.
+        for game in &guide.games {
+            for channel in game.champion.channels.iter().chain(&game.playoffs.channels) {
+                assert_ne!(channel.channel, "division_title", "{}", game.id);
+            }
+        }
     }
 
     #[test]

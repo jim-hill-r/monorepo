@@ -6,13 +6,16 @@
 
 pub mod elo;
 pub mod games;
+pub mod relevance;
 pub mod sim;
 pub mod standings;
 
 pub use elo::{EloParams, Ratings};
 pub use games::{Date, Game, GameType, Outcome, Schedule, Score, Season, Week};
+pub use relevance::{Link, Relevance, relevance};
 pub use sim::{
-    GameImpact, SimConfig, Simulation, Swing, TeamOdds, simulate, spread_win_probability,
+    Cause, Channel, ChannelImpact, Contribution, GameImpact, NEGLIGIBLE_SWING, SimConfig,
+    Simulation, Swing, TeamOdds, Tier, simulate, spread_win_probability,
 };
 pub use standings::{
     Conference, Division, Procedure, Record, Region, Standings, Step, Team, Tiebreak,

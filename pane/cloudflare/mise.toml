@@ -1,6 +1,8 @@
 # pane/cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
 # affected-by: ../web
+# deploy-on-every-push: pane's snapshot reads the whole repo, so redeploy it
+# on every push to main (push-main.yml), not only pushes under pane/.
 
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy" }
@@ -9,7 +11,7 @@ node = "24"
 
 [env]
 # Production URL. CI shows it on the GitHub deployment and in the job summary.
-DEPLOY_URL = "https://pane.pages.dev"
+DEPLOY_URL = "https://pane-dbc.pages.dev"
 
 [task_config]
 includes = ["../../standards/tasks/cloudflare-pages.toml"]

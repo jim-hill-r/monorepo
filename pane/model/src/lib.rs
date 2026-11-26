@@ -9,6 +9,9 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+/// The repo pane reviews, for links to files and releases on GitHub.
+pub const REPO_URL: &str = "https://github.com/jimhillr/monorepo";
+
 /// Version of the snapshot JSON format. Bump it for any change that an older
 /// reader could not parse.
 pub const SNAPSHOT_VERSION: u32 = 1;
@@ -201,6 +204,12 @@ pub struct Deliverable {
     /// A document's status line, such as `Accepted`.
     #[serde(default)]
     pub status: Option<String>,
+    /// Files to download, such as a release's macOS and Android builds.
+    #[serde(default)]
+    pub downloads: Vec<Link>,
+    /// The Markdown source of a plan, decision or retro, shown in the page.
+    #[serde(default)]
+    pub body: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -328,6 +337,22 @@ mod tests {
             url: None,
             date: Some("2026-11-25".into()),
             status: None,
+            downloads: vec![],
+            body: Some("# Plan\n\nText.".into()),
+        });
+        s.deliverables.push(Deliverable {
+            kind: DeliverableKind::Release,
+            title: "game nightly".into(),
+            project: Some("game".into()),
+            path: None,
+            url: Some("https://github.com/jimhillr/monorepo/releases/tag/game-nightly".into()),
+            date: None,
+            status: None,
+            downloads: vec![Link {
+                label: "macOS".into(),
+                url: "https://github.com/jimhillr/monorepo/releases/download/game-nightly/game-macos.zip".into(),
+            }],
+            body: None,
         });
         s.reviews.push(Review {
             project: "pane".into(),

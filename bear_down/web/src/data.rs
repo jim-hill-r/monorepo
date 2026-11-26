@@ -69,9 +69,24 @@ pub struct Swing {
     pub swing: f64,
     /// The team to root for, or `None` when the swing is within noise.
     pub root_for: Option<String>,
-    /// Plain-language reasons the pick helps. Missing in older files.
+    /// How much the game matters: `matters`, `small`, `negligible` or
+    /// `none`. Missing in older files.
+    #[serde(default)]
+    pub tier: String,
+    /// The plain-language explanation of the verdict. Missing in older files.
     #[serde(default)]
     pub why: Vec<String>,
+}
+
+impl Swing {
+    /// The verdict shown when there is no team to root for.
+    pub fn no_pick_label(&self) -> &'static str {
+        match self.tier.as_str() {
+            "none" => "Can't matter",
+            "small" => "Too close to call",
+            _ => "Doesn't matter",
+        }
+    }
 }
 
 /// What the rankings optimize.
@@ -80,6 +95,8 @@ pub enum Goal {
     /// The Bears winning the Super Bowl (decision 0002).
     #[default]
     SuperBowl,
+    /// The Bears making the playoffs (Jim, 2026-11-26).
+    Playoffs,
     /// All four NFC North teams reaching the divisional round (decision 0007).
     NfcNorth,
 }
@@ -88,6 +105,7 @@ impl Goal {
     pub fn swing(self, game: &Game) -> &Swing {
         match self {
             Goal::SuperBowl => &game.champion,
+            Goal::Playoffs => &game.playoffs,
             Goal::NfcNorth => &game.nfc_north,
         }
     }
@@ -96,6 +114,7 @@ impl Goal {
     pub fn odds_label(self) -> &'static str {
         match self {
             Goal::SuperBowl => "Super Bowl odds",
+            Goal::Playoffs => "playoff odds",
             Goal::NfcNorth => "NFC North odds",
         }
     }
@@ -221,7 +240,7 @@ mod tests {
     #[test]
     fn ranks_by_absolute_swing_for_the_goal() {
         let r = Rooting::parse(SAMPLE).expect("sample parses");
-        for goal in [Goal::SuperBowl, Goal::NfcNorth] {
+        for goal in [Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth] {
             let swings: Vec<f64> = r
                 .ranked(goal)
                 .iter()
@@ -232,6 +251,26 @@ mod tests {
         // The Bears' own game leads the Super Bowl ranking.
         let top = r.ranked(Goal::SuperBowl)[0];
         assert!(top.home == "CHI" || top.away == "CHI");
+        // And the playoff ranking.
+        let top = r.ranked(Goal::Playoffs)[0];
+        assert!(top.home == "CHI" || top.away == "CHI");
+    }
+
+    #[test]
+    fn no_pick_labels_follow_the_tier() {
+        let swing = |tier: &str| Swing {
+            if_home_wins: 0.5,
+            if_away_wins: 0.5,
+            swing: 0.0,
+            root_for: None,
+            tier: tier.to_string(),
+            why: Vec::new(),
+        };
+        assert_eq!(swing("none").no_pick_label(), "Can't matter");
+        assert_eq!(swing("small").no_pick_label(), "Too close to call");
+        assert_eq!(swing("negligible").no_pick_label(), "Doesn't matter");
+        // Older files have no tier.
+        assert_eq!(swing("").no_pick_label(), "Doesn't matter");
     }
 
     #[test]
