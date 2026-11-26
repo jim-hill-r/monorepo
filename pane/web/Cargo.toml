@@ -11,7 +11,10 @@ expect_used = "warn"
 unsafe_code = "forbid"
 
 [dependencies]
-dioxus = { version = "0.7.2", features = ["web"] }
+dioxus = { version = "0.7.2", features = ["web", "router"] }
+gloo-net = { version = "0.6", default-features = false, features = ["http"] }
+js-sys = "0.3"
+pane_model = { path = "../model" }
 
 [features]
 default = ["web"]
