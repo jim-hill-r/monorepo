@@ -1,0 +1,49 @@
+# Shared mise tasks for Dioxus web apps.
+#
+# Needs in the project's [tools]: rust (with the wasm32-unknown-unknown target)
+# and "cargo:dioxus-cli" pinned to the project's dioxus version. Projects with a
+# package.json (Playwright end-to-end tests) also need node.
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = "cargo clippy --all-targets -- -D warnings"
+
+[build]
+run = "cargo build --all-targets"
+
+[test]
+description = "Rust tests, then Playwright tests when the project has a package.json"
+run = [
+  "cargo test",
+  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps chromium && npm test; fi",
+]
+
+[ci]
+description = "Everything CI checks; makes no artifacts"
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy --all-targets -- -D warnings",
+  "cargo build --all-targets",
+  "cargo test",
+  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps chromium && npm test; fi",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+description = "Serve with hot reload"
+run = "dx serve --platform web"
+
+[release]
+description = "Release bundle into dist/"
+run = "dx bundle --platform web --release --out-dir dist"
+
+[deploy]
+description = "Web apps deploy through their cloudflare/ project"
+run = "echo 'deploy: this app is deployed by its cloudflare project, if it has one'"

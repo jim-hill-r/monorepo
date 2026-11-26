@@ -1,0 +1,26 @@
+# Repo root. Installs no tools and builds nothing: every project directory has
+# its own mise.toml with its tools and the standard tasks for its type
+# (standards/tasks/*.toml). Run a task in one project with
+#   cd <project> && mise run ci
+# or, from anywhere, across every project:
+#   mise run '//...:ci'
+
+experimental_monorepo_root = true
+
+[settings]
+experimental = true
+
+[tasks."affected"]
+description = "List project directories touched by changes since a base ref (JSON array)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/affected.sh"
+
+[tasks."projects"]
+description = "List every project directory (JSON array)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/affected.sh --all"
+
+[tasks."audit"]
+description = "Check every project follows the repo standards"
+dir = "{{config_root}}"
+run = "bash standards/scripts/audit.sh"

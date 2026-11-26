@@ -1,0 +1,10 @@
+# sparkhill/webapp: dioxus-web project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
+cargo-binstall = "latest"
+"cargo:dioxus-cli" = "0.6.3"
+
+[task_config]
+includes = ["../../standards/tasks/dioxus-web.toml"]

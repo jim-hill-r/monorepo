@@ -1,0 +1,45 @@
+# Shared mise tasks for Cloudflare Pages deploy projects.
+#
+# The project holds wrangler.toml, whose pages_build_output_dir points at the
+# web app's release output. Override [tasks.release] in the project's
+# mise.toml to build that web app. deploy needs CLOUDFLARE_API_TOKEN and
+# CLOUDFLARE_ACCOUNT_ID in the environment.
+# Needs in [tools]: rust, node, "npm:wrangler".
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = "cargo clippy --all-targets -- -D warnings"
+
+[build]
+run = "cargo build --all-targets"
+
+[test]
+run = "cargo test"
+
+[ci]
+description = "Everything CI checks; makes no artifacts"
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy --all-targets -- -D warnings",
+  "cargo build --all-targets",
+  "cargo test",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+run = "echo 'dev: run dev in the web app project instead'"
+
+[release]
+run = "echo 'release: override in mise.toml to build the web app this project deploys'"
+
+[deploy]
+description = "Deploy the built site to Cloudflare Pages"
+depends = ["release"]
+run = "wrangler pages deploy"
