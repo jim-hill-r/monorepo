@@ -22,6 +22,9 @@ workflows it replaces.
 - TODO (agent-generated): Render a `vhs` tape per CLI (`docs/demo.tape`) to a GIF when a PR changes user-facing output, and link it from the sticky PR comment.
 - TODO (agent-generated): Bevy UAT. Add a scripted mode to controlled_chaos (fixed timestep, seeded RNG, timed inputs, screenshots at named frames, non-zero exit on panic) and a `smoke` task in `standards/tasks/bevy-game.toml` that runs it under `xvfb-run` and records the display with `ffmpeg`.
 - TODO (agent-generated): Check whether controlled_chaos builds for `wasm32-unknown-unknown`; if it does, deploy the web build as a Pages preview per PR and to production on main.
+- TODO (agent-generated): Monthly full run. Add `monthly-uat.yml` (first Tuesday of each month plus `workflow_dispatch`) that runs `ci`, `release`, `deploy` and `smoke` for every project, including on-hold ones, and publishes the combined UAT report to `uat-reports` under `monthly-<yyyy-mm>`.
+- TODO (agent-generated): Give every shared task file a default `smoke` task that fails with "no smoke test yet", so projects without UAT show up in the monthly report.
+- TODO (agent-generated): Add a scheduled agent task after the monthly run that records a `FIX` in the `ISSUES.md` of each failed project in one draft PR, and flag any project whose last successful UAT is older than 31 days.
 - TODO (agent-ignore): Create the PostHog Cloud project and add a read-only PostHog personal API key as a repo secret. Needs Jim.
 - TODO (agent-generated): Add PostHog session replay to each production web app (production host only, inputs masked, console and network capture on) with a privacy note on each site.
 - TODO (agent-generated): Send PostHog gameplay events (session start, level or turn reached, quit, panic message) from the controlled_chaos web build.

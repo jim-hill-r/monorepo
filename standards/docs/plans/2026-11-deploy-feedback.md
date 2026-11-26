@@ -146,6 +146,29 @@ recordings.
 - Perseus sites: when sparkhill/website or profiles/jimhillr first deploys,
   give it a Pages project and reuse the website path above.
 
+## Phase 3e: monthly full run
+
+Every project must be built, released or deployed, and UAT tested at least
+once a month, even with no changes (Jim, 2026-11-26).
+
+- Add `monthly-uat.yml`, scheduled for the first Tuesday of each month and
+  runnable by hand (`workflow_dispatch`). It reuses `mise-projects.yml` with
+  every project (empty `base`), and runs `ci`, `release`, `deploy` where a
+  project has one, then `smoke`.
+- Publish the combined UAT report (screenshots, videos, transcripts) to the
+  `uat-reports` Pages project under a `monthly-<yyyy-mm>` branch and link it
+  from the run summary.
+- Every project needs a real `smoke` task for this to mean anything. Until a
+  project has one, the shared task file's default fails with "no smoke test
+  yet", so the gap shows in the report instead of passing quietly.
+- A scheduled agent task runs after the monthly workflow: it reads the
+  results, adds a `FIX` to the `ISSUES.md` of each project that failed, and
+  opens one draft PR with those items and a short summary.
+- A check in `//:audit` (or the monthly run itself) lists any project whose
+  last successful UAT is older than 31 days.
+- On-hold projects are included. If one cannot build, it gets a `FIX`, not a
+  skip.
+
 ## Phase 4: real user sessions (PostHog)
 
 Jim chose PostHog Cloud on its free tier on 2026-11-26.
@@ -197,6 +220,7 @@ Free tier limits as of 2026-11; check them before relying on them.
 | Previews and report hosting | Cloudflare Pages | Free |
 | CLI and game releases | GitHub Releases | Free |
 | Terminal recordings | `vhs`, `trycmd` | Free (open source) |
+| Monthly full run | GitHub Actions | One full build of every project a month; the largest single use of minutes, still free on public repos |
 | Smoke runs | GitHub Actions | Free on public repos; about a minute per app per run otherwise |
 | Session replay | PostHog Cloud | Free up to 5,000 recordings and 1M events a month |
 | Observability | Honeycomb | Free up to 20M events a month |

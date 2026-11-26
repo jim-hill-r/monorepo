@@ -80,7 +80,14 @@ check in a minute without a local clone.
 7. **Playwright screenshots and video are the default evidence on PRs.** Jim
    asked for this on 2026-11-26. Every UI change links the recorded report in
    the PR, which replaces taking screenshots by hand.
-8. **Everything stays inside free tiers** and runs from GitHub Actions or an
+8. **Every project is built, released or deployed, and UAT tested at least
+   once a month, even when nothing changed** (Jim, 2026-11-26). A monthly
+   scheduled workflow runs `ci`, `release`, `deploy` where a project deploys,
+   and `smoke` for every project, and publishes the recorded UAT report.
+   Toolchain drift, expired secrets and dead dependencies then show up within
+   a month instead of when someone next touches the project. A project whose
+   last successful UAT is older than 31 days is flagged.
+9. **Everything stays inside free tiers** and runs from GitHub Actions or an
    agent skill, never from a local clone.
 
 ## Consequences
@@ -102,6 +109,10 @@ check in a minute without a local clone.
   build for `wasm32` get only the recorded native run.
 - CLI telemetry is opt-in only, so most real-use feedback for CLIs comes from
   Jim's own runs and the transcript tests.
+- The monthly run deploys projects whose code did not change, so a deploy
+  must be safe to repeat, and an on-hold project still has to build. An
+  on-hold project that cannot is recorded as a `FIX` in its `ISSUES.md`
+  rather than skipped silently.
 - The smoke suite must stay short (about a minute per app) to keep Actions
   minutes low, and must not depend on seeded data in production.
 - New secrets: `HONEYCOMB_API_KEY` for CI and deploy markers, and a PostHog
