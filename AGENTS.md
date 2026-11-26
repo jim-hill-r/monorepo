@@ -129,7 +129,9 @@ repo, rather than in any one agent tool's settings.
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
-  `needs-jim`).
+  `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
+  changes what the repo uses or costs, and `needs-human` when it adds a
+  vendor or money or raises a budget (standards/docs/cost.md).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own

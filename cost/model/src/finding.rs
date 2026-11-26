@@ -16,8 +16,13 @@ pub enum Code {
     Cost005,
     /// Money over a blip's monthly budget.
     Cost006,
+    /// The code uses a service, or more of a counted limit, than the file
+    /// lists (the detectors in `standards/radar/detectors.toml`).
+    Cost007,
     /// `reviewed` is old. Always a warning, even with `--strict`.
     Cost008,
+    /// An outside host no detector or allow entry knows. Always a warning.
+    Cost009,
 }
 
 impl Code {
@@ -29,13 +34,15 @@ impl Code {
             Code::Cost004 => "COST-004",
             Code::Cost005 => "COST-005",
             Code::Cost006 => "COST-006",
+            Code::Cost007 => "COST-007",
             Code::Cost008 => "COST-008",
+            Code::Cost009 => "COST-009",
         }
     }
 
     /// Whether `--strict` (phase 3) turns this into a failure.
     pub fn can_fail(self) -> bool {
-        self != Code::Cost008
+        !matches!(self, Code::Cost008 | Code::Cost009)
     }
 }
 

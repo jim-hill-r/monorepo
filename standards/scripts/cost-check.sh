@@ -5,7 +5,9 @@
 #
 #   cost-check.sh [check] [--projects a,b]
 #       Run the per-project rules (for the listed projects, or every one) and
-#       the account-wide rules. Called by `mise run //:audit`.
+#       the account-wide rules. Called by `mise run //:audit`. Without
+#       --projects, COST_PROJECTS (comma separated, set by hooks.sh and PR
+#       CI to the affected projects) picks them when it is set, even empty.
 #   cost-check.sh render-check
 #       Fail when the limit tables in standards/docs/free-tiers.md don't
 #       match standards/radar/limits.toml. Called by standards CI.
@@ -37,6 +39,10 @@ if [ "$mode" = render-check ]; then
   if [ "$status" -eq 1 ]; then exit 1; fi
   [ "$status" -eq 0 ] || echo "warning: cost render could not run; see the output above"
   exit 0
+fi
+
+if [ $# -eq 0 ] && [ -n "${COST_PROJECTS+set}" ]; then
+  set -- --projects "$COST_PROJECTS"
 fi
 
 if ! "${cost[@]}" check --root . "$@"; then
