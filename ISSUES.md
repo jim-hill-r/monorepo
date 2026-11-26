@@ -1,6 +1,8 @@
 
 # Priority Issues
 
+- TODO (agent-generated): Make the git hooks pass in cloud sandboxes for projects with Playwright tests. In cahokia/web (and likely cookbook/web) the `ci` task runs `npx playwright install --with-deps`, which can't download Chromium there, and `dx` (dioxus-cli) can't be installed to serve the app, so every commit touching cahokia fails the pre-commit hook and agents need Jim's OK to commit with `LEFTHOOK=0`. Options: point Playwright at the sandbox's preinstalled Chromium (`/opt/pw-browsers`), or have `standards/scripts/hooks.sh` skip the npm test step with a clear notice when the browser or `dx` is unavailable, leaving it to PR CI. Update `standards/docs/git-hooks.md` to match.
+
 # Backlog
 
 Feedback on every change: see

@@ -60,7 +60,6 @@ pub fn FamilyTreeView(
     let width = layout.width() + 2.0 * MARGIN;
     let height = layout.height() + 2.0 * MARGIN;
     let view_box = format!("{} {} {width} {height}", -MARGIN, -MARGIN);
-    let row_gap = spacing.row_gap;
 
     rsx! {
         svg {
@@ -74,7 +73,7 @@ pub fn FamilyTreeView(
             style: "background-color: {BACKGROUND}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;",
             g { class: "family-tree-edges",
                 for edge in layout.edges() {
-                    EdgeLine { key: "{edge_key(edge)}", edge: edge.clone(), row_gap }
+                    EdgeLine { key: "{edge_key(edge)}", edge: edge.clone() }
                 }
             }
             g { class: "family-tree-nodes",
@@ -92,7 +91,7 @@ pub fn FamilyTreeView(
 
 /// One line between two boxes.
 #[component]
-fn EdgeLine(edge: Edge, row_gap: f64) -> Element {
+fn EdgeLine(edge: Edge) -> Element {
     let (class, dash) = match edge.kind {
         EdgeKind::ParentChild => ("family-tree-edge parent-child", None),
         EdgeKind::Spouse => ("family-tree-edge spouse", Some("6 4")),
@@ -102,7 +101,7 @@ fn EdgeLine(edge: Edge, row_gap: f64) -> Element {
             class,
             "data-from": "{edge.from}",
             "data-to": "{edge.to}",
-            d: edge_path(&edge, row_gap),
+            d: edge_path(&edge),
             fill: "none",
             stroke: LINE_COLOUR,
             stroke_width: "2",
@@ -187,26 +186,18 @@ fn edge_key(edge: &Edge) -> String {
     format!("{kind}:{}:{}", edge.from, edge.to)
 }
 
-/// SVG path data for an edge.
-///
-/// Spouse lines are straight. Parent-child lines drop from the parent,
-/// cross at the middle of the gap between the rows, then drop into the
-/// child, so siblings share one horizontal bar. When the parent and child
-/// rows are further apart than one gap (bad data), the bar sits one half gap
-/// above the child.
-fn edge_path(edge: &Edge, row_gap: f64) -> String {
-    let (start, end) = (edge.start, edge.end);
-    match edge.kind {
-        EdgeKind::Spouse => format!("M {} {} L {} {}", start.x, start.y, end.x, end.y),
-        EdgeKind::ParentChild if start.x == end.x => {
-            format!("M {} {} V {}", start.x, start.y, end.y)
-        }
-        EdgeKind::ParentChild => {
-            let direction = if end.y >= start.y { 1.0 } else { -1.0 };
-            let bar = end.y - direction * row_gap / 2.0;
-            format!("M {} {} V {bar} H {} V {}", start.x, start.y, end.x, end.y)
-        }
-    }
+/// SVG path data for an edge: a line through the corners of the route
+/// `core` worked out, so siblings hang off their own family's bar.
+fn edge_path(edge: &Edge) -> String {
+    edge.route
+        .iter()
+        .enumerate()
+        .map(|(i, point)| {
+            let command = if i == 0 { "M" } else { "L" };
+            format!("{command} {} {}", point.x, point.y)
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Birth and death years for a box, such as `1920 – 1990`, `b. 1920` or
@@ -247,6 +238,7 @@ fn fit_label(name: &str, max_chars: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cahokia_core::Point;
 
     fn person(id: &str, name: &str, sex: Sex, birth: Option<&str>, death: Option<&str>) -> Person {
         Person::new(
@@ -396,7 +388,7 @@ mod tests {
             .find(|edge| edge.kind == EdgeKind::Spouse)
             .unwrap();
         assert_eq!(
-            edge_path(edge, 80.0),
+            edge_path(edge),
             format!(
                 "M {} {} L {} {}",
                 edge.start.x, edge.start.y, edge.end.x, edge.end.y
@@ -405,27 +397,29 @@ mod tests {
     }
 
     #[test]
-    fn parent_child_path_bends_halfway_between_rows() {
+    fn parent_child_path_follows_the_route() {
         let edge = Edge {
             kind: EdgeKind::ParentChild,
             from: "a".into(),
             to: "b".into(),
-            start: cahokia_core::Point { x: 80.0, y: 60.0 },
-            end: cahokia_core::Point { x: 280.0, y: 140.0 },
+            start: Point { x: 200.0, y: 30.0 },
+            end: Point { x: 90.0, y: 140.0 },
+            route: vec![
+                Point { x: 200.0, y: 30.0 },
+                Point { x: 200.0, y: 100.0 },
+                Point { x: 90.0, y: 100.0 },
+                Point { x: 90.0, y: 140.0 },
+            ],
         };
-        assert_eq!(edge_path(&edge, 80.0), "M 80 60 V 100 H 280 V 140");
+        assert_eq!(edge_path(&edge), "M 200 30 L 200 100 L 90 100 L 90 140");
     }
 
     #[test]
-    fn parent_child_path_directly_below_is_one_segment() {
-        let edge = Edge {
-            kind: EdgeKind::ParentChild,
-            from: "a".into(),
-            to: "b".into(),
-            start: cahokia_core::Point { x: 80.0, y: 60.0 },
-            end: cahokia_core::Point { x: 80.0, y: 140.0 },
-        };
-        assert_eq!(edge_path(&edge, 80.0), "M 80 60 V 140");
+    fn couple_children_hang_from_the_spouse_line() {
+        let html = render(family());
+        // dad and mum sit side by side, so the line to each child drops
+        // from the middle of their spouse line (x 200, y 30).
+        assert!(html.contains("data-from=\"dad\" data-to=\"kid1\" d=\"M 200 30 L 200 100"));
     }
 
     #[test]

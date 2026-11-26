@@ -13,8 +13,8 @@ Dioxus components shared by the cahokia web, desktop and mobile apps.
 
 Draws a `core::FamilyTree` with the coordinates from
 `FamilyTree::tree_layout_with()`: a box per person with their name and birth
-and death years, dashed lines between spouses, and lines from parents down to
-their children. Names too long for their box are shortened with `…` and shown
+and death years, dashed lines between spouses, and lines from each couple or
+single parent down to their children, following the routes `core` works out. Names too long for their box are shortened with `…` and shown
 in full as a tooltip. An empty tree shows a short message instead.
 
 ```rust
