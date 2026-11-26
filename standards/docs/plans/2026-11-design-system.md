@@ -7,6 +7,13 @@ Started 2026-11-26 from Jim's request:
 > should have five themes: earthy, airy, professional, colorful, and 8bit
 > gamey.
 
+And, later the same day:
+
+> Our design system should also allow for us to override one of the
+> standard themes with custom theme as defined in the app. The custom themes
+> would typically to match another companies branding such as Chicago bears
+> theme.
+
 Status: **proposed**, waiting for Jim. Every open question has a recommended
 answer under [Decisions](#decisions), so "yes to all" approves the plan as
 written. The work items go into an `ISSUES.md` once it is approved, as the
@@ -25,6 +32,9 @@ be shown in any of five themes and three modes without its own CSS changing.
   constants for the games.
 - **Five themes:** earthy, airy, professional, colorful and gamey (8-bit).
 - **Three modes:** light, dark and accessible.
+- **Custom app themes.** An app can override a standard theme with its own,
+  for example to match another organisation's branding (a Chicago Bears
+  theme for bear_down), and the same checks apply to it.
 - **Accessibility is checked, not hoped for.** CI proves every theme and mode
   meets WCAG 2.2 contrast before it merges, and the apps' browser tests
   check the pages themselves.
@@ -113,7 +123,7 @@ Each theme defines every semantic token for both light and dark.
 | **Earthy** | Warm, natural, handmade | Clay, bark, sand and olive | Serif headings (system serif stack), humanist sans body | Soft corners, warm low shadows | `cahokia`, `cookbook` (both already brown) |
 | **Airy** | Light, calm, spacious | Sky blue, mist and white | System sans at lighter weights, looser line height | Large radii, almost no shadow, more spacing | `sparkhill`, `profiles/jimhillr` |
 | **Professional** | Neutral, dense, quiet | Greys with one blue accent | System sans, tight scale | Small radii, thin borders | `pane`, `evals` and other tools |
-| **Colorful** | Playful, bright | Magenta, violet, teal and sun yellow | Rounded system stack (`ui-rounded`) | Pill buttons, bold borders | `bear_down` (its navy and orange become an app accent, below) |
+| **Colorful** | Playful, bright | Magenta, violet, teal and sun yellow | Rounded system stack (`ui-rounded`) | Pill buttons, bold borders | `bear_down`, under its own Bears theme (below) |
 | **Gamey (8-bit)** | Retro console, chunky | A small fixed palette of a few flat colours, no gradients | Pixel font for headings, monospace body | Square corners, 2 px hard borders, stepped "pixel" shadows, `image-rendering: pixelated` | `controlled_chaos`, `starcraft` |
 
 Starting values for the colours that matter most, already checked against
@@ -187,12 +197,71 @@ Every app gets a small settings control (theme, light, dark or system,
 accessible on or off). In Dioxus 0.7 apps that is one shared component (see
 below); the others write the three attributes themselves.
 
-### App accents
+### Custom app themes
 
-An app may keep a brand colour, such as bear_down's orange, by overriding
-`accent` and its partners in its own sheet. The CI check reads that override
-too (see below), so a brand colour can't break contrast. Apps may not
-override any other semantic colour.
+An app can define its own theme, usually to match another organisation's
+branding (for example a Chicago Bears theme for bear_down), on top of one of
+the five standard themes. Jim asked for this on 2026-11-26.
+
+**How it works.** A custom theme lives in the app, not in `design_system`,
+as `<app>/design/theme.toml`. It names the standard theme it `extends` and
+overrides only what it needs. Everything it doesn't set (fonts, spacing,
+shape, motion, status colours, the data palette, accessible-mode rules) comes
+from the base theme, so a brand theme can be a dozen lines:
+
+```toml
+# bear_down/design/theme.toml
+name = "bears"
+label = "Chicago Bears"
+extends = "colorful"         # fonts, shape and everything unset come from here
+
+[primitives]
+navy = "#0b162a"
+orange = "#c83803"
+orange-light = "#ff8f5c"      # the brand orange is only 3.5:1 on navy
+
+[light.color]
+accent = "orange"             # 5.2:1 on white
+on-accent = "#ffffff"
+text = "navy"
+
+[dark.color]
+bg = "navy"
+surface = "#14223b"
+accent = "orange-light"       # 8.0:1 on navy, so AAA too
+on-accent = "navy"
+
+[accessible.light.color]
+accent = "#a32e02"            # 7.1:1 on white, for AAA
+```
+
+**What it may override:** any primitive and any semantic colour, the fonts
+(self-hosted in the app, under an open licence, or a system stack), and the
+radii and shadows. It may not change the spacing scale, `target-min`,
+`focus-width` or anything accessible mode turns off, so a brand can't make
+an app less usable.
+
+**What it must pass:** exactly what a standard theme passes. The contrast
+check resolves the custom theme over its base and checks its four
+combinations (light, dark, each standard and accessible). A brand colour that
+fails, as the Bears orange does as text on navy, fails CI until the theme
+gives a lighter or darker shade for that scheme. If a brand has no dark
+look, the theme can set `schemes = ["light"]` and the app shows light only;
+accessible mode is always available and never optional.
+
+**What it generates:** `design_system_cli render --app <app>` writes
+`<app>/design/theme.css`, one block per combination under
+`data-theme="bears"`, committed and checked like `dist/tokens.css`, and for a
+game a `theme.rs` of constants. The app loads it after `tokens.css`.
+
+**In the picker:** the custom theme is the app's default and is listed
+first. The app chooses, in the same file, whether the standard themes are
+also offered (`offer_standard = true`, the default), so people can still
+switch to plainer themes.
+
+**Branding care:** colours and fonts are fine to match. Logos, team marks
+and names are trademarks: an app uses them only where it already has the
+right to, and the design system never ships them.
 
 ## The source and what it generates
 
@@ -317,9 +386,10 @@ contrast next to each ratio as information only, since WCAG 3 is not final.
 Results are written to `design_system/docs/contrast.md` (generated,
 committed), a table Jim can read without running anything.
 
-App accent overrides are checked the same way: the check reads each
-consuming app's `accent` override from a `[design_system]` table in that
-app's `royalty.toml`, rather than parsing its CSS.
+Custom app themes are checked the same way: `design_system` CI checks
+every `*/design/theme.toml` in the repo, and each app's own CI runs the check
+on its theme, so a change on either side is caught. Each app with a custom
+theme lists it in `affected-by`, so the tokens changing reruns its check.
 
 ### Using the tokens (lint)
 
@@ -361,7 +431,8 @@ phase 1 is done.
 1. **pane/web** (professional): map its properties onto `--ds-` tokens, drop
    its own colour values, add the theme picker. First user of
    `design_system_dioxus`.
-2. **bear_down/web** (colorful, with its orange as the app accent).
+2. **bear_down/web**: its Bears theme, extending colorful, becomes the
+   first custom app theme, so it proves the override path early.
 
 ### Phase 3: the apps with hard-coded colours
 
@@ -431,9 +502,12 @@ Recommended answers, so "yes to all" approves the plan:
    the tech radar tables, rather than built by each app.
 5. **Every app ships all five themes and a picker**, each with a default:
    earthy for cahokia and cookbook, professional for pane and tools, colorful
-   for bear_down, airy for sparkhill and profiles, gamey for the games.
-6. **Apps may override only the accent** (with its partners), and the check
-   verifies it.
+   for bear_down until its own Bears theme lands, airy for sparkhill and profiles, gamey for the games.
+6. **Custom app themes** live in `<app>/design/theme.toml`, extend one
+   standard theme, may override colours, fonts, radii and shadows but not
+   spacing, targets, focus or accessible-mode rules, and pass the same
+   contrast check. They are the app's default, with the standard themes
+   still offered unless the app turns them off.
 7. **The user's choice is saved in the browser** (`localStorage`), never on
    a server, and follows the system's scheme and contrast settings until the
    user picks.
