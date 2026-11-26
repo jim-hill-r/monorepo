@@ -3,6 +3,44 @@
 - All projects MUST include a CONTRIBUTING.md. The CONTRIBUTING.md should include the following sections:
     - A `Getting Started` section which describes how to install the project's toolchain, how to build, and how to test.
 
+## Retros
+
+A retro looks back on a piece of work (a project phase, an incident, a
+release) and records what to change. Pane reads retros to show them and to
+light each project's Retros health signal, so they follow one shape.
+
+- **Where:** repo-wide retros in `standards/docs/retros/`, a project's retros
+  in `<project>/docs/retros/`.
+- **Name:** one file per retro, `YYYY-MM-DD-<topic>.md`, dated the day it is
+  written, such as `2026-12-01-pane-phase-0.md`.
+- **Title and date:** an `# H1` title, then a `- Date: YYYY-MM-DD` line. When
+  the line is missing, the date comes from the file name.
+- **Sections**, in this order:
+  - `## What happened`: the work and the outcome, with links to its plan,
+    PRs or incident.
+  - `## What went well`
+  - `## What to change`
+  - `## Actions`: a checkbox list, `- [ ]` for open and `- [x]` for done.
+    Each open action is also a `TODO` line in the right `ISSUES.md`, and the
+    action links to that file. Tick the action when its TODO is done.
+
+```markdown
+# Pane phase 0
+
+- Date: 2026-12-01
+
+## What happened
+
+## What went well
+
+## What to change
+
+## Actions
+
+- [ ] Run the smoke tests against PR previews ([ISSUES.md](../../ISSUES.md))
+- [x] Add a retro convention
+```
+
 ## Pull Request Standards
 
 ### UI Changes Documentation
