@@ -41,9 +41,16 @@ Mark the PR ready for review once **all** of these hold:
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
 - You've re-read the full diff and would be comfortable with a human reviewing it.
 
-Ready for review hands the PR to a human; it is not approval. If a reviewer
-requests changes, address them and re-check the list above. Move the PR back to
-draft if it stops meeting it.
+Ready for review hands the PR to a human; it is not approval.
+
+## Working on a PR that already exists
+
+Before you start any work on an existing PR (a reviewer's changes, a CI fix,
+a merge from `main`, any push), **convert it back to draft first** (Jim,
+2026-11-26). Do the work, then mark it ready for review again only once it
+meets every point of the list above, including green checks on the new head
+commit. Move the PR back to draft too if it stops meeting the list for any
+other reason.
 
 Never approve your own PR. Once it is mergeable as defined in
 `standards/docs/pull-requests.md` (not a draft, no conflict, an approving

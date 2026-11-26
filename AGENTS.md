@@ -23,6 +23,12 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
+  starts any work on an existing PR (a fix, a review answer, a merge from
+  `main`, any push), it first converts the PR to draft, and marks it ready for
+  review again only once its checks are green and it meets the
+  `open-pull-request` checklist. This applies to every PR an agent works on,
+  including in PR triage.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the

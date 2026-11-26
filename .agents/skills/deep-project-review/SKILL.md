@@ -198,5 +198,6 @@ Deliver with the `open-pull-request` skill, with these differences:
 - Request a review from `jimhillr`, and mark the PR ready for review once the
   `Review decks` check is green.
 
-When Jim leaves feedback, answer each comment in the deck (or reply on the PR
-saying why not), and keep the PR ready for review.
+When Jim leaves feedback, convert the PR to draft before changing anything,
+answer each comment in the deck (or reply on the PR saying why not), and mark
+it ready for review again once the `Review decks` check is green.
