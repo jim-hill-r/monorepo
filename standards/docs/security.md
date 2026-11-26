@@ -66,7 +66,7 @@ so there is nothing to ignore. A PR that adds an ignore line gets the
 already out: rewriting history doesn't help. Instead:
 
 1. Remove it from the code and load it from a secret instead.
-2. Add a `TODO (human)` to the root `HUMAN_ISSUES.md` to revoke and replace
+2. Add a human task in `issues/human/` to revoke and replace
    it, naming the service and the secret (never its value).
 3. Once it is revoked, add its fingerprint to `.gitleaksignore` with the date
    it was revoked, so the weekly full-history scan passes again.
@@ -80,11 +80,11 @@ Dependabot opens weekly version bumps for every lockfile.
 
 **An advisory (SEC-003, SEC-004).** Update the crate or package if you can
 (`cargo update -p <crate>`, `npm audit fix`). If you can't now, add a
-`FIX (agent-generated)` line naming the advisory IDs. If it doesn't affect
+fix issue file in `issues/` naming the advisory IDs. If it doesn't affect
 us, or no fix exists, add it to the `ignore` list of the project's
 `deny.toml` (copy `standards/deny.toml` to start one) with a reason and a
 review date. A PR that adds an ignore gets the `needs-human` label. The
-advisories found on 2026-11-26 are FIX lines in the root `ISSUES.md`. When a project
+advisories found on 2026-11-26 are `issues/threat-check-advisories-*.md`. When a project
 adds a `Cargo.lock` or `package-lock.json`, add its entry to
 `.github/dependabot.yml` in the same PR (SEC-006 fails until you do). Pinned
 dependencies from `AGENTS.md` are listed under that entry's `ignore`, so

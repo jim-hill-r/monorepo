@@ -1,0 +1,53 @@
+# Values every theme starts from. A theme file overrides what makes it
+# itself (fonts, corners, shadows, motion, the type ratio); accessible mode
+# (modes.toml) then overrides what it must. Token names here appear in CSS as
+# --ds-<name>.
+
+# The type scale: text-base is `base` rem, each step up or down multiplies or
+# divides by `ratio` (text-xs is two steps down, text-3xl four up).
+[type]
+base = 1.0
+ratio = 1.2
+
+[fonts]
+heading = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+body = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+mono = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+
+[tokens]
+leading-body = "1.5"
+leading-heading = "1.2"
+weight-body = "400"
+weight-strong = "600"
+
+# A 4 px grid.
+space-0 = "0"
+space-1 = "0.25rem"
+space-2 = "0.5rem"
+space-3 = "0.75rem"
+space-4 = "1rem"
+space-5 = "1.5rem"
+space-6 = "2rem"
+space-7 = "3rem"
+space-8 = "4rem"
+
+radius-sm = "4px"
+radius-md = "8px"
+radius-lg = "12px"
+radius-pill = "999px"
+
+shadow-1 = "0 1px 2px rgb(0 0 0 / 0.12)"
+shadow-2 = "0 2px 6px rgb(0 0 0 / 0.14)"
+shadow-3 = "0 8px 24px rgb(0 0 0 / 0.18)"
+
+border-width = "1px"
+
+# Focus rings and hit targets. 24 px is the WCAG 2.2 AA minimum target size
+# (2.5.8); accessible mode raises it to 44 px (2.5.5, AAA).
+focus-width = "2px"
+focus-offset = "2px"
+target-min = "24px"
+
+motion-fast = "120ms"
+motion-slow = "240ms"
+ease = "cubic-bezier(0.2, 0, 0, 1)"

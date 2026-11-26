@@ -17,6 +17,8 @@ Called by the three workflows below.
    (`mise run //:projects`). See `standards/scripts/affected.sh` for what
    counts as affected (files inside the project, shared task files it
    includes, Cargo path dependencies, and `# affected-by:` lines).
+   Deploy runs also list every project marked `# deploy-on-every-push`
+   (pane, whose snapshot reads the whole repo).
 2. **ci (&lt;project&gt;)** runs once per project: installs the project's tools
    with `jdx/mise-action`, restores the Rust cache, runs `mise run ci`, and
    then `mise run deploy` when the `deploy` input is true.

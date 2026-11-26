@@ -5,5 +5,5 @@
 # safe. A PR that adds a line here gets the needs-human label.
 #
 # A real secret that was committed is never just listed here: it is rotated
-# first (a TODO (human) in HUMAN_ISSUES.md), and its fingerprint is added only
+# first (a human task in issues/human/), and its fingerprint is added only
 # once the old value is dead.

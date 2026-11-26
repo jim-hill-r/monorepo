@@ -2,8 +2,8 @@
 
 Started 2026-11-26. The decision behind this plan is
 [../decisions/0001-deploy-feedback-loop.md](../decisions/0001-deploy-feedback-loop.md).
-The work items are `TODO` lines in the root [ISSUES.md](../../../ISSUES.md)
-under `# Backlog`, in the order below.
+The work items are issue files in the root [issues/](../../../issues/) with
+`epic: Feedback on every change`, in the order below.
 
 ## Goal
 
@@ -122,7 +122,7 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
   preview. A reviewer approves only after opening the preview and the report.
 - A failed production smoke run fails `push-main.yml`. The PR triage
   task, or the next agent to see it, adds a `FIX` to the project's
-  `ISSUES.md` and offers a rollback.
+  `issues/` and offers a rollback.
 
 ## Phase 3b: CLI UAT
 
@@ -186,7 +186,7 @@ latest version of main that passed CI is deployed.
   project has one, the shared task file's default fails with "no smoke test
   yet", so the gap shows in the report instead of passing quietly.
 - A scheduled agent task runs after the nightly workflow: it reads the
-  results, adds a `FIX` to the `ISSUES.md` of each project that failed, and
+  results, adds a `FIX` issue file to the `issues/` of each project that failed, and
   opens one draft PR with those items and a short summary.
 - A check lists any project whose last successful UAT is older than 2 days.
 - On-hold projects are included. If one cannot build, it gets a `FIX`, not a
@@ -207,7 +207,7 @@ Jim chose PostHog Cloud on its free tier on 2026-11-26.
   task that runs it. It reads the past week's recordings and events through
   the PostHog API (sessions with exceptions, rage clicks, dead clicks or quick
   exits), groups them by app and page, and writes `FIX` and `TODO` items with
-  recording links into the right `ISSUES.md` in one draft PR. A short summary
+  recording links as issue files in the right `issues/` folder in one draft PR. A short summary
   of the week goes into the PR body so Jim can watch the two or three
   recordings that matter.
 - When a PR fixes something found this way, its body links the recording.

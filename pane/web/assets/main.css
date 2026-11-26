@@ -330,3 +330,17 @@ h1 {
     padding: 0.75rem 1rem;
   }
 }
+
+.group h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.inline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}

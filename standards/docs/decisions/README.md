@@ -12,7 +12,8 @@ Earlier repo-wide decisions about the move to mise are listed in
 | # | Decision | Status |
 | --- | --- | --- |
 | [0001](0001-deploy-feedback-loop.md) | Preview builds, recorded smoke UAT and real-user review on free tiers | Accepted |
-| [0002](0002-human-issues.md) | Manual tasks for a human live in HUMAN_ISSUES.md, with a weekly digest | Accepted |
+| [0002](0002-human-issues.md) | Manual tasks for a human live in HUMAN_ISSUES.md, with a weekly digest | Accepted (file layout superseded by 0006) |
 | [0003](0003-eval-engine.md) | Evaluate product requirements at every stage (CI, CD, observability, chaos, judge, human) on free tiers | Accepted |
 | [0004](0004-database-engine.md) | Files first, committed SQLite next, D1 when a hosted database is needed | Accepted |
 | [0005](0005-browser-testing.md) | Keep Playwright, but run it on a browser we already have | Accepted |
+| [0006](0006-one-file-per-issue.md) | One file per issue in `issues/` folders, with a generated list | Accepted |

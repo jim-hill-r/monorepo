@@ -15,13 +15,13 @@ yanked = "deny"
 unmaintained = "workspace"
 # Each ignore says why it is safe and when to look again. Adding one gets the
 # PR the needs-human label. Fixable advisories are FIX lines in the project's
-# ISSUES.md instead.
+# issue files instead.
 ignore = []
 
 [licenses]
 # Not checked yet: deps-check.sh runs advisories and sources only, because our
 # own crates have no `license` or `publish = false` and so fail as unlicensed.
-# A TODO in standards/ISSUES.md turns this on.
+# issues/threat-check-cargo-deny-licences.md turns this on.
 # Permissive licences and weak copyleft that doesn't spread to our code.
 allow = [
   "0BSD",

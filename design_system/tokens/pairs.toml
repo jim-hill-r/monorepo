@@ -1,0 +1,74 @@
+# Which foreground sits on which background, and the minimum WCAG 2.2
+# contrast ratio in standard and accessible mode. `design_system_cli check`
+# tests every pair in every theme, scheme and mode, and fails CI if any
+# misses. Results: design_system/docs/contrast.md.
+
+[[pair]]
+why = "Body text and links (WCAG 1.4.3 AA, 1.4.6 AAA)"
+fg = ["text", "text-muted", "link"]
+bg = ["bg", "surface", "surface-raised"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Text on accent buttons and badges"
+fg = ["on-accent"]
+bg = ["accent", "accent-hover"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Status colours, used as text on the page and as fills behind their on- colour"
+fg = ["success", "warning", "danger", "info"]
+bg = ["bg", "surface", "surface-raised"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Text on status fills"
+fg = ["on-success"]
+bg = ["success"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Text on status fills"
+fg = ["on-warning"]
+bg = ["warning"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Text on status fills"
+fg = ["on-danger"]
+bg = ["danger"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Text on status fills"
+fg = ["on-info"]
+bg = ["info"]
+min = 4.5
+accessible = 7.0
+
+[[pair]]
+why = "Control borders, focus rings and the accent as a fill (WCAG 1.4.11 non-text contrast, 2.4.13 focus appearance)"
+fg = ["border-strong", "focus", "accent"]
+bg = ["bg", "surface", "surface-raised"]
+min = 3.0
+accessible = 4.5
+
+# The categorical palette for charts, map layers and game categories: each
+# at least 3:1 against the page, and far enough apart to tell from each
+# other. Distance is in OKLab, where about 0.02 is just noticeable. In
+# accessible mode the colours must also stay apart for protanopia,
+# deuteranopia and tritanopia (simulated with the Machado 2009 matrices);
+# charts should still label or pattern their series.
+[data]
+tokens = ["data-1", "data-2", "data-3", "data-4", "data-5", "data-6", "data-7", "data-8"]
+on = ["bg", "surface"]
+min = 3.0
+accessible = 3.0
+min_distance = 0.08
+accessible_distance = 0.04

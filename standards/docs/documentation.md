@@ -21,8 +21,9 @@ light each project's Retros health signal, so they follow one shape.
   - `## What went well`
   - `## What to change`
   - `## Actions`: a checkbox list, `- [ ]` for open and `- [x]` for done.
-    Each open action is also a `TODO` line in the right `ISSUES.md`, and the
-    action links to that file. Tick the action when its TODO is done.
+    Each open action is also an issue file in the right `issues/` folder,
+    and the action links to that file. Tick the action when its issue is
+    done.
 
 ```markdown
 # Pane phase 0
@@ -37,7 +38,7 @@ light each project's Retros health signal, so they follow one shape.
 
 ## Actions
 
-- [ ] Run the smoke tests against PR previews ([ISSUES.md](../../ISSUES.md))
+- [ ] Run the smoke tests against PR previews ([issue](../../issues/run-smoke-tests-against-pr-preview.md))
 - [x] Add a retro convention
 ```
 

@@ -35,7 +35,8 @@ fn write(path: PathBuf, content: &str) {
     fs::write(&path, content).unwrap_or_else(|e| panic!("write {}: {e}", path.display()));
 }
 
-/// A repo with projects `app`, `site` (affected by `app`) and `other`, pushed
+/// A repo with projects `app`, `site` (affected by `app`), `other` and
+/// `snap` (deploys on every push), pushed
 /// to a bare `origin`. Returns the clone and the first commit.
 fn setup() -> (PathBuf, String) {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -60,6 +61,10 @@ fn setup() -> (PathBuf, String) {
     write(work.join("app/mise.toml"), "# app\n");
     write(work.join("site/mise.toml"), "# affected-by: ../app\n");
     write(work.join("other/mise.toml"), "# other\n");
+    write(
+        work.join("snap/mise.toml"),
+        "# deploy-on-every-push: reads the whole repo\n",
+    );
     git(&work, &["add", "-A"]);
     git(&work, &["commit", "--quiet", "-m", "first"]);
     git(
@@ -142,4 +147,51 @@ fn test_skips_a_commit_that_is_not_on_main() {
     let (code, out) = check(&work, "other");
     assert_eq!(code, 3, "{out}");
     assert!(out.contains("not in the last"), "{out}");
+}
+
+#[test]
+fn test_deploys_an_every_push_project_at_the_tip_of_main() {
+    let (work, first) = setup();
+    push_change(&work, "other/src.txt", &first);
+    git(&work, &["checkout", "--quiet", "--detach", "origin/main"]);
+    let (code, out) = check(&work, "snap");
+    assert_eq!(code, 0, "{out}");
+}
+
+#[test]
+fn test_skips_an_every_push_project_once_any_newer_commit_lands() {
+    let (work, first) = setup();
+    push_change(&work, "other/src.txt", &first);
+    let (code, out) = check(&work, "snap");
+    assert_eq!(code, 3, "every commit changes what snap shows: {out}");
+    assert!(out.contains("deploys on every push"), "{out}");
+}
+
+fn affected(work: &Path, args: &[&str], base: &str) -> String {
+    let out = Command::new("bash")
+        .arg("standards/scripts/affected.sh")
+        .args(args)
+        .arg(base)
+        .current_dir(work)
+        .env_remove("AFFECTED_DEPLOY")
+        .env_remove("AFFECTED_CHANGED_ONLY")
+        .output()
+        .unwrap_or_else(|e| panic!("run affected.sh: {e}"));
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8_lossy(&out.stdout).trim().to_string()
+}
+
+#[test]
+fn test_deploy_runs_always_list_every_push_projects() {
+    let (work, first) = setup();
+    push_change(&work, "other/src.txt", "main");
+    assert_eq!(affected(&work, &[], &first), r#"["other"]"#);
+    assert_eq!(
+        affected(&work, &["--deploy"], &first),
+        r#"["other","snap"]"#
+    );
 }

@@ -2,7 +2,7 @@
 # Print a JSON array of project directories (dirs with a mise.toml, other than
 # the repo root) that changes since BASE touch.
 #
-#   affected.sh [--all] [--changed-only] [BASE | --files]
+#   affected.sh [--all] [--changed-only] [--deploy] [BASE | --files]
 #
 # BASE defaults to $AFFECTED_BASE, then origin/main. An empty BASE, or one of
 # all zeros (a new branch push), lists every project. With --files the changed
@@ -25,15 +25,20 @@
 #   - for a script in standards/scripts/, the projects whose mise.toml or
 #     included standards/tasks file names it.
 # Pushes to main and the nightly runs still check every project.
+# With --deploy (or AFFECTED_DEPLOY=1), which push-main.yml uses, projects
+# whose mise.toml has a `# deploy-on-every-push` line are always listed, for
+# sites built from the whole repo (pane's snapshot).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-all_flag="" changed_only="${AFFECTED_CHANGED_ONLY:-}" files_flag="" base_arg=""
+all_flag="" changed_only="${AFFECTED_CHANGED_ONLY:-}" deploy="${AFFECTED_DEPLOY:-}"
+files_flag="" base_arg=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --all) all_flag=1 ;;
     --changed-only) changed_only=1 ;;
+    --deploy) deploy=1 ;;
     --files) files_flag=1 ;;
     *) base_arg=$1 ;;
   esac
@@ -156,5 +161,12 @@ while :; do
   done
   [ $added -eq 1 ] || break
 done
+
+# Sites built from the whole repo deploy on every push to main.
+if [ -n "$deploy" ] && [ "$deploy" != 0 ]; then
+  for p in "${all[@]}"; do
+    grep -qE '^# *deploy-on-every-push' "$p/mise.toml" && hit[$p]=1
+  done
+fi
 
 printf '%s\n' "${!hit[@]}" | sed '/^$/d' | sort | to_json
