@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
-use crate::card::{Card, CardCategory};
-use crate::card_library::CardLibrary;
-use crate::deck::{Deck, DeckBuilder};
+use crate::card::Card;
+use crate::card_library::{CardLibrary, default_action_deck};
+use crate::deck::Deck;
 use crate::rules::{Player, RulesEngine, TurnPhase};
 use crate::state::AppState;
 
@@ -119,81 +119,22 @@ pub const STARTING_HAND_SIZE: usize = 3;
 const EMPTY_HAND_CARD: &str = "Empty Hand";
 
 fn setup(mut commands: Commands) {
-    // Build a card library with the available cards, using proper categories
-    // from the rulebook.
-    let mut library = CardLibrary::new();
-    library.register(Card::with_category(
-        "Ace of Spades",
-        14,
-        CardCategory::Technology,
-    ));
-    library.register(Card::with_category("NASA", 13, CardCategory::Government));
-    library.register(Card::with_category(
-        "Biodome",
-        12,
-        CardCategory::Environment,
-    ));
-    library.register(Card::with_category(
-        "Stock Market",
-        11,
-        CardCategory::Economy,
-    ));
-    library.register(Card::with_category("Asteroid", 10, CardCategory::Crisis));
-    library.register(Card::with_category("Engineer", 9, CardCategory::Profession));
-    library.register(Card::with_category("Suburb", 8, CardCategory::Civilian));
-    library.register(Card::with_category(
-        "Space Station",
-        7,
-        CardCategory::Society,
-    ));
-    library.register(Card::with_category(
-        "Solar Panel",
-        6,
-        CardCategory::Technology,
-    ));
-    library.register(Card::with_category(
-        "City Hall",
-        5,
-        CardCategory::Government,
-    ));
-    library.register(Card::with_category("Forest", 4, CardCategory::Environment));
-    library.register(Card::with_category("Trade Route", 3, CardCategory::Economy));
-    library.register(Card::with_category("Flood", 2, CardCategory::Crisis));
-    library.register(Card::with_category("Farmer", 1, CardCategory::Profession));
-
+    let library = CardLibrary::default_library();
     info!(
         "Card library contains {} cards: {}",
         library.len(),
         library.card_names().join(", ")
     );
 
-    // Build the shared action deck (max 2 copies of any card).
-    let mut builder = DeckBuilder::new().with_max_copies(2);
-    for name in [
-        "Ace of Spades",
-        "NASA",
-        "Biodome",
-        "Stock Market",
-        "Asteroid",
-        "Engineer",
-        "Suburb",
-        "Space Station",
-        "Solar Panel",
-        "City Hall",
-        "Forest",
-        "Trade Route",
-        "Flood",
-        "Farmer",
-        "Ace of Spades",
-        "NASA",
-        "Biodome",
-        "Stock Market",
-    ] {
-        if let Some(card) = library.get(name) {
-            builder.add_card(card);
+    // The unit tests in `card_library` guarantee the default deck builds, so
+    // this error path only catches a broken card list during development.
+    let mut action_deck: Deck = match default_action_deck(&library) {
+        Ok(deck) => deck,
+        Err(err) => {
+            error!("Could not build the action deck: {err}");
+            return;
         }
-    }
-    let mut action_deck: Deck = builder.build();
+    };
     action_deck.shuffle();
 
     info!(

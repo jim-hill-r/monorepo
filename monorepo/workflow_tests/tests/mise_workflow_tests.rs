@@ -129,3 +129,149 @@ fn test_no_workflow_commits_build_artifacts() {
         );
     }
 }
+
+/// Projects that publish a site: they include the shared cloudflare-pages tasks.
+fn deploying_projects() -> Vec<std::path::PathBuf> {
+    let root = get_repo_root();
+    let mut found = Vec::new();
+    let mut stack = vec![root.clone()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir).unwrap_or_else(|e| panic!("read_dir: {}", e)) {
+            let path = entry.unwrap_or_else(|e| panic!("entry: {}", e)).path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if path.is_dir() {
+                if !name.starts_with('.') && name != "target" && name != "node_modules" {
+                    stack.push(path);
+                }
+            } else if name == "mise.toml" {
+                let content = fs::read_to_string(&path).unwrap_or_default();
+                if content.contains("standards/tasks/cloudflare-pages.toml") {
+                    found.push(path);
+                }
+            }
+        }
+    }
+    found.sort();
+    found
+}
+
+/// The string value of `key` in the `[env]` table of a mise.toml.
+fn env_value(content: &str, key: &str) -> Option<String> {
+    let mut in_env = false;
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_env = line == "[env]";
+            continue;
+        }
+        if !in_env {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            if k.trim() == key {
+                return Some(v.trim().trim_matches('"').to_string());
+            }
+        }
+    }
+    None
+}
+
+#[test]
+fn test_every_deploying_project_records_its_production_url() {
+    let projects = deploying_projects();
+    assert!(
+        !projects.is_empty(),
+        "expected at least one cloudflare project"
+    );
+    for path in projects {
+        let content = fs::read_to_string(&path).unwrap_or_default();
+        let url = env_value(&content, "DEPLOY_URL")
+            .unwrap_or_else(|| panic!("{} should set [env] DEPLOY_URL", path.display()));
+        assert!(
+            url.starts_with("https://") && !url.ends_with('/'),
+            "{}: DEPLOY_URL should be an https URL without a trailing slash, got {url}",
+            path.display()
+        );
+    }
+}
+
+#[test]
+fn test_deploys_use_the_production_environment_with_its_url() {
+    let (content, parsed) = load("mise-projects.yml");
+    let env = &parsed["jobs"]["project"]["environment"];
+    let name = env["name"].as_str().unwrap_or_default();
+    assert!(
+        name.contains("'production'") && name.contains("inputs.deploy"),
+        "deploying jobs should use the production environment, got {name:?}"
+    );
+    let url = env["url"].as_str().unwrap_or_default();
+    assert!(
+        url.contains("deploy_urls"),
+        "the environment should link the project's DEPLOY_URL, got {url:?}"
+    );
+    assert!(
+        content.contains("DEPLOY_URL"),
+        "the plan job should read each project's DEPLOY_URL"
+    );
+}
+
+#[test]
+fn test_deploy_writes_the_url_to_the_job_summary() {
+    let (_, parsed) = load("mise-projects.yml");
+    let steps = parsed["jobs"]["project"]["steps"]
+        .as_sequence()
+        .unwrap_or_else(|| panic!("project job has no steps"));
+    let deploy = steps
+        .iter()
+        .find(|s| {
+            s["run"]
+                .as_str()
+                .is_some_and(|r| r.contains("mise run deploy"))
+        })
+        .unwrap_or_else(|| panic!("no deploy step"));
+    let run = deploy["run"].as_str().unwrap_or_default();
+    assert!(
+        run.contains("GITHUB_STEP_SUMMARY"),
+        "deploy should write a job summary"
+    );
+    assert!(
+        run.contains("pipefail"),
+        "a failed deploy must still fail the step when its output is piped"
+    );
+}
+
+#[test]
+fn test_push_main_can_redeploy_one_project_at_a_ref() {
+    let (_, push) = load("push-main.yml");
+    let inputs = &push["on"]["workflow_dispatch"]["inputs"];
+    assert!(
+        !inputs["project"].is_null(),
+        "dispatch needs a project input"
+    );
+    assert!(!inputs["ref"].is_null(), "dispatch needs a ref input");
+    let job = calls_mise_projects(&push);
+    assert!(
+        job["with"]["project"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("inputs.project"),
+        "the project input should be passed on"
+    );
+    assert!(
+        job["with"]["ref"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("inputs.ref"),
+        "the ref input should be passed on"
+    );
+
+    let (content, projects) = load("mise-projects.yml");
+    let call_inputs = &projects["on"]["workflow_call"]["inputs"];
+    assert!(!call_inputs["project"].is_null());
+    assert!(!call_inputs["ref"].is_null());
+    let checkouts = content.matches("ref: ${{ inputs.ref }}").count();
+    assert_eq!(
+        checkouts, 2,
+        "both the plan and project jobs should check out the requested ref"
+    );
+}

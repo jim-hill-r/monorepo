@@ -2,10 +2,12 @@
 #
 # The project holds wrangler.toml, whose pages_build_output_dir points at the
 # web app's release output. Override [tasks.release] in the project's
-# mise.toml to build that web app. deploy needs CLOUDFLARE_API_TOKEN and
-# CLOUDFLARE_ACCOUNT_ID in the environment. The first deploy creates the
-# Pages project named in wrangler.toml, but only while the account stays
-# inside its free tier budget (standards/docs/free-tiers.md).
+# mise.toml to build that web app, and set the production URL as DEPLOY_URL
+# in its [env] (CI links it from the GitHub deployment). deploy needs
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment.
+# The first deploy creates the Pages project named in wrangler.toml, but
+# only while the account stays inside its free tier budget
+# (standards/docs/free-tiers.md).
 # Needs in [tools]: rust, node, "npm:wrangler".
 
 [fmt-check]

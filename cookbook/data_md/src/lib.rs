@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 // Export the embedded module for WASM/web targets
 pub mod embedded;
+mod parse;
 
 /// A markdown-based implementation of RecipeReader and RecipeWriter
 /// that reads and writes recipe data from/to markdown files.
@@ -91,180 +92,9 @@ impl MarkdownRecipeStore {
             .and_then(|s| s.to_str())
             .ok_or_else(|| RecipeError::InvalidData("Invalid file name".to_string()))?;
 
-        // Use file name as ID
+        // Use file name as ID and fallback title
         let id = file_stem.to_string();
-
-        // Parse title from first heading or use file name
-        let title = self.extract_title(content).unwrap_or_else(|| id.clone());
-
-        // Try to extract UUID from frontmatter, generate a new one if not found or invalid
-        let uuid = self.extract_uuid(content).unwrap_or_else(Uuid::new_v4);
-
-        // Create recipe with extracted or generated UUID
-        let mut recipe = Recipe::new_with_uuid(id, uuid, title);
-
-        // Parse optional fields from markdown
-        recipe.description = self.extract_description(content);
-        recipe.ingredients = self.extract_ingredients(content);
-        recipe.instructions = self.extract_instructions(content);
-        recipe.prep_time_minutes = self.extract_prep_time(content);
-        recipe.cook_time_minutes = self.extract_cook_time(content);
-        recipe.servings = self.extract_servings(content);
-        recipe.tags = self.extract_tags(content);
-
-        Ok(recipe)
-    }
-
-    /// Extracts the title from markdown (first # heading)
-    fn extract_title(&self, content: &str) -> Option<String> {
-        for line in content.lines() {
-            let trimmed = line.trim();
-            if let Some(title) = trimmed.strip_prefix("# ") {
-                return Some(title.trim().to_string());
-            }
-        }
-        None
-    }
-
-    /// Extracts description (text before first section)
-    fn extract_description(&self, content: &str) -> Option<String> {
-        let mut desc_lines = Vec::new();
-        let mut in_description = false;
-
-        for line in content.lines() {
-            let trimmed = line.trim();
-
-            // Skip title
-            if trimmed.starts_with("# ") {
-                in_description = true;
-                continue;
-            }
-
-            // Stop at first section heading
-            if trimmed.starts_with("## ") {
-                break;
-            }
-
-            if in_description && !trimmed.is_empty() {
-                desc_lines.push(trimmed.to_string());
-            }
-        }
-
-        if desc_lines.is_empty() {
-            None
-        } else {
-            Some(desc_lines.join(" "))
-        }
-    }
-
-    /// Extracts ingredients from ## Ingredients section
-    fn extract_ingredients(&self, content: &str) -> Vec<String> {
-        self.extract_list_section(content, "## Ingredients")
-    }
-
-    /// Extracts instructions from ## Instructions section
-    fn extract_instructions(&self, content: &str) -> Vec<String> {
-        self.extract_list_section(content, "## Instructions")
-    }
-
-    /// Extracts a list from a markdown section
-    fn extract_list_section(&self, content: &str, section_header: &str) -> Vec<String> {
-        let mut items = Vec::new();
-        let mut in_section = false;
-
-        for line in content.lines() {
-            let trimmed = line.trim();
-
-            if trimmed == section_header {
-                in_section = true;
-                continue;
-            }
-
-            // Stop at next section
-            if in_section && trimmed.starts_with("## ") {
-                break;
-            }
-
-            if in_section {
-                // Handle both - and numbered lists
-                if let Some(item) = trimmed.strip_prefix("- ") {
-                    items.push(item.trim().to_string());
-                } else if let Some(pos) = trimmed.find(". ") {
-                    // Check if it's a numbered list (e.g., "1. ")
-                    if trimmed[..pos].chars().all(|c| c.is_ascii_digit()) {
-                        items.push(trimmed[pos + 2..].trim().to_string());
-                    }
-                }
-            }
-        }
-
-        items
-    }
-
-    /// Extracts prep time from metadata
-    fn extract_prep_time(&self, content: &str) -> Option<u32> {
-        self.extract_time_field(content, "Prep Time:")
-    }
-
-    /// Extracts cook time from metadata
-    fn extract_cook_time(&self, content: &str) -> Option<u32> {
-        self.extract_time_field(content, "Cook Time:")
-    }
-
-    /// Extracts a time field in minutes
-    fn extract_time_field(&self, content: &str, field: &str) -> Option<u32> {
-        for line in content.lines() {
-            if let Some(value) = line.strip_prefix(field) {
-                let value = value.trim();
-                // Parse "X minutes" or just "X"
-                let num_str = value.split_whitespace().next()?;
-                return num_str.parse::<u32>().ok();
-            }
-        }
-        None
-    }
-
-    /// Extracts servings from metadata
-    fn extract_servings(&self, content: &str) -> Option<u32> {
-        for line in content.lines() {
-            if let Some(value) = line.strip_prefix("Servings:") {
-                let value = value.trim();
-                let num_str = value.split_whitespace().next()?;
-                return num_str.parse::<u32>().ok();
-            }
-        }
-        None
-    }
-
-    /// Extracts tags from metadata
-    fn extract_tags(&self, content: &str) -> Vec<String> {
-        for line in content.lines() {
-            if let Some(value) = line.strip_prefix("Tags:") {
-                return value
-                    .split(',')
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-            }
-        }
-        Vec::new()
-    }
-
-    /// Extracts UUID from metadata
-    /// Returns None if no UUID field is found or if the UUID is invalid
-    fn extract_uuid(&self, content: &str) -> Option<Uuid> {
-        for line in content.lines() {
-            if let Some(value) = line.strip_prefix("UUID:") {
-                let uuid_str = value.trim();
-                // Try to parse the UUID
-                if let Ok(uuid) = Uuid::parse_str(uuid_str) {
-                    return Some(uuid);
-                }
-                // If parsing fails, return None (caller will generate a new UUID)
-                return None;
-            }
-        }
-        None
+        Ok(parse::recipe(content, id.clone(), id))
     }
 
     /// Loads all plan markdown files from the content directory
@@ -308,44 +138,7 @@ impl MarkdownRecipeStore {
 
     /// Parses plan data from markdown content
     fn parse_plan_markdown(&self, content: &str, week: u32) -> PlanResult<Plan> {
-        // Extract recipe UUIDs from the markdown content
-        let recipe_uuids = self.extract_plan_recipe_uuids(content)?;
-
-        // Validate we have exactly 7 UUIDs
-        if recipe_uuids.len() != 7 {
-            return Err(PlanError::InvalidData(format!(
-                "Plan for week {} must have exactly 7 recipe UUIDs, found {}",
-                week,
-                recipe_uuids.len()
-            )));
-        }
-
-        Plan::new_checked(week, recipe_uuids).map_err(|e| {
-            PlanError::InvalidData(format!("Failed to create plan for week {}: {}", week, e))
-        })
-    }
-
-    /// Extracts recipe UUIDs from the markdown content (new format)
-    fn extract_plan_recipe_uuids(&self, content: &str) -> PlanResult<Vec<Uuid>> {
-        // Look for the "Recipe UUIDs: X, Y, Z" line
-        for line in content.lines() {
-            let trimmed = line.trim();
-            if let Some(uuids_str) = trimmed.strip_prefix("Recipe UUIDs:") {
-                let uuids: Result<Vec<Uuid>, _> = uuids_str
-                    .split(',')
-                    .map(|s| {
-                        Uuid::parse_str(s.trim())
-                            .map_err(|e| PlanError::InvalidData(format!("Invalid UUID: {}", e)))
-                    })
-                    .collect();
-
-                return uuids;
-            }
-        }
-
-        Err(PlanError::InvalidData(
-            "Could not find 'Recipe UUIDs:' line in plan markdown".to_string(),
-        ))
+        parse::plan(content, week)
     }
 
     /// Writes a recipe to a markdown file
