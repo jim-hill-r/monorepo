@@ -11,7 +11,6 @@ Work the phases in order; within a phase, top to bottom.
 
 ### Phase 0: foundations
 
-- TODO (agent-generated): Add a `pane/model` library crate to the pane workspace with the shared serde types (`Snapshot`, `Project`, `WorkItem`, `HumanIssue`, `Deliverable`, `Review`, `Retro`, `Signal`, `Health`) and a snapshot format version.
 - TODO (agent-generated): Add a `pane/snapshot` binary crate that reads a repo checkout and writes `snapshot.json`: projects from `[monorepo].config_roots`, each project's type (its `standards/tasks/<type>.toml` include), `DEPLOY_URL`, README summary, on-hold and priority status from the root `ISSUES.md`, and every `TODO`/`FIX` line in every `ISSUES.md` with its file, line, section, epic heading and tags. Test the parsers against fixture files.
 - TODO (agent-generated): Extend `pane_snapshot` to read `HUMAN_ISSUES.md` (text, added date, what it unblocks, age), `TODO`/`FIX` code comments (skipping `target/` and `node_modules/`), and the plans, decisions and retros folders (title, date, status, path).
 - TODO (agent-generated): Run `pane_snapshot` in pane's `release` task before `dx bundle`, writing into the web app's static assets as `/data/snapshot.json` (never committed), and record the commit and time it was taken.

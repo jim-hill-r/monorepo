@@ -1,0 +1,3 @@
+[project]
+name = "pane_model"
+description = "Shared serde types for pane's snapshot and API data."
