@@ -1,0 +1,10 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {"address": "cloudflare_api_token.deploy", "mode": "managed", "type": "cloudflare_api_token", "name": "deploy", "provider_name": "registry.opentofu.org/cloudflare/cloudflare",
+     "change": {"actions": ["create"], "before": null,
+       "after": {"name": "deploy", "policies": [{"effect": "allow"}]},
+       "after_unknown": {"id": true, "value": true}, "before_sensitive": false,
+       "after_sensitive": {"policies": [{}], "value": true}}}
+  ]
+}

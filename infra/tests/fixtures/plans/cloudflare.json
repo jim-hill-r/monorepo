@@ -1,0 +1,15 @@
+{
+  "format_version": "1.2",
+  "planned_values": {"root_module": {"resources": [
+    {"address": "cloudflare_pages_project.cookbook", "mode": "managed", "type": "cloudflare_pages_project", "name": "cookbook", "provider_name": "registry.opentofu.org/cloudflare/cloudflare", "values": {"name": "jimhillr-cookbook"}, "sensitive_values": {}},
+    {"address": "cloudflare_pages_project.pane", "mode": "managed", "type": "cloudflare_pages_project", "name": "pane", "provider_name": "registry.opentofu.org/cloudflare/cloudflare", "values": {"name": "jimhillr-pane"}, "sensitive_values": {}},
+    {"address": "cloudflare_workers_cron_trigger.nightly", "mode": "managed", "type": "cloudflare_workers_cron_trigger", "name": "nightly", "provider_name": "registry.opentofu.org/cloudflare/cloudflare", "values": {"schedules": [{"cron": "0 6 * * *"}, {"cron": "0 18 * * *"}]}, "sensitive_values": {}},
+    {"address": "cloudflare_workers_cron_trigger.weekly", "mode": "managed", "type": "cloudflare_workers_cron_trigger", "name": "weekly", "provider_name": "registry.opentofu.org/cloudflare/cloudflare", "values": {"schedules": [{"cron": "0 6 * * 1"}]}, "sensitive_values": {}},
+    {"address": "data.cloudflare_zone.main", "mode": "data", "type": "cloudflare_zone", "name": "main", "provider_name": "registry.opentofu.org/cloudflare/cloudflare", "values": {}, "sensitive_values": {}}
+  ]}},
+  "resource_changes": [
+    {"address": "cloudflare_pages_project.pane", "mode": "managed", "type": "cloudflare_pages_project", "name": "pane", "provider_name": "registry.opentofu.org/cloudflare/cloudflare",
+     "change": {"actions": ["create"], "before": null, "after": {"name": "jimhillr-pane"}, "after_unknown": {"id": true}, "before_sensitive": false, "after_sensitive": {}}}
+  ],
+  "configuration": {"root_module": {}}
+}

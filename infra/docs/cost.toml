@@ -1,0 +1,9 @@
+# infra: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Rust synth of Terraform JSON, checked in PR CI with OpenTofu. No vendor API calls yet: the plan and apply workflows (decision 0007) come next. $0 a month."
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "PR CI runs `mise run ci` (build, tests, synth check, `tofu validate`), about a minute a run on a standard runner."
+notes = "The plan and apply workflows will add a minute or two per PR and merge that touches infra/, and one drift plan a week. They will also use Auth0 machine-to-machine tokens (about 30 to 60 a month, decision 0007), which needs Jim to raise the auth0_m2m_tokens_per_month budget from 0 first."
