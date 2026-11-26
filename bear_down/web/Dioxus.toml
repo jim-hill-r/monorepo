@@ -1,4 +1,7 @@
 [application]
+# Copied to the web bundle root, so public/rooting.json is served at /rooting.json
+# (dist/public/rooting.json after `dx bundle --out-dir dist`).
+public_dir = "public"
 
 [web.app]
 # HTML title tag content
