@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
  *   npm test -- sidebar.spec.ts
  */
 
-test.describe('Sidebar Component', () => {
+test.describe('Sidebar Component @req:CAHO-005', () => {
   test('should display sidebar toggle button in header', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

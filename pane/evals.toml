@@ -1,0 +1,177 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+
+prefix = "PANE"
+
+# PANE-001: Today shows what needs Jim
+
+[[eval]]
+id = "human-issues-oldest-first"
+requirement = "PANE-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "sorts_human_issues_oldest_first_undated_last"
+
+[[eval]]
+id = "new-since-last-visit"
+requirement = "PANE-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "finds_items_added_since_the_baseline"
+
+[[eval]]
+id = "today-page"
+requirement = "PANE-001"
+stages = ["ci"]
+kind = "playwright"
+description = "Today and Human issues list what is waiting, with or without localStorage."
+
+[[eval]]
+id = "today-page-live"
+requirement = "PANE-001"
+stages = ["cd"]
+kind = "http"
+path = "/"
+
+# PANE-002: Pane shows the repo as it is on main
+
+[[eval]]
+id = "snapshot-projects"
+requirement = "PANE-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "builds_projects_from_config_roots"
+
+[[eval]]
+id = "snapshot-issue-files"
+requirement = "PANE-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "collects_every_issues_file_and_skips_build_dirs"
+
+[[eval]]
+id = "snapshot-human-issues-and-docs"
+requirement = "PANE-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "collects_human_issues_docs_and_retros"
+
+[[eval]]
+id = "snapshot-before-bundle"
+requirement = "PANE-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "release_builds_the_snapshot_before_the_bundle"
+
+[[eval]]
+id = "footer-commit-and-age"
+requirement = "PANE-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "footer_shows_short_commit_and_age"
+
+[[eval]]
+id = "home-loads-snapshot"
+requirement = "PANE-002"
+stages = ["ci"]
+kind = "playwright"
+
+[[eval]]
+id = "snapshot-live"
+requirement = "PANE-002"
+stages = ["cd"]
+kind = "http"
+path = "/data/snapshot.json"
+body_contains = "\"version\""
+
+# PANE-003: All open work can be found and filtered
+
+[[eval]]
+id = "work-filters"
+requirement = "PANE-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "filters_work_by_each_field"
+
+[[eval]]
+id = "work-order"
+requirement = "PANE-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "sorts_fixes_first_then_priority_then_projects_then_repo_wide"
+
+[[eval]]
+id = "work-github-links"
+requirement = "PANE-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "links_lines_on_github_at_the_commit"
+
+[[eval]]
+id = "work-page"
+requirement = "PANE-003"
+stages = ["ci"]
+kind = "playwright"
+
+# PANE-004: Every deliverable is a click away
+
+[[eval]]
+id = "deliverables-newest-first"
+requirement = "PANE-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "groups_deliverables_newest_first"
+
+[[eval]]
+id = "release-downloads"
+requirement = "PANE-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "builds_release_download_links"
+
+[[eval]]
+id = "deliverables-page"
+requirement = "PANE-004"
+stages = ["ci"]
+kind = "playwright"
+
+# PANE-005: Each project has one page with everything about it
+
+[[eval]]
+id = "project-work-with-sub-projects"
+requirement = "PANE-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "project_work_includes_sub_projects_fixes_first"
+
+[[eval]]
+id = "project-page"
+requirement = "PANE-005"
+stages = ["ci"]
+kind = "playwright"
+
+# PANE-006: Pane is easy and safe to use on a phone
+
+[[eval]]
+id = "markdown-raw-html-is-text"
+requirement = "PANE-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "shows_raw_html_as_text"
+
+[[eval]]
+id = "markdown-blocks-script-urls"
+requirement = "PANE-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "blocks_script_urls"
+
+[[eval]]
+id = "nav-and-not-found"
+requirement = "PANE-006"
+stages = ["ci"]
+kind = "playwright"
+description = "Not yet checked at phone width: no test sets a 375 px viewport."
+
+# PANE-007 to PANE-010 have no evals yet: they come with the review
+# dashboard plan's phases 2 to 7.
