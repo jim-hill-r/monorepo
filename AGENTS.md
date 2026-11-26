@@ -16,7 +16,8 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   `standards/docs/issue-management.md`.
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
-  full checklist.
+  full checklist. Don't hand a PR to a human (or present it as awaiting their
+  review) until its checks are green and it is out of draft.
 
 ## Project rules and notes
 
