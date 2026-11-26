@@ -74,11 +74,11 @@ deploy shows on its commit and in the repo's Deployments list, and the job
 summary lists the production URL, the URL of that exact deployment and the
 commit. Smoke tests and PR comments read the same `DEPLOY_URL`.
 
-A `*.pages.dev` name is global, so when another account already has
-`<name>.pages.dev`, Cloudflare gives the new project a suffixed subdomain
-(pane is `pane-dbc`, controlled_chaos is `controlled-chaos-5v4`). After a
-project's first deploy, take `DEPLOY_URL` from the "Deployment complete"
-line in the deploy job's log, not from the name in `wrangler.toml`.
+A Cloudflare Pages project is named `jimhillr-<project>`, so its
+`DEPLOY_URL` is `https://jimhillr-<project>.pages.dev` (see "Cloudflare
+Pages projects" in [naming.md](naming.md)). If Cloudflare still gives
+a project a suffixed subdomain, because another account has the name, take
+`DEPLOY_URL` from the "Deployment complete" line in the deploy job's log.
 
 A deploy runs only after `mise run ci` passed in the same job, and only for
 the latest version of main: `standards/scripts/deploy-check.sh` skips it

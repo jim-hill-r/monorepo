@@ -1,13 +1,15 @@
 //! The `cost` command. See `cost/README.md`.
 
 mod check;
+mod git;
 mod render;
+mod summary;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Result, bail};
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -22,7 +24,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Check every project's docs/cost.toml (COST-001 to COST-006, COST-008).
+    /// Check every project's docs/cost.toml (COST-001 to COST-009).
     Check {
         /// Repo root. Defaults to the nearest directory above the current
         /// one that holds standards/radar/limits.toml.
@@ -39,6 +41,25 @@ enum Command {
         #[arg(long)]
         strict: bool,
         /// The date to check against, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<NaiveDate>,
+    },
+    /// Compare the working tree with the merge base of --base and print the
+    /// PR's cost summary as Markdown: cost files changed, services, usage,
+    /// money and budgets that moved, and the labels the PR gets.
+    Summary {
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The branch or commit the change is compared with, such as
+        /// origin/main.
+        #[arg(long)]
+        base: String,
+        /// Also write the summary as JSON here (labels, needs_human, ...).
+        #[arg(long)]
+        json: Option<PathBuf>,
+        /// The date to price recurring money in, YYYY-MM-DD. Defaults to
+        /// today (UTC).
         #[arg(long)]
         today: Option<NaiveDate>,
     },
@@ -89,6 +110,24 @@ fn run(cli: Cli) -> Result<ExitCode> {
             } else {
                 ExitCode::SUCCESS
             })
+        }
+        Command::Summary {
+            root,
+            base,
+            json,
+            today,
+        } => {
+            let root = find_root(root)?;
+            let today = today.unwrap_or_else(|| chrono::Utc::now().date_naive());
+            let month = cost_model::Month::new(today.year(), today.month())
+                .ok_or_else(|| anyhow::anyhow!("today's month is out of range"))?;
+            let summary = summary::summary(&root, &base, month)?;
+            print!("{}", cost_model::render_summary(&summary));
+            if let Some(path) = json {
+                std::fs::write(&path, serde_json::to_string_pretty(&summary)? + "\n")
+                    .map_err(|e| anyhow::anyhow!("writing {}: {e}", path.display()))?;
+            }
+            Ok(ExitCode::SUCCESS)
         }
         Command::Render { root, check } => {
             let root = find_root(root)?;

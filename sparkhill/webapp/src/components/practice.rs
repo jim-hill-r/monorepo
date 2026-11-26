@@ -1,4 +1,5 @@
 use crate::canvas_js::CANVAS_JS;
+use crate::patterns::demonstration_js;
 use crate::state::{AppState, PracticePhase};
 use dioxus::document::eval;
 use dioxus::prelude::*;
@@ -27,34 +28,12 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         state.write().start_practice();
         let expr = state.read().expression.clone();
         if let Some(ref letter) = expr {
-            // Fetch pattern and animate the letter demonstration
+            // Animate the letter demonstration from the bundled patterns
             let letter = letter.clone();
             phase.set(PracticePhase::Watching);
             eval(&format!(
-                r#"window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{
-                    window._eelAnimDone = true;
-                }});
-                // Try to fetch and animate - falls back to guidelines-only if unavailable
-                (async function() {{
-                    try {{
-                        const url = 'https://eel3-data.s3.us-east-2.amazonaws.com/patterns/{letter}/master.json';
-                        const r = await fetch(url);
-                        const data = await r.json();
-                        const bnd = data.boundary || {{
-                            top: 0, ascenderLine: data.dimensions.upperGuidePixels,
-                            capLine: data.dimensions.upperGuidePixels,
-                            meanLine: data.dimensions.middleGuidePixels,
-                            baseLine: data.dimensions.lowerGuidePixels,
-                            beardLine: data.dimensions.lowestGuidePixels,
-                            bottom: data.dimensions.heightPixels
-                        }};
-                        window.eelCanvas.drawLetter(JSON.stringify([{{letter: data.letter, path: data.path, boundary: bnd}}]), 'Tracing');
-                    }} catch(e) {{
-                        // No pattern data available - animation complete immediately
-                        window._eelAnimDone = true;
-                    }}
-                }})();
-                "#
+                "window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{ window._eelAnimDone = true; }}); {}",
+                demonstration_js(&letter)
             ));
         }
     };
@@ -89,26 +68,8 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 feedback.set("Great job!".to_string());
                 phase.set(PracticePhase::Watching);
                 eval(&format!(
-                    r#"window.eelCanvas.clear();
-                    (async function() {{
-                        try {{
-                            const url = 'https://eel3-data.s3.us-east-2.amazonaws.com/patterns/{next}/master.json';
-                            const r = await fetch(url);
-                            const data = await r.json();
-                            const bnd = data.boundary || {{
-                                top: 0, ascenderLine: data.dimensions.upperGuidePixels,
-                                capLine: data.dimensions.upperGuidePixels,
-                                meanLine: data.dimensions.middleGuidePixels,
-                                baseLine: data.dimensions.lowerGuidePixels,
-                                beardLine: data.dimensions.lowestGuidePixels,
-                                bottom: data.dimensions.heightPixels
-                            }};
-                            window.eelCanvas.drawLetter(JSON.stringify([{{letter: data.letter, path: data.path, boundary: bnd}}]), 'Tracing');
-                        }} catch(e) {{
-                            window._eelAnimDone = true;
-                        }}
-                    }})();
-                    "#
+                    "window.eelCanvas.clear(); {}",
+                    demonstration_js(&next)
                 ));
             }
             let _ = letter;

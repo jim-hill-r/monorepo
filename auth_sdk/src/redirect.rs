@@ -61,8 +61,8 @@ mod tests {
     #[test]
     fn redirect_url_is_origin_plus_slash() {
         assert_eq!(
-            redirect_url_for_origin("https://cahokia-web.pages.dev"),
-            "https://cahokia-web.pages.dev/"
+            redirect_url_for_origin("https://jimhillr-cahokia.pages.dev"),
+            "https://jimhillr-cahokia.pages.dev/"
         );
         assert_eq!(
             redirect_url_for_origin("http://localhost:8080"),
@@ -73,8 +73,8 @@ mod tests {
     #[test]
     fn redirect_url_does_not_double_the_slash() {
         assert_eq!(
-            redirect_url_for_origin("https://cahokia-web.pages.dev/"),
-            "https://cahokia-web.pages.dev/"
+            redirect_url_for_origin("https://jimhillr-cahokia.pages.dev/"),
+            "https://jimhillr-cahokia.pages.dev/"
         );
     }
 

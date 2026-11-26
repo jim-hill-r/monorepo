@@ -286,7 +286,7 @@ pub fn check_account(
     findings
 }
 
-fn money(cents: u64) -> String {
+pub(crate) fn money(cents: u64) -> String {
     format!("${}.{:02}", cents / 100, cents % 100)
 }
 

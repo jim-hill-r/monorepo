@@ -18,14 +18,14 @@
     "auth0_client": {
       "cahokia": {
         "allowed_logout_urls": [
-          "https://cahokia-web.pages.dev",
-          "https://*.cahokia-web.pages.dev",
+          "https://jimhillr-cahokia.pages.dev",
+          "https://*.jimhillr-cahokia.pages.dev",
           "http://localhost:8080"
         ],
         "app_type": "spa",
         "callbacks": [
-          "https://cahokia-web.pages.dev/",
-          "https://*.cahokia-web.pages.dev/",
+          "https://jimhillr-cahokia.pages.dev/",
+          "https://*.jimhillr-cahokia.pages.dev/",
           "http://localhost:8080/"
         ],
         "dynamic": {
@@ -54,8 +54,8 @@
         },
         "name": "cahokia",
         "web_origins": [
-          "https://cahokia-web.pages.dev",
-          "https://*.cahokia-web.pages.dev",
+          "https://jimhillr-cahokia.pages.dev",
+          "https://*.jimhillr-cahokia.pages.dev",
           "http://localhost:8080"
         ]
       },

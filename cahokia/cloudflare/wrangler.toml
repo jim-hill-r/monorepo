@@ -1,6 +1,6 @@
 # Cloudflare Pages configuration for cahokia web deployment
 
-name = "cahokia-web"
+name = "jimhillr-cahokia"
 compatibility_date = "2024-12-20"
 # `mise run release` in ../web runs dx bundle --out-dir dist, which puts the site in dist/public.
 pages_build_output_dir = "../web/dist/public"

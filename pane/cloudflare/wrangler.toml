@@ -1,6 +1,6 @@
 # Cloudflare Pages configuration for pane deployment
 
-name = "pane"
+name = "jimhillr-pane"
 compatibility_date = "2024-12-20"
 # `mise run release` in ../web runs dx bundle --out-dir dist, which puts the site in dist/public.
 pages_build_output_dir = "../web/dist/public"
