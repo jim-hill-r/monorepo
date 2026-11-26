@@ -32,7 +32,8 @@ Runs on every push to `main`: `mise run ci` then `mise run deploy` in each
 project the push changed. Only the cloudflare projects deploy anything; they
 build their web app and publish it with `wrangler pages deploy`, which needs
 the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
-Runs are queued, never cancelled, so a deploy is not cut short.
+Runs have no concurrency group, so every push gets its own CI and deploy;
+a group would let GitHub cancel queued runs and skip them.
 
 ### nightly-ci.yml
 
