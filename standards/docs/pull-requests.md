@@ -62,9 +62,13 @@ A PR is safe only if all of these hold:
   tests or CI.
 - It doesn't touch `.github/workflows`, secrets, permissions, credentials or
   auth code, unless the change is trivially safe.
-- Dependency bumps are patch or minor only. A 0.x minor bump (0.8 to 0.9)
-  counts as major. Group PRs are checked bump by bump, because a group can hide
-  a major bump.
+- A major bump (including a 0.x minor bump, such as 0.8 to 0.9, and a GitHub
+  Actions major such as `actions/checkout` 6 to 7) is safe only when every
+  project it touches passes CI and the release notes list no breaking change
+  that CI wouldn't catch (a data format, a deploy setting or runtime
+  behavior). Patch and minor bumps only need green checks. Group PRs are
+  checked bump by bump, because a group can hide a major bump. A bump in a
+  workflow's `uses:` line counts as trivially safe under the rule above.
 - It doesn't bump a pinned dependency listed in `AGENTS.md`.
 
 ### Dependabot PRs
@@ -73,10 +77,20 @@ A PR is safe only if all of these hold:
 | --- | --- |
 | Safe | Approve, then squash-merge. |
 | Already mergeable (approved and green) | Squash-merge. |
-| Conflicting or behind `main` | Comment `@dependabot rebase`. |
+| Behind `main` but not conflicting | Nothing. Being behind doesn't block a merge. |
+| Conflicting, and only Dependabot has committed to it | Nothing. Dependabot rebases its own PRs when they conflict. |
+| Conflicting, and someone else has committed to it | Close it with a one-line comment. Dependabot opens a fresh PR on its next run. |
+| Checks only from a workflow that no longer exists | Update the branch from `main` so current CI runs. |
 | `main` already has the same or a newer version, or another open PR supersedes it | Close with a one-line comment saying which. |
 | Bumps a pinned dependency | Close with a comment naming the pin. |
-| Major bump, failing check, or anything else not safe | Add the `needs-human` label and leave it open. |
+| A check fails because of the bump (code no longer compiles, a test fails) | Report it as needing a code fix. An agent thread fixes the code in its own PR, which includes the bump, and closes this one as superseded. No label. |
+| Anything else not safe (a breaking change CI can't catch, auth or secrets changes that aren't trivial) | Add the `needs-human` label and say in the report what a person has to decide. |
+
+Triage never comments `@dependabot ...` itself: Claude's GitHub safety
+filter rewrites bot commands in agent comments so they don't run. Triage
+also never merges `main` into a Dependabot branch except to re-run outdated
+checks, because any commit from someone else stops Dependabot from rebasing
+that PR.
 
 ### Human PRs
 
