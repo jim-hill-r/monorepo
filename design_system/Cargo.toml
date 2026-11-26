@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["model", "cli", "palette"]
+members = ["model", "cli", "palette", "dioxus", "preview"]
 
 [workspace.package]
 version = "0.1.0"

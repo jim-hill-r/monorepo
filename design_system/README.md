@@ -13,11 +13,11 @@ The latest contrast results are in [docs/contrast.md](docs/contrast.md).
 
 ## Status
 
-Phase 1 (the source and the check) is in progress. Done: the token files,
-the model and CLI, the generated CSS, JSON and Rust outputs, custom app
-themes and the contrast check. Still to come in phase 1: the Dioxus theme
-picker and self-hosted fonts, and the preview site. Then apps adopt it, pane
-and bear_down first.
+Phase 1 (the source and the check) is done: the token files, the model and
+CLI, the generated CSS, JSON and Rust outputs, custom app themes, the
+contrast check, the Dioxus picker with self-hosted fonts, and the preview
+site at <https://design-system.pages.dev>. Next, apps adopt it, pane and
+bear_down first.
 
 ## Using it
 
@@ -49,6 +49,25 @@ Three attributes on `<html>` pick the combination:
 
 `prefers-reduced-motion` turns motion off in every mode, and Windows high
 contrast (`forced-colors: active`) swaps the colour tokens for system colours.
+
+**Dioxus 0.7 apps** use the `design_system_dioxus` crate, which embeds
+the CSS, the fonts and the theme script, so nothing is copied:
+
+```rust
+use design_system_dioxus::{Stylesheets, ThemePicker};
+
+rsx! {
+    Stylesheets { default_theme: "professional" }
+    ThemePicker {}
+}
+```
+
+`ThemePicker` is a labelled form (theme; colours: system, light or dark;
+accessible mode: system, on or off) that saves the choice in `localStorage`.
+`Stylesheets` applies the saved choice once the app starts. To apply it
+before first paint, also inline `design_system_dioxus::head_script(...)` in
+the app's `index.html`. Pages without Dioxus inline `js/theme.js` the same
+way, with `data-ds-default` (and optionally `data-ds-themes`) on `<html>`.
 
 **Games and native UI** use the `design_system_palette` crate, which has every
 value as a constant and no dependencies:
@@ -117,9 +136,13 @@ tokens/
   pairs.toml         which foreground sits on which background, and the minimum ratio
   themes/*.toml      the five themes: primitives, then [light.color] and [dark.color]
 css/elements.css     element defaults, after the reset, in dist/base.css
+js/theme.js          applies the saved theme choice; inline it in <head>
 model/               design_system_model: parse, resolve, contrast maths
 cli/                 design_system_cli: render and check
 palette/             design_system_palette: the values as Rust constants (generated)
+dioxus/              design_system_dioxus: Stylesheets, ThemePicker, use_theme for Dioxus 0.7
+dioxus/fonts/        Atkinson Hyperlegible and Press Start 2P (SIL OFL), latin subsets
+preview/             the preview site (its own project, deployed to Cloudflare Pages)
 dist/                tokens.css, base.css, tokens.json (generated, committed)
 docs/contrast.md     every checked pair (generated, committed)
 ```
@@ -127,3 +150,7 @@ docs/contrast.md     every checked pair (generated, committed)
 Everything under `dist/`, `palette/src/generated.rs` and `docs/contrast.md`
 is generated: edit the TOML, then run `mise run render`. CI fails if they
 don't match.
+
+The fonts live in `dioxus/fonts/` rather than a top-level `fonts/` (as the
+plan sketched) because Dioxus's `asset!` only reads files inside the crate
+that uses it. Other stacks copy them from there, as the preview does.

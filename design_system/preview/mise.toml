@@ -1,0 +1,26 @@
+# design_system/preview: cloudflare-pages project. Standard tasks: ci, fix,
+# build, test, dev, release, deploy. Run with: mise run <task>
+# The preview site: every design system token in every theme, scheme and
+# mode, built from ../tokens. Deployed to Cloudflare Pages (free plan).
+# affected-by: ..
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+node = "24"
+"npm:wrangler" = "4"
+
+[env]
+# Production URL. CI shows it on the GitHub deployment and in the job summary.
+DEPLOY_URL = "https://design-system.pages.dev"
+
+[task_config]
+includes = ["../../standards/tasks/cloudflare-pages.toml"]
+
+[tasks.release]
+description = "Build the preview site into dist/"
+run = "cargo run --quiet -p design_system_preview -- dist"
+
+[tasks.dev]
+description = "Build the preview site and serve it on http://localhost:8000"
+depends = ["release"]
+run = "python3 -m http.server 8000 --directory dist"
