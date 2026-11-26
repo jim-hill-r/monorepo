@@ -16,7 +16,10 @@ How it works:
    stack, `out/<stack>/main.tf.json`, with sorted keys. That file is
    committed and reviewed; CI fails if it differs from a fresh synth.
 4. **OpenTofu** plans and applies `out/<stack>/`. This program never calls a
-   vendor API.
+   vendor API. State is kept in the private R2 bucket `jimhillr-infra-state`,
+   one object per stack with a lock file, and encrypted
+   ([decision 0009](../standards/docs/decisions/0009-opentofu-state-on-r2.md));
+   it is never committed to git.
 
 | Stack | Manages | Credentials |
 | --- | --- | --- |

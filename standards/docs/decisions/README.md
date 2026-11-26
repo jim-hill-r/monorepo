@@ -17,4 +17,5 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0004](0004-database-engine.md) | Files first, committed SQLite next, D1 when a hosted database is needed | Accepted |
 | [0005](0005-browser-testing.md) | Keep Playwright, but run it on a browser we already have | Accepted |
 | [0006](0006-one-file-per-issue.md) | One file per issue in `issues/` folders, with a generated list | Accepted |
-| [0007](0007-infrastructure-as-code.md) | Infrastructure as code: Rust synthesizes Terraform JSON, OpenTofu applies it | Accepted |
+| [0007](0007-infrastructure-as-code.md) | Infrastructure as code: Rust synthesizes Terraform JSON, OpenTofu applies it | Accepted (state location changed by 0009) |
+| [0009](0009-opentofu-state-on-r2.md) | OpenTofu state in Cloudflare R2, the one payment-method exception | Accepted |

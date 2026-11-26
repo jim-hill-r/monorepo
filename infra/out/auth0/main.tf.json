@@ -106,8 +106,41 @@
   },
   "terraform": {
     "backend": {
-      "local": {
-        "path": "../../state/auth0.tfstate"
+      "s3": {
+        "bucket": "jimhillr-infra-state",
+        "key": "auth0.tfstate",
+        "region": "auto",
+        "skip_credentials_validation": true,
+        "skip_metadata_api_check": true,
+        "skip_region_validation": true,
+        "skip_requesting_account_id": true,
+        "skip_s3_checksum": true,
+        "use_lockfile": true,
+        "use_path_style": true
+      }
+    },
+    "encryption": {
+      "key_provider": {
+        "pbkdf2": {
+          "state": {
+            "passphrase": "${var.tofu_state_passphrase}"
+          }
+        }
+      },
+      "method": {
+        "aes_gcm": {
+          "state": {
+            "keys": "key_provider.pbkdf2.state"
+          }
+        }
+      },
+      "plan": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
+      },
+      "state": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
       }
     },
     "required_providers": {
@@ -115,6 +148,13 @@
         "source": "auth0/auth0",
         "version": "1.63.0"
       }
+    }
+  },
+  "variable": {
+    "tofu_state_passphrase": {
+      "nullable": false,
+      "sensitive": true,
+      "type": "string"
     }
   }
 }

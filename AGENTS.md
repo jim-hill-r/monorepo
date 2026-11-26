@@ -100,7 +100,7 @@ repo, rather than in any one agent tool's settings.
     same PR.
 - **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
   plan, except Claude Code (budget $25 a month). Each technology's monthly
-  budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method or raise a spending
+  budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method (the one exception: Cloudflare, for the R2 state bucket, decision 0009) or raise a spending
   or cache limit, and when a limit is near, stop rather than pay. Anything
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in
