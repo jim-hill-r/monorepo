@@ -187,6 +187,12 @@ Option A. Each item is a default, so Jim can answer "yes to all".
    fails, or `terrars` stops being maintained, fall back to hand-written
    serde structs for the ten or so resource types we use (A2); our
    constructs sit on top either way, so the switch doesn't touch them.
+   **We support `terrars`** (Jim, 2026-11-26): "if we find bugs in terrars
+   it is a library we are willing to support and commit code to." A bug
+   we hit is fixed upstream with a pull request to `andrewbaxter/terrars`,
+   not worked around in our code; until it is released, `infra` uses a
+   git dependency on the fixed commit, noted in its `Cargo.toml`. Its
+   single maintainer is a reason to contribute, not a reason to drop it.
 3. **The synthesized `.tf.json` is committed**, and CI fails if it doesn't
    match a fresh synth, the same way the tech radar's tables are generated
    and checked. That is the reviewed, declarative artifact, and applying it

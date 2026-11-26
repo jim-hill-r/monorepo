@@ -1036,7 +1036,7 @@
     "quadrant": "Languages & Frameworks",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Proposed in decision 0007 as the typed layer under the infra crate's constructs, pending a phase 1 spike on build time; hand-written structs are the fallback.",
+    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Proposed in decision 0007 as the typed layer under the infra crate's constructs, pending a phase 1 spike on build time; hand-written structs are the fallback. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26).",
     "exemplars": [],
     "sources": [
       "standards/docs/decisions/0007-infrastructure-as-code.md"
