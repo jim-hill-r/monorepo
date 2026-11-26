@@ -19,3 +19,13 @@ if [ -n "${CI:-}" ] && command -v apt-get >/dev/null; then
   sudo apt-get install -y llvm-18-dev libpolly-18-dev libzstd-dev
 fi
 '''
+
+# The git hooks skip this project when LLVM 18's headers are missing; see
+# standards/docs/git-hooks.md.
+[tasks."ci:check-tools"]
+description = "Fail, naming what is missing, when ci can't build here"
+run = '''
+[ -f "$LLVM_SYS_181_PREFIX/include/llvm-c/Core.h" ] && exit 0
+echo "LLVM 18 headers not found in $LLVM_SYS_181_PREFIX (apt: llvm-18-dev libpolly-18-dev libzstd-dev)"
+exit 1
+'''

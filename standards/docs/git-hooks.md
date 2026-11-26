@@ -21,13 +21,14 @@ This installs lefthook through mise (`mise exec lefthook@<version>`, the
 
 Both hooks run `standards/scripts/hooks.sh`, which runs `mise run //:audit`
 and then `mise run ci` in each affected project (installing its tools with
-`mise install` first). Projects are picked by `standards/scripts/affected.sh`,
-the same script PR CI uses.
+`mise install` first). Projects are picked by
+`standards/scripts/affected.sh --local`, the script PR CI uses, with one
+difference described below.
 
 | Hook | Projects | Notes |
 | --- | --- | --- |
-| `pre-commit` | touched by the staged and unstaged changes | Records each passing project against the commit's tree. |
-| `pre-push` | touched since `origin/main` (or `AFFECTED_BASE`): the list PR CI checks | Skips projects whose `ci` already passed in a pre-commit of the same tree, so commit-then-push runs CI once. |
+| `pre-commit` | touched by the staged and unstaged changes; when committing a merge, the projects the branch changes compared with the branch merged in (`MERGE_HEAD`), so merging `main` doesn't check `main`'s changes | Records each passing project against the commit's tree. |
+| `pre-push` | touched since `origin/main` (or `AFFECTED_BASE`), which it fetches first so a stale copy doesn't make everything merged since look changed | Skips projects whose `ci` already passed in a pre-commit of the same tree, so commit-then-push runs CI once. |
 
 Every project runs even after one fails, and the hook prints the failures at
 the end. `mise run fix` in a project fixes most format and lint failures.
@@ -36,8 +37,18 @@ You can run either check by hand without committing:
 `bash standards/scripts/hooks.sh pre-commit` (or `pre-push`).
 
 A change to the root `mise.toml`, `standards/scripts/` or the mise CI
-workflows affects every project, so its hooks run CI in every project, just
-as PR CI does.
+workflows makes PR CI check every project. The hooks don't: with `--local`
+such a change checks only the projects that test those files, `standards`
+(its own scripts and `standards/tests/`) and `monorepo` (the workflow tests,
+through the `# affected-by:` lines in its `mise.toml`). PR CI remains the
+check that every project still builds. A Markdown file outside any project,
+such as `AGENTS.md`, checks only `monorepo`.
+
+Before running a project's tools, the hook clears git's own variables
+(`GIT_DIR`, `GIT_INDEX_FILE` and the rest of `git rev-parse --local-env-vars`),
+so tests that run git in their own temporary repos aren't pointed at this one.
+
+`standards/tests/hooks.test.sh` tests these cases.
 
 ## Cloud sandboxes
 
@@ -66,15 +77,36 @@ mise's version service. Follow these steps there; each one is safe to repeat.
    the same gap fails the task. Say in the PR that the Playwright tests ran
    only in PR CI.
 
-If a check still fails only because the sandbox lacks a tool (a "command not
-found", not a failure your change caused), commit with `LEFTHOOK=0`, and say
-in the PR which checks failed that way. PR CI then runs them.
+6. **System libraries and downloads:** a project whose build needs something
+   a sandbox can't install defines a `ci:check-tools` task that fails,
+   naming what is missing. The hook runs it first and, when it fails, skips
+   the project with "not checked here, PR CI checks it" instead of failing
+   the commit, and lists the skipped projects at the end. Say in the PR which
+   projects were skipped. Today that is:
+
+   | Project | Needs | Defined in |
+   | --- | --- | --- |
+   | `controlled_chaos`, `starcraft` | alsa and libudev (`pkg-config`) | `standards/tasks/bevy-game.toml` |
+   | `my_lang` | LLVM 18 headers | `my_lang/mise.toml` |
+   | `luggage` | the Swagger UI zip from GitHub, or `SWAGGER_UI_DOWNLOAD_URL` | `luggage/mise.toml` |
+
+   `cahokia/web` and `cookbook/web` need none: without `dx` their Rust
+   checks still run and the Playwright step skips itself (step 5). Add a
+   `ci:check-tools` task to any other project with the same problem, rather
+   than skipping the hooks.
+
+With these steps an agent needs no `LEFTHOOK=0` for a missing tool. If a
+check still fails only because the sandbox lacks something (a "command not
+found", not a failure your change caused), add the missing `ci:check-tools`
+check in the same PR. As a last resort, commit with `LEFTHOOK=0` without
+asking first, and say in the PR which checks didn't run. PR CI then runs
+them.
 
 ## Skipping
 
 `LEFTHOOK=0 git commit ...` (or `git push --no-verify`) skips the hooks.
 Agents never skip them to get a change through, only for a tool the sandbox
-can't install (see above). A human may skip them for a
+can't install that no `ci:check-tools` task covers yet (see above). A human may skip them for a
 work-in-progress commit, but then must run the pre-push check before opening
 or updating a PR.
 

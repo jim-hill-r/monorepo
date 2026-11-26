@@ -6,3 +6,16 @@ rust = { version = "stable", components = "rustfmt,clippy" }
 
 [task_config]
 includes = ["../standards/tasks/rust.toml"]
+
+# utoipa-swagger-ui downloads the Swagger UI zip from GitHub at build time
+# (or copies SWAGGER_UI_DOWNLOAD_URL). The git hooks skip this project when
+# neither is reachable; see standards/docs/git-hooks.md.
+[tasks."ci:check-tools"]
+description = "Fail, naming what is missing, when ci can't build here"
+run = '''
+[ -n "${SWAGGER_UI_DOWNLOAD_URL:-}" ] && exit 0
+url=https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.32.6.zip
+curl -sfIL --max-time 20 -o /dev/null "$url" && exit 0
+echo "can't download the Swagger UI zip utoipa-swagger-ui builds in ($url); set SWAGGER_UI_DOWNLOAD_URL to a copy"
+exit 1
+'''

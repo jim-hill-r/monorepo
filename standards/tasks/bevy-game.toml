@@ -12,6 +12,20 @@ if [ -n "${CI:-}" ] && command -v apt-get >/dev/null; then
 fi
 '''
 
+["ci:check-tools"]
+description = "Fail, naming what is missing, when ci can't build here"
+# The git hooks skip the project when this fails (standards/docs/git-hooks.md);
+# in CI, ci:deps installs the libraries instead.
+run = '''
+missing=""
+for lib in alsa libudev; do
+  pkg-config --exists "$lib" 2>/dev/null || missing="$missing $lib"
+done
+[ -z "$missing" ] && exit 0
+echo "system libraries missing:$missing (apt: libasound2-dev libudev-dev)"
+exit 1
+'''
+
 [fmt-check]
 run = "cargo fmt --all --check"
 
