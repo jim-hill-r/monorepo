@@ -64,7 +64,7 @@ cargo test
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash
-cast ci
+mise run ci
 ```
 
 ## License

@@ -13,7 +13,7 @@ echo ""
 echo "Checking required files..."
 required_files=(
     "$PROJECT_DIR/Cargo.toml"
-    "$PROJECT_DIR/Cast.toml"
+    "$PROJECT_DIR/mise.toml"
     "$PROJECT_DIR/wrangler.toml"
     "$PROJECT_DIR/README.md"
     "$PROJECT_DIR/ISSUES.md"
@@ -45,14 +45,14 @@ if ! grep -q "name = \"jimhillr-cookbook\"" "$PROJECT_DIR/wrangler.toml"; then
 fi
 echo "  ✓ wrangler.toml has valid syntax"
 
-# Test 4: Verify Cast.toml configuration
+# Test 4: Verify mise.toml uses the cloudflare-pages tasks
 echo ""
-echo "Validating Cast.toml..."
-if ! grep -q 'framework = "cloudflare-pages"' "$PROJECT_DIR/Cast.toml"; then
-    echo "Error: Cast.toml missing or incorrect framework configuration"
+echo "Validating mise.toml..."
+if ! grep -q 'standards/tasks/cloudflare-pages.toml' "$PROJECT_DIR/mise.toml"; then
+    echo "Error: mise.toml does not include standards/tasks/cloudflare-pages.toml"
     exit 1
 fi
-echo "  ✓ Cast.toml has valid configuration"
+echo "  ✓ mise.toml has valid configuration"
 
 echo ""
 echo "=== All validation tests passed ==="

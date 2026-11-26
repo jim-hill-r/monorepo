@@ -98,7 +98,7 @@ Find Cargo.toml files that reference a specific dependency:
 find . -name "Cargo.toml" -exec grep -l "pattern" {} \;
 ```
 
-**Important**: Always verify if metadata (like `[package.metadata.cast]`) is just configuration vs actual dependencies.
+**Important**: Always verify if metadata (like a `[package.metadata.*]` table) is just configuration vs actual dependencies.
 
 ## Creating New Issues
 

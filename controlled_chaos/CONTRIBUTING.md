@@ -4,11 +4,11 @@
 
 ### Install Toolchain
 
-Use the Cast install command to install all required dependencies:
+Install the toolchain with mise (see the root AGENTS.md "Dev commands"):
 
 ```bash
 cd controlled_chaos
-cast install
+mise install
 ```
 
 This will automatically install:
@@ -39,5 +39,5 @@ cargo test
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash
-cast ci
+mise run ci
 ```

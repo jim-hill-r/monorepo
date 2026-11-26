@@ -4,11 +4,11 @@
 
 ### Install Toolchain
 
-Use the Cast install command to install all required dependencies:
+Install the toolchain with mise (see the root AGENTS.md "Dev commands"):
 
 ```bash
 cd my_lang
-cast install
+mise install
 ```
 
 This will automatically install:
@@ -34,10 +34,10 @@ cargo test
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash
-cast ci
+mise run ci
 ```
 
 ## Notes
 
-- This project requires LLVM 18. Run `cast install` to install it automatically.
+- This project requires LLVM 18. On Linux, `mise run ci:deps` installs it in CI (apt); install it locally from your package manager.
 - On macOS, you may need to set `LLVM_SYS_180_PREFIX=$(brew --prefix llvm@18)` in your environment.

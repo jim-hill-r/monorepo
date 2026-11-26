@@ -73,8 +73,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     // `mise run dev` is the project's standard dev task (dx serve on port 8080).
-    // Falls back to `cast run` while the Cast CI still runs these tests.
-    command: 'if command -v mise >/dev/null 2>&1; then mise run dev; else cast run; fi',
+    command: 'mise run dev',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 600 * 1000, // first dx build in CI is slow

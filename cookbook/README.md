@@ -195,10 +195,10 @@ and serve:
 dx serve
 ```
 
-Or use the Cast CLI from the workspace root:
+Or use mise from the `web` directory:
 
 ```bash
-cast run
+mise run dev
 ```
 
 ## Building

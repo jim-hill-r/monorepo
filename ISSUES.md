@@ -4,7 +4,6 @@
 # Backlog
 
 # Priority Projects
-- cast
 - cookbook
 - homer
 - controlled_chaos

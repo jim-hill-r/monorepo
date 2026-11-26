@@ -17,17 +17,17 @@ The `web` project is the browser-based frontend for the Cookbook application. It
 Before running this project, you need to have:
 - Rust toolchain installed (visit [rustup.rs](https://rustup.rs))
 - Dioxus CLI (`dx`) installed
-- Cast CLI for toolchain management (included in this monorepo)
+- [mise](https://mise.jdx.dev) for toolchain management
 
 ### Installing Required Tools
 
 #### Automated Installation (Recommended)
 
-Use the Cast install command to install all required dependencies:
+Install the toolchain (Rust, the wasm target and a matching `dx`) with mise:
 
 ```bash
 cd cookbook/web
-cast install
+mise install
 ```
 
 This will automatically install:
@@ -141,7 +141,8 @@ web/
 ├── tests/
 │   ├── routing.spec.ts  # Playwright tests for routes
 │   └── README.md        # Testing documentation
-├── Cargo.toml       # Rust dependencies, project metadata, and Cast configuration
+├── Cargo.toml       # Rust dependencies and project metadata
+├── mise.toml        # Tools and standard tasks (mise run ci, dev, ...)
 ├── Dioxus.toml      # Dioxus build configuration
 ├── package.json     # npm package for Playwright tests
 ├── playwright.config.ts  # Playwright test configuration
