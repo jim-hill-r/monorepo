@@ -1,0 +1,3 @@
+# evals: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Rust CLI that checks requirements and evals; reads only repo files. $0 a month."

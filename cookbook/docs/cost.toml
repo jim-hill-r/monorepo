@@ -1,0 +1,17 @@
+# cookbook: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Static Dioxus site on Cloudflare Pages with Auth0 sign-in. $0 a month."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the static site (Pages project `jimhillr-cookbook`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+[service.usage]
+pages_projects = 1
+
+[[service]]
+blip = "Auth0"
+plan = "free"
+why = "Sign-in (shared free tenant with cahokia)."
+[service.usage]
+auth0_mau = 5

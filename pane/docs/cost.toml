@@ -1,0 +1,11 @@
+# pane: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Dioxus review dashboard on Cloudflare Pages. $0 a month."
+notes = "Phase 7 of pane's plan adds a Worker route (/api/free-tiers); list Cloudflare Workers here when it lands."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the static site (Pages project `pane`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+[service.usage]
+pages_projects = 1

@@ -30,18 +30,36 @@
 # free limit: the script clamps them.
 set -euo pipefail
 
-# Free limits (as of 2026-11) and our budgets, well inside them.
-PAGES_PROJECTS_LIMIT=100
-WORKERS_LIMIT=100
-CRON_TRIGGERS_LIMIT=5
-PAGES_PROJECTS_BUDGET=${FREE_TIERS_PAGES_PROJECTS_BUDGET:-25}
-WORKERS_BUDGET=${FREE_TIERS_WORKERS_BUDGET:-25}
-CRON_TRIGGERS_BUDGET=${FREE_TIERS_CRON_TRIGGERS_BUDGET:-3}
+# Free limits and our budgets, well inside them, from standards/radar/limits.toml
+# (the one place they are kept; see standards/docs/free-tiers.md). Found next to
+# this script, so fixture repos in the tests use the real numbers.
+LIMITS_FILE=${FREE_TIERS_LIMITS_FILE:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/../radar" && pwd)/limits.toml"}
+
+# limit KEY FIELD: the whole-number FIELD (free or budget) of the [[limit]]
+# whose key is KEY. Every field is on its own `name = value` line.
+limit() {
+  local value
+  value=$(awk -v key="$1" -v field="$2" '
+    /^\[\[limit\]\]/ { current = "" }
+    $1 == "key" { gsub(/"/, "", $3); current = $3 }
+    current == key && $1 == field { print $3; exit }
+  ' "$LIMITS_FILE")
+  [[ "$value" =~ ^[0-9]+$ ]] || { echo "free-tiers: no whole-number $2 for limit $1 in $LIMITS_FILE" >&2; exit 1; }
+  echo "$value"
+}
+
+[ -f "$LIMITS_FILE" ] || { echo "free-tiers: $LIMITS_FILE not found" >&2; exit 1; }
+PAGES_PROJECTS_LIMIT=$(limit pages_projects free)
+WORKERS_LIMIT=$(limit workers free)
+CRON_TRIGGERS_LIMIT=$(limit cron_triggers free)
+PAGES_PROJECTS_BUDGET=${FREE_TIERS_PAGES_PROJECTS_BUDGET:-$(limit pages_projects budget)}
+WORKERS_BUDGET=${FREE_TIERS_WORKERS_BUDGET:-$(limit workers budget)}
+CRON_TRIGGERS_BUDGET=${FREE_TIERS_CRON_TRIGGERS_BUDGET:-$(limit cron_triggers budget)}
 # GitHub: 10 GB cache per repo (evicted, never billed, unless the limit is
 # raised) and 500 MB artifact storage on the Free plan if the repo is ever
-# private. Warn well before either.
-GITHUB_CACHE_WARN_BYTES=${FREE_TIERS_GITHUB_CACHE_WARN_BYTES:-$((8 * 1024 * 1024 * 1024))}
-GITHUB_ARTIFACTS_WARN_BYTES=${FREE_TIERS_GITHUB_ARTIFACTS_WARN_BYTES:-$((400 * 1024 * 1024))}
+# private. Warn at our budget, well before either.
+GITHUB_CACHE_WARN_BYTES=${FREE_TIERS_GITHUB_CACHE_WARN_BYTES:-$(limit github_cache_bytes budget)}
+GITHUB_ARTIFACTS_WARN_BYTES=${FREE_TIERS_GITHUB_ARTIFACTS_WARN_BYTES:-$(limit github_artifact_bytes budget)}
 
 clamp() { if [ "$1" -gt "$2" ]; then echo "$2"; else echo "$1"; fi; }
 PAGES_PROJECTS_BUDGET=$(clamp "$PAGES_PROJECTS_BUDGET" "$PAGES_PROJECTS_LIMIT")
