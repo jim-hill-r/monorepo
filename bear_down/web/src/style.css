@@ -52,6 +52,8 @@ ol { list-style: none; margin: 0; padding: 0; }
 .teams, .root { font-weight: 600; }
 .meta, .secondary { color: var(--muted); font-size: 0.85rem; }
 .impact { color: var(--orange); font-weight: 600; }
+.why { flex-basis: 100%; margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 0.85rem; }
+.why li { margin: 2px 0; }
 .neutral .root { color: var(--muted); font-weight: 400; }
 .status { color: var(--muted); }
 .error { color: var(--orange); }

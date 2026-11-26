@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T14:47:09Z",
+  "generated_at": "2026-11-26T16:25:18Z",
   "season": 2026,
   "week": 12,
   "simulations": 100000,
@@ -18,38 +18,49 @@
       "ties": 0
     },
     "odds": {
-      "playoffs": 0.90655,
-      "divisional_round": 0.58039,
-      "conference_game": 0.30114,
-      "super_bowl": 0.14524,
-      "champion": 0.06826
+      "playoffs": 0.92252,
+      "divisional_round": 0.6034,
+      "conference_game": 0.31946,
+      "super_bowl": 0.15499,
+      "champion": 0.07239
     }
   },
-  "nfc_north_divisional": 0.00058,
+  "nfc_north_divisional": 0.0007,
   "games": [
     {
       "id": "2026_12_CHI_DET",
       "gameday": "2026-11-26",
       "away": "CHI",
       "home": "DET",
-      "home_win_probability": 0.5689338662738638,
+      "home_win_probability": 0.455600303381578,
       "champion": {
-        "if_home_wins": 0.055129442738043,
-        "if_away_wins": 0.08564787914003487,
-        "swing": -0.030518436401991866,
-        "root_for": "CHI"
+        "if_home_wins": 0.05746,
+        "if_away_wins": 0.08502,
+        "swing": -0.02756,
+        "root_for": "CHI",
+        "why": [
+          "The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race.",
+          "A win raises the Bears' chance of winning the NFC North by 36.3 points, of the No. 1 seed (the only first-round bye) by 13.8 points, and of making the playoffs by 9.8 points."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.8639403247038174,
-        "if_away_wins": 0.9629750145264381,
-        "swing": -0.09903468982262065,
-        "root_for": "CHI"
+        "if_home_wins": 0.86934,
+        "if_away_wins": 0.96695,
+        "swing": -0.09760999999999997,
+        "root_for": "CHI",
+        "why": [
+          "The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race.",
+          "A win raises the Bears' chance of winning the NFC North by 36.3 points and of the No. 1 seed (the only first-round bye) by 13.8 points."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0006669591926283457,
-        "if_away_wins": 0.00046484601975595586,
-        "swing": 0.00020211317287238987,
-        "root_for": null
+        "if_home_wins": 0.00085,
+        "if_away_wins": 0.00051,
+        "swing": 0.0003399999999999999,
+        "root_for": "DET",
+        "why": [
+          "The Lions (8-2) are one of the four NFC North teams that all need to reach the divisional round."
+        ]
       }
     },
     {
@@ -57,24 +68,33 @@
       "gameday": "2026-11-26",
       "away": "KC",
       "home": "BUF",
-      "home_win_probability": 0.712301397760025,
+      "home_win_probability": 0.5882510122416368,
       "champion": {
-        "if_home_wins": 0.06820541602357233,
-        "if_away_wins": 0.0683954054994779,
-        "swing": -0.00018998947590556647,
-        "root_for": null
+        "if_home_wins": 0.07145,
+        "if_away_wins": 0.07335,
+        "swing": -0.001899999999999999,
+        "root_for": "KC",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Chiefs win.",
+          "It barely changes the Bears' seeding: the gain comes from who they would likely face in the playoffs."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.9061737056264908,
-        "if_away_wins": 0.9074834667594849,
-        "swing": -0.0013097611329940806,
-        "root_for": null
+        "if_home_wins": 0.9226,
+        "if_away_wins": 0.92242,
+        "swing": 0.00017999999999995797,
+        "root_for": "BUF",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Bills win.",
+          "The Bills are on the Bears' schedule, so their wins add to the Bears' strength of schedule, a late tiebreaker."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.000561245966044619,
-        "if_away_wins": 0.0006265227984684998,
-        "swing": -0.00006527683242388076,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -82,24 +102,30 @@
       "gameday": "2026-11-26",
       "away": "PHI",
       "home": "DAL",
-      "home_win_probability": 0.6402546457541494,
+      "home_win_probability": 0.7362969027047115,
       "champion": {
-        "if_home_wins": 0.06823267969764785,
-        "if_away_wins": 0.06830835710922135,
-        "swing": -0.0000756774115735076,
-        "root_for": null
+        "if_home_wins": 0.07238,
+        "if_away_wins": 0.07243,
+        "swing": -0.00004999999999999449,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.906430460570588,
-        "if_away_wins": 0.9067615855516468,
-        "swing": -0.0003311249810588057,
-        "root_for": null
+        "if_home_wins": 0.92246,
+        "if_away_wins": 0.92271,
+        "swing": -0.0002500000000000835,
+        "root_for": "PHI",
+        "why": [
+          "The Cowboys (5-6) compete with the Bears (8-2) for NFC playoff spots and seeding.",
+          "The Bears beat the Eagles in week 3, so each Eagles win raises the Bears' strength of victory, a tiebreaker."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0005320897040642263,
-        "if_away_wins": 0.0006648015290435168,
-        "swing": -0.00013271182497929049,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.00073,
+        "swing": -0.00002999999999999997,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -107,24 +133,27 @@
       "gameday": "2026-11-27",
       "away": "DEN",
       "home": "PIT",
-      "home_win_probability": 0.39495354571451535,
+      "home_win_probability": 0.36897386735571674,
       "champion": {
-        "if_home_wins": 0.06741231073575288,
-        "if_away_wins": 0.06881180763071437,
-        "swing": -0.0013994968949614939,
-        "root_for": null
+        "if_home_wins": 0.07244,
+        "if_away_wins": 0.07226,
+        "swing": 0.0001799999999999996,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9090517132060159,
-        "if_away_wins": 0.9049214970860643,
-        "swing": 0.0041302161199515686,
-        "root_for": "PIT"
+        "if_home_wins": 0.92253,
+        "if_away_wins": 0.92252,
+        "swing": 9.99999999995449e-6,
+        "root_for": null,
+        "why": []
       },
       "nfc_north": {
-        "if_home_wins": 0.0009130335539831089,
-        "if_away_wins": 0.000363210117052715,
-        "swing": 0.0005498234369303938,
-        "root_for": "PIT"
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -132,24 +161,41 @@
       "gameday": "2026-11-29",
       "away": "ATL",
       "home": "MIN",
-      "home_win_probability": 0.7820016956563808,
+      "home_win_probability": 0.6986236680328497,
       "champion": {
-        "if_home_wins": 0.06774008050603796,
-        "if_away_wins": 0.07013106461255461,
-        "swing": -0.0023909841065166554,
-        "root_for": null
+        "if_home_wins": 0.07159,
+        "if_away_wins": 0.07502,
+        "swing": -0.0034300000000000025,
+        "root_for": "ATL",
+        "why": [
+          "The Vikings (7-3) are an NFC North rival of the Bears (8-2): every loss helps the Bears win the division.",
+          "The Vikings beat the Bears in week 2, so the Bears would lose a head-to-head tiebreaker: better that the Vikings drop games.",
+          "The Bears still play the Vikings in week 18.",
+          "The Bears beat the Falcons in week 6, so each Falcons win raises the Bears' strength of victory, a tiebreaker.",
+          "A Falcons win raises the Bears' chance of winning the NFC North by 7.3 points, of the No. 1 seed (the only first-round bye) by 1.1 points, and of making the playoffs by 0.7 points."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.905284007411667,
-        "if_away_wins": 0.9111060013796275,
-        "swing": -0.005821993967960459,
-        "root_for": "ATL"
+        "if_home_wins": 0.9203,
+        "if_away_wins": 0.92725,
+        "swing": -0.006950000000000012,
+        "root_for": "ATL",
+        "why": [
+          "The Vikings (7-3) are an NFC North rival of the Bears (8-2): every loss helps the Bears win the division.",
+          "The Vikings beat the Bears in week 2, so the Bears would lose a head-to-head tiebreaker: better that the Vikings drop games.",
+          "The Bears still play the Vikings in week 18.",
+          "The Bears beat the Falcons in week 6, so each Falcons win raises the Bears' strength of victory, a tiebreaker.",
+          "A Falcons win raises the Bears' chance of winning the NFC North by 7.3 points and of the No. 1 seed (the only first-round bye) by 1.1 points."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0006006006006006006,
-        "if_away_wins": 0.0005058634168774431,
-        "swing": 0.00009473718372315747,
-        "root_for": null
+        "if_home_wins": 0.00075,
+        "if_away_wins": 0.00062,
+        "swing": 0.00013000000000000002,
+        "root_for": "MIN",
+        "why": [
+          "The Vikings (7-3) are one of the four NFC North teams that all need to reach the divisional round."
+        ]
       }
     },
     {
@@ -157,24 +203,27 @@
       "gameday": "2026-11-29",
       "away": "BAL",
       "home": "HOU",
-      "home_win_probability": 0.6939127684632543,
+      "home_win_probability": 0.6855484615246431,
       "champion": {
-        "if_home_wins": 0.06855297865286766,
-        "if_away_wins": 0.06759625118375077,
-        "swing": 0.0009567274691168887,
-        "root_for": null
+        "if_home_wins": 0.07242,
+        "if_away_wins": 0.07237,
+        "swing": 0.00004999999999999449,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9065540452887845,
-        "if_away_wins": 0.9065408353198576,
-        "swing": 0.000013209968926841675,
-        "root_for": null
+        "if_home_wins": 0.92252,
+        "if_away_wins": 0.92252,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       },
       "nfc_north": {
-        "if_home_wins": 0.0006053879527797396,
-        "if_away_wins": 0.000522483100937204,
-        "swing": 0.0000829048518425356,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -182,24 +231,32 @@
       "gameday": "2026-11-29",
       "away": "LV",
       "home": "CLE",
-      "home_win_probability": 0.6616415777770152,
+      "home_win_probability": 0.6310261326442832,
       "champion": {
-        "if_home_wins": 0.06863873077388882,
-        "if_away_wins": 0.06752297902427527,
-        "swing": 0.00111575174961355,
-        "root_for": null
+        "if_home_wins": 0.07233,
+        "if_away_wins": 0.07209,
+        "swing": 0.0002400000000000041,
+        "root_for": "CLE",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Browns win.",
+          "It barely changes the Bears' seeding: the gain comes from who they would likely face in the playoffs."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.9070939808647208,
-        "if_away_wins": 0.9054913975960406,
-        "swing": 0.0016025832686802355,
-        "root_for": null
+        "if_home_wins": 0.92255,
+        "if_away_wins": 0.92234,
+        "swing": 0.00020999999999993246,
+        "root_for": "CLE",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Browns win."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0006055468087683178,
-        "if_away_wins": 0.0005302851755833136,
-        "swing": 0.00007526163318500418,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.00069,
+        "swing": 0.000010000000000000026,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -207,24 +264,35 @@
       "gameday": "2026-11-29",
       "away": "NE",
       "home": "LAC",
-      "home_win_probability": 0.3427516779521608,
+      "home_win_probability": 0.455600303381578,
       "champion": {
-        "if_home_wins": 0.0670854638422206,
-        "if_away_wins": 0.06887115165336374,
-        "swing": -0.0017856878111431468,
-        "root_for": null
+        "if_home_wins": 0.07221,
+        "if_away_wins": 0.07247,
+        "swing": -0.0002600000000000102,
+        "root_for": "NE",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Patriots win.",
+          "The Bears beat the Patriots in week 7, so each Patriots win raises the Bears' strength of victory, a tiebreaker.",
+          "A Patriots win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 0.2 points."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.9052154857560263,
-        "if_away_wins": 0.9072443937666287,
-        "swing": -0.0020289080106024038,
-        "root_for": null
+        "if_home_wins": 0.92235,
+        "if_away_wins": 0.92272,
+        "swing": -0.00036999999999998145,
+        "root_for": "NE",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Patriots win.",
+          "The Bears beat the Patriots in week 7, so each Patriots win raises the Bears' strength of victory, a tiebreaker.",
+          "A Patriots win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 0.2 points."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007888970051132214,
-        "if_away_wins": 0.00047130368681109846,
-        "swing": 0.0003175933183021229,
-        "root_for": null
+        "if_home_wins": 0.00069,
+        "if_away_wins": 0.0007,
+        "swing": -0.000010000000000000026,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -232,24 +300,29 @@
       "gameday": "2026-11-29",
       "away": "NO",
       "home": "CIN",
-      "home_win_probability": 0.8086363356198661,
+      "home_win_probability": 0.7714088703117442,
       "champion": {
-        "if_home_wins": 0.06779262267678707,
-        "if_away_wins": 0.07022194500753677,
-        "swing": -0.002429322330749703,
-        "root_for": null
+        "if_home_wins": 0.07227,
+        "if_away_wins": 0.0724,
+        "swing": -0.0001300000000000051,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9071457758076299,
-        "if_away_wins": 0.9040490669993243,
-        "swing": 0.0030967088083055927,
-        "root_for": null
+        "if_home_wins": 0.92247,
+        "if_away_wins": 0.92267,
+        "swing": -0.00019999999999997797,
+        "root_for": "NO",
+        "why": [
+          "The Bears beat the Saints in week 11, so each Saints win raises the Bears' strength of victory, a tiebreaker."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0006067284951895098,
-        "if_away_wins": 0.0004677997816934352,
-        "swing": 0.00013892871349607458,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -257,24 +330,30 @@
       "gameday": "2026-11-29",
       "away": "NYG",
       "home": "IND",
-      "home_win_probability": 0.4094683891983782,
+      "home_win_probability": 0.32776374218264587,
       "champion": {
-        "if_home_wins": 0.06903678189199164,
-        "if_away_wins": 0.0677280768258782,
-        "swing": 0.0013087050661134414,
-        "root_for": null
+        "if_home_wins": 0.07257,
+        "if_away_wins": 0.07235,
+        "swing": 0.00021999999999999797,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9072702669455037,
-        "if_away_wins": 0.9060567770196276,
-        "swing": 0.00121348992587611,
-        "root_for": null
+        "if_home_wins": 0.92321,
+        "if_away_wins": 0.9222,
+        "swing": 0.0010099999999999554,
+        "root_for": "IND",
+        "why": [
+          "The Giants (6-3-1) compete with the Bears (8-2) for NFC playoff spots and seeding.",
+          "A Colts win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 0.1 points."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0006396850781153893,
-        "if_away_wins": 0.0005391289697582344,
-        "swing": 0.00010055610835715497,
-        "root_for": null
+        "if_home_wins": 0.00075,
+        "if_away_wins": 0.0007,
+        "swing": 0.00005000000000000002,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -282,24 +361,30 @@
       "gameday": "2026-11-29",
       "away": "NYJ",
       "home": "MIA",
-      "home_win_probability": 0.5779693238150481,
+      "home_win_probability": 0.36897386735571674,
       "champion": {
-        "if_home_wins": 0.06682087310766256,
-        "if_away_wins": 0.07024174570348712,
-        "swing": -0.0034208725958245617,
-        "root_for": "NYJ"
+        "if_home_wins": 0.07233,
+        "if_away_wins": 0.0724,
+        "swing": -0.00007000000000000062,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9053874436830022,
-        "if_away_wins": 0.9081508949582828,
-        "swing": -0.0027634512752806595,
-        "root_for": null
+        "if_home_wins": 0.92247,
+        "if_away_wins": 0.92254,
+        "swing": -0.0000700000000000145,
+        "root_for": "NYJ",
+        "why": [
+          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Jets win.",
+          "The Bears beat the Jets in week 4, so each Jets win raises the Bears' strength of victory, a tiebreaker."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0006559527714004591,
-        "if_away_wins": 0.00047540944638569966,
-        "swing": 0.00018054332501475949,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -307,24 +392,34 @@
       "gameday": "2026-11-29",
       "away": "SEA",
       "home": "SF",
-      "home_win_probability": 0.6105156891828645,
+      "home_win_probability": 0.5882510122416368,
       "champion": {
-        "if_home_wins": 0.06712845730342586,
-        "if_away_wins": 0.07004563149346464,
-        "swing": -0.002917174190038785,
-        "root_for": null
+        "if_home_wins": 0.0701,
+        "if_away_wins": 0.07562,
+        "swing": -0.005520000000000011,
+        "root_for": "SEA",
+        "why": [
+          "The 49ers (9-1) compete with the Bears (8-2) for NFC playoff spots and seeding.",
+          "The Bears beat the Seahawks in week 8, so each Seahawks win raises the Bears' strength of victory, a tiebreaker.",
+          "A Seahawks win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 10.2 points."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.9212069726029635,
-        "if_away_wins": 0.8834205573745134,
-        "swing": 0.037786415228450054,
-        "root_for": "SF"
+        "if_home_wins": 0.93509,
+        "if_away_wins": 0.90507,
+        "swing": 0.030019999999999936,
+        "root_for": "SF",
+        "why": [
+          "The Seahawks (6-4) compete with the Bears (8-2) for NFC playoff spots and seeding.",
+          "The Bears beat the Seahawks in week 8, so they would win a head-to-head tiebreaker with them."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0004737710542222803,
-        "if_away_wins": 0.0007476346386862255,
-        "swing": -0.0002738635844639452,
-        "root_for": null
+        "if_home_wins": 0.00064,
+        "if_away_wins": 0.00076,
+        "swing": -0.00011999999999999999,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -332,24 +427,27 @@
       "gameday": "2026-11-29",
       "away": "TEN",
       "home": "JAX",
-      "home_win_probability": 0.9030766431628079,
+      "home_win_probability": 0.859498014650663,
       "champion": {
-        "if_home_wins": 0.06831045979685198,
-        "if_away_wins": 0.06779137948770703,
-        "swing": 0.0005190803091449508,
-        "root_for": null
+        "if_home_wins": 0.0724,
+        "if_away_wins": 0.0725,
+        "swing": -0.00009999999999998899,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9066338794182479,
-        "if_away_wins": 0.9057710112128382,
-        "swing": 0.0008628682054097059,
-        "root_for": null
+        "if_home_wins": 0.92254,
+        "if_away_wins": 0.92251,
+        "swing": 0.00002999999999997449,
+        "root_for": null,
+        "why": []
       },
       "nfc_north": {
-        "if_home_wins": 0.0005538386557228149,
-        "if_away_wins": 0.0008229606007612386,
-        "swing": -0.0002691219450384237,
-        "root_for": null
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -357,24 +455,31 @@
       "gameday": "2026-11-29",
       "away": "WAS",
       "home": "ARI",
-      "home_win_probability": 0.4266400078681493,
+      "home_win_probability": 0.3144515384753569,
       "champion": {
-        "if_home_wins": 0.06793298725814063,
-        "if_away_wins": 0.0685005206525512,
-        "swing": -0.0005675333944105687,
-        "root_for": null
+        "if_home_wins": 0.07206,
+        "if_away_wins": 0.07257,
+        "swing": -0.0005099999999999966,
+        "root_for": "WAS",
+        "why": [
+          "It barely changes the Bears' seeding: the gain comes from who they would likely face in the playoffs."
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.9081642284096272,
-        "if_away_wins": 0.9053627212773343,
-        "swing": 0.0028015071322928797,
-        "root_for": null
+        "if_home_wins": 0.92332,
+        "if_away_wins": 0.92215,
+        "swing": 0.0011700000000000044,
+        "root_for": "ARI",
+        "why": [
+          "The Commanders (4-5-1) compete with the Bears (8-2) for NFC playoff spots and seeding."
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.00037753657385559226,
-        "if_away_wins": 0.0007289135716765013,
-        "swing": -0.000351376997820909,
-        "root_for": "WAS"
+        "if_home_wins": 0.0007,
+        "if_away_wins": 0.0007,
+        "swing": 0.0,
+        "root_for": null,
+        "why": []
       }
     },
     {
@@ -382,24 +487,27 @@
       "gameday": "2026-11-30",
       "away": "CAR",
       "home": "TB",
-      "home_win_probability": 0.6096793340233638,
+      "home_win_probability": 0.5882510122416368,
       "champion": {
-        "if_home_wins": 0.06929930880859567,
-        "if_away_wins": 0.06663071945771068,
-        "swing": 0.0026685893508849867,
-        "root_for": null
+        "if_home_wins": 0.07231,
+        "if_away_wins": 0.07257,
+        "swing": -0.00025999999999999635,
+        "root_for": null,
+        "why": []
       },
       "playoffs": {
-        "if_home_wins": 0.9074098339175156,
-        "if_away_wins": 0.9052020746674884,
-        "swing": 0.0022077592500272525,
-        "root_for": null
+        "if_home_wins": 0.92251,
+        "if_away_wins": 0.92257,
+        "swing": -0.00005999999999994898,
+        "root_for": null,
+        "why": []
       },
       "nfc_north": {
-        "if_home_wins": 0.000556884069839814,
-        "if_away_wins": 0.0006162378678169774,
-        "swing": -0.00005935379797716346,
-        "root_for": null
+        "if_home_wins": 0.00067,
+        "if_away_wins": 0.00069,
+        "swing": -0.000019999999999999944,
+        "root_for": null,
+        "why": []
       }
     }
   ]

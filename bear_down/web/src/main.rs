@@ -175,6 +175,13 @@ fn GameRow(game: Game, goal: Goal) -> Element {
                     None => rsx! { span { class: "root", "Doesn't matter" } },
                 }
             }
+            if !s.why.is_empty() {
+                ul { class: "why",
+                    for reason in s.why.iter() {
+                        li { "{reason}" }
+                    }
+                }
+            }
         }
     }
 }

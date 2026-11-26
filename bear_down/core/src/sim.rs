@@ -136,6 +136,10 @@ pub struct GameImpact {
     /// The swing on the odds that all four NFC North teams reach the
     /// divisional round (decision 0007).
     pub nfc_north: Swing,
+    /// The swing on the focus team's odds of winning its division.
+    pub division: Swing,
+    /// The swing on the focus team's odds of the conference's top seed.
+    pub top_seed: Swing,
 }
 
 impl GameImpact {
@@ -248,7 +252,10 @@ pub fn simulate(
         remaining.push(Remaining {
             home: team(game, &game.home_team)?,
             away: team(game, &game.away_team)?,
-            home_win_probability: ratings.home_win_probability(game),
+            home_win_probability: game
+                .spread_line
+                .map(spread_win_probability)
+                .unwrap_or_else(|| ratings.home_win_probability(game)),
         });
     }
     let mut played_playoffs = HashMap::new();
@@ -291,7 +298,7 @@ pub fn simulate(
     // `forced`'s game given to the home team if `true`, the away team if
     // `false`), then the playoffs. The same seed gives the same draws, so two
     // seasons that differ only in the forced game share everything else.
-    let play_season = |seed: u64, forced: Option<(usize, bool)>| -> Postseason {
+    let play_season = |seed: u64, forced: Option<(usize, bool)>| -> (Postseason, Option<usize>) {
         let mut rng = Rng::new(seed);
         let mut standings = base.clone();
         for (index, game) in remaining.iter().enumerate() {
@@ -323,14 +330,26 @@ pub fn simulate(
                 away
             }
         };
-        play_postseason(&seeds, &mut play)
+        let focus_seed = seeds[config.focus.conference() as usize]
+            .iter()
+            .position(|&team| team == config.focus);
+        (play_postseason(&seeds, &mut play), focus_seed)
     };
-    let goals = |postseason: &Postseason| {
+    // The goals each game's swing is measured on: the focus team's playoffs,
+    // title, division title and top seed, and all four NFC North teams in
+    // the divisional round.
+    let goals = |(postseason, focus_seed): &(Postseason, Option<usize>)| {
         let focus = postseason.reached[config.focus.index()];
         let all_north = north
             .iter()
             .all(|&team| postseason.reached[team] >= DIVISIONAL);
-        [focus >= PLAYOFFS, focus >= CHAMPION, all_north]
+        [
+            focus >= PLAYOFFS,
+            focus >= CHAMPION,
+            all_north,
+            focus_seed.is_some_and(|seed| seed < 4),
+            *focus_seed == Some(0),
+        ]
     };
     let run_seed =
         |run: u32| Rng::new(config.seed ^ (u64::from(run) << 32 | u64::from(run))).next_u64();
@@ -338,13 +357,17 @@ pub fn simulate(
     let mut reached_counts = [[0u32; 6]; 32];
     let mut nfc_north_count = 0u32;
     for run in 0..config.simulations {
-        let postseason = play_season(run_seed(run), None);
+        let (postseason, _) = play_season(run_seed(run), None);
         for (counts, &reached) in reached_counts.iter_mut().zip(&postseason.reached) {
             for round in counts.iter_mut().take(usize::from(reached) + 1) {
                 *round += 1;
             }
         }
-        nfc_north_count += u32::from(goals(&postseason)[2]);
+        nfc_north_count += u32::from(
+            north
+                .iter()
+                .all(|&team| postseason.reached[team] >= DIVISIONAL),
+        );
     }
 
     // Each game's swing: every season is played twice, once with each
@@ -355,7 +378,7 @@ pub fn simulate(
         .iter()
         .zip(&tracked_games)
         .map(|(&index, game)| {
-            let mut pairs = [PairedCounts::default(); 3];
+            let mut pairs = [PairedCounts::default(); 5];
             for run in 0..runs {
                 let seed = run_seed(run);
                 let home = goals(&play_season(seed, Some((index, true))));
@@ -364,7 +387,8 @@ pub fn simulate(
                     counts.add(home, away);
                 }
             }
-            let [playoffs, champion, nfc_north] = pairs.map(|counts| counts.swing(runs));
+            let [playoffs, champion, nfc_north, division, top_seed] =
+                pairs.map(|counts| counts.swing(runs));
             GameImpact {
                 game_id: game.id.clone(),
                 gameday: game.gameday,
@@ -374,6 +398,8 @@ pub fn simulate(
                 playoffs,
                 champion,
                 nfc_north,
+                division,
+                top_seed,
             }
         })
         .collect();
@@ -401,6 +427,35 @@ pub fn simulate(
         nfc_north: share(nfc_north_count),
         games,
     })
+}
+
+/// The standard deviation of NFL game margins around the betting line, in
+/// points. With it, a line becomes a win probability.
+pub const SPREAD_SIGMA: f64 = 13.45;
+
+/// The home team's chance of winning from the betting line (nflverse
+/// `spread_line`: the home team's expected margin, positive when it is
+/// favored). Games with a line use it instead of Elo, since the market knows
+/// about injuries, rest and form that Elo can't see.
+pub fn spread_win_probability(spread: f64) -> f64 {
+    normal_cdf(spread / SPREAD_SIGMA)
+}
+
+/// The standard normal CDF, from Abramowitz and Stegun 7.1.26 (error under
+/// 1.5e-7).
+fn normal_cdf(x: f64) -> f64 {
+    let z = x.abs() / std::f64::consts::SQRT_2;
+    let t = 1.0 / (1.0 + 0.327_591_1 * z);
+    let poly = t
+        * (0.254_829_592
+            + t * (-0.284_496_736
+                + t * (1.421_413_741 + t * (-1.453_152_027 + t * 1.061_405_429))));
+    let erf = 1.0 - poly * (-z * z).exp();
+    if x >= 0.0 {
+        0.5 * (1.0 + erf)
+    } else {
+        0.5 * (1.0 - erf)
+    }
 }
 
 /// Plays both conferences' brackets and the Super Bowl. `seeds` holds the
@@ -805,6 +860,18 @@ mod tests {
     }
 
     #[test]
+    fn betting_lines_become_win_probabilities() {
+        close(spread_win_probability(0.0), 0.5);
+        // A 3-point favorite wins about 59% of the time.
+        assert!((spread_win_probability(3.0) - 0.588).abs() < 0.002);
+        close(
+            spread_win_probability(-7.0) + spread_win_probability(7.0),
+            1.0,
+        );
+        assert!(spread_win_probability(14.5) > 0.85);
+    }
+
+    #[test]
     fn root_for_follows_the_sign() {
         let game = GameImpact {
             game_id: "x".to_owned(),
@@ -819,6 +886,8 @@ mod tests {
             playoffs: Swing::from_pairs(10, 90, 0, 80, 100),
             champion: Swing::from_pairs(90, 10, 80, 0, 100),
             nfc_north: Swing::from_pairs(1, 1, 0, 0, 100),
+            division: Swing::from_pairs(1, 1, 0, 0, 100),
+            top_seed: Swing::from_pairs(1, 1, 0, 0, 100),
         };
         assert_eq!(game.root_for(&game.playoffs), Some(team("GB")));
         assert_eq!(game.root_for(&game.champion), Some(team("DET")));
