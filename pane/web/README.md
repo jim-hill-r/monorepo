@@ -17,6 +17,11 @@ one column under 720 px.
 | `/docs/<path>` | One plan, decision or retro rendered from its Markdown (`src/markdown.rs`), with a link to the file on GitHub |
 | `/health`, `/reviews`, `/add` | Placeholders naming the phase that fills them in |
 
+It uses the [design system](../../design_system/README.md)'s professional
+theme: `design_system_dioxus::Stylesheets` loads the tokens, and
+`assets/main.css` uses only `--ds-` tokens, so the theme picker in the footer
+can switch it to any theme, light, dark or accessible mode.
+
 The footer shows the snapshot's commit and how long ago it was taken. Pure
 helpers for the pages (dates, ages, sorting, counts, filters, GitHub links)
 are in `src/view.rs` with unit tests.
