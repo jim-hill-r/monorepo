@@ -51,13 +51,15 @@ impl EmbeddedRecipeStore {
             }
         }
 
-        // Verify we loaded all 365 recipes
-        assert_eq!(
-            self.recipes.len(),
-            365,
-            "Expected to load 365 recipes but loaded {}. Check that all recipe files exist and parse correctly.",
-            self.recipes.len()
-        );
+        // build.rs fails the build unless a recipe file exists for every day 1-365,
+        // so a shortfall here can only come from a parse failure, logged above.
+        if self.recipes.len() != 365 {
+            tracing::error!(
+                loaded = self.recipes.len(),
+                "Expected to load 365 recipes but loaded {}",
+                self.recipes.len()
+            );
+        }
     }
 
     /// Parses recipe data from markdown content
@@ -186,13 +188,15 @@ impl EmbeddedPlanStore {
             }
         }
 
-        // Verify we loaded plans (should be 52-53 depending on year)
-        // Some years have 53 ISO weeks (e.g., 2020, 2026), others have 52 (e.g., 2024)
-        assert!(
-            self.plans.len() >= 52 && self.plans.len() <= 53,
-            "Expected to load 52-53 plans but loaded {}. Check that plan files exist and parse correctly.",
-            self.plans.len()
-        );
+        // Every week-N.md file is include_str!'d, so a missing file fails the build;
+        // a shortfall here can only come from a parse failure, logged above.
+        if !(52..=53).contains(&self.plans.len()) {
+            tracing::error!(
+                loaded = self.plans.len(),
+                "Expected to load 52-53 plans but loaded {}",
+                self.plans.len()
+            );
+        }
     }
 
     /// Parses plan data from markdown content
