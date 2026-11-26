@@ -19,6 +19,7 @@ file from here, so every project answers the same commands:
 | `perseus-web.toml` | Perseus / Sycamore sites |
 | `bevy-game.toml` | Bevy games |
 | `cloudflare-pages.toml` | Cloudflare Pages deploy projects |
+| `cloudflare-worker.toml` | Rust Cloudflare Workers (workers-rs) |
 | `docs.toml` | Docs-only projects |
 
 A project can override or add tasks in its own `mise.toml` under `[tasks.<name>]`.

@@ -549,11 +549,13 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. Planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API; not deployed yet.",
-    "exemplars": [],
+    "description": "Approved vendor, Free plan only. The telemetry Worker (Rust, workers-rs) writes events to Analytics Engine with a rate-limit binding (decision 0001); Web Analytics and pane's API are planned. Workers are created only through free-tiers.sh worker.",
+    "exemplars": [
+      "telemetry"
+    ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",
-      "pane/ISSUES.md"
+      "telemetry/README.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
     "budget": 0

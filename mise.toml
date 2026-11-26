@@ -50,6 +50,7 @@ config_roots = [
   "sparkhill/website",
   "standards",
   "starcraft",
+  "telemetry",
 ]
 
 [tasks."affected"]

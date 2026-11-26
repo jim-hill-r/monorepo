@@ -21,6 +21,13 @@
 #       exist, but only while the account stays within the Pages project
 #       budget. Otherwise it stops with an error and creates nothing.
 #
+#   free-tiers.sh worker
+#       Run from a Cloudflare Worker project directory (the deploy task does
+#       this). Passes when the Worker named in ./wrangler.toml exists, or
+#       when one more Worker stays within the Workers budget, so the
+#       `wrangler deploy` that follows may create it. Otherwise it stops
+#       with an error before anything is created.
+#
 #   free-tiers.sh usage
 #       Live usage check (Cloudflare and GitHub). Writes a table to
 #       $GITHUB_STEP_SUMMARY when set and exits non-zero when anything is at
@@ -167,6 +174,33 @@ pages_project() {
   wrangler pages project create "$name" --production-branch main
 }
 
+# Every Worker script name in the account, one per line.
+cf_worker_names() {
+  local body
+  body=$(cf_get "workers/scripts") || die "could not list Cloudflare Workers (the token needs Workers Scripts read)"
+  jq -e '.success == true' >/dev/null <<<"$body" || die "Cloudflare API error: $(jq -c '.errors' <<<"$body")"
+  jq -r '.result[].id' <<<"$body"
+}
+
+worker() {
+  [ -f wrangler.toml ] || die "no wrangler.toml in $(pwd)"
+  local name
+  name=$(sed -nE 's/^name *= *"([^"]+)".*/\1/p' wrangler.toml | head -n1)
+  [ -n "$name" ] || die "wrangler.toml has no name"
+  need_cf
+  local workers count
+  workers=$(cf_worker_names)
+  if grep -qxF "$name" <<<"$workers"; then
+    echo "free-tiers: Worker $name exists"
+    return 0
+  fi
+  count=$(grep -c . <<<"$workers" || true)
+  if [ "$count" -ge "$WORKERS_BUDGET" ]; then
+    die "not creating Worker $name: the account has $count Workers and the budget is $WORKERS_BUDGET (free limit $WORKERS_LIMIT). Delete unused Workers or ask Jim; see standards/docs/free-tiers.md"
+  fi
+  echo "free-tiers: Worker $name will be created ($((count + 1)) of $WORKERS_BUDGET budgeted)"
+}
+
 # --------------------------------------------------------------- usage ----
 
 usage_check() {
@@ -238,6 +272,7 @@ usage_check() {
 case "${1:-}" in
   check) check ;;
   pages-project) pages_project ;;
+  worker) worker ;;
   usage) usage_check ;;
-  *) die "usage: free-tiers.sh check | pages-project | usage" ;;
+  *) die "usage: free-tiers.sh check | pages-project | worker | usage" ;;
 esac
