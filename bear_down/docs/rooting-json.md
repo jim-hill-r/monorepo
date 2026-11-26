@@ -15,6 +15,8 @@ example `CHI`, `DET`, `GB`, `MIN`. Dates are `YYYY-MM-DD`.
 | `simulations` | number | How many seasons were simulated. |
 | `latest_game` | object or null | The latest game with a final score: `id`, `gameday`, `away`, `home`, `away_score`, `home_score`. Shows how fresh the data is (decision 0006). |
 | `bears.record` | object | `wins`, `losses`, `ties`. |
+| `bears.division_lead` | number | Games ahead of the best NFC North rival, by record alone (no tiebreakers; a tie counts half): positive is alone in first place, 0 is tied for it, negative is behind. |
+| `bears.division_rival` | string | That best rival. |
 | `bears.odds` | object | `playoffs`, `divisional_round`, `conference_game`, `super_bowl` (reached it), `champion` (won it). |
 | `nfc_north_divisional` | number | The chance all four NFC North teams reach the divisional round (decision 0007). |
 | `games` | array | The current week's games still to be played, in schedule order. |
@@ -71,7 +73,9 @@ A swing object has:
   "latest_game": { "id": "2026_12_GB_LA", "gameday": "2026-11-25", "away": "GB", "home": "LA", "away_score": 13, "home_score": 26 },
   "bears": {
     "record": { "wins": 8, "losses": 2, "ties": 0 },
-    "odds": { "playoffs": 0.907, "divisional_round": 0.580, "conference_game": 0.301, "super_bowl": 0.145, "champion": 0.068 }
+    "odds": { "playoffs": 0.907, "divisional_round": 0.580, "conference_game": 0.301, "super_bowl": 0.145, "champion": 0.068 },
+    "division_lead": 1.0,
+    "division_rival": "DET"
   },
   "nfc_north_divisional": 0.0006,
   "games": [
