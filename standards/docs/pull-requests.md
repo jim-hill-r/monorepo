@@ -42,8 +42,7 @@ A failing check still counts as green only when the same check is also
 failing on the latest `main` commit and the PR didn't cause the failure: the
 projects the PR changes pass within that check, or the PR changes none of the
 projects it covers. This covers checks that are red on `main` for unrelated
-reasons, such as the old Cast `run-ci` check until the mise migration replaces
-it. A check that passes on `main` and fails on the PR is never green, and a
+reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
 ## Hourly PR triage

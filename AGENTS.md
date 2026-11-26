@@ -41,8 +41,7 @@ repo, rather than in any one agent tool's settings.
   least one approving review on the current head commit and no outstanding
   "changes requested", and green checks. Green means every check has finished
   and passed, except a check that is also failing on the latest `main` commit
-  for reasons the PR didn't cause (today, the old Cast `run-ci` check until
-  the mise migration replaces it). A pending check is never green. Agents
+  for reasons the PR didn't cause. A pending check is never green. Agents
   still never approve their own PRs. Details are in
   `standards/docs/pull-requests.md`.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
@@ -68,21 +67,24 @@ Each project's build, test and CI steps run through the repo's task runner.
 Run the CI task for every project you changed and make it pass before
 opening or readying a PR.
 
-- Install project tooling: `cast install` (in the project directory)
-- Run CI for a project (fmt, clippy, build, tests, and npm lint/test where a
-  `package.json` exists): `cast ci`
-- Run only tests: `cast test`
-- Explore other commands: `cast -h`
+- Install project tooling: `mise install` (in the project directory)
+- Run CI for a project (fmt, clippy, build, tests, and npm tests where a
+  `package.json` exists): `mise run ci`
+- Run only tests: `mise run test`
+- Fix formatting and lints: `mise run fix`
+- List the project's tasks: `mise tasks`
+- Check the repo standards: `mise run //:audit`
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
 
-The repo is moving from Cast to [mise](https://mise.jdx.dev). Each project
-already has a `mise.toml`, and `mise run ci` runs the same checks as `cast ci`
-in a non-blocking CI job. The rules and decisions for that move (no root Rust
-workspace, the same tasks in every project, no committed build artifacts) are in
-[standards/docs/mise.md](standards/docs/mise.md). This section switches to mise
-once Cast is removed.
+Every project has the same tasks (`ci`, `fix`, `build`, `test`, `dev`,
+`release`, `deploy`), from one shared file in `standards/tasks/`. The rules
+and decisions (no root Rust workspace, no committed build artifacts) are in
+[standards/docs/mise.md](standards/docs/mise.md). CI runs `mise run ci` in
+each changed project; pushes to `main` also run `mise run deploy`. The old
+Cast CLI and `Cast.toml` files are still in the tree until they are removed,
+but nothing runs them.
 
 ## Skills
 

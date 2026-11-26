@@ -1,25 +1,31 @@
 ---
-# Runs `mise run ci` in every project a pull request touches, one job per
-# project. Runs beside the Cast-based Pull Request CI while the repo moves from
-# Cast to mise; it is not a required check yet.
-name: Pull Request mise CI
+# Reusable workflow: list the projects to check, then run mise tasks in each
+# one, one job per project. Called by pull-request-ci.yml, push-main.yml and
+# nightly-ci.yml. Every project is a directory with a mise.toml that includes
+# one standards/tasks/<type>.toml, so every project has the same tasks.
+name: mise projects
 
 'on':
-  pull_request:
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      all:
-        description: Run every project, not only changed ones
+      base:
+        description: >-
+          Git ref to diff against to find affected projects. Empty runs every
+          project.
+        type: string
+        default: ''
+      deploy:
+        description: Run `mise run deploy` after `mise run ci`
         type: boolean
-        default: true
+        default: false
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
 
 permissions:
   contents: read
-
-concurrency:
-  group: mise-ci-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
@@ -42,12 +48,12 @@ jobs:
       - name: Audit standards
         run: mise run //:audit
 
-      - name: List affected projects
+      - name: List projects
         id: affected
         env:
-          AFFECTED_BASE: origin/${{ github.base_ref || 'main' }}
+          AFFECTED_BASE: ${{ inputs.base }}
         run: |
-          if [ "${{ inputs.all }}" = "true" ]; then
+          if [ -z "$AFFECTED_BASE" ]; then
             projects=$(mise run --quiet //:projects)
           else
             projects=$(mise run --quiet //:affected)
@@ -55,7 +61,7 @@ jobs:
           echo "projects=$projects" >> "$GITHUB_OUTPUT"
           echo "Projects: $projects"
 
-  ci:
+  project:
     needs: plan
     if: needs.plan.outputs.projects != '[]'
     runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
@@ -78,6 +84,14 @@ jobs:
         with:
           workspaces: ${{ matrix.project }}
           key: ${{ matrix.project }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: mise run ci
         run: mise run ci
+
+      - name: mise run deploy
+        if: inputs.deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: mise run deploy
