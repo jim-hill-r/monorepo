@@ -1,0 +1,333 @@
+# Plan: only live resources exist, and orphans are cleaned up
+
+Started 2026-11-26 from Jim's request:
+
+> Whenever we rename we need to ensure we don't leave behind orphaned
+> resources. Can you add a new thread to work through a plan on how we can
+> ensure our live resources are the only ones needed and orphans or
+> temporary resources are cleaned up regularly?
+
+Status: **proposed**. Every open question has a recommended answer under
+"Decisions", so "yes to all" approves the plan as written. Once approved,
+the work items become `TODO (agent-generated)` lines in the root
+[ISSUES.md](../../../ISSUES.md) under "Resource cleanup", one group per
+phase, and the steps only Jim can do go in
+[HUMAN_ISSUES.md](../../../HUMAN_ISSUES.md).
+
+This plan builds on the [threat check](2026-11-threat-check.md) rather than
+duplicating it. The threat check's phase 3 already plans a weekly live check
+that flags Pages projects and Workers no `threat.toml` claims. This plan
+widens that one check to every kind of resource we create, adds a way to
+retire a resource on purpose (the rename case), and adds the step the
+threat check leaves open: actually deleting what nobody needs, safely and
+only with Jim's approval.
+
+## Goal
+
+- **Every live resource is claimed by a file in the repo.** A Pages
+  project, Worker, database, branch, release or sign-in URL that no file
+  claims is an orphan, and shows up within a week.
+- **A rename or removal can't leave anything behind.** The PR that renames
+  or removes a resource records the old one as retired, or CI fails.
+- **Temporary resources clean themselves up.** Preview deployments, caches
+  and branches of closed PRs are deleted on a schedule with no one asking.
+- **Deleting anything that was live needs Jim's approval** and happens in
+  an order that can't open a hole (for example, sign-in URLs are removed
+  before the site they point at, so nobody can claim the freed subdomain and
+  receive our users' sign-in codes).
+- **No local clone, $0.** Everything runs as GitHub workflows and agent
+  skills on free tiers, per [AGENTS.md](../../../AGENTS.md).
+
+## Where we start
+
+Live inventory read from the Cloudflare API and GitHub on 2026-11-26
+(read-only):
+
+| Resource | What exists | Claimed by |
+| --- | --- | --- |
+| Pages projects | 5: `jimhillr-cookbook` (37 deployments), `cahokia-web` (20), `pane` at `pane-dbc.pages.dev` (17), `jimhillr-bear-down` (10), `controlled-chaos` at `controlled-chaos-5v4.pages.dev` (2) | Each `wrangler.toml` `name` on `main`. All 5 are claimed today. |
+| Workers, D1, KV | None | - |
+| R2 | Unknown: the token can't read R2. R2 bills once enabled, so it must stay off (free-tiers.md). | - |
+| DNS zones, custom domains | None; every site is on `*.pages.dev` | - |
+| Auth0 | Applications for cahokia and cookbook; callback URLs, origins and logout URLs live only in the Auth0 dashboard | Nothing in the repo yet (the threat check's `[auth] callbacks` will) |
+| Git branches | 13: `main`, 11 `claude/*`, 1 `dependabot/*` | Open PRs; nothing checks the rest |
+| GitHub releases | One nightly prerelease per game (`nightly-downloads.yml`), assets replaced in place | The workflow's game matrix |
+| Actions caches and artifacts | Counted weekly by `free-tiers.sh usage`; artifacts use `retention-days` 1 or 90 | Nothing deletes caches of closed PRs |
+
+What is about to go wrong: the `jimhillr-{project}` rename moves
+`cahokia-web`, `pane` and `controlled-chaos` to new Pages projects. The
+`free-tiers.sh pages-project` guard creates the new project on the first
+deploy, and nothing deletes the old one. Each old project would keep its
+last deployment public at its old `*.pages.dev` address (pane's holds
+Jim-only data until Cloudflare Access is in front of it), keep using one of
+our 25 budgeted Pages projects, and, once deleted later by hand, free a
+subdomain that any Auth0 callback still pointing at it would trust.
+
+Existing pieces to reuse:
+
+- `standards/scripts/free-tiers.sh` already lists Pages projects and
+  Workers with the read-only Cloudflare token, and runs weekly from
+  `all-free-tier-usage.yml`.
+- `all-delete-branches.yml` deletes named branches, skips the default branch
+  and open PR heads, and is a dry run by default. (The
+  `delete-stale-branches.sh` local script from 2026-11-25 is superseded by
+  it and is not reused.)
+- The threat check's `threat.toml` `[[surface]] url` and `[auth] callbacks`,
+  and the cost check's `cost.toml`, already say what each project runs.
+- The eval engine's `human-check` entries in `standards/settings.toml` ask
+  Jim to confirm dashboard-only settings on a schedule.
+
+## Part 1: claims (what should exist)
+
+A resource is **claimed** when a file on `main` names it. Claims come from
+files projects already have, so there is nothing new to keep in sync:
+
+| Kind | Claimed by |
+| --- | --- |
+| Pages project, Worker | `name` in a `wrangler.toml` |
+| D1, KV, Queue, R2 bucket, Cron Trigger | A binding or `[triggers]` entry in a `wrangler.toml` |
+| Public URL, Auth0 callback, origin, logout URL | `threat.toml` `[[surface]] url` and `[auth] callbacks` (once threat check phase 2 writes them; until then the Auth0 part waits, see phase 4) |
+| DNS record, custom domain | `threat.toml` `[[surface]] url` |
+| GitHub release | The game matrix in `nightly-downloads.yml` |
+| Git branch | `main`, or the head of an open PR |
+
+Anything else that must exist goes in one small repo-wide file,
+**`standards/resources.toml`**, which also holds the retired list:
+
+```toml
+# standards/resources.toml
+
+# Live but not claimed by any project file: each needs a reason and a date
+# to look at it again, so "keep" never means "forever without a look".
+[[keep]]
+kind = "pages"
+name = "example-landing"
+why = "Jim's hand-made landing page, not in the repo."
+review = "2027-05-26"
+
+# Retired on purpose. The PR that adds an entry is Jim's approval to delete
+# it; the cleanup workflow deletes it after delete_after.
+[[retired]]
+kind = "pages"                        # pages | worker | d1 | kv | queue | cron | dns | auth0-url | branch | release
+name = "cahokia-web"
+url = "https://cahokia-web.pages.dev" # every address it answers on
+replaced_by = "jimhillr-cahokia"
+why = "Renamed to the jimhillr-{project} scheme."
+retired = "2026-11-27"
+delete_after = "2026-12-04"           # 7 days of grace to undo by removing the entry
+deleted = ""                          # set once the sweep confirms it is gone
+```
+
+Entries in `[[retired]]` stay after deletion (with `deleted` set), so the
+repo remembers every name we gave up and the audit can keep old addresses
+out of the code (RES-002 below).
+
+## Part 2: guards on every PR (prevent orphans)
+
+Two new rules, in the `free-tiers.sh check` style, run by the hooks and PR
+CI. They read only files, so they cost milliseconds:
+
+- **RES-001, a rename needs a retirement (PR CI and pre-push).** Compare the
+  claims on the PR's base with its head. Any claimed resource that
+  disappears (a `wrangler.toml` `name` changes, a binding or project is
+  removed, a game leaves the release matrix) must appear as a `[[retired]]`
+  entry in the same PR, or as a `[[keep]]` entry if it is staying on
+  purpose. Fails from day one: it has no false positives, and missing one
+  is exactly the bug Jim described.
+- **RES-002, no references to retired addresses (`//:audit`).** No tracked
+  file outside `standards/resources.toml` and dated history (plans,
+  decisions, reviews, changelogs) mentions a retired `url` or `name`. This
+  catches the README link, the hard-coded API base URL and the test fixture
+  that a rename forgets.
+- **Retirement is Jim's call.** PR CI labels any PR that adds a
+  `[[retired]]` or `[[keep]]` entry `needs-human`, so it can't merge until
+  Jim approves it. That approval is the approval to delete.
+
+The `open-pull-request` skill gains one checklist line: a PR that renames or
+removes a resource adds its retirement entry, and lists the inbound
+references to remove first (Part 4).
+
+## Part 3: the weekly sweep (find orphans)
+
+`standards/scripts/resources.sh sweep`, a bash and `jq` script next to
+`free-tiers.sh` that reuses its Cloudflare helpers, runs as a new job in
+the existing weekly `all-free-tier-usage.yml` (Mondays, 7 AM Pacific).
+Same read-only token, no new secret. It:
+
+1. Reads every claim, `[[keep]]` and `[[retired]]` entry from the repo.
+2. Lists what is live: Pages projects and their deployments, Workers, D1,
+   KV, Queues, Cron Triggers, DNS records once a zone exists, branches,
+   releases, Actions caches.
+3. Sorts each live resource into **claimed**, **kept**, **retired, pending
+   deletion**, **retired but still live after `delete_after`** (the cleanup
+   failed), **kept past its review date** or **orphan**.
+4. Writes the table to the run summary and a JSON report as a workflow
+   artifact (`retention-days: 7`), and goes red when there is an orphan, a
+   failed deletion or an overdue keep.
+
+This is the threat check's weekly live check, widened. When threat check
+phase 3 lands, its URL and access probes run in the same job and read the
+same report, so there is one sweep, not two.
+
+**Who acts on it.** A workflow can't open PRs that need judgement, so the
+weekly `human-issues-digest` skill gains a step: read the latest sweep
+report, and for each new orphan open one draft PR that adds a `[[retired]]`
+entry (or a `[[keep]]` entry when the resource is clearly Jim's), labelled
+`needs-human`, and list it in the digest. It also sets `deleted` on entries
+the sweep confirms are gone. No new scheduled task, so no new Claude spend.
+
+## Part 4: deleting safely (approved resources)
+
+A new workflow, **`all-retire-resources.yml`**, runs weekly after the sweep
+and on `workflow_dispatch` (`dry_run` defaults to true, like
+`all-delete-branches.yml`). It deletes only resources listed in
+`[[retired]]` whose `delete_after` has passed. It never deletes something
+just because it is unclaimed. Guards, each a hard stop for that entry:
+
+- The name is still claimed by any file on `main`.
+- A Pages project has had a production deployment in the last 7 days
+  (something still deploys to it).
+- The entry's inbound references (below) aren't all gone yet.
+
+**Safe order.** Work from the outside in, so nothing ever points at a name
+someone else could claim:
+
+1. **Stop new deploys.** The rename PR is merged and the new resource is
+   serving (the sweep sees it claimed and live).
+2. **Remove inbound references.** Auth0 callback, origin and logout URLs;
+   DNS records and custom domains; PostHog allowed hosts; links in the
+   repo (RES-002 already blocks those). Auth0 and DNS are checked by the
+   workflow, which refuses step 3 while any reference remains; until the
+   Auth0 read in phase 4 exists, the retirement PR adds a `TODO (human)`
+   to `HUMAN_ISSUES.md` for Jim to remove the Auth0 URLs, and the workflow
+   waits until that line has been removed (lines are removed once done).
+3. **Delete the resource.** For Pages, delete the project, which removes
+   every deployment and preview alias with it. For data stores (D1, KV),
+   export a dump to a workflow artifact first, kept 90 days.
+4. **Remove what protected it.** Cloudflare Access applications for the old
+   hostname go last, so private content is never public in between.
+5. **Verify.** The next sweep confirms it is gone, and the digest sets
+   `deleted`.
+
+The deploy token already has Pages edit, which is all step 3 needs today.
+A Workers, D1 or DNS deletion needs that permission on the token; that is a
+`TODO (human)` added when the first such resource exists, not now.
+
+**Old `*.pages.dev` names: delete, don't stub.** An alternative is to keep
+the old project with a redirect page, which holds the subdomain so nobody
+can claim it. It costs a Pages project slot and keeps a live resource
+forever. Our old names are days old with no outside users, and removing the
+Auth0 URLs first takes away the reason to claim them, so the plan deletes.
+A future rename of a site with real outside users can choose a redirect
+stub in its retirement PR (`[[keep]]` with a review date).
+
+## Part 5: temporary resources (no approval needed)
+
+These are temporary by design and rebuilt from git, so automation deletes
+them without asking, and each run lists what it deleted in its summary:
+
+| Resource | Rule | Where |
+| --- | --- | --- |
+| Pages preview deployments | Delete non-production deployments older than 14 days, keeping the newest one per branch that still has an open PR. Production deployments other than the current one older than 30 days too (rollback is a redeploy from git). | `all-retire-resources.yml` weekly |
+| Actions caches of a PR | Delete the caches for `refs/pull/N/merge` when PR N closes (GitHub's documented clean-up pattern). | New `pull-request-closed-cleanup.yml` on `pull_request: closed` |
+| Branches of merged or closed PRs | Delete 7 days after the PR closes. A closed PR keeps its commits and GitHub's "Restore branch" button, so nothing is lost. | Sweep, through the `all-delete-branches.yml` logic (moved into `resources.sh` so both share it) |
+| Branches with no PR | Listed after 14 days; the digest asks Jim before deleting, since one could hold unfinished work. | Sweep and digest |
+| Workflow artifacts | `retention-days` of 7 or less on every `upload-artifact`, except review decks (90) with a comment saying why. | New audit rule RES-003 |
+| Dependabot entries for missing folders | Already planned as SEC-006 in the threat check. | - |
+
+GitHub's own **"Automatically delete head branches"** setting removes most
+merged branches at merge time for free; turning it on is a `TODO (human)`.
+
+## Phases
+
+### Phase 1: claims, guards and a read-only sweep
+
+- `standards/docs/resources.md` with the rules above (claims, retiring,
+  safe order, temporary resources) and a short "renaming a resource"
+  checklist; link it from `standards/docs/README.md` and `free-tiers.md`.
+- `standards/resources.toml` (empty `[[keep]]` and `[[retired]]`), and
+  `resources.sh check` with RES-001 to RES-003 in the hooks, `//:audit`
+  and PR CI, tested in `monorepo/workflow_tests`.
+- PR CI step that labels PRs adding `[[retired]]` or `[[keep]]`
+  `needs-human`.
+- `resources.sh sweep` as a read-only job in `all-free-tier-usage.yml`.
+- The `human-issues-digest` and `open-pull-request` skill steps above.
+- A rule in AGENTS.md: "Renaming or removing a resource retires the old
+  one in `standards/resources.toml` in the same PR."
+
+### Phase 2: temporary resources
+
+- `pull-request-closed-cleanup.yml` for PR caches.
+- Preview deployment pruning and closed-PR branch deletion in a new
+  `all-retire-resources.yml` (temporary resources only at this point).
+- Move the branch-deletion logic from `all-delete-branches.yml` into
+  `resources.sh` so the manual workflow and the sweep share it.
+
+### Phase 3: approved deletion
+
+- `all-retire-resources.yml` deletes `[[retired]]` entries in the safe
+  order, with the guards and a dry run by default.
+- First use: the rename PR for `cahokia-web`, `pane` and
+  `controlled-chaos` adds their retirement entries (with the Auth0
+  `TODO (human)` for cahokia's callback URLs). If the rename merges before
+  this phase, an agent adds those entries in a separate `needs-human` PR
+  and the old projects wait, still claimed by nothing and flagged by the
+  sweep, until the workflow exists.
+
+### Phase 4: Auth0 and DNS
+
+- A weekly read of Auth0 applications' callback, origin and logout URLs
+  with a Management API token limited to `read:clients` (about 4 of the
+  free plan's 1,000 machine tokens a month). Any URL not claimed by a
+  `threat.toml` is an orphan; step 2 of the safe order checks it
+  automatically instead of waiting on a `TODO (human)`. Jim creates the
+  token, so this is a `TODO (human)`; removing a URL stays a dashboard step
+  for Jim, because a write token for Auth0 is more access than this needs.
+- Dangling DNS: once a zone exists, any record pointing at a `*.pages.dev`
+  or `*.workers.dev` name we don't own is an error (the classic subdomain
+  takeover).
+
+## Cost of this plan
+
+Nothing. Everything runs on standard GitHub-hosted runners on a public repo
+and reads the Cloudflare API with the existing token. Phase 4 uses a few
+Auth0 machine tokens a month out of 1,000 free. No new scheduled Claude
+task: the digest that already runs weekly does the agent step. Deleting old
+projects frees Pages project slots rather than using them.
+
+## Decisions
+
+Recommended answers; "yes to all" accepts every one.
+
+1. **Claims come from existing files** (`wrangler.toml`, `threat.toml`,
+   the release matrix, open PRs), plus `standards/resources.toml` only for
+   kept and retired resources. *Alternative:* one hand-kept inventory of
+   everything, which drifts from the code.
+2. **Approval to delete is approving the PR that retires the resource**,
+   with 7 days of grace before the workflow deletes it. *Alternative:*
+   also require a click on a protected GitHub environment for each
+   deletion run (free, but one more thing to remember).
+3. **A rename without a retirement fails CI from day one** (RES-001), and
+   old addresses can't stay in the code (RES-002).
+4. **Temporary resources are deleted automatically** (previews after 14
+   days, closed-PR caches at close, closed-PR branches after 7 days);
+   branches with no PR are only listed.
+5. **Old `*.pages.dev` projects are deleted, not kept as redirect stubs,**
+   after their Auth0 URLs are removed.
+6. **One sweep:** this job is the threat check's weekly live check,
+   widened, in `all-free-tier-usage.yml`.
+7. **The weekly digest does the agent work**, rather than a new scheduled
+   task.
+8. **Jim turns on "Automatically delete head branches"** in the repo
+   settings, and later creates the read-only Auth0 token (phase 4). Both go
+   in `HUMAN_ISSUES.md`.
+
+## Not doing (yet)
+
+- Cleaning Claude's own leftovers (scheduled tasks, project files) from a
+  workflow: no API reaches them. The coordinator keeps those tidy.
+- PostHog: one project on the free plan, nothing to orphan. Its allowed
+  hosts are listed as an inbound reference in the safe order.
+- Squarespace: Jim's account, not touched by automation.
+- Deleting Actions caches by age: GitHub already evicts caches unused for 7
+  days, and the usage check warns at 8 GB.
