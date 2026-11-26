@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use crate::NFC_NORTH;
 use crate::elo::{Ratings, win_probability};
 use crate::games::Outcome;
-use crate::games::{Game, Season};
+use crate::games::{Date, Game, Season};
 use crate::standings::{Conference, Standings, Team, wild_cards};
 
 /// How many seasons a weekly build simulates (decision 0003).
@@ -120,6 +120,8 @@ impl Swing {
 pub struct GameImpact {
     /// The nflverse game id.
     pub game_id: String,
+    /// The day the game is played.
+    pub gameday: Date,
     /// The home team.
     pub home: Team,
     /// The away team.
@@ -344,6 +346,7 @@ pub fn simulate(
             };
             GameImpact {
                 game_id: game.id.clone(),
+                gameday: game.gameday,
                 home: remaining[index].home,
                 away: remaining[index].away,
                 home_win_probability: remaining[index].home_win_probability,
@@ -765,6 +768,11 @@ mod tests {
     fn root_for_follows_the_sign() {
         let game = GameImpact {
             game_id: "x".to_owned(),
+            gameday: Date {
+                year: 2026,
+                month: 11,
+                day: 26,
+            },
             home: team("DET"),
             away: team("GB"),
             home_win_probability: 0.5,
