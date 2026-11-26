@@ -69,9 +69,24 @@ pub struct Swing {
     pub swing: f64,
     /// The team to root for, or `None` when the swing is within noise.
     pub root_for: Option<String>,
-    /// Plain-language reasons the pick helps. Missing in older files.
+    /// How much the game matters: `matters`, `small`, `negligible` or
+    /// `none`. Missing in older files.
+    #[serde(default)]
+    pub tier: String,
+    /// The plain-language explanation of the verdict. Missing in older files.
     #[serde(default)]
     pub why: Vec<String>,
+}
+
+impl Swing {
+    /// The verdict shown when there is no team to root for.
+    pub fn no_pick_label(&self) -> &'static str {
+        match self.tier.as_str() {
+            "none" => "Can't matter",
+            "small" => "Too close to call",
+            _ => "Doesn't matter",
+        }
+    }
 }
 
 /// What the rankings optimize.
@@ -232,6 +247,23 @@ mod tests {
         // The Bears' own game leads the Super Bowl ranking.
         let top = r.ranked(Goal::SuperBowl)[0];
         assert!(top.home == "CHI" || top.away == "CHI");
+    }
+
+    #[test]
+    fn no_pick_labels_follow_the_tier() {
+        let swing = |tier: &str| Swing {
+            if_home_wins: 0.5,
+            if_away_wins: 0.5,
+            swing: 0.0,
+            root_for: None,
+            tier: tier.to_string(),
+            why: Vec::new(),
+        };
+        assert_eq!(swing("none").no_pick_label(), "Can't matter");
+        assert_eq!(swing("small").no_pick_label(), "Too close to call");
+        assert_eq!(swing("negligible").no_pick_label(), "Doesn't matter");
+        // Older files have no tier.
+        assert_eq!(swing("").no_pick_label(), "Doesn't matter");
     }
 
     #[test]

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T16:25:18Z",
+  "generated_at": "2026-11-26T17:30:11Z",
   "season": 2026,
   "week": 12,
   "simulations": 100000,
@@ -18,14 +18,14 @@
       "ties": 0
     },
     "odds": {
-      "playoffs": 0.92252,
-      "divisional_round": 0.6034,
-      "conference_game": 0.31946,
-      "super_bowl": 0.15499,
-      "champion": 0.07239
+      "playoffs": 0.92205,
+      "divisional_round": 0.60369,
+      "conference_game": 0.31937,
+      "super_bowl": 0.15515,
+      "champion": 0.07252
     }
   },
-  "nfc_north_divisional": 0.0007,
+  "nfc_north_divisional": 0.00069,
   "games": [
     {
       "id": "2026_12_CHI_DET",
@@ -34,33 +34,84 @@
       "home": "DET",
       "home_win_probability": 0.455600303381578,
       "champion": {
-        "if_home_wins": 0.05746,
-        "if_away_wins": 0.08502,
-        "swing": -0.02756,
+        "if_home_wins": 0.05731,
+        "if_away_wins": 0.08529,
+        "swing": -0.027980000000000005,
         "root_for": "CHI",
+        "tier": "matters",
         "why": [
           "The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race.",
-          "A win raises the Bears' chance of winning the NFC North by 36.3 points, of the No. 1 seed (the only first-round bye) by 13.8 points, and of making the playoffs by 9.8 points."
+          "NFC North title, on record: a Bears win helps the Bears by 1.6 Super Bowl points.",
+          "Seeding, on record: a Bears win helps the Bears by 0.71 Super Bowl points.",
+          "Wild card, on record: a Bears win helps the Bears by 0.50 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "division_title",
+            "cause": "record",
+            "favors": "CHI",
+            "share": 0.0157,
+            "std_error": 0.0007793170728272286,
+            "seasons": 0.36257
+          },
+          {
+            "channel": "seed",
+            "cause": "record",
+            "favors": "CHI",
+            "share": 0.00706,
+            "std_error": 0.0006083597323952334,
+            "seasons": 0.27682
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "CHI",
+            "share": 0.00504,
+            "std_error": 0.00022393298997691252,
+            "seasons": 0.09192
+          }
         ]
       },
       "playoffs": {
-        "if_home_wins": 0.86934,
-        "if_away_wins": 0.96695,
-        "swing": -0.09760999999999997,
+        "if_home_wins": 0.8685,
+        "if_away_wins": 0.96674,
+        "swing": -0.09824,
         "root_for": "CHI",
+        "tier": "matters",
         "why": [
           "The Bears' own game: a win over the Lions, a division rival, counts twice in the NFC North race.",
-          "A win raises the Bears' chance of winning the NFC North by 36.3 points and of the No. 1 seed (the only first-round bye) by 13.8 points."
+          "Wild card, on record: a Bears win helps the Bears by 9.2 playoff points.",
+          "NFC North title, on record: a Bears win helps the Bears by 0.63 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "CHI",
+            "share": 0.09192,
+            "std_error": 0.0009136230820201512,
+            "seasons": 0.09192
+          },
+          {
+            "channel": "division_title",
+            "cause": "record",
+            "favors": "CHI",
+            "share": 0.00632,
+            "std_error": 0.0002506004309653118,
+            "seasons": 0.36257
+          }
         ]
       },
       "nfc_north": {
         "if_home_wins": 0.00085,
-        "if_away_wins": 0.00051,
-        "swing": 0.0003399999999999999,
+        "if_away_wins": 0.0005,
+        "swing": 0.00034999999999999994,
         "root_for": "DET",
+        "tier": "matters",
         "why": [
           "The Lions (8-2) are one of the four NFC North teams that all need to reach the divisional round."
-        ]
+        ],
+        "channels": []
       }
     },
     {
@@ -70,31 +121,75 @@
       "home": "BUF",
       "home_win_probability": 0.5882510122416368,
       "champion": {
-        "if_home_wins": 0.07145,
-        "if_away_wins": 0.07335,
-        "swing": -0.001899999999999999,
+        "if_home_wins": 0.07159,
+        "if_away_wins": 0.0735,
+        "swing": -0.001909999999999995,
         "root_for": "KC",
+        "tier": "matters",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Chiefs win.",
-          "It barely changes the Bears' seeding: the gain comes from who they would likely face in the playoffs."
+          "An AFC game, so it reaches the Bears mostly through the Super Bowl opponent and the tiebreakers of teams on their schedule.",
+          "Super Bowl opponent (who wins the AFC): a Chiefs win helps the Bears by 0.21 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "super_bowl_opponent",
+            "cause": null,
+            "favors": "KC",
+            "share": 0.0020599999999999998,
+            "std_error": 0.00025604211372350446,
+            "seasons": 0.35583
+          }
         ]
       },
       "playoffs": {
-        "if_home_wins": 0.9226,
-        "if_away_wins": 0.92242,
-        "swing": 0.00017999999999995797,
-        "root_for": "BUF",
+        "if_home_wins": 0.92212,
+        "if_away_wins": 0.92195,
+        "swing": 0.00017000000000000348,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Bills win.",
-          "The Bills are on the Bears' schedule, so their wins add to the Bears' strength of schedule, a late tiebreaker."
+          "Doesn't matter: Chiefs at Bills moves the Bears' playoff odds by under 0.05 points (a Bills win is better by just 0.017 playoff points).",
+          "Wild card, decided by head-to-head in under 0.01% of seasons: a Bills win helps the Bears by 0.007 playoff points.",
+          "Wild card, decided by strength of schedule in under 0.01% of seasons: a Bills win helps the Bears by 0.004 playoff points.",
+          "Wild card, decided by strength of victory in under 0.01% of seasons: a Bills win helps the Bears by 0.004 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "BUF",
+            "share": 0.00007,
+            "std_error": 0.000026456587081481237,
+            "seasons": 0.00007
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "BUF",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00004
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "BUF",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00004
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
+        "if_home_wins": 0.00069,
+        "if_away_wins": 0.00069,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Chiefs at Bills measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -102,30 +197,68 @@
       "gameday": "2026-11-26",
       "away": "PHI",
       "home": "DAL",
-      "home_win_probability": 0.7362969027047115,
+      "home_win_probability": 0.7600053974795067,
       "champion": {
-        "if_home_wins": 0.07238,
-        "if_away_wins": 0.07243,
-        "swing": -0.00004999999999999449,
+        "if_home_wins": 0.07251,
+        "if_away_wins": 0.07257,
+        "swing": -0.000059999999999990616,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Eagles at Cowboys moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.006 give or take 0.009 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Eagles (3-7) are still in the NFC race and are on the Bears' schedule (strength of victory and schedule) and the Cowboys (5-6) are still in the NFC race."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92246,
-        "if_away_wins": 0.92271,
-        "swing": -0.0002500000000000835,
-        "root_for": "PHI",
+        "if_home_wins": 0.92199,
+        "if_away_wins": 0.92224,
+        "swing": -0.00024999999999997247,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "The Cowboys (5-6) compete with the Bears (8-2) for NFC playoff spots and seeding.",
-          "The Bears beat the Eagles in week 3, so each Eagles win raises the Bears' strength of victory, a tiebreaker."
+          "Doesn't matter: Eagles at Cowboys moves the Bears' playoff odds by under 0.05 points (an Eagles win is better by just 0.025 playoff points).",
+          "Wild card, decided by conference record in under 0.01% of seasons: an Eagles win helps the Bears by 0.008 playoff points.",
+          "Wild card, decided by head-to-head in under 0.01% of seasons: an Eagles win helps the Bears by 0.006 playoff points.",
+          "Wild card, decided by strength of victory in under 0.01% of seasons: an Eagles win helps the Bears by 0.005 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "conference record",
+            "favors": "PHI",
+            "share": 0.00008,
+            "std_error": 0.000028283139853983683,
+            "seasons": 0.00008
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "PHI",
+            "share": 0.00006,
+            "std_error": 0.00002449416256988591,
+            "seasons": 0.00006
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "PHI",
+            "share": 0.00005,
+            "std_error": 0.000022360120751015635,
+            "seasons": 0.00005
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
+        "if_home_wins": 0.00069,
         "if_away_wins": 0.00073,
-        "swing": -0.00002999999999999997,
-        "root_for": null,
-        "why": []
+        "swing": -0.000039999999999999996,
+        "root_for": "PHI",
+        "tier": "matters",
+        "why": [
+          "The Cowboys (5-6) compete with the NFC North teams for NFC playoff spots and seeding."
+        ],
+        "channels": []
       }
     },
     {
@@ -135,25 +268,39 @@
       "home": "PIT",
       "home_win_probability": 0.36897386735571674,
       "champion": {
-        "if_home_wins": 0.07244,
-        "if_away_wins": 0.07226,
-        "swing": 0.0001799999999999996,
+        "if_home_wins": 0.07275,
+        "if_away_wins": 0.072685,
+        "swing": 0.00006499999999999562,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Broncos at Steelers moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.006 give or take 0.014 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Broncos (8-2) could still be the Super Bowl opponent and the Steelers (6-4) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92253,
-        "if_away_wins": 0.92252,
-        "swing": 9.99999999995449e-6,
+        "if_home_wins": 0.921705,
+        "if_away_wins": 0.9217,
+        "swing": 5.000000000032756e-6,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Broncos at Steelers moves the Bears' playoff odds by under 0.05 points (the difference, under 0.001 give or take under 0.001 playoff points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Broncos (8-2) could still be the Super Bowl opponent and the Steelers (6-4) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
+        "if_home_wins": 0.00068,
+        "if_away_wins": 0.00068,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Broncos at Steelers measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -163,39 +310,135 @@
       "home": "MIN",
       "home_win_probability": 0.6986236680328497,
       "champion": {
-        "if_home_wins": 0.07159,
-        "if_away_wins": 0.07502,
-        "swing": -0.0034300000000000025,
+        "if_home_wins": 0.07167,
+        "if_away_wins": 0.07508,
+        "swing": -0.0034099999999999964,
         "root_for": "ATL",
+        "tier": "matters",
         "why": [
-          "The Vikings (7-3) are an NFC North rival of the Bears (8-2): every loss helps the Bears win the division.",
-          "The Vikings beat the Bears in week 2, so the Bears would lose a head-to-head tiebreaker: better that the Vikings drop games.",
-          "The Bears still play the Vikings in week 18.",
-          "The Bears beat the Falcons in week 6, so each Falcons win raises the Bears' strength of victory, a tiebreaker.",
-          "A Falcons win raises the Bears' chance of winning the NFC North by 7.3 points, of the No. 1 seed (the only first-round bye) by 1.1 points, and of making the playoffs by 0.7 points."
+          "The Vikings (7-3) are an NFC North rival of the Bears (8-2).",
+          "Seeding, decided by head-to-head in 6.9% of seasons: a Falcons win helps the Bears by 0.094 Super Bowl points.",
+          "NFC North title, decided by head-to-head in 4.3% of seasons: a Falcons win helps the Bears by 0.092 Super Bowl points.",
+          "Seeding, decided by division record in 4.6% of seasons: a Falcons win helps the Bears by 0.062 Super Bowl points.",
+          "NFC North title, decided by division record in 2.7% of seasons: a Falcons win helps the Bears by 0.056 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "seed",
+            "cause": "head-to-head",
+            "favors": "ATL",
+            "share": 0.0009399999999999994,
+            "std_error": 0.0002771121866681435,
+            "seasons": 0.06932
+          },
+          {
+            "channel": "division_title",
+            "cause": "head-to-head",
+            "favors": "ATL",
+            "share": 0.0009199999999999998,
+            "std_error": 0.0002489809952586743,
+            "seasons": 0.04338
+          },
+          {
+            "channel": "seed",
+            "cause": "division record",
+            "favors": "ATL",
+            "share": 0.0006199999999999999,
+            "std_error": 0.0002306429188160781,
+            "seasons": 0.0463
+          },
+          {
+            "channel": "division_title",
+            "cause": "division record",
+            "favors": "ATL",
+            "share": 0.00056,
+            "std_error": 0.00020879862068509935,
+            "seasons": 0.02735
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "ATL",
+            "share": 0.00023,
+            "std_error": 0.00004999470972012939,
+            "seasons": 0.0068
+          },
+          {
+            "channel": "wild_card",
+            "cause": "division record",
+            "favors": "ATL",
+            "share": 0.00009,
+            "std_error": 0.00003605438946924493,
+            "seasons": 0.00283
+          },
+          {
+            "channel": "seed",
+            "cause": "strength of schedule",
+            "favors": "ATL",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00014
+          }
         ]
       },
       "playoffs": {
-        "if_home_wins": 0.9203,
-        "if_away_wins": 0.92725,
-        "swing": -0.006950000000000012,
+        "if_home_wins": 0.91979,
+        "if_away_wins": 0.92681,
+        "swing": -0.007020000000000026,
         "root_for": "ATL",
+        "tier": "matters",
         "why": [
-          "The Vikings (7-3) are an NFC North rival of the Bears (8-2): every loss helps the Bears win the division.",
-          "The Vikings beat the Bears in week 2, so the Bears would lose a head-to-head tiebreaker: better that the Vikings drop games.",
-          "The Bears still play the Vikings in week 18.",
-          "The Bears beat the Falcons in week 6, so each Falcons win raises the Bears' strength of victory, a tiebreaker.",
-          "A Falcons win raises the Bears' chance of winning the NFC North by 7.3 points and of the No. 1 seed (the only first-round bye) by 1.1 points."
+          "The Vikings (7-3) are an NFC North rival of the Bears (8-2).",
+          "Wild card, decided by head-to-head in 0.68% of seasons: a Falcons win helps the Bears by 0.53 playoff points.",
+          "Wild card, decided by division record in 0.28% of seasons: a Falcons win helps the Bears by 0.15 playoff points.",
+          "Wild card, decided by strength of schedule in 0.01% of seasons: a Falcons win helps the Bears by 0.010 playoff points.",
+          "Wild card, decided by record in common games in under 0.01% of seasons: a Falcons win helps the Bears by 0.004 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "ATL",
+            "share": 0.0053,
+            "std_error": 0.00026022893766835387,
+            "seasons": 0.0068
+          },
+          {
+            "channel": "wild_card",
+            "cause": "division record",
+            "favors": "ATL",
+            "share": 0.0015300000000000001,
+            "std_error": 0.0001681564479881756,
+            "seasons": 0.00283
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "ATL",
+            "share": 0.0001,
+            "std_error": 0.00003162119542332326,
+            "seasons": 0.0001
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record in common games",
+            "favors": "ATL",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00004
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.00075,
+        "if_home_wins": 0.00074,
         "if_away_wins": 0.00062,
-        "swing": 0.00013000000000000002,
+        "swing": 0.00011999999999999999,
         "root_for": "MIN",
+        "tier": "matters",
         "why": [
           "The Vikings (7-3) are one of the four NFC North teams that all need to reach the divisional round."
-        ]
+        ],
+        "channels": []
       }
     },
     {
@@ -205,25 +448,39 @@
       "home": "HOU",
       "home_win_probability": 0.6855484615246431,
       "champion": {
-        "if_home_wins": 0.07242,
-        "if_away_wins": 0.07237,
+        "if_home_wins": 0.07256,
+        "if_away_wins": 0.07251,
         "swing": 0.00004999999999999449,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Ravens at Texans moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.005 give or take 0.006 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Ravens (4-7) could still be the Super Bowl opponent and the Texans (4-6) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92252,
-        "if_away_wins": 0.92252,
+        "if_home_wins": 0.92205,
+        "if_away_wins": 0.92205,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Ravens at Texans moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Ravens (4-7) could still be the Super Bowl opponent and the Texans (4-6) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
+        "if_home_wins": 0.00069,
+        "if_away_wins": 0.00069,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Ravens at Texans measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -233,30 +490,66 @@
       "home": "CLE",
       "home_win_probability": 0.6310261326442832,
       "champion": {
-        "if_home_wins": 0.07233,
-        "if_away_wins": 0.07209,
+        "if_home_wins": 0.07247,
+        "if_away_wins": 0.07223,
         "swing": 0.0002400000000000041,
-        "root_for": "CLE",
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Browns win.",
-          "It barely changes the Bears' seeding: the gain comes from who they would likely face in the playoffs."
-        ]
+          "Doesn't matter: Raiders at Browns moves the Bears' Super Bowl odds by under 0.05 points (a Browns win is better by just 0.024 Super Bowl points).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Raiders (4-7) could still be the Super Bowl opponent and the Browns (6-4) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92255,
-        "if_away_wins": 0.92234,
-        "swing": 0.00020999999999993246,
-        "root_for": "CLE",
+        "if_home_wins": 0.92208,
+        "if_away_wins": 0.92187,
+        "swing": 0.00021000000000004349,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Browns win."
+          "Doesn't matter: Raiders at Browns moves the Bears' playoff odds by under 0.05 points (a Browns win is better by just 0.021 playoff points).",
+          "Wild card, decided by strength of schedule in 0.01% of seasons: a Browns win helps the Bears by 0.011 playoff points.",
+          "Wild card, decided by strength of victory in under 0.01% of seasons: a Browns win helps the Bears by 0.004 playoff points.",
+          "Wild card, decided by head-to-head in under 0.01% of seasons: a Browns win helps the Bears by 0.004 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "CLE",
+            "share": 0.00011,
+            "std_error": 0.000033164423709752596,
+            "seasons": 0.00011
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "CLE",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00004
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "CLE",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00004
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
+        "if_home_wins": 0.00069,
         "if_away_wins": 0.00069,
-        "swing": 0.000010000000000000026,
+        "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Raiders at Browns measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -266,33 +559,66 @@
       "home": "LAC",
       "home_win_probability": 0.455600303381578,
       "champion": {
-        "if_home_wins": 0.07221,
-        "if_away_wins": 0.07247,
-        "swing": -0.0002600000000000102,
-        "root_for": "NE",
+        "if_home_wins": 0.07235,
+        "if_away_wins": 0.0726,
+        "swing": -0.0002500000000000002,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Patriots win.",
-          "The Bears beat the Patriots in week 7, so each Patriots win raises the Bears' strength of victory, a tiebreaker.",
-          "A Patriots win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 0.2 points."
-        ]
+          "Doesn't matter: Patriots at Chargers moves the Bears' Super Bowl odds by under 0.05 points (a Patriots win is better by just 0.025 Super Bowl points).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Patriots (5-5) could still be the Super Bowl opponent and are on the Bears' schedule (strength of victory and schedule) and the Chargers (1-9) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92235,
-        "if_away_wins": 0.92272,
-        "swing": -0.00036999999999998145,
-        "root_for": "NE",
+        "if_home_wins": 0.92188,
+        "if_away_wins": 0.92224,
+        "swing": -0.00035999999999991594,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Patriots win.",
-          "The Bears beat the Patriots in week 7, so each Patriots win raises the Bears' strength of victory, a tiebreaker.",
-          "A Patriots win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 0.2 points."
+          "Doesn't matter: Patriots at Chargers moves the Bears' playoff odds by under 0.05 points (a Patriots win is better by just 0.036 playoff points).",
+          "Wild card, decided by strength of victory in 0.02% of seasons: a Patriots win helps the Bears by 0.019 playoff points.",
+          "Wild card, decided by strength of schedule in 0.01% of seasons: a Patriots win helps the Bears by 0.011 playoff points.",
+          "Wild card, decided by head-to-head in under 0.01% of seasons: a Patriots win helps the Bears by 0.005 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "NE",
+            "share": 0.00019,
+            "std_error": 0.00004358484828469637,
+            "seasons": 0.00019
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "NE",
+            "share": 0.00011,
+            "std_error": 0.000033164423709752596,
+            "seasons": 0.00011
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "NE",
+            "share": 0.00005,
+            "std_error": 0.000022360120751015635,
+            "seasons": 0.00005
+          }
         ]
       },
       "nfc_north": {
         "if_home_wins": 0.00069,
-        "if_away_wins": 0.0007,
-        "swing": -0.000010000000000000026,
+        "if_away_wins": 0.00069,
+        "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Patriots at Chargers measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -302,27 +628,66 @@
       "home": "CIN",
       "home_win_probability": 0.7714088703117442,
       "champion": {
-        "if_home_wins": 0.07227,
-        "if_away_wins": 0.0724,
-        "swing": -0.0001300000000000051,
+        "if_home_wins": 0.0724,
+        "if_away_wins": 0.07255,
+        "swing": -0.00014999999999999736,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Saints at Bengals moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.015 give or take 0.016 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Saints (3-7) are still in the NFC race and are on the Bears' schedule (strength of victory and schedule) and the Bengals (7-3) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92247,
-        "if_away_wins": 0.92267,
-        "swing": -0.00019999999999997797,
-        "root_for": "NO",
+        "if_home_wins": 0.922,
+        "if_away_wins": 0.92219,
+        "swing": -0.00018999999999991246,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "The Bears beat the Saints in week 11, so each Saints win raises the Bears' strength of victory, a tiebreaker."
+          "Doesn't matter: Saints at Bengals moves the Bears' playoff odds by under 0.05 points (a Saints win is better by just 0.019 playoff points).",
+          "Wild card, decided by strength of schedule in under 0.01% of seasons: a Saints win helps the Bears by 0.008 playoff points.",
+          "Wild card, decided by head-to-head in under 0.01% of seasons: a Saints win helps the Bears by 0.006 playoff points.",
+          "Wild card, decided by strength of victory in under 0.01% of seasons: a Saints win helps the Bears by 0.005 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "NO",
+            "share": 0.00008,
+            "std_error": 0.000028283139853983683,
+            "seasons": 0.00008
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "NO",
+            "share": 0.00006,
+            "std_error": 0.00002449416256988591,
+            "seasons": 0.00006
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "NO",
+            "share": 0.00005,
+            "std_error": 0.000022360120751015635,
+            "seasons": 0.00005
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
+        "if_home_wins": 0.00069,
+        "if_away_wins": 0.00069,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Saints at Bengals measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -332,28 +697,91 @@
       "home": "IND",
       "home_win_probability": 0.32776374218264587,
       "champion": {
-        "if_home_wins": 0.07257,
-        "if_away_wins": 0.07235,
-        "swing": 0.00021999999999999797,
+        "if_home_wins": 0.073005,
+        "if_away_wins": 0.072845,
+        "swing": 0.00016000000000000736,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Giants at Colts moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.016 give or take 0.012 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Giants (6-3-1) are still in the NFC race and the Colts (3-8) could still be the Super Bowl opponent."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92321,
-        "if_away_wins": 0.9222,
-        "swing": 0.0010099999999999554,
+        "if_home_wins": 0.922395,
+        "if_away_wins": 0.92138,
+        "swing": 0.0010149999999999881,
         "root_for": "IND",
+        "tier": "matters",
         "why": [
           "The Giants (6-3-1) compete with the Bears (8-2) for NFC playoff spots and seeding.",
-          "A Colts win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 0.1 points."
+          "Wild card, on record: a Colts win helps the Bears by 0.040 playoff points.",
+          "Wild card, decided by head-to-head in 0.03% of seasons: a Colts win helps the Bears by 0.028 playoff points.",
+          "Wild card, decided by strength of victory in 0.01% of seasons: a Colts win helps the Bears by 0.013 playoff points.",
+          "Wild card, decided by strength of schedule in under 0.01% of seasons: a Colts win helps the Bears by 0.009 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "IND",
+            "share": 0.0004,
+            "std_error": 0.00004471241438347967,
+            "seasons": 0.0004
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "IND",
+            "share": 0.000285,
+            "std_error": 0.000038400441078195965,
+            "seasons": 0.000295
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "IND",
+            "share": 0.00013,
+            "std_error": 0.00002549344033276011,
+            "seasons": 0.00013
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "IND",
+            "share": 0.00009,
+            "std_error": 0.00002121224881996249,
+            "seasons": 0.00009
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record in common games",
+            "favors": "IND",
+            "share": 0.00006,
+            "std_error": 0.00001731998845265204,
+            "seasons": 0.00006
+          },
+          {
+            "channel": "wild_card",
+            "cause": "conference record",
+            "favors": "IND",
+            "share": 0.000045,
+            "std_error": 0.00001499966249620304,
+            "seasons": 0.000045
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.00075,
-        "if_away_wins": 0.0007,
-        "swing": 0.00005000000000000002,
+        "if_home_wins": 0.000705,
+        "if_away_wins": 0.000675,
+        "swing": 0.00002999999999999997,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Giants at Colts measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -363,28 +791,48 @@
       "home": "MIA",
       "home_win_probability": 0.36897386735571674,
       "champion": {
-        "if_home_wins": 0.07233,
-        "if_away_wins": 0.0724,
+        "if_home_wins": 0.07246,
+        "if_away_wins": 0.07253,
         "swing": -0.00007000000000000062,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Jets at Dolphins moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.007 give or take 0.006 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Jets (3-8) could still be the Super Bowl opponent and are on the Bears' schedule (strength of victory and schedule) and the Dolphins (1-9) could still be the Super Bowl opponent and are on the Bears' schedule (strength of victory and schedule)."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92247,
-        "if_away_wins": 0.92254,
-        "swing": -0.0000700000000000145,
-        "root_for": "NYJ",
+        "if_home_wins": 0.92199,
+        "if_away_wins": 0.92207,
+        "swing": -0.00007999999999996898,
+        "root_for": null,
+        "tier": "negligible",
         "why": [
-          "An AFC game, so it only matters through the Bears' likely Super Bowl opponent: the AFC field looks easier with a Jets win.",
-          "The Bears beat the Jets in week 4, so each Jets win raises the Bears' strength of victory, a tiebreaker."
+          "Doesn't matter: Jets at Dolphins moves the Bears' playoff odds by under 0.05 points (a Jets win is better by just 0.008 playoff points).",
+          "Wild card, decided by strength of schedule in under 0.01% of seasons: a Jets win helps the Bears by 0.008 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "NYJ",
+            "share": 0.00008,
+            "std_error": 0.000028283139853983683,
+            "seasons": 0.00008
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
+        "if_home_wins": 0.00069,
+        "if_away_wins": 0.00069,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Jets at Dolphins measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -392,16 +840,78 @@
       "gameday": "2026-11-29",
       "away": "SEA",
       "home": "SF",
-      "home_win_probability": 0.5882510122416368,
+      "home_win_probability": 0.5737280458252917,
       "champion": {
-        "if_home_wins": 0.0701,
+        "if_home_wins": 0.07009,
         "if_away_wins": 0.07562,
-        "swing": -0.005520000000000011,
+        "swing": -0.005530000000000007,
         "root_for": "SEA",
+        "tier": "matters",
         "why": [
           "The 49ers (9-1) compete with the Bears (8-2) for NFC playoff spots and seeding.",
-          "The Bears beat the Seahawks in week 8, so each Seahawks win raises the Bears' strength of victory, a tiebreaker.",
-          "A Seahawks win raises the Bears' chance of the No. 1 seed (the only first-round bye) by 10.2 points."
+          "Seeding, decided by conference record in 6.7% of seasons: a Seahawks win helps the Bears by 0.41 Super Bowl points.",
+          "Seeding, decided by record in common games in 3.9% of seasons: a Seahawks win helps the Bears by 0.23 Super Bowl points.",
+          "Seeding, decided by strength of victory in 2.1% of seasons: a Seahawks win helps the Bears by 0.13 Super Bowl points.",
+          "Wild card, decided by head-to-head in 2.3% of seasons: a 49ers win helps the Bears by 0.10 Super Bowl points.",
+          "Net: these pull opposite ways, and a Seahawks win comes out ahead by 0.55 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "seed",
+            "cause": "conference record",
+            "favors": "SEA",
+            "share": 0.004079999999999999,
+            "std_error": 0.00037394322563726165,
+            "seasons": 0.06683
+          },
+          {
+            "channel": "seed",
+            "cause": "record in common games",
+            "favors": "SEA",
+            "share": 0.0022799999999999995,
+            "std_error": 0.0002995797322917557,
+            "seasons": 0.03857
+          },
+          {
+            "channel": "seed",
+            "cause": "strength of victory",
+            "favors": "SEA",
+            "share": 0.00128,
+            "std_error": 0.00020972271217014146,
+            "seasons": 0.0214
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "SF",
+            "share": 0.0010099999999999998,
+            "std_error": 0.0001043541997238252,
+            "seasons": 0.02275
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "SF",
+            "share": 0.00032,
+            "std_error": 0.0000565594908039314,
+            "seasons": 0.0055
+          },
+          {
+            "channel": "wild_card",
+            "cause": "conference record",
+            "favors": "SF",
+            "share": 0.00014000000000000001,
+            "std_error": 0.00004690206818467604,
+            "seasons": 0.00411
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record in common games",
+            "favors": "SF",
+            "share": 0.00004,
+            "std_error": 0.00001999959999599992,
+            "seasons": 0.00063
+          }
         ]
       },
       "playoffs": {
@@ -409,9 +919,55 @@
         "if_away_wins": 0.90507,
         "swing": 0.030019999999999936,
         "root_for": "SF",
+        "tier": "matters",
         "why": [
           "The Seahawks (6-4) compete with the Bears (8-2) for NFC playoff spots and seeding.",
-          "The Bears beat the Seahawks in week 8, so they would win a head-to-head tiebreaker with them."
+          "Wild card, decided by head-to-head in 2.3% of seasons: a 49ers win helps the Bears by 2.0 playoff points.",
+          "Wild card, on record: a 49ers win helps the Bears by 0.54 playoff points.",
+          "Wild card, decided by conference record in 0.41% of seasons: a 49ers win helps the Bears by 0.31 playoff points.",
+          "Wild card, decided by strength of victory in 0.13% of seasons: a 49ers win helps the Bears by 0.10 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "SF",
+            "share": 0.01997,
+            "std_error": 0.00047277054794054164,
+            "seasons": 0.02275
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "SF",
+            "share": 0.0054,
+            "std_error": 0.00023389826848439898,
+            "seasons": 0.0055
+          },
+          {
+            "channel": "wild_card",
+            "cause": "conference record",
+            "favors": "SF",
+            "share": 0.00307,
+            "std_error": 0.00020249876789748622,
+            "seasons": 0.00411
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "SF",
+            "share": 0.00103,
+            "std_error": 0.00011353145379144934,
+            "seasons": 0.00129
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record in common games",
+            "favors": "SF",
+            "share": 0.00049,
+            "std_error": 0.00007935741301227,
+            "seasons": 0.00063
+          }
         ]
       },
       "nfc_north": {
@@ -419,7 +975,11 @@
         "if_away_wins": 0.00076,
         "swing": -0.00011999999999999999,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Seahawks at 49ers measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -429,25 +989,48 @@
       "home": "JAX",
       "home_win_probability": 0.859498014650663,
       "champion": {
-        "if_home_wins": 0.0724,
-        "if_away_wins": 0.0725,
-        "swing": -0.00009999999999998899,
+        "if_home_wins": 0.07253,
+        "if_away_wins": 0.07264,
+        "swing": -0.00010999999999999899,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Titans at Jaguars moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.011 give or take 0.014 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Titans (1-9) could still be the Super Bowl opponent and the Jaguars (7-3) could still be the Super Bowl opponent and are on the Bears' schedule (strength of victory and schedule)."
+        ],
+        "channels": []
       },
       "playoffs": {
-        "if_home_wins": 0.92254,
-        "if_away_wins": 0.92251,
-        "swing": 0.00002999999999997449,
+        "if_home_wins": 0.92207,
+        "if_away_wins": 0.92203,
+        "swing": 0.00003999999999992898,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Titans at Jaguars moves the Bears' playoff odds by under 0.05 points (the difference, 0.004 give or take 0.003 playoff points, is within the simulation's noise).",
+          "Wild card, decided by strength of schedule in under 0.01% of seasons: a Jaguars win helps the Bears by 0.005 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "JAX",
+            "share": 0.00005,
+            "std_error": 0.000022360120751015635,
+            "seasons": 0.00005
+          }
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
+        "if_home_wins": 0.00069,
+        "if_away_wins": 0.00069,
         "swing": 0.0,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Titans at Jaguars measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
       }
     },
     {
@@ -457,29 +1040,111 @@
       "home": "ARI",
       "home_win_probability": 0.3144515384753569,
       "champion": {
-        "if_home_wins": 0.07206,
-        "if_away_wins": 0.07257,
-        "swing": -0.0005099999999999966,
+        "if_home_wins": 0.07257,
+        "if_away_wins": 0.072995,
+        "swing": -0.0004250000000000087,
         "root_for": "WAS",
+        "tier": "small",
         "why": [
-          "It barely changes the Bears' seeding: the gain comes from who they would likely face in the playoffs."
+          "A small edge: a Commanders win is better by 0.043 give or take 0.008 Super Bowl points, close to the 0.05-point line.",
+          "NFC playoff field (who else gets in, and where): a Commanders win helps the Bears by 0.038 Super Bowl points.",
+          "Seeding, decided by strength of victory in 0.07% of seasons: a Commanders win helps the Bears by 0.009 Super Bowl points.",
+          "Wild card, on record: a Cardinals win helps the Bears by 0.003 Super Bowl points.",
+          "Net: these pull opposite ways, and a Commanders win comes out ahead by 0.043 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "playoff_path",
+            "cause": null,
+            "favors": "WAS",
+            "share": 0.00038,
+            "std_error": 0.00007210601916622494,
+            "seasons": 0.180005
+          },
+          {
+            "channel": "seed",
+            "cause": "strength of victory",
+            "favors": "WAS",
+            "share": 0.000095,
+            "std_error": 0.000029579636153948888,
+            "seasons": 0.00075
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "ARI",
+            "share": 0.00003,
+            "std_error": 0.000012247265000807324,
+            "seasons": 0.00063
+          }
         ]
       },
       "playoffs": {
-        "if_home_wins": 0.92332,
-        "if_away_wins": 0.92215,
-        "swing": 0.0011700000000000044,
+        "if_home_wins": 0.922515,
+        "if_away_wins": 0.92135,
+        "swing": 0.0011649999999999716,
         "root_for": "ARI",
+        "tier": "matters",
         "why": [
-          "The Commanders (4-5-1) compete with the Bears (8-2) for NFC playoff spots and seeding."
+          "The Commanders (4-5-1) compete with the Bears (8-2) for NFC playoff spots and seeding.",
+          "Wild card, on record: a Cardinals win helps the Bears by 0.063 playoff points.",
+          "Wild card, decided by head-to-head in 0.05% of seasons: a Cardinals win helps the Bears by 0.033 playoff points.",
+          "Wild card, decided by conference record in 0.01% of seasons: a Cardinals win helps the Bears by 0.010 playoff points.",
+          "Wild card, decided by record in common games in under 0.01% of seasons: a Cardinals win helps the Bears by 0.008 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "ARI",
+            "share": 0.00063,
+            "std_error": 0.00005610717868508449,
+            "seasons": 0.00063
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "ARI",
+            "share": 0.000325,
+            "std_error": 0.00004923892642005916,
+            "seasons": 0.000485
+          },
+          {
+            "channel": "wild_card",
+            "cause": "conference record",
+            "favors": "ARI",
+            "share": 0.0001,
+            "std_error": 0.0000223595617130569,
+            "seasons": 0.0001
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record in common games",
+            "favors": "ARI",
+            "share": 0.00007500000000000001,
+            "std_error": 0.000020614845985357254,
+            "seasons": 0.000085
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "ARI",
+            "share": 0.00004,
+            "std_error": 0.000015811135316605196,
+            "seasons": 0.00005
+          }
         ]
       },
       "nfc_north": {
-        "if_home_wins": 0.0007,
-        "if_away_wins": 0.0007,
-        "swing": 0.0,
-        "root_for": null,
-        "why": []
+        "if_home_wins": 0.000695,
+        "if_away_wins": 0.00067,
+        "swing": 0.000024999999999999957,
+        "root_for": "ARI",
+        "tier": "matters",
+        "why": [
+          "The Commanders (4-5-1) compete with the NFC North teams for NFC playoff spots and seeding."
+        ],
+        "channels": []
       }
     },
     {
@@ -489,25 +1154,93 @@
       "home": "TB",
       "home_win_probability": 0.5882510122416368,
       "champion": {
-        "if_home_wins": 0.07231,
-        "if_away_wins": 0.07257,
-        "swing": -0.00025999999999999635,
+        "if_home_wins": 0.07280666666666667,
+        "if_away_wins": 0.07309666666666667,
+        "swing": -0.0002899999999999986,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Panthers at Buccaneers moves the Bears' Super Bowl odds by under 0.05 points (a Panthers win is better by just 0.029 Super Bowl points).",
+          "NFC playoff field (who else gets in, and where): a Panthers win helps the Bears by 0.028 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "playoff_path",
+            "cause": null,
+            "favors": "CAR",
+            "share": 0.0002766666666666667,
+            "std_error": 0.00008333180243038247,
+            "seasons": 0.5655566666666667
+          }
+        ]
       },
       "playoffs": {
-        "if_home_wins": 0.92251,
-        "if_away_wins": 0.92257,
-        "swing": -0.00005999999999994898,
+        "if_home_wins": 0.9212933333333333,
+        "if_away_wins": 0.9213833333333333,
+        "swing": -0.0000900000000000345,
         "root_for": null,
-        "why": []
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Panthers at Buccaneers moves the Bears' playoff odds by under 0.05 points (a Panthers win is better by just 0.009 playoff points).",
+          "Wild card, decided by strength of schedule in under 0.01% of seasons: a Panthers win helps the Bears by 0.007 playoff points.",
+          "Wild card, decided by head-to-head in under 0.01% of seasons: a Buccaneers win helps the Bears by 0.004 playoff points.",
+          "Wild card, decided by strength of victory in under 0.01% of seasons: a Panthers win helps the Bears by 0.002 playoff points.",
+          "Wild card, on record: a Panthers win helps the Bears by 0.001 playoff points.",
+          "Net: these pull opposite ways, and a Panthers win comes out ahead by 0.009 playoff points."
+        ],
+        "channels": [
+          {
+            "channel": "wild_card",
+            "cause": "strength of schedule",
+            "favors": "CAR",
+            "share": 0.00007333333333333333,
+            "std_error": 0.00001563414591586373,
+            "seasons": 0.00007333333333333333
+          },
+          {
+            "channel": "wild_card",
+            "cause": "head-to-head",
+            "favors": "TB",
+            "share": 0.000043333333333333334,
+            "std_error": 0.000015985909304643772,
+            "seasons": 0.00007666666666666667
+          },
+          {
+            "channel": "wild_card",
+            "cause": "strength of victory",
+            "favors": "CAR",
+            "share": 0.000019999999999999998,
+            "std_error": 9.428019704877348e-6,
+            "seasons": 0.000026666666666666667
+          },
+          {
+            "channel": "wild_card",
+            "cause": "record",
+            "favors": "CAR",
+            "share": 0.000013333333333333333,
+            "std_error": 6.666622222074073e-6,
+            "seasons": 0.000013333333333333333
+          },
+          {
+            "channel": "wild_card",
+            "cause": "conference record",
+            "favors": "CAR",
+            "share": 0.000013333333333333333,
+            "std_error": 6.666622222074073e-6,
+            "seasons": 0.000013333333333333333
+          }
+        ]
       },
       "nfc_north": {
-        "if_home_wins": 0.00067,
-        "if_away_wins": 0.00069,
-        "swing": -0.000019999999999999944,
-        "root_for": null,
-        "why": []
+        "if_home_wins": 0.0006966666666666666,
+        "if_away_wins": 0.0007333333333333333,
+        "swing": -0.00003666666666666673,
+        "root_for": "CAR",
+        "tier": "matters",
+        "why": [
+          "The Buccaneers (3-7) compete with the NFC North teams for NFC playoff spots and seeding."
+        ],
+        "channels": []
       }
     }
   ]
