@@ -116,6 +116,15 @@ repo, rather than in any one agent tool's settings.
   secrets are made by a person and stored only as GitHub or vendor
   secrets. The `infra` plan guard IAC-002 fails any plan that would put a
   sensitive value in state.
+- **Second approval for credentials (Jim, 2026-11-26).** A credential
+  change (new or edited Auth0 apps and grants, token scopes, Access
+  policies, GitHub secrets, environments or rulesets) applies only after
+  Jim approves its run in the `infra-credentials` GitHub environment, on
+  top of the PR approval
+  ([decision 0010](standards/docs/decisions/0010-credential-second-approval.md)).
+  Agents never approve a `credential-change` PR, never put a
+  credential-capable token anywhere but that environment, and never ask
+  for admin rights for `jimhillr-agt` or the Claude GitHub App.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
