@@ -26,6 +26,24 @@ Every resource that already exists is brought in with an `import` block, and
 every resource has `prevent_destroy`: IaC never deletes anything (decision
 0007, item 8).
 
+## Plan guards
+
+`cargo run -- guard plan.json` checks the JSON of a saved plan
+(`tofu show -json plan.tfplan > plan.json`) and fails on any finding. The
+workflows run it on every plan before it is shown or applied.
+
+| ID | Fails when |
+| --- | --- |
+| IAC-001 | the plan deletes or replaces anything (forget it with a `removed` block instead, which the guard allows) |
+| IAC-002 | our configuration sets an attribute the provider marks sensitive, so a secret would land in state |
+| IAC-003 | a resource type that can bill (R2, subscriptions and the like), or more Pages projects, Workers or Cron Trigger schedules than the budgets in `standards/radar/limits.toml` |
+| IAC-004 | a provider or resource type not allowlisted in `src/guard.rs` |
+
+The lists live in `src/guard.rs`. Add a resource type to the allowlist in the
+PR that first uses it, after checking it can't bill; a test fails if a stack
+uses a type that isn't listed. The guards are tested on fixture plans in
+`tests/fixtures/plans/`, one of them real OpenTofu output.
+
 ## Changing a setting
 
 Edit the construct or stack, run `mise run synth`, and commit the change to
