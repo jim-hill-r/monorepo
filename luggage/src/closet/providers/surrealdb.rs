@@ -35,7 +35,7 @@ impl SurrealDbClosetProvider<Client> {
         password: &'a str,
         namespace: &'a str,
         database: &'a str,
-    ) -> Result<Self, surrealdb::Error> {
+    ) -> Result<Self, LuggageError> {
         let db = Surreal::new::<Ws>(url).await?;
 
         db.signin(Root { username, password }).await?;
@@ -47,7 +47,7 @@ impl SurrealDbClosetProvider<Client> {
 }
 
 impl SurrealDbClosetProvider<Db> {
-    pub async fn new(namespace: &str, database: &str) -> Result<Self, surrealdb::Error> {
+    pub async fn new(namespace: &str, database: &str) -> Result<Self, LuggageError> {
         let db = Surreal::new::<Mem>(()).await?;
         db.use_ns(namespace).use_db(database).await?;
         Ok(Self { db })
