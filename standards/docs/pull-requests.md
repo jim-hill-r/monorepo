@@ -49,8 +49,8 @@ PR that touches a project failing on `main` must not make that project worse.
 
 GitHub auto-merge is on for this repo (squash only). An agent turns it on for
 its own PR when it marks the PR ready for review (Jim, 2026-11-26), with
-`PUT /repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge` (squash) or
-`gh pr merge <n> --auto --squash --delete-branch`. It does so only when all of
+`gh api -X PUT repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge -f merge_method=SQUASH`
+(Claude sessions can't use GraphQL, so `gh pr merge --auto` fails there). It does so only when all of
 these hold:
 
 - The PR meets the `open-pull-request` ready checklist: complete, every check
@@ -158,8 +158,7 @@ Code footer.
 Any agent that starts work on an existing PR (pushing a fix, answering a
 review with a change, merging `main` into it, or any other push) first
 converts the PR to draft and turns off its auto-merge
-(`DELETE /repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge` or
-`gh pr merge <n> --disable-auto`), and marks it ready for review and turns
+(`gh api -X DELETE repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge`), and marks it ready for review and turns
 auto-merge back on only once its checks are green on the new head commit
 (Jim, 2026-11-26). The draft tells
 reviewers and triage that the PR is changing under them, so nobody approves

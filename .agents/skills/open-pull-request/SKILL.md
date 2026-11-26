@@ -46,8 +46,8 @@ Ready for review hands the PR to a human; it is not approval.
 ## Turn on auto-merge
 
 Right after marking it ready, turn on GitHub auto-merge with squash
-(`PUT /repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge`, or
-`gh pr merge <n> --auto --squash --delete-branch`), so the PR lands as soon
+(`gh api -X PUT repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge -f merge_method=SQUASH`;
+`gh pr merge --auto` needs GraphQL, which Claude sessions can't use), so the PR lands as soon
 as a reviewer approves it. Skip this when the PR is labelled `needs-human` or
 a check is red, even one also failing on `main`; the rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
@@ -58,8 +58,7 @@ your own PR, so it waits for a human's approval either way.
 Before you start any work on an existing PR (a reviewer's changes, a CI fix,
 a merge from `main`, any push), **convert it back to draft first** (Jim,
 2026-11-26), and turn off its auto-merge
-(`DELETE /repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge`, or
-`gh pr merge <n> --disable-auto`). Do the work, then mark it ready for review
+(`gh api -X DELETE repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge`). Do the work, then mark it ready for review
 and turn auto-merge on again only once it
 meets every point of the list above, including green checks on the new head
 commit. Move the PR back to draft too if it stops meeting the list for any
