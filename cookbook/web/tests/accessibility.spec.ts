@@ -8,7 +8,7 @@ import AxeBuilder from '@axe-core/playwright';
  * on key pages of the application.
  *
  * Before running these tests, start the Dioxus dev server:
- *   cast run
+ *   mise run dev
  *
  * Run tests with:
  *   npm test

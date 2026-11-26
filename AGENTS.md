@@ -104,9 +104,7 @@ Every project has the same tasks (`ci`, `fix`, `build`, `test`, `dev`,
 `release`, `deploy`), from one shared file in `standards/tasks/`. The rules
 and decisions (no root Rust workspace, no committed build artifacts) are in
 [standards/docs/mise.md](standards/docs/mise.md). CI runs `mise run ci` in
-each changed project; pushes to `main` also run `mise run deploy`. The old
-Cast CLI and `Cast.toml` files are still in the tree until they are removed,
-but nothing runs them.
+each changed project; pushes to `main` also run `mise run deploy`.
 
 ## Skills
 

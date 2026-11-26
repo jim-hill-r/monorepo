@@ -22,6 +22,10 @@ export default defineConfig({
   
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
+
+  /* The unoptimised dev build loads slowly on CI runners; tests that visit
+     several pages need more than the default 30s there. */
+  timeout: process.env.CI ? 60 * 1000 : 30 * 1000,
   
   /* Use a limited number of workers on CI to balance speed and stability. */
   workers: process.env.CI ? 2 : 4,
@@ -73,8 +77,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     // `mise run dev` is the project's standard dev task (dx serve on port 8080).
-    // Falls back to `cast run` while the Cast CI still runs these tests.
-    command: 'if command -v mise >/dev/null 2>&1; then mise run dev; else cast run; fi',
+    command: 'mise run dev',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 600 * 1000, // first dx build in CI is slow

@@ -21,9 +21,9 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 - TODO (agent-generated): Render a `vhs` tape per CLI (`docs/demo.tape`) to a GIF when a PR changes user-facing output, and link it from the sticky PR comment.
 - TODO (agent-generated): Bevy UAT. Add a scripted mode to controlled_chaos (fixed timestep, seeded RNG, timed inputs, screenshots at named frames, non-zero exit on panic) and a `smoke` task in `standards/tasks/bevy-game.toml` that runs it under `xvfb-run` and records the display with `ffmpeg`.
 - TODO (agent-generated): Check whether controlled_chaos builds for `wasm32-unknown-unknown`; if it does, deploy the web build as a Pages preview per PR and to production on main.
-- TODO (agent-generated): Monthly full run. Add `monthly-uat.yml` (first Tuesday of each month plus `workflow_dispatch`) that runs `ci`, `release`, `deploy` and `smoke` for every project, including on-hold ones, and publishes the combined UAT report to `uat-reports` under `monthly-<yyyy-mm>`.
-- TODO (agent-generated): Give every shared task file a default `smoke` task that fails with "no smoke test yet", so projects without UAT show up in the monthly report.
-- TODO (agent-generated): Add a scheduled agent task after the monthly run that records a `FIX` in the `ISSUES.md` of each failed project in one draft PR, and flag any project whose last successful UAT is older than 31 days.
+- TODO (agent-generated): Nightly UAT. Add a `smoke` step after `deploy` in the nightly run (`nightly-ci.yml` through `mise-projects.yml`) for every project, including on-hold ones, and publish the combined UAT report to `uat-reports` under a `nightly` branch.
+- TODO (agent-generated): Give every shared task file a default `smoke` task that fails with "no smoke test yet", so projects without UAT show up in the nightly report.
+- TODO (agent-generated): Add a scheduled agent task after the nightly run that records a `FIX` in the `ISSUES.md` of each failed project in one draft PR, and flag any project whose last successful UAT is older than 2 days.
 - TODO (agent-ignore): Create the PostHog Cloud project and add a read-only PostHog personal API key as a repo secret. Needs Jim.
 - TODO (agent-generated): Add PostHog session replay to each production web app (production host only, inputs masked, console and network capture on) with a privacy note on each site.
 - TODO (agent-generated): Send gameplay events (session start, level or turn reached, quit, panic message) from the controlled_chaos web build to the `telemetry` Worker.
@@ -39,10 +39,13 @@ Free tiers: see [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
 - TODO (agent-generated): Once the nightly run deploys every project (PR #583), make `nightly-ci.yml` call `all-free-tier-usage.yml` as its first job and make the `mise-projects.yml` job need it, so a nightly deploy never runs past a budget.
 - TODO (agent-generated): When bear_down or the `telemetry` Worker first deploys, add a `free-tiers.sh worker` guard (count Workers and Cron Triggers in the account before `wrangler deploy`) and run it from the Workers deploy task, like `pages-project` for Pages.
 - TODO (agent-generated): When PostHog is added, extend `free-tiers.sh usage` to read the month's event and recording counts from the PostHog API and warn at 80% of the free allowance.
-- TODO (agent-ignore): Confirm there is no payment method on the Cloudflare, PostHog, Auth0 and RapidAPI accounts, that GitHub's Actions budget is $0 with usage stopped at the limit, and give `CLOUDFLARE_API_TOKEN` Workers Scripts read access for the usage check. Needs Jim.
+- TODO (agent-ignore): Double-check there is still no payment method on the Cloudflare, PostHog, Auth0 and RapidAPI accounts (Jim, 2026-11-25: none attached yet), that GitHub's Actions budget is $0 with usage stopped at the limit, and give `CLOUDFLARE_API_TOKEN` Workers Scripts read access for the usage check. Needs Jim.
+- TODO (agent-generated): Cost approval process. Add a "Spending money" section to `standards/docs/free-tiers.md`: any expense (paid plan, add-on, domain, payment method) needs a decision record in `standards/docs/decisions/` with the monthly and yearly cost, why the free tier isn't enough, and how to cancel. The PR gets the `needs-jim` label and only Jim merges it. Add a check to `free-tiers.sh check` that fails when a decision record says `Cost:` with a non-zero amount but is not marked `Approved by: Jim`.
+- TODO (agent-generated): Cost ledger. Add `standards/docs/costs.md` listing every service, plan, monthly cost (all $0 today), payment method on file (none) and the decision record behind any paid line, and have the `usage` check fail if a service in the guards isn't listed there.
+- TODO (agent-generated): Monthly cost review. Add a `review-costs` agent skill and ask Jim to schedule it on the 1st of each month. It runs All Free Tier Usage, compares the results with `standards/docs/costs.md`, records the month's usage in `standards/docs/costs/<yyyy-mm>.md`, and labels a PR `needs-jim` when anything is above 80% of a free limit or not $0.
+- TODO (agent-generated): Billing checks in the weekly usage workflow, where the vendor's API allows it. Use a separate read-only secret for each: GitHub's billing usage API (fail on any non-zero net amount for the month), and Cloudflare's account subscriptions API with a Billing Read token (fail on any paid subscription, Workers Paid included). Record in `free-tiers.md` which vendors can't be checked by API (PostHog, Auth0, RapidAPI) so the monthly review asks Jim about them.
 
 # Priority Projects
-- cast
 - cookbook
 - homer
 - controlled_chaos

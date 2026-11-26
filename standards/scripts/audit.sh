@@ -18,7 +18,7 @@ errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
 
 # Top-level directories that are not projects.
-skip_top='^(\.[^/]*|cast|agent_copilot)$'  # cast goes away with Cast; agent_copilot is handled separately
+skip_top='^\.'  # hidden directories are not projects
 
 for d in $(git ls-files | cut -d/ -f1 | sort -u); do
   [ -d "$d" ] || continue

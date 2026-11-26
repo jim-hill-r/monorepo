@@ -32,7 +32,8 @@ Runs on every push to `main`: `mise run ci` then `mise run deploy` in each
 project the push changed. Only the cloudflare projects deploy anything; they
 build their web app and publish it with `wrangler pages deploy`, which needs
 the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
-Runs are queued, never cancelled, so a deploy is not cut short.
+Runs have no concurrency group, so every push gets its own CI and deploy;
+a group would let GitHub cancel queued runs and skip them.
 
 A project with `DEPLOY_URL` in its `mise.toml` `[env]` deploys in the
 `production` environment, so the deploy is listed under Deployments with its
@@ -43,10 +44,18 @@ which is how to roll back (see `standards/docs/mise.md`).
 
 ### nightly-ci.yml
 
-Runs `mise run ci` in every project at 2 AM Pacific, so new toolchain or
-dependency releases that break a quiet project show up.
+Runs `mise run ci` then `mise run deploy` in every project at 2 AM Pacific,
+so new toolchain or dependency releases, expired secrets and broken deploys
+show up within a day, even in quiet projects. It needs the same Cloudflare
+secrets as `push-main.yml`.
 
-Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs`.
+Every deploy, here and in `push-main.yml`, runs only after `ci` passed in
+the same job, and `standards/scripts/deploy-check.sh` skips it when a newer
+commit on main changes the project, so an older run never overwrites a
+newer deploy.
+
+Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
+`deploy_check_tests.rs`.
 
 ## all-free-tier-usage.yml
 

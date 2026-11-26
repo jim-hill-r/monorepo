@@ -1,3 +1,0 @@
-[project]
-name = "cast_cli"
-description = "The CLI binary for the Cast tool — highly opinionated tooling for Rust monorepos."

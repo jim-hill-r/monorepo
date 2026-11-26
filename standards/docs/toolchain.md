@@ -1,226 +1,59 @@
 # Toolchain Management
 
-This document defines standards for managing development toolchains across the monorepo.
+How development tools are installed and run across the monorepo. The rules
+for the task runner itself are in [mise.md](mise.md).
 
-## Overview
+## One tool manager: mise
 
-Projects in this monorepo use various frameworks that require specific development tools beyond the base Rust toolchain. This document outlines the toolchain requirements and management strategy.
+Every tool a project needs is listed in the `[tools]` table of its
+`mise.toml`, and `mise install` (in the project directory) installs exactly
+those versions. CI does the same through `jdx/mise-action`, so local and CI
+toolchains match.
 
-## Base Toolchain
+| Need | `[tools]` entry |
+| --- | --- |
+| Rust (stable, with rustfmt and clippy) | `rust = { version = "stable", components = "rustfmt,clippy" }` |
+| Rust for the web (wasm) | add `targets = "wasm32-unknown-unknown"` |
+| Dioxus CLI | `"cargo:dioxus-cli" = "<dioxus version>"` plus `cargo-binstall = "latest"` |
+| Perseus CLI | `"cargo:perseus-cli" = "0.4.2"` |
+| Node.js | `node = "24"` |
+| Wrangler | `"npm:wrangler" = "4"` |
 
-All projects require:
-- **Rust toolchain** (rustc, cargo, rustfmt, clippy)
-- Managed via `rustup` or GitHub Actions' `actions-rust-lang/setup-rust-toolchain`
-- Version strategy: Use latest stable Rust (currently 1.92.0)
-- GitHub workflows use `toolchain: stable` to automatically track latest stable releases
-- **Git LFS** (git-lfs)
-- Required for handling large files in the repository
-- Installation: System package manager (e.g., `apt install git-lfs`, `brew install git-lfs`)
-- Must be initialized with `git lfs install` after installation
+System packages that mise does not manage (for example LLVM for my_lang, or
+the audio and windowing libraries the Bevy games need) are installed by the
+project's `ci:deps` task in CI. Locally, install them with your package
+manager; the project's README or CONTRIBUTING lists them.
 
-## Framework-Specific Toolchains
+Git LFS is needed for the repository's large files: install it with your
+package manager and run `git lfs install` once.
 
-### Dioxus Framework
+## Pinning versions
 
-Projects using Dioxus require framework specification in their configuration:
+- Pin every tool except Rust stable to a version or major series in
+  `mise.toml`.
+- `dioxus-cli` MUST match the `dioxus` crate version in the project's
+  `Cargo.lock`; `dx` refuses to run otherwise.
+- Playwright comes from the project's `package-lock.json` (`npm ci`); its
+  browsers are installed by the `test` and `ci` tasks.
+- Change a version in a PR, and let the PR's CI run the affected projects.
 
-**Cast.toml example:**
-```toml
-framework = "dioxus"
-```
+## Use the standard tasks
 
-**Cargo.toml metadata example:**
-```toml
-[package.metadata.cast]
-framework = "dioxus"
-```
+Run work through the standard tasks (`mise run ci`, `fix`, `build`, `test`,
+`dev`, `release`, `deploy`) rather than calling the underlying tools in
+scripts or config. For example, Playwright's `webServer` runs
+`mise run dev`, not `dx serve`. Calling a tool directly is fine for
+interactive debugging or a flag the tasks do not expose.
 
-#### Required Tools
-1. **Dioxus CLI (`dx`)**
-   - Version: 0.7.2 (current standard)
-   - Installation: `cargo install dioxus-cli --version 0.7.2`
-   - Purpose: Development server, building, and bundling
-   - Commands: `dx serve`, `dx build`, `dx bundle`
+## Platforms
 
-2. **Node.js and npm** (for web platform)
-   - Version: 20.x (LTS)
-   - Installation: System package manager or nvm
-   - Purpose: JavaScript tooling, dependency management
-   - Required for: Playwright testing, web asset management
+- CI runs on `ubuntu-24.04` (Playwright cannot install browsers on 26.04 yet).
+- macOS works the same way; use `brew` for system packages.
+- Windows is not a supported platform today.
 
-3. **Playwright** (for testing)
-   - Installation: `npm ci` (from package.json), then `npx playwright install --with-deps chromium`
-   - Purpose: End-to-end testing of web applications
-   - Browser: Chromium (with system dependencies)
+## Related documentation
 
-#### Optional Tools
-- **TypeScript compiler**: For projects with TypeScript code (installed via npm)
-
-### Cloudflare Pages Framework
-
-Projects deploying to Cloudflare Pages (`framework = "cloudflare-pages"`) require:
-
-#### Required Tools
-1. **Wrangler CLI**
-   - Installation options:
-     - Via npm: `npm install -g wrangler`
-     - Via cargo: `cargo install wrangler`
-   - Purpose: Cloudflare Workers and Pages deployment
-   - Configuration: wrangler.toml in project root
-
-2. **Node.js and npm**
-   - Version: 20.x (LTS)
-   - Purpose: Wrangler and other JavaScript tools
-
-### Rust Library/Binary
-
-Projects using standard Rust tooling only require the base Rust toolchain.
-
-## Toolchain Management Strategy
-
-### Current State (Manual Installation)
-
-Currently, toolchains are managed manually:
-- **Local development**: Developers install tools as needed based on project README
-- **CI/CD**: GitHub Actions workflows manually install required tools using action steps
-
-Example workflow steps from `.github/workflows/pull-request-ci.yml` (simplified):
-```yaml
-- name: Setup Node.js
-  uses: actions/setup-node@v4
-  
-- name: Install Playwright browsers
-  run: |
-    # Bash script that finds projects with Playwright and installs browsers
-    # (This is in GitHub Actions YAML - we follow the "no shell scripts in repo" rule)
-    
-- name: Install Dioxus CLI
-  run: cargo install dioxus-cli --version 0.7.2
-```
-
-These manual installation steps will be replaced by `cast install`.
-
-### Future State (Cast Toolchain Command)
-
-Cast provides commands to automate toolchain management:
-
-```bash
-# Install all required tools for a project
-cast install
-
-# Check which tools are installed
-cast install check
-
-# List required tools for current project
-cast install list
-```
-
-The command will:
-1. Read the project's Cast configuration (Cast.toml or Cargo.toml metadata)
-2. Determine required tools based on framework and project type
-3. Check for existing installations
-4. Install missing tools or suggest installation for system-managed tools
-5. Verify tool versions match requirements
-
-### GitHub Workflow Standard
-
-Workflows should:
-1. **Only install Rust** via `actions-rust-lang/setup-rust-toolchain`
-2. **Use `cast install`** for all framework-specific tools
-3. Keep workflow files simple and declarative
-4. Delegate tool installation logic to the Cast tool
-
-## Tool Version Management
-
-### Version Pinning
-- Tools should be pinned to specific versions in documentation and installation commands
-- Version requirements should be encoded in Cast's toolchain module
-- Examples: Dioxus CLI 0.7.2, Node.js 20.x
-
-### Version Updates
-- Tool versions should be updated via PR with testing
-- Update checklist:
-  1. Update version in Cast toolchain module
-  2. Update documentation (README files, this document)
-  3. Update GitHub Actions caches (cache keys include versions)
-  4. Test on representative projects
-  5. Update the Dev commands section of AGENTS.md
-
-## Installation Verification
-
-When installing tools, verify installation with:
-- Dioxus CLI: `dx --version`
-- Node.js: `node --version`
-- npm: `npm --version`
-- Playwright: `npx playwright --version`
-- Wrangler: `wrangler --version`
-
-## Cross-Platform Considerations
-
-### Linux (GitHub Actions, WSL)
-- Primary CI/CD environment: Ubuntu latest
-- Use `apt` for system dependencies (e.g., Playwright browser dependencies)
-- Most tools install via cargo or npm without issues
-
-### macOS
-- Use `brew` for system dependencies
-- cargo and npm tools work identically to Linux
-
-### Windows
-- Not currently a priority platform
-- Some tools may require different installation methods
-- Document when implementing cross-platform support
-
-## Command Abstraction
-
-**IMPORTANT**: Always use `cast` commands instead of directly invoking underlying tools. The Cast CLI provides a consistent abstraction layer that:
-- Handles framework detection automatically
-- Ensures proper configuration is used
-- Maintains consistency across projects
-- Simplifies CI/CD workflows
-
-### Examples
-
-✅ **Correct**: Use cast commands
-```bash
-cast run          # Starts dev server (dx serve for Dioxus, cargo run otherwise)
-cast build        # Builds project with framework-specific commands
-cast test         # Runs tests with appropriate test runner
-cast install      # Installs all required tools including cast itself
-```
-
-❌ **Incorrect**: Direct tool invocation in scripts/configs
-```bash
-dx serve --port 8080              # Don't hardcode dx commands
-cargo run                          # Use cast run instead
-npm test                           # Use cast test for consistency
-cargo install --path cast/cli      # Use cast install instead
-```
-
-### When to Use Direct Commands
-
-Direct tool commands are acceptable only in:
-1. **Interactive development**: Running `dx serve` manually during development
-2. **Tool-specific features**: Using `dx bundle` flags not exposed by cast
-3. **Debugging**: Directly invoking tools to diagnose issues
-
-In configuration files (Playwright, CI workflows, etc.), **always use cast commands**.
-
-## Best Practices
-
-1. **Document tool requirements** in project README files
-2. **Pin tool versions** to ensure reproducibility
-3. **Cache installed tools** in CI/CD (GitHub Actions cache)
-4. **Verify installations** before use
-5. **Keep toolchain management centralized** in the Cast tool
-6. **Update tools deliberately** with testing, not automatically
-7. **Use cast commands** instead of underlying tools in scripts and configuration
-
-## Related Documentation
-
-- Cast README: `/cast/README.md`
-- Pull Request CI Workflow: `.github/workflows/pull-request-ci.yml`
-- Trunk CI Workflow: `.github/workflows/trunk-ci.yml`
-- Workflow Conventions: `.github/WORKFLOW_CONVENTIONS.md`
-- Agent instructions: `AGENTS.md` and `.agents/skills/`
-- Cast Toolchain Epic: `/ISSUES.md` (implementation plan)
+- [mise.md](mise.md): rules, CI/CD and decisions
+- [`standards/tasks/`](../tasks/README.md): the shared task files
+- `.github/workflows/README.md`: the CI/CD workflows
+- `AGENTS.md`: Dev commands

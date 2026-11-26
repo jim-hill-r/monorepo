@@ -1,8 +1,19 @@
-# standards: rust project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# standards: docs project (standards docs, shared task files, repo scripts).
+# Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
 
-[tools]
-rust = { version = "stable", components = "rustfmt,clippy" }
-
 [task_config]
-includes = ["../standards/tasks/rust.toml"]
+includes = ["../standards/tasks/docs.toml"]
+
+[tasks.ci]
+description = "Check the repo scripts parse and the repo passes its own audit"
+dir = "{{config_root}}"
+run = [
+  "for f in scripts/*.sh; do bash -n \"$f\"; done",
+  "bash scripts/audit.sh",
+]
+
+[tasks.test]
+description = "Same as ci: the scripts are the only code here"
+dir = "{{config_root}}"
+run = "mise run ci"

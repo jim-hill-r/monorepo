@@ -146,8 +146,25 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJECT: ${{ matrix.project }}
           DEPLOY_URL: ${{ fromJSON(needs.plan.outputs.deploy_urls)[matrix.project] }}
+          ROLLBACK_REF: ${{ inputs.ref }}
         run: |
           set -o pipefail
+          # This step only runs once `mise run ci` passed. Deploy only the
+          # latest version of main: skip when a newer commit on main changes
+          # this project (its own run deploys it). A rollback (ref given)
+          # deploys exactly what was asked for.
+          if [ -z "$ROLLBACK_REF" ]; then
+            status=0
+            reason=$(bash "$GITHUB_WORKSPACE/standards/scripts/deploy-check.sh" "$PROJECT") || status=$?
+            echo "$reason"
+            if [ "$status" -eq 3 ]; then
+              echo "### Skipped deploy of $PROJECT" >> "$GITHUB_STEP_SUMMARY"
+              echo "$reason" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            elif [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
+          fi
           mise run deploy 2>&1 | tee "$RUNNER_TEMP/deploy.log"
           [ -n "$DEPLOY_URL" ] || exit 0
           # wrangler prints the URL of this exact deployment, for example

@@ -4,40 +4,19 @@
 
 ### Install Toolchain
 
-Use the Cast install command to install all required dependencies:
-
-```bash
-cd standards
-cast install
-```
-
-This will automatically install:
-- Rust toolchain (rustc, cargo, rustfmt, clippy)
+Nothing to install beyond mise and bash. The scripts also use `git` and `jq`.
 
 ### Build
 
-To build the project:
-
-```bash
-cargo build
-```
-
-To build a release binary:
-
-```bash
-cargo build --release
-```
+There is nothing to build.
 
 ### Test
 
-To run Rust unit tests:
-
 ```bash
-cargo test
+cd standards
+mise run ci        # checks the scripts parse and runs the repo audit
+mise run //:audit  # the audit alone, from anywhere in the repo
 ```
 
-To run all CI checks (formatting, linting, build, and tests):
-
-```bash
-cast ci
-```
+When you change a task file in `tasks/` or a script in `scripts/`, the pull
+request's CI runs every project that uses it.

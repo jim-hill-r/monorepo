@@ -4,11 +4,11 @@
 
 ### Install Toolchain
 
-Use the Cast install command to install all required dependencies:
+Install the toolchain with mise (see the root AGENTS.md "Dev commands"):
 
 ```bash
 cd cookbook/web
-cast install
+mise install
 ```
 
 This will automatically install:
@@ -47,5 +47,5 @@ npm test
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash
-cast ci
+mise run ci
 ```
