@@ -1,0 +1,11 @@
+[package]
+name = "bear_down_web"
+description = "The bear_down web page, which renders rooting.json"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+dioxus = { workspace = true, features = ["web"] }
