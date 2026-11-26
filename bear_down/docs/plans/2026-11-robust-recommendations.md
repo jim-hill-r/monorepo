@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: proposed (2026-11-26), waiting on Jim
+- Status: accepted (Jim, 2026-11-26); step 1 done
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -108,7 +108,8 @@ shows it under every game, not just picks.
 Each is one PR, in this order:
 
 1. Tiebreaker trace in `Standings::seeds`, tested against past seasons'
-   real tiebreaks.
+   real tiebreaks. Done: `Standings::seeds_traced` reports each
+   `Tiebreak` (step, tied group, survivors).
 2. Channel counts in the paired simulation, with the adding-up test.
 3. Static relevance pass and exact "can't matter" cases.
 4. Adaptive pair counts and the tiers.

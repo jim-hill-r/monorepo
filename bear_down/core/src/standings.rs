@@ -273,7 +273,7 @@ pub fn wild_cards(season: u16) -> usize {
 
 /// Which set of tiebreaker steps to use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Procedure {
+pub enum Procedure {
     /// Teams in the same division.
     Division,
     /// Teams in different divisions: wild cards and seeding.
@@ -281,14 +281,61 @@ enum Procedure {
 }
 
 /// One tiebreaker step.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Step {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Step {
     HeadToHead,
     DivisionRecord,
     CommonGames,
     ConferenceRecord,
     StrengthOfVictory,
     StrengthOfSchedule,
+}
+
+impl Step {
+    /// The step's name, as fans know it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Step::HeadToHead => "head-to-head",
+            Step::DivisionRecord => "division record",
+            Step::CommonGames => "record in common games",
+            Step::ConferenceRecord => "conference record",
+            Step::StrengthOfVictory => "strength of victory",
+            Step::StrengthOfSchedule => "strength of schedule",
+        }
+    }
+}
+
+impl fmt::Display for Step {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
+/// One decision while breaking a tie: `step` (or a coin flip, when `None`)
+/// kept `kept` out of `group`, teams with the same winning percentage.
+/// [`Standings::seeds_traced`] reports these in the order they happen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Tiebreak {
+    /// Division or wild-card procedure.
+    pub procedure: Procedure,
+    /// The step that separated the teams, or `None` for a coin flip.
+    pub step: Option<Step>,
+    /// The tied teams the step looked at.
+    pub group: Vec<Team>,
+    /// The teams it kept: the rest lost the tie at this step.
+    pub kept: Vec<Team>,
+}
+
+impl Tiebreak {
+    /// Whether `team` was in this tie and lost it here.
+    pub fn dropped(&self, team: Team) -> bool {
+        self.group.contains(&team) && !self.kept.contains(&team)
+    }
+
+    /// Whether `team` was in this tie and survived it while others dropped.
+    pub fn survived(&self, team: Team) -> bool {
+        self.kept.contains(&team)
+    }
 }
 
 const DIVISION_STEPS: [Step; 6] = [
@@ -432,7 +479,16 @@ impl Standings {
         division: Division,
         coin: &mut impl FnMut(usize) -> usize,
     ) -> [Team; 4] {
-        let ranked = self.rank(&division.teams(), Procedure::Division, None, 4, coin);
+        self.division_ranking_traced(division, coin, &mut |_, _, _, _| {})
+    }
+
+    fn division_ranking_traced(
+        &self,
+        division: Division,
+        coin: &mut impl FnMut(usize) -> usize,
+        trace: &mut impl FnMut(Procedure, Option<Step>, &[Team], &[Team]),
+    ) -> [Team; 4] {
+        let ranked = self.rank(&division.teams(), Procedure::Division, None, 4, coin, trace);
         [ranked[0], ranked[1], ranked[2], ranked[3]]
     }
 
@@ -445,11 +501,47 @@ impl Standings {
         wild_cards: usize,
         coin: &mut impl FnMut(usize) -> usize,
     ) -> Vec<Team> {
+        self.seeds_inner(conference, wild_cards, coin, &mut |_, _, _, _| {})
+    }
+
+    /// [`Standings::seeds`], also reporting every tiebreaker decision to
+    /// `trace`: division ties first, then the division winners' seeding,
+    /// then the wild cards. Ties with no tiebreaker step (teams with
+    /// different records) report nothing.
+    pub fn seeds_traced(
+        &self,
+        conference: Conference,
+        wild_cards: usize,
+        coin: &mut impl FnMut(usize) -> usize,
+        trace: &mut impl FnMut(Tiebreak),
+    ) -> Vec<Team> {
+        self.seeds_inner(
+            conference,
+            wild_cards,
+            coin,
+            &mut |procedure, step, group, kept| {
+                trace(Tiebreak {
+                    procedure,
+                    step,
+                    group: group.to_vec(),
+                    kept: kept.to_vec(),
+                })
+            },
+        )
+    }
+
+    fn seeds_inner(
+        &self,
+        conference: Conference,
+        wild_cards: usize,
+        coin: &mut impl FnMut(usize) -> usize,
+        trace: &mut impl FnMut(Procedure, Option<Step>, &[Team], &[Team]),
+    ) -> Vec<Team> {
         let mut division_rank = [0u8; 32];
         let mut winners = Vec::with_capacity(4);
         let mut others = Vec::with_capacity(12);
         for division in conference.divisions() {
-            let ranking = self.division_ranking(division, coin);
+            let ranking = self.division_ranking_traced(division, coin, trace);
             for (rank, team) in ranking.iter().enumerate() {
                 division_rank[team.index()] = rank as u8;
             }
@@ -457,8 +549,8 @@ impl Standings {
             others.extend_from_slice(&ranking[1..]);
         }
         let ranks = Some(&division_rank);
-        let mut seeds = self.rank(&winners, Procedure::WildCard, ranks, 4, coin);
-        seeds.extend(self.rank(&others, Procedure::WildCard, ranks, wild_cards, coin));
+        let mut seeds = self.rank(&winners, Procedure::WildCard, ranks, 4, coin, trace);
+        seeds.extend(self.rank(&others, Procedure::WildCard, ranks, wild_cards, coin, trace));
         seeds
     }
 
@@ -471,6 +563,7 @@ impl Standings {
         division_rank: Option<&[u8; 32]>,
         limit: usize,
         coin: &mut impl FnMut(usize) -> usize,
+        trace: &mut impl FnMut(Procedure, Option<Step>, &[Team], &[Team]),
     ) -> Vec<Team> {
         let mut by_pct: Vec<(Team, Record)> = teams
             .iter()
@@ -481,7 +574,7 @@ impl Standings {
         for group in by_pct.chunk_by(|a, b| a.1.cmp_pct(b.1) == Ordering::Equal) {
             let mut tied: Vec<Team> = group.iter().map(|(team, _)| *team).collect();
             while !tied.is_empty() && ranked.len() < limit {
-                let best = self.break_tie(&tied, procedure, division_rank, coin);
+                let best = self.break_tie(&tied, procedure, division_rank, coin, trace);
                 tied.retain(|&team| team != best);
                 ranked.push(best);
             }
@@ -496,6 +589,7 @@ impl Standings {
         procedure: Procedure,
         division_rank: Option<&[u8; 32]>,
         coin: &mut impl FnMut(usize) -> usize,
+        trace: &mut impl FnMut(Procedure, Option<Step>, &[Team], &[Team]),
     ) -> Team {
         let mut group = tied.to_vec();
         if procedure == Procedure::WildCard
@@ -518,13 +612,16 @@ impl Standings {
             for &step in steps {
                 let survivors = self.apply(step, &group, procedure);
                 if survivors.len() < group.len() {
+                    trace(procedure, Some(step), &group, &survivors);
                     // A step that drops any team starts the procedure again
                     // with the teams that are left.
                     group = survivors;
                     continue 'restart;
                 }
             }
-            return group[coin(group.len()) % group.len()];
+            let winner = group[coin(group.len()) % group.len()];
+            trace(procedure, None, &group, &[winner]);
+            return winner;
         }
         group[0]
     }
@@ -875,9 +972,21 @@ mod tests {
         let tied = teams(&["DAL", "ATL", "SEA"]);
         // DAL is 2-1 against the other two but swept neither, so conference
         // record decides: ATL 3-1, DAL 2-1.
-        let wild_card = standings.break_tie(&tied, Procedure::WildCard, None, &mut no_coin);
+        let wild_card = standings.break_tie(
+            &tied,
+            Procedure::WildCard,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(wild_card, team("ATL"));
-        let combined = standings.break_tie(&tied, Procedure::Division, None, &mut no_coin);
+        let combined = standings.break_tie(
+            &tied,
+            Procedure::Division,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(combined, team("DAL"));
     }
 
@@ -887,7 +996,13 @@ mod tests {
         beat(&mut standings, "DAL", "ATL", 1);
         beat(&mut standings, "DAL", "SEA", 1);
         let tied = teams(&["ATL", "SEA", "DAL"]);
-        let best = standings.break_tie(&tied, Procedure::WildCard, None, &mut no_coin);
+        let best = standings.break_tie(
+            &tied,
+            Procedure::WildCard,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(best, team("DAL"));
 
         // SEA lost to both; ATL and DAL never met, so conference record
@@ -896,7 +1011,13 @@ mod tests {
         beat(&mut standings, "DAL", "SEA", 1);
         beat(&mut standings, "ATL", "SEA", 1);
         beat(&mut standings, "NYG", "DAL", 1);
-        let best = standings.break_tie(&tied, Procedure::WildCard, None, &mut no_coin);
+        let best = standings.break_tie(
+            &tied,
+            Procedure::WildCard,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(best, team("ATL"));
     }
 
@@ -913,15 +1034,33 @@ mod tests {
         beat(&mut standings, "BUF", "MIA", 5);
         beat(&mut standings, "MIA", "ATL", 1);
         let tied = teams(&["DAL", "ATL"]);
-        let wild_card = standings.break_tie(&tied, Procedure::WildCard, None, &mut no_coin);
+        let wild_card = standings.break_tie(
+            &tied,
+            Procedure::WildCard,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(wild_card, team("DAL"));
         // Division ties have no minimum, so common games pick ATL.
-        let division = standings.break_tie(&tied, Procedure::Division, None, &mut no_coin);
+        let division = standings.break_tie(
+            &tied,
+            Procedure::Division,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(division, team("ATL"));
         // A fourth common game each brings the step back.
         beat(&mut standings, "ATL", "KC", 1);
         beat(&mut standings, "KC", "DAL", 1);
-        let wild_card = standings.break_tie(&tied, Procedure::WildCard, None, &mut no_coin);
+        let wild_card = standings.break_tie(
+            &tied,
+            Procedure::WildCard,
+            None,
+            &mut no_coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(wild_card, team("ATL"));
     }
 
@@ -949,7 +1088,13 @@ mod tests {
             flips.push(n);
             1
         };
-        let best = standings.break_tie(&tied, Procedure::WildCard, None, &mut coin);
+        let best = standings.break_tie(
+            &tied,
+            Procedure::WildCard,
+            None,
+            &mut coin,
+            &mut |_, _, _, _| {},
+        );
         assert_eq!(best, team("ATL"));
         assert_eq!(flips, [2]);
     }
@@ -1045,5 +1190,95 @@ mod tests {
             }
         }
         assert_eq!(checked, 2 * 24);
+    }
+
+    /// Every tiebreaker decision for `conference` in `year`.
+    fn traces(schedule: &Schedule, year: u16, conference: Conference) -> Vec<Tiebreak> {
+        let mut traces = Vec::new();
+        standings(schedule, year).seeds_traced(
+            conference,
+            wild_cards(year),
+            &mut no_coin,
+            &mut |tiebreak| traces.push(tiebreak),
+        );
+        traces
+    }
+
+    fn decided(traces: &[Tiebreak], winner: &str, loser: &str) -> Option<Option<Step>> {
+        traces
+            .iter()
+            .find(|t| t.survived(team(winner)) && t.dropped(team(loser)))
+            .map(|t| t.step)
+    }
+
+    #[test]
+    fn traces_real_tiebreaks() {
+        let schedule = schedule();
+        // 2023: the Bills won the AFC East over the Dolphins and took the
+        // No. 2 seed over the Chiefs, both on head-to-head; the Cowboys
+        // took the NFC's No. 2 seed over the Lions on head-to-head.
+        let afc = traces(&schedule, 2023, Conference::Afc);
+        assert_eq!(decided(&afc, "BUF", "MIA"), Some(Some(Step::HeadToHead)));
+        assert_eq!(decided(&afc, "BUF", "KC"), Some(Some(Step::HeadToHead)));
+        let nfc = traces(&schedule, 2023, Conference::Nfc);
+        assert_eq!(decided(&nfc, "DAL", "DET"), Some(Some(Step::HeadToHead)));
+        // 2024: the Steelers were seeded over the Broncos on head-to-head.
+        let afc = traces(&schedule, 2024, Conference::Afc);
+        assert_eq!(decided(&afc, "PIT", "DEN"), Some(Some(Step::HeadToHead)));
+    }
+
+    #[test]
+    fn tracing_never_changes_the_seeds() {
+        let schedule = schedule();
+        for year in 2002..=2025 {
+            let standings = standings(&schedule, year);
+            for conference in Conference::ALL {
+                let plain = standings.seeds(conference, wild_cards(year), &mut no_coin);
+                let mut traces = Vec::new();
+                let traced = standings.seeds_traced(
+                    conference,
+                    wild_cards(year),
+                    &mut no_coin,
+                    &mut |tiebreak| traces.push(tiebreak),
+                );
+                assert_eq!(plain, traced, "{year} {conference}");
+                for tiebreak in &traces {
+                    assert!(tiebreak.group.len() > 1, "{year}: {tiebreak:?}");
+                    assert!(!tiebreak.kept.is_empty(), "{year}: {tiebreak:?}");
+                    assert!(tiebreak.kept.len() < tiebreak.group.len());
+                    assert!(tiebreak.kept.iter().all(|t| tiebreak.group.contains(t)));
+                    let pct = standings.record(tiebreak.group[0]);
+                    assert!(
+                        tiebreak
+                            .group
+                            .iter()
+                            .all(|&t| standings.record(t).cmp_pct(pct) == Ordering::Equal),
+                        "{year}: tied teams share a record: {tiebreak:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_coin_flip_is_traced_as_no_step() {
+        // Two teams that never met, with identical results against the
+        // same opponents, can only be split by a coin.
+        let mut standings = Standings::new();
+        beat(&mut standings, "CHI", "NYG", 1);
+        beat(&mut standings, "GB", "NYG", 1);
+        let mut traces = Vec::new();
+        standings.division_ranking_traced(
+            Division::NFC_NORTH,
+            &mut |_| 0,
+            &mut |_, step, group, _| traces.push((step, group.to_vec())),
+        );
+        assert!(
+            traces
+                .iter()
+                .any(|(step, group)| step.is_none() && group.contains(&team("CHI"))),
+            "{traces:?}"
+        );
+        assert_eq!(Step::StrengthOfVictory.to_string(), "strength of victory");
     }
 }
