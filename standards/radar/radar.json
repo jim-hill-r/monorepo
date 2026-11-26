@@ -900,14 +900,15 @@
   },
   {
     "name": "Shared design tokens (design_system)",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Techniques",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Proposed: one TOML source of colour, type and spacing tokens for five themes (earthy, airy, professional, colorful, gamey) in light, dark and accessible modes, generated as CSS custom properties for web apps and Rust constants for Bevy games, with WCAG contrast checked in CI. Moves to Adopt when pane/web uses it.",
+    "description": "Chosen (Jim, 2026-11-26), not yet rolled out: one TOML source of colour, type and spacing tokens for five themes (earthy, airy, professional, colorful, gamey) in light, dark and accessible modes, plus custom app themes such as bear_down's Bears theme, generated as CSS custom properties for web apps and Rust constants for Bevy games, with WCAG contrast checked in CI. Moves to Adopt when pane/web uses it.",
     "exemplars": [],
     "sources": [
-      "standards/docs/plans/2026-11-design-system.md"
+      "standards/docs/plans/2026-11-design-system.md",
+      "https://github.com/jimhillr/monorepo/pull/657"
     ],
     "claude": "",
     "budget": 0
