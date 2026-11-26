@@ -25,3 +25,14 @@ body {
 .page-content ul {
     line-height: 1.8;
 }
+/* The family tree is drawn at its natural size; wide trees scroll sideways
+   inside the page instead of widening it. */
+.family-tree-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+.family-tree-scroll svg {
+    display: block;
+}

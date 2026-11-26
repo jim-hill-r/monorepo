@@ -132,6 +132,9 @@ const ABBREVIATIONS: [&str; 32] = [
 pub struct Team(u8);
 
 impl Team {
+    /// The Chicago Bears ([`crate::BEARS`]).
+    pub const BEARS: Team = Team(20);
+
     /// Every team, division by division.
     pub fn all() -> impl Iterator<Item = Team> {
         (0..32).map(Team)
@@ -717,6 +720,12 @@ mod tests {
             ["CHI", "DET", "GB", "MIN"]
         );
         assert_eq!(Division::NFC_NORTH.to_string(), "NFC North");
+    }
+
+    #[test]
+    fn bears_constant_is_chicago() {
+        assert_eq!(Team::BEARS.abbr(), crate::BEARS);
+        assert_eq!(Team::BEARS.division(), Division::NFC_NORTH);
     }
 
     #[test]

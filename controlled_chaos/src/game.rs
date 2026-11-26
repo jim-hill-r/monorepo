@@ -75,29 +75,36 @@ pub struct AttackerCardResource(pub Card);
 #[derive(Component, Debug)]
 pub struct GameUiRoot;
 
-/// Marks the text displaying Player 1's information.
-#[derive(Component, Debug)]
-pub struct Player1InfoText;
+/// A per-player statistic shown in the game UI.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayerStat {
+    /// Remaining life, shown with the player's name.
+    Life,
+    /// Remaining civilians.
+    Civilians,
+    /// Current happiness score.
+    Happiness,
+}
 
-/// Marks the text displaying Player 2's information.
-#[derive(Component, Debug)]
-pub struct Player2InfoText;
+/// Marks a text node that shows one statistic of one player.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlayerStatText {
+    /// Index of the player in [`RulesEngine::players`].
+    pub player: usize,
+    /// The statistic this node shows.
+    pub stat: PlayerStat,
+}
 
-/// Marks the text displaying Player 1's civilian count.
-#[derive(Component, Debug)]
-pub struct Player1CiviliansText;
-
-/// Marks the text displaying Player 2's civilian count.
-#[derive(Component, Debug)]
-pub struct Player2CiviliansText;
-
-/// Marks the text displaying Player 1's happiness score.
-#[derive(Component, Debug)]
-pub struct Player1HappinessText;
-
-/// Marks the text displaying Player 2's happiness score.
-#[derive(Component, Debug)]
-pub struct Player2HappinessText;
+impl PlayerStatText {
+    /// Returns the text this node shows for `player`.
+    pub fn text(&self, player: &Player) -> String {
+        match self.stat {
+            PlayerStat::Life => format!("{}: {} Life", player.name, player.life),
+            PlayerStat::Civilians => format!("  Civilians: {}", player.civilians),
+            PlayerStat::Happiness => format!("  Happiness: {}", player.happiness),
+        }
+    }
+}
 
 /// Marks the text displaying the current game phase.
 #[derive(Component, Debug)]
@@ -571,7 +578,10 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Player 1 Info (life)
             root.spawn((
-                Player1InfoText,
+                PlayerStatText {
+                    player: 0,
+                    stat: PlayerStat::Life,
+                },
                 TextBundle::from_section(
                     "Player 1: 20 Life",
                     TextStyle {
@@ -584,7 +594,10 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Player 1 civilians
             root.spawn((
-                Player1CiviliansText,
+                PlayerStatText {
+                    player: 0,
+                    stat: PlayerStat::Civilians,
+                },
                 TextBundle::from_section(
                     "  Civilians: 2",
                     TextStyle {
@@ -597,7 +610,10 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Player 1 happiness
             root.spawn((
-                Player1HappinessText,
+                PlayerStatText {
+                    player: 0,
+                    stat: PlayerStat::Happiness,
+                },
                 TextBundle::from_section(
                     "  Happiness: 50",
                     TextStyle {
@@ -610,7 +626,10 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Player 2 Info (life)
             root.spawn((
-                Player2InfoText,
+                PlayerStatText {
+                    player: 1,
+                    stat: PlayerStat::Life,
+                },
                 TextBundle::from_section(
                     "Player 2: 20 Life",
                     TextStyle {
@@ -623,7 +642,10 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Player 2 civilians
             root.spawn((
-                Player2CiviliansText,
+                PlayerStatText {
+                    player: 1,
+                    stat: PlayerStat::Civilians,
+                },
                 TextBundle::from_section(
                     "  Civilians: 2",
                     TextStyle {
@@ -636,7 +658,10 @@ fn spawn_game_ui(mut commands: Commands) {
 
             // Player 2 happiness
             root.spawn((
-                Player2HappinessText,
+                PlayerStatText {
+                    player: 1,
+                    stat: PlayerStat::Happiness,
+                },
                 TextBundle::from_section(
                     "  Happiness: 50",
                     TextStyle {
@@ -699,146 +724,18 @@ fn spawn_game_ui(mut commands: Commands) {
 }
 
 /// Updates the game UI to reflect the current state of the rules engine.
-#[allow(clippy::type_complexity)]
-#[allow(clippy::too_many_arguments)]
 fn update_game_ui(
     engine_res: Option<Res<RulesEngineResource>>,
-    mut p1_query: Query<
-        &mut Text,
-        (
-            With<Player1InfoText>,
-            Without<Player2InfoText>,
-            Without<GamePhaseText>,
-            Without<Player1CiviliansText>,
-            Without<Player2CiviliansText>,
-            Without<Player1HappinessText>,
-            Without<Player2HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
-    mut p2_query: Query<
-        &mut Text,
-        (
-            With<Player2InfoText>,
-            Without<Player1InfoText>,
-            Without<GamePhaseText>,
-            Without<Player1CiviliansText>,
-            Without<Player2CiviliansText>,
-            Without<Player1HappinessText>,
-            Without<Player2HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
-    mut p1_civ_query: Query<
-        &mut Text,
-        (
-            With<Player1CiviliansText>,
-            Without<Player1InfoText>,
-            Without<Player2InfoText>,
-            Without<GamePhaseText>,
-            Without<Player2CiviliansText>,
-            Without<Player1HappinessText>,
-            Without<Player2HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
-    mut p2_civ_query: Query<
-        &mut Text,
-        (
-            With<Player2CiviliansText>,
-            Without<Player1InfoText>,
-            Without<Player2InfoText>,
-            Without<GamePhaseText>,
-            Without<Player1CiviliansText>,
-            Without<Player1HappinessText>,
-            Without<Player2HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
-    mut p1_happiness_query: Query<
-        &mut Text,
-        (
-            With<Player1HappinessText>,
-            Without<Player1InfoText>,
-            Without<Player2InfoText>,
-            Without<GamePhaseText>,
-            Without<Player1CiviliansText>,
-            Without<Player2CiviliansText>,
-            Without<Player2HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
-    mut p2_happiness_query: Query<
-        &mut Text,
-        (
-            With<Player2HappinessText>,
-            Without<Player1InfoText>,
-            Without<Player2InfoText>,
-            Without<GamePhaseText>,
-            Without<Player1CiviliansText>,
-            Without<Player2CiviliansText>,
-            Without<Player1HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
-    mut phase_query: Query<
-        &mut Text,
-        (
-            With<GamePhaseText>,
-            Without<Player1InfoText>,
-            Without<Player2InfoText>,
-            Without<Player1CiviliansText>,
-            Without<Player2CiviliansText>,
-            Without<Player1HappinessText>,
-            Without<Player2HappinessText>,
-            Without<HandDisplayText>,
-            Without<InstructionsText>,
-        ),
-    >,
+    mut stat_query: Query<(&PlayerStatText, &mut Text), Without<GamePhaseText>>,
+    mut phase_query: Query<&mut Text, (With<GamePhaseText>, Without<PlayerStatText>)>,
 ) {
     let Some(res) = engine_res else { return };
     let engine = &res.0;
 
-    // Update Player 1 life
-    if let Ok(mut text) = p1_query.get_single_mut() {
-        text.sections[0].value = format!(
-            "{}: {} Life",
-            engine.players[0].name, engine.players[0].life
-        );
-    }
-
-    // Update Player 2 life
-    if let Ok(mut text) = p2_query.get_single_mut() {
-        text.sections[0].value = format!(
-            "{}: {} Life",
-            engine.players[1].name, engine.players[1].life
-        );
-    }
-
-    // Update Player 1 civilians
-    if let Ok(mut text) = p1_civ_query.get_single_mut() {
-        text.sections[0].value = format!("  Civilians: {}", engine.players[0].civilians);
-    }
-
-    // Update Player 2 civilians
-    if let Ok(mut text) = p2_civ_query.get_single_mut() {
-        text.sections[0].value = format!("  Civilians: {}", engine.players[1].civilians);
-    }
-
-    // Update Player 1 happiness
-    if let Ok(mut text) = p1_happiness_query.get_single_mut() {
-        text.sections[0].value = format!("  Happiness: {}", engine.players[0].happiness);
-    }
-
-    // Update Player 2 happiness
-    if let Ok(mut text) = p2_happiness_query.get_single_mut() {
-        text.sections[0].value = format!("  Happiness: {}", engine.players[1].happiness);
+    for (stat_text, mut text) in &mut stat_query {
+        if let Some(player) = engine.players.get(stat_text.player) {
+            text.sections[0].value = stat_text.text(player);
+        }
     }
 
     // Update phase info
@@ -1138,6 +1035,122 @@ mod tests {
             .iter(app.world())
             .count();
         assert_eq!(count, 0, "hand display should be removed on exit");
+    }
+
+    // ── PlayerStatText / update_game_ui ──────────────────────────────────────
+
+    #[test]
+    fn player_stat_text_formats_each_stat() {
+        let mut player = Player::new("Alice", 17);
+        player.civilians = 3;
+        player.happiness = 42;
+        let text = |stat| PlayerStatText { player: 0, stat }.text(&player);
+        assert_eq!(text(PlayerStat::Life), "Alice: 17 Life");
+        assert_eq!(text(PlayerStat::Civilians), "  Civilians: 3");
+        assert_eq!(text(PlayerStat::Happiness), "  Happiness: 42");
+    }
+
+    #[test]
+    fn spawn_game_ui_creates_one_text_per_player_stat() {
+        let mut app = make_test_app();
+        app.world_mut().run_system_once(spawn_game_ui);
+
+        let mut markers: Vec<(usize, PlayerStat)> = app
+            .world_mut()
+            .query::<&PlayerStatText>()
+            .iter(app.world())
+            .map(|m| (m.player, m.stat))
+            .collect();
+        markers.sort_by_key(|&(player, stat)| (player, stat as u8));
+        let mut expected = Vec::new();
+        for player in 0..2 {
+            for stat in [
+                PlayerStat::Life,
+                PlayerStat::Civilians,
+                PlayerStat::Happiness,
+            ] {
+                expected.push((player, stat));
+            }
+        }
+        assert_eq!(markers, expected);
+    }
+
+    /// Spawns the UI, applies `change` to the engine, runs `update_game_ui`
+    /// and returns the text of every player stat node.
+    fn player_stat_texts_after(
+        change: impl FnOnce(&mut RulesEngine),
+    ) -> Vec<(PlayerStatText, String)> {
+        let mut app = make_test_app();
+        let mut engine = make_engine_with_hands();
+        change(&mut engine);
+        app.insert_resource(RulesEngineResource(engine));
+        app.world_mut().run_system_once(spawn_game_ui);
+        app.world_mut().run_system_once(update_game_ui);
+
+        let mut texts: Vec<(PlayerStatText, String)> = app
+            .world_mut()
+            .query::<(&PlayerStatText, &Text)>()
+            .iter(app.world())
+            .map(|(m, t)| (*m, t.sections[0].value.clone()))
+            .collect();
+        texts.sort_by_key(|(m, _)| (m.player, m.stat as u8));
+        texts
+    }
+
+    #[test]
+    fn update_game_ui_shows_each_players_stats() {
+        let texts = player_stat_texts_after(|engine| {
+            engine.players[0].life = 15;
+            engine.players[0].civilians = 1;
+            engine.players[0].happiness = 60;
+            engine.players[1].life = 9;
+            engine.players[1].civilians = 4;
+            engine.players[1].happiness = 35;
+        });
+        let values: Vec<&str> = texts.iter().map(|(_, t)| t.as_str()).collect();
+        assert_eq!(
+            values,
+            [
+                "Alice: 15 Life",
+                "  Civilians: 1",
+                "  Happiness: 60",
+                "Bob: 9 Life",
+                "  Civilians: 4",
+                "  Happiness: 35",
+            ]
+        );
+    }
+
+    #[test]
+    fn update_game_ui_updates_phase_text() {
+        let mut app = make_test_app();
+        app.insert_resource(RulesEngineResource(make_engine_with_hands()));
+        app.world_mut().run_system_once(spawn_game_ui);
+        app.world_mut().run_system_once(update_game_ui);
+
+        let text = app
+            .world_mut()
+            .query_filtered::<&Text, With<GamePhaseText>>()
+            .single(app.world())
+            .sections[0]
+            .value
+            .clone();
+        assert_eq!(text, "Phase: Draw | Round: 1 | Active: Alice");
+    }
+
+    #[test]
+    fn update_game_ui_without_engine_leaves_text_unchanged() {
+        let mut app = make_test_app();
+        app.world_mut().run_system_once(spawn_game_ui);
+        app.world_mut().run_system_once(update_game_ui);
+
+        let life = app
+            .world_mut()
+            .query::<(&PlayerStatText, &Text)>()
+            .iter(app.world())
+            .find(|(m, _)| m.player == 0 && m.stat == PlayerStat::Life)
+            .map(|(_, t)| t.sections[0].value.clone());
+        assert_eq!(life.as_deref(), Some("Player 1: 20 Life"));
     }
 
     // ── ActionDeckResource ────────────────────────────────────────────────────

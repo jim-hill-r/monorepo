@@ -7,11 +7,12 @@ This directory contains development standards and guidelines for the monorepo.
 - [Configuration](./configuration.md) - Configuration file standards
 - [Decisions](./decisions/README.md) - Repo-wide decision records
 - [Documentation](./documentation.md) - Documentation standards
+- [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Naming](./naming.md) - Naming conventions
-- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md)
+- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md) and the [eval engine](./plans/2026-11-eval-engine.md)
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Rust](./rust.md) - Rust coding standards
 - [Testing](./testing.md) - Testing standards and requirements

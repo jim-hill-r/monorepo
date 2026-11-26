@@ -7,17 +7,11 @@ fn test_load_example_recipes() {
 
     let store = MarkdownRecipeStore::new(content_dir).expect("Should load content directory");
 
-    // Every recipe file must load. week-53.md lists only 2 recipes and is a known gap
-    // (see cookbook/ISSUES.md).
-    let unexpected: Vec<&String> = store
-        .load_errors()
-        .iter()
-        .filter(|e| !e.contains("week-53.md"))
-        .collect();
+    // Every recipe and plan file must load.
     assert!(
-        unexpected.is_empty(),
+        store.load_errors().is_empty(),
         "Unexpected load errors: {:?}",
-        unexpected
+        store.load_errors()
     );
 
     // Test plan loading first to get UUID for day-1
@@ -75,4 +69,41 @@ fn test_load_example_recipes() {
         "Should have at least 52 plans, got {}",
         all_plans.len()
     );
+}
+
+#[test]
+fn test_every_week_plan_parses_with_seven_recipes() {
+    let content_dir = "../content";
+    let store = MarkdownRecipeStore::new(content_dir).expect("Should load content directory");
+
+    let mut weeks: Vec<u32> = std::fs::read_dir(content_dir)
+        .expect("Should read content directory")
+        .filter_map(|entry| {
+            let name = entry.ok()?.file_name().into_string().ok()?;
+            name.strip_prefix("week-")?
+                .strip_suffix(".md")?
+                .parse()
+                .ok()
+        })
+        .collect();
+    weeks.sort_unstable();
+
+    // ISO 8601 years have 52 or 53 weeks, so every one of them needs a plan.
+    assert_eq!(
+        weeks,
+        (1..=53).collect::<Vec<u32>>(),
+        "One plan per ISO week"
+    );
+
+    for week in weeks {
+        let plan = store
+            .get_by_week(week)
+            .unwrap_or_else(|e| panic!("week-{week}.md should parse: {e}"));
+        assert_eq!(plan.week, week);
+        assert_eq!(plan.recipe_uuids.len(), 7, "week-{week}.md needs 7 recipes");
+        for uuid in &plan.recipe_uuids {
+            RecipeReader::get_by_uuid(&store, uuid)
+                .unwrap_or_else(|e| panic!("week-{week}.md lists unknown recipe {uuid}: {e}"));
+        }
+    }
 }
