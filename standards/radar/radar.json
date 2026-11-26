@@ -1,0 +1,826 @@
+[
+  {
+    "name": "Rust",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The language for all code in the repo unless an exception says otherwise.",
+    "exemplars": [
+      "cookbook",
+      "homer"
+    ],
+    "sources": [
+      "standards/docs/README.md",
+      "standards/docs/rust.md"
+    ],
+    "claude": "Official rust-analyzer-lsp Claude Code plugin."
+  },
+  {
+    "name": "Dioxus",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The framework for web, desktop and mobile apps. New work uses 0.7; blueeel and sparkhill/webapp are still on 0.6, and cahokia's version is pinned on purpose (AGENTS.md).",
+    "exemplars": [
+      "cookbook/web",
+      "cahokia",
+      "pane/web"
+    ],
+    "sources": [
+      "standards/docs/README.md",
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "dioxus-ssr",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Render Dioxus components in plain Rust tests to check text, links and classes without a browser.",
+    "exemplars": [
+      "cahokia/ui"
+    ],
+    "sources": [],
+    "claude": ""
+  },
+  {
+    "name": "Bevy",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The game engine.",
+    "exemplars": [
+      "controlled_chaos"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Axum",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The HTTP server framework. Its only user, luggage, is on hold.",
+    "exemplars": [
+      "luggage"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "utoipa",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "OpenAPI documents generated from Axum handlers (spelled \"Utopia\" in the standards README).",
+    "exemplars": [
+      "luggage"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Clap",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Argument parsing for traditional CLIs.",
+    "exemplars": [
+      "homer"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Ratatui",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The framework for terminal UIs. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Tokio",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The async runtime for IO-bound work.",
+    "exemplars": [
+      "auth_sdk",
+      "luggage"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Rayon",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Data parallelism for compute-bound work. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "tracing",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The only logging library.",
+    "exemplars": [
+      "auth_sdk",
+      "cahokia"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "anyhow",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Error handling in applications.",
+    "exemplars": [
+      "homer"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "thiserror",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Error types in libraries.",
+    "exemplars": [
+      "auth_sdk",
+      "cahokia/ui"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "nalgebra",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Linear algebra. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "ndarray",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "N-dimensional arrays and matrices. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Pingora",
+    "ring": "Adopt",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The reverse proxy framework. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "inkwell (LLVM)",
+    "ring": "Trial",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "LLVM bindings for the my_lang compiler. Needs LLVM headers, so it can't build in cloud sandboxes. Use only for compiler work.",
+    "exemplars": [
+      "my_lang"
+    ],
+    "sources": [
+      "standards/ISSUES.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "TypeScript and Node.js",
+    "ring": "Trial",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Allowed only for VS Code extensions and the Playwright e2e specs. Jim dislikes the Node dependency; decision 0005 (proposed) keeps it limited to e2e tests.",
+    "exemplars": [
+      "cookbook/web",
+      "cahokia/web"
+    ],
+    "sources": [
+      "standards/docs/typescript.md",
+      "https://github.com/jimhillr/monorepo/pull/616"
+    ],
+    "claude": "Official typescript-lsp Claude Code plugin."
+  },
+  {
+    "name": "Perseus and Sycamore 0.8",
+    "ring": "Hold",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Don't start new sites on them; use Dioxus. The existing sites stay pinned to sycamore 0.8 because perseus 0.4.2 needs it.",
+    "exemplars": [
+      "profiles/jimhillr",
+      "sparkhill/website"
+    ],
+    "sources": [
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "mise",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "The task runner and tool installer for every project: the same ci, fix, build, test, dev, release and deploy tasks everywhere, from shared files in standards/tasks.",
+    "exemplars": [
+      "standards",
+      "cookbook"
+    ],
+    "sources": [
+      "standards/docs/mise.md",
+      "standards/docs/plans/2026-11-cast-to-mise.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "lefthook",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Git hooks that run the audit and each affected project's CI before every commit and push. Making them work in cloud sandboxes is an open TODO.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/git-hooks.md",
+      "standards/ISSUES.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Playwright",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Browser end-to-end tests, and the recorded smoke UAT (screenshots, video, trace) that decision 0001 makes the default evidence on PRs.",
+    "exemplars": [
+      "cookbook/web",
+      "cahokia/web"
+    ],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md"
+    ],
+    "claude": "Playwright MCP server (Microsoft)."
+  },
+  {
+    "name": "Playwright on a system browser",
+    "ring": "Assess",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Proposed in decision 0005: launch Chromium tests on the machine's own Chrome instead of Playwright's download, so they run in sandboxes. Rust WebDriver (fantoccini, thirtyfour), CDP (chromiumoxide) and WebDriver BiDi clients were compared and not recommended yet.",
+    "exemplars": [],
+    "sources": [
+      "https://github.com/jimhillr/monorepo/pull/616"
+    ],
+    "claude": "Playwright MCP server (Microsoft)."
+  },
+  {
+    "name": "Marp",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Slide decks written in Markdown, used for the weekly deep project reviews.",
+    "exemplars": [
+      "docs/reviews"
+    ],
+    "sources": [
+      ".agents/skills/deep-project-review/SKILL.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "cross",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Always use it for cross compilation. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "samply",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The profiler. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "criterion",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Benchmarks and regression reports. No project uses it yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "trycmd and vhs",
+    "ring": "Trial",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Transcript tests for CLIs, and terminal recordings for PRs that change CLI output. Chosen in decision 0001; rollout not started.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Cast",
+    "ring": "Hold",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "The old monorepo CLI, replaced by mise and removed. Don't restore it or its project templates.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/plans/2026-11-cast-to-mise.md",
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "GitHub (Actions, Dependabot, CodeQL)",
+    "ring": "Adopt",
+    "quadrant": "Platforms",
+    "isNew": "FALSE",
+    "kind": "vendor",
+    "description": "Approved vendor. Hosts the repo and runs all CI, CD, nightly runs and maintenance workflows on standard runners, which are free on this public repo.",
+    "exemplars": [
+      ".github/workflows",
+      "monorepo/workflow_tests"
+    ],
+    "sources": [
+      "AGENTS.md",
+      "standards/docs/free-tiers.md"
+    ],
+    "claude": "Official GitHub MCP server, which has a read-only mode; Claude Code's own GitHub integration."
+  },
+  {
+    "name": "Cloudflare Pages",
+    "ring": "Adopt",
+    "quadrant": "Platforms",
+    "isNew": "FALSE",
+    "kind": "vendor",
+    "description": "Approved vendor. Hosts the static web apps, deployed with wrangler pages deploy (direct upload, no Pages builds). New projects are created only through free-tiers.sh.",
+    "exemplars": [
+      "cookbook/cloudflare",
+      "cahokia/cloudflare",
+      "pane/cloudflare"
+    ],
+    "sources": [
+      "AGENTS.md",
+      "standards/docs/free-tiers.md"
+    ],
+    "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills."
+  },
+  {
+    "name": "Cloudflare Workers",
+    "ring": "Trial",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Approved vendor, Free plan only. Planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API; not deployed yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md",
+      "pane/ISSUES.md"
+    ],
+    "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills."
+  },
+  {
+    "name": "Cloudflare D1",
+    "ring": "Trial",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "The hosted database for now (Jim, 2026-11-26), used only when a deployed service must write data at runtime. Part of an approved vendor, Free plan only. No project uses it yet. Decision 0004 in PR 615.",
+    "exemplars": [],
+    "sources": [
+      "https://github.com/jimhillr/monorepo/pull/615"
+    ],
+    "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills."
+  },
+  {
+    "name": "Cloudflare R2",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "R2 bills past its free allowance once it is enabled, so don't enable it without a decision record.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/free-tiers.md"
+    ],
+    "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills."
+  },
+  {
+    "name": "Squarespace",
+    "ring": "Adopt",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Approved vendor. Jim's existing account; no automation or project in the repo uses it.",
+    "exemplars": [],
+    "sources": [
+      "AGENTS.md",
+      "standards/docs/free-tiers.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Auth0",
+    "ring": "Adopt",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Approved exception, free plan. Always use it for sign-in (CIAM). Tests use mocks, never real tokens.",
+    "exemplars": [
+      "auth_sdk",
+      "cookbook/web",
+      "cahokia/web"
+    ],
+    "sources": [
+      "AGENTS.md",
+      "standards/docs/README.md",
+      "standards/docs/free-tiers.md"
+    ],
+    "claude": "Official Auth0 MCP server."
+  },
+  {
+    "name": "PostHog",
+    "ring": "Trial",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Approved exception, free tier, for one job: real-user session replay (and game events) on production sites, with all text input masked. Not integrated in any project yet.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md",
+      "AGENTS.md"
+    ],
+    "claude": "PostHog MCP connector in the Claude directory."
+  },
+  {
+    "name": "RapidAPI (Zillow data)",
+    "ring": "Trial",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Approved exception for homer only, and only on its free plan. It must never cost money: no paid plan and no scheduled runs.",
+    "exemplars": [
+      "homer"
+    ],
+    "sources": [
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Neon",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Hosted Postgres with per-PR branches and scale to zero. Jim chose D1 first (2026-11-26); Neon is revisited only if a need comes up that D1 can't meet. Not an approved vendor.",
+    "exemplars": [],
+    "sources": [
+      "https://github.com/jimhillr/monorepo/pull/615"
+    ],
+    "claude": "Neon MCP connector in the Claude directory."
+  },
+  {
+    "name": "SurrealDB",
+    "ring": "Trial",
+    "quadrant": "Platforms",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Named the general-purpose database in the standards README, used only by luggage (on hold). Decision 0004 (PR 615) puts files, committed SQLite and then D1 first, so the README and this blip need revisiting once it merges.",
+    "exemplars": [
+      "luggage"
+    ],
+    "sources": [
+      "standards/docs/README.md",
+      "https://github.com/jimhillr/monorepo/pull/615"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "SpacetimeDB",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "Named in the standards README for real-time stateful sync, but no project has tried it.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Supabase and Turso",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Compared in decision 0004 (proposed) and not recommended: Supabase pauses idle projects and has paid-only branching; Turso blocks every database once any one limit is hit and is being acquired.",
+    "exemplars": [],
+    "sources": [
+      "https://github.com/jimhillr/monorepo/pull/615"
+    ],
+    "claude": "Supabase MCP connector in the Claude directory."
+  },
+  {
+    "name": "Honeycomb, Sentry and Microsoft Clarity",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Considered for observability and session replay in decision 0001 and dropped in favour of Cloudflare plus PostHog, to keep the vendor count down.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md"
+    ],
+    "claude": "Sentry MCP connector in the Claude directory."
+  },
+  {
+    "name": "RentCast, ATTOM and HouseCanary",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Property data alternatives to RapidAPI. RentCast's free plan bills overage with no hard cap; ATTOM and HouseCanary are paid only.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/free-tiers.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Free tiers only",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Every service runs on its free plan; when a limit is near, stop rather than pay. Anything automation creates on demand goes through the free-tiers guard.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/free-tiers.md",
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Fewest vendors, cost first",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Reach for GitHub, Cloudflare and Squarespace first. Any other vendor needs Jim's sign-off in a decision record, unless it is clearly cheaper.",
+    "exemplars": [],
+    "sources": [
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Decision records in the repo",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Plans, decisions and retros are Markdown committed next to what they are about, never chat or hosted docs.",
+    "exemplars": [
+      "standards",
+      "bear_down"
+    ],
+    "sources": [
+      "standards/docs/decisions/README.md",
+      "AGENTS.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Work tracked in ISSUES.md",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "TODO and FIX lines in each project's ISSUES.md instead of GitHub issues; tasks only a person can do go in HUMAN_ISSUES.md (decision 0002).",
+    "exemplars": [
+      "cookbook",
+      "pane"
+    ],
+    "sources": [
+      "standards/docs/issue-management.md",
+      "standards/docs/decisions/0002-human-issues.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Agent Skills",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Repeatable agent procedures as skills in .agents/skills, validated on every PR, so the repo runs without a local clone.",
+    "exemplars": [
+      ".agents/skills"
+    ],
+    "sources": [
+      "AGENTS.md"
+    ],
+    "claude": "Native to Claude Code: skills in .claude/skills load automatically."
+  },
+  {
+    "name": "Draft-first PRs with an agent merge rule",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "PRs open as drafts, go ready only when green, and any agent may squash-merge a mergeable, approved PR. PR triage drives every PR to closure.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/pull-requests.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Nightly CI and CD",
+    "ring": "Adopt",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Every project runs CI every night, and every deployable project redeploys the latest main that passed, so drift shows up within a day.",
+    "exemplars": [
+      ".github/workflows"
+    ],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Preview deploys and recorded smoke UAT",
+    "ring": "Trial",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "A preview per PR and @smoke Playwright tests recorded against previews and production, linked from the PR. Accepted in decision 0001; rollout under way.",
+    "exemplars": [
+      "cookbook/web"
+    ],
+    "sources": [
+      "standards/docs/decisions/0001-deploy-feedback-loop.md",
+      "standards/docs/plans/2026-11-deploy-feedback.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Files before databases",
+    "ring": "Trial",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Jim's rule (2026-11-26): keep data and results as committed Markdown, JSON, JSON Lines, CSV or TOML; when real queries are needed, commit a SQLite .sql dump read with rusqlite; a hosted database (D1) is the last resort. Lands in AGENTS.md with PR 615.",
+    "exemplars": [],
+    "sources": [
+      "https://github.com/jimhillr/monorepo/pull/615"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Eval engine for product requirements",
+    "ring": "Assess",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Proposed in decision 0003: requirements with stable IDs, evals tied to each, verdicts computed after CI, CD, chaos runs and observation, plus in-app feedback from Jim. Results stay in committed files.",
+    "exemplars": [],
+    "sources": [
+      "https://github.com/jimhillr/monorepo/pull/612"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Shell scripts",
+    "ring": "Hold",
+    "quadrant": "Techniques",
+    "isNew": "FALSE",
+    "kind": "technology",
+    "description": "The standards say to script in Rust, not shell. The repo scripts in standards/scripts are the existing exception; don't add shell scripts to projects.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/README.md"
+    ],
+    "claude": ""
+  },
+  {
+    "name": "Claude Code",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Our AI coding platform (Jim, 2026-11-26): agents work the ISSUES.md backlog, open and triage PRs, and run the scheduled reviews and digests. Its support shapes other choices: prefer technologies and vendors Claude knows well or that have a Claude plugin or MCP server we can enable read-only.",
+    "exemplars": [
+      ".agents/skills"
+    ],
+    "sources": [
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "claude": "It is Claude. Skills, plugins and MCP servers extend it."
+  }
+]

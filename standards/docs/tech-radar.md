@@ -1,0 +1,177 @@
+# Tech radar
+
+The tech radar lists every technology, technique and vendor this monorepo has
+an opinion on: what is approved, what is under evaluation, what to avoid, and
+which projects show each one in use. It follows Thoughtworks'
+[Technology Radar](https://www.thoughtworks.com/radar) and their advice on
+[building your own](https://www.thoughtworks.com/insights/blog/build-your-own-technology-radar)
+and on [an enterprise radar](https://www.thoughtworks.com/insights/blog/technology-strategy/how-to-create-your-enterprise-technology-radar).
+
+The data lives in [`standards/radar/radar.json`](../radar/radar.json). The
+tables below are generated from it, so edit the JSON, never the tables.
+
+## Rings
+
+Each entry (a "blip") sits in one ring. Thoughtworks' rings, with what they
+mean here:
+
+| Ring | Thoughtworks | Here |
+| --- | --- | --- |
+| **Adopt** | Safe default, "as close to a no brainer as possible". | Approved, and the default for its job. Use it without asking. |
+| **Trial** | Shown to work on real project work in certain circumstances. | Approved for limited use: an exception with conditions (RapidAPI on its free plan, inkwell for compilers), or chosen but not yet rolled out (PostHog, D1). Use it within its conditions. |
+| **Assess** | Worth exploring to see how it would affect you. | Under evaluation: an open decision record or PR, or named in the standards but never tried. Don't use it in a project until it moves in. |
+| **Hold** | Don't start anything new with it. | Rejected, replaced or risky. Existing use may stay; new use needs a decision record. |
+
+Every Assess blip links the PR or decision that evaluates it. A vendor moves
+into Adopt or Trial only with Jim's sign-off, as the vendor rule in
+[AGENTS.md](../../AGENTS.md) says.
+
+## Selection criteria
+
+When choosing between options, in this order:
+
+1. **Cost.** Free tiers only, and cost always wins
+   ([free-tiers.md](free-tiers.md)).
+2. **Well supported by Claude.** Claude Code is our AI coding platform, so
+   prefer technologies Claude knows well and vendors that have a Claude Code
+   plugin or an MCP server (Jim, 2026-11-26). We enable those integrations
+   **read-only**, to give Claude context (logs, analytics, schemas,
+   settings); changes still go through the repo, its workflows and PRs. The
+   "Claude support" column below says what exists for each blip.
+3. **Fewest vendors.** Reach for an approved vendor first; any other needs
+   Jim's sign-off ([AGENTS.md](../../AGENTS.md)).
+
+## Quadrants
+
+The four Thoughtworks quadrants, kept stable so change stays visible:
+
+- **Techniques:** how we work and structure software (processes, policies,
+  conventions).
+- **Tools:** tools we develop, test and run the repo with.
+- **Platforms:** what software runs on or talks to: hosting, databases and
+  every outside vendor.
+- **Languages & Frameworks:** languages, frameworks and libraries.
+
+## Fields
+
+Each blip in `radar.json` has the five columns Thoughtworks'
+[Build Your Own Radar](https://www.thoughtworks.com/radar/byor) tool reads,
+plus four of ours:
+
+| Field | Meaning |
+| --- | --- |
+| `name` | The specific technology, not a broad category. |
+| `ring` | `Adopt`, `Trial`, `Assess` or `Hold`. |
+| `quadrant` | `Techniques`, `Tools`, `Platforms` or `Languages & Frameworks`. |
+| `isNew` | `"TRUE"` if the blip was added or moved in the last refresh, else `"FALSE"`. Shown as "(new)" below. |
+| `description` | A sentence or two on why it sits where it does, and any conditions. |
+| `kind` | `vendor` for an outside service with an account, else `technology`. |
+| `exemplars` | Repo paths of the projects to copy from (for a Hold blip, where it still lives). Empty means no project uses it yet; the first that does becomes its exemplar. |
+| `sources` | Repo paths or URLs of the rules, decisions and PRs behind the placement. |
+| `claude` | The Claude Code plugin or MCP server for it, if any (empty when none is known). |
+
+To see it as a picture, give the file's raw GitHub URL to the BYOR tool, or
+render it in pane later. The hosted BYOR tool now only accepts its own outer
+ring name, "Caution", so map Hold to Caution there, or self-host
+[build-your-own-radar](https://github.com/thoughtworks/build-your-own-radar),
+which keeps custom names.
+
+## Changing the radar
+
+- **Any PR that adds, approves, rejects or drops a technology or vendor
+  updates `radar.json` in the same PR**, then runs
+  `bash standards/scripts/radar.sh render`. That includes a decision record
+  that changes a ring, and a project that becomes the first user (the
+  exemplar) of a blip.
+- `mise run ci` in `standards` runs `radar.sh check`: valid rings, quadrants
+  and fields, unique names, exemplar and source paths that exist, a source
+  for every Assess blip, and tables that match the JSON.
+- **Refresh it twice a year** (Thoughtworks says at least once a year, twice
+  is better): set `isNew` to `"FALSE"` on blips that didn't move, move blips
+  whose evaluation finished, and drop Hold blips nobody has needed for a year.
+  Pending changes this edition knows about are noted in the blips themselves
+  (for example SurrealDB, which waits on decision 0004).
+
+## The radar
+
+First edition: 2026-11-26.
+
+<!-- radar:start (generated by standards/scripts/radar.sh render; edit radar.json instead) -->
+
+### Techniques
+
+| Blip | Ring | Kind | Exemplar projects | Why | Claude support | Sources |
+| --- | --- | --- | --- | --- | --- | --- |
+| Agent Skills (new) | Adopt | technology | [.agents/skills](../../.agents/skills) | Repeatable agent procedures as skills in .agents/skills, validated on every PR, so the repo runs without a local clone. | Native to Claude Code: skills in .claude/skills load automatically. | [AGENTS.md](../../AGENTS.md) |
+| Decision records in the repo (new) | Adopt | technology | [standards](../../standards), [bear_down](../../bear_down) | Plans, decisions and retros are Markdown committed next to what they are about, never chat or hosted docs. | - | [README.md](../../standards/docs/decisions/README.md), [AGENTS.md](../../AGENTS.md) |
+| Draft-first PRs with an agent merge rule (new) | Adopt | technology | none yet | PRs open as drafts, go ready only when green, and any agent may squash-merge a mergeable, approved PR. PR triage drives every PR to closure. | - | [pull-requests.md](../../standards/docs/pull-requests.md) |
+| Fewest vendors, cost first (new) | Adopt | technology | none yet | Reach for GitHub, Cloudflare and Squarespace first. Any other vendor needs Jim's sign-off in a decision record, unless it is clearly cheaper. | - | [AGENTS.md](../../AGENTS.md) |
+| Free tiers only (new) | Adopt | technology | [standards](../../standards) | Every service runs on its free plan; when a limit is near, stop rather than pay. Anything automation creates on demand goes through the free-tiers guard. | - | [free-tiers.md](../../standards/docs/free-tiers.md), [AGENTS.md](../../AGENTS.md) |
+| Nightly CI and CD (new) | Adopt | technology | [.github/workflows](../../.github/workflows) | Every project runs CI every night, and every deployable project redeploys the latest main that passed, so drift shows up within a day. | - | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md) |
+| Work tracked in ISSUES.md | Adopt | technology | [cookbook](../../cookbook), [pane](../../pane) | TODO and FIX lines in each project's ISSUES.md instead of GitHub issues; tasks only a person can do go in HUMAN_ISSUES.md (decision 0002). | - | [issue-management.md](../../standards/docs/issue-management.md), [0002-human-issues.md](../../standards/docs/decisions/0002-human-issues.md) |
+| Files before databases (new) | Trial | technology | none yet | Jim's rule (2026-11-26): keep data and results as committed Markdown, JSON, JSON Lines, CSV or TOML; when real queries are needed, commit a SQLite .sql dump read with rusqlite; a hosted database (D1) is the last resort. Lands in AGENTS.md with PR 615. | - | [PR 615](https://github.com/jimhillr/monorepo/pull/615) |
+| Preview deploys and recorded smoke UAT (new) | Trial | technology | [cookbook/web](../../cookbook/web) | A preview per PR and @smoke Playwright tests recorded against previews and production, linked from the PR. Accepted in decision 0001; rollout under way. | - | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md), [2026-11-deploy-feedback.md](../../standards/docs/plans/2026-11-deploy-feedback.md) |
+| Eval engine for product requirements (new) | Assess | technology | none yet | Proposed in decision 0003: requirements with stable IDs, evals tied to each, verdicts computed after CI, CD, chaos runs and observation, plus in-app feedback from Jim. Results stay in committed files. | - | [PR 612](https://github.com/jimhillr/monorepo/pull/612) |
+| Shell scripts | Hold | technology | [standards](../../standards) | The standards say to script in Rust, not shell. The repo scripts in standards/scripts are the existing exception; don't add shell scripts to projects. | - | [README.md](../../standards/docs/README.md) |
+
+### Tools
+
+| Blip | Ring | Kind | Exemplar projects | Why | Claude support | Sources |
+| --- | --- | --- | --- | --- | --- | --- |
+| Claude Code (new) | Adopt | vendor | [.agents/skills](../../.agents/skills) | Our AI coding platform (Jim, 2026-11-26): agents work the ISSUES.md backlog, open and triage PRs, and run the scheduled reviews and digests. Its support shapes other choices: prefer technologies and vendors Claude knows well or that have a Claude plugin or MCP server we can enable read-only. | It is Claude. Skills, plugins and MCP servers extend it. | [AGENTS.md](../../AGENTS.md), [CLAUDE.md](../../CLAUDE.md) |
+| criterion | Adopt | technology | none yet | Benchmarks and regression reports. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| cross | Adopt | technology | none yet | Always use it for cross compilation. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| lefthook (new) | Adopt | technology | [standards](../../standards) | Git hooks that run the audit and each affected project's CI before every commit and push. Making them work in cloud sandboxes is an open TODO. | - | [git-hooks.md](../../standards/docs/git-hooks.md), [ISSUES.md](../../standards/ISSUES.md) |
+| Marp (new) | Adopt | technology | [docs/reviews](../../docs/reviews) | Slide decks written in Markdown, used for the weekly deep project reviews. | - | [SKILL.md](../../.agents/skills/deep-project-review/SKILL.md) |
+| mise (new) | Adopt | technology | [standards](../../standards), [cookbook](../../cookbook) | The task runner and tool installer for every project: the same ci, fix, build, test, dev, release and deploy tasks everywhere, from shared files in standards/tasks. | - | [mise.md](../../standards/docs/mise.md), [2026-11-cast-to-mise.md](../../standards/docs/plans/2026-11-cast-to-mise.md) |
+| Playwright | Adopt | technology | [cookbook/web](../../cookbook/web), [cahokia/web](../../cahokia/web) | Browser end-to-end tests, and the recorded smoke UAT (screenshots, video, trace) that decision 0001 makes the default evidence on PRs. | Playwright MCP server (Microsoft). | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md) |
+| samply | Adopt | technology | none yet | The profiler. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| trycmd and vhs (new) | Trial | technology | none yet | Transcript tests for CLIs, and terminal recordings for PRs that change CLI output. Chosen in decision 0001; rollout not started. | - | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md) |
+| Playwright on a system browser (new) | Assess | technology | none yet | Proposed in decision 0005: launch Chromium tests on the machine's own Chrome instead of Playwright's download, so they run in sandboxes. Rust WebDriver (fantoccini, thirtyfour), CDP (chromiumoxide) and WebDriver BiDi clients were compared and not recommended yet. | Playwright MCP server (Microsoft). | [PR 616](https://github.com/jimhillr/monorepo/pull/616) |
+| Cast (new) | Hold | technology | none yet | The old monorepo CLI, replaced by mise and removed. Don't restore it or its project templates. | - | [2026-11-cast-to-mise.md](../../standards/docs/plans/2026-11-cast-to-mise.md), [AGENTS.md](../../AGENTS.md) |
+
+### Platforms
+
+| Blip | Ring | Kind | Exemplar projects | Why | Claude support | Sources |
+| --- | --- | --- | --- | --- | --- | --- |
+| Auth0 (new) | Adopt | vendor | [auth_sdk](../../auth_sdk), [cookbook/web](../../cookbook/web), [cahokia/web](../../cahokia/web) | Approved exception, free plan. Always use it for sign-in (CIAM). Tests use mocks, never real tokens. | Official Auth0 MCP server. | [AGENTS.md](../../AGENTS.md), [README.md](../../standards/docs/README.md), [free-tiers.md](../../standards/docs/free-tiers.md) |
+| Cloudflare Pages | Adopt | vendor | [cookbook/cloudflare](../../cookbook/cloudflare), [cahokia/cloudflare](../../cahokia/cloudflare), [pane/cloudflare](../../pane/cloudflare) | Approved vendor. Hosts the static web apps, deployed with wrangler pages deploy (direct upload, no Pages builds). New projects are created only through free-tiers.sh. | Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills. | [AGENTS.md](../../AGENTS.md), [free-tiers.md](../../standards/docs/free-tiers.md) |
+| GitHub (Actions, Dependabot, CodeQL) | Adopt | vendor | [.github/workflows](../../.github/workflows), [monorepo/workflow_tests](../../monorepo/workflow_tests) | Approved vendor. Hosts the repo and runs all CI, CD, nightly runs and maintenance workflows on standard runners, which are free on this public repo. | Official GitHub MCP server, which has a read-only mode; Claude Code's own GitHub integration. | [AGENTS.md](../../AGENTS.md), [free-tiers.md](../../standards/docs/free-tiers.md) |
+| Squarespace (new) | Adopt | vendor | none yet | Approved vendor. Jim's existing account; no automation or project in the repo uses it. | - | [AGENTS.md](../../AGENTS.md), [free-tiers.md](../../standards/docs/free-tiers.md) |
+| Cloudflare D1 (new) | Trial | vendor | none yet | The hosted database for now (Jim, 2026-11-26), used only when a deployed service must write data at runtime. Part of an approved vendor, Free plan only. No project uses it yet. Decision 0004 in PR 615. | Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills. | [PR 615](https://github.com/jimhillr/monorepo/pull/615) |
+| Cloudflare Workers (new) | Trial | vendor | none yet | Approved vendor, Free plan only. Planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API; not deployed yet. | Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills. | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md), [ISSUES.md](../../pane/ISSUES.md) |
+| PostHog (new) | Trial | vendor | none yet | Approved exception, free tier, for one job: real-user session replay (and game events) on production sites, with all text input masked. Not integrated in any project yet. | PostHog MCP connector in the Claude directory. | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md), [AGENTS.md](../../AGENTS.md) |
+| RapidAPI (Zillow data) (new) | Trial | vendor | [homer](../../homer) | Approved exception for homer only, and only on its free plan. It must never cost money: no paid plan and no scheduled runs. | - | [AGENTS.md](../../AGENTS.md) |
+| SurrealDB | Trial | technology | [luggage](../../luggage) | Named the general-purpose database in the standards README, used only by luggage (on hold). Decision 0004 (PR 615) puts files, committed SQLite and then D1 first, so the README and this blip need revisiting once it merges. | - | [README.md](../../standards/docs/README.md), [PR 615](https://github.com/jimhillr/monorepo/pull/615) |
+| Neon (new) | Assess | vendor | none yet | Hosted Postgres with per-PR branches and scale to zero. Jim chose D1 first (2026-11-26); Neon is revisited only if a need comes up that D1 can't meet. Not an approved vendor. | Neon MCP connector in the Claude directory. | [PR 615](https://github.com/jimhillr/monorepo/pull/615) |
+| SpacetimeDB | Assess | technology | none yet | Named in the standards README for real-time stateful sync, but no project has tried it. | - | [README.md](../../standards/docs/README.md) |
+| Cloudflare R2 (new) | Hold | vendor | none yet | R2 bills past its free allowance once it is enabled, so don't enable it without a decision record. | Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills. | [free-tiers.md](../../standards/docs/free-tiers.md) |
+| Honeycomb, Sentry and Microsoft Clarity (new) | Hold | vendor | none yet | Considered for observability and session replay in decision 0001 and dropped in favour of Cloudflare plus PostHog, to keep the vendor count down. | Sentry MCP connector in the Claude directory. | [0001-deploy-feedback-loop.md](../../standards/docs/decisions/0001-deploy-feedback-loop.md) |
+| RentCast, ATTOM and HouseCanary (new) | Hold | vendor | none yet | Property data alternatives to RapidAPI. RentCast's free plan bills overage with no hard cap; ATTOM and HouseCanary are paid only. | - | [free-tiers.md](../../standards/docs/free-tiers.md) |
+| Supabase and Turso (new) | Hold | vendor | none yet | Compared in decision 0004 (proposed) and not recommended: Supabase pauses idle projects and has paid-only branching; Turso blocks every database once any one limit is hit and is being acquired. | Supabase MCP connector in the Claude directory. | [PR 615](https://github.com/jimhillr/monorepo/pull/615) |
+
+### Languages & Frameworks
+
+| Blip | Ring | Kind | Exemplar projects | Why | Claude support | Sources |
+| --- | --- | --- | --- | --- | --- | --- |
+| anyhow | Adopt | technology | [homer](../../homer) | Error handling in applications. | - | [README.md](../../standards/docs/README.md) |
+| Axum | Adopt | technology | [luggage](../../luggage) | The HTTP server framework. Its only user, luggage, is on hold. | - | [README.md](../../standards/docs/README.md) |
+| Bevy | Adopt | technology | [controlled_chaos](../../controlled_chaos) | The game engine. | - | [README.md](../../standards/docs/README.md) |
+| Clap | Adopt | technology | [homer](../../homer) | Argument parsing for traditional CLIs. | - | [README.md](../../standards/docs/README.md) |
+| Dioxus | Adopt | technology | [cookbook/web](../../cookbook/web), [cahokia](../../cahokia), [pane/web](../../pane/web) | The framework for web, desktop and mobile apps. New work uses 0.7; blueeel and sparkhill/webapp are still on 0.6, and cahokia's version is pinned on purpose (AGENTS.md). | - | [README.md](../../standards/docs/README.md), [AGENTS.md](../../AGENTS.md) |
+| dioxus-ssr | Adopt | technology | [cahokia/ui](../../cahokia/ui) | Render Dioxus components in plain Rust tests to check text, links and classes without a browser. | - |  |
+| nalgebra | Adopt | technology | none yet | Linear algebra. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| ndarray | Adopt | technology | none yet | N-dimensional arrays and matrices. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| Pingora | Adopt | technology | none yet | The reverse proxy framework. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| Ratatui | Adopt | technology | none yet | The framework for terminal UIs. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| Rayon | Adopt | technology | none yet | Data parallelism for compute-bound work. No project uses it yet. | - | [README.md](../../standards/docs/README.md) |
+| Rust | Adopt | technology | [cookbook](../../cookbook), [homer](../../homer) | The language for all code in the repo unless an exception says otherwise. | Official rust-analyzer-lsp Claude Code plugin. | [README.md](../../standards/docs/README.md), [rust.md](../../standards/docs/rust.md) |
+| thiserror | Adopt | technology | [auth_sdk](../../auth_sdk), [cahokia/ui](../../cahokia/ui) | Error types in libraries. | - | [README.md](../../standards/docs/README.md) |
+| Tokio | Adopt | technology | [auth_sdk](../../auth_sdk), [luggage](../../luggage) | The async runtime for IO-bound work. | - | [README.md](../../standards/docs/README.md) |
+| tracing | Adopt | technology | [auth_sdk](../../auth_sdk), [cahokia](../../cahokia) | The only logging library. | - | [README.md](../../standards/docs/README.md) |
+| utoipa | Adopt | technology | [luggage](../../luggage) | OpenAPI documents generated from Axum handlers (spelled "Utopia" in the standards README). | - | [README.md](../../standards/docs/README.md) |
+| inkwell (LLVM) | Trial | technology | [my_lang](../../my_lang) | LLVM bindings for the my_lang compiler. Needs LLVM headers, so it can't build in cloud sandboxes. Use only for compiler work. | - | [ISSUES.md](../../standards/ISSUES.md) |
+| TypeScript and Node.js | Trial | technology | [cookbook/web](../../cookbook/web), [cahokia/web](../../cahokia/web) | Allowed only for VS Code extensions and the Playwright e2e specs. Jim dislikes the Node dependency; decision 0005 (proposed) keeps it limited to e2e tests. | Official typescript-lsp Claude Code plugin. | [typescript.md](../../standards/docs/typescript.md), [PR 616](https://github.com/jimhillr/monorepo/pull/616) |
+| Perseus and Sycamore 0.8 | Hold | technology | [profiles/jimhillr](../../profiles/jimhillr), [sparkhill/website](../../sparkhill/website) | Don't start new sites on them; use Dioxus. The existing sites stay pinned to sycamore 0.8 because perseus 0.4.2 needs it. | - | [AGENTS.md](../../AGENTS.md) |
+
+<!-- radar:end -->

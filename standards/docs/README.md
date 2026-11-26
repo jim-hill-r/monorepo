@@ -16,6 +16,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Rust](./rust.md) - Rust coding standards
 - [Testing](./testing.md) - Testing standards and requirements
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
+- [Tech radar](./tech-radar.md) - Every approved, evaluated and held technology and vendor, with exemplar projects
 - [TypeScript](./typescript.md) - TypeScript coding standards
 
 ---

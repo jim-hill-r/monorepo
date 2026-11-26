@@ -66,3 +66,5 @@ Needs the `telemetry` Worker and Web Analytics from the deploy-feedback TODOs in
 - TODO (agent-generated): Link each project's latest UAT report from the `uat-reports` Pages project on its Project page and in Deliverables, and use the smoke result in the Deploy and UAT signal.
 
 # Backlog
+
+- TODO (agent-generated): Add a Tech radar page to pane: read `standards/radar/radar.json` into the snapshot and draw the four quadrants and four rings (Adopt, Trial, Assess, Hold) with a blip per entry, "(new)" blips marked, and a list beside it with each blip's description, exemplar projects (linking to their Project pages) and sources. See `standards/docs/tech-radar.md` for the fields.

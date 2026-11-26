@@ -4,8 +4,9 @@ Once a week a scheduled agent task, "Weekly deep project review", runs the
 [`deep-project-review`](../../.agents/skills/deep-project-review/SKILL.md)
 skill. Each run picks one project, studies it in depth (purpose and long-term
 goals, progress and what is holding it up, features, user experience,
-architecture, security, performance, quality, operations) and writes a slide
-deck here as a pull request for Jim's review and feedback.
+architecture, security, performance, quality, operations, and a re-review of
+its tech selection against the [tech radar](../../standards/docs/tech-radar.md))
+and writes a slide deck here as a pull request for Jim's review and feedback.
 
 Each review lives in its own folder, `<YYYY-MM-DD>-<project>/`, with the deck
 in `deck.md` and its screenshots beside it.
