@@ -32,6 +32,7 @@ criteria set, it leaves the score out.
 |--------|-------------|
 | `--address` | The property address to look up (required) |
 | `--api-key` | RapidAPI key for Zillow API access (or set `RAPIDAPI_KEY` env var) |
+| `--quota-file` | Where homer keeps the RapidAPI quota it last saw (or set `HOMER_QUOTA_FILE`); see [Free quota](#free-quota) |
 | `--min-bedrooms` | Minimum number of bedrooms |
 | `--max-bedrooms` | Maximum number of bedrooms |
 | `--min-bathrooms` | Minimum number of bathrooms |
@@ -41,7 +42,24 @@ criteria set, it leaves the score out.
 ## API Key
 
 Homer uses the Zillow API via [RapidAPI](https://rapidapi.com/apimaker/api/zillow-com1).
-Sign up for a free or paid plan and set your API key via:
+Sign up for the free plan and set your API key via:
 
 - The `--api-key` flag
 - The `RAPIDAPI_KEY` environment variable
+
+## Free quota
+
+homer must stay on RapidAPI's free plan, so it never makes a request past the
+plan's monthly quota. Every RapidAPI response reports the quota in the
+`x-ratelimit-requests-limit`, `x-ratelimit-requests-remaining` and
+`x-ratelimit-requests-reset` headers. homer saves the latest values to
+`$XDG_STATE_HOME/homer/rapidapi-quota.json` (or
+`~/.local/state/homer/rapidapi-quota.json`; change it with `--quota-file`) and:
+
+- prints a warning when 10% of the quota or less is left (5 requests if
+  RapidAPI doesn't send the limit),
+- stops with an error, without contacting RapidAPI, once the quota is used up,
+  until the reset time RapidAPI gave has passed.
+
+If the quota file is ever corrupt, homer stops rather than guessing; delete the
+file to start over.
