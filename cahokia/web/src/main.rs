@@ -305,8 +305,8 @@ mod tests {
         // the redirect URI is the site root from every page, never the
         // current page URL.
         assert_eq!(
-            redirect_url_for_origin("https://cahokia-web.pages.dev"),
-            "https://cahokia-web.pages.dev/"
+            redirect_url_for_origin("https://jimhillr-cahokia.pages.dev"),
+            "https://jimhillr-cahokia.pages.dev/"
         );
         assert_eq!(
             redirect_url_for_origin("http://localhost:8080"),

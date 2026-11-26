@@ -25,7 +25,7 @@ fn test_wrangler_toml_has_required_fields() {
     let content = fs::read_to_string("wrangler.toml").expect("Failed to read wrangler.toml");
 
     assert!(
-        content.contains("name = \"cahokia-web\""),
+        content.contains("name = \"jimhillr-cahokia\""),
         "wrangler.toml missing project name"
     );
 

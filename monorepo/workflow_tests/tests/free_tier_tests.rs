@@ -95,7 +95,7 @@ fn test_check_passes_on_a_clean_fixture() {
         (".github/workflows/ci.yml", OK_WORKFLOW),
         (
             "site/wrangler.toml",
-            "name = \"site\"\npages_build_output_dir = \"dist\"\n",
+            "name = \"jimhillr-site\"\npages_build_output_dir = \"dist\"\n",
         ),
     ]);
     let out = run_check(&repo);
@@ -187,6 +187,48 @@ fn test_budgets_cannot_be_raised_past_the_free_limit() {
 }
 
 #[test]
+fn test_check_rejects_pages_projects_without_the_prefix() {
+    for name in [
+        "site",
+        "pane",
+        "jimhillr_site",
+        "Jimhillr-site",
+        "jimhillr-",
+    ] {
+        let repo = fixture_repo(&[(
+            "site/wrangler.toml",
+            &format!("name = \"{name}\"\npages_build_output_dir = \"dist\"\n"),
+        )]);
+        let out = run_check(&repo);
+        assert!(!out.status.success(), "{name} should be rejected");
+        assert!(stdout(&out).contains("FT-006"), "{}", stdout(&out));
+    }
+}
+
+#[test]
+fn test_pages_project_refuses_a_name_without_the_prefix() {
+    let dir = temp_dir("prefix");
+    let path = stub_bin(&dir, &[]);
+    let project = dir.join("project");
+    write(
+        &project.join("wrangler.toml"),
+        "name = \"new-site\"\npages_build_output_dir = \"dist\"\n",
+    );
+    let out = Command::new("bash")
+        .arg(script())
+        .arg("pages-project")
+        .current_dir(&project)
+        .env("PATH", &path)
+        .env("CLOUDFLARE_API_TOKEN", "test-token")
+        .env("CLOUDFLARE_ACCOUNT_ID", "test-account")
+        .output()
+        .expect("run free-tiers.sh");
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("jimhillr-"));
+    assert_eq!(wrangler_log(&dir), "", "wrangler should not be called");
+}
+
+#[test]
 fn test_check_rejects_paid_wrangler_settings() {
     for setting in [
         "usage_model = \"standard\"",
@@ -250,7 +292,7 @@ fn run_pages_project(dir: &Path, path: &str, budget: Option<&str>) -> Output {
     let project = dir.join("project");
     write(
         &project.join("wrangler.toml"),
-        "name = \"new-site\"\npages_build_output_dir = \"dist\"\n",
+        "name = \"jimhillr-new-site\"\npages_build_output_dir = \"dist\"\n",
     );
     let mut cmd = Command::new("bash");
     cmd.arg(script())
@@ -278,7 +320,7 @@ fn test_pages_project_creates_a_missing_project_within_budget() {
     assert!(out.status.success(), "{}", stdout(&out));
     assert_eq!(
         wrangler_log(&dir).trim(),
-        "pages project create new-site --production-branch main"
+        "pages project create jimhillr-new-site --production-branch main"
     );
 }
 
@@ -287,7 +329,7 @@ fn test_pages_project_leaves_an_existing_project_alone() {
     let dir = temp_dir("exists");
     // Put it on the second page of results to exercise paging.
     let mut existing: Vec<String> = (0..14).map(|i| format!("site-{i}")).collect();
-    existing.push("new-site".into());
+    existing.push("jimhillr-new-site".into());
     let path = stub_bin(&dir, &existing);
     let out = run_pages_project(&dir, &path, Some("1"));
     assert!(out.status.success(), "{}", stdout(&out));

@@ -121,7 +121,7 @@ fn test_downloads_list_names_controlled_chaos() {
     assert!(
         stdout.contains(r#""project": "controlled_chaos""#)
             && stdout.contains(r#""tag": "controlled_chaos-nightly""#)
-            && stdout.contains(r#""deploy_url": "https://controlled-chaos.pages.dev""#),
+            && stdout.contains(r#""deploy_url": "https://jimhillr-controlled-chaos.pages.dev""#),
         "unexpected list: {stdout}"
     );
 }

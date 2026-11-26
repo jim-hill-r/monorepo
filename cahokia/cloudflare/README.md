@@ -58,7 +58,7 @@ web app deploy automatically; see `.github/workflows/push-main.yml`.
 Alternatively, you can deploy directly with wrangler:
 
 ```bash
-wrangler pages deploy ../web/dist --project-name=cahokia-web
+wrangler pages deploy ../web/dist --project-name=jimhillr-cahokia
 ```
 
 ### Automated Deployment

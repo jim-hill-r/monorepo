@@ -96,6 +96,11 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
+  named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
+  it never collides with another account's `*.pages.dev` name. The audit
+  enforces it (FT-006); details in
+  [standards/docs/naming.md](standards/docs/naming.md#cloudflare-pages-projects).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`).

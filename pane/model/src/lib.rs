@@ -307,7 +307,7 @@ mod tests {
         s.projects.push(Project {
             path: "pane/web".into(),
             kind: "dioxus-web".into(),
-            deploy_url: Some("https://pane.pages.dev".into()),
+            deploy_url: Some("https://jimhillr-pane.pages.dev".into()),
             summary: Some("The web frontend for pane.".into()),
             status: ProjectStatus::Priority,
         });

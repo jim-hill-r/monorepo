@@ -67,6 +67,10 @@ deploy shows on its commit and in the repo's Deployments list, and the job
 summary lists the production URL, the URL of that exact deployment and the
 commit. Smoke tests and PR comments read the same `DEPLOY_URL`.
 
+A Cloudflare Pages project is named `jimhillr-<project>`, so its
+`DEPLOY_URL` is `https://jimhillr-<project>.pages.dev` (see "Cloudflare
+Pages projects" in [naming.md](naming.md)).
+
 A deploy runs only after `mise run ci` passed in the same job, and only for
 the latest version of main: `standards/scripts/deploy-check.sh` skips it
 (and says so in the job summary) when a newer commit on main changes the
