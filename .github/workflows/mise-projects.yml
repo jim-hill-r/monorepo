@@ -70,16 +70,15 @@ jobs:
         with:
           install: false
 
-      # The audit builds the evals CLI (`evals check`) once any project has
-      # requirements or evals. Cache that build, saved from main only.
+      # The audit builds the evals CLI (`evals check`) and the cost CLI
+      # (`cost check`). Cache those builds, saved from main only.
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: evals
-          key: evals-audit
+          workspaces: |
+            evals
+            cost
+          key: audit
           save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: Audit standards
-        run: mise run //:audit
 
       - name: List projects
         id: affected
@@ -104,6 +103,20 @@ jobs:
           fi
           echo "projects=$projects" >> "$GITHUB_OUTPUT"
           echo "Projects: $projects"
+
+      # After the project list, so a PR's cost check (COST-001 to COST-004,
+      # COST-007 to COST-009) runs only for its affected projects, as the
+      # git hooks do. Runs with every project otherwise.
+      - name: Audit standards
+        env:
+          AFFECTED_BASE: ${{ inputs.base }}
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+        run: |
+          if [ -n "$AFFECTED_BASE" ]; then
+            COST_PROJECTS=$(jq -r 'join(",")' <<<"$PROJECTS")
+            export COST_PROJECTS
+          fi
+          mise run //:audit
 
       # A project that deploys sets DEPLOY_URL in its mise.toml [env]. Its job
       # then runs in the `production` environment, so each deploy shows on the

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Tests standards/scripts/cost-check.sh: it runs `cost check` (passing
-# --projects through), never fails the audit, fails render-check only when
-# the free-tier tables are out of date, and skips without cargo. cargo is a
-# stub. Run from anywhere:
+# --projects or COST_PROJECTS through), never fails the audit, fails
+# render-check only when the free-tier tables are out of date, and skips
+# without cargo. cargo is a stub. Run from anywhere:
 #   bash standards/tests/cost-check.test.sh
 set -uo pipefail
 
@@ -37,7 +37,7 @@ run_case() {
   while [ $# -gt 0 ] && [ "$1" != "--" ]; do vars+=("$1"); shift; done
   [ "${1:-}" = "--" ] && shift
   : >"$work/calls"
-  out=$(cd "$work/repo" && env -u CARGO_STATUS "${vars[@]}" PATH="$path" "$bash_bin" standards/scripts/cost-check.sh "$@" 2>&1)
+  out=$(cd "$work/repo" && env -u CARGO_STATUS -u COST_PROJECTS "${vars[@]}" PATH="$path" "$bash_bin" standards/scripts/cost-check.sh "$@" 2>&1)
   status=$?
   calls=$(cat "$work/calls")
   if [ "$status" -ne "$want" ]; then
@@ -62,6 +62,12 @@ expect "check" "prints its output" grep -q "stub output" <<<"$out"
 
 run_case "projects" "$work/stubs:$work/empty" 0 -- check --projects cookbook,pane
 expect "projects" "passes --projects" test "$calls" = "$prefix check --root . --projects cookbook,pane"
+
+run_case "affected" "$work/stubs:$work/empty" 0 COST_PROJECTS=cookbook,pane
+expect "affected" "passes COST_PROJECTS as --projects" test "$calls" = "$prefix check --root . --projects cookbook,pane"
+
+run_case "none affected" "$work/stubs:$work/empty" 0 COST_PROJECTS=
+expect "none affected" "passes an empty --projects" test "$calls" = "$prefix check --root . --projects "
 
 run_case "check findings" "$work/stubs:$work/empty" 0 CARGO_STATUS=1
 expect "check findings" "warns" grep -q "warning: cost check could not run" <<<"$out"
