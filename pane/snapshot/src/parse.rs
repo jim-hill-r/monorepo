@@ -2,8 +2,8 @@
 //! each one is tested against strings and fixture files.
 
 use pane_model::{
-    Deliverable, DeliverableKind, HumanIssue, ProjectStatus, Retro, RetroAction, WorkItem,
-    WorkKind, WorkSource,
+    Deliverable, DeliverableKind, HumanIssue, Link, ProjectStatus, REPO_URL, Retro, RetroAction,
+    WorkItem, WorkKind, WorkSource,
 };
 
 /// The project paths in the root `mise.toml`'s `[monorepo].config_roots`.
@@ -46,6 +46,73 @@ pub fn deploy_url(project_mise: &str) -> Option<String> {
         .get("DEPLOY_URL")?
         .as_str()
         .map(str::to_owned)
+}
+
+/// `RELEASE_TAG` from a project's `[env]` table: the GitHub Release its
+/// nightly downloads go to (see "Game builds" in `standards/docs/mise.md`).
+pub fn release_tag(project_mise: &str) -> Option<String> {
+    let value: toml::Table = toml::from_str(project_mise).ok()?;
+    value
+        .get("env")?
+        .get("RELEASE_TAG")?
+        .as_str()
+        .map(str::to_owned)
+}
+
+/// `[package].name` from a `Cargo.toml`.
+pub fn package_name(cargo_toml: &str) -> Option<String> {
+    let value: toml::Table = toml::from_str(cargo_toml).ok()?;
+    value
+        .get("package")?
+        .get("name")?
+        .as_str()
+        .map(str::to_owned)
+}
+
+/// A project's production site as a deliverable, titled for the app it
+/// deploys: `cookbook/cloudflare` shows as `cookbook`.
+pub fn live_site(project: &str, url: &str) -> Deliverable {
+    Deliverable {
+        kind: DeliverableKind::LiveSite,
+        title: project
+            .strip_suffix("/cloudflare")
+            .unwrap_or(project)
+            .to_owned(),
+        project: Some(project.to_owned()),
+        path: None,
+        url: Some(url.to_owned()),
+        date: None,
+        status: None,
+        downloads: Vec::new(),
+        body: None,
+    }
+}
+
+/// A game's nightly GitHub Release, with its macOS and Android downloads at
+/// the fixed asset URLs `nightly-downloads.yml` publishes:
+/// `<repo>/releases/download/<tag>/<package>-macos.zip` and `-android.apk`.
+pub fn release(project: &str, tag: &str, package: &str) -> Deliverable {
+    let base = format!("{REPO_URL}/releases/download/{tag}");
+    Deliverable {
+        kind: DeliverableKind::Release,
+        title: format!("{project} (nightly)"),
+        project: Some(project.to_owned()),
+        path: None,
+        url: Some(format!("{REPO_URL}/releases/tag/{tag}")),
+        date: None,
+        status: None,
+        downloads: vec![
+            Link {
+                label: "macOS".to_owned(),
+                url: format!("{base}/{package}-macos.zip"),
+            },
+            Link {
+                label: "Android".to_owned(),
+                url: format!("{base}/{package}-android.apk"),
+            },
+        ],
+        body: None,
+    }
 }
 
 /// The first paragraph of a README that is not a heading, badge, quote,
@@ -475,6 +542,8 @@ pub fn doc_deliverable(
         url: None,
         date,
         status: field("Status:"),
+        downloads: Vec::new(),
+        body: Some(contents.to_owned()),
     }
 }
 
@@ -563,6 +632,53 @@ mod tests {
             None
         );
         Ok(())
+    }
+
+    #[test]
+    fn reads_release_tag_and_package_name() {
+        let mise = "[env]\nDEPLOY_URL = \"https://g.pages.dev\"\nRELEASE_TAG = \"g-nightly\"\n";
+        assert_eq!(release_tag(mise).as_deref(), Some("g-nightly"));
+        assert_eq!(release_tag("[env]\n"), None);
+        assert_eq!(release_tag("not toml ["), None);
+        let cargo = "[package]\nname = \"my_game\"\nversion = \"0.1.0\"\n";
+        assert_eq!(package_name(cargo).as_deref(), Some("my_game"));
+        assert_eq!(package_name("[workspace]\n"), None);
+    }
+
+    #[test]
+    fn builds_release_download_links() {
+        let r = release("games/g", "g-nightly", "my_game");
+        assert_eq!(r.kind, DeliverableKind::Release);
+        assert_eq!(r.title, "games/g (nightly)");
+        assert_eq!(
+            r.url.as_deref(),
+            Some("https://github.com/jimhillr/monorepo/releases/tag/g-nightly")
+        );
+        let urls: Vec<_> = r
+            .downloads
+            .iter()
+            .map(|l| (l.label.as_str(), l.url.as_str()))
+            .collect();
+        assert_eq!(
+            urls,
+            [
+                (
+                    "macOS",
+                    "https://github.com/jimhillr/monorepo/releases/download/g-nightly/my_game-macos.zip"
+                ),
+                (
+                    "Android",
+                    "https://github.com/jimhillr/monorepo/releases/download/g-nightly/my_game-android.apk"
+                ),
+            ]
+        );
+        let site = live_site("app/web", "https://app.pages.dev");
+        assert_eq!(site.kind, DeliverableKind::LiveSite);
+        assert_eq!(site.url.as_deref(), Some("https://app.pages.dev"));
+        assert_eq!(site.title, "app/web");
+        let site = live_site("cookbook/cloudflare", "https://c.pages.dev");
+        assert_eq!(site.title, "cookbook");
+        assert_eq!(site.project.as_deref(), Some("cookbook/cloudflare"));
     }
 
     #[test]

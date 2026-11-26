@@ -51,6 +51,22 @@
     "budget": 0
   },
   {
+    "name": "pulldown-cmark",
+    "ring": "Trial",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "CommonMark Markdown to HTML in Rust, compiled to wasm; pane renders plans, decisions and retros with it, raw HTML shown as text.",
+    "exemplars": [
+      "pane/web"
+    ],
+    "sources": [
+      "pane/docs/plans/2026-11-review-dashboard.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Bevy",
     "ring": "Adopt",
     "quadrant": "Languages & Frameworks",

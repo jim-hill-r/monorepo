@@ -21,10 +21,23 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
     for path in &roots {
         let dir = root.join(path);
         let mise = read_optional(&dir.join("mise.toml"));
+        let deploy_url = parse::deploy_url(&mise);
+        if let Some(url) = &deploy_url {
+            snapshot.deliverables.push(parse::live_site(path, url));
+        }
+        if let Some(tag) = parse::release_tag(&mise) {
+            // Asset names start with the Cargo package name; fall back to
+            // the folder name for a project without one.
+            let package = parse::package_name(&read_optional(&dir.join("Cargo.toml")))
+                .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(path).to_owned());
+            snapshot
+                .deliverables
+                .push(parse::release(path, &tag, &package));
+        }
         snapshot.projects.push(Project {
             path: path.clone(),
             kind: parse::project_kind(&mise).unwrap_or_else(|| "unknown".to_owned()),
-            deploy_url: parse::deploy_url(&mise),
+            deploy_url,
             summary: parse::readme_summary(&read_optional(&dir.join("README.md"))),
             status: lists.status_of(path),
         });

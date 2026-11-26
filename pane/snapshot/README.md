@@ -32,7 +32,9 @@ It exits non-zero, writing nothing, if the root `mise.toml` has no
 | `work_items` (from issue files) | Every issue file (`issues/<slug>.md` or `<project>/issues/<slug>.md`, not `README.md`) with front matter: `kind` (`todo` or `fix`), the section from `priority` (`Priority Issues` or `Backlog`), `epic`, `tags`, the body as the text, the line the body starts on, and the owning project (the longest config root containing the file). |
 | `work_items` (from code) | Every `TODO` / `FIX` that follows a comment opener (`//`, `#`, `/*`, `<!--`, `--`, `;`) in `.rs`, `.toml`, `.sh`, `.yml`, `.ts`, `.js`, `.py`, `.css`, `.html`, `.sql` and similar files. Openers inside a `"string"` or a `` `code span` `` are ignored. |
 | `human_issues` | Each file in the root `issues/human/` (not `README.md`), with its body as the text and `added` and `unblocks` from its front matter. Pane works out the age from `taken_at`. |
-| `deliverables` | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, and date from `- Date:`, `Started <date>`, or the file name. |
+| `deliverables` (live sites) | Each project with a `DEPLOY_URL` in its `[env]`. |
+| `deliverables` (downloads) | Each project with a `RELEASE_TAG` in its `[env]` (see "Game builds" in `standards/docs/mise.md`): its GitHub Release, and the macOS and Android assets `<package>-macos.zip` and `<package>-android.apk`, where `<package>` is `[package].name` in its `Cargo.toml`. |
+| `deliverables` (documents) | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, date from `- Date:`, `Started <date>`, or the file name, and the whole file as `body` for pane to render. |
 | `retros` | Each retro again, with its `- [ ]` / `- [x]` items under `## Actions`. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are

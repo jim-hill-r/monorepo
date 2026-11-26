@@ -2,9 +2,12 @@
 //! (built by `pane_snapshot` in the release) and shows it.
 
 use dioxus::prelude::*;
-use pane_model::Snapshot;
+use pane_model::{DeliverableKind, Snapshot, WorkKind};
 
+mod markdown;
 mod view;
+
+use view::{Bucket, WorkFilter};
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const SNAPSHOT_URL: &str = "/data/snapshot.json";
@@ -68,6 +71,8 @@ mod route {
         ProjectPage { path: Vec<String> },
         #[route("/deliverables")]
         Deliverables {},
+        #[route("/docs/:..path")]
+        DocPage { path: Vec<String> },
         #[route("/reviews")]
         Reviews {},
         #[route("/human-issues")]
@@ -273,13 +278,106 @@ fn Health() -> Element {
     }
 }
 
+/// A route to a document page from its repo path.
+fn doc_route(path: &str) -> Route {
+    Route::DocPage {
+        path: path.split('/').map(str::to_owned).collect(),
+    }
+}
+
 #[component]
 fn Deliverables() -> Element {
     rsx! {
-        Planned {
-            title: "Deliverables",
-            phase: 1,
-            what: "Live sites, releases, review decks, plans, decisions and retros.",
+        h1 { "Deliverables" }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let groups: Vec<_> = view::DELIVERABLE_GROUPS
+                    .iter()
+                    .map(|(kind, heading)| {
+                        let items: Vec<_> = view::deliverables_of(&s, *kind).into_iter().cloned().collect();
+                        (*kind, *heading, items)
+                    })
+                    .collect();
+                rsx! {
+                    for (kind , heading , items) in groups {
+                        section { class: "group", "data-testid": "deliverables-{view::deliverable_key(kind)}",
+                            h2 { "{heading} " span { class: "muted count", "{items.len()}" } }
+                            if items.is_empty() {
+                                p { class: "muted", "None yet." }
+                            }
+                            ul { class: "rows",
+                                for d in items {
+                                    li { key: "{d.title}{d.path:?}{d.url:?}",
+                                        if let Some(path) = d.path.clone() {
+                                            Link { class: "row-title", to: doc_route(&path), "{d.title}" }
+                                        } else if let Some(url) = &d.url {
+                                            a { class: "row-title", href: "{url}", "{d.title}" }
+                                        } else {
+                                            span { class: "row-title", "{d.title}" }
+                                        }
+                                        if kind == DeliverableKind::LiveSite {
+                                            if let Some(url) = &d.url {
+                                                span { class: "muted", " {url}" }
+                                            }
+                                        }
+                                        div { class: "meta",
+                                            if let Some(p) = &d.project {
+                                                if kind != DeliverableKind::LiveSite {
+                                                    span { "{p}" }
+                                                }
+                                            }
+                                            if let Some(date) = &d.date {
+                                                span { "{date}" }
+                                            }
+                                            if let Some(status) = &d.status {
+                                                span { class: "badge", "{status}" }
+                                            }
+                                            for link in d.downloads.clone() {
+                                                a { class: "download", href: "{link.url}", "Download for {link.label}" }
+                                            }
+                                            if let Some(path) = &d.path {
+                                                a { href: "{view::github_file_url(&s.commit, path)}", "On GitHub" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    p { class: "muted",
+                        "Review decks come in Phase 2, and PR previews and UAT reports in Phases 3 and 6."
+                    }
+                }
+            },
+        }
+    }
+}
+
+/// A plan, decision or retro, rendered from its Markdown.
+#[component]
+fn DocPage(path: Vec<String>) -> Element {
+    let path = path.join("/");
+    rsx! {
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let Some(doc) = view::find_doc(&s, &path).cloned() else {
+                    return rsx! {
+                        h1 { "{path}" }
+                        p { "No plan, decision or retro at this path in the snapshot." }
+                        Link { to: Route::Deliverables {}, "All deliverables" }
+                    };
+                };
+                let html = markdown::to_html(doc.body.as_deref().unwrap_or_default(), &path, &s.commit);
+                let github = view::github_file_url(&s.commit, &path);
+                rsx! {
+                    p { class: "doc-path",
+                        Link { to: Route::Deliverables {}, "Deliverables" }
+                        " / {path} · "
+                        a { href: "{github}", "Open on GitHub" }
+                    }
+                    article { class: "doc", "data-testid": "doc", dangerous_inner_html: "{html}" }
+                }
+            },
         }
     }
 }
@@ -298,21 +396,143 @@ fn Reviews() -> Element {
 #[component]
 fn HumanIssues() -> Element {
     rsx! {
-        Planned {
-            title: "Human issues",
-            phase: 1,
-            what: "Tasks only you can do, oldest first, with what each one unblocks.",
+        h1 { "Human issues" }
+        p { class: "muted", "Tasks only you can do, oldest first. Mark done and add a note come in Phase 5." }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let now = now();
+                let issues: Vec<_> = view::sorted_human_issues(&s)
+                    .into_iter()
+                    .map(|i| {
+                        let age = i
+                            .added
+                            .as_deref()
+                            .and_then(|d| view::days_since(d, now))
+                            .map(view::days_label);
+                        (i.clone(), age, view::github_line_url(&s.commit, &i.file, i.line))
+                    })
+                    .collect();
+                rsx! {
+                    if issues.is_empty() {
+                        p { "Nothing is waiting on you." }
+                    }
+                    ul { class: "rows", "data-testid": "human-issues",
+                        for (issue , age , url) in issues {
+                            li { key: "{issue.file}:{issue.line}",
+                                p { class: "row-text", "{issue.text}" }
+                                div { class: "meta",
+                                    if let Some(age) = age {
+                                        span { class: "badge", "{age}" }
+                                    }
+                                    if let Some(added) = &issue.added {
+                                        span { "Added {added}" }
+                                    }
+                                    a { href: "{url}", "Open on GitHub" }
+                                }
+                                if let Some(unblocks) = &issue.unblocks {
+                                    p { class: "muted unblocks", "Unblocks {unblocks}" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
         }
     }
 }
 
 #[component]
 fn Work() -> Element {
+    let mut filter = use_signal(WorkFilter::default);
     rsx! {
-        Planned {
-            title: "Work",
-            phase: 1,
-            what: "Every TODO and FIX across the repo, filterable by project, kind and tag.",
+        h1 { "Work" }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let (projects, tags) = view::work_facets(&s.work_items);
+                let current = filter.read().clone();
+                let rows: Vec<_> = view::filter_work(&s.work_items, &current)
+                    .into_iter()
+                    .map(|i| (i.clone(), view::github_line_url(&s.commit, &i.file, i.line)))
+                    .collect();
+                let total = s.work_items.len();
+                let shown = rows.len();
+                let some = |v: String| (!v.is_empty()).then_some(v);
+                rsx! {
+                    form { class: "filters", "aria-label": "Filters",
+                        label {
+                            "Project "
+                            select {
+                                name: "project",
+                                onchange: move |e| filter.write().project = some(e.value()),
+                                option { value: "", "Any" }
+                                for p in projects {
+                                    option { value: "{p}", selected: current.project.as_deref() == Some(p.as_str()), "{p}" }
+                                }
+                            }
+                        }
+                        label {
+                            "Kind "
+                            select {
+                                name: "kind",
+                                onchange: move |e| {
+                                    filter.write().kind = match e.value().as_str() {
+                                        "todo" => Some(WorkKind::Todo),
+                                        "fix" => Some(WorkKind::Fix),
+                                        _ => None,
+                                    };
+                                },
+                                option { value: "", "Any" }
+                                option { value: "todo", selected: current.kind == Some(WorkKind::Todo), "TODO" }
+                                option { value: "fix", selected: current.kind == Some(WorkKind::Fix), "FIX" }
+                            }
+                        }
+                        label {
+                            "Where "
+                            select {
+                                name: "bucket",
+                                onchange: move |e| filter.write().bucket = Bucket::from_key(&e.value()),
+                                option { value: "", "Anywhere" }
+                                for b in Bucket::ALL {
+                                    option { value: "{b.key()}", selected: current.bucket == Some(b), "{b.label()}" }
+                                }
+                            }
+                        }
+                        label {
+                            "Tag "
+                            select {
+                                name: "tag",
+                                onchange: move |e| filter.write().tag = some(e.value()),
+                                option { value: "", "Any" }
+                                for t in tags {
+                                    option { value: "{t}", selected: current.tag.as_deref() == Some(t.as_str()), "{t}" }
+                                }
+                            }
+                        }
+                    }
+                    p { class: "muted", "data-testid": "work-count", "Showing {shown} of {total}" }
+                    ul { class: "rows", "data-testid": "work-items",
+                        for (item , url) in rows {
+                            li { key: "{item.file}:{item.line}",
+                                p { class: "row-text",
+                                    span { class: "badge kind-{view::kind_label(item.kind).to_lowercase()}", "{view::kind_label(item.kind)}" }
+                                    " {item.text}"
+                                }
+                                div { class: "meta",
+                                    span { "{view::project_label(item.project.as_deref())}" }
+                                    span { "{Bucket::of(&item).label()}" }
+                                    if let Some(epic) = &item.epic {
+                                        span { "{epic}" }
+                                    }
+                                    for t in item.tags.clone() {
+                                        span { class: "tag", "{t}" }
+                                    }
+                                    a { href: "{url}", "{item.file}:{item.line}" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
         }
     }
 }

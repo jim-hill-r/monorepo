@@ -192,6 +192,8 @@ fn collects_human_issues_docs_and_retros() -> TestResult {
     assert_eq!(
         docs,
         [
+            (DeliverableKind::LiveSite, None, Some("app/web")),
+            (DeliverableKind::Release, None, Some("tool")),
             (
                 DeliverableKind::Decision,
                 Some("app/docs/decisions/0001-pick-a-thing.md"),
@@ -208,6 +210,22 @@ fn collects_human_issues_docs_and_retros() -> TestResult {
                 Some("app")
             ),
         ]
+    );
+    assert_eq!(
+        s.deliverables[0].url.as_deref(),
+        Some("https://app.pages.dev")
+    );
+    assert_eq!(
+        s.deliverables[1].downloads[0].url,
+        "https://github.com/jimhillr/monorepo/releases/download/tool-nightly/the_tool-macos.zip",
+        "release assets are named for the Cargo package"
+    );
+    assert!(
+        s.deliverables[2]
+            .body
+            .as_deref()
+            .is_some_and(|b| b.starts_with('#')),
+        "docs carry their Markdown"
     );
     assert_eq!(s.retros.len(), 1);
     assert_eq!(s.retros[0].actions.len(), 2);

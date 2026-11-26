@@ -1,6 +1,6 @@
 # Plan: robust, explained recommendations
 
-- Status: accepted (Jim, 2026-11-26); steps 1 to 3 done
+- Status: accepted (Jim, 2026-11-26); steps 1 to 4 done
 - Requirements: [BEAR-003, BEAR-004, BEAR-005, BEAR-006](../requirements.md)
 
 ## Where we are
@@ -124,7 +124,14 @@ Each is one PR, in this order:
    A game with none can't matter in any season. The elimination check uses
    records only, so it errs toward "still alive" (the 2023 Bears, out only
    on tiebreakers, still count as alive); in week 12 every game is open.
-4. Adaptive pair counts and the tiers.
+4. Adaptive pair counts and the tiers. Done: a game whose Super Bowl
+   swing's two-standard-error range spans the 0.05-point line, with a
+   standard error over a fifth of it, gets another batch of pairs, up to 4
+   times the simulations. A game the relevance pass closes isn't simulated,
+   so its swings are exactly zero. `GameImpact::tier` gives matters, small,
+   negligible or none. In week 12, four games got extra pairs and the build
+   went from about 16 to 20.5 seconds locally. The page doesn't use the
+   tiers yet; step 5 does.
 5. `channels` in `rooting.json`, explanation text and the page.
 6. Golden-week evals.
 
