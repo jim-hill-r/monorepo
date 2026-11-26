@@ -27,6 +27,9 @@ Jim opens one site, on his laptop or phone, and within a minute knows:
    shared system, and on a click, the evidence behind the colour.
 4. **What to do about it**: add a `TODO` or `FIX` to any project, and mark a
    human issue done, without opening an editor or a terminal.
+5. **What it earns and costs**: each project's revenue and cost by month, and
+   whether it pays for itself (added 2026-11-26, see
+   [Revenue and cost](#revenue-and-cost)).
 
 Pane reads from and writes to the repo. It never becomes a second place where
 work is tracked: the repo stays the source of truth (AGENTS.md), and every
@@ -254,6 +257,72 @@ Because the PR is ready, not draft, and touches only `ISSUES.md` or
 `pane-edit` PRs as safe for PR triage to approve. AGENTS.md's draft rule is
 for PRs agents open; this one is Jim's. Phase 5 makes that change.
 
+## Revenue and cost
+
+Added 2026-11-26 from Jim's request:
+
+> Pane should also include features to evaluate revenue and cost of each
+> project.
+
+Following decision [0004](../../../standards/docs/decisions/0004-database-engine.md)
+(files first), the numbers come from three places, all read into
+the snapshot or the Worker like everything else.
+
+### Where the numbers come from
+
+| Number | Source | Notes |
+| --- | --- | --- |
+| **Shared fixed costs** | A monthly budget per blip in `standards/radar/radar.json` (tech radar, PR #619) | Today Claude Code is $25 a month and every other blip is $0, since everything else runs on free plans. |
+| **Usage against free limits** | `free-tiers.sh usage` (weekly `all-free-tier-usage.yml` run), given a JSON output uploaded as the run's artifact | Not money while we stay on free plans, so it is shown as headroom ("Pages projects 6 of 25"), not as cost. The Worker reads the latest run's JSON, cached for an hour. |
+| **Project revenue and project-only costs** | A new per-project file, `<project>/finance.toml` | Revenue by month, and costs only that project has (a domain bought on Squarespace, an app store fee). Missing file means no revenue and no project-only cost. |
+
+`finance.toml` holds whole cents in US dollars, so nothing is lost to
+floating point:
+
+```toml
+# pane/finance.toml (example)
+[[revenue]]
+month = "2026-11"          # YYYY-MM
+cents = 0
+source = "None yet"        # where it came from: a store, a sponsor, an invoice
+
+[[cost]]
+name = "pane.example.com domain"
+cents = 1200
+every = "year"             # "month", "year" or "once"
+since = "2026-11"
+vendor = "Squarespace"     # must be a blip in radar.json
+```
+
+Every number has a source line, because pane shows it as evidence the same
+way the health lights do.
+
+### Splitting shared costs
+
+A fixed cost such as Claude Code isn't any one project's. Pane splits each
+month's shared costs across projects **by their share of the PRs merged that
+month** (a PR touching two projects counts half to each), since agent work is
+what the money buys. Projects with no merged PRs that month get none. The
+rule is one pure function in `pane/model`, so it is unit tested and easy to
+change; the page always shows the split and the rule beside it.
+
+### What pane shows
+
+- **Money page**: one row per project with this month's revenue, direct cost,
+  share of shared costs and net, and a 12-month chart of each. A totals row,
+  and the shared costs listed on their own with their radar blips.
+- **Project page**: a Money section with the same numbers for that project,
+  each linked to its `finance.toml` line or radar blip on GitHub.
+- **Free tiers**: the headroom table, so a limit coming close shows up before
+  it would cost anything.
+- **Add**: "Add revenue" and "Add a cost" forms that write a `finance.toml`
+  entry through the `pane-edit` PR, the same way TODOs are added.
+
+No new vendor or service: the numbers are files in the repo and one more
+artifact from a workflow that already runs. Pane never reads a bank,
+payment processor or billing API; if one is wanted later it needs its own
+decision record.
+
 ## Phases
 
 ### Phase 0: foundations
@@ -325,6 +394,19 @@ Needs the `telemetry` Worker and Web Analytics from the deploy-feedback plan
   app's Web Analytics and to PostHog recordings once those exist.
 - Link the latest UAT report per project once `uat-reports` exists.
 
+### Phase 7: revenue and cost
+
+Needs Phase 1 for the pages, Phase 3 for the free-tier usage, and Phase 5 for
+the forms. Can start after Phase 1.
+
+- The `finance.toml` convention in `standards/docs/`, money types and the
+  shared-cost split in `pane/model`, and the snapshot reading every
+  `finance.toml` and the radar's monthly budgets.
+- The Money page and the Money section on Project pages.
+- `free-tiers.sh usage` writes JSON, and the Worker serves the latest run's
+  headroom.
+- The "Add revenue" and "Add a cost" forms through the `pane-edit` PR.
+
 ## Things Jim does
 
 These become `TODO (human)` lines in `HUMAN_ISSUES.md` in the PR of the phase
@@ -369,6 +451,11 @@ Approving the PR that adds this plan approves these. Say if any should change.
    ready-for-review `pane-edit` PRs that PR triage may approve.
 4. Retros follow the convention above.
 5. Thresholds start as in this plan and are tuned in `pane/health.toml`.
+6. Revenue and project-only costs live in a per-project `finance.toml`, in
+   whole US cents, and shared costs come from the radar's monthly budgets.
+   Revenue added through pane goes through a `pane-edit` PR like a TODO.
+7. Shared costs are split across projects by their share of merged PRs that
+   month.
 
 ## Not doing (yet)
 
