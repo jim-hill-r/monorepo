@@ -4,8 +4,10 @@
 //! This crate does no I/O beyond parsing. The `bear_down_cli` binary downloads
 //! the data and writes the results; see `docs/decisions/0001`.
 
+pub mod elo;
 pub mod games;
 
+pub use elo::{EloParams, Ratings};
 pub use games::{Game, GameType, Outcome, Schedule, Score, Season, Week};
 
 /// The Bears' team abbreviation in nflverse data.
