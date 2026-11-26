@@ -52,6 +52,9 @@ impl Player {
     /// Initial happiness score per player.
     pub const STARTING_HAPPINESS: u32 = 50;
 
+    /// Happiness gained by the winner of a battle, as defined by the rulebook.
+    pub const BATTLE_WIN_HAPPINESS: i32 = 5;
+
     /// Creates a new player with an empty hand and the given starting life total.
     ///
     /// Civilians are initialized to [`STARTING_CIVILIANS`] and happiness to
@@ -224,12 +227,14 @@ impl RulesEngine {
 
     /// Compares `attacker` (active player's card) against `defender` (inactive player's card).
     ///
-    /// The losing player takes 1 point of damage.  On a draw neither player is damaged.
+    /// The losing player takes 1 point of damage and the winning player gains
+    /// [`BATTLE_WIN_HAPPINESS`] happiness.  On a draw neither player is affected.
     /// May only be called during the [`Battle`] phase.
     /// On success the phase advances to [`End`].
     ///
     /// [`Battle`]: TurnPhase::Battle
     /// [`End`]: TurnPhase::End
+    /// [`BATTLE_WIN_HAPPINESS`]: Player::BATTLE_WIN_HAPPINESS
     pub fn resolve_battle(
         &mut self,
         attacker: &Card,
@@ -248,10 +253,13 @@ impl RulesEngine {
             BattleOutcome::AttackerWins => {
                 let defender_idx = self.inactive_player();
                 self.players[defender_idx].life = self.players[defender_idx].life.saturating_sub(1);
+                self.players[self.active_player].adjust_happiness(Player::BATTLE_WIN_HAPPINESS);
             }
             BattleOutcome::DefenderWins => {
+                let defender_idx = self.inactive_player();
                 self.players[self.active_player].life =
                     self.players[self.active_player].life.saturating_sub(1);
+                self.players[defender_idx].adjust_happiness(Player::BATTLE_WIN_HAPPINESS);
             }
             BattleOutcome::Draw => {}
         }
@@ -591,6 +599,56 @@ mod tests {
         assert_eq!(outcome, BattleOutcome::Draw);
         assert_eq!(engine.players[0].life, 3);
         assert_eq!(engine.players[1].life, 3);
+    }
+
+    #[test]
+    fn battle_attacker_wins_grants_attacker_happiness() {
+        let mut engine = make_engine();
+        advance_to_battle(&mut engine, ace());
+        engine.resolve_battle(&ace(), &two()).unwrap();
+        assert_eq!(
+            engine.players[0].happiness,
+            Player::STARTING_HAPPINESS + Player::BATTLE_WIN_HAPPINESS as u32
+        );
+        assert_eq!(engine.players[1].happiness, Player::STARTING_HAPPINESS);
+    }
+
+    #[test]
+    fn battle_defender_wins_grants_defender_happiness() {
+        let mut engine = make_engine();
+        advance_to_battle(&mut engine, two());
+        engine.resolve_battle(&two(), &ace()).unwrap();
+        assert_eq!(engine.players[0].happiness, Player::STARTING_HAPPINESS);
+        assert_eq!(
+            engine.players[1].happiness,
+            Player::STARTING_HAPPINESS + Player::BATTLE_WIN_HAPPINESS as u32
+        );
+    }
+
+    #[test]
+    fn battle_draw_grants_no_happiness() {
+        let mut engine = make_engine();
+        advance_to_battle(&mut engine, king());
+        engine.resolve_battle(&king(), &king()).unwrap();
+        assert_eq!(engine.players[0].happiness, Player::STARTING_HAPPINESS);
+        assert_eq!(engine.players[1].happiness, Player::STARTING_HAPPINESS);
+    }
+
+    #[test]
+    fn battle_win_happiness_is_clamped_at_one_hundred() {
+        let mut engine = make_engine();
+        engine.players[0].adjust_happiness(100);
+        advance_to_battle(&mut engine, ace());
+        engine.resolve_battle(&ace(), &two()).unwrap();
+        assert_eq!(engine.players[0].happiness, 100);
+    }
+
+    #[test]
+    fn battle_in_wrong_phase_grants_no_happiness() {
+        let mut engine = make_engine();
+        engine.resolve_battle(&ace(), &two()).unwrap_err();
+        assert_eq!(engine.players[0].happiness, Player::STARTING_HAPPINESS);
+        assert_eq!(engine.players[1].happiness, Player::STARTING_HAPPINESS);
     }
 
     #[test]

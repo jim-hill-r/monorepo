@@ -4,7 +4,7 @@ use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
 use crate::card::{Card, CardCategory};
 use crate::card_library::CardLibrary;
 use crate::deck::{Deck, DeckBuilder};
-use crate::rules::{BattleOutcome, Player, RulesEngine, TurnPhase};
+use crate::rules::{Player, RulesEngine, TurnPhase};
 use crate::state::AppState;
 
 /// Plugin that sets up the core game systems.
@@ -411,25 +411,14 @@ fn handle_battle_phase(
     }
 }
 
-/// Resolves the battle between `attacker` and `defender` and adjusts happiness.
+/// Resolves the battle between `attacker` and `defender` and logs the outcome.
 ///
-/// Called by [`handle_battle_phase`] after both cards have been selected.  The
-/// winner gains +5 happiness.
+/// Called by the human and AI battle handlers after both cards have been
+/// selected.  Damage and the winner's happiness reward are applied by
+/// [`RulesEngine::resolve_battle`].
 fn apply_battle_result(engine: &mut RulesEngine, attacker: &Card, defender: &Card) {
     match engine.resolve_battle(attacker, defender) {
-        Ok(outcome) => {
-            info!("Battle outcome: {outcome:?}");
-            match outcome {
-                BattleOutcome::AttackerWins => {
-                    engine.players[engine.active_player].adjust_happiness(5);
-                }
-                BattleOutcome::DefenderWins => {
-                    let defender_idx = engine.inactive_player();
-                    engine.players[defender_idx].adjust_happiness(5);
-                }
-                BattleOutcome::Draw => {}
-            }
-        }
+        Ok(outcome) => info!("Battle outcome: {outcome:?}"),
         Err(e) => warn!("resolve_battle failed: {e}"),
     }
 }
@@ -1119,7 +1108,10 @@ mod tests {
         let defender = Card::new("Two", 2);
         let initial_happiness = engine.players[0].happiness;
         apply_battle_result(&mut engine, &attacker, &defender);
-        assert_eq!(engine.players[0].happiness, initial_happiness + 5);
+        assert_eq!(
+            engine.players[0].happiness,
+            initial_happiness + Player::BATTLE_WIN_HAPPINESS as u32
+        );
     }
 
     #[test]
@@ -1132,7 +1124,10 @@ mod tests {
         let defender = Card::new("Ace", 14);
         let initial_p2_happiness = engine.players[1].happiness;
         apply_battle_result(&mut engine, &attacker, &defender);
-        assert_eq!(engine.players[1].happiness, initial_p2_happiness + 5);
+        assert_eq!(
+            engine.players[1].happiness,
+            initial_p2_happiness + Player::BATTLE_WIN_HAPPINESS as u32
+        );
     }
 
     #[test]

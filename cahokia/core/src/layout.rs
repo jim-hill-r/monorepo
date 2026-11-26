@@ -88,6 +88,42 @@ impl FamilyTree {
     pub fn generation_layout(&self) -> GenerationLayout {
         Layouter::new(self).run()
     }
+
+    /// The links to draw between people, by id, read the same way the
+    /// layout reads them: one link per pair whatever direction it was
+    /// recorded in, links to missing people and to oneself dropped.
+    pub(crate) fn drawable_links(&self) -> Links<'_> {
+        let layouter = Layouter::new(self);
+        let ids = &layouter.ids;
+        let spouses = layouter
+            .spouses
+            .iter()
+            .enumerate()
+            .flat_map(|(a, partners)| {
+                partners
+                    .iter()
+                    .filter(move |&&b| b > a)
+                    .map(move |&b| (ids[a], ids[b]))
+            })
+            .collect();
+        let parent_child = layouter
+            .parent_child
+            .iter()
+            .map(|&(parent, child)| (ids[parent], ids[child]))
+            .collect();
+        Links {
+            spouses,
+            parent_child,
+        }
+    }
+}
+
+/// Spouse and parent-child links between people, by id, sorted by id.
+pub(crate) struct Links<'a> {
+    /// Spouse pairs, each listed once with the smaller id first.
+    pub spouses: Vec<(&'a str, &'a str)>,
+    /// Parent pairs as (parent, child).
+    pub parent_child: Vec<(&'a str, &'a str)>,
 }
 
 /// Working state for one layout. People are referred to by their index in

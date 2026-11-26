@@ -1,6 +1,8 @@
 pub mod layout;
+pub mod tree_layout;
 
 pub use layout::{GenerationLayout, Placement};
+pub use tree_layout::{Edge, EdgeKind, Node, Point, Spacing, TreeLayout};
 
 /// Represents a person's sex in a family tree.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
