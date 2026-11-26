@@ -4,11 +4,18 @@
 
 #[allow(clippy::all, clippy::unwrap_used, clippy::expect_used, unused)]
 pub mod auth0;
+#[allow(clippy::all, clippy::unwrap_used, clippy::expect_used, unused)]
+pub mod cloudflare;
 
 /// The `auth0/auth0` provider version the bindings were generated from. It
 /// must match `terrars_auth0.json`, which a test checks.
 #[cfg_attr(not(test), allow(dead_code))]
 pub const AUTH0_PROVIDER_VERSION: &str = "1.63.0";
+
+/// The `cloudflare/cloudflare` provider version, matching
+/// `terrars_cloudflare.json`.
+#[cfg_attr(not(test), allow(dead_code))]
+pub const CLOUDFLARE_PROVIDER_VERSION: &str = "5.29.0";
 
 #[cfg(test)]
 mod tests {
@@ -17,6 +24,14 @@ mod tests {
         let config: serde_json::Value =
             serde_json::from_str(include_str!("../../terrars_auth0.json"))?;
         assert_eq!(config["version"], super::AUTH0_PROVIDER_VERSION);
+        Ok(())
+    }
+
+    #[test]
+    fn cloudflare_version_matches_the_generator_config() -> anyhow::Result<()> {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../../terrars_cloudflare.json"))?;
+        assert_eq!(config["version"], super::CLOUDFLARE_PROVIDER_VERSION);
         Ok(())
     }
 }

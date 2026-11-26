@@ -23,11 +23,14 @@ use std::fmt;
 use std::path::Path;
 
 /// Providers the stacks may use, by their full registry address.
-pub const ALLOWED_PROVIDERS: &[&str] = &["registry.opentofu.org/auth0/auth0"];
+pub const ALLOWED_PROVIDERS: &[&str] = &[
+    "registry.opentofu.org/auth0/auth0",
+    "registry.opentofu.org/cloudflare/cloudflare",
+];
 
 /// Resource types the stacks may manage. Add a type here in the same PR that
 /// first uses it, after checking it can't bill.
-pub const ALLOWED_RESOURCE_TYPES: &[&str] = &["auth0_client"];
+pub const ALLOWED_RESOURCE_TYPES: &[&str] = &["auth0_client", "cloudflare_web_analytics_site"];
 
 /// Resource types that are free only up to a budget, and the
 /// `standards/radar/limits.toml` key that holds it. A Cron Trigger resource
@@ -620,7 +623,7 @@ mod tests {
     #[test]
     fn billable_types_fail_and_are_not_allowlisted() -> anyhow::Result<()> {
         let findings = check(&plan("r2.json")?, &budgets()?);
-        assert_eq!(ids(&findings), ["IAC-003", "IAC-004", "IAC-004"]);
+        assert_eq!(ids(&findings), ["IAC-003", "IAC-004"]);
         Ok(())
     }
 

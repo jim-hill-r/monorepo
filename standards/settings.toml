@@ -112,6 +112,14 @@ why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
 every = "30d"
 
 [[setting]]
+id = "cloudflare-infra-token-scopes"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > My Profile > API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Web Analytics: Read; infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Web Analytics: Edit. Both are limited to this account, neither has any API Tokens permission, and neither expires within 30 days."
+why = "PR plans must not be able to change anything, and IaC must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
+every = "90d"
+
+[[setting]]
 id = "github-secrets-tofu-state"
 vendor = "GitHub"
 where = "jimhillr/monorepo > Settings > Secrets and variables > Actions, and Environments > infra"

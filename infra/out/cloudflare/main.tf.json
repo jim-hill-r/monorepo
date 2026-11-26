@@ -1,0 +1,123 @@
+{
+  "provider": {
+    "cloudflare": [
+      {}
+    ]
+  },
+  "resource": {
+    "cloudflare_web_analytics_site": {
+      "bear_down": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-bear-down.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
+      },
+      "cahokia": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-cahokia.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
+      },
+      "controlled_chaos": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-controlled-chaos.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
+      },
+      "cookbook": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-cookbook.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
+      },
+      "design_system": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-design-system.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
+      },
+      "pane": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-pane.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
+      }
+    }
+  },
+  "terraform": {
+    "backend": {
+      "http": {
+        "lock_method": "LOCK",
+        "retry_max": 5,
+        "unlock_method": "UNLOCK",
+        "update_method": "POST",
+        "username": "tofu"
+      }
+    },
+    "encryption": {
+      "key_provider": {
+        "pbkdf2": {
+          "state": {
+            "passphrase": "${var.tofu_state_passphrase}"
+          }
+        }
+      },
+      "method": {
+        "aes_gcm": {
+          "state": {
+            "keys": "key_provider.pbkdf2.state"
+          }
+        }
+      },
+      "plan": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
+      },
+      "state": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
+      }
+    },
+    "required_providers": {
+      "cloudflare": {
+        "source": "cloudflare/cloudflare",
+        "version": "5.29.0"
+      }
+    }
+  },
+  "variable": {
+    "cloudflare_account_id": {
+      "nullable": false,
+      "type": "string"
+    },
+    "tofu_state_passphrase": {
+      "nullable": false,
+      "sensitive": true,
+      "type": "string"
+    }
+  }
+}

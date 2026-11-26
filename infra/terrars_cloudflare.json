@@ -1,0 +1,7 @@
+{
+  "provider": "cloudflare/cloudflare",
+  "version": "5.29.0",
+  "include": ["web_analytics_site"],
+  "dest": "src/tfschema/cloudflare",
+  "binary": "tofu"
+}

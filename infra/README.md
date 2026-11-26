@@ -25,6 +25,7 @@ How it works:
 | Stack | Manages | Credentials |
 | --- | --- | --- |
 | `auth0` | The cookbook and cahokia Auth0 applications: callback, web origin and logout URLs for production, Pages previews (`https://*.<pages project>.pages.dev`) and localhost, and the Single Page Application type | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` from the environment |
+| `cloudflare` | Web Analytics on each production Pages site (`cloudflare_web_analytics_site`, beacon auto-installed); wrangler still creates and deploys the Pages projects | `CLOUDFLARE_API_TOKEN` and `TF_VAR_cloudflare_account_id` from the environment |
 
 Every resource that already exists is brought in with an `import` block, and
 every resource has `prevent_destroy`: IaC never deletes anything (decision
