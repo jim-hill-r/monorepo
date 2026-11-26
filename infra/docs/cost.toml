@@ -12,3 +12,8 @@ notes = "The plan and apply workflows will add a minute or two per PR and merge 
 blip = "Cloudflare Pages"
 plan = "free"
 why = "The cloudflare stack turns on Web Analytics (free, no usage limit we track) for each production Pages site. It creates no Pages projects; wrangler does, and free-tiers.sh counts them."
+
+[[service]]
+blip = "Auth0"
+plan = "free"
+why = "The auth0 stack manages the existing cookbook and cahokia applications (callback, origin and logout URLs). It adds no users or applications, so no MAU."
