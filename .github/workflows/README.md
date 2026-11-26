@@ -1,118 +1,45 @@
 # GitHub Actions Workflows
 
-## cast-ci.yml
+## CI/CD with mise
 
-This workflow automatically runs `cast ci` for any project that has changes in a pull request.
+Every project is a directory with a `mise.toml` that includes one shared task
+file from `standards/tasks/`, so every project has the same tasks (`ci`, `fix`,
+`build`, `test`, `dev`, `release`, `deploy`). The rules are in
+[standards/docs/mise.md](../../standards/docs/mise.md).
 
-### How It Works
+### mise-projects.yml (reusable)
 
-1. **Trigger**: The workflow runs on pull request events (opened, synchronized, reopened).
+Called by the three workflows below.
 
-2. **Build and Run**: 
-   - Sets up the Rust and Node.js toolchains
-   - Builds the `cast` CLI from `cast/cli`
-   - Runs `cast ci --only-changed --recursive 2` from the repository root
-   - This recursively finds all projects with `Cast.toml` up to 2 levels deep and runs CI checks only on projects with changes
+1. **plan** runs `mise run //:audit` (the repo standards check), then lists
+   the projects to run: those affected since the `base` input
+   (`mise run //:affected`), or every project when `base` is empty
+   (`mise run //:projects`). See `standards/scripts/affected.sh` for what
+   counts as affected (files inside the project, shared task files it
+   includes, Cargo path dependencies, and `# affected-by:` lines).
+2. **ci (&lt;project&gt;)** runs once per project: installs the project's tools
+   with `jdx/mise-action`, restores the Rust cache, runs `mise run ci`, and
+   then `mise run deploy` when the `deploy` input is true.
 
-3. **Changed Project Detection**: 
-   - The `--only-changed` flag makes `cast ci` check each project for changes compared to the origin's default branch
-   - Projects with no changes are automatically skipped
-   - The `--recursive 2` flag ensures all Cast projects up to 2 levels deep are checked
+### pull-request-ci.yml
 
-4. **Results**: 
-   - `cast ci` automatically installs required tools for each project
-   - Runs all CI checks (fmt, clippy, build, test) for changed projects
-   - Fails the workflow if any project's CI check fails
+Runs on every pull request against the projects it changes. Never deploys.
+`workflow_dispatch` runs every project on a branch.
 
-### Setup Requirements
+### push-main.yml
 
-The workflow requires:
-1. Rust toolchain (automatically installed by the workflow)
-2. Node.js toolchain (automatically installed by the workflow)
-3. Projects must have a `Cast.toml` file in their root directory
-4. The `cast/cli` project must be buildable
+Runs on every push to `main`: `mise run ci` then `mise run deploy` in each
+project the push changed. Only the cloudflare projects deploy anything; they
+build their web app and publish it with `wrangler pages deploy`, which needs
+the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+Runs are queued, never cancelled, so a deploy is not cut short.
 
-### Permissions
+### nightly-ci.yml
 
-The workflow requires the following permissions:
-- `contents: read` - To checkout the repository and read files
-- `pull-requests: read` - To access PR information
+Runs `mise run ci` in every project at 2 AM Pacific, so new toolchain or
+dependency releases that break a quiet project show up.
 
-## nightly.yml
-
-This workflow runs `cast ci` recursively across all projects in the monorepo on a nightly schedule.
-
-### How It Works
-
-1. **Trigger**: The workflow runs automatically at 2 AM Pacific Time (10 AM UTC) every day, and can also be triggered manually via `workflow_dispatch`.
-
-2. **Build and Run**: 
-   - Sets up the Rust toolchain
-   - Builds the `cast` CLI from `cast/cli`
-   - Runs `cast ci --recursive 2 --check` from the repository root
-   - This recursively finds all projects with `Cast.toml` up to 2 levels deep and runs CI checks on them
-
-3. **Results**: 
-   - Fails the workflow if any project's CI check fails
-   - Provides a comprehensive health check of the entire monorepo
-
-### Setup Requirements
-
-The workflow requires:
-1. Rust toolchain (automatically installed by the workflow)
-2. Node.js toolchain (automatically installed by the workflow)
-3. Projects must have a `Cast.toml` file in their root directory
-4. The `cast/cli` project must be buildable
-
-### Permissions
-
-The workflow requires the following permissions:
-- `contents: read` - To checkout the repository and read files
-
-## cast-cd.yml (CD)
-
-This workflow automatically runs `cast cd` for any project when new Linux build artifacts are committed to the main branch.
-
-### How It Works
-
-1. **Trigger**: The workflow runs when artifacts are pushed to the main branch. Specifically, it triggers on changes to `**/artifacts/x86_64-unknown-linux-gnu/**` paths.
-
-2. **Artifact Detection**: 
-   - Gets the list of files changed in the latest commit
-   - Filters for files in `artifacts/x86_64-unknown-linux-gnu/` directories
-   - Extracts the parent project directory for each artifact
-   - Collects unique project directories that have new Linux artifacts
-
-3. **Build and Run**: 
-   - Sets up the Rust and Node.js toolchains
-   - Builds the `cast` CLI from `cast/cli`
-   - Runs `cast cd` for each project with new artifacts
-
-4. **Results**: 
-   - Groups output by project for easy reading
-   - Fails the workflow if any project's CD fails
-
-### Setup Requirements
-
-The workflow requires:
-1. Rust toolchain (automatically installed by the workflow)
-2. Node.js toolchain (automatically installed by the workflow)
-3. Projects must have a `Cast.toml` file in their root directory
-4. The `cast/cli` project must be buildable
-
-### Permissions
-
-The workflow requires the following permissions:
-- `contents: read` - To checkout the repository and read files
-
-### Integration with Trunk CI
-
-This workflow is designed to run after the Trunk CI workflow, which:
-1. Runs `cast ci --release` on changed projects
-2. Builds Linux artifacts in `artifacts/x86_64-unknown-linux-gnu/` directories
-3. Commits these artifacts back to the main branch
-
-When Trunk CI commits new artifacts, this CD workflow automatically triggers to deploy those projects.
+Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs`.
 
 ## codeql.yml
 
@@ -123,7 +50,7 @@ This workflow runs CodeQL security scanning on the codebase, analyzing JavaScrip
 - **Performance**: Rust CodeQL analysis takes ~26 minutes per scan
 - **Scope**: The monorepo contains ~20+ Rust projects
 - **Efficiency**: Most PRs don't modify all Rust code
-- **Alternative**: Rust security is checked by `clippy` in `cast ci`
+- **Alternative**: Rust security is checked by `clippy` in `mise run ci`
 
 ### How It Works
 

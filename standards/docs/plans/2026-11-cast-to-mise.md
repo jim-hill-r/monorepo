@@ -69,3 +69,13 @@ All four went with the recommendation:
 - `dx` refuses to run unless its version matches the `dioxus` crate, so each
   app pins `dioxus-cli` to its locked or resolved dioxus version.
 - my_lang needs LLVM 18 (inkwell), installed through its `ci:deps` task.
+
+## Learned in PR 2
+
+- The Cast CI followed changed projects only by directory, so a change to
+  `cookbook/core` never re-tested `cookbook/web`. `affected.sh` now follows
+  Cargo path dependencies and `# affected-by:` lines too.
+- The web e2e tests run in Chromium, Firefox and WebKit, so CI installs all
+  three Playwright browsers, as Cast did.
+- Deploys now need the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+  repository secrets; the Cast CD workflow passed none.
