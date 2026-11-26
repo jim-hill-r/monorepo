@@ -2,10 +2,11 @@
 # Print a JSON array of project directories (dirs with a mise.toml, other than
 # the repo root) that changes since BASE touch.
 #
-#   affected.sh [--all] [BASE]
+#   affected.sh [--all] [--local] [BASE | --files]
 #
 # BASE defaults to $AFFECTED_BASE, then origin/main. An empty BASE, or one of
-# all zeros (a new branch push), lists every project.
+# all zeros (a new branch push), lists every project. With --files the changed
+# paths are read from stdin, one per line, instead of from git.
 #
 # A project is affected when:
 #   - a changed file is inside it and in no deeper project;
@@ -17,10 +18,24 @@
 #     changed, or is itself an affected project (for example a cloudflare
 #     project names the web app it deploys).
 # Changes to the root mise.toml, standards/scripts/ or the mise CI workflows
-# affect every project.
+# affect every project, except with --local: the git hooks use it so that
+# such a change checks only the projects that test those files (`standards`
+# and `monorepo`, through their own paths and affected-by lines), while PR CI
+# still checks every project.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
+
+all_flag="" local_flag="" files_flag="" base_arg=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --all) all_flag=1 ;;
+    --local) local_flag=1 ;;
+    --files) files_flag=1 ;;
+    *) base_arg=$1 ;;
+  esac
+  shift
+done
 
 projects() {
   git ls-files -- '*/mise.toml' | xargs -r -n1 dirname | sort -u
@@ -28,19 +43,23 @@ projects() {
 
 to_json() { jq -R . | jq -cs .; }
 
-if [ "${1:-}" = "--all" ]; then
+if [ -n "$all_flag" ]; then
   projects | to_json
   exit 0
 fi
 
-base="${1:-${AFFECTED_BASE:-origin/main}}"
-if [ -z "$base" ] || [[ "$base" =~ ^0+$ ]]; then
-  projects | to_json
-  exit 0
+if [ -n "$files_flag" ]; then
+  mapfile -t changed
+else
+  base="${base_arg:-${AFFECTED_BASE:-origin/main}}"
+  if [ -z "$base" ] || [[ "$base" =~ ^0+$ ]]; then
+    projects | to_json
+    exit 0
+  fi
+  mapfile -t changed < <(git diff --name-only "$base"...HEAD; git diff --name-only HEAD)
 fi
 
 mapfile -t all < <(projects)
-mapfile -t changed < <(git diff --name-only "$base"...HEAD; git diff --name-only HEAD)
 
 # Normalise a path relative to the repo root.
 norm() { realpath -m --relative-to=. "$1"; }
@@ -75,8 +94,10 @@ for f in "${changed[@]}"; do
   [ -n "$f" ] || continue
   case "$f" in
     mise.toml|standards/scripts/*|.github/workflows/pull-request-ci.yml|.github/workflows/push-main.yml|.github/workflows/nightly-ci.yml|.github/workflows/nightly-cd.yml|.github/workflows/mise-projects.yml)
-      for p in "${all[@]}"; do hit[$p]=1; done
-      continue ;;
+      if [ -z "$local_flag" ]; then
+        for p in "${all[@]}"; do hit[$p]=1; done
+        continue
+      fi ;;
     standards/tasks/*.toml)
       t=$(basename "$f")
       for p in "${all[@]}"; do

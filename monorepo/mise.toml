@@ -1,5 +1,11 @@
 # monorepo: rust project. Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
+# workflow_tests read these repo files, so a change to them runs its tests:
+# affected-by: ../.github
+# affected-by: ../standards/scripts
+# affected-by: ../standards/tasks
+# affected-by: ../mise.toml
+# affected-by: ../AGENTS.md
 
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy" }
