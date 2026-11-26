@@ -1,0 +1,181 @@
+{
+  "generated_at": "2026-11-26T23:11:01.950981212Z",
+  "projects": [
+    {
+      "project": "bear_down",
+      "musts": 6,
+      "musts_in_production": 6,
+      "requirements": [
+        {
+          "requirement": "BEAR-001",
+          "title": "Every game this week gets a verdict",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-002",
+          "title": "A pick says how much it helps",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-003",
+          "title": "Every game explains how it reaches the Bears",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-004",
+          "title": "Conflicting effects are named and netted",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-005",
+          "title": "\"Doesn't matter\" is earned and explained",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-006",
+          "title": "Tiebreaker claims are exact",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-007",
+          "title": "Win chances use the best available odds",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-008",
+          "title": "The page says how fresh it is",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "BEAR-009",
+          "title": "NFC North mode",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "cookbook",
+      "musts": 3,
+      "musts_in_production": 3,
+      "requirements": [
+        {
+          "requirement": "COOK-001",
+          "title": "There is a recipe for every day of the year",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "COOK-002",
+          "title": "Every week has a meal plan with a shopping list",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "COOK-003",
+          "title": "The shopping list adds up",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "COOK-004",
+          "title": "The cookbook is easy to use on a phone",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "COOK-005",
+          "title": "Every page is accessible",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "COOK-006",
+          "title": "It is easy to move between today, recipes and plans",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "COOK-007",
+          "title": "The recipes are real and varied",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "COOK-008",
+          "title": "Each week has a theme and lists its staples",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "COOK-009",
+          "title": "Jim can rearrange which recipes are in a plan",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        }
+      ]
+    }
+  ]
+}
