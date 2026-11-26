@@ -264,7 +264,8 @@ Added 2026-11-26 from Jim's request:
 > Pane should also include features to evaluate revenue and cost of each
 > project.
 
-There is no database, so the numbers come from three places, all read into
+Following decision [0004](../../../standards/docs/decisions/0004-database-engine.md)
+(files first), the numbers come from three places, all read into
 the snapshot or the Worker like everything else.
 
 ### Where the numbers come from
