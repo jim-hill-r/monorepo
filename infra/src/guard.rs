@@ -3,8 +3,8 @@
 //!
 //! - IAC-001: it deletes or replaces anything. IaC never destroys; retire a
 //!   resource with a `removed` block instead (decision 0007, item 8).
-//! - IAC-002: our configuration sets a value the provider marks sensitive,
-//!   so a secret would land in state.
+//! - IAC-002: any value the provider marks sensitive would be in state,
+//!   whoever set it. Secrets never go in git or state, even encrypted.
 //! - IAC-003: it would leave more resources than a free-tier budget allows
 //!   (the budgets in `standards/radar/limits.toml`, the same ones
 //!   `free-tiers.sh` reads), or any resource of a type that can bill.
@@ -169,70 +169,65 @@ fn sensitive_attributes(sensitive: &Value) -> Vec<&str> {
         .collect()
 }
 
-/// The configuration's `expressions` for each resource address, from the
-/// root module and any child modules.
-fn configured_expressions(plan: &Value) -> BTreeMap<String, &Value> {
-    fn walk<'a>(module: &'a Value, prefix: &str, out: &mut BTreeMap<String, &'a Value>) {
-        for resource in module
-            .get("resources")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            if let Some(expressions) = resource.get("expressions") {
-                out.insert(
-                    format!("{prefix}{}", str_field(resource, "address")),
-                    expressions,
-                );
-            }
-        }
-        for (name, call) in module
-            .get("module_calls")
-            .and_then(Value::as_object)
-            .into_iter()
-            .flatten()
-        {
-            if let Some(child) = call.get("module") {
-                walk(child, &format!("{prefix}module.{name}."), out);
-            }
-        }
+/// Attributes a provider marks sensitive that hold no secret, so they may
+/// be in state. Each needs a reason.
+pub const NOT_SECRET: &[(&str, &str, &str)] = &[(
+    "auth0_client",
+    "signing_keys",
+    "the tenant's public signing certificates (`cert`, `pkcs7`); the Management API never returns the private key",
+)];
+
+fn is_set(value: Option<&Value>) -> bool {
+    match value {
+        None | Some(Value::Null) => false,
+        Some(Value::Array(items)) => !items.is_empty(),
+        Some(Value::Object(map)) => !map.is_empty(),
+        Some(Value::String(s)) => !s.is_empty(),
+        Some(_) => true,
     }
-    let mut out = BTreeMap::new();
-    if let Some(root) = plan.pointer("/configuration/root_module") {
-        walk(root, "", &mut out);
-    }
-    out
 }
 
-/// IAC-002: an attribute our configuration sets must not be sensitive.
-/// Sensitive values the provider computes (a generated client secret, say)
-/// are not flagged here; they are kept out by IAC-004, which doesn't
-/// allowlist resource types that hold them.
+fn is_unknown(value: Option<&Value>) -> bool {
+    match value {
+        Some(Value::Bool(b)) => *b,
+        Some(Value::Array(items)) => items.iter().any(|v| is_unknown(Some(v))),
+        Some(Value::Object(map)) => map.values().any(|v| is_unknown(Some(v))),
+        _ => false,
+    }
+}
+
+/// IAC-002: no secret value in state, ever, even encrypted (Jim,
+/// 2026-11-26). Fails on any attribute the provider marks sensitive that
+/// holds a value, or will once applied (a token or client secret the vendor
+/// generates), whether our configuration set it or not. Write-only
+/// attributes never reach state, so they pass. The only exceptions are the
+/// [`NOT_SECRET`] attributes.
 fn no_sensitive_values(plan: &Value) -> Vec<Finding> {
-    let configured = configured_expressions(plan);
     let mut findings = Vec::new();
     for change in resource_changes(plan) {
-        if actions(change)
-            .iter()
-            .all(|a| *a == "no-op" || *a == "delete")
-        {
-            continue;
-        }
-        let address = str_field(change, "address");
-        // Configuration is per resource block, so drop any `[index]`.
-        let block = address.split('[').next().unwrap_or(address);
-        let Some(expressions) = configured.get(block) else {
+        let Some(after) = change.pointer("/change/after").filter(|a| !a.is_null()) else {
             continue;
         };
         let Some(sensitive) = change.pointer("/change/after_sensitive") else {
             continue;
         };
+        let address = str_field(change, "address");
+        let kind = str_field(change, "type");
+        let unknown = change.pointer("/change/after_unknown");
         for attribute in sensitive_attributes(sensitive) {
-            if expressions.get(attribute).is_some() {
+            if NOT_SECRET
+                .iter()
+                .any(|(t, a, _)| *t == kind && *a == attribute)
+            {
+                continue;
+            }
+            let held =
+                is_set(after.get(attribute)) || is_unknown(unknown.and_then(|u| u.get(attribute)));
+            if held {
                 findings.push(finding(
                     "IAC-002",
                     format!(
-                        "{address} sets the sensitive attribute `{attribute}`; secret values stay out of IaC and its state"
+                        "{address} would keep the sensitive attribute `{attribute}` in state; secrets never go in git or OpenTofu state, even encrypted"
                     ),
                 ));
             }
@@ -397,10 +392,39 @@ mod tests {
     }
 
     #[test]
-    fn setting_a_sensitive_value_fails() -> anyhow::Result<()> {
+    fn any_sensitive_value_in_state_fails() -> anyhow::Result<()> {
+        // One we set (`encryption_key`) and one the vendor generated
+        // (`client_secret`): both would be in state.
         let findings = check(&plan("sensitive.json")?, &budgets()?);
+        assert_eq!(ids(&findings), ["IAC-002", "IAC-002"]);
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("`encryption_key`"))
+        );
+        assert!(
+            findings
+                .iter()
+                .any(|f| f.message.contains("`client_secret`"))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_generated_token_fails_before_it_exists() -> anyhow::Result<()> {
+        // A new token's value is unknown at plan time and lands in state on
+        // apply.
+        let findings = no_sensitive_values(&plan("minted-token.json")?);
         assert_eq!(ids(&findings), ["IAC-002"]);
-        assert!(findings[0].message.contains("`encryption_key`"));
+        assert!(findings[0].message.contains("cloudflare_api_token.deploy"));
+        assert!(findings[0].message.contains("`value`"));
+        Ok(())
+    }
+
+    #[test]
+    fn write_only_and_public_sensitive_attributes_pass() -> anyhow::Result<()> {
+        let findings = no_sensitive_values(&plan("not-secret.json")?);
+        assert!(findings.is_empty(), "{findings:?}");
         Ok(())
     }
 
@@ -459,7 +483,7 @@ mod tests {
         );
         assert!(findings.iter().any(|f| {
             f.message
-                .contains("terraform_data.b sets the sensitive attribute `input`")
+                .contains("terraform_data.b would keep the sensitive attribute `input`")
         }));
         Ok(())
     }

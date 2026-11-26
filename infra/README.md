@@ -35,7 +35,7 @@ workflows run it on every plan before it is shown or applied.
 | ID | Fails when |
 | --- | --- |
 | IAC-001 | the plan deletes or replaces anything (forget it with a `removed` block instead, which the guard allows) |
-| IAC-002 | our configuration sets an attribute the provider marks sensitive, so a secret would land in state |
+| IAC-002 | any attribute the provider marks sensitive would hold a value in state, whether we set it or the vendor generates it (secrets never go in git or state, even encrypted); write-only attributes pass |
 | IAC-003 | a resource type that can bill (R2, subscriptions and the like), or more Pages projects, Workers or Cron Trigger schedules than the budgets in `standards/radar/limits.toml` |
 | IAC-004 | a provider or resource type not allowlisted in `src/guard.rs` |
 
