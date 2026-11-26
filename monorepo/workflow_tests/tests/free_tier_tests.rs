@@ -373,7 +373,7 @@ fn test_usage_workflow_only_reads() {
     assert!(yaml["on"]["schedule"].is_sequence(), "runs on a schedule");
     assert!(
         yaml["on"]["workflow_call"].is_mapping(),
-        "the monthly run can call it"
+        "the nightly run can call it"
     );
     assert!(content.contains("free-tiers.sh usage"));
 }

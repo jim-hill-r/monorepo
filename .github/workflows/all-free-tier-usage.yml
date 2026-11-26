@@ -4,7 +4,7 @@ name: All Free Tier Usage
 # and Workers counts, GitHub Actions cache and artifact storage) against the
 # budgets in standards/docs/free-tiers.md, and goes red when anything reaches
 # its warning level. It only reads; it never creates, deletes or upgrades
-# anything. The monthly full run calls it first and stops if it fails.
+# anything. The nightly run is to call it first and stop if it fails.
 on:
   schedule:
     # Mondays at 3 PM UTC (7 AM Pacific)

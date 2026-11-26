@@ -36,7 +36,7 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 
 Free tiers: see [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
 
-- TODO (agent-generated): When `monthly-uat.yml` is added, make its first job call `all-free-tier-usage.yml` and stop the run if it fails, so the monthly deploy never creates anything past a budget.
+- TODO (agent-generated): Once the nightly run deploys every project (PR #583), make `nightly-ci.yml` call `all-free-tier-usage.yml` as its first job and make the `mise-projects.yml` job need it, so a nightly deploy never runs past a budget.
 - TODO (agent-generated): When bear_down or the `telemetry` Worker first deploys, add a `free-tiers.sh worker` guard (count Workers and Cron Triggers in the account before `wrangler deploy`) and run it from the Workers deploy task, like `pages-project` for Pages.
 - TODO (agent-generated): When PostHog is added, extend `free-tiers.sh usage` to read the month's event and recording counts from the PostHog API and warn at 80% of the free allowance.
 - TODO (agent-ignore): Confirm there is no payment method on the Cloudflare, PostHog, Auth0 and RapidAPI accounts, that GitHub's Actions budget is $0 with usage stopped at the limit, and give `CLOUDFLARE_API_TOKEN` Workers Scripts read access for the usage check. Needs Jim.
