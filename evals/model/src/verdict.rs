@@ -329,6 +329,7 @@ mod tests {
             threshold: None,
             evidence: None,
             run: None,
+            note: None,
             at: hours_ago(hours),
             by: if stage == Stage::Human {
                 By::Jim

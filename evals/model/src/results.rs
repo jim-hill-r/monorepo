@@ -52,6 +52,9 @@ pub struct EvalResult {
     /// The workflow run id.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<String>,
+    /// A short human-readable reason, such as `2 of 3 tests failed`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
     pub at: DateTime<Utc>,
     pub by: By,
 }
