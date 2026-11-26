@@ -17,6 +17,10 @@ name: Pull Request mise CI
 permissions:
   contents: read
 
+concurrency:
+  group: mise-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
   MISE_YES: '1'
