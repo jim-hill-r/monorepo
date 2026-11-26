@@ -196,7 +196,7 @@ test('a project page shows its sub-projects, documents, deliverables and work @s
   ).toBeVisible();
   await expect(page.getByTestId('project-latest')).toContainText('Latest plan');
   await expect(
-    page.getByTestId('project-deliverables').getByRole('link', { name: /pane-dbc\.pages\.dev|pane/ }).first(),
+    page.getByTestId('project-deliverables').getByRole('link', { name: /jimhillr-pane\.pages\.dev|pane/ }).first(),
   ).toBeVisible();
   const work = page.getByTestId('project-work');
   await expect(work).toContainText(/\d+ open TODOs and \d+ FIXes, including its sub-projects\./);

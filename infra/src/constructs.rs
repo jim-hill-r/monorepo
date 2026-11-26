@@ -30,12 +30,6 @@ impl WebApp {
         }
     }
 
-    /// Use a Pages project name that doesn't follow the naming rule yet.
-    pub fn pages_project(mut self, name: &str) -> Self {
-        self.pages_project = name.to_string();
-        self
-    }
-
     /// Sign in with an Auth0 application.
     pub fn sign_in(mut self, app: Auth0App) -> Self {
         self.sign_in = Some(app);
@@ -105,12 +99,6 @@ mod tests {
     fn pages_project_follows_the_naming_rule() {
         assert_eq!(WebApp::new("cookbook").pages_project, "jimhillr-cookbook");
         assert_eq!(WebApp::new("bear_down").pages_project, "jimhillr-bear-down");
-    }
-
-    #[test]
-    fn pages_project_can_be_overridden() {
-        let app = WebApp::new("cahokia").pages_project("cahokia-web");
-        assert_eq!(app.production_origin(), "https://cahokia-web.pages.dev");
     }
 
     #[test]

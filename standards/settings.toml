@@ -117,7 +117,7 @@ every = "30d"
 id = "auth0-cahokia-app"
 vendor = "Auth0"
 where = "manage.auth0.com > Applications > the Cahokia application"
-expect = "Type is Single Page Application, and https://cahokia-web.pages.dev/ and http://localhost:8080/ are in Allowed Callback URLs (without the slash in Allowed Web Origins and Allowed Logout URLs)."
+expect = "Type is Single Page Application, and https://jimhillr-cahokia.pages.dev/ and http://localhost:8080/ are in Allowed Callback URLs (without the slash in Allowed Web Origins and Allowed Logout URLs)."
 why = "A dropped callback URL breaks sign-in on Cahokia production."
 every = "90d"
 
