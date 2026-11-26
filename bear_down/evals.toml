@@ -1,0 +1,147 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+
+prefix = "BEAR"
+
+# BEAR-001: Every game this week gets a verdict
+
+[[eval]]
+id = "every-game-has-a-verdict"
+requirement = "BEAR-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_game_is_explained_from_what_was_measured"
+
+[[eval]]
+id = "live-guide-has-verdicts"
+requirement = "BEAR-001"
+stages = ["cd"]
+kind = "http"
+path = "/rooting.json"
+body_contains = "\"root_for\""
+
+# BEAR-002: A pick says how much it helps
+
+[[eval]]
+id = "games-ranked-by-swing"
+requirement = "BEAR-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "ranks_by_absolute_swing_for_the_goal"
+
+[[eval]]
+id = "live-guide-has-swings"
+requirement = "BEAR-002"
+stages = ["cd"]
+kind = "http"
+path = "/rooting.json"
+body_contains = "\"swing\""
+
+# BEAR-003: Every game explains how it reaches the Bears
+
+[[eval]]
+id = "every-game-is-explained"
+requirement = "BEAR-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_game_is_explained_from_what_was_measured"
+
+[[eval]]
+id = "golden-week-2020-wild-card"
+requirement = "BEAR-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "golden_week_2020_week_17"
+description = "Cardinals at Rams reaches the 8-7 Bears through the wild card, as it did."
+
+[[eval]]
+id = "live-guide-has-channels"
+requirement = "BEAR-003"
+stages = ["cd"]
+kind = "http"
+path = "/rooting.json"
+body_contains = "\"channels\""
+
+# BEAR-004: Conflicting effects are named and netted
+
+[[eval]]
+id = "channel-shares-add-up"
+requirement = "BEAR-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "channel_shares_add_up_to_the_swing"
+
+[[eval]]
+id = "live-guide-has-explanations"
+requirement = "BEAR-004"
+stages = ["cd"]
+kind = "http"
+path = "/rooting.json"
+body_contains = "\"why\""
+
+# BEAR-005: "Doesn't matter" is earned and explained
+
+[[eval]]
+id = "tiers-follow-the-line"
+requirement = "BEAR-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "tiers_follow_the_line_with_confidence"
+
+[[eval]]
+id = "close-calls-get-more-pairs"
+requirement = "BEAR-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "close_calls_get_more_pairs_and_closed_games_none"
+
+[[eval]]
+id = "doesnt-matter-texts-are-distinct"
+requirement = "BEAR-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_game_is_explained_from_what_was_measured"
+
+[[eval]]
+id = "live-guide-has-tiers"
+requirement = "BEAR-005"
+stages = ["cd"]
+kind = "http"
+path = "/rooting.json"
+body_contains = "\"tier\""
+
+# BEAR-006: Tiebreaker claims are exact
+
+[[eval]]
+id = "real-tiebreaks-traced"
+requirement = "BEAR-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "traces_real_tiebreaks"
+
+[[eval]]
+id = "golden-week-2018-head-to-head"
+requirement = "BEAR-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "golden_week_2018_week_17"
+description = "The 2018 Bears' bye came down to head-to-head with the Rams, and the text says so."
+
+# BEAR-007: Win chances use the best available odds
+
+[[eval]]
+id = "betting-lines-become-win-probabilities"
+requirement = "BEAR-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "betting_lines_become_win_probabilities"
+
+# BEAR-008: The page says how fresh it is
+
+[[eval]]
+id = "live-guide-says-when"
+requirement = "BEAR-008"
+stages = ["cd"]
+kind = "http"
+path = "/rooting.json"
+body_contains = "\"generated_at\""

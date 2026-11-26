@@ -145,3 +145,63 @@ test('an unknown path shows the not found page', async ({ page }) => {
   await page.getByRole('link', { name: 'Back to Today' }).click();
   await expect(page).toHaveURL('/');
 });
+
+test('today lists what is waiting and what is new since the last visit @smoke', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.getByTestId('today-waiting').getByRole('heading', { level: 2 })).toContainText(
+    'Waiting on you',
+  );
+  // A first visit has nothing to compare with.
+  await expect(page.getByTestId('today-new')).toContainText('Nothing to compare with yet');
+
+  // Pretend the last visit was of an older snapshot that saw nothing.
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'pane.visits.v1',
+      JSON.stringify({ current: { commit: '0000000', at: 0, seen: [] }, previous: null }),
+    ),
+  );
+  await page.reload();
+  const fresh = page.getByTestId('today-new');
+  await expect(fresh).toContainText('Compared with your visit');
+  await expect(fresh.getByRole('heading', { name: 'TODOs and FIXes' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /\d+ new since your last visit/ })).toBeVisible();
+
+  // A reload of the same snapshot keeps comparing with that visit.
+  await page.reload();
+  await expect(page.getByTestId('today-new')).toContainText('snapshot 0000000');
+});
+
+test('today works without localStorage', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      get() {
+        throw new Error('blocked');
+      },
+    });
+  });
+  await page.goto('/');
+
+  await expect(page.getByTestId('today-waiting')).toBeVisible();
+  await expect(page.getByTestId('today-new')).toContainText("isn't keeping pane's visits");
+});
+
+test('a project page shows its sub-projects, documents, deliverables and work @smoke', async ({ page }) => {
+  await page.goto('/projects/pane');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('pane');
+  await expect(
+    page.getByTestId('project-sub-projects').getByRole('link', { name: 'pane/web' }),
+  ).toBeVisible();
+  await expect(page.getByTestId('project-latest')).toContainText('Latest plan');
+  await expect(
+    page.getByTestId('project-deliverables').getByRole('link', { name: /jimhillr-pane\.pages\.dev|pane/ }).first(),
+  ).toBeVisible();
+  const work = page.getByTestId('project-work');
+  await expect(work).toContainText(/\d+ open TODOs and \d+ FIXes, including its sub-projects\./);
+  await expect(work.locator('li').first()).toBeVisible();
+
+  await page.getByTestId('project-latest').getByRole('link').first().click();
+  await expect(page).toHaveURL(/\/docs\/pane\/.+\.md$/);
+});

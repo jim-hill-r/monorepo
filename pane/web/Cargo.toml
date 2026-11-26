@@ -16,6 +16,9 @@ gloo-net = { version = "0.6", default-features = false, features = ["http"] }
 js-sys = "0.3"
 pane_model = { path = "../model" }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+web-sys = { version = "0.3", features = ["Storage", "Window"] }
 
 [features]
 default = ["web"]
