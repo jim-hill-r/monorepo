@@ -8,7 +8,9 @@
 # Run after `mise run ci` has passed for PROJECT. Exit status:
 #   0  deploy: HEAD is main's tip, or no newer commit on main affects PROJECT
 #   3  skip: a newer commit on main affects PROJECT (its own push run deploys
-#      it), or HEAD is not on main; the reason is printed
+#      it), or HEAD is not on main; the reason is printed. A project whose
+#      mise.toml has a `# deploy-on-every-push` line is affected by every
+#      commit, so only main's tip deploys it
 #   other  error
 #
 # "Affects" is decided by affected.sh, run at main's tip against HEAD, so
@@ -30,6 +32,11 @@ fi
 
 if ! git merge-base --is-ancestor "$head" "$tip" 2>/dev/null; then
   echo "skip: $head is not in the last ${DEPLOY_CHECK_DEPTH:-200} commits of main"
+  exit 3
+fi
+
+if grep -qE '^# *deploy-on-every-push' "$project/mise.toml" 2>/dev/null; then
+  echo "skip: main moved to $tip, and $project deploys on every push; that commit's run deploys it"
   exit 3
 fi
 

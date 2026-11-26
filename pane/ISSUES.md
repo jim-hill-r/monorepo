@@ -9,12 +9,6 @@ rules and costs, is
 [docs/plans/2026-11-review-dashboard.md](docs/plans/2026-11-review-dashboard.md).
 Work the phases in order; within a phase, top to bottom.
 
-### Phase 1: read-only from the repo
-
-- TODO (agent-generated): Build the Project page: README summary, type, status, deliverables, open TODOs and FIXes, latest plan, decision and retro links.
-- TODO (agent-generated): Build the Today page from the snapshot: open human issues oldest first and items added since the last visit (last visit kept in `localStorage`, page works without it).
-- TODO (agent-generated): Deploy pane on every push to `main`, not only pushes under `pane/`, since its snapshot reads the whole repo. Do it in `push-main.yml` or `mise-projects.yml` without changing how other projects are picked.
-
 ### Phase 2: executive reviews
 
 Needs PR #585 (docs/reviews and `review-decks.sh`) merged.
