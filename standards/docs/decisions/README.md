@@ -16,3 +16,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0003](0003-eval-engine.md) | Evaluate product requirements at every stage (CI, CD, observability, chaos, judge, human) on free tiers | Accepted |
 | [0004](0004-database-engine.md) | Files first, committed SQLite next, D1 when a hosted database is needed | Accepted |
 | [0005](0005-browser-testing.md) | Keep Playwright, but run it on a browser we already have | Accepted |
+| [0007](0007-infrastructure-as-code.md) | Infrastructure as code: Rust synthesizes Terraform JSON, OpenTofu applies it | Proposed |
