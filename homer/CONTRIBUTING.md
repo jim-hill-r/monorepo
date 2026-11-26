@@ -40,6 +40,18 @@ Tests never call the real Zillow API. `ZillowClient::with_base_url` points the
 client at a local [mockito](https://docs.rs/mockito) server instead, so HTTP
 handling (success, error statuses, bad JSON) is tested offline.
 
+`tests/cli.rs` runs the real `homer` binary against the
+[trycmd](https://docs.rs/trycmd) transcripts in `tests/cmd/`: `--help`, a
+lookup, a scored lookup and a missing API key. Each case is a `.toml` file
+with the arguments, plus `.stdout` and `.stderr` files with the expected
+output. The binary reaches a local mockito server through the hidden
+`--base-url` flag (`HOMER_BASE_URL`), so these are offline too. After an
+intended output change, update the transcripts and review the diff:
+
+```bash
+TRYCMD=overwrite cargo test --test cli
+```
+
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash

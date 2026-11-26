@@ -1,0 +1,6 @@
+error: the following required arguments were not provided:
+  --api-key <API_KEY>
+
+Usage: homer --address <ADDRESS> --api-key <API_KEY>
+
+For more information, try '--help'.

@@ -1,0 +1,5 @@
+# --help must never print the API key from RAPIDAPI_KEY.
+bin.name = "homer"
+args = ["--help"]
+env.add = { RAPIDAPI_KEY = "secret-test-key" }
+env.remove = ["HOMER_QUOTA_FILE"]
