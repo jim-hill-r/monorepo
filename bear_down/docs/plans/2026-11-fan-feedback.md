@@ -112,7 +112,8 @@ export. No new vendor.
 Each is one PR:
 
 1. `std_error` in `rooting.json`, and the tier rule shared by the CLI and
-   the page (no visible change).
+   the page (no visible change). Done: `bear_down_core::tier_against`,
+   used by the CLI and by the page's `Goal::verdict`.
 2. The `telemetry` Worker with `exposure` and `feedback` events (the root
    backlog's Worker TODO), deployed with `free-tiers.sh` guards.
 3. The vote buttons and note box on the page, with the privacy note and
