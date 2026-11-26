@@ -47,7 +47,9 @@ repo, rather than in any one agent tool's settings.
   - **Approved exceptions:**
     - PostHog, for real-user session replay (decision 0001).
     - Auth0, used by `auth_sdk` and `cahokia` for sign-in.
-  - **Pending Jim's confirmation:** RapidAPI (Zillow data), used by `homer`.
+    - RapidAPI (Zillow data), used by `homer`, **only on its free plan**. It
+      must never cost money: don't add a paid plan, scheduled runs or anything
+      else that could push usage past the free quota.
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
