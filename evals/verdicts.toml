@@ -1,0 +1,16 @@
+# Thresholds for the verdict rules in the eval engine plan
+# (standards/docs/plans/2026-11-eval-engine.md#verdicts).
+# Tune them in a one-line PR.
+
+# A metric within this fraction of its threshold is at risk (0.10 = 10%).
+near_threshold = 0.10
+
+# An eval that failed this many of its last `flaky_window` runs is at risk.
+flaky_failures = 2
+flaky_window = 7
+
+# A requirement is met only if a production-stage result is younger than this.
+fresh_days = 2
+
+# A requirement whose newest production-stage result is older than this is at risk.
+stale_days = 3

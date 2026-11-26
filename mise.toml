@@ -27,6 +27,7 @@ config_roots = [
   "cookbook",
   "cookbook/cloudflare",
   "cookbook/web",
+  "evals",
   "homer",
   "luggage",
   "monorepo",

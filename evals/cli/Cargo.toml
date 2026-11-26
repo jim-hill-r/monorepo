@@ -1,0 +1,20 @@
+[package]
+name = "evals_cli"
+description = "The evals command: checks requirements.md and evals.toml files."
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "evals"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+evals_model = { path = "../model" }
+
+[dev-dependencies]
+tempfile = "3.27.0"

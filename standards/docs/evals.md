@@ -151,10 +151,12 @@ requirement needs at least one eval in a production stage.
 
 ## Checks
 
-`evals check` runs from `mise run //:audit` over every project with an
-`evals.toml` or `docs/requirements.md`. Until Phase 4 of the plan the
-findings are warnings; then EVL-004 becomes an error, and the rest follow
-once every shipping project has its files.
+`evals check` (the `evals` project, `cargo run -p evals_cli -- check` in
+`evals/`) checks every top-level project with an `evals.toml` or
+`docs/requirements.md`. It will run from `mise run //:audit`. Until Phase 4
+of the plan the findings are warnings (`--strict` makes them fail); then
+EVL-004 becomes an error, and the rest follow once every shipping project
+has its files.
 
 | Code | Finding |
 | --- | --- |
@@ -162,6 +164,11 @@ once every shipping project has its files.
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
+
+For EVL-003 a test matches when a Rust `fn` name in the project starts with
+the eval's `filter`, a `.ts` or `.js` file contains its `grep`, or a file
+path ends with its `glob`. `target/`, `node_modules/` and hidden folders
+are not searched.
 
 Malformed files (a heading that isn't `<PREFIX>-<nnn>: <title>`, a missing
 field, an unknown priority, stage or kind, or an `evals.toml` whose `prefix`
