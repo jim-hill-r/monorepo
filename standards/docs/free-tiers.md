@@ -115,8 +115,9 @@ homer calls the Zillow API on RapidAPI with a key the user supplies. It runs
 by hand only: the repo check rejects any workflow that uses the RapidAPI key,
 so no scheduled run can spend the quota. The free plan's monthly request
 quota is shown on the API's RapidAPI pricing page and in the
-`x-ratelimit-requests-limit` response header; homer's backlog has a TODO to
-stop before going past it.
+`x-ratelimit-requests-limit` response header. homer saves the quota each
+response reports, warns when 10% or less is left, and stops before a request
+once it is used up (see homer's README, "Free quota").
 
 ### Squarespace
 
