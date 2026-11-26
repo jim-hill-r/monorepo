@@ -12,7 +12,7 @@ name: All CodeQL Security Scanning
 # - Takes ~26 minutes per scan
 # - Monorepo has many Rust projects
 # - Most PRs don't modify all Rust code
-# - Rust security is checked by clippy in `cast ci`
+# - Rust security is checked by clippy in `mise run ci`
 
 on:
   push:

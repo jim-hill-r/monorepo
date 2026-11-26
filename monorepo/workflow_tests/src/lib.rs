@@ -21,40 +21,14 @@ pub fn get_repo_root() -> PathBuf {
     }
 }
 
-/// Get the path to the cast-ci.yml workflow file (legacy - now split into PR and Trunk CI)
-pub fn get_cast_ci_workflow_path() -> PathBuf {
-    // For backwards compatibility, return pull-request-ci.yml path
-    get_pull_request_ci_workflow_path()
-}
-
-/// Get the path to the pull-request-ci.yml workflow file
-pub fn get_pull_request_ci_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/pull-request-ci.yml")
-}
-
-/// Get the path to the push-main-ci.yml workflow file
-pub fn get_trunk_ci_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/push-main-ci.yml")
-}
-
-/// Get the path to the cast_cli Cargo.toml
-pub fn get_cast_cli_cargo_path() -> PathBuf {
-    get_repo_root().join("cast/cli/Cargo.toml")
-}
-
-/// Get the path to the push-main-cd.yml workflow file
-pub fn get_cast_cd_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/push-main-cd.yml")
+/// Get the path to a workflow file by name, e.g. `pull-request-ci.yml`
+pub fn get_workflow_path(name: &str) -> PathBuf {
+    get_repo_root().join(".github/workflows").join(name)
 }
 
 /// Get the path to the all-codeql.yml workflow file
 pub fn get_codeql_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/all-codeql.yml")
-}
-
-/// Get the path to the nightly-standards-audit.yml workflow file
-pub fn get_standards_audit_workflow_path() -> PathBuf {
-    get_repo_root().join(".github/workflows/nightly-standards-audit.yml")
 }
 
 /// Get the path to the all-delete-branches.yml workflow file
