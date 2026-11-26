@@ -10,3 +10,7 @@ workspace = true
 dioxus = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
+cahokia_core = { package = "core", path = "../core" }
+
+[dev-dependencies]
+dioxus-ssr = "0.7.3"

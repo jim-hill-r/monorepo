@@ -129,8 +129,8 @@ for node in layout.nodes() {
 }
 let edge = &layout.edges()[0];
 assert_eq!(edge.kind, EdgeKind::ParentChild);
-assert_eq!(edge.start, Point { x: 80.0, y: 60.0 }); // bottom middle of dad's box
-assert_eq!(edge.end, Point { x: 80.0, y: 140.0 }); // top middle of kid's box
+assert_eq!(edge.start, Point { x: 90.0, y: 60.0 }); // bottom middle of dad's box
+assert_eq!(edge.end, Point { x: 90.0, y: 140.0 }); // top middle of kid's box
 ```
 
 Coordinates use SVG's convention (origin top left, `y` down), and

@@ -322,7 +322,7 @@ pub type FamilyTreeResult<T> = Result<T, FamilyTreeError>;
 /// let children = tree.get_related_people("p1", &Relationship::Parent);
 /// assert_eq!(children.len(), 1);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FamilyTree {
     /// Map of person ID to Person
     pub people: HashMap<String, Person>,
