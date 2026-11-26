@@ -380,3 +380,110 @@ fn test_push_main_can_redeploy_one_project_at_a_ref() {
         "both the plan and project jobs should check out the requested ref"
     );
 }
+
+/// The `steps` of a job in mise-projects.yml, by job name.
+fn mise_projects_steps(job: &str) -> Vec<serde_yaml::Value> {
+    let (_, parsed) = load("mise-projects.yml");
+    parsed["jobs"][job]["steps"]
+        .as_sequence()
+        .unwrap_or_else(|| panic!("mise-projects.yml job {job} has no steps"))
+        .clone()
+}
+
+fn step_index(steps: &[serde_yaml::Value], name: &str) -> usize {
+    steps
+        .iter()
+        .position(|s| s["name"].as_str() == Some(name))
+        .unwrap_or_else(|| panic!("no step named {name:?}"))
+}
+
+#[test]
+fn test_evals_run_after_ci_and_publish_their_results() {
+    let steps = mise_projects_steps("project");
+    let ci = step_index(&steps, "mise run ci");
+    let evals = step_index(&steps, "mise run evals");
+    let upload = step_index(&steps, "Upload eval results");
+    assert!(ci < evals && evals < upload, "ci, then evals, then upload");
+
+    let step = &steps[evals];
+    assert_eq!(step["env"]["EVALS_STAGE"].as_str(), Some("ci"));
+    assert_eq!(
+        step["if"].as_str(),
+        Some("${{ !cancelled() }}"),
+        "evals should run after a failed ci, so failing evals show"
+    );
+    assert_eq!(
+        step["continue-on-error"].as_bool(),
+        Some(true),
+        "the eval step must not fail the job"
+    );
+    let run = step["run"].as_str().unwrap_or_default();
+    assert!(run.contains("mise run evals"), "should run the evals task");
+    assert!(
+        run.contains("standards/scripts/evals.sh\" publish"),
+        "should write the job summary"
+    );
+
+    let upload = &steps[upload];
+    assert_eq!(upload["with"]["retention-days"].as_u64(), Some(14));
+    assert!(
+        upload["uses"]
+            .as_str()
+            .unwrap_or_default()
+            .starts_with("actions/upload-artifact@")
+    );
+}
+
+#[test]
+fn test_rust_caches_include_the_evals_cli() {
+    for job in ["plan", "project"] {
+        let steps = mise_projects_steps(job);
+        let cache = steps
+            .iter()
+            .find(|s| {
+                s["uses"]
+                    .as_str()
+                    .is_some_and(|u| u.starts_with("Swatinem/rust-cache@"))
+            })
+            .unwrap_or_else(|| panic!("job {job} has no rust-cache step"));
+        let workspaces = cache["with"]["workspaces"].as_str().unwrap_or_default();
+        assert!(
+            workspaces.lines().any(|l| l.trim() == "evals"),
+            "job {job} should cache evals/ (got {workspaces:?})"
+        );
+        assert_eq!(
+            cache["with"]["save-if"].as_str(),
+            Some("${{ github.ref == 'refs/heads/main' }}"),
+            "job {job} should save its cache from main only"
+        );
+    }
+}
+
+#[test]
+fn test_every_shared_task_file_has_an_evals_task_and_ci_saves_cargo_test() {
+    let dir = get_repo_root().join("standards/tasks");
+    for entry in fs::read_dir(&dir).unwrap_or_else(|e| panic!("{e}")) {
+        let path = entry.unwrap_or_else(|e| panic!("{e}")).path();
+        if path.extension().and_then(|e| e.to_str()) != Some("toml") {
+            continue;
+        }
+        let content = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{e}"));
+        let name = path.display();
+        assert!(
+            content.lines().any(|l| l == "[evals]"),
+            "{name} has no evals task"
+        );
+        // The [ci] table runs up to the next table header.
+        let ci = content
+            .split("\n[ci]\n")
+            .nth(1)
+            .and_then(|rest| rest.split("\n[").next())
+            .unwrap_or_else(|| panic!("{name} has no ci task"));
+        if ci.contains("cargo test") {
+            assert!(
+                ci.contains("evals.sh\\\" report cargo-test"),
+                "{name}: ci should save `cargo test` output with evals.sh report"
+            );
+        }
+    }
+}

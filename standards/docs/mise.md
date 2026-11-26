@@ -12,7 +12,7 @@ It replaced Cast in November 2026. Shared task files live in
   but the repo root never is.
 - **Same commands everywhere.** Every project's `mise.toml` includes exactly
   one `standards/tasks/<type>.toml`, so `mise run ci`, `fix`, `build`, `test`,
-  `dev`, `release` and `deploy` work in any project. `mise run //:audit`
+  `dev`, `release`, `deploy` and `evals` work in any project. `mise run //:audit`
   enforces this on every pull request.
 - **Tools come from mise.** A project lists its own tools in `[tools]`. System
   packages that CI needs go in a `ci:deps` task override in the project's
@@ -32,7 +32,9 @@ It replaced Cast in November 2026. Shared task files live in
 
 All three workflows call `.github/workflows/mise-projects.yml`, which runs
 `mise run //:audit`, lists projects, and runs `mise run ci` in each one as its
-own job.
+own job, then `mise run evals`, which turns the test reports `ci` saved into
+eval results in the job summary and a 14-day `evals-results-<project>`
+artifact ([evals.md](evals.md#in-ci)).
 
 | Workflow | Projects | Runs |
 | --- | --- | --- |

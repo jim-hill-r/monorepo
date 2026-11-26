@@ -176,6 +176,32 @@ Malformed files (a heading that isn't `<PREFIX>-<nnn>: <title>`, a missing
 field, an unknown priority, stage or kind, or an `evals.toml` whose `prefix`
 doesn't match the project's prefix) are reported too.
 
+## In CI
+
+Stage `ci` runs in every project job of `mise-projects.yml` (PR CI, pushes
+to `main` and nightly CI), through the shared tasks and
+`standards/scripts/evals.sh`:
+
+1. The `ci` task saves what the tests print: `cargo test` output to
+   `target/evals-reports/cargo-test.log` (`evals.sh report cargo-test ...`),
+   and in Dioxus web apps Playwright's JSON report to
+   `target/evals-reports/playwright.json` (the `e2e` task adds
+   `--reporter=list,json`). `target/` is ignored by git.
+2. The `evals` task (`mise run evals`) runs `evals run` for the top-level
+   project's `evals.toml` with those reports, appending to
+   `$EVALS_RESULTS`. A project with no `evals.toml` collects nothing. A
+   sub-project's job (`cookbook/web`), or a top-level project that has
+   sub-projects, passes `--partial`, so it reports only the evals its own
+   tests cover; each part's job reports its share.
+3. The workflow then writes the job summary table (`evals.sh publish`) and
+   uploads the results file as a 14-day `evals-results-<project>` artifact.
+
+The eval step runs even when `ci` failed, so failing evals show, and it
+never fails the job itself: failing tests already fail `ci`, and a bug in
+the engine must not block a pull request. Run the same steps locally with
+`mise run ci && mise run evals && bash ../standards/scripts/evals.sh publish`
+from a project directory.
+
 ## Results and verdicts
 
 Results are files, never a database: JSONL in the job summary artifact and

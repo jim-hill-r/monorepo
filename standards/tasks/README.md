@@ -11,6 +11,7 @@ file from here, so every project answers the same commands:
 | `dev` | Run locally |
 | `release` | Release build |
 | `deploy` | Ship the release (deployable projects only; a no-op elsewhere) |
+| `evals` | Turn the test reports `ci` saved in `target/evals-reports/` into eval results (`../scripts/evals.sh`, [evals.md](../docs/evals.md#in-ci)) |
 
 | File | For |
 | --- | --- |

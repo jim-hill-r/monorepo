@@ -63,6 +63,11 @@ enum Command {
         /// The JSONL file to append results to.
         #[arg(long, default_value = "evals-results.jsonl")]
         out: PathBuf,
+        /// The reports cover only part of the project (one sub-project's CI
+        /// job): evals with no matching test get no result instead of
+        /// `skip` or `error`.
+        #[arg(long)]
+        partial: bool,
     },
     /// Write the job summary for a results file: one table per project.
     Publish {
@@ -131,6 +136,7 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             playwright_report,
             commit,
             out,
+            partial,
         } => {
             let root = resolve_root(root)?;
             let evals_path = root.join(&project).join(check::EVALS);
@@ -176,6 +182,7 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 run: run_id,
                 evidence,
                 at: chrono::Utc::now(),
+                partial,
             };
             let (results, notes) = run::collect(&file, &reports, &ctx);
             for note in notes {

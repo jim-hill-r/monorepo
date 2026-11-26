@@ -163,10 +163,11 @@ Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
 
 Every project has the same tasks (`ci`, `fix`, `build`, `test`, `dev`,
-`release`, `deploy`), from one shared file in `standards/tasks/`. The rules
-and decisions (no root Rust workspace, no committed build artifacts) are in
-[standards/docs/mise.md](standards/docs/mise.md). CI runs `mise run ci` in
-each changed project; pushes to `main` also run `mise run deploy`.
+`release`, `deploy`, `evals`), from one shared file in `standards/tasks/`.
+The rules and decisions (no root Rust workspace, no committed build
+artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
+`mise run ci` and then `mise run evals` in each changed project; pushes to
+`main` also run `mise run deploy`.
 
 ## Skills
 
