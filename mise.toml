@@ -73,3 +73,8 @@ run = "bash standards/scripts/review-decks.sh"
 description = "Install lefthook (through mise) and the git hooks that run the CI checks"
 dir = "{{config_root}}"
 run = "bash standards/scripts/setup-hooks.sh"
+
+[tasks."downloads"]
+description = "List the projects that publish nightly downloads to a GitHub Release (JSON array)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/downloads.sh list"

@@ -1,0 +1,148 @@
+---
+# Each night: build the macOS app and Android APK of every game with
+# RELEASE_TAG in its mise.toml [env] and publish them to that GitHub Release,
+# so the newest build that passed CI is always at the same download link
+# (Jim, 2026-11-26). The web build deploys through nightly-cd.yml like any
+# project with DEPLOY_URL. Pull requests that change the build build it too,
+# but never publish. Standard runners, macOS included, are free on this
+# public repo; artifacts are kept one day. See standards/docs/mise.md,
+# "Game builds".
+name: Nightly downloads
+
+'on':
+  schedule:
+    # 2:30 AM Pacific Time (10:30 AM UTC), with Nightly CD
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - controlled_chaos/**
+      - standards/scripts/bevy-release.sh
+      - standards/scripts/downloads.sh
+      - standards/tasks/bevy-game.toml
+      - .github/workflows/nightly-downloads.yml
+
+permissions:
+  contents: read
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+  MISE_YES: '1'
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      projects: ${{ steps.list.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
+      - name: List projects with downloads
+        id: list
+        run: echo "projects=$(mise run --quiet //:downloads)" >> "$GITHUB_OUTPUT"
+
+  # Publish only builds of a commit whose CI passed.
+  ci:
+    needs: plan
+    if: needs.plan.outputs.projects != '[]'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(needs.plan.outputs.projects) }}
+    name: ci (${{ matrix.game.project }})
+    defaults:
+      run:
+        working-directory: ${{ matrix.game.project }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v5
+        with:
+          working_directory: ${{ matrix.game.project }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.game.project }}
+          key: ${{ matrix.game.project }}
+          save-if: false
+
+      - name: mise run ci
+        run: mise run ci
+
+  build:
+    needs: [plan, ci]
+    runs-on: ${{ matrix.platform == 'macos' && 'macos-15' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(needs.plan.outputs.projects) }}
+        platform: [macos, android]
+    name: ${{ matrix.platform }} (${{ matrix.game.project }})
+    defaults:
+      run:
+        working-directory: ${{ matrix.game.project }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v5
+        with:
+          working_directory: ${{ matrix.game.project }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.game.project }}
+          key: ${{ matrix.game.project }}-${{ matrix.platform }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: mise run release:${{ matrix.platform }}
+        env:
+          # Optional; without them the APK has a debug signature. Never
+          # passed to pull request builds.
+          ANDROID_KEYSTORE_BASE64: >-
+            ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          ANDROID_KEYSTORE_PASSWORD: >-
+            ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+        run: mise run release:${{ matrix.platform }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.game.slug }}-${{ matrix.platform }}
+          path: |
+            ${{ matrix.game.project }}/dist/*.zip
+            ${{ matrix.game.project }}/dist/*.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: [plan, build]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        game: ${{ fromJSON(needs.plan.outputs.projects) }}
+    name: publish (${{ matrix.game.project }})
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ matrix.game.slug }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/downloads
+
+      - name: Publish to the ${{ matrix.game.tag }} release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ matrix.game.tag }}
+          PROJECT: ${{ matrix.game.project }}
+          DEPLOY_URL: ${{ matrix.game.deploy_url }}
+          DIR: ${{ runner.temp }}/downloads
+        run: bash standards/scripts/downloads.sh publish "$TAG" "$DIR" "$PROJECT"

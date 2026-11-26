@@ -44,10 +44,11 @@ Source: [How use of GitHub Actions is measured](https://docs.github.com/en/billi
 | Larger runners (custom labels, `-xlarge`, `-16core` and so on) | Billed even on public repos | Never used | Billed |
 | Actions cache | 10 GB per repo | Warn at 8 GB | Oldest entries evicted; billed only if the limit is raised |
 | Artifact and Packages storage | Free on a public repo (500 MB on the Free plan if the repo goes private) | Warn at 400 MB | Billed only with a payment method |
+| Release assets (game downloads, `nightly-downloads.yml`) | Free; each file under 2 GiB, no total limit | One nightly prerelease per game, assets replaced in place | - |
 | Minutes if the repo goes private | $12 a month of included compute (about 2,000 Linux minutes) | - | Blocked with no payment method |
 
 The repo is public, so Actions costs nothing as long as jobs run on standard
-runners. Making the repo private would change that; it needs a decision
+runners (`macos-15` included; the game downloads use it). Making the repo private would change that; it needs a decision
 record first.
 
 ### Cloudflare (Pages, Workers, observability)

@@ -75,6 +75,34 @@ the commit SHA or tag to deploy. The run checks out that ref, runs
 latest-version check. A ref from
 before `DEPLOY_URL` existed still deploys, but without the environment link.
 
+### Game builds
+
+Bevy games (`standards/tasks/bevy-game.toml`) have three extra tasks that
+build the game for players, through `standards/scripts/bevy-release.sh`:
+`release:web` (WebAssembly in `dist/web`), `release:macos` (a universal
+`.app`, zipped, macOS only) and `release:android` (an APK, with cargo-apk).
+
+- **Web.** A game with a `wrangler.toml` deploys its web build to Cloudflare
+  Pages like any other site: it sets `DEPLOY_URL`, and `mise run deploy`
+  builds `dist/web` and runs `wrangler pages deploy`, so `push-main.yml` and
+  Nightly CD publish it. A game without one deploys nothing.
+- **macOS and Android.** A game with `RELEASE_TAG` in its `[env]` gets
+  both built every night by `nightly-downloads.yml` (after `mise run ci`
+  passes) and published to that GitHub Release, a prerelease whose tag is
+  moved to the commit built and whose assets are replaced in place. The
+  links never change:
+  `https://github.com/jimhillr/monorepo/releases/download/<RELEASE_TAG>/<package>-macos.zip`
+  and `.../<package>-android.apk`.
+- **Finding them.** `mise run //:downloads` (`standards/scripts/downloads.sh
+  list`) prints every game with downloads as JSON: project, release tag and
+  web URL. Tools such as pane's Deliverables page read that list, or the
+  `RELEASE_TAG` and `DEPLOY_URL` lines in each `mise.toml`, instead of
+  hard-coding links.
+- **Signing.** The macOS app has only an ad-hoc signature, because Developer
+  ID signing and notarization need a paid Apple account. The APK is signed
+  with the `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` secrets
+  when they exist, otherwise with a throwaway debug key.
+
 ## Decisions
 
 | Date | Decision |
@@ -87,4 +115,5 @@ before `DEPLOY_URL` existed still deploys, but without the environment link.
 | 2026-11-26 | Run the CI checks locally in lefthook pre-commit and pre-push hooks, installed through mise ([git-hooks.md](git-hooks.md)). |
 | 2026-11-26 | Deploy from the `push-main.yml` run with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, rather than from committed artifacts. |
 | 2026-11-26 | Run CI and CD for every project every night, and deploy only the latest version of main that passed CI ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |
+| 2026-11-26 | Publish game builds for playtesting: the web build to Cloudflare Pages, and macOS and Android builds to a nightly GitHub prerelease per game (`RELEASE_TAG`). |
 | 2026-11-26 | Record each deploying project's production URL as `DEPLOY_URL` in its `mise.toml`, deploy in a `production` GitHub environment, and roll back by redeploying one project at a ref ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |

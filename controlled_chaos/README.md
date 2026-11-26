@@ -12,6 +12,27 @@ Controlled Chaos is a digital tabletop card game where players build decks and c
 cargo run
 ```
 
+## Playtesting
+
+| Where | How |
+| --- | --- |
+| Browser | <https://controlled-chaos.pages.dev>. Click the page once so it gets the keyboard. Redeployed on every merge to `main` that changes the game, and every night. |
+| macOS | [controlled_chaos-macos.zip](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-macos.zip). Unzip and open "Controlled Chaos". It isn't notarized, so the first time macOS refuses: open System Settings > Privacy & Security, click **Open Anyway**, and confirm. (Or run `xattr -dr com.apple.quarantine "Controlled Chaos.app"`.) |
+| Android | [controlled_chaos-android.apk](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-android.apk). Open the link on the phone and allow your browser to install unknown apps. Until a release key is set up, uninstall the old build before installing a new one. The game needs a keyboard for now (see ISSUES.md). |
+| Your computer | `mise run dev` (or `cargo run`) in this folder. |
+
+The macOS and Android builds come from the
+[controlled_chaos-nightly release](https://github.com/jimhillr/monorepo/releases/tag/controlled_chaos-nightly),
+rebuilt at 2:30 AM Pacific each night from the latest `main` that passed CI
+(the Nightly downloads workflow; run it by hand from the Actions tab for a
+build now). Build them yourself with `mise run release:web`,
+`mise run release:macos` (on a Mac) or `mise run release:android` (needs the
+Android SDK and NDK). See "Game builds" in `standards/docs/mise.md`.
+
+Controls: **Space** draws a card and ends your turn, and **1** to **8** pick
+a card from your hand to play or to defend with. The game shows the next key
+to press on screen.
+
 ## Development
 
 ```bash

@@ -5,6 +5,10 @@
 
 # Backlog
 
+- TODO (agent-generated): Some characters in the UI text show as empty boxes (the dash in the title and between card name and category, the "1–4" range) because Bevy's default font has no glyphs for them. Use plain ASCII ("-", "1-4") in the strings in `src/game.rs`, or bundle a font that has them.
+
+- TODO (agent-generated): Make the game playable without a keyboard, so the Android APK and phone browsers work. Cards in hand and the phase change are keyboard-only today (`KeyCode::Digit1`..`Digit8` and `Space` in `src/game.rs`): add tap and click targets for each card in hand and a "Next phase" button that feed the same actions, with unit tests for the shared action function.
+
 # Priority Projects
 
 # On Hold Projects

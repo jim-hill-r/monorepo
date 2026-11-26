@@ -1,0 +1,8 @@
+# Cloudflare Pages: the web build of the game, for playtesting.
+# `mise run deploy` builds it into dist/web (standards/scripts/bevy-release.sh)
+# and the first deploy creates this Pages project, within the free tier
+# budget (standards/docs/free-tiers.md).
+
+name = "controlled-chaos"
+compatibility_date = "2026-11-01"
+pages_build_output_dir = "dist/web"

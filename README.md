@@ -1,5 +1,6 @@
 [![Nightly CI](https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml)
 [![Nightly CD](https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml)
+[![Nightly downloads](https://github.com/jimhillr/monorepo/actions/workflows/nightly-downloads.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-downloads.yml)
 
 # Monorepo
 

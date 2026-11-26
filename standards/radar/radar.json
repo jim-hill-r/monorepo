@@ -399,6 +399,40 @@
     "budget": 0
   },
   {
+    "name": "wasm-bindgen",
+    "ring": "Trial",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Builds the web (WebAssembly) version of Bevy games for Cloudflare Pages, through the bevy-game release:web task. The CLI version must match wasm-bindgen in the game's Cargo.lock.",
+    "exemplars": [
+      "controlled_chaos"
+    ],
+    "sources": [
+      "standards/docs/mise.md",
+      "standards/scripts/bevy-release.sh"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "cargo-apk",
+    "ring": "Trial",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Packages Bevy games as Android APKs for playtesting (release:android). Unmaintained upstream but still what Bevy 0.14's NativeActivity build supports; cross can't make an APK. Revisit (xbuild or Gradle with GameActivity) when Bevy is upgraded.",
+    "exemplars": [
+      "controlled_chaos"
+    ],
+    "sources": [
+      "standards/docs/mise.md",
+      "standards/scripts/bevy-release.sh"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "samply",
     "ring": "Adopt",
     "quadrant": "Tools",
@@ -483,7 +517,8 @@
     "exemplars": [
       "cookbook/cloudflare",
       "cahokia/cloudflare",
-      "pane/cloudflare"
+      "pane/cloudflare",
+      "controlled_chaos"
     ],
     "sources": [
       "AGENTS.md",
