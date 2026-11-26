@@ -129,14 +129,21 @@ impl Choice {
     }
 }
 
+/// Reads the choice, waiting up to two seconds for the theme script: the
+/// `Script` that `Stylesheets` adds can run after the first effects.
+const READ_CHOICE: &str = r#"
+for (let i = 0; i < 40 && !window.dsTheme; i++) {
+  await new Promise((r) => setTimeout(r, 50));
+}
+return window.dsTheme ? window.dsTheme.get() : null;
+"#;
+
 /// The current choice, read from the page once the theme script has run.
 /// `None` until then.
 pub fn use_theme() -> Signal<Option<Choice>> {
     let mut choice = use_signal(|| None::<Choice>);
     use_future(move || async move {
-        let read = document::eval("return window.dsTheme ? window.dsTheme.get() : null;")
-            .join::<Option<Choice>>()
-            .await;
+        let read = document::eval(READ_CHOICE).join::<Option<Choice>>().await;
         if let Ok(Some(c)) = read {
             choice.set(Some(c));
         }

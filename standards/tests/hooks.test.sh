@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Tests standards/scripts/hooks.sh (with affected.sh) in a throwaway repo:
 # which projects a commit or a merge checks, the skip when ci:check-tools
-# fails, and that git's hook variables don't reach a project's ci. Each
+# fails, that git's hook variables don't reach a project's ci, and that a
+# staged secret fails the commit (when gitleaks can be installed). Each
 # project's ci only logs its name, so this needs only git, jq and mise.
 #   bash standards/tests/hooks.test.sh
 set -uo pipefail
@@ -20,7 +21,9 @@ git_() {
 
 mkdir -p "$repo/standards/scripts"
 cp "$root/standards/scripts/hooks.sh" "$root/standards/scripts/affected.sh" \
+  "$root/standards/scripts/secrets-check.sh" "$root/standards/scripts/deps-check.sh" \
   "$repo/standards/scripts/"
+cp "$root/.gitleaks.toml" "$root/.gitleaksignore" "$repo/"
 cat >"$repo/mise.toml" <<'TOML'
 monorepo_root = true
 
@@ -105,6 +108,26 @@ git_ checkout -- .
 echo 2 >"$repo/a/file"
 check "git env" 0 "a" GIT_DIR="$repo/.git" GIT_INDEX_FILE="$repo/.git/index"
 git_ checkout -- .
+
+# A staged secret fails the commit, and every project's ci still runs.
+# Skipped where gitleaks can't be installed (secrets-check.sh then warns).
+if (cd "$repo" && bash standards/scripts/secrets-check.sh history 2>&1) | grep -q 'warning\[SEC-001\]'; then
+  echo "hooks.test.sh: gitleaks not available, skipping the staged secret case"
+else
+  echo 4 >"$repo/a/file"
+  # A made-up PostHog personal key, built here so this file has no secret.
+  echo "POSTHOG_KEY=phx_$(printf 'Ab3dEf6hIj9kLm2nOp5qRs8tUv1wXy4zAb7cDe0fGh3iJk6')" >"$repo/a/key.txt"
+  git_ add a/key.txt
+  check "staged secret" 1 "a"
+  case "$out" in
+    *"error[SEC-001]"*) ;;
+    *) echo "FAIL staged secret: no SEC-001 error in:"; echo "$out" | sed 's/^/    /'
+       failures=$((failures + 1)) ;;
+  esac
+  git_ rm --cached -q a/key.txt
+  rm -f "$repo/a/key.txt"
+  git_ checkout -- .
+fi
 
 # Committing a merge of main checks the branch's own changes, not main's.
 git_ checkout -b feature
