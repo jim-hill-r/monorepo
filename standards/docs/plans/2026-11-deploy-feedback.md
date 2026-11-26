@@ -23,19 +23,37 @@ Inventory of every project with a `mise.toml`, 2026-11-26.
 
 | Type | Projects | Before merge | After release | Real use |
 | --- | --- | --- | --- | --- |
-| Dioxus web app | cookbook/web, pane/web, cahokia/web, sparkhill/webapp, blueeel, bear_down (coming) | Preview URL, Playwright `@smoke` with screenshots and video | `@smoke` against production | PostHog replay, Honeycomb browser telemetry |
+| Dioxus web app | cookbook/web, pane/web, cahokia/web, sparkhill/webapp, blueeel, bear_down (coming) | Preview URL, Playwright `@smoke` with screenshots and video | `@smoke` against production | PostHog replay, Cloudflare Web Analytics, errors to the `telemetry` Worker |
 | Perseus site | sparkhill/website, profiles/jimhillr (not deployed yet) | Same as web apps once deployed (`perseus export` is static, so Pages works) | Same | Same |
 | Dioxus desktop app | cahokia/desktop | Launch under xvfb, screenshot and video of the window | Smoke run against the release bundle | None yet |
 | Dioxus mobile app | cahokia/mobile | Covered by cahokia/web through the shared `ui` crate | Nightly Android emulator run with a screenshot; iOS not covered | None yet |
-| CLI | homer, cookbook/recipe_gen, my_lang (compiles and runs sample programs) | `trycmd` transcript tests, `vhs` GIF when output changes | Smoke session against the released binary | Opt-in `tracing` export to Honeycomb |
+| CLI | homer, cookbook/recipe_gen, my_lang (compiles and runs sample programs) | `trycmd` transcript tests, `vhs` GIF when output changes | Smoke session against the released binary | Opt-in reports to the `telemetry` Worker |
 | Bevy game | controlled_chaos (starcraft on hold) | Playable web preview if it builds for `wasm32`, scripted xvfb run with screenshots and video | Scripted run against the release build | PostHog gameplay events from the web build |
-| HTTP API | luggage (on hold, not deployed) | HTTP smoke test of the OpenAPI routes against `cargo run` | Same test against the deployed URL | Honeycomb traces through `tracing` |
+| HTTP API | luggage (on hold, not deployed) | HTTP smoke test of the OpenAPI routes against `cargo run` | Same test against the deployed URL | Workers Logs, or `tracing` output to the `telemetry` Worker |
 | Library | auth_sdk, cahokia/ui, cookbook/core, profiles/content_provider, luggage crates | Unit tests plus the consumers' CI (`affected-by`) | Nothing to release | Through the apps that use it |
 | Content and docs | cookbook/content and data_md, athenaeum, bogan, psy_ents, royalty, bear_down docs | Markdown and link checks; cookbook content is checked by building and smoke testing the site | Nothing to release | None |
 | Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, monorepo/workflow_tests | Existing CI until removed | None | None |
 
-Honeycomb adds the numbers (CI times, errors, page performance) next to those
+Cloudflare adds the numbers (errors, page performance, deploys) next to those
 recordings.
+
+## Vendors
+
+Jim asked on 2026-11-26 to use Cloudflare wherever it can do the job, to keep
+the number of vendors down. The plan uses three: GitHub (code, CI,
+releases), Cloudflare (hosting, previews, reports, analytics, logs) and
+PostHog (real-user replay only).
+
+| Need | Cloudflare option | Used? |
+| --- | --- | --- |
+| Previews and production hosting | Pages and Workers static assets | Yes |
+| UAT report hosting | Pages project `uat-reports` (or R2) | Yes |
+| Real-user analytics and performance | Web Analytics (free JS beacon) | Yes |
+| Errors, events, deploy events | A `telemetry` Worker writing to Analytics Engine and Workers Logs | Yes |
+| Logs and traces for Workers | Workers Observability (free: 0.5 GB a day, 7-day retention) | Yes |
+| Headless browser for smoke tests | Browser Run (Playwright; free: 10 browser minutes a day) | Later, for a daily production check from a Cron Worker. Its recordings are DOM replays, not video, so PR evidence stays on GitHub Actions |
+| Replay of real visitors | None. Browser Run records only sessions we drive | PostHog. A home-made rrweb recorder storing to R2 is the fallback if PostHog is dropped |
+| OTLP export to another tool | Workers Paid ($5 a month) | Not needed |
 
 ## Where we start
 
@@ -191,25 +209,31 @@ Jim chose PostHog Cloud on its free tier on 2026-11-26.
 - Games: the web build sends a few PostHog events (session start, level or
   turn reached, quit, panic message). Replay of the game canvas is not
   attempted; the review skill reads these events alongside the web sessions.
-- CLIs: no tracking by default. Setting `HONEYCOMB_API_KEY` in the
-  environment opts in to sending errors and command timings (Phase 5).
+- CLIs: no tracking by default. Setting `TELEMETRY_URL` in the environment
+  opts in to sending errors and command timings (Phase 5).
 
-## Phase 5: Honeycomb
+## Phase 5: Cloudflare observability
 
-- CI/CD traces: send each workflow run to Honeycomb as a trace (one span per
-  job and step) so slow or flaky CI shows up. Needs `HONEYCOMB_API_KEY`.
-- Deploy markers: each production deploy posts a Honeycomb marker with the
-  project, commit and PR, so graphs show when a change landed.
-- Browser telemetry: add Honeycomb's OpenTelemetry web SDK to each web app
-  for page loads, Core Web Vitals and uncaught errors, with an ingest-only
-  key.
-- CLIs: an opt-in `tracing` OTLP exporter, on only when the user sets
-  `HONEYCOMB_API_KEY`, for errors and command timings.
-- Games: frame-time and load-time spans from the scripted CI run, so a slow
-  change shows up as a regression.
-- Rust services: any server code (for example `auth_sdk` users with a
-  backend) exports its `tracing` spans over OTLP with `tracing-opentelemetry`.
-- One trigger: alert Jim if browser errors jump after a deploy marker.
+- Turn on Cloudflare Web Analytics for every production site (one switch per
+  Pages project, or the JS beacon for Workers sites). No cookies, so no
+  consent banner change.
+- Add a `telemetry` project: a small Rust Worker with one `POST /event`
+  route that validates and rate-limits events, writes them to an Analytics
+  Engine dataset, and logs them to Workers Logs. Event kinds: `error`
+  (browser or game panic, with page and build), `game` (gameplay events),
+  `cli` (opt-in reports) and `deploy` (project, commit, PR).
+- Each web app reports uncaught errors and panics to it. Each production
+  deploy posts a `deploy` event, so errors can be lined up with the change
+  that caused them.
+- CLIs post errors and command timings only when the user sets
+  `TELEMETRY_URL` (opt-in).
+- The weekly `review-user-sessions` skill also queries Analytics Engine
+  through its SQL API: error counts per app and build, and whether errors
+  rose after a deploy event. That replaces a separate alerting tool.
+- Games: frame-time and load-time numbers from the scripted CI run go into
+  the job summary, so a slow change shows up as a regression.
+- Later, if needed: a daily production smoke check from a Cron Worker using
+  Browser Run, inside its free 10 minutes a day.
 
 ## Cost
 
@@ -223,7 +247,8 @@ Free tier limits as of 2026-11; check them before relying on them.
 | Monthly full run | GitHub Actions | One full build of every project a month; the largest single use of minutes, still free on public repos |
 | Smoke runs | GitHub Actions | Free on public repos; about a minute per app per run otherwise |
 | Session replay | PostHog Cloud | Free up to 5,000 recordings and 1M events a month |
-| Observability | Honeycomb | Free up to 20M events a month |
+| Analytics | Cloudflare Web Analytics | Free |
+| Errors, events, logs | Cloudflare Workers, Analytics Engine, Workers Observability | Free tier (0.5 GB a day of logs, 7-day retention) |
 | Private previews, if ever needed | Cloudflare Access | Free up to 50 users |
 
 ## Not doing (yet)

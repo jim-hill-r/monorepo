@@ -27,15 +27,13 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 - TODO (agent-generated): Add a scheduled agent task after the monthly run that records a `FIX` in the `ISSUES.md` of each failed project in one draft PR, and flag any project whose last successful UAT is older than 31 days.
 - TODO (agent-ignore): Create the PostHog Cloud project and add a read-only PostHog personal API key as a repo secret. Needs Jim.
 - TODO (agent-generated): Add PostHog session replay to each production web app (production host only, inputs masked, console and network capture on) with a privacy note on each site.
-- TODO (agent-generated): Send PostHog gameplay events (session start, level or turn reached, quit, panic message) from the controlled_chaos web build.
+- TODO (agent-generated): Send gameplay events (session start, level or turn reached, quit, panic message) from the controlled_chaos web build to the `telemetry` Worker.
 - TODO (agent-generated): Add a `review-user-sessions` agent skill that reads the past week's PostHog sessions with errors, rage clicks or dead clicks and records `FIX`/`TODO` items with recording links in the right `ISSUES.md`, and ask Jim to schedule it weekly.
-- TODO (agent-ignore): Create a Honeycomb account on the free tier and add `HONEYCOMB_API_KEY` as a repo secret. Needs Jim.
-- TODO (agent-generated): Send GitHub Actions CI/CD runs to Honeycomb as traces, one span per job and step.
-- TODO (agent-generated): Post a Honeycomb deploy marker (project, commit, PR) from every production deploy.
-- TODO (agent-generated): Add Honeycomb's OpenTelemetry web SDK to each web app for page loads, Core Web Vitals and uncaught errors, using an ingest-only key.
-- TODO (agent-generated): Add an opt-in `tracing` OTLP exporter to each CLI that sends errors and command timings to Honeycomb only when `HONEYCOMB_API_KEY` is set.
-- TODO (agent-generated): Export `tracing` spans over OTLP to Honeycomb from any Rust service with a backend, using `tracing-opentelemetry`.
-- TODO (agent-generated): Add a Honeycomb trigger that alerts when browser errors rise after a deploy marker.
+- TODO (agent-ignore): Turn on Cloudflare Web Analytics for each production Pages project and give the Cloudflare API token Analytics Engine read access. Needs Jim in the Cloudflare dashboard.
+- TODO (agent-generated): Add a `telemetry` Rust Worker project with a `POST /event` route that validates and rate-limits events (`error`, `game`, `cli`, `deploy`) and writes them to an Analytics Engine dataset and Workers Logs.
+- TODO (agent-generated): Report uncaught errors and panics from each web app to the `telemetry` Worker, and post a `deploy` event (project, commit, PR) from every production deploy.
+- TODO (agent-generated): Add opt-in error and timing reports from each CLI to the `telemetry` Worker, sent only when `TELEMETRY_URL` is set.
+- TODO (agent-generated): Make the `review-user-sessions` skill query Analytics Engine for error counts per app and build and flag errors that rose after a deploy event.
 
 # Priority Projects
 - cast

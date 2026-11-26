@@ -54,9 +54,17 @@ check in a minute without a local clone.
    `ISSUES.md`. The tool is PostHog Cloud on its free tier (Jim, 2026-11-26),
    chosen over Microsoft Clarity, Sentry and no replay because it is free at
    our traffic and has an API an agent can read.
-4. **Honeycomb is the observability backend**, on its free tier: CI/CD traces
-   first, then a deploy marker per production deploy, then browser
-   instrumentation and `tracing` exports from any Rust services.
+4. **Cloudflare is the observability backend, and the only vendor besides
+   GitHub and PostHog** (Jim asked on 2026-11-26 to keep the number of
+   vendors down, and chose Cloudflare plus PostHog over Cloudflare only and
+   over keeping Honeycomb). Cloudflare Web Analytics gives real-user page views and
+   performance for free. A small `telemetry` Worker takes browser errors,
+   gameplay events, opt-in CLI reports and a deploy event from each
+   production deploy, and stores them with Workers Analytics Engine and
+   Workers Logs, which Workers Observability can query. Honeycomb was the
+   first choice and is dropped. Cloudflare has no replay of real visitors
+   (Browser Run's recordings only cover sessions we drive), so PostHog stays
+   for that one job.
 5. **CLIs and Bevy games get the same three checkpoints in their own form.**
    - Before merge: CLIs run scripted user sessions against the built binary
      with transcript tests (`trycmd`), and a PR that changes user-facing
@@ -70,13 +78,13 @@ check in a minute without a local clone.
    - Real use: games send a few gameplay events (session start, level
      reached, quit, crash) to PostHog from the web build. CLIs send nothing
      unless the user opts in with an environment variable, in which case
-     errors and command timings go to Honeycomb through `tracing`.
+     errors and command timings go to the `telemetry` Worker.
 6. **Native apps and the API are covered more lightly.** cahokia desktop gets
    a recorded launch under xvfb; cahokia mobile is checked through its shared
    `ui` crate in the web build, with an Android emulator run only nightly.
    iOS needs macOS runners and is not covered. luggage gets an HTTP smoke
-   test against its OpenAPI routes and `tracing` export to Honeycomb once it
-   is deployed.
+   test against its OpenAPI routes, and runs as a Worker or sends its
+   `tracing` output to the `telemetry` Worker once it is deployed.
 7. **Playwright screenshots and video are the default evidence on PRs.** Jim
    asked for this on 2026-11-26. Every UI change links the recorded report in
    the PR, which replaces taking screenshots by hand.
@@ -115,8 +123,12 @@ check in a minute without a local clone.
   rather than skipped silently.
 - The smoke suite must stay short (about a minute per app) to keep Actions
   minutes low, and must not depend on seeded data in production.
-- New secrets: `HONEYCOMB_API_KEY` for CI and deploy markers, and a PostHog
-  personal API key (read-only) for the weekly review task. The PostHog project
+- Free Workers Observability keeps data for 7 days and stops ingesting at
+  0.5 GB a day, so the weekly review must run within a week, and anything
+  worth keeping becomes an `ISSUES.md` item. Exporting OTLP traces to another
+  tool needs Workers Paid ($5 a month); we don't need it.
+- New secrets: the existing Cloudflare token needs Analytics Engine read
+  access for the weekly review, plus a PostHog personal API key (read-only) for the weekly review task. The PostHog project
   key is public and ingest-only, so it lives in each app's config.
 - Workflow changes build on the mise workflows from PR #570
   (`mise-projects.yml`, `push-main.yml`), not the Cast ones.
