@@ -23,10 +23,10 @@ own way. The full inventory is in the plan; the ones users touch are:
 
 Libraries, docs and content are checked by their consumers and by CI only.
 
-The websites are Dioxus apps served as static files from Cloudflare Pages or Workers. Until the
-mise migration, CD only ran when CI committed build artifacts to main, so a
+The websites are served as static files from Cloudflare Pages or Workers.
+Until the mise migration, CD only ran when CI committed build artifacts to main, so a
 deploy left no trace on the PR that caused it and nobody looked at the result.
-[PR #570](https://github.com/jimhillr/monorepo/pull/570) replaces that with
+[PR #570](https://github.com/jimhillr/monorepo/pull/570) replaced that with
 `mise run deploy` after `mise run ci` on every push to main. Playwright tests
 already exist for cookbook and cahokia, but only against a local dev server.
 Most changes are made by agents, so a human reviewer needs evidence they can
@@ -118,5 +118,5 @@ check in a minute without a local clone.
 - New secrets: `HONEYCOMB_API_KEY` for CI and deploy markers, and a PostHog
   personal API key (read-only) for the weekly review task. The PostHog project
   key is public and ingest-only, so it lives in each app's config.
-- Workflow changes wait for PR #570 to merge and build on its
-  `mise-projects.yml` instead of the Cast workflows.
+- Workflow changes build on the mise workflows from PR #570
+  (`mise-projects.yml`, `push-main.yml`), not the Cast ones.

@@ -43,15 +43,15 @@ recordings.
   `*/cloudflare` project that runs `wrangler pages deploy`. sparkhill has a
   web app but no deploy yet. bear_down will serve Workers static assets.
 - [PR #570](https://github.com/jimhillr/monorepo/pull/570) (mise migration
-  step 2) replaces the artifacts-triggered CD with `push-main.yml`, which runs
-  `mise run ci` then `mise run deploy` in each affected project through the
-  reusable `mise-projects.yml`. That PR owns the workflow files, so all
-  workflow changes below start after it merges and build on it.
+  step 2, merged 2026-11-26) replaced the artifacts-triggered CD with
+  `push-main.yml`, which runs `mise run ci` then `mise run deploy` in each
+  affected project through the reusable `mise-projects.yml`. All workflow
+  changes below build on those files.
 - Playwright suites exist for cookbook/web and cahokia/web. Their configs
   always start a local `dx serve` and record nothing.
 - No observability, analytics or replay anywhere.
 
-## Phase 1: clean up CD (after #570 merges)
+## Phase 1: clean up CD
 
 - Give each deploying project a `production` GitHub environment with its URL,
   so every deploy shows on the commit and in the repo's Deployments list.
