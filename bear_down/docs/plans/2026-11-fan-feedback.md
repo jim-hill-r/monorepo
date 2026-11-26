@@ -118,7 +118,9 @@ Each is one PR:
    backlog's Worker TODO), deployed with `free-tiers.sh` guards. Built in
    the root `telemetry/` project, with the other four kinds too.
 3. The vote buttons and note box on the page, with the privacy note and
-   `@smoke` tests.
+   `@smoke` tests. Done: a vote posts at once; the optional note follows
+   as a second `feedback` event with `vote` set to `note`, so each vote
+   counts once. The arm is `a` until step 4.
 4. The A/B arms (`localStorage` id, `?arm=`), with screenshots of both arms
    in UAT.
 5. The weekly export workflow and per-arm summary, and the evals.

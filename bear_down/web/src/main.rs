@@ -4,12 +4,14 @@
 //! and 0007).
 
 mod data;
+mod feedback;
 mod teams;
 
 use bear_down_core::NEGLIGIBLE_SWING;
 use data::{Game, Goal, Rooting, no_pick_label, percent, swing_percent, timestamp};
 use design_system_dioxus::{Stylesheets, ThemePicker};
 use dioxus::prelude::*;
+use feedback::{Ballot, MAX_NOTE, TELEMETRY_URL, Vote, verdict, vote_key};
 
 const STYLE: &str = include_str!("style.css");
 /// The generated "bears" theme (`design_system_cli render`).
@@ -143,13 +145,24 @@ fn Guide(rooting: Rooting) -> Element {
             } else {
                 ol {
                     for game in games {
-                        GameRow { key: "{game.id}", game: game.clone(), goal: goal_now }
+                        GameRow {
+                            key: "{goal_now.tab()}-{game.id}",
+                            game: game.clone(),
+                            goal: goal_now,
+                            season: rooting.season,
+                            week: rooting.week,
+                        }
                     }
                 }
             }
         }
 
         footer {
+            if voting_allowed() && rooting.week.is_some() {
+                p { class: "privacy",
+                    "A vote sends the game, the verdict shown, your answer and any note to this site's own server. No cookies, no sign-in, and Do Not Track turns voting off."
+                }
+            }
             p { "Updated {timestamp(&rooting.generated_at)} from {rooting.simulations} simulated seasons." }
             if let Some(g) = &rooting.latest_game {
                 p {
@@ -173,13 +186,21 @@ fn Stat(label: &'static str, value: String) -> Element {
 }
 
 #[component]
-fn GameRow(game: Game, goal: Goal) -> Element {
+fn GameRow(game: Game, goal: Goal, season: u16, week: Option<u8>) -> Element {
     let s = goal.swing(&game);
     let away = teams::nickname(&game.away);
     let home = teams::nickname(&game.home);
     let home_p = percent(game.home_win_probability);
     let (root, tier) = goal.verdict(&game, NEGLIGIBLE_SWING);
     let pick = root.as_deref().map(teams::name);
+    let ballot = week.filter(|_| voting_allowed()).map(|week| Ballot {
+        arm: "a".to_string(),
+        season,
+        week,
+        goal,
+        game: game.id.clone(),
+        verdict: verdict(root.as_deref(), tier),
+    });
     let impact = format!("{} {}", swing_percent(s.swing), goal.odds_label());
     // Playoff odds are larger and easier to feel, so the Super Bowl view
     // shows their swing too (decision 0002).
@@ -211,6 +232,135 @@ fn GameRow(game: Game, goal: Goal) -> Element {
                     }
                 }
             }
+            if let Some(ballot) = ballot {
+                VoteBox { ballot }
+            }
         }
     }
+}
+
+/// Where a game's vote stands in this browser.
+#[derive(Clone, Copy, PartialEq)]
+enum Voting {
+    Open,
+    /// Voted; the optional note box is showing.
+    Voted,
+    Done,
+}
+
+/// "Does this verdict look right?" with Yes, No and Confusing, then
+/// "Thanks" and an optional note (BEAR-010).
+#[component]
+fn VoteBox(ballot: Ballot) -> Element {
+    let key = vote_key(ballot.season, ballot.week, ballot.goal, &ballot.game);
+    let mut state = use_signal({
+        let key = key.clone();
+        move || {
+            if has_voted(&key) {
+                Voting::Done
+            } else {
+                Voting::Open
+            }
+        }
+    });
+    let mut note = use_signal(String::new);
+    match state() {
+        Voting::Open => rsx! {
+            div { class: "vote", role: "group", aria_label: "Does this verdict look right?",
+                span { class: "vote-question", "Does this verdict look right?" }
+                for vote in Vote::ALL {
+                    button {
+                        class: "vote-button",
+                        onclick: {
+                            let (ballot, key) = (ballot.clone(), key.clone());
+                            move |_| {
+                                post(ballot.vote(vote));
+                                remember_vote(&key);
+                                state.set(Voting::Voted);
+                            }
+                        },
+                        "{vote.label()}"
+                    }
+                }
+            }
+        },
+        Voting::Voted => rsx! {
+            form {
+                class: "vote thanks",
+                onsubmit: {
+                    let ballot = ballot.clone();
+                    move |event: FormEvent| {
+                        event.prevent_default();
+                        if let Some(body) = ballot.note(&note()) {
+                            post(body);
+                        }
+                        state.set(Voting::Done);
+                    }
+                },
+                span { class: "vote-thanks", "Thanks!" }
+                label { class: "vote-note",
+                    "What's off? (optional)"
+                    input {
+                        r#type: "text",
+                        maxlength: "{MAX_NOTE}",
+                        value: "{note}",
+                        oninput: move |event| note.set(event.value()),
+                    }
+                }
+                button { r#type: "submit", class: "vote-button", "Send" }
+            }
+        },
+        Voting::Done => rsx! {
+            div { class: "vote thanks", span { class: "vote-thanks", "Thanks for your vote." } }
+        },
+    }
+}
+
+/// Whether the browser allows sending votes: Do Not Track and Global
+/// Privacy Control both turn it off.
+fn voting_allowed() -> bool {
+    let Some(window) = web_sys::window() else {
+        return false;
+    };
+    let navigator = window.navigator();
+    let get = |target: &wasm_bindgen::JsValue, name: &str| {
+        js_sys::Reflect::get(target, &name.into()).unwrap_or(wasm_bindgen::JsValue::UNDEFINED)
+    };
+    let dnt = get(&navigator, "doNotTrack").as_string().as_deref() == Some("1")
+        || get(&window, "doNotTrack").as_string().as_deref() == Some("1");
+    let gpc = get(&navigator, "globalPrivacyControl").as_bool() == Some(true);
+    !(dnt || gpc)
+}
+
+fn storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok().flatten()
+}
+
+fn has_voted(key: &str) -> bool {
+    storage()
+        .and_then(|storage| storage.get_item(key).ok().flatten())
+        .is_some()
+}
+
+fn remember_vote(key: &str) {
+    if let Some(storage) = storage() {
+        let _ = storage.set_item(key, "1");
+    }
+}
+
+/// Posts an event to the `telemetry` Worker without waiting for it. The
+/// body goes as `text/plain`, which needs no CORS preflight, and `keepalive`
+/// lets it finish if the fan leaves the page.
+fn post(body: String) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let init = web_sys::RequestInit::new();
+    init.set_method("POST");
+    init.set_body(&body.into());
+    let _ = js_sys::Reflect::set(&init, &"keepalive".into(), &true.into());
+    let request = window.fetch_with_str_and_init(TELEMETRY_URL, &init);
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = wasm_bindgen_futures::JsFuture::from(request).await;
+    });
 }
