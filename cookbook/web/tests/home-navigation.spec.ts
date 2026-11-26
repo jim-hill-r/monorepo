@@ -14,7 +14,7 @@ import { test, expect } from '@playwright/test';
  *   npm test
  */
 
-test.describe('Home Page Navigation UI', () => {
+test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
   test('should have a recipes navigation card', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

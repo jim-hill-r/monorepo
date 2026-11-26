@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  *   dx serve --port 8080
  */
 
-test.describe("Today's recipe link on 31 December of a leap year", () => {
+test.describe("Today's recipe link on 31 December of a leap year", { tag: '@req:COOK-001' }, () => {
   test.beforeEach(async ({ page }) => {
     // Midday local time on day 366 of 2028
     await page.clock.setFixedTime(new Date(2028, 11, 31, 12, 0, 0));

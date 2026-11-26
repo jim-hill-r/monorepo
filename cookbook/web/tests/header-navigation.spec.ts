@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  *   npm test
  */
 
-test.describe('Header Navigation', () => {
+test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
   test('should display header on home page', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

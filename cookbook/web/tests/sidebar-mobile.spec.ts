@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  * and can be opened/closed using the hamburger menu.
  */
 
-test.describe('Sidebar Mobile Responsiveness', () => {
+test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
   // Configure these tests to run only on mobile viewports
   test.use({ 
     viewport: { width: 375, height: 667 } // iPhone SE size
