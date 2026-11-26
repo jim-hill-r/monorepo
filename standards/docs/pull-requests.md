@@ -76,13 +76,13 @@ A PR is safe only if all of these hold:
 | Conflicting or behind `main` | Comment `@dependabot rebase`. |
 | `main` already has the same or a newer version, or another open PR supersedes it | Close with a one-line comment saying which. |
 | Bumps a pinned dependency | Close with a comment naming the pin. |
-| Major bump, failing check, or anything else not safe | Add the `needs-jim` label and leave it open. |
+| Major bump, failing check, or anything else not safe | Add the `needs-human` label and leave it open. |
 
 ### Human PRs
 
 Skip drafts. Squash-merge one that is already mergeable. Otherwise approve
 when safe, then squash-merge. Never close or push to them.
-If a PR isn't safe, add `needs-jim` and say why in the report. Flag any that
+If a PR isn't safe, add `needs-human` and say why in the report. Flag any that
 have been open for more than 7 days without activity.
 
 ### Agent PRs
@@ -99,7 +99,7 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
   for review and flag it.
-- Otherwise add `needs-jim` and flag it.
+- Otherwise add `needs-human` and flag it.
 
 ### Reporting
 

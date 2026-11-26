@@ -31,6 +31,16 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 - TODO (agent-generated): Add opt-in error and timing reports from each CLI to the `telemetry` Worker, sent only when `TELEMETRY_URL` is set.
 - TODO (agent-generated): Make the `review-user-sessions` skill query Analytics Engine for error counts per app and build and flag errors that rose after a deploy event.
 
+Free tiers: see [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
+
+- TODO (agent-generated): Once the nightly run deploys every project (PR #583), make `nightly-ci.yml` call `all-free-tier-usage.yml` as its first job and make the `mise-projects.yml` job need it, so a nightly deploy never runs past a budget.
+- TODO (agent-generated): When bear_down or the `telemetry` Worker first deploys, add a `free-tiers.sh worker` guard (count Workers and Cron Triggers in the account before `wrangler deploy`) and run it from the Workers deploy task, like `pages-project` for Pages.
+- TODO (agent-generated): When PostHog is added, extend `free-tiers.sh usage` to read the month's event and recording counts from the PostHog API and warn at 80% of the free allowance.
+- TODO (agent-generated): Cost approval process. Add a "Spending money" section to `standards/docs/free-tiers.md`: any expense (paid plan, add-on, domain, payment method) needs a decision record in `standards/docs/decisions/` with the monthly and yearly cost, why the free tier isn't enough, and how to cancel. The PR gets the `needs-human` label and only Jim merges it. Add a check to `free-tiers.sh check` that fails when a decision record says `Cost:` with a non-zero amount but is not marked `Approved by: Jim`.
+- TODO (agent-generated): Cost ledger. Add `standards/docs/costs.md` listing every service, plan, monthly cost (all $0 today), payment method on file (none) and the decision record behind any paid line, and have the `usage` check fail if a service in the guards isn't listed there.
+- TODO (agent-generated): Monthly cost review. Add a `review-costs` agent skill and ask Jim to schedule it on the 1st of each month. It runs All Free Tier Usage, compares the results with `standards/docs/costs.md`, records the month's usage in `standards/docs/costs/<yyyy-mm>.md`, and labels a PR `needs-human` when anything is above 80% of a free limit or not $0.
+- TODO (agent-generated): Billing checks in the weekly usage workflow, where the vendor's API allows it. Use a separate read-only secret for each: GitHub's billing usage API (fail on any non-zero net amount for the month), and Cloudflare's account subscriptions API with a Billing Read token (fail on any paid subscription, Workers Paid included). Record in `free-tiers.md` which vendors can't be checked by API (PostHog, Auth0, RapidAPI) so the monthly review asks Jim about them.
+
 # Priority Projects
 - cookbook
 - homer

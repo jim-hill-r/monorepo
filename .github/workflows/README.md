@@ -60,6 +60,18 @@ newer deploy.
 Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
 `deploy_check_tests.rs`.
 
+## all-free-tier-usage.yml
+
+Weekly (Mondays, 7 AM Pacific), by hand, or called from another workflow:
+runs `standards/scripts/free-tiers.sh usage`, which reads how many Cloudflare
+Pages projects and Workers exist and how much Actions cache and artifact
+storage the repo uses, writes a table to the run summary, and fails when
+anything reaches its budget in
+[standards/docs/free-tiers.md](../../standards/docs/free-tiers.md). It only
+reads.
+
+Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+
 ## codeql.yml
 
 This workflow runs CodeQL security scanning on the codebase, analyzing JavaScript/TypeScript and GitHub Actions workflows but **not Rust**.

@@ -47,7 +47,7 @@ repo, rather than in any one agent tool's settings.
   - **Any other vendor needs Jim's sign-off.** Propose it in a decision record
     in `standards/docs/decisions/` (or the PR description for a small
     change), saying what it costs, why no approved vendor fits, and what a
-    switch would take. Label the PR `needs-jim` and don't merge it until Jim
+    switch would take. Label the PR `needs-human` and don't merge it until Jim
     approves.
   - **Approved exceptions:**
     - PostHog, for real-user session replay (decision 0001).
@@ -55,6 +55,15 @@ repo, rather than in any one agent tool's settings.
     - RapidAPI (Zillow data), used by `homer`, **only on its free plan**. It
       must never cost money: don't add a paid plan, scheduled runs or anything
       else that could push usage past the free quota.
+- **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
+  plan. Never turn on a paid plan, add a payment method or raise a spending
+  or cache limit, and when a limit is near, stop rather than pay. Anything
+  automation creates on demand goes through `standards/scripts/free-tiers.sh`.
+  Limits, budgets and guards are in
+  [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
+- **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
+  unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
+  `needs-jim`).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
@@ -71,7 +80,7 @@ repo, rather than in any one agent tool's settings.
   every open PR: it approves safe dependabot and human PRs, squash-merges every
   mergeable PR (per the merge rule above), asks dependabot to rebase
   conflicts, closes superseded or pinned bumps, adopts orphaned agent PRs, and
-  labels anything that needs Jim `needs-jim`. Safe to approve means green
+  labels anything that needs a person `needs-human`. Safe to approve means green
   checks, no conflict, patch or minor bumps only (a 0.x minor bump counts as
   major), never the pinned bumps above, and no workflow, auth or secrets
   changes unless trivially safe. It reads this file for extra pins, so list
