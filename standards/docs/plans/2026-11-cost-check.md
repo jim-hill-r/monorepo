@@ -300,6 +300,9 @@ Phase 1 rewrites those three TODOs to match.
 
 ### Phase 2: detectors and the PR summary
 
+Done 2026-11-26. COST-009 was added for unknown hosts, so COST-007 can
+become an error in phase 3 while the unknown-host warning stays a warning.
+
 - `standards/radar/detectors.toml` and COST-007, warnings only.
 - `cost summary --base` and the PR CI step that writes the summary and sets
   the `cost` and `needs-human` labels.

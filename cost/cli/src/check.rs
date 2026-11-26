@@ -7,11 +7,53 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use chrono::{Datelike, NaiveDate};
 use cost_model::{
-    COST_FILE, Decision, Finding, Month, check_account, check_project, parse_limits, parse_radar,
+    COST_FILE, Decision, Detection, Detectors, Finding, Month, SourceFile, check_account,
+    check_drift, check_project, parse_detectors, parse_limits, parse_radar,
 };
+
+use crate::git;
 
 pub const LIMITS: &str = "standards/radar/limits.toml";
 pub const RADAR: &str = "standards/radar/radar.json";
+pub const DETECTORS: &str = "standards/radar/detectors.toml";
+pub const WORKFLOWS: &str = ".github/workflows";
+
+/// The detectors, or `None` when the repo has no detectors.toml.
+pub fn load_detectors(root: &Path) -> Result<Option<Detectors>> {
+    let Ok(text) = fs::read_to_string(root.join(DETECTORS)) else {
+        return Ok(None);
+    };
+    parse_detectors(&text)
+        .map(Some)
+        .map_err(|e| anyhow::anyhow!("{DETECTORS}: {e}"))
+}
+
+/// Builds `SourceFile`s from paths and their text.
+pub fn sources(files: impl IntoIterator<Item = (String, String)>) -> Vec<SourceFile> {
+    files
+        .into_iter()
+        .map(|(path, text)| SourceFile { path, text })
+        .collect()
+}
+
+/// The repo's workflows in the working tree.
+pub fn workflows_here(root: &Path) -> Vec<SourceFile> {
+    sources(git::read_here(root, &git::tracked(root, WORKFLOWS)))
+}
+
+/// Runs the detectors over a project's tracked files in the working tree.
+pub fn detect_here(
+    root: &Path,
+    name: &str,
+    detectors: &Detectors,
+    workflows: &[SourceFile],
+) -> Detection {
+    let paths: Vec<String> = git::tracked(root, name)
+        .into_iter()
+        .filter(|p| detectors.scans(p))
+        .collect();
+    detectors.detect(name, &sources(git::read_here(root, &paths)), workflows)
+}
 
 pub struct Report {
     pub findings: Vec<Finding>,
@@ -72,6 +114,13 @@ pub fn check(root: &Path, selected: Option<&[String]>, today: NaiveDate) -> Resu
     let limits = parse_limits(&read(LIMITS)?).map_err(|e| anyhow::anyhow!("{LIMITS}: {e}"))?;
     let radar = parse_radar(&read(RADAR)?).map_err(|e| anyhow::anyhow!("{RADAR}: {e}"))?;
 
+    let detectors = load_detectors(root)?;
+    let workflows = if detectors.is_some() {
+        workflows_here(root)
+    } else {
+        Vec::new()
+    };
+
     let all = projects(root)?;
     let chosen = selection(&all, selected);
     let mut findings = Vec::new();
@@ -88,6 +137,10 @@ pub fn check(root: &Path, selected: Option<&[String]>, today: NaiveDate) -> Resu
         );
         if chosen.contains(name) {
             findings.extend(project_findings);
+            if let (Some(detectors), Some(project)) = (&detectors, &project) {
+                let found = detect_here(root, name, detectors, &workflows);
+                findings.extend(check_drift(name, &project.file, &found));
+            }
         }
         parsed.extend(project);
     }
@@ -174,6 +227,35 @@ mod tests {
         let selected = ["cookbook/web".to_string(), "nope".to_string()];
         let report = check(dir.path(), Some(&selected), today()).expect("check");
         assert_eq!(report.checked, 1);
+        assert_eq!(codes(&report), [("COST-005", LIMITS.to_string())]);
+    }
+
+    #[test]
+    fn test_drift_runs_for_selected_projects_only() {
+        let dir = fixture();
+        let root = dir.path();
+        write(
+            root,
+            DETECTORS,
+            "[scan]\nextensions = [\"rs\"]\nskip_dirs = []\nskip_files = []\n[[detector]]\nid = \"sq\"\nblip = \"Squarespace\"\nwhy = \"x\"\nhosts = [\"squarespace.com\"]\n",
+        );
+        write(
+            root,
+            "pane/src/main.rs",
+            "let a = \"https://api.squarespace.com/x\";\nlet b = \"https://api.unknown.dev/y\";\n",
+        );
+        let selected = ["pane".to_string()];
+        let report = check(root, Some(&selected), today()).expect("check");
+        assert_eq!(
+            codes(&report),
+            [
+                ("COST-007", "pane/docs/cost.toml".to_string()),
+                ("COST-009", "pane/src/main.rs".to_string()),
+                ("COST-005", LIMITS.to_string()),
+            ]
+        );
+        let selected = ["cookbook".to_string()];
+        let report = check(root, Some(&selected), today()).expect("check");
         assert_eq!(codes(&report), [("COST-005", LIMITS.to_string())]);
     }
 

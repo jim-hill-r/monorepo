@@ -1,0 +1,279 @@
+# Detectors for the cost check (COST-007 and COST-009 in standards/docs/cost.md).
+# Each one maps something in a project's files to the vendor blip in
+# radar.json it implies, and sometimes to a limits.toml key it counts. The
+# check runs them over each project's whole tree (git's tracked files), so a
+# project can't drift from its docs/cost.toml through a series of small PRs.
+#
+# [scan]       Which files the line detectors read.
+# [[detector]] One of:
+#   hosts/patterns     URL hosts (and their subdomains) or regexes matched
+#                      against each non-comment line; `files` narrows
+#                      patterns to some file names.
+#   wrangler           A dotted key in a wrangler.toml; an array counts its
+#                      entries, anything else counts 1.
+#   workflow_schedule  A workflow named <project>.yml or <project>-*.yml with
+#                      a `schedule:`.
+#   usage              The limits.toml key each match adds its count to.
+# [[allow]]    Outside hosts that cost nothing. Subdomains are allowed too.
+# [[exempt]]   A file (or a directory ending in /) a detector must not count,
+#              such as a guard that searches for the pattern itself. Use
+#              detector = "unknown-host" for COST-009, or "*" for all.
+#
+# Plain open-source dependencies cost nothing and are not detectors: only
+# a vendor's SDK, host or key names one.
+
+[scan]
+extensions = ["rs", "ts", "tsx", "js", "jsx", "mjs", "cjs", "html", "css", "toml", "json", "yml", "yaml", "sh", "py", "vue", "svelte"]
+skip_dirs = ["docs", "issues", "target", "node_modules", "dist", ".wrangler", "test-results", "playwright-report"]
+skip_files = ["Cargo.lock", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"]
+
+# Cloudflare, from wrangler.toml.
+
+[[detector]]
+id = "cloudflare-pages"
+blip = "Cloudflare Pages"
+why = "a wrangler.toml with pages_build_output_dir is a Pages project"
+wrangler = "pages_build_output_dir"
+usage = "pages_projects"
+
+[[detector]]
+id = "cloudflare-worker"
+blip = "Cloudflare Workers"
+why = "a wrangler.toml with main is a Worker"
+wrangler = "main"
+usage = "workers"
+
+[[detector]]
+id = "cloudflare-crons"
+blip = "Cloudflare Workers"
+why = "Cron Triggers in a wrangler.toml"
+wrangler = "triggers.crons"
+usage = "cron_triggers"
+
+[[detector]]
+id = "cloudflare-d1"
+blip = "Cloudflare D1"
+why = "a d1_databases binding"
+wrangler = "d1_databases"
+usage = "d1_databases"
+
+[[detector]]
+id = "cloudflare-kv"
+blip = "Cloudflare Workers"
+why = "a kv_namespaces binding (KV is part of the Workers free plan)"
+wrangler = "kv_namespaces"
+
+[[detector]]
+id = "cloudflare-r2"
+blip = "Cloudflare R2"
+why = "an r2_buckets binding"
+wrangler = "r2_buckets"
+
+[[detector]]
+id = "cloudflare-analytics-engine"
+blip = "Cloudflare Workers"
+why = "an analytics_engine_datasets binding"
+wrangler = "analytics_engine_datasets"
+
+# Vendor SDKs, hosts and keys.
+
+[[detector]]
+id = "posthog-host"
+blip = "PostHog"
+why = "calls PostHog"
+hosts = ["posthog.com"]
+
+[[detector]]
+id = "posthog-package"
+blip = "PostHog"
+why = "a PostHog SDK"
+files = ["package.json", "Cargo.toml"]
+patterns = ['"posthog-(js|node)"\s*:', '^\s*posthog(-rs)?\s*=']
+
+[[detector]]
+id = "auth0"
+blip = "Auth0"
+why = "signs in with Auth0"
+hosts = ["auth0.com"]
+patterns = ['\bAUTH0_[A-Z0-9_]+']
+
+[[detector]]
+id = "auth0-package"
+blip = "Auth0"
+why = "an Auth0 SDK"
+files = ["package.json", "Cargo.toml"]
+patterns = ['"@auth0/[a-z0-9-]+"\s*:', '^\s*auth0[a-z0-9_-]*\s*=']
+
+[[detector]]
+id = "rapidapi"
+blip = "RapidAPI (Zillow data)"
+why = "calls RapidAPI"
+hosts = ["rapidapi.com"]
+patterns = ['\bRAPIDAPI_[A-Z0-9_]+', '(?i)x-rapidapi-(key|host)']
+
+# GitHub Actions minutes for a project's own scheduled workflow.
+
+[[detector]]
+id = "github-schedule"
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+why = "a scheduled workflow of its own uses Actions minutes"
+workflow_schedule = true
+
+# Hosts that cost nothing.
+
+[[allow]]
+host = "example.com"
+why = "Reserved for examples (RFC 2606)."
+
+[[allow]]
+host = "example.org"
+why = "Reserved for examples (RFC 2606)."
+
+[[allow]]
+host = "example.net"
+why = "Reserved for examples (RFC 2606)."
+
+[[allow]]
+host = "example"
+why = "Reserved for examples (RFC 2606)."
+
+[[allow]]
+host = "invalid"
+why = "Reserved, never resolves (RFC 2606)."
+
+[[allow]]
+host = "test"
+why = "Reserved for tests (RFC 2606)."
+
+[[allow]]
+host = "localhost"
+why = "This machine."
+
+[[allow]]
+host = "github.com"
+why = "GitHub, an approved vendor on its free plan."
+
+[[allow]]
+host = "githubusercontent.com"
+why = "GitHub raw files and avatars."
+
+[[allow]]
+host = "github.io"
+why = "GitHub Pages docs sites."
+
+[[allow]]
+host = "pages.dev"
+why = "Our own Cloudflare Pages sites; the Pages detector counts them."
+
+[[allow]]
+host = "workers.dev"
+why = "Our own Workers; the Worker detector counts them."
+
+[[allow]]
+host = "api.cloudflare.com"
+why = "Cloudflare's API, for the free-tier guards and deploys."
+
+[[allow]]
+host = "developers.cloudflare.com"
+why = "Docs."
+
+[[allow]]
+host = "crates.io"
+why = "Rust package registry."
+
+[[allow]]
+host = "docs.rs"
+why = "Docs."
+
+[[allow]]
+host = "rust-lang.org"
+why = "Rust toolchain and docs."
+
+[[allow]]
+host = "npmjs.com"
+why = "npm package registry."
+
+[[allow]]
+host = "npmjs.org"
+why = "npm package registry."
+
+[[allow]]
+host = "w3.org"
+why = "XML namespaces and specs."
+
+[[allow]]
+host = "schemas.xmlsoap.org"
+why = "XML namespaces."
+
+[[allow]]
+host = "json-schema.org"
+why = "JSON Schema."
+
+[[allow]]
+host = "schemastore.org"
+why = "JSON Schema store."
+
+[[allow]]
+host = "fonts.googleapis.com"
+why = "Free web fonts."
+
+[[allow]]
+host = "fonts.gstatic.com"
+why = "Free web fonts."
+
+[[allow]]
+host = "mise.jdx.dev"
+why = "The task runner's docs and installer."
+
+[[allow]]
+host = "claude.ai"
+why = "Claude Code, our AI coding platform (its budget is in the radar)."
+
+[[allow]]
+host = "claude.com"
+why = "Claude Code links."
+
+[[allow]]
+host = "anthropic.com"
+why = "Claude Code links."
+
+[[allow]]
+host = "www.apple.com"
+why = "The plist DTD in macOS app bundles."
+
+[[allow]]
+host = "zillow.com"
+why = "Listing links homer prints; the data itself comes through RapidAPI."
+
+# Files a detector must not count.
+
+[[exempt]]
+path = "standards/radar/"
+detector = "*"
+why = "The radar, limits and detectors name every vendor by design."
+
+[[exempt]]
+path = "cost/"
+detector = "*"
+why = "The cost check's own tests use detector fixtures."
+
+[[exempt]]
+path = "pane/web/src/markdown.rs"
+detector = "unknown-host"
+why = "Test links for the Markdown renderer."
+
+[[exempt]]
+path = "profiles/content_provider/src/lib.rs"
+detector = "unknown-host"
+why = "Links on the profile page, not services."
+
+
+[[exempt]]
+path = "standards/scripts/free-tiers.sh"
+detector = "rapidapi"
+why = "FT-002 searches the workflows for a RapidAPI key."
+
+[[exempt]]
+path = "monorepo/workflow_tests/"
+detector = "rapidapi"
+why = "Tests for the FT-002 guard."

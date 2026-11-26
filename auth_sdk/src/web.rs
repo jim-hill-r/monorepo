@@ -232,7 +232,7 @@ pub fn fetch_current_location_from_browser() -> Option<String> {
     }
     None
 }
-/// The site origin, such as `https://cahokia-web.pages.dev`.
+/// The site origin, such as `https://jimhillr-cahokia.pages.dev`.
 ///
 /// Pass it to [`crate::redirect::redirect_url_for_origin`] for a stable
 /// `redirect_url`.

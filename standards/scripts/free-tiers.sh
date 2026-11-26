@@ -14,12 +14,15 @@
 #         FT-004  Cron Triggers across all wrangler.toml files stay within
 #                 the budget.
 #         FT-005  No wrangler.toml turns on a paid-only setting.
+#         FT-006  Every Pages project is named jimhillr-<project>, because
+#                 *.pages.dev names are global (standards/docs/naming.md).
 #
 #   free-tiers.sh pages-project
 #       Run from a Cloudflare project directory (the deploy task does this).
 #       Creates the Pages project named in ./wrangler.toml if it does not
 #       exist, but only while the account stays within the Pages project
-#       budget. Otherwise it stops with an error and creates nothing.
+#       budget and the name has the jimhillr- prefix. Otherwise it stops with
+#       an error and creates nothing.
 #
 #   free-tiers.sh usage
 #       Live usage check (Cloudflare and GitHub). Writes a table to
@@ -71,6 +74,11 @@ GH_API=${FREE_TIERS_GH_API:-https://api.github.com}
 
 die() { echo "free-tiers: $*" >&2; exit 1; }
 
+# Pages project names: jimhillr-<project>, lowercase letters, digits and
+# hyphens (standards/docs/naming.md, "Cloudflare Pages projects").
+PAGES_NAME_RE='^jimhillr-[a-z0-9]+(-[a-z0-9]+)*$'
+wrangler_name() { sed -nE 's/^[[:space:]]*"?name"?[[:space:]]*[:=][[:space:]]*"([^"]+)".*/\1/p' "$1" | head -n1; }
+
 # ---------------------------------------------------------------- check ----
 
 check() {
@@ -102,6 +110,9 @@ check() {
   for f in $wranglers; do
     if grep -qE '^[[:space:]]*"?pages_build_output_dir"?' "$f"; then
       pages=$((pages + 1))
+      n=$(wrangler_name "$f")
+      [[ "$n" =~ $PAGES_NAME_RE ]] ||
+        err FT-006 "$f names Pages project '$n'; Pages projects must be named jimhillr-<project> (standards/docs/naming.md)"
     else
       workers=$((workers + 1))
     fi
@@ -168,8 +179,10 @@ cf_workers_count() {
 pages_project() {
   [ -f wrangler.toml ] || die "no wrangler.toml in $(pwd)"
   local name
-  name=$(sed -nE 's/^name *= *"([^"]+)".*/\1/p' wrangler.toml | head -n1)
+  name=$(wrangler_name wrangler.toml)
   [ -n "$name" ] || die "wrangler.toml has no name"
+  [[ "$name" =~ $PAGES_NAME_RE ]] ||
+    die "not creating Pages project $name: Pages projects must be named jimhillr-<project> (standards/docs/naming.md)"
   need_cf
   local projects count
   projects=$(cf_pages_projects)
