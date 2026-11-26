@@ -21,7 +21,7 @@ run = "cargo build"
 description = "Rust tests, then Playwright tests when the project has a package.json"
 run = [
   "cargo test",
-  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps chromium && npm test; fi",
+  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps && npm test; fi",
 ]
 
 ["ci:deps"]
@@ -36,7 +36,7 @@ run = [
   "cargo clippy -- -D warnings",
   "cargo build",
   "cargo test",
-  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps chromium && npm test; fi",
+  "if [ -f package.json ]; then npm ci && npx playwright install --with-deps && npm test; fi",
 ]
 
 [fix]
