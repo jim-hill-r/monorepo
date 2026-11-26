@@ -18,7 +18,7 @@ async function waitForAuth(page: Page) {
   });
 }
 
-test.describe('Auth0 sign-in config', () => {
+test.describe('Auth0 sign-in config @req:CAHO-003', () => {
   // AUTH-003: the home page must never render "Authentication Error".
   test('home page shows Login, never an authentication error', async ({ page }) => {
     await page.goto('/');
