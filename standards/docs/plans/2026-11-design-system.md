@@ -16,7 +16,7 @@ And, later the same day:
 
 Status: **proposed**, waiting for Jim. Every open question has a recommended
 answer under [Decisions](#decisions), so "yes to all" approves the plan as
-written. The work items go into an `ISSUES.md` once it is approved, as the
+written. The work items go into issue files in `issues/` once it is approved, as the
 [cost check plan](2026-11-cost-check.md) did.
 
 ## Goal
@@ -268,7 +268,7 @@ right to, and the design system never ships them.
 ### Files
 
 A new project, `design_system/`, with the usual `mise.toml`, `royalty.toml`,
-`ISSUES.md`, README and CONTRIBUTING:
+`issues/` folder, README and CONTRIBUTING:
 
 ```text
 design_system/
