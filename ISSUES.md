@@ -8,7 +8,6 @@ Feedback on every change: see
 They build on the mise workflows from PR #570 (`mise-projects.yml`,
 `push-main.yml`, `pull-request-ci.yml`).
 
-- TODO (agent-generated): CD cleanup. Give each deploying project a `production` GitHub environment with its URL, write the deployed URL to the job summary, record the URL as `DEPLOY_URL` in the project's `mise.toml`, and add a `workflow_dispatch` redeploy of one project at a given ref for rollbacks.
 - TODO (agent-generated): Preview deploys. Add a `preview` task to `standards/tasks/cloudflare-pages.toml` (`wrangler pages deploy --branch pr-<n>`), run it in PR CI for affected deploy projects on same-repo PRs, and keep one sticky PR comment with the preview URLs.
 - TODO (agent-ignore): Add the Cloudflare Pages preview domains to the Auth0 allowed callback URLs for cookbook and cahokia. Needs Jim in the Auth0 dashboard.
 - TODO (agent-generated): Smoke UAT. Tag a few Playwright tests `@smoke` in cookbook/web and cahokia/web, let `playwright.config.ts` use `BASE_URL` and record video, screenshots and traces for smoke runs, and add a `smoke` task to the web task files.
