@@ -2,7 +2,9 @@
 # build, test, dev, release, deploy. Run with: mise run <task>
 # The contrast check runs in ci; apps that read the tokens list this
 # directory on an `# affected-by:` line so their CI reruns when it changes.
+# App theme folders (*/design) are listed below too, so check reruns when one changes.
 # affected-by: ../standards/docs/reset.css
+# affected-by: ../bear_down/design
 
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy" }

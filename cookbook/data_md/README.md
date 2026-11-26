@@ -63,6 +63,7 @@ Recipes support UUIDs as unique identifiers:
 - `MarkdownRecipeStore::new` skips any recipe or plan file that fails to parse, or that reuses another recipe's UUID or ID. It logs a warning for each and lists them in `load_errors()`.
 - `get_by_id`, `exists` and `delete` accept either a UUID string or a legacy ID.
 - `update` and `save` match a recipe by UUID, or else by legacy ID; in the second case the stored UUID is kept, so plans still resolve.
+- `EmbeddedRecipeStore` (the web app's compiled-in recipes) keys recipes the same way: `get_by_id` and `exists` accept a UUID string or a legacy ID such as `day-1`, `get_by_uuid` is a map lookup, and a recipe that reuses another's UUID or ID is skipped with a warning.
 - UUIDs allow recipes to be renamed and moved without breaking references
 
 ## Usage

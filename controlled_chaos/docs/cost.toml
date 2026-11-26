@@ -1,0 +1,16 @@
+# controlled_chaos: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Bevy card game with a web build on Cloudflare Pages and nightly desktop downloads on a GitHub Release. $0 a month."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the static site (Pages project `controlled-chaos`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+[service.usage]
+pages_projects = 1
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "Publishes the nightly desktop builds to the `controlled_chaos-nightly` prerelease (nightly-downloads.yml), replacing the assets in place."
+notes = "Release assets are free; each file stays well under the 2 GB per-file limit."

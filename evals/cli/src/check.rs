@@ -1,5 +1,6 @@
 //! `evals check`: validates every project's `docs/requirements.md` and
-//! `evals.toml` against `standards/docs/evals.md`.
+//! `evals.toml`, and the human-check files (`standards/settings.toml` and
+//! `standards/settings-checks.jsonl`), against `standards/docs/evals.md`.
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
@@ -7,11 +8,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use evals_model::{Eval, Kind, Priority, Requirement, parse_evals, parse_requirements};
+use evals_model::{
+    Eval, Kind, Priority, Requirement, SettingCheck, parse_evals, parse_requirements,
+    parse_settings,
+};
 
 pub const REQUIREMENTS: &str = "docs/requirements.md";
 pub const EVALS: &str = "evals.toml";
 pub const NAMING: &str = "standards/docs/naming.md";
+pub const SETTINGS: &str = "standards/settings.toml";
+pub const SETTING_CHECKS: &str = "standards/settings-checks.jsonl";
 
 /// One problem, printed as `warning[EVL-001] cookbook/evals.toml: ...`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,12 +71,14 @@ impl TestIndex {
 }
 
 /// Checks one project from its files' text. `None` means the file is absent.
+/// `settings` are the ids in `standards/settings.toml`.
 pub fn check_project(
     project: &str,
     expected_prefix: Option<&str>,
     requirements_text: Option<&str>,
     evals_text: Option<&str>,
     tests: &TestIndex,
+    settings: &[String],
 ) -> Vec<Finding> {
     let requirements_path = format!("{project}/{REQUIREMENTS}");
     let evals_path = format!("{project}/{EVALS}");
@@ -198,6 +206,23 @@ pub fn check_project(
         }
     }
 
+    // EVL-001, widened: a human-check must name a setting in the manifest.
+    for eval in &evals {
+        if let Kind::HumanCheck { setting } = &eval.kind
+            && !settings.contains(setting)
+        {
+            finding(
+                Some("EVL-001"),
+                &evals_path,
+                None,
+                format!(
+                    "eval `{}` names setting `{setting}`, which is not in {SETTINGS}",
+                    eval.id
+                ),
+            );
+        }
+    }
+
     // EVL-003: test-report evals must match a real test.
     for eval in &evals {
         if !tests.matches(eval) {
@@ -274,7 +299,7 @@ pub fn check_repo(root: &Path) -> Result<Vec<Finding>> {
         .with_context(|| format!("reading {}", naming_path.display()))?;
     let prefixes = parse_prefixes(&naming);
 
-    let mut findings = Vec::new();
+    let (mut findings, settings) = check_settings(root)?;
     for project in top_level_dirs(root)? {
         let dir = root.join(&project);
         let requirements = read_optional(&dir.join(REQUIREMENTS))?;
@@ -289,9 +314,49 @@ pub fn check_repo(root: &Path) -> Result<Vec<Finding>> {
             requirements.as_deref(),
             evals.as_deref(),
             &tests,
+            &settings,
         ));
     }
     Ok(findings)
+}
+
+/// Checks the settings manifest and the answers file, returning the
+/// findings and the manifest's setting ids.
+fn check_settings(root: &Path) -> Result<(Vec<Finding>, Vec<String>)> {
+    let mut findings = Vec::new();
+    let mut ids = Vec::new();
+    if let Some(text) = read_optional(&root.join(SETTINGS))? {
+        match parse_settings(&text) {
+            Ok(settings) => ids = settings.into_iter().map(|s| s.id).collect(),
+            Err(errors) => findings.extend(errors.into_iter().map(|e| Finding {
+                code: None,
+                path: SETTINGS.to_string(),
+                line: e.line,
+                message: e.message,
+            })),
+        }
+    }
+    if let Some(text) = read_optional(&root.join(SETTING_CHECKS))? {
+        for (index, line) in text.lines().enumerate() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            let message = match serde_json::from_str::<SettingCheck>(line) {
+                Err(e) => format!("not an answer line: {e}"),
+                Ok(check) if !ids.contains(&check.setting) => {
+                    format!("setting `{}` is not in {SETTINGS}", check.setting)
+                }
+                Ok(_) => continue,
+            };
+            findings.push(Finding {
+                code: None,
+                path: SETTING_CHECKS.to_string(),
+                line: Some(index + 1),
+                message,
+            });
+        }
+    }
+    Ok((findings, ids))
 }
 
 /// Finds the repo root: the nearest ancestor of `start` holding `naming.md`.
@@ -302,7 +367,7 @@ pub fn find_root(start: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
-fn read_optional(path: &Path) -> Result<Option<String>> {
+pub fn read_optional(path: &Path) -> Result<Option<String>> {
     match fs::read_to_string(path) {
         Ok(text) => Ok(Some(text)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -310,7 +375,7 @@ fn read_optional(path: &Path) -> Result<Option<String>> {
     }
 }
 
-fn top_level_dirs(root: &Path) -> Result<Vec<String>> {
+pub fn top_level_dirs(root: &Path) -> Result<Vec<String>> {
     let mut dirs = Vec::new();
     for entry in fs::read_dir(root).with_context(|| format!("listing {}", root.display()))? {
         let entry = entry?;
@@ -472,7 +537,14 @@ kind = "cargo"
     }
 
     fn check(reqs: Option<&str>, evals: Option<&str>) -> Vec<Finding> {
-        check_project("cookbook", Some("COOK"), reqs, evals, &tests_index())
+        check_project(
+            "cookbook",
+            Some("COOK"),
+            reqs,
+            evals,
+            &tests_index(),
+            &["auth0-cookbook-app".to_string()],
+        )
     }
 
     fn codes(findings: &[Finding]) -> Vec<Option<&'static str>> {
@@ -605,7 +677,7 @@ kind = "trycmd"
                 .contains("PANE-001 does not use cookbook's prefix COOK")
         );
 
-        let findings = check_project("newproj", None, None, Some(EVALS_OK), &tests_index());
+        let findings = check_project("newproj", None, None, Some(EVALS_OK), &tests_index(), &[]);
         assert!(findings[0].message.contains("no requirement prefix"));
     }
 
@@ -713,6 +785,69 @@ kind = "trycmd"
         )?;
         let findings = check_repo(root)?;
         assert_eq!(codes(&findings), vec![Some("EVL-003")]);
+        Ok(())
+    }
+
+    #[test]
+    fn evl_001_human_check_names_an_unknown_setting() {
+        let evals = format!(
+            "{EVALS_OK}\n[[eval]]\nid = \"callbacks\"\nrequirement = \"COOK-001\"\nstages = [\"human\"]\nkind = \"human-check\"\nsetting = \"auth0-cookbook-app\"\n\n[[eval]]\nid = \"gone\"\nrequirement = \"COOK-001\"\nstages = [\"human\"]\nkind = \"human-check\"\nsetting = \"no-such-setting\"\n"
+        );
+        let findings = check(Some(REQS), Some(&evals));
+        assert_eq!(codes(&findings), vec![Some("EVL-001")], "{findings:?}");
+        assert!(findings[0].message.contains("no-such-setting"));
+    }
+
+    #[test]
+    fn checks_the_settings_manifest_and_answers() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let root = root.path();
+        fs::create_dir_all(root.join("standards/docs"))?;
+        fs::write(root.join(NAMING), "## Requirement prefixes\n")?;
+        let entry = "id = \"a-setting\"\nvendor = \"v\"\nwhere = \"w\"\nexpect = \"e\"\nwhy = \"y\"\nevery = \"30d\"\n";
+        fs::write(root.join(SETTINGS), format!("[[setting]]\n{entry}"))?;
+        fs::write(
+            root.join(SETTING_CHECKS),
+            concat!(
+                r#"{"setting":"a-setting","status":"pass","note":"ok","at":"2026-12-01T00:00:00Z","by":"jim"}"#,
+                "\n\n",
+                r#"{"setting":"other","status":"pass","at":"2026-12-01T00:00:00Z","by":"jim"}"#,
+                "\nnot json\n",
+            ),
+        )?;
+        let findings = check_repo(root)?;
+        let lines: Vec<String> = findings.iter().map(ToString::to_string).collect();
+        assert_eq!(lines.len(), 2, "{lines:?}");
+        assert!(
+            lines[0].starts_with(
+                "warning standards/settings-checks.jsonl:3: setting `other` is not in"
+            )
+        );
+        assert!(
+            lines[1].starts_with("warning standards/settings-checks.jsonl:4: not an answer line")
+        );
+
+        fs::write(
+            root.join(SETTINGS),
+            format!("[[setting]]\n{entry}value = \"secret\"\n"),
+        )?;
+        fs::remove_file(root.join(SETTING_CHECKS))?;
+        let findings = check_repo(root)?;
+        assert_eq!(findings.len(), 1);
+        assert!(
+            findings[0].message.contains("unknown field `value`"),
+            "{findings:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn checks_the_real_settings_manifest() -> Result<()> {
+        let root = find_root(Path::new(env!("CARGO_MANIFEST_DIR")))
+            .ok_or_else(|| anyhow::anyhow!("no repo root"))?;
+        let (findings, ids) = check_settings(&root)?;
+        assert_eq!(findings, vec![]);
+        assert!(!ids.is_empty());
         Ok(())
     }
 

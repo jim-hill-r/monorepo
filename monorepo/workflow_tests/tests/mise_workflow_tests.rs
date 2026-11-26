@@ -1,6 +1,6 @@
 //! Tests for the mise-based CI/CD workflows: pull-request-ci.yml,
 //! push-main.yml, nightly-ci.yml and nightly-cd.yml, which all call
-//! mise-projects.yml.
+//! mise-projects.yml, and evals-store.yml, which stores their eval results.
 
 use std::fs;
 use workflow_tests::*;
@@ -18,14 +18,24 @@ fn calls_mise_projects(parsed: &serde_yaml::Value) -> serde_yaml::Value {
     let jobs = parsed["jobs"]
         .as_mapping()
         .unwrap_or_else(|| panic!("workflow has no jobs"));
-    assert_eq!(jobs.len(), 1, "workflow should have exactly one job");
-    let (_, job) = jobs.iter().next().unwrap_or_else(|| panic!("no job"));
+    let callers: Vec<&serde_yaml::Value> = jobs
+        .values()
+        .filter(|job| job["uses"].as_str() == Some("./.github/workflows/mise-projects.yml"))
+        .collect();
     assert_eq!(
-        job["uses"].as_str(),
-        Some("./.github/workflows/mise-projects.yml"),
-        "the job should call mise-projects.yml"
+        callers.len(),
+        1,
+        "exactly one job should call mise-projects.yml"
     );
-    job.clone()
+    for (name, job) in jobs {
+        let uses = job["uses"].as_str();
+        assert!(
+            uses == Some("./.github/workflows/mise-projects.yml")
+                || uses == Some("./.github/workflows/evals-store.yml"),
+            "job {name:?} should call mise-projects.yml or evals-store.yml"
+        );
+    }
+    callers[0].clone()
 }
 
 #[test]
@@ -412,6 +422,113 @@ fn test_push_main_can_redeploy_one_project_at_a_ref() {
     );
 }
 
+/// The `steps` of a job in mise-projects.yml, by job name.
+fn mise_projects_steps(job: &str) -> Vec<serde_yaml::Value> {
+    let (_, parsed) = load("mise-projects.yml");
+    parsed["jobs"][job]["steps"]
+        .as_sequence()
+        .unwrap_or_else(|| panic!("mise-projects.yml job {job} has no steps"))
+        .clone()
+}
+
+fn step_index(steps: &[serde_yaml::Value], name: &str) -> usize {
+    steps
+        .iter()
+        .position(|s| s["name"].as_str() == Some(name))
+        .unwrap_or_else(|| panic!("no step named {name:?}"))
+}
+
+#[test]
+fn test_evals_run_after_ci_and_publish_their_results() {
+    let steps = mise_projects_steps("project");
+    let ci = step_index(&steps, "mise run ci");
+    let evals = step_index(&steps, "mise run evals");
+    let upload = step_index(&steps, "Upload eval results");
+    assert!(ci < evals && evals < upload, "ci, then evals, then upload");
+
+    let step = &steps[evals];
+    assert_eq!(step["env"]["EVALS_STAGE"].as_str(), Some("ci"));
+    assert_eq!(
+        step["if"].as_str(),
+        Some("${{ !cancelled() }}"),
+        "evals should run after a failed ci, so failing evals show"
+    );
+    assert_eq!(
+        step["continue-on-error"].as_bool(),
+        Some(true),
+        "the eval step must not fail the job"
+    );
+    let run = step["run"].as_str().unwrap_or_default();
+    assert!(run.contains("mise run evals"), "should run the evals task");
+    assert!(
+        run.contains("standards/scripts/evals.sh\" publish"),
+        "should write the job summary"
+    );
+
+    let upload = &steps[upload];
+    assert_eq!(upload["with"]["retention-days"].as_u64(), Some(14));
+    assert!(
+        upload["uses"]
+            .as_str()
+            .unwrap_or_default()
+            .starts_with("actions/upload-artifact@")
+    );
+}
+
+#[test]
+fn test_rust_caches_include_the_evals_cli() {
+    for job in ["plan", "project"] {
+        let steps = mise_projects_steps(job);
+        let cache = steps
+            .iter()
+            .find(|s| {
+                s["uses"]
+                    .as_str()
+                    .is_some_and(|u| u.starts_with("Swatinem/rust-cache@"))
+            })
+            .unwrap_or_else(|| panic!("job {job} has no rust-cache step"));
+        let workspaces = cache["with"]["workspaces"].as_str().unwrap_or_default();
+        assert!(
+            workspaces.lines().any(|l| l.trim() == "evals"),
+            "job {job} should cache evals/ (got {workspaces:?})"
+        );
+        assert_eq!(
+            cache["with"]["save-if"].as_str(),
+            Some("${{ github.ref == 'refs/heads/main' }}"),
+            "job {job} should save its cache from main only"
+        );
+    }
+}
+
+#[test]
+fn test_every_shared_task_file_has_an_evals_task_and_ci_saves_cargo_test() {
+    let dir = get_repo_root().join("standards/tasks");
+    for entry in fs::read_dir(&dir).unwrap_or_else(|e| panic!("{e}")) {
+        let path = entry.unwrap_or_else(|e| panic!("{e}")).path();
+        if path.extension().and_then(|e| e.to_str()) != Some("toml") {
+            continue;
+        }
+        let content = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{e}"));
+        let name = path.display();
+        assert!(
+            content.lines().any(|l| l == "[evals]"),
+            "{name} has no evals task"
+        );
+        // The [ci] table runs up to the next table header.
+        let ci = content
+            .split("\n[ci]\n")
+            .nth(1)
+            .and_then(|rest| rest.split("\n[").next())
+            .unwrap_or_else(|| panic!("{name} has no ci task"));
+        if ci.contains("cargo test") {
+            assert!(
+                ci.contains("evals.sh\\\" report cargo-test"),
+                "{name}: ci should save `cargo test` output with evals.sh report"
+            );
+        }
+    }
+}
+
 #[test]
 fn test_push_main_deploys_every_push_projects() {
     let (content, _) = load("mise-projects.yml");
@@ -426,4 +543,78 @@ fn test_push_main_deploys_every_push_projects() {
             .any(|l| l.starts_with("# deploy-on-every-push")),
         "pane's snapshot reads the whole repo, so it deploys on every push"
     );
+}
+
+/// Stores eval results after the projects run: push-main and nightly CI only.
+fn stores_evals(name: &str, mise_job: &str) {
+    let (_, parsed) = load(name);
+    let job = &parsed["jobs"]["store-evals"];
+    assert_eq!(
+        job["uses"].as_str(),
+        Some("./.github/workflows/evals-store.yml"),
+        "{name} should store eval results"
+    );
+    assert_eq!(job["needs"].as_str(), Some(mise_job));
+    assert!(
+        job["if"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("!cancelled()"),
+        "results are stored even when a project failed"
+    );
+    assert_eq!(job["permissions"]["contents"].as_str(), Some("write"));
+    assert_eq!(
+        parsed["permissions"]["contents"].as_str(),
+        Some("read"),
+        "{name}: only the store-evals job may write"
+    );
+    assert!(
+        parsed["jobs"][mise_job]["permissions"].is_null(),
+        "{name}: the mise-projects.yml call stays read-only"
+    );
+}
+
+#[test]
+fn test_push_main_and_nightly_ci_store_eval_results() {
+    stores_evals("push-main.yml", "ci-cd");
+    stores_evals("nightly-ci.yml", "ci");
+    for name in ["pull-request-ci.yml", "nightly-cd.yml"] {
+        let (content, _) = load(name);
+        assert!(
+            !content.contains("evals-store.yml"),
+            "{name} must not store results"
+        );
+    }
+}
+
+#[test]
+fn test_evals_store_pushes_only_to_the_evals_results_branch() {
+    let (content, parsed) = load("evals-store.yml");
+    assert!(!parsed["on"]["workflow_call"].is_null());
+    assert_eq!(parsed["permissions"]["contents"].as_str(), Some("read"));
+    let job = &parsed["jobs"]["store"];
+    assert_eq!(job["permissions"]["contents"].as_str(), Some("write"));
+    assert_eq!(
+        job["continue-on-error"].as_bool(),
+        Some(true),
+        "storing must never fail the run"
+    );
+    assert!(content.contains("evals.sh store"));
+    assert!(!content.contains("git push"), "the push lives in evals.sh");
+
+    let (mise, _) = load("mise-projects.yml");
+    assert!(
+        !mise.contains("contents: write"),
+        "a write job inside mise-projects.yml breaks callers that grant only read"
+    );
+
+    let script = fs::read_to_string(get_repo_root().join("standards/scripts/evals.sh"))
+        .unwrap_or_else(|e| panic!("read evals.sh: {e}"));
+    let pushes: Vec<&str> = script
+        .lines()
+        .filter(|l| l.contains("\" push ") && !l.trim_start().starts_with('#'))
+        .collect();
+    assert_eq!(pushes.len(), 1, "evals.sh pushes once: {pushes:?}");
+    assert!(pushes[0].contains("HEAD:refs/heads/evals-results"));
+    assert!(!pushes[0].contains("--force") && !pushes[0].contains(" -f "));
 }

@@ -7,6 +7,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Configuration](./configuration.md) - Configuration file standards
 - [Decisions](./decisions/README.md) - Repo-wide decision records
 - [Documentation](./documentation.md) - Documentation standards
+- [Cost](./cost.md) - Each project's cost analysis (`docs/cost.toml`), the cost check and how an expense is approved
 - [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push

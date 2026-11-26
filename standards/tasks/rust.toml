@@ -29,13 +29,13 @@ description = "System packages CI needs; override in a project's mise.toml"
 run = "true"
 
 [ci]
-description = "Everything CI checks; makes no artifacts"
+description = "Everything CI checks; makes no artifacts (test reports go in target/evals-reports)"
 depends = ["ci:deps"]
 run = [
   "cargo fmt --all --check",
   "cargo clippy -- -D warnings",
   "cargo build",
-  "cargo test",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
 ]
 
 [fix]
@@ -56,3 +56,7 @@ run = "cargo build --release"
 [deploy]
 description = "Nothing to deploy for a plain Rust crate"
 run = "echo 'deploy: nothing to deploy for this project'"
+
+[evals]
+description = "Turn the reports ci saved into eval results (standards/docs/evals.md)"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" run"

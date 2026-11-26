@@ -1,0 +1,9 @@
+# homer: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Local CLI that reads Zillow listings through RapidAPI on its free plan, run by hand only. $0 a month."
+
+[[service]]
+blip = "RapidAPI (Zillow data)"
+plan = "free"
+why = "Zillow listing data. The user supplies the key; homer stops before a request once the free quota is used up, and no workflow may use the key (FT-002)."
+notes = "Usage is a handful of requests per manual run; the quota number is on the API's pricing page."

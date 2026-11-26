@@ -70,7 +70,8 @@ run_case no-package 0 "$work/stubs" && refuse no-package "npm" "$calls"
 touch "$work/project/package.json"
 
 # Everything installs: the tests run.
-run_case all-tools 0 "$work/stubs" && expect all-tools "npm test" "$calls"
+run_case all-tools 0 "$work/stubs" && expect all-tools "npm test" "$calls" \
+  && expect all-tools "--reporter=list,json" "$calls"
 
 # A failing test fails the task, in CI or not.
 run_case test-fails 1 "$work/stubs" FAIL_npm=test

@@ -2,8 +2,8 @@
 //!
 //! | Verdict | Rule |
 //! | --- | --- |
-//! | Not met | The latest result of any production-stage eval failed, or Jim's latest rating is "not met" and no `cd` result has come in since. Amber (at risk) for `should` and `could`. |
-//! | At risk | An eval failed `flaky_failures` of its last `flaky_window` runs, a metric is within `near_threshold` of its limit, the judge says not met (unless Jim rated it met since), a `ci` eval's latest result failed, an eval errored or never ran, or the newest production result is older than `stale_days` (or not younger than `fresh_days`). |
+//! | Not met | The latest result of any production-stage eval failed, Jim's latest rating is "not met" and no `cd` result has come in since, or Jim's latest answer to a `human-check` eval's setting is "not ok". Amber (at risk) for `should` and `could`. |
+//! | At risk | A `human-check` eval's setting was never checked, or was last checked longer ago than twice its `every`. An eval failed `flaky_failures` of its last `flaky_window` runs, a metric is within `near_threshold` of its limit, the judge says not met (unless Jim rated it met since), a `ci` eval's latest result failed, an eval errored or never ran, or the newest production result is older than `stale_days` (or not younger than `fresh_days`). |
 //! | Met | Every eval's latest result passes, and a production-stage result is younger than `fresh_days`. |
 //! | Unknown | Retired, no evals, or no production-stage results yet. |
 
@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::evals::{Eval, Kind, Stage};
 use crate::requirements::{Priority, Requirement};
 use crate::results::{EvalResult, ResultStatus};
+use crate::settings::{Setting, SettingCheck, latest_check};
 use crate::{ParseError, ids::parse_requirement_id};
 
 /// The tunable numbers in `evals/verdicts.toml`.
@@ -86,15 +87,61 @@ pub struct VerdictReport {
     pub reasons: Vec<String>,
 }
 
+/// Jim's answers to the human checks (`standards/settings-checks.jsonl`)
+/// and the manifest they answer (`standards/settings.toml`). Both live on
+/// `main`, not in the results.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct HumanChecks<'a> {
+    pub settings: &'a [Setting],
+    pub answers: &'a [SettingCheck],
+}
+
+impl HumanChecks<'_> {
+    /// What one `human-check` eval says: a failure (Jim's latest answer was
+    /// "not ok"), a risk (never checked, past twice its `every`, or an
+    /// unknown setting), or nothing.
+    fn judge(&self, eval_id: &str, setting: &str, now: DateTime<Utc>) -> CheckFinding {
+        let Some(manifest) = self.settings.iter().find(|s| s.id == setting) else {
+            return CheckFinding::Risk(format!(
+                "{eval_id} names setting {setting}, which is not in standards/settings.toml"
+            ));
+        };
+        match latest_check(setting, self.answers) {
+            None => CheckFinding::Risk(format!("setting {setting} has never been checked")),
+            Some(answer) if answer.status == ResultStatus::Fail => CheckFinding::Failure(format!(
+                "Jim answered setting {setting} not ok at {}: {}",
+                answer.at,
+                answer.note.as_deref().unwrap_or("no note")
+            )),
+            Some(answer) if now - answer.at >= manifest.interval() * 2 => {
+                CheckFinding::Risk(format!(
+                    "setting {setting} was last checked {}, over twice its every ({})",
+                    answer.at.format("%Y-%m-%d"),
+                    manifest.every
+                ))
+            }
+            Some(_) => CheckFinding::Fine,
+        }
+    }
+}
+
+enum CheckFinding {
+    Fine,
+    Risk(String),
+    Failure(String),
+}
+
 /// Computes a requirement's verdict.
 ///
 /// `evals` and `results` may hold other requirements' entries; only those
 /// naming `requirement` are used. Results are matched to evals by eval id,
-/// and Jim's ratings are the results with stage `human`.
+/// and Jim's ratings are the results with stage `human`. A `human-check`
+/// eval has no results: its state is Jim's latest answer in `checks`.
 pub fn verdict(
     requirement: &Requirement,
     evals: &[Eval],
     results: &[EvalResult],
+    checks: HumanChecks<'_>,
     thresholds: &Thresholds,
     now: DateTime<Utc>,
 ) -> VerdictReport {
@@ -117,9 +164,25 @@ pub fn verdict(
         .collect();
     results.sort_by_key(|r| r.at);
 
+    // Human checks: answers, not results.
+    let mut check_failures = Vec::new();
+    let mut check_risks = Vec::new();
+    for eval in &evals {
+        if let Kind::HumanCheck { setting } = &eval.kind {
+            match checks.judge(&eval.id, setting, now) {
+                CheckFinding::Fine => {}
+                CheckFinding::Risk(reason) => check_risks.push(reason),
+                CheckFinding::Failure(reason) => check_failures.push(reason),
+            }
+        }
+    }
+
     // Results per (eval, stage), oldest first.
     let mut runs: BTreeMap<(&str, Stage), Vec<&EvalResult>> = BTreeMap::new();
     for eval in &evals {
+        if matches!(eval.kind, Kind::HumanCheck { .. }) {
+            continue;
+        }
         for stage in &eval.stages {
             runs.insert((eval.id.as_str(), *stage), Vec::new());
         }
@@ -157,6 +220,7 @@ pub fn verdict(
             failures.push(format!("Jim rated it not met at {}", human.at));
         }
     }
+    failures.extend(check_failures);
     if !failures.is_empty() {
         let verdict = if requirement.priority == Priority::Must {
             Verdict::NotMet
@@ -171,10 +235,14 @@ pub fn verdict(
         return report(Verdict::Unknown, vec!["no evals".into()]);
     }
     let Some(newest_production) = newest_production else {
-        return report(
-            Verdict::Unknown,
-            vec!["no production-stage results yet".into()],
-        );
+        if check_risks.is_empty() {
+            return report(
+                Verdict::Unknown,
+                vec!["no production-stage results yet".into()],
+            );
+        }
+        check_risks.push("no production-stage results yet".into());
+        return report(Verdict::AtRisk, check_risks);
     };
 
     // At risk.
@@ -237,6 +305,7 @@ pub fn verdict(
         ));
     }
 
+    risks.extend(check_risks);
     if risks.is_empty() {
         report(Verdict::Met, Vec::new())
     } else {
@@ -355,6 +424,7 @@ mod tests {
             &requirement(priority),
             evals,
             results,
+            HumanChecks::default(),
             &Thresholds::default(),
             now(),
         )
@@ -389,6 +459,7 @@ mod tests {
             &retired,
             &layout_evals(),
             &green_results(),
+            HumanChecks::default(),
             &Thresholds::default(),
             now(),
         );
@@ -619,5 +690,143 @@ mod tests {
         let mut ids = vec!["COOK-010", "COOK-002", "COOK-1000"];
         ids.sort_by_key(|id| requirement_order(id));
         assert_eq!(ids, vec!["COOK-002", "COOK-010", "COOK-1000"]);
+    }
+
+    fn auth0_setting() -> Setting {
+        Setting {
+            id: "auth0-app".into(),
+            vendor: "Auth0".into(),
+            location: "manage.auth0.com > Applications".into(),
+            expect: "The callback URL is listed.".into(),
+            why: "Sign-in fails without it.".into(),
+            every: "30d".into(),
+        }
+    }
+
+    fn answer(status: ResultStatus, days: i64) -> SettingCheck {
+        SettingCheck {
+            setting: "auth0-app".into(),
+            status,
+            note: Some(if status == ResultStatus::Pass {
+                "ok".into()
+            } else {
+                "callback missing".into()
+            }),
+            at: now() - Duration::days(days),
+            by: By::Jim,
+        }
+    }
+
+    fn checked_evals() -> Vec<Eval> {
+        let mut evals = layout_evals();
+        evals.push(eval(
+            "auth0-callbacks",
+            &[Stage::Human],
+            Kind::HumanCheck {
+                setting: "auth0-app".into(),
+            },
+        ));
+        evals
+    }
+
+    fn run_checked(
+        priority: Priority,
+        results: &[EvalResult],
+        answers: &[SettingCheck],
+    ) -> VerdictReport {
+        let settings = [auth0_setting()];
+        verdict(
+            &requirement(priority),
+            &checked_evals(),
+            results,
+            HumanChecks {
+                settings: &settings,
+                answers,
+            },
+            &Thresholds::default(),
+            now(),
+        )
+    }
+
+    #[test]
+    fn a_recent_ok_answer_keeps_it_met() {
+        let report = run_checked(
+            Priority::Must,
+            &green_results(),
+            &[answer(ResultStatus::Pass, 40)],
+        );
+        assert_eq!(report.verdict, Verdict::Met, "{report:?}");
+    }
+
+    #[test]
+    fn a_not_ok_answer_is_not_met_until_a_newer_ok() {
+        let answers = [
+            answer(ResultStatus::Pass, 20),
+            answer(ResultStatus::Fail, 3),
+        ];
+        let report = run_checked(Priority::Must, &green_results(), &answers);
+        assert_eq!(report.verdict, Verdict::NotMet);
+        assert_eq!(report.reasons.len(), 1);
+        assert!(
+            report.reasons[0].contains("not ok") && report.reasons[0].contains("callback missing"),
+            "{report:?}"
+        );
+        let report = run_checked(Priority::Should, &green_results(), &answers);
+        assert_eq!(report.verdict, Verdict::AtRisk);
+
+        let fixed = [answers[1].clone(), answer(ResultStatus::Pass, 1)];
+        let report = run_checked(Priority::Must, &green_results(), &fixed);
+        assert_eq!(report.verdict, Verdict::Met, "{report:?}");
+    }
+
+    #[test]
+    fn an_overdue_or_missing_answer_is_at_risk() {
+        let report = run_checked(
+            Priority::Must,
+            &green_results(),
+            &[answer(ResultStatus::Pass, 60)],
+        );
+        assert_eq!(report.verdict, Verdict::AtRisk);
+        assert_eq!(
+            report.reasons,
+            vec!["setting auth0-app was last checked 2026-10-11, over twice its every (30d)"]
+        );
+
+        let report = run_checked(Priority::Must, &green_results(), &[]);
+        assert_eq!(report.verdict, Verdict::AtRisk);
+        assert_eq!(
+            report.reasons,
+            vec!["setting auth0-app has never been checked"]
+        );
+    }
+
+    #[test]
+    fn an_overdue_check_is_at_risk_even_without_production_results() {
+        let ci_only = [result("layout", Stage::Ci, ResultStatus::Pass, 1)];
+        let report = run_checked(Priority::Must, &ci_only, &[]);
+        assert_eq!(report.verdict, Verdict::AtRisk);
+        assert_eq!(
+            report.reasons,
+            vec![
+                "setting auth0-app has never been checked",
+                "no production-stage results yet"
+            ]
+        );
+        let report = run_checked(Priority::Must, &ci_only, &[answer(ResultStatus::Pass, 1)]);
+        assert_eq!(report.verdict, Verdict::Unknown);
+    }
+
+    #[test]
+    fn a_setting_missing_from_the_manifest_is_at_risk() {
+        let report = verdict(
+            &requirement(Priority::Must),
+            &checked_evals(),
+            &green_results(),
+            HumanChecks::default(),
+            &Thresholds::default(),
+            now(),
+        );
+        assert_eq!(report.verdict, Verdict::AtRisk);
+        assert!(report.reasons[0].contains("not in standards/settings.toml"));
     }
 }

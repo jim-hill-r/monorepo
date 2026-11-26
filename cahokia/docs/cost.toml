@@ -1,0 +1,17 @@
+# cahokia: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Dioxus web app on Cloudflare Pages with Auth0 sign-in, plus desktop and mobile builds that need no hosting. $0 a month."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the static site (Pages project `cahokia-web`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+[service.usage]
+pages_projects = 1
+
+[[service]]
+blip = "Auth0"
+plan = "free"
+why = "Sign-in for the web app (shared free tenant with cookbook)."
+[service.usage]
+auth0_mau = 5

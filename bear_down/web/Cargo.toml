@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 bear_down_core = { workspace = true }
+design_system_dioxus = { path = "../../design_system/dioxus" }
 dioxus = { workspace = true, features = ["web"] }
 serde = { workspace = true }
 serde_json = "1.0.154"

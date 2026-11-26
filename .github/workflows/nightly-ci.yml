@@ -19,3 +19,12 @@ jobs:
     uses: ./.github/workflows/mise-projects.yml
     with:
       base: ''
+
+  # Commit the eval results to the evals-results branch, even when a
+  # project failed, so failing evals are kept too.
+  store-evals:
+    needs: ci
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/evals-store.yml
+    permissions:
+      contents: write

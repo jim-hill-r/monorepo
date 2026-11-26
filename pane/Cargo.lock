@@ -506,6 +506,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "design_system_dioxus"
+version = "0.1.0"
+dependencies = [
+ "dioxus",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1930,6 +1939,7 @@ dependencies = [
 name = "pane_web"
 version = "0.1.0"
 dependencies = [
+ "design_system_dioxus",
  "dioxus",
  "gloo-net",
  "js-sys",

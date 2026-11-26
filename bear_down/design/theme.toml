@@ -1,0 +1,62 @@
+# bear_down's custom theme: Chicago Bears navy and orange on top of the
+# colorful theme. Everything not set here (fonts, spacing, status colours,
+# the data palette, accessible-mode rules) comes from colorful. Checked for
+# WCAG contrast with the standard themes; results in
+# design_system/docs/contrast.md. Regenerate design/theme.css with
+# `mise run render` in design_system.
+#
+# Colours only: no team marks or logos ship with the design system.
+
+name = "bears"
+label = "Chicago Bears"
+extends = "colorful"
+
+[primitives]
+navy = "#0b162a"
+navy-800 = "#14223b"
+navy-700 = "#172540"
+navy-600 = "#2a3a57"
+orange = "#c83803"          # 5.2:1 on white, only 3.5:1 on navy
+orange-dark = "#9e2c02"     # 7.4:1 on white, for AAA
+orange-light = "#ff8f5c"    # 8.0:1 on navy
+slate = "#5b6475"
+
+[fonts]
+heading = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+body = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+
+[light.color]
+bg = "#ffffff"
+surface = "#fbfcfd"
+surface-raised = "#ffffff"
+border = "#dde1e8"
+border-strong = "#7d8799"
+text = "navy"
+text-muted = "slate"
+accent = "orange"
+accent-hover = "orange-dark"
+focus = "navy"
+
+[dark.color]
+bg = "navy"
+surface = "navy-800"
+surface-raised = "navy-700"
+border = "navy-600"
+border-strong = "#6b7c99"
+text = "#eef1f6"
+text-muted = "#9aa5b8"
+accent = "orange-light"
+accent-hover = "#ffab85"
+
+[accessible.light.color]
+border-strong = "#5f6878"
+text-muted = "#454d5c"
+accent = "orange-dark"
+accent-hover = "#8a2702"
+focus = "navy"
+
+[accessible.dark.color]
+border-strong = "#8a97ad"
+text-muted = "#b4bdcc"
+accent = "#ffa77d"
+accent-hover = "#ffc2a6"

@@ -25,8 +25,9 @@ pub enum Stage {
     Chaos,
     Observe,
     Judge,
-    /// Jim's own rating. Implicit for every requirement, never listed in
-    /// `evals.toml`.
+    /// Jim's own judgment: his rating in pane (implicit for every
+    /// requirement, never listed) and his answers to `human-check` evals,
+    /// the only kind that lists this stage.
     Human,
 }
 
@@ -102,6 +103,9 @@ pub enum Kind {
     },
     /// An agent grades the live product against a rubric.
     Judge { rubric: String },
+    /// Jim checks a setting made by hand; `setting` is an `id` in
+    /// `standards/settings.toml`.
+    HumanCheck { setting: String },
 }
 
 impl Kind {
@@ -115,6 +119,7 @@ impl Kind {
             Kind::Metric { .. } => "metric",
             Kind::Fault { .. } => "fault",
             Kind::Judge { .. } => "judge",
+            Kind::HumanCheck { .. } => "human-check",
         }
     }
 
@@ -129,6 +134,7 @@ impl Kind {
             "metric" => &["source", "metric", "min", "max", "window"],
             "fault" => &["fault", "grep"],
             "judge" => &["rubric"],
+            "human-check" => &["setting"],
             _ => return None,
         })
     }
@@ -255,7 +261,7 @@ fn check_keys(table: &toml::Table) -> Vec<ParseError> {
             .unwrap_or_default();
         let Some(kind_fields) = Kind::fields(kind) else {
             errors.push(ParseError::whole_file(format!(
-                "eval `{name}`: unknown kind `{kind}`; expected cargo, playwright, trycmd, script, http, metric, fault or judge"
+                "eval `{name}`: unknown kind `{kind}`; expected cargo, playwright, trycmd, script, http, metric, fault, judge or human-check"
             )));
             continue;
         };
@@ -291,15 +297,19 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
     }
     let mut seen = Vec::new();
     for stage in &eval.stages {
-        if *stage == Stage::Human {
+        if *stage == Stage::Human && !matches!(eval.kind, Kind::HumanCheck { .. }) {
             problems.push(
-                "stage `human` is implicit for every requirement and is not listed".to_string(),
+                "stage `human` is listed only by human-check evals (Jim's rating is implicit)"
+                    .to_string(),
             );
         }
         if seen.contains(stage) {
             problems.push(format!("stage `{}` is listed twice", stage.as_str()));
         }
         seen.push(*stage);
+    }
+    if matches!(eval.kind, Kind::HumanCheck { .. }) && eval.stages != [Stage::Human] {
+        problems.push("a human-check eval runs in the human stage only".into());
     }
     if eval.stages.contains(&Stage::Judge) != matches!(eval.kind, Kind::Judge { .. }) {
         problems.push("a judge eval runs in the judge stage only, and only judge evals do".into());
@@ -370,6 +380,13 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
         }
         Kind::Fault { fault, .. } => require_text(&mut problems, "fault", fault),
         Kind::Judge { rubric } => require_text(&mut problems, "rubric", rubric),
+        Kind::HumanCheck { setting } => {
+            if !is_kebab_case(setting) {
+                problems.push(format!(
+                    "setting `{setting}` is not a kebab-case id from standards/settings.toml"
+                ));
+            }
+        }
         Kind::Cargo { .. } | Kind::Playwright { .. } | Kind::Trycmd { .. } => {}
     }
     problems
@@ -593,6 +610,39 @@ body_contains = "Cookbook"
         );
         assert!(
             errors(&one_eval("stages = [\"nightly\"]\nkind = \"cargo\""))[0].contains("nightly")
+        );
+    }
+
+    #[test]
+    fn checks_human_check_evals() {
+        let text = "prefix = \"COOK\"\n[[eval]]\nid = \"e\"\nrequirement = \"COOK-001\"\nstages = [\"human\"]\nkind = \"human-check\"\nsetting = \"auth0-cookbook-app\"\n";
+        let file = match parse_evals(text) {
+            Ok(file) => file,
+            Err(e) => panic!("{e:?}"),
+        };
+        assert_eq!(
+            file.evals[0].kind,
+            Kind::HumanCheck {
+                setting: "auth0-cookbook-app".into()
+            }
+        );
+        assert_eq!(file.evals[0].kind.name(), "human-check");
+
+        assert_eq!(
+            errors(&one_eval(
+                "stages = [\"human\", \"cd\"]\nkind = \"human-check\"\nsetting = \"a\""
+            )),
+            vec!["eval `e`: a human-check eval runs in the human stage only"]
+        );
+        assert!(
+            errors(&one_eval(
+                "stages = [\"human\"]\nkind = \"human-check\"\nsetting = \"Not An Id\""
+            ))[0]
+                .contains("kebab-case")
+        );
+        assert!(
+            errors(&one_eval("stages = [\"human\"]\nkind = \"human-check\""))[0]
+                .contains("setting"),
         );
     }
 

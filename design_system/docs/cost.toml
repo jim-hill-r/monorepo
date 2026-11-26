@@ -1,0 +1,10 @@
+# design_system: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Theme tokens, CSS and a Dioxus picker, with a static preview site on Cloudflare Pages. $0 a month."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the preview site (Pages project `jimhillr-design-system`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+[service.usage]
+pages_projects = 1

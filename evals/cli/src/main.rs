@@ -1,9 +1,11 @@
 //! The `evals` command. See `evals/README.md`.
 
 mod check;
+mod human_checks;
 mod publish;
 mod reports;
 mod run;
+mod store;
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -63,6 +65,17 @@ enum Command {
         /// The JSONL file to append results to.
         #[arg(long, default_value = "evals-results.jsonl")]
         out: PathBuf,
+        /// The reports cover only part of the project (one sub-project's CI
+        /// job): evals with no matching test get no result instead of
+        /// `skip` or `error`.
+        #[arg(long)]
+        partial: bool,
+    },
+    /// Settings made by hand (standards/settings.toml) that Jim checks on a
+    /// schedule, and his answers (standards/settings-checks.jsonl).
+    HumanChecks {
+        #[command(subcommand)]
+        command: HumanChecksCommand,
     },
     /// Write the job summary for a results file: one table per project.
     Publish {
@@ -73,6 +86,84 @@ enum Command {
         /// or standard output when that isn't set.
         #[arg(long)]
         summary: Option<PathBuf>,
+    },
+    /// Add results to a checkout of the `evals-results` branch: append each
+    /// to results/<project>/<yyyy-mm>.jsonl and rewrite verdicts.json.
+    /// `standards/scripts/evals.sh store` commits and pushes it.
+    Store {
+        /// JSONL results files. Repeat for several.
+        #[arg(long, required = true)]
+        results: Vec<PathBuf>,
+        /// The checkout of the `evals-results` branch.
+        #[arg(long)]
+        dir: PathBuf,
+        /// Repo root (main), for the requirements, evals and human-check
+        /// answers. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// Print every requirement's current verdict, from the results in a
+    /// checkout of the `evals-results` branch and the requirements, evals and
+    /// human-check answers on main. `standards/scripts/evals.sh verdicts`
+    /// fetches the branch for you.
+    Verdicts {
+        /// The checkout of the `evals-results` branch.
+        #[arg(long)]
+        dir: PathBuf,
+        /// Only this top-level project, such as `cookbook`.
+        #[arg(long)]
+        project: Option<String>,
+        /// Print verdicts.json instead of text.
+        #[arg(long)]
+        json: bool,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+}
+
+#[derive(Subcommand)]
+enum HumanChecksCommand {
+    /// List each check that is due: never checked, last answered longer
+    /// ago than its `every`, or last answered "not ok". With --write, also
+    /// write its human task, issues/human/settings-check-<id>.md.
+    Due {
+        /// Write a task file for each due check that has none yet.
+        #[arg(long)]
+        write: bool,
+        /// With --write, write at most this many new task files.
+        #[arg(long, default_value_t = 5)]
+        limit: usize,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// Record Jim's answer to a check, appended to
+    /// standards/settings-checks.jsonl, and delete its human task file.
+    Answer {
+        /// The setting's id in standards/settings.toml.
+        setting: String,
+        /// Jim said it is as expected.
+        #[arg(long, conflicts_with = "not_ok", required_unless_present = "not_ok")]
+        ok: bool,
+        /// Jim said it is wrong: his words on what is wrong.
+        #[arg(long, value_name = "WHAT_IS_WRONG")]
+        not_ok: Option<String>,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// When Jim answered (RFC 3339). Defaults to now.
+        #[arg(long)]
+        at: Option<chrono::DateTime<chrono::Utc>>,
     },
 }
 
@@ -131,6 +222,7 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             playwright_report,
             commit,
             out,
+            partial,
         } => {
             let root = resolve_root(root)?;
             let evals_path = root.join(&project).join(check::EVALS);
@@ -176,6 +268,7 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 run: run_id,
                 evidence,
                 at: chrono::Utc::now(),
+                partial,
             };
             let (results, notes) = run::collect(&file, &reports, &ctx);
             for note in notes {
@@ -193,6 +286,57 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             );
             Ok(ExitCode::SUCCESS)
         }
+        Command::HumanChecks { command } => match command {
+            HumanChecksCommand::Due {
+                write,
+                limit,
+                root,
+                now,
+            } => {
+                let root = resolve_root(root)?;
+                let lines = human_checks::due(
+                    &root,
+                    now.unwrap_or_else(chrono::Utc::now),
+                    write.then_some(limit),
+                )?;
+                if lines.is_empty() {
+                    println!("No human checks are due.");
+                } else {
+                    print!("{lines}");
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+            HumanChecksCommand::Answer {
+                setting,
+                ok,
+                not_ok,
+                root,
+                at,
+            } => {
+                let root = resolve_root(root)?;
+                let (status, note) = match not_ok {
+                    Some(words) if !ok => (ResultStatus::Fail, Some(words)),
+                    _ => (ResultStatus::Pass, Some("ok".to_string())),
+                };
+                let check = human_checks::answer(
+                    &root,
+                    &setting,
+                    status,
+                    note,
+                    at.unwrap_or_else(chrono::Utc::now),
+                )?;
+                let path = root.join(check::SETTING_CHECKS);
+                append(&path, &format!("{}\n", serde_json::to_string(&check)?))?;
+                println!("evals: recorded {setting} as {}", status_word(status));
+                if human_checks::close_task(&root, &setting)? {
+                    println!(
+                        "evals: deleted its task, {}/settings-check-{setting}.md",
+                        human_checks::HUMAN_ISSUES
+                    );
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+        },
         Command::Publish { results, summary } => {
             let text = fs::read_to_string(&results)
                 .with_context(|| format!("reading {}", results.display()))?;
@@ -208,6 +352,63 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             }
             Ok(ExitCode::SUCCESS)
         }
+        Command::Store {
+            results,
+            dir,
+            root,
+            now,
+        } => {
+            let root = resolve_root(root)?;
+            let mut new = Vec::new();
+            for path in &results {
+                let text = fs::read_to_string(path)
+                    .with_context(|| format!("reading {}", path.display()))?;
+                new.extend(publish::parse_results(&text)?);
+            }
+            let files = store::append_results(&dir, &new)?;
+            for file in &files {
+                println!("evals store: appended to {file}");
+            }
+            let all = store::read_results(&dir)?;
+            let verdicts = store::compute(&root, &all, None, now.unwrap_or_else(chrono::Utc::now))?;
+            store::write_verdicts(&dir, &verdicts)?;
+            println!(
+                "evals store: {} result(s) added, {} written",
+                new.len(),
+                store::VERDICTS_FILE
+            );
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Verdicts {
+            dir,
+            project,
+            json,
+            root,
+            now,
+        } => {
+            let root = resolve_root(root)?;
+            let all = store::read_results(&dir)?;
+            let verdicts = store::compute(
+                &root,
+                &all,
+                project.as_deref(),
+                now.unwrap_or_else(chrono::Utc::now),
+            )?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&verdicts)?);
+            } else {
+                print!("{}", store::render(&verdicts));
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+    }
+}
+
+fn status_word(status: ResultStatus) -> &'static str {
+    if status == ResultStatus::Pass {
+        "ok"
+    } else {
+        "not ok"
     }
 }
 

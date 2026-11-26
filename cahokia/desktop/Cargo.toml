@@ -14,3 +14,6 @@ auth_sdk = { workspace = true }
 [features]
 default = ["desktop"]
 desktop = ["dioxus/desktop"]
+
+[dev-dependencies]
+dioxus-ssr = "0.7.3"

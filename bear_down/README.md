@@ -38,3 +38,14 @@ the remaining work to build v1 is listed in [issues/](issues/).
 | `core/` | `bear_down_core` | Data parsing, Elo, standings, simulation and rooting analysis. No I/O. |
 | `cli/` | `bear_down_cli` (binary `bear_down`) | Downloads the data, runs the simulation, writes `rooting.json`. |
 | `web/` | `bear_down_web` | The Dioxus page that renders `rooting.json`. |
+| `design/` | (not a crate) | The "Chicago Bears" theme for the [design system](../design_system/README.md): `theme.toml` is the source, `theme.css` is generated from it. |
+
+## Theme
+
+The web page uses the shared design system. Its own "Chicago Bears" theme in
+[design/theme.toml](design/theme.toml) extends the standard colorful theme
+with Bears navy and orange, in light, dark and accessible mode, and the
+page's appearance picker also offers the five standard themes. After
+changing `theme.toml`, run `mise run render` in `design_system` to
+regenerate `theme.css`; `design_system`'s CI fails until you do, and also
+fails if any colour pair misses its WCAG contrast minimum.

@@ -1,0 +1,10 @@
+# Happy path: look up a property and score it against preferences.
+bin.name = "homer"
+args = [
+  "--address", "123 Main St, Seattle, WA 98101",
+  "--api-key", "test-key", "--quota-file", "quota.json",
+  "--min-bedrooms", "3",
+  "--min-sqft", "2000",
+  "--max-price", "800000",
+]
+fs.sandbox = true
