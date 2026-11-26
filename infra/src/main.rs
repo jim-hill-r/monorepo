@@ -4,7 +4,8 @@
 //! `infra synth --check` fails when the committed files differ from a fresh
 //! synth. OpenTofu plans and applies those files; this program never calls a
 //! vendor API. `infra guard <plan.json>` checks a saved plan's JSON against
-//! the plan guards (IAC-001 to IAC-004) before it may be applied.
+//! the plan guards (IAC-001 to IAC-005) before it may be applied, and
+//! reports whether it changes a credential (decision 0010).
 
 mod constructs;
 mod guard;
@@ -43,6 +44,11 @@ enum Command {
         /// The free-tier budgets.
         #[arg(long, default_value = concat!(env!("CARGO_MANIFEST_DIR"), "/../standards/radar/limits.toml"))]
         limits: PathBuf,
+        /// Write the plan's credential changes here as JSON,
+        /// `{"credential_change": bool, "changes": [...]}`, so the workflow
+        /// applies it in `infra-credentials` when true (decision 0010).
+        #[arg(long)]
+        report: Option<PathBuf>,
     },
 }
 
@@ -66,7 +72,11 @@ fn main() -> anyhow::Result<()> {
             }
             Ok(())
         }
-        Command::Guard { plan, limits } => {
+        Command::Guard {
+            plan,
+            limits,
+            report,
+        } => {
             let text = std::fs::read_to_string(&plan)
                 .with_context(|| format!("reading {}", plan.display()))?;
             let json: serde_json::Value = serde_json::from_str(&text)
@@ -82,7 +92,32 @@ fn main() -> anyhow::Result<()> {
                     plan.display()
                 );
             }
-            println!("guard: ok ({})", plan.display());
+            let changes = guard::credential_changes(&json);
+            for change in &changes {
+                println!(
+                    "credential change: {} ({}): {}",
+                    change.address,
+                    change.actions.join(", "),
+                    change.attributes.join(", ")
+                );
+            }
+            if let Some(report) = report {
+                let body = serde_json::json!({
+                    "credential_change": !changes.is_empty(),
+                    "changes": changes,
+                });
+                std::fs::write(&report, serde_json::to_string_pretty(&body)? + "\n")
+                    .with_context(|| format!("writing {}", report.display()))?;
+            }
+            println!(
+                "guard: ok ({}){}",
+                plan.display(),
+                if changes.is_empty() {
+                    ""
+                } else {
+                    "; credential changes need Jim's second approval in infra-credentials"
+                }
+            );
             Ok(())
         }
     }
