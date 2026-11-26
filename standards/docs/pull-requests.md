@@ -97,6 +97,8 @@ A PR is safe only if all of these hold:
   checked bump by bump, because a group can hide a major bump. A bump in a
   workflow's `uses:` line counts as trivially safe under the rule above.
 - It doesn't bump a pinned dependency listed in `AGENTS.md`.
+- It isn't labelled `credential-change`. Those PRs change what a credential
+  can do and need Jim's own approval, whoever opened them (decision 0010).
 
 ### Dependabot PRs
 

@@ -1,9 +1,11 @@
 pub mod layout;
 pub mod sample;
 pub mod tree_layout;
+pub mod viewport;
 
 pub use layout::{GenerationLayout, Placement};
 pub use tree_layout::{Edge, EdgeKind, Node, Point, Spacing, TreeLayout};
+pub use viewport::{Lineage, LineageRole, Viewport};
 
 /// Represents a person's sex in a family tree.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

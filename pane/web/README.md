@@ -63,7 +63,7 @@ first, and run in CI as part of `mise run ci`.
 npm ci
 npm test            # every test, in Chromium
 npm run smoke       # only the @smoke tests, recording video, screenshots and traces
-BASE_URL=https://pane-dbc.pages.dev npm run smoke   # against the live site instead
+BASE_URL=https://jimhillr-pane.pages.dev npm run smoke   # against the live site instead
 ```
 
 ## Prerequisites

@@ -3,6 +3,25 @@
 - All deployments MUST be kebab-case.
 - All Proof of Concept projects must begin with poc (ie: poc_project_name)
 
+## Cloudflare Pages projects
+
+Every Cloudflare Pages project MUST be named `jimhillr-<project>` (Jim,
+2026-11-26), where `<project>` is the top-level project directory in
+kebab-case: `cahokia/cloudflare` deploys `jimhillr-cahokia` and
+`controlled_chaos` deploys `jimhillr-controlled-chaos`. The name is the
+`name` in the project's `wrangler.toml`, and the site is served at
+`https://jimhillr-<project>.pages.dev`, which is the project's `DEPLOY_URL`.
+
+A `*.pages.dev` subdomain is global across all Cloudflare accounts. When
+another account already has `<name>.pages.dev`, Cloudflare quietly gives a
+new project a random suffix instead (our first `pane` project got
+`pane-dbc.pages.dev`), so the deploy URL no longer follows from the name. The
+prefix keeps our names out of everyone else's way.
+
+`free-tiers.sh check` (part of `mise run //:audit`) fails with FT-006 on a
+Pages project without the prefix, and `free-tiers.sh pages-project` refuses
+to create one.
+
 ## Requirement prefixes
 
 Each project's product requirements use IDs made of a short prefix and a

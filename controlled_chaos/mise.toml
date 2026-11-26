@@ -14,8 +14,7 @@ node = "24"
 [env]
 GAME_TITLE = "Controlled Chaos"
 # Web build for playtesting. CI shows it on the GitHub deployment and in the job summary.
-# Cloudflare added "-5v4" because controlled-chaos.pages.dev belongs to another account.
-DEPLOY_URL = "https://controlled-chaos-5v4.pages.dev"
+DEPLOY_URL = "https://jimhillr-controlled-chaos.pages.dev"
 # GitHub Release that nightly-downloads.yml publishes the macOS and Android builds to.
 RELEASE_TAG = "controlled_chaos-nightly"
 
