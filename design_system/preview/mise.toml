@@ -11,7 +11,7 @@ node = "24"
 
 [env]
 # Production URL. CI shows it on the GitHub deployment and in the job summary.
-DEPLOY_URL = "https://design-system.pages.dev"
+DEPLOY_URL = "https://jimhillr-design-system.pages.dev"
 
 [task_config]
 includes = ["../../standards/tasks/cloudflare-pages.toml"]

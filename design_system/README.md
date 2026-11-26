@@ -16,7 +16,7 @@ The latest contrast results are in [docs/contrast.md](docs/contrast.md).
 Phase 1 (the source and the check) is done: the token files, the model and
 CLI, the generated CSS, JSON and Rust outputs, custom app themes, the
 contrast check, the Dioxus picker with self-hosted fonts, and the preview
-site at <https://design-system.pages.dev>. Next, apps adopt it, pane and
+site at <https://jimhillr-design-system.pages.dev>. Next, apps adopt it, pane and
 bear_down first.
 
 ## Using it

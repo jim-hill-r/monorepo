@@ -1,6 +1,6 @@
 # Cloudflare Pages configuration for the design system preview site.
 
-name = "design-system"
+name = "jimhillr-design-system"
 compatibility_date = "2024-12-20"
 # `mise run release` here writes the site to dist/.
 pages_build_output_dir = "dist"

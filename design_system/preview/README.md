@@ -11,5 +11,6 @@ settings.
 - Build and serve it on <http://localhost:8000>: `mise run dev`
 - Deploy (CI does this on pushes to `main`): `mise run deploy`
 
-It is a Cloudflare Pages project named `design-system` on the free plan,
-created by `standards/scripts/free-tiers.sh` on the first deploy.
+It is the Cloudflare Pages project `jimhillr-design-system` (Pages projects
+are named `jimhillr-<project>`, see `standards/docs/naming.md`) on the free
+plan, created by `standards/scripts/free-tiers.sh` on the first deploy.
