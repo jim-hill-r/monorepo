@@ -1,6 +1,6 @@
 # 0001. Static site, simulated at build time, rebuilt weekly
 
-- Status: Accepted
+- Status: Accepted; hosting and schedule superseded by [0009](0009-cloudflare-pages-nightly-cd.md)
 - Date: 2026-11-25
 
 ## Context

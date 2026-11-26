@@ -1,0 +1,25 @@
+# bear_down/cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+# affected-by: ../web ../cli ../core
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+node = "24"
+"npm:wrangler" = "4"
+
+[env]
+# Production URL. CI shows it on the GitHub deployment and in the job summary.
+DEPLOY_URL = "https://jimhillr-bear-down.pages.dev"
+
+[task_config]
+includes = ["../../standards/tasks/cloudflare-pages.toml"]
+
+# Simulate the season (the CLI downloads nflverse games.csv itself), then
+# bundle the web app, which serves the fresh rooting.json from public/.
+[tasks.release]
+description = "Run the simulation and build the web app this project deploys"
+dir = "{{config_root}}/.."
+run = [
+  "cargo run --release -p bear_down_cli -- --out web/public/rooting.json",
+  "cd web && mise run release",
+]

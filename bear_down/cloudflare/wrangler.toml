@@ -1,0 +1,6 @@
+# Cloudflare Pages configuration for the bear_down deployment
+
+name = "jimhillr-bear-down"
+compatibility_date = "2026-11-01"
+# `mise run release` in ../web runs dx bundle --out-dir dist, which puts the site in dist/public.
+pages_build_output_dir = "../web/dist/public"
