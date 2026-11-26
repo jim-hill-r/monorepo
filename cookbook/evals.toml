@@ -1,0 +1,106 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+
+prefix = "COOK"
+
+# COOK-001: There is a recipe for every day of the year
+
+[[eval]]
+id = "day-files-exist"
+requirement = "COOK-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_all_365_day_files_exist"
+
+[[eval]]
+id = "today-picks-a-recipe"
+requirement = "COOK-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_recipe_day_for_date"
+description = "Every date maps to a recipe day, including leap years."
+
+[[eval]]
+id = "recipe-pages"
+requirement = "COOK-001"
+stages = ["ci"]
+kind = "playwright"
+
+[[eval]]
+id = "recipe-page-live"
+requirement = "COOK-001"
+stages = ["cd"]
+kind = "http"
+path = "/recipe/1"
+
+# COOK-002: Every week has a meal plan with a shopping list
+
+[[eval]]
+id = "week-plans-have-seven-recipes"
+requirement = "COOK-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_every_week_plan"
+
+[[eval]]
+id = "shopping-list-built"
+requirement = "COOK-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_get_week_shopping_list"
+
+[[eval]]
+id = "plan-pages"
+requirement = "COOK-002"
+stages = ["ci"]
+kind = "playwright"
+
+[[eval]]
+id = "plan-page-live"
+requirement = "COOK-002"
+stages = ["cd"]
+kind = "http"
+path = "/plan/1"
+
+# COOK-003: The shopping list adds up
+# No eval yet: the existing shopping list tests check sorting and
+# de-duplication only. The ISSUES.md TODO that fixes the sums adds one.
+
+# COOK-004: The cookbook is easy to use on a phone
+
+[[eval]]
+id = "mobile-sidebar"
+requirement = "COOK-004"
+stages = ["ci"]
+kind = "playwright"
+
+# COOK-005: Every page is accessible
+
+[[eval]]
+id = "axe-key-pages"
+requirement = "COOK-005"
+stages = ["ci", "cd"]
+kind = "playwright"
+
+# COOK-006: It is easy to move between today, recipes and plans
+
+[[eval]]
+id = "header-and-home-links"
+requirement = "COOK-006"
+stages = ["ci"]
+kind = "playwright"
+
+# COOK-007: The recipes are real and varied
+
+[[eval]]
+id = "recipes-read-as-real"
+requirement = "COOK-007"
+stages = ["judge"]
+kind = "judge"
+rubric = """
+Open ten random days. Pass if each is a distinct, sensible dish whose
+ingredients and steps match its title and could be cooked as written, and
+the ten span several meal types and cuisines. Fail on repeated titles,
+template phrasing, or steps that don't use the listed ingredients."""
+
+# COOK-008 and COOK-009 have no evals until the features exist.

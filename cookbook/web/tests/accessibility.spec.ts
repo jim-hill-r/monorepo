@@ -14,7 +14,7 @@ import AxeBuilder from '@axe-core/playwright';
  *   npm test
  */
 
-test.describe('Accessibility', () => {
+test.describe('Accessibility', { tag: '@req:COOK-005' }, () => {
   test('home page should have no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

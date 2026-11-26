@@ -45,7 +45,7 @@ test.describe('Cookbook Web Application', () => {
   });
 });
 
-test.describe('Recipe Routes', () => {
+test.describe('Recipe Routes', { tag: '@req:COOK-001' }, () => {
   test('should load recipe for day 1', async ({ page }) => {
     await page.goto('/recipe/1');
     await page.waitForLoadState('networkidle');
@@ -131,7 +131,7 @@ test.describe('Recipe Routes', () => {
   });
 });
 
-test.describe('Plan Routes', () => {
+test.describe('Plan Routes', { tag: '@req:COOK-002' }, () => {
   test('should load plan for week 1', async ({ page }) => {
     await page.goto('/plan/1');
     await page.waitForLoadState('networkidle');
@@ -223,7 +223,7 @@ test.describe('404 Page', () => {
 });
 
 test.describe('Input Validation', () => {
-  test('should show error for day 0', async ({ page }) => {
+  test('should show error for day 0', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/0');
     await page.waitForLoadState('networkidle');
     
@@ -234,7 +234,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content p')).toContainText('between 1 and 365');
   });
 
-  test('should show error for day 366', async ({ page }) => {
+  test('should show error for day 366', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/366');
     await page.waitForLoadState('networkidle');
     
@@ -245,7 +245,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content p')).toContainText('between 1 and 365');
   });
 
-  test('should show error for day 999', async ({ page }) => {
+  test('should show error for day 999', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/999');
     await page.waitForLoadState('networkidle');
     
@@ -255,7 +255,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content p')).toContainText('Day 999 is not valid');
   });
 
-  test('should show error for week 0', async ({ page }) => {
+  test('should show error for week 0', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/0');
     await page.waitForLoadState('networkidle');
     
@@ -266,7 +266,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content p')).toContainText('between 1 and 53');
   });
 
-  test('should show error for week 54', async ({ page }) => {
+  test('should show error for week 54', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/54');
     await page.waitForLoadState('networkidle');
     
@@ -277,7 +277,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content p')).toContainText('between 1 and 53');
   });
 
-  test('should show error for week 100', async ({ page }) => {
+  test('should show error for week 100', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/100');
     await page.waitForLoadState('networkidle');
     
@@ -287,7 +287,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content p')).toContainText('Week 100 is not valid');
   });
 
-  test('should have back to home link on invalid day page', async ({ page }) => {
+  test('should have back to home link on invalid day page', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/500');
     await page.waitForLoadState('networkidle');
     
@@ -302,7 +302,7 @@ test.describe('Input Validation', () => {
     await expect(page.locator('#content h1')).toHaveText("The Engineer's 365 Cookbook");
   });
 
-  test('should have back to home link on invalid week page', async ({ page }) => {
+  test('should have back to home link on invalid week page', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/75');
     await page.waitForLoadState('networkidle');
     
