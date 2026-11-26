@@ -43,7 +43,7 @@ run = [
 
 [dev]
 description = "Serve with hot reload"
-run = "dx serve --platform web"
+run = "dx serve --platform web --port 8080"
 
 [release]
 description = "Release bundle into dist/"

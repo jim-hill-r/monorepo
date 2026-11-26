@@ -69,14 +69,11 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    // IMPORTANT: Use 'cast run' instead of 'dx serve --port 8080'
-    // cast run is the correct command as it handles framework detection
-    // and ensures consistency with the development workflow.
-    // The CI workflow ensures cast is available in PATH before running tests.
-    command: 'cast run',
+    // `mise run dev` is the project's standard dev task (dx serve on port 8080).
+    command: 'mise run dev',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 600 * 1000, // first dx build in CI is slow
     cwd: __dirname,
     
     stdout: 'pipe',
