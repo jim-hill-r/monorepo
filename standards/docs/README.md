@@ -8,6 +8,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Documentation](./documentation.md) - Documentation standards
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Naming](./naming.md) - Naming conventions
+- [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Rust](./rust.md) - Rust coding standards
 - [Testing](./testing.md) - Testing standards and requirements
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
