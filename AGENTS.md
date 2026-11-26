@@ -52,6 +52,8 @@ repo, rather than in any one agent tool's settings.
   - **Approved exceptions:**
     - PostHog, for real-user session replay (decision 0001).
     - Auth0, used by `auth_sdk` and `cahokia` for sign-in.
+    - Neon, on its free plan, as the hosted database once a service needs
+      one (decision 0004). Files and committed SQLite come first.
     - RapidAPI (Zillow data), used by `homer`, **only on its free plan**. It
       must never cost money: don't add a paid plan, scheduled runs or anything
       else that could push usage past the free quota.
@@ -61,6 +63,17 @@ repo, rather than in any one agent tool's settings.
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in
   [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
+- **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
+  as possible. Dev work, results and data (eval results, reports, fixtures,
+  scraped data) are files committed to the monorepo: Markdown, JSON, JSON
+  Lines, CSV or TOML, next to the project that owns them. When a project
+  really needs a database in the repo (queries, joins or indexes over the
+  data), use SQLite committed to the repo: prefer a `.sql` text dump that
+  builds the database (it diffs and reviews like code), and commit the
+  `.sqlite` file itself only when it is small. Rust code reads it with
+  `rusqlite` and its `bundled` feature. A hosted database is a last resort,
+  for data a deployed service must write at runtime; which one, and when, is
+  decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`).
