@@ -3,6 +3,7 @@ mod components;
 mod pages;
 mod patterns;
 mod state;
+mod tracing_check;
 
 use dioxus::prelude::*;
 use pages::{congratulations::Congratulations, home::Home, letter::Letter, word::Word};
