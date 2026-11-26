@@ -85,112 +85,116 @@ test.describe('Family tree page @req:CAHO-001', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
-  test('drags to pan the tree', async ({ page }) => {
-    await openFamilyTree(page);
+  test.describe('exploring around one relative @req:CAHO-007', () => {
+    test('drags to pan the tree', async ({ page }) => {
+      await openFamilyTree(page);
 
-    const content = page.locator('.family-tree-content');
-    const before = await content.getAttribute('transform');
-    const box = await treeBox(page);
-    // Start the drag on the background, below the bottom row of people.
-    const x = box.x + 20;
-    const y = box.y + box.height - 10;
-    await page.mouse.move(x, y);
-    await page.mouse.down();
-    await page.mouse.move(x + 60, y - 30, { steps: 5 });
-    await page.mouse.up();
-
-    const after = await content.getAttribute('transform');
-    expect(after).not.toEqual(before);
-    const [bx, by] = translateOf(before);
-    const [ax, ay] = translateOf(after);
-    expect(ax - bx).toBeCloseTo(60, 0);
-    expect(ay - by).toBeCloseTo(-30, 0);
-  });
-
-  test('zooms with the buttons, the wheel and Fit', async ({ page, isMobile }) => {
-    await openFamilyTree(page);
-
-    const level = page.locator('.family-tree-zoom-level');
-    const start = await level.textContent();
-    await page.getByRole('button', { name: 'Zoom in' }).click();
-    await expect(level).not.toHaveText(start ?? '');
-    const zoomed = parseInt((await level.textContent()) ?? '0', 10);
-    expect(zoomed).toBeGreaterThan(parseInt(start ?? '0', 10));
-
-    // Phones have no mouse wheel.
-    if (!isMobile) {
+      const content = page.locator('.family-tree-content');
+      const before = await content.getAttribute('transform');
       const box = await treeBox(page);
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      await page.mouse.wheel(0, 400);
+      // Start the drag on the background, below the bottom row of people.
+      const x = box.x + 20;
+      const y = box.y + box.height - 10;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + 60, y - 30, { steps: 5 });
+      await page.mouse.up();
+
+      const after = await content.getAttribute('transform');
+      expect(after).not.toEqual(before);
+      const [bx, by] = translateOf(before);
+      const [ax, ay] = translateOf(after);
+      expect(ax - bx).toBeCloseTo(60, 0);
+      expect(ay - by).toBeCloseTo(-30, 0);
+    });
+
+    test('zooms with the buttons, the wheel and Fit', async ({ page, isMobile }) => {
+      await openFamilyTree(page);
+
+      const level = page.locator('.family-tree-zoom-level');
+      const start = await level.textContent();
+      await page.getByRole('button', { name: 'Zoom in' }).click();
+      await expect(level).not.toHaveText(start ?? '');
+      const zoomed = parseInt((await level.textContent()) ?? '0', 10);
+      expect(zoomed).toBeGreaterThan(parseInt(start ?? '0', 10));
+
+      // Phones have no mouse wheel.
+      if (!isMobile) {
+        const box = await treeBox(page);
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.wheel(0, 400);
+        await expect
+          .poll(async () => parseInt((await level.textContent()) ?? '0', 10))
+          .toBeLessThan(zoomed);
+      }
+
+      await page.getByRole('button', { name: 'Fit' }).click();
+      await expect(level).toHaveText(start ?? '');
+    });
+
+    test('pinches to zoom on a touch screen', async ({ page, browserName, isMobile }) => {
+      // Touch input is sent through the Chrome DevTools Protocol.
+      test.skip(browserName !== 'chromium' || !isMobile, 'needs Chromium touch emulation');
+      await openFamilyTree(page);
+
+      const level = page.locator('.family-tree-zoom-level');
+      const start = parseInt((await level.textContent()) ?? '0', 10);
+      const box = await treeBox(page);
+      const cdp = await page.context().newCDPSession(page);
+      const touch = (
+        type: 'touchStart' | 'touchMove' | 'touchEnd',
+        touchPoints: { x: number; y: number; id: number }[],
+      ) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+      const cx = box.x + box.width / 2;
+      const cy = box.y + box.height / 2;
+      await touch('touchStart', [{ x: cx - 20, y: cy, id: 1 }, { x: cx + 20, y: cy, id: 2 }]);
+      for (let i = 1; i <= 5; i++) {
+        await touch('touchMove', [
+          { x: cx - 20 - 4 * i, y: cy, id: 1 },
+          { x: cx + 20 + 4 * i, y: cy, id: 2 },
+        ]);
+      }
+      await touch('touchEnd', []);
+
+      // The fingers spread from 40 to 80 pixels apart, so the zoom doubles.
       await expect
         .poll(async () => parseInt((await level.textContent()) ?? '0', 10))
-        .toBeLessThan(zoomed);
-    }
+        .toBeGreaterThanOrEqual(start * 2 - 1);
+    });
 
-    await page.getByRole('button', { name: 'Fit' }).click();
-    await expect(level).toHaveText(start ?? '');
-  });
+    test('clicking a person highlights their ancestors and descendants', async ({ page }) => {
+      await openFamilyTree(page);
 
-  test('pinches to zoom on a touch screen', async ({ page, browserName, isMobile }) => {
-    // Touch input is sent through the Chrome DevTools Protocol.
-    test.skip(browserName !== 'chromium' || !isMobile, 'needs Chromium touch emulation');
-    await openFamilyTree(page);
+      await page.locator('[data-person-id="henry"]').click();
+      await expect(page.locator('[data-person-id="henry"]')).toHaveClass(/\bfocus\b/);
+      for (const id of ['thomas', 'clara']) {
+        await expect(page.locator(`[data-person-id="${id}"]`)).toHaveClass(/\bancestor\b/);
+      }
+      for (const id of ['daniel', 'margaret']) {
+        await expect(page.locator(`[data-person-id="${id}"]`)).toHaveClass(/\bdescendant\b/);
+      }
+      await expect(page.locator('[data-person-id="ruth"]')).toHaveClass(/\bdimmed\b/);
+      await expect(page.locator('.family-tree-edge.on-lineage')).toHaveCount(4);
+      await expect(page.locator('.family-tree-status')).toHaveText(
+        "Highlighting Henry Reed's 2 ancestors and 2 descendants.",
+      );
 
-    const level = page.locator('.family-tree-zoom-level');
-    const start = parseInt((await level.textContent()) ?? '0', 10);
-    const box = await treeBox(page);
-    const cdp = await page.context().newCDPSession(page);
-    const touch = (type: string, touchPoints: { x: number; y: number; id: number }[]) =>
-      cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
-    const cx = box.x + box.width / 2;
-    const cy = box.y + box.height / 2;
-    await touch('touchStart', [{ x: cx - 20, y: cy, id: 1 }, { x: cx + 20, y: cy, id: 2 }]);
-    for (let i = 1; i <= 5; i++) {
-      await touch('touchMove', [
-        { x: cx - 20 - 4 * i, y: cy, id: 1 },
-        { x: cx + 20 + 4 * i, y: cy, id: 2 },
-      ]);
-    }
-    await touch('touchEnd', []);
+      // Clicking them again clears the focus.
+      await page.locator('[data-person-id="henry"]').click();
+      await expect(page.locator('.family-tree-person.dimmed')).toHaveCount(0);
+    });
 
-    // The fingers spread from 40 to 80 pixels apart, so the zoom doubles.
-    await expect
-      .poll(async () => parseInt((await level.textContent()) ?? '0', 10))
-      .toBeGreaterThanOrEqual(start * 2 - 1);
-  });
+    test('picks a focus person from the list and clears it with Escape', async ({ page }) => {
+      await openFamilyTree(page);
 
-  test('clicking a person highlights their ancestors and descendants', async ({ page }) => {
-    await openFamilyTree(page);
+      await page.locator('select.family-tree-focus').selectOption('eleanor');
+      await expect(page.locator('[data-person-id="eleanor"]')).toHaveClass(/\bfocus\b/);
+      await expect(page.locator('.family-tree-person.ancestor')).toHaveCount(4);
 
-    await page.locator('[data-person-id="henry"]').click();
-    await expect(page.locator('[data-person-id="henry"]')).toHaveClass(/\bfocus\b/);
-    for (const id of ['thomas', 'clara']) {
-      await expect(page.locator(`[data-person-id="${id}"]`)).toHaveClass(/\bancestor\b/);
-    }
-    for (const id of ['daniel', 'margaret']) {
-      await expect(page.locator(`[data-person-id="${id}"]`)).toHaveClass(/\bdescendant\b/);
-    }
-    await expect(page.locator('[data-person-id="ruth"]')).toHaveClass(/\bdimmed\b/);
-    await expect(page.locator('.family-tree-edge.on-lineage')).toHaveCount(4);
-    await expect(page.locator('.family-tree-status')).toHaveText(
-      "Highlighting Henry Reed's 2 ancestors and 2 descendants.",
-    );
-
-    // Clicking them again clears the focus.
-    await page.locator('[data-person-id="henry"]').click();
-    await expect(page.locator('.family-tree-person.dimmed')).toHaveCount(0);
-  });
-
-  test('picks a focus person from the list and clears it with Escape', async ({ page }) => {
-    await openFamilyTree(page);
-
-    await page.locator('select.family-tree-focus').selectOption('eleanor');
-    await expect(page.locator('[data-person-id="eleanor"]')).toHaveClass(/\bfocus\b/);
-    await expect(page.locator('.family-tree-person.ancestor')).toHaveCount(4);
-
-    await page.locator('svg.family-tree').focus();
-    await page.keyboard.press('Escape');
-    await expect(page.locator('.family-tree-person.focus')).toHaveCount(0);
+      await page.locator('svg.family-tree').focus();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.family-tree-person.focus')).toHaveCount(0);
+    });
   });
 
   test('is linked from the sidebar', async ({ page }) => {
