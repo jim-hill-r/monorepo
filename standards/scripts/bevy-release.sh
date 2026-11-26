@@ -134,7 +134,16 @@ android() {
     export CARGO_APK_RELEASE_KEYSTORE_PASSWORD="${ANDROID_KEYSTORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is not set}"
     echo "bevy-release: signing with the release key"
   else
-    echo "bevy-release: no ANDROID_KEYSTORE_BASE64, so the APK is signed with a debug key (uninstall the old build before installing a new one)"
+    # cargo-apk insists on a release keystore for --release, so make a
+    # throwaway one, as Android's own debug keystore would be.
+    local ks="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/debug.keystore"
+    rm -f "$ks"
+    keytool -genkeypair -noprompt -keystore "$ks" -storepass android -keypass android \
+      -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+      -dname "CN=Android Debug,O=Android,C=US" >/dev/null
+    export CARGO_APK_RELEASE_KEYSTORE="$ks"
+    export CARGO_APK_RELEASE_KEYSTORE_PASSWORD=android
+    echo "bevy-release: no ANDROID_KEYSTORE_BASE64, so the APK is signed with a new debug key (uninstall the old build before installing a new one)"
   fi
   cargo apk build --release --lib
   local apk
