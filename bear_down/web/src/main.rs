@@ -172,7 +172,7 @@ fn GameRow(game: Game, goal: Goal) -> Element {
                             span { class: "impact secondary", "{p}" }
                         }
                     },
-                    None => rsx! { span { class: "root", "Doesn't matter" } },
+                    None => rsx! { span { class: "root", "{s.no_pick_label()}" } },
                 }
             }
             if !s.why.is_empty() {
