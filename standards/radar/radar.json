@@ -991,7 +991,9 @@
     "isNew": "TRUE",
     "kind": "technology",
     "description": "Accepted in decision 0007 (Jim, 2026-11-26) as the IaC engine: plans and applies the Terraform JSON the infra crate synthesizes, with built-in state encryption and no account. Moves to Trial when its phase 1 merges.",
-    "exemplars": [],
+    "exemplars": [
+      "infra"
+    ],
     "sources": [
       "standards/docs/decisions/0007-infrastructure-as-code.md"
     ],
@@ -1005,7 +1007,9 @@
     "isNew": "TRUE",
     "kind": "technology",
     "description": "Accepted in decision 0007 (Jim, 2026-11-26): Rust constructs write committed Terraform JSON (*.tf.json), PR CI plans it, and main applies the saved plan, so generation and apply are decoupled. Dashboard settings move into code; drift is checked weekly.",
-    "exemplars": [],
+    "exemplars": [
+      "infra"
+    ],
     "sources": [
       "standards/docs/decisions/0007-infrastructure-as-code.md"
     ],
@@ -1074,10 +1078,13 @@
     "quadrant": "Languages & Frameworks",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs, pending a phase 1 spike on build time; hand-written structs are the fallback. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26).",
-    "exemplars": [],
+    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26).",
+    "exemplars": [
+      "infra"
+    ],
     "sources": [
-      "standards/docs/decisions/0007-infrastructure-as-code.md"
+      "standards/docs/decisions/0007-infrastructure-as-code.md",
+      "standards/docs/decisions/0007-terrars-spike.md"
     ],
     "claude": "",
     "budget": 0

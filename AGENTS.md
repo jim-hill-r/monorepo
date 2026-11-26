@@ -61,6 +61,9 @@ repo, rather than in any one agent tool's settings.
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
   - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
     0.8, which `perseus` 0.4.2 requires.
+  - `terrars` in `infra` is pinned with `=`: its generated bindings in
+    `infra/src/tfschema/` must be regenerated with the same version, so bump
+    it only together with them (see `infra/README.md`).
 - **Vendors (Jim, 2026-11-26).** When designing a system, use as few vendors
   as possible, but cost always comes first: if a non-approved vendor is
   clearly cheaper (including free tiers), cost wins over vendor count.

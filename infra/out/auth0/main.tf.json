@@ -1,0 +1,120 @@
+{
+  "import": [
+    {
+      "id": "savzmZnyHcvewGkQX8aaInwPFonC9k2x",
+      "to": "auth0_client.cookbook"
+    },
+    {
+      "id": "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E",
+      "to": "auth0_client.cahokia"
+    }
+  ],
+  "provider": {
+    "auth0": [
+      {}
+    ]
+  },
+  "resource": {
+    "auth0_client": {
+      "cahokia": {
+        "allowed_logout_urls": [
+          "https://cahokia-web.pages.dev",
+          "https://*.cahokia-web.pages.dev",
+          "http://localhost:8080"
+        ],
+        "app_type": "spa",
+        "callbacks": [
+          "https://cahokia-web.pages.dev/",
+          "https://*.cahokia-web.pages.dev/",
+          "http://localhost:8080/"
+        ],
+        "dynamic": {
+          "addons": null,
+          "anonymous_sessions": null,
+          "b2b_integration_configuration": null,
+          "default_organization": null,
+          "express_configuration": null,
+          "fedcm_login": null,
+          "identity_assertion_authorization_grant": null,
+          "jwt_configuration": null,
+          "mobile": null,
+          "my_organization_configuration": null,
+          "native_social_login": null,
+          "oidc_logout": null,
+          "oidc_support": null,
+          "refresh_token": null,
+          "session_transfer": null,
+          "token_exchange": null,
+          "token_quota": null
+        },
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        },
+        "name": "cahokia",
+        "web_origins": [
+          "https://cahokia-web.pages.dev",
+          "https://*.cahokia-web.pages.dev",
+          "http://localhost:8080"
+        ]
+      },
+      "cookbook": {
+        "allowed_logout_urls": [
+          "https://jimhillr-cookbook.pages.dev",
+          "https://*.jimhillr-cookbook.pages.dev",
+          "http://localhost:8080"
+        ],
+        "app_type": "spa",
+        "callbacks": [
+          "https://jimhillr-cookbook.pages.dev/",
+          "https://*.jimhillr-cookbook.pages.dev/",
+          "http://localhost:8080/"
+        ],
+        "dynamic": {
+          "addons": null,
+          "anonymous_sessions": null,
+          "b2b_integration_configuration": null,
+          "default_organization": null,
+          "express_configuration": null,
+          "fedcm_login": null,
+          "identity_assertion_authorization_grant": null,
+          "jwt_configuration": null,
+          "mobile": null,
+          "my_organization_configuration": null,
+          "native_social_login": null,
+          "oidc_logout": null,
+          "oidc_support": null,
+          "refresh_token": null,
+          "session_transfer": null,
+          "token_exchange": null,
+          "token_quota": null
+        },
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        },
+        "name": "cookbook",
+        "web_origins": [
+          "https://jimhillr-cookbook.pages.dev",
+          "https://*.jimhillr-cookbook.pages.dev",
+          "http://localhost:8080"
+        ]
+      }
+    }
+  },
+  "terraform": {
+    "backend": {
+      "local": {
+        "path": "../../state/auth0.tfstate"
+      }
+    },
+    "required_providers": {
+      "auth0": {
+        "source": "auth0/auth0",
+        "version": "1.63.0"
+      }
+    }
+  }
+}

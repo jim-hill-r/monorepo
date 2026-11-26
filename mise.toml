@@ -33,6 +33,7 @@ config_roots = [
   "design_system/preview",
   "evals",
   "homer",
+  "infra",
   "luggage",
   "monorepo",
   "my_lang",
