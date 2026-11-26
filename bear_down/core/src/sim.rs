@@ -7,10 +7,11 @@
 //! over. Simulated games never tie, and ratings don't move inside a simulated
 //! season. Playoff games that were already played keep their real winner.
 //!
-//! For every regular-season game left in the current week, the simulations
-//! are split by who won it, which gives the swing on the focus team's playoff
-//! and Super Bowl odds and on the NFC North divisional-round goal without a
-//! separate run per game. See `docs/decisions/0003-own-monte-carlo-simulator.md`
+//! For every regular-season game left in the current week, each simulated
+//! season is played twice from the same seed, once with each result (common
+//! random numbers). That gives the swing on the focus team's playoff and
+//! Super Bowl odds and on the NFC North divisional-round goal with little
+//! noise, so even a small swing from a far-off game shows. See `docs/decisions/0003-own-monte-carlo-simulator.md`
 //! and `docs/decisions/0007-nfc-north-divisional-mode.md`.
 
 use std::collections::HashMap;
@@ -67,12 +68,12 @@ pub struct TeamOdds {
 /// standard error of their difference.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Swing {
-    /// The goal's probability in the simulations the home team won.
+    /// The goal's probability when the home team wins.
     pub if_home_wins: f64,
-    /// The goal's probability in the simulations the away team won.
+    /// The goal's probability when the away team wins.
     pub if_away_wins: f64,
-    /// The standard error of [`Swing::swing`]. Infinite when one team never
-    /// won the game in any simulation.
+    /// The standard error of [`Swing::swing`]. Infinite with no
+    /// simulations.
     pub std_error: f64,
 }
 
@@ -89,28 +90,28 @@ impl Swing {
         self.swing().abs() > 2.0 * self.std_error
     }
 
-    /// Builds a swing from counts: how often the goal happened among the
-    /// `home_runs` simulations the home team won, and among the `away_runs`
-    /// it lost.
-    fn from_counts(home_hits: u32, home_runs: u32, away_hits: u32, away_runs: u32) -> Self {
-        let share = |hits: u32, runs: u32| {
-            if runs == 0 {
-                0.0
-            } else {
-                f64::from(hits) / f64::from(runs)
-            }
-        };
-        let variance = |p: f64, runs: u32| p * (1.0 - p) / f64::from(runs);
-        let (home, away) = (share(home_hits, home_runs), share(away_hits, away_runs));
-        let std_error = if home_runs == 0 || away_runs == 0 {
-            f64::INFINITY
-        } else {
-            (variance(home, home_runs) + variance(away, away_runs)).sqrt()
-        };
+    /// Builds a swing from `runs` paired seasons: how often the goal
+    /// happened with a home win and with an away win, and how many pairs
+    /// reached it only with a home win or only with an away win. The
+    /// standard error is that of the mean paired difference.
+    fn from_pairs(home: u32, away: u32, home_only: u32, away_only: u32, runs: u32) -> Self {
+        if runs == 0 {
+            return Swing {
+                if_home_wins: 0.0,
+                if_away_wins: 0.0,
+                std_error: f64::INFINITY,
+            };
+        }
+        let n = f64::from(runs);
+        let mean = (f64::from(home_only) - f64::from(away_only)) / n;
+        // Each pair's difference is 1, -1 or 0, so its square is 1 exactly
+        // when the two results disagree.
+        let mean_square = f64::from(home_only + away_only) / n;
+        let variance = (mean_square - mean * mean).max(0.0) / n;
         Swing {
-            if_home_wins: home,
-            if_away_wins: away,
-            std_error,
+            if_home_wins: f64::from(home) / n,
+            if_away_wins: f64::from(away) / n,
+            std_error: variance.sqrt(),
         }
     }
 }
@@ -190,13 +191,30 @@ struct Remaining {
     home_win_probability: f64,
 }
 
-/// Per-game counts for the swings, split by who won.
+/// One goal's counts over paired seasons that differ only in one game.
 #[derive(Default, Clone, Copy)]
-struct ImpactCounts {
-    runs: [u32; 2],
-    playoffs: [u32; 2],
-    champion: [u32; 2],
-    nfc_north: [u32; 2],
+struct PairedCounts {
+    /// Seasons the goal happened when the home team won the game.
+    home: u32,
+    /// Seasons the goal happened when the away team won the game.
+    away: u32,
+    /// Pairs where only the home win reached the goal.
+    home_only: u32,
+    /// Pairs where only the away win reached the goal.
+    away_only: u32,
+}
+
+impl PairedCounts {
+    fn add(&mut self, home: bool, away: bool) {
+        self.home += u32::from(home);
+        self.away += u32::from(away);
+        self.home_only += u32::from(home && !away);
+        self.away_only += u32::from(away && !home);
+    }
+
+    fn swing(self, runs: u32) -> Swing {
+        Swing::from_pairs(self.home, self.away, self.home_only, self.away_only, runs)
+    }
 }
 
 /// How far each team got in one simulated postseason.
@@ -269,16 +287,21 @@ pub fn simulate(
         .map(Team::index)
         .collect();
 
-    let mut rng = Rng::new(config.seed);
-    let mut reached_counts = [[0u32; 6]; 32];
-    let mut nfc_north_count = 0u32;
-    let mut impacts = vec![ImpactCounts::default(); tracked.len()];
-    let mut home_won = vec![false; remaining.len()];
-    for _ in 0..config.simulations {
+    // Plays one season from `seed`: the remaining regular-season games (with
+    // `forced`'s game given to the home team if `true`, the away team if
+    // `false`), then the playoffs. The same seed gives the same draws, so two
+    // seasons that differ only in the forced game share everything else.
+    let play_season = |seed: u64, forced: Option<(usize, bool)>| -> Postseason {
+        let mut rng = Rng::new(seed);
         let mut standings = base.clone();
-        for (game, won) in remaining.iter().zip(home_won.iter_mut()) {
-            *won = rng.chance(game.home_win_probability);
-            let outcome = if *won {
+        for (index, game) in remaining.iter().enumerate() {
+            let mut home_won = rng.chance(game.home_win_probability);
+            if let Some((forced_index, home_wins)) = forced
+                && forced_index == index
+            {
+                home_won = home_wins;
+            }
+            let outcome = if home_won {
                 Outcome::HomeWin
             } else {
                 Outcome::AwayWin
@@ -300,28 +323,61 @@ pub fn simulate(
                 away
             }
         };
-        let postseason = play_postseason(&seeds, &mut play);
+        play_postseason(&seeds, &mut play)
+    };
+    let goals = |postseason: &Postseason| {
+        let focus = postseason.reached[config.focus.index()];
+        let all_north = north
+            .iter()
+            .all(|&team| postseason.reached[team] >= DIVISIONAL);
+        [focus >= PLAYOFFS, focus >= CHAMPION, all_north]
+    };
+    let run_seed =
+        |run: u32| Rng::new(config.seed ^ (u64::from(run) << 32 | u64::from(run))).next_u64();
 
+    let mut reached_counts = [[0u32; 6]; 32];
+    let mut nfc_north_count = 0u32;
+    for run in 0..config.simulations {
+        let postseason = play_season(run_seed(run), None);
         for (counts, &reached) in reached_counts.iter_mut().zip(&postseason.reached) {
             for round in counts.iter_mut().take(usize::from(reached) + 1) {
                 *round += 1;
             }
         }
-        let all_north = north
-            .iter()
-            .all(|&team| postseason.reached[team] >= DIVISIONAL);
-        nfc_north_count += u32::from(all_north);
-        let focus = postseason.reached[config.focus.index()];
-        for (counts, &index) in impacts.iter_mut().zip(&tracked) {
-            let side = usize::from(!home_won[index]);
-            counts.runs[side] += 1;
-            counts.playoffs[side] += u32::from(focus >= PLAYOFFS);
-            counts.champion[side] += u32::from(focus >= CHAMPION);
-            counts.nfc_north[side] += u32::from(all_north);
-        }
+        nfc_north_count += u32::from(goals(&postseason)[2]);
     }
 
+    // Each game's swing: every season is played twice, once with each
+    // result, from the same seed (common random numbers). The difference
+    // then comes from this game alone, which makes even small swings clear.
     let runs = config.simulations;
+    let games = tracked
+        .iter()
+        .zip(&tracked_games)
+        .map(|(&index, game)| {
+            let mut pairs = [PairedCounts::default(); 3];
+            for run in 0..runs {
+                let seed = run_seed(run);
+                let home = goals(&play_season(seed, Some((index, true))));
+                let away = goals(&play_season(seed, Some((index, false))));
+                for ((counts, home), away) in pairs.iter_mut().zip(home).zip(away) {
+                    counts.add(home, away);
+                }
+            }
+            let [playoffs, champion, nfc_north] = pairs.map(|counts| counts.swing(runs));
+            GameImpact {
+                game_id: game.id.clone(),
+                gameday: game.gameday,
+                home: remaining[index].home,
+                away: remaining[index].away,
+                home_win_probability: remaining[index].home_win_probability,
+                playoffs,
+                champion,
+                nfc_north,
+            }
+        })
+        .collect();
+
     let share = |count: u32| {
         if runs == 0 {
             0.0
@@ -336,26 +392,6 @@ pub fn simulate(
         super_bowl: share(counts[usize::from(SUPER_BOWL)]),
         champion: share(counts[usize::from(CHAMPION)]),
     });
-    let games = tracked
-        .iter()
-        .zip(&tracked_games)
-        .zip(&impacts)
-        .map(|((&index, game), counts)| {
-            let swing = |hits: [u32; 2]| {
-                Swing::from_counts(hits[0], counts.runs[0], hits[1], counts.runs[1])
-            };
-            GameImpact {
-                game_id: game.id.clone(),
-                gameday: game.gameday,
-                home: remaining[index].home,
-                away: remaining[index].away,
-                home_win_probability: remaining[index].home_win_probability,
-                playoffs: swing(counts.playoffs),
-                champion: swing(counts.champion),
-                nfc_north: swing(counts.nfc_north),
-            }
-        })
-        .collect();
     Ok(Simulation {
         season: season.year,
         week: week_number,
@@ -745,23 +781,27 @@ mod tests {
     }
 
     #[test]
-    fn swing_noise_comes_from_the_counts() {
-        let even = Swing::from_counts(50, 100, 50, 100);
-        close(even.swing(), 0.0);
-        close(even.std_error, (2.0 * 0.25 / 100.0f64).sqrt());
-        assert!(!even.matters());
+    fn swing_noise_comes_from_the_pairs() {
+        // Every pair agrees: no swing and no noise.
+        let none = Swing::from_pairs(50, 50, 0, 0, 100);
+        close(none.swing(), 0.0);
+        close(none.std_error, 0.0);
+        assert!(!none.matters());
 
-        let clear = Swing::from_counts(90, 100, 10, 100);
-        close(clear.swing(), 0.8);
-        assert!(clear.matters());
+        // One pair in a hundred: a small swing, but clearly not noise once
+        // there are enough pairs.
+        let small = Swing::from_pairs(5_100, 5_000, 100, 0, 10_000);
+        close(small.swing(), 0.01);
+        assert!(small.matters());
 
-        let one_sided = Swing::from_counts(5, 10, 0, 0);
-        assert!(one_sided.std_error.is_infinite());
-        assert!(!one_sided.matters());
+        // Disagreements both ways that cancel out.
+        let cancels = Swing::from_pairs(50, 50, 10, 10, 100);
+        close(cancels.swing(), 0.0);
+        assert!(!cancels.matters());
 
-        let certain = Swing::from_counts(100, 100, 100, 100);
-        close(certain.std_error, 0.0);
-        assert!(!certain.matters());
+        let empty = Swing::from_pairs(0, 0, 0, 0, 0);
+        assert!(empty.std_error.is_infinite());
+        assert!(!empty.matters());
     }
 
     #[test]
@@ -776,9 +816,9 @@ mod tests {
             home: team("DET"),
             away: team("GB"),
             home_win_probability: 0.5,
-            playoffs: Swing::from_counts(10, 100, 90, 100),
-            champion: Swing::from_counts(90, 100, 10, 100),
-            nfc_north: Swing::from_counts(1, 100, 1, 100),
+            playoffs: Swing::from_pairs(10, 90, 0, 80, 100),
+            champion: Swing::from_pairs(90, 10, 80, 0, 100),
+            nfc_north: Swing::from_pairs(1, 1, 0, 0, 100),
         };
         assert_eq!(game.root_for(&game.playoffs), Some(team("GB")));
         assert_eq!(game.root_for(&game.champion), Some(team("DET")));
