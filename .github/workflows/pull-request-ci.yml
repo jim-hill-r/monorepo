@@ -1,6 +1,7 @@
 ---
-# Runs `mise run ci` in every project a pull request touches. See
-# mise-projects.yml and standards/docs/mise.md.
+# Runs `mise run ci` in every project a pull request changes (affected.sh
+# --changed-only: shared scripts and root config don't fan out to every
+# project). See mise-projects.yml and standards/docs/mise.md.
 name: Pull Request CI
 
 'on':
@@ -20,6 +21,7 @@ jobs:
     uses: ./.github/workflows/mise-projects.yml
     with:
       base: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+      changed_only: true
 
   # One check that always runs and passes only when every project passed, so
   # the ruleset on main can require it and GitHub auto-merge waits for green

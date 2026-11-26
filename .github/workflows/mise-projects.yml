@@ -14,6 +14,13 @@ name: mise projects
           project.
         type: string
         default: ''
+      changed_only:
+        description: >-
+          Pass --changed-only to affected.sh: a change to the root mise.toml,
+          standards/scripts/ or the CI workflows checks only the projects that
+          test or use those files, not every project. Used by pull requests.
+        type: boolean
+        default: false
       deploy:
         description: Run `mise run deploy` after `mise run ci`
         type: boolean
@@ -70,6 +77,7 @@ jobs:
         id: affected
         env:
           AFFECTED_BASE: ${{ inputs.base }}
+          AFFECTED_CHANGED_ONLY: ${{ inputs.changed_only && '1' || '' }}
           ONLY_PROJECT: ${{ inputs.project }}
         run: |
           if [ -n "$ONLY_PROJECT" ]; then

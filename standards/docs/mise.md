@@ -50,6 +50,14 @@ project sits in); and every project whose `mise.toml` has an
 The cloudflare projects use `# affected-by: ../web`, so a change to a web app
 redeploys it.
 
+A change to the root `mise.toml`, `standards/scripts/` or the mise CI
+workflows makes `push-main.yml` check every project. Pull requests (and the
+git hooks) pass `--changed-only` instead, so such a change checks only
+`standards`, `monorepo` (whose workflow tests read those files) and, for a
+script, the projects whose `mise.toml` or included task file names it
+(Jim, 2026-11-26: CI runs only for the projects a change touches). The
+nightly CI run still checks every project.
+
 ### Deploys
 
 A project that deploys sets its production URL as `DEPLOY_URL` in the
@@ -117,3 +125,4 @@ build the game for players, through `standards/scripts/bevy-release.sh`:
 | 2026-11-26 | Run CI and CD for every project every night, and deploy only the latest version of main that passed CI ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |
 | 2026-11-26 | Publish game builds for playtesting: the web build to Cloudflare Pages, and macOS and Android builds to a nightly GitHub prerelease per game (`RELEASE_TAG`). |
 | 2026-11-26 | Record each deploying project's production URL as `DEPLOY_URL` in its `mise.toml`, deploy in a `production` GitHub environment, and roll back by redeploying one project at a ref ([decision 0001](decisions/0001-deploy-feedback-loop.md)). |
+| 2026-11-26 | Pull request CI checks only the projects a change touches; shared scripts and root config no longer run every project (`affected.sh --changed-only`). |

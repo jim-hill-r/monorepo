@@ -45,6 +45,9 @@ echo $p >>"$log"
 TOML
   echo 0 >"$repo/$p/file"
 done
+# b's ci names a shared script, so changing that script checks b.
+echo 'true' >"$repo/standards/scripts/used-by-b.sh"
+echo '# uses standards/scripts/used-by-b.sh' >>"$repo/b/mise.toml"
 cat >>"$repo/nolib/mise.toml" <<'TOML'
 
 [tasks."ci:check-tools"]
@@ -81,6 +84,11 @@ git_ commit -am a
 echo "# x" >>"$repo/mise.toml"
 echo "# x" >>"$repo/standards/scripts/affected.sh"
 check "root files" 0 ""
+git_ checkout -- .
+
+# A shared script checks only the projects that name it.
+echo "# x" >>"$repo/standards/scripts/used-by-b.sh"
+check "used script" 0 "b"
 git_ checkout -- .
 
 # A project whose ci:check-tools fails is skipped with a note, not failed.

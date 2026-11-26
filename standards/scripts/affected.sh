@@ -2,7 +2,7 @@
 # Print a JSON array of project directories (dirs with a mise.toml, other than
 # the repo root) that changes since BASE touch.
 #
-#   affected.sh [--all] [--local] [BASE | --files]
+#   affected.sh [--all] [--changed-only] [BASE | --files]
 #
 # BASE defaults to $AFFECTED_BASE, then origin/main. An empty BASE, or one of
 # all zeros (a new branch push), lists every project. With --files the changed
@@ -18,19 +18,22 @@
 #     changed, or is itself an affected project (for example a cloudflare
 #     project names the web app it deploys).
 # Changes to the root mise.toml, standards/scripts/ or the mise CI workflows
-# affect every project, except with --local: the git hooks use it so that
-# such a change checks only the projects that test those files (`standards`
-# and `monorepo`, through their own paths and affected-by lines), while PR CI
-# still checks every project.
+# affect every project, except with --changed-only (or AFFECTED_CHANGED_ONLY=1),
+# which PR CI and the git hooks use. Then such a change affects only:
+#   - the projects that test those files (`standards` and `monorepo`, through
+#     their own paths and affected-by lines);
+#   - for a script in standards/scripts/, the projects whose mise.toml or
+#     included standards/tasks file names it.
+# Pushes to main and the nightly runs still check every project.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-all_flag="" local_flag="" files_flag="" base_arg=""
+all_flag="" changed_only="${AFFECTED_CHANGED_ONLY:-}" files_flag="" base_arg=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --all) all_flag=1 ;;
-    --local) local_flag=1 ;;
+    --changed-only) changed_only=1 ;;
     --files) files_flag=1 ;;
     *) base_arg=$1 ;;
   esac
@@ -84,6 +87,17 @@ watched_dirs() {
     | while read -r dep; do norm "$p/$dep"; done
 }
 
+# Whether project $1's mise.toml, or a standards/tasks file it includes,
+# names the script $2.
+uses_script() {
+  local t
+  grep -qF "$2" "$1/mise.toml" && return 0
+  for t in $(grep -oE 'standards/tasks/[A-Za-z0-9_-]+\.toml' "$1/mise.toml" | sort -u); do
+    [ -f "$t" ] && grep -qF "$2" "$t" && return 0
+  done
+  return 1
+}
+
 declare -A hit=()
 declare -A watch=()
 for p in "${all[@]}"; do
@@ -94,10 +108,16 @@ for f in "${changed[@]}"; do
   [ -n "$f" ] || continue
   case "$f" in
     mise.toml|standards/scripts/*|.github/workflows/pull-request-ci.yml|.github/workflows/push-main.yml|.github/workflows/nightly-ci.yml|.github/workflows/nightly-cd.yml|.github/workflows/mise-projects.yml)
-      if [ -z "$local_flag" ]; then
+      if [ -z "$changed_only" ] || [ "$changed_only" = 0 ]; then
         for p in "${all[@]}"; do hit[$p]=1; done
         continue
-      fi ;;
+      fi
+      case "$f" in
+        standards/scripts/*)
+          for p in "${all[@]}"; do
+            uses_script "$p" "$f" && hit[$p]=1
+          done ;;
+      esac ;;
     standards/tasks/*.toml)
       t=$(basename "$f")
       for p in "${all[@]}"; do
