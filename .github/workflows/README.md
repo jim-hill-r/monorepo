@@ -21,7 +21,20 @@ Called by the three workflows below.
    (pane, whose snapshot reads the whole repo).
 2. **ci (&lt;project&gt;)** runs once per project: installs the project's tools
    with `jdx/mise-action`, restores the Rust cache, runs `mise run ci`, and
-   then `mise run deploy` when the `deploy` input is true.
+   then `mise run evals` (stage `ci` eval results in the job summary and a
+   14-day artifact), and `mise run deploy` when the `deploy` input is true.
+
+### evals-store.yml (reusable)
+
+Called by `push-main.yml` and `nightly-ci.yml` after `mise-projects.yml`,
+never by pull requests. Its one job downloads every project's
+`evals-results-<project>` artifact from the run and commits them to the
+long-lived `evals-results` data branch (`standards/scripts/evals.sh store`,
+see [standards/docs/evals.md](../../standards/docs/evals.md#results-and-verdicts)).
+It is the only CI job with `contents: write`, granted on the calling job
+only, and its only push is to `evals-results` (SEC-007). It never fails the
+run. It is a separate workflow because a reusable workflow whose job asks
+for write fails to start when a caller (pull requests) grants only read.
 
 ### pull-request-ci.yml
 

@@ -918,6 +918,7 @@ version = "0.1.0"
 dependencies = [
  "auth_sdk",
  "dioxus",
+ "dioxus-ssr",
  "ui",
 ]
 
@@ -3192,6 +3193,7 @@ version = "0.1.0"
 dependencies = [
  "auth_sdk",
  "dioxus",
+ "dioxus-ssr",
  "ui",
 ]
 
@@ -5818,7 +5820,6 @@ name = "web"
 version = "0.1.0"
 dependencies = [
  "auth_sdk",
- "core",
  "dioxus",
  "dioxus-ssr",
  "ui",

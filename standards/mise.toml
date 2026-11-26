@@ -6,13 +6,14 @@
 includes = ["../standards/tasks/docs.toml"]
 
 [tasks.ci]
-description = "Check the repo scripts parse, their tests pass, the repo passes its own audit, and the tech radar is valid"
+description = "Check the repo scripts parse, their tests pass, the repo passes its own audit, the tech radar is valid and the free-tier tables match limits.toml"
 dir = "{{config_root}}"
 run = [
   "for f in scripts/*.sh tests/*.sh; do bash -n \"$f\"; done",
   "for t in tests/*.test.sh; do bash \"$t\" || exit 1; done",
   "bash scripts/audit.sh",
   "bash scripts/radar.sh check",
+  "bash scripts/cost-check.sh render-check",
 ]
 
 [tasks.test]
@@ -21,6 +22,9 @@ dir = "{{config_root}}"
 run = "mise run ci"
 
 [tasks.fix]
-description = "Regenerate the tech radar tables from standards/radar/radar.json"
+description = "Regenerate the tech radar tables from standards/radar/radar.json and the free-tier tables from standards/radar/limits.toml"
 dir = "{{config_root}}"
-run = "bash scripts/radar.sh render"
+run = [
+  "bash scripts/radar.sh render",
+  "cargo run --quiet --manifest-path ../cost/Cargo.toml -p cost_cli -- render --root ..",
+]

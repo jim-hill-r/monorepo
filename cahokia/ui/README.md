@@ -8,6 +8,7 @@ Dioxus components shared by the cahokia web, desktop and mobile apps.
 | `Navbar` | The top navigation bar. |
 | `Sidebar` | A slide-out side panel that wraps its children. |
 | `FamilyTreeView` | A family tree drawn as inline SVG. |
+| `FamilyTreePage` | The `/family-tree` page every app routes to: the sample family in a sideways-scrolling container. |
 
 ## FamilyTreeView
 

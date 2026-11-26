@@ -24,6 +24,11 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   project's `issues/` and never only in a chat thread. Agents don't work
   them. A weekly Claude scheduled task, "Weekly human issues digest", reports
   them to Jim with the `human-issues-digest` skill (decision 0002).
+- **Settings made by hand** (connectors, secrets, Auth0, Cloudflare tokens,
+  billing) are listed in `standards/settings.toml`, never with a secret's
+  value. A change that makes or needs one adds its entry in the same PR; the
+  weekly digest asks Jim to re-check each one on its schedule ("Human
+  checks" in `standards/docs/evals.md`).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
@@ -56,6 +61,9 @@ repo, rather than in any one agent tool's settings.
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
   - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
     0.8, which `perseus` 0.4.2 requires.
+  - `terrars` in `infra` is pinned with `=`: its generated bindings in
+    `infra/src/tfschema/` must be regenerated with the same version, so bump
+    it only together with them (see `infra/README.md`).
 - **Vendors (Jim, 2026-11-26).** When designing a system, use as few vendors
   as possible, but cost always comes first: if a non-approved vendor is
   clearly cheaper (including free tiers), cost wins over vendor count.
@@ -96,7 +104,11 @@ repo, rather than in any one agent tool's settings.
   or cache limit, and when a limit is near, stop rather than pay. Anything
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in
-  [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
+  [standards/docs/free-tiers.md](standards/docs/free-tiers.md), with the
+  numbers in `standards/radar/limits.toml`. Every project keeps its expected
+  usage and money in `docs/cost.toml`, checked by `cost check`
+  ([standards/docs/cost.md](standards/docs/cost.md)); update it in any PR
+  that adds a service, a deploy or a cost.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -181,10 +193,11 @@ Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
 
 Every project has the same tasks (`ci`, `fix`, `build`, `test`, `dev`,
-`release`, `deploy`), from one shared file in `standards/tasks/`. The rules
-and decisions (no root Rust workspace, no committed build artifacts) are in
-[standards/docs/mise.md](standards/docs/mise.md). CI runs `mise run ci` in
-each changed project; pushes to `main` also run `mise run deploy`.
+`release`, `deploy`, `evals`), from one shared file in `standards/tasks/`.
+The rules and decisions (no root Rust workspace, no committed build
+artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
+`mise run ci` and then `mise run evals` in each changed project; pushes to
+`main` also run `mise run deploy`.
 
 ## Skills
 

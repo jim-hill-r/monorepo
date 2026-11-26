@@ -1,0 +1,140 @@
+# Settings made by hand in a dashboard ("clickops"), which no file in the
+# repo holds, so no eval can read them. Jim checks each one every `every`
+# days: the weekly human issues digest writes a due check as a human task,
+# issues/human/settings-check-<id>.md, and his answer is recorded in
+# settings-checks.jsonl.
+# Format and process: "Human checks" in standards/docs/evals.md.
+#
+# Never put a secret's value here: only that it exists and what it is for.
+# A human task (issues/human/) that creates a setting adds its entry here in
+# the same PR. `evals check` validates this file.
+
+# Claude: the agents' own platform.
+
+[[setting]]
+id = "claude-github-app"
+vendor = "GitHub"
+where = "github.com/settings/installations > Claude"
+expect = "The Claude GitHub App is installed on jimhillr/monorepo with access to that repository."
+why = "Without it agents can't push branches, open PRs or read checks."
+every = "90d"
+
+[[setting]]
+id = "claude-connectors"
+vendor = "Claude"
+where = "claude.ai > Settings > Connectors"
+expect = "GitHub and Cloudflare are connected and signed in, with no Reconnect prompt, and Cloudflare is read-only."
+why = "An expired connector sign-in silently stops agents reaching GitHub or Cloudflare."
+every = "30d"
+
+[[setting]]
+id = "claude-scheduled-tasks"
+vendor = "Claude"
+where = "claude.ai > the Monorepo project > Scheduled tasks"
+expect = "PR triage (7:50, 12:50 and 17:50 New York), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
+why = "PRs stop merging and human tasks stop reaching Jim when a task is paused or failing."
+every = "30d"
+
+[[setting]]
+id = "claude-code-budget"
+vendor = "Anthropic"
+where = "claude.ai > Settings > Billing"
+expect = "Claude Code spend this month is within the $25 budget, and no extra usage or higher plan is turned on."
+why = "Claude Code is the one paid service; its budget is $25 a month (AGENTS.md)."
+every = "30d"
+
+# GitHub: the repo itself.
+
+[[setting]]
+id = "github-main-ruleset"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Rules > Rulesets > Default"
+expect = "The Default ruleset is active on main: pull requests required, force pushes and deletion blocked."
+why = "Without it anyone, agents included, can push straight to main."
+every = "90d"
+
+[[setting]]
+id = "github-merge-settings"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > General > Pull Requests"
+expect = "Squash merging and Allow auto-merge are on."
+why = "Agents squash-merge and turn on auto-merge when a PR is ready (AGENTS.md)."
+every = "90d"
+
+[[setting]]
+id = "github-actions-budget"
+vendor = "GitHub"
+where = "github.com/settings/billing > Budgets and alerts"
+expect = "The Actions budget is $0 with usage stopped at the limit, and no payment method is added."
+why = "Keeps GitHub on its free plan (standards/docs/free-tiers.md)."
+every = "30d"
+
+[[setting]]
+id = "github-dependabot"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Advanced Security"
+expect = "Dependabot alerts and security updates are on."
+why = "Version updates come from .github/dependabot.yml, but alerts and security updates are switched on only here."
+every = "90d"
+
+[[setting]]
+id = "github-secret-cloudflare-api-token"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "The CLOUDFLARE_API_TOKEN repo secret exists."
+why = "Every Cloudflare Pages deploy in push-main.yml and nightly-cd.yml uses it."
+every = "90d"
+
+[[setting]]
+id = "github-secret-cloudflare-account-id"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "The CLOUDFLARE_ACCOUNT_ID repo secret exists."
+why = "Every Cloudflare Pages deploy uses it."
+every = "90d"
+
+# Cloudflare.
+
+[[setting]]
+id = "cloudflare-api-token-scopes"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > My Profile > API Tokens"
+expect = "The token in CLOUDFLARE_API_TOKEN has Cloudflare Pages: Edit, is limited to this account, and doesn't expire within 30 days."
+why = "A token missing a scope, or expired, fails every deploy."
+every = "90d"
+
+[[setting]]
+id = "cloudflare-billing"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Billing"
+expect = "The account is on the Free plan with no payment method and no paid add-on (Workers Paid, R2 paid, Images)."
+why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
+every = "30d"
+
+# Auth0.
+
+[[setting]]
+id = "auth0-cahokia-app"
+vendor = "Auth0"
+where = "manage.auth0.com > Applications > the Cahokia application"
+expect = "Type is Single Page Application, and https://jimhillr-cahokia.pages.dev/ and http://localhost:8080/ are in Allowed Callback URLs (without the slash in Allowed Web Origins and Allowed Logout URLs)."
+why = "A dropped callback URL breaks sign-in on Cahokia production."
+every = "90d"
+
+[[setting]]
+id = "auth0-billing"
+vendor = "Auth0"
+where = "manage.auth0.com > Settings > Subscription"
+expect = "The tenant is on the Free plan with no payment method."
+why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
+every = "90d"
+
+# RapidAPI.
+
+[[setting]]
+id = "rapidapi-free-plan"
+vendor = "RapidAPI"
+where = "rapidapi.com > My Apps > Billing"
+expect = "The Zillow API subscription is on the free plan, with no payment method and no paid plan."
+why = "homer may use RapidAPI only on its free plan; it must never cost money (AGENTS.md)."
+every = "30d"

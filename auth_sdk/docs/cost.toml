@@ -1,0 +1,3 @@
+# auth_sdk: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Rust library for sign-in flows. It calls no service itself; the apps that use it (cahokia, cookbook) list Auth0. $0 a month."

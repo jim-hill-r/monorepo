@@ -1,0 +1,451 @@
+# Free limits of every service the repo uses, and our budgets inside them.
+#
+# The one source for these numbers: `standards/scripts/free-tiers.sh` reads
+# its budgets from here, `cost check` holds every project's docs/cost.toml
+# to them (COST-005), and the tables in standards/docs/free-tiers.md are
+# generated from this file (`cost render`; standards CI fails when they
+# differ). The convention is in standards/docs/cost.md.
+#
+# Fields:
+#   key        Usage key, used in [service.usage] in docs/cost.toml.
+#   blip       The vendor blip in standards/radar/radar.json it belongs to.
+#   item       What the limit counts, as the table shows it.
+#   free       The vendor's free limit, a whole number of `unit`. Leave it
+#              out when the limit isn't a number (say why in free_note).
+#   budget     Ours, well inside `free`. Leave it out to hold usage to the
+#              free limit itself. Only Jim sets or raises a budget.
+#   scope      "account": summed over every project. "project": each
+#              project on its own.
+#   unit       What the numbers count. "bytes" is shown in GB or MB.
+#   past       What happens past the free limit.
+#   source     The vendor page the number came from.
+#   checked    When someone last checked the number against the source.
+#   free_note, budget_note   Optional text shown after the number.
+#
+# The guards in free-tiers.sh read `free` and `budget` with a line-based
+# parser: keep every field on its own line as `name = value`.
+
+# ---------------------------------------------------------------- GitHub ----
+
+[[limit]]
+key = "github_runner_minutes_per_month"
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+item = "Minutes on standard GitHub-hosted runners"
+free_note = "Unlimited on a public repo ($12 a month of compute, about 2,000 Linux minutes, if it goes private)"
+scope = "account"
+unit = "minutes"
+past = "Blocked with no payment method if the repo goes private"
+source = "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+checked = "2026-11-26"
+
+[[limit]]
+key = "github_larger_runner_minutes_per_month"
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+item = "Larger runners (custom labels, `-xlarge`, `-16core` and so on)"
+free = 0
+free_note = "billed even on public repos"
+budget = 0
+budget_note = "never used; FT-001 rejects them"
+scope = "account"
+unit = "minutes"
+past = "Billed"
+source = "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+checked = "2026-11-26"
+
+[[limit]]
+key = "github_cache_bytes"
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+item = "Actions cache"
+free = 10737418240
+free_note = "per repo"
+budget = 8589934592
+budget_note = "warn"
+scope = "account"
+unit = "bytes"
+past = "Oldest entries evicted; billed only if the limit is raised"
+source = "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+checked = "2026-11-26"
+
+[[limit]]
+key = "github_artifact_bytes"
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+item = "Artifact and Packages storage"
+free = 524288000
+free_note = "on the Free plan if the repo goes private; free on a public repo"
+budget = 419430400
+budget_note = "warn"
+scope = "account"
+unit = "bytes"
+past = "Billed only with a payment method"
+source = "https://docs.github.com/en/billing/concepts/product-billing/github-actions"
+checked = "2026-11-26"
+
+[[limit]]
+key = "github_release_asset_bytes"
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+item = "Release assets (game downloads, `nightly-downloads.yml`)"
+free = 2147483648
+free_note = "per file; no total limit"
+budget_note = "one nightly prerelease per game, assets replaced in place"
+scope = "project"
+unit = "bytes"
+past = "Upload fails"
+source = "https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases"
+checked = "2026-11-26"
+
+# ------------------------------------------------------ Cloudflare Pages ----
+
+[[limit]]
+key = "pages_projects"
+blip = "Cloudflare Pages"
+item = "Pages projects"
+free = 100
+free_note = "per account, hard, not routinely raised"
+budget = 25
+scope = "account"
+unit = "projects"
+past = "Creation fails"
+source = "https://developers.cloudflare.com/pages/platform/limits"
+checked = "2026-11-26"
+
+[[limit]]
+key = "pages_builds_per_month"
+blip = "Cloudflare Pages"
+item = "Pages builds (Cloudflare's own CI)"
+free = 500
+free_note = "1 at a time"
+budget = 0
+budget_note = "we deploy with `wrangler pages deploy`, a direct upload"
+scope = "account"
+unit = "builds"
+past = "Builds queue or fail"
+source = "https://developers.cloudflare.com/pages/platform/limits"
+checked = "2026-11-26"
+
+[[limit]]
+key = "pages_files_per_site"
+blip = "Cloudflare Pages"
+item = "Files per site"
+free = 20000
+free_note = "each up to 25 MiB"
+scope = "project"
+unit = "files"
+past = "Deploy fails"
+source = "https://developers.cloudflare.com/pages/platform/limits"
+checked = "2026-11-26"
+
+# ---------------------------------------------------- Cloudflare Workers ----
+# The Workers Free plan has no billing: past a limit, requests fail or data
+# stops being ingested until the daily reset at 00:00 UTC.
+
+[[limit]]
+key = "workers"
+blip = "Cloudflare Workers"
+item = "Workers"
+free = 100
+free_note = "per account"
+budget = 25
+scope = "account"
+unit = "workers"
+past = "Deploy fails"
+source = "https://developers.cloudflare.com/workers/platform/limits/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "workers_requests_per_day"
+blip = "Cloudflare Workers"
+item = "Workers requests (includes Pages Functions)"
+free = 100000
+budget_note = "rate-limit public endpoints such as `telemetry`"
+scope = "account"
+unit = "requests a day"
+past = "Error 1027 until 00:00 UTC"
+source = "https://developers.cloudflare.com/workers/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "workers_cpu_ms_per_request"
+blip = "Cloudflare Workers"
+item = "Workers CPU time"
+free = 10
+free_note = "per request"
+scope = "project"
+unit = "ms"
+past = "Error 1102"
+source = "https://developers.cloudflare.com/workers/platform/limits/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "cron_triggers"
+blip = "Cloudflare Workers"
+item = "Cron Triggers"
+free = 5
+free_note = "per account"
+budget = 3
+scope = "account"
+unit = "triggers"
+past = "Deploy fails"
+source = "https://developers.cloudflare.com/workers/platform/limits/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "kv_reads_per_day"
+blip = "Cloudflare Workers"
+item = "KV reads"
+free = 100000
+scope = "account"
+unit = "reads a day"
+past = "Operation errors"
+source = "https://developers.cloudflare.com/workers/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "kv_writes_per_day"
+blip = "Cloudflare Workers"
+item = "KV writes"
+free = 1000
+scope = "account"
+unit = "writes a day"
+past = "Operation errors"
+source = "https://developers.cloudflare.com/workers/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "kv_storage_bytes"
+blip = "Cloudflare Workers"
+item = "KV storage"
+free = 1073741824
+scope = "account"
+unit = "bytes"
+past = "Operation errors"
+source = "https://developers.cloudflare.com/workers/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "workers_logs_events_per_day"
+blip = "Cloudflare Workers"
+item = "Workers Logs (until 2026-12-01; then 0.5 GB a day of observability, 7 days)"
+free = 200000
+free_note = "kept 3 days"
+scope = "account"
+unit = "events a day"
+past = "Stops ingesting until 00:00 UTC"
+source = "https://developers.cloudflare.com/observability/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "analytics_engine_points_per_day"
+blip = "Cloudflare Workers"
+item = "Analytics Engine data points written"
+free = 100000
+scope = "account"
+unit = "points a day"
+past = "Not billed today"
+source = "https://developers.cloudflare.com/analytics/analytics-engine/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "analytics_engine_queries_per_day"
+blip = "Cloudflare Workers"
+item = "Analytics Engine queries"
+free = 10000
+scope = "account"
+unit = "queries a day"
+past = "Not billed today"
+source = "https://developers.cloudflare.com/analytics/analytics-engine/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "browser_run_minutes_per_day"
+blip = "Cloudflare Workers"
+item = "Browser Run"
+free = 10
+scope = "account"
+unit = "minutes a day"
+past = "Sessions refused"
+source = "https://developers.cloudflare.com/workers/platform/pricing/"
+checked = "2026-11-26"
+
+# ------------------------------------------------------- Cloudflare D1 ----
+
+[[limit]]
+key = "d1_databases"
+blip = "Cloudflare D1"
+item = "D1 databases"
+free = 10
+free_note = "each up to 500 MB"
+scope = "account"
+unit = "databases"
+past = "Creation fails"
+source = "https://developers.cloudflare.com/d1/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "d1_storage_bytes"
+blip = "Cloudflare D1"
+item = "D1 storage"
+free = 5368709120
+scope = "account"
+unit = "bytes"
+past = "Writes fail"
+source = "https://developers.cloudflare.com/d1/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "d1_rows_read_per_day"
+blip = "Cloudflare D1"
+item = "D1 rows read"
+free = 5000000
+scope = "account"
+unit = "rows a day"
+past = "Operation errors"
+source = "https://developers.cloudflare.com/d1/platform/pricing/"
+checked = "2026-11-26"
+
+[[limit]]
+key = "d1_rows_written_per_day"
+blip = "Cloudflare D1"
+item = "D1 rows written"
+free = 100000
+scope = "account"
+unit = "rows a day"
+past = "Operation errors"
+source = "https://developers.cloudflare.com/d1/platform/pricing/"
+checked = "2026-11-26"
+
+# ------------------------------------------------------- Cloudflare R2 ----
+
+[[limit]]
+key = "r2_storage_bytes"
+blip = "Cloudflare R2"
+item = "R2 storage (also 1M Class A and 10M Class B operations a month)"
+free = 10737418240
+free_note = "a month"
+budget = 0
+budget_note = "on hold: don't enable R2 without a decision record"
+scope = "account"
+unit = "bytes"
+past = "Billed once R2 is enabled"
+source = "https://developers.cloudflare.com/r2/pricing/"
+checked = "2026-11-26"
+
+# ------------------------------------------------------------- PostHog ----
+
+[[limit]]
+key = "posthog_events_per_month"
+blip = "PostHog"
+item = "Product analytics events"
+free = 1000000
+scope = "account"
+unit = "events a month"
+past = "No card on file, so it cannot bill; adding one turns on pay-as-you-go"
+source = "https://posthog.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "posthog_recordings_per_month"
+blip = "PostHog"
+item = "Web session recordings"
+free = 5000
+scope = "account"
+unit = "recordings a month"
+past = "No card on file, so it cannot bill"
+source = "https://posthog.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "posthog_mobile_recordings_per_month"
+blip = "PostHog"
+item = "Mobile session recordings"
+free = 2500
+scope = "account"
+unit = "recordings a month"
+past = "No card on file, so it cannot bill"
+source = "https://posthog.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "posthog_flag_requests_per_month"
+blip = "PostHog"
+item = "Feature flag requests"
+free = 1000000
+scope = "account"
+unit = "requests a month"
+past = "No card on file, so it cannot bill"
+source = "https://posthog.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "posthog_exceptions_per_month"
+blip = "PostHog"
+item = "Exceptions"
+free = 100000
+scope = "account"
+unit = "exceptions a month"
+past = "No card on file, so it cannot bill"
+source = "https://posthog.com/pricing"
+checked = "2026-11-26"
+
+# --------------------------------------------------------------- Auth0 ----
+
+[[limit]]
+key = "auth0_mau"
+blip = "Auth0"
+item = "Monthly active users"
+free = 25000
+scope = "account"
+unit = "users"
+past = "Free tenants are not upgraded automatically"
+source = "https://auth0.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "auth0_tenants"
+blip = "Auth0"
+item = "Tenants"
+free = 1
+scope = "account"
+unit = "tenants"
+past = "Creation fails"
+source = "https://auth0.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "auth0_custom_domains"
+blip = "Auth0"
+item = "Custom domains"
+free = 1
+budget = 0
+budget_note = "adding one asks for a card, so don't"
+scope = "account"
+unit = "domains"
+past = "Needs a card"
+source = "https://auth0.com/pricing"
+checked = "2026-11-26"
+
+[[limit]]
+key = "auth0_m2m_tokens_per_month"
+blip = "Auth0"
+item = "Machine-to-machine tokens"
+free = 1000
+budget = 0
+budget_note = "CI uses mocks, never real tokens"
+scope = "account"
+unit = "tokens a month"
+past = "Token requests fail"
+source = "https://auth0.com/pricing"
+checked = "2026-11-26"
+
+# ---------------------------------------------------------------- RapidAPI ----
+
+[[limit]]
+key = "rapidapi_requests_per_month"
+blip = "RapidAPI (Zillow data)"
+item = "Zillow API requests"
+free_note = "the free plan's quota, shown on the API's pricing page and in `x-ratelimit-requests-limit`"
+budget_note = "homer stops before a request once the quota is used up; never run on a schedule (FT-002)"
+scope = "account"
+unit = "requests a month"
+past = "homer stops; the free plan refuses requests"
+source = "https://rapidapi.com/pricing"
+checked = "2026-11-26"
