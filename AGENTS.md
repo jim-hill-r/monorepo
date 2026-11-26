@@ -32,8 +32,8 @@ repo, rather than in any one agent tool's settings.
   run by default), not by deleting branches by hand or with a local script.
 - **Pinned dependencies — do not bump:**
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
-  - `sycamore` in `sparkhill/website` must stay on 0.8, which `perseus` 0.4.2
-    requires.
+  - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
+    0.8, which `perseus` 0.4.2 requires.
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **PR review automation.** An hourly scheduled agent task, "Hourly PR
