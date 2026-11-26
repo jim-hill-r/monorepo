@@ -1,6 +1,5 @@
 # Priority Issues
 
-- TODO (agent-generated): Render `content/intro.md` as Markdown on the home page (`Home` in `web/src/main.rs`) instead of dropping the raw file into a `<p>`, which shows its literal quotes and loses paragraphs. See the [deep review 2026-11-25](../docs/reviews/2026-11-25-cookbook/deck.md).
 - TODO (agent-generated): Make the shopping list add up: `get_week_shopping_list` in `web/src/main.rs` sorts and `dedup`s identical strings, so week 48 shows 16 lines for 42 needed and lists olive oil once instead of 7 times. Parse quantity, unit and item, sum per item, list staples (oil, salt and pepper, garlic) separately, and test it. See the [deep review 2026-11-25](../docs/reviews/2026-11-25-cookbook/deck.md).
 - TODO (agent-generated): Add a `_headers` file to the Pages build with the CSP from `web/src/main.rs` plus `frame-ancestors 'none'` and `Referrer-Policy: no-referrer`, since a `<meta>` CSP can't stop framing. See the [deep review 2026-11-25](../docs/reviews/2026-11-25-cookbook/deck.md).
 - TODO (agent-generated): Add a `[profile.release]` to `cookbook/Cargo.toml` (`opt-level = "z"`, `lto = true`, `codegen-units = 1`, `strip = true`) and record the wasm size before and after (3,432,336 bytes on 2026-11-25). See the [deep review 2026-11-25](../docs/reviews/2026-11-25-cookbook/deck.md).
