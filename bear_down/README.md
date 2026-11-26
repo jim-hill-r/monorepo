@@ -21,7 +21,12 @@ Early development. `core` parses the nflverse schedule and results
 probabilities from them (`bear_down_core::Ratings`). It also computes
 standings, division winners and playoff seeds with the NFL tiebreakers from
 decision 0005 (`bear_down_core::Standings`), checked against every real
-playoff field since 2002, but nothing is simulated yet.
+playoff field since 2002. `bear_down_core::simulate` plays out the rest of
+the season and the playoffs (100,000 times for a weekly build, about half a
+second in a release build) and gives every team's playoff and Super Bowl
+odds, plus each of this week's games' swing on the Bears' playoff and Super
+Bowl odds and on the NFC North divisional-round goal. Nothing downloads the
+data or writes `rooting.json` yet.
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
 the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
 
