@@ -1,0 +1,9 @@
+# standards: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Repo docs, shared mise tasks and scripts. Runs the repo-wide workflows on GitHub Actions on standard runners. $0 a month."
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "Repo-wide CI, nightly CI and CD, CodeQL, branch cleanup and the weekly free-tier usage run, all on standard GitHub-hosted runners (free on a public repo)."
+notes = "Cache and artifact use are measured weekly by free-tiers.sh usage, not estimated here."

@@ -187,6 +187,48 @@ fn test_budgets_cannot_be_raised_past_the_free_limit() {
 }
 
 #[test]
+fn test_budgets_come_from_limits_toml() {
+    // Two Workers pass the real budget of 25 but fail a limits file whose
+    // budget is 1, so the script reads its budgets from limits.toml.
+    let files: Vec<(String, String)> = (0..2)
+        .map(|i| (format!("w{i}/wrangler.toml"), format!("name = \"w{i}\"\n")))
+        .collect();
+    let refs: Vec<(&str, &str)> = files
+        .iter()
+        .map(|(a, b)| (a.as_str(), b.as_str()))
+        .collect();
+    let repo = fixture_repo(&refs);
+    assert!(run_check(&repo).status.success());
+
+    let real = std::fs::read_to_string(get_repo_root().join("standards/radar/limits.toml"))
+        .expect("read limits.toml");
+    let tight = real.replacen(
+        "budget = 25\nscope = \"account\"\nunit = \"workers\"",
+        "budget = 1\nscope = \"account\"\nunit = \"workers\"",
+        1,
+    );
+    assert_ne!(
+        real, tight,
+        "the workers budget line moved; update this test"
+    );
+    let limits = repo.join("limits.toml");
+    write(&limits, &tight);
+    let out = Command::new("bash")
+        .arg(script())
+        .arg("check")
+        .env("FREE_TIERS_ROOT", &repo)
+        .env("FREE_TIERS_LIMITS_FILE", &limits)
+        .output()
+        .expect("run free-tiers.sh");
+    assert!(!out.status.success());
+    assert!(
+        stdout(&out).contains("the budget is 1 (free limit 100)"),
+        "{}",
+        stdout(&out)
+    );
+}
+
+#[test]
 fn test_check_rejects_paid_wrangler_settings() {
     for setting in [
         "usage_model = \"standard\"",

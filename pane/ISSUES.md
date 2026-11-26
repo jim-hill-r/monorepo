@@ -69,14 +69,13 @@ Needs Phases 3 to 5 above and the eval engine's `evals-results` files (root
 
 ### Phase 7: revenue and cost
 
-Needs Phase 1 for the pages, Phase 3 for free-tier usage and Phase 5 for the forms. See "Revenue and cost" in the plan.
+Needs Phase 1 for the pages, Phase 3 for free-tier usage and Phase 5 for the forms. See "Revenue and cost" in the plan. Revenue and project-only costs live in each project's `docs/cost.toml` (`[[revenue]]` and `[[cost]]`, convention in `standards/docs/cost.md`), which replaces the `finance.toml` the plan proposed; read them through the `cost_model` crate (`cost/model`), which already has the money types and `monthly_cents`.
 
-- TODO (agent-generated): Add `standards/docs/finance.md` with the per-project `finance.toml` convention (`[[revenue]]` by month and `[[cost]]` with `every` = month, year or once, in whole US cents, each with a source or vendor), link it from `standards/docs/README.md`, and add `finance.toml` to the files a project may have.
-- TODO (agent-generated): Add money types to `pane/model` (`Money` in cents, `RevenueLine`, `CostLine`, `ProjectMoney`) and pure functions for a project's monthly revenue, direct cost (spreading yearly costs over twelve months) and net, and for splitting shared costs across projects by their share of PRs merged that month, with unit tests for each edge (no PRs, one project, a PR touching two projects, a once cost).
-- TODO (agent-generated): Read every `finance.toml` and the radar's monthly budgets (`standards/radar/radar.json`, once PR #619's budgets land) into the snapshot in `pane_snapshot`, failing the build on an invalid file, with fixture tests.
+- TODO (agent-generated): Add a `ProjectMoney` type to `pane/model` built on `cost_model`'s `Cost`, `Revenue` and `monthly_cents`, and pure functions for a project's monthly revenue, direct cost and net, and for splitting shared costs across projects by their share of PRs merged that month, with unit tests for each edge (no PRs, one project, a PR touching two projects, a once cost).
+- TODO (agent-generated): Read every `docs/cost.toml` (through `cost_model::parse_cost_file`), the radar's monthly budgets (`standards/radar/radar.json`) and the limits in `standards/radar/limits.toml` into the snapshot in `pane_snapshot`: per project its services, plans, money this month and expected usage, and account-wide expected usage against each budget. Fail the build on an invalid file, with fixture tests.
 - TODO (agent-generated): Build the Money page (per project: this month's revenue, direct cost, shared-cost share and net, a 12-month chart, a totals row, and shared costs listed with their radar blips) and a Money section on each Project page, each number linking to its source line on GitHub.
 - TODO (agent-generated): Give `free-tiers.sh usage` a JSON output uploaded as the `all-free-tier-usage.yml` run's artifact, and add `/api/free-tiers` to the pane Worker (latest run's JSON, cached for an hour) shown as a headroom table on the Money page.
-- TODO (agent-generated): Add "Add revenue" and "Add a cost" forms that append a `finance.toml` entry through the `pane-edit` PR, and name `finance.toml` as safe for PR triage to approve in `standards/docs/pull-requests.md` only when the PR is a `pane-edit` PR.
+- TODO (agent-generated): Add "Add revenue" and "Add a cost" forms that append a `[[revenue]]` or `[[cost]]` entry to the project's `docs/cost.toml` through the `pane-edit` PR (which `cost check` then verifies), and name a `docs/cost.toml` change as safe for PR triage to approve in `standards/docs/pull-requests.md` only when the PR is a `pane-edit` PR that adds revenue or a $0 cost; any cost above $0 stays `needs-human`.
 
 # Backlog
 

@@ -9,6 +9,7 @@
 #   NAM-001  Project directory names are snake_case.
 #   HUM-001  TODO (human) lines live only in the root HUMAN_ISSUES.md.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
+#   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -60,6 +61,9 @@ done
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.
 bash standards/scripts/evals-check.sh
+
+# COST-*: per-project cost analyses against the budgets. Warnings only.
+bash standards/scripts/cost-check.sh
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))

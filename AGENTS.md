@@ -84,7 +84,11 @@ repo, rather than in any one agent tool's settings.
   or cache limit, and when a limit is near, stop rather than pay. Anything
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in
-  [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
+  [standards/docs/free-tiers.md](standards/docs/free-tiers.md), with the
+  numbers in `standards/radar/limits.toml`. Every project keeps its expected
+  usage and money in `docs/cost.toml`, checked by `cost check`
+  ([standards/docs/cost.md](standards/docs/cost.md)); update it in any PR
+  that adds a service, a deploy or a cost.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
