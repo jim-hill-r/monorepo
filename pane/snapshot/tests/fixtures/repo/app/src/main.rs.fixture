@@ -1,0 +1,8 @@
+// TODO (agent-ignore): Line comment.
+fn main() {
+    let s = "TODO (agent-ignore): in a string, not a comment";
+    let x = 1; // FIX (agent-ignore): Trailing comment.
+    /* TODO (agent-ignore): Block comment. */
+    // h1 { x } // TODO (agent-ignore): After commented-out code.
+    let _ = (s, x);
+}
