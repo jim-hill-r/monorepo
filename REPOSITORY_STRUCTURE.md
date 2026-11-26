@@ -17,6 +17,7 @@ This document describes the organization and structure of this monorepo to help 
 │   └── content_provider/ # Content provider library
 ├── standards/           # Coding, testing, workflow and documentation standards (standards/docs/)
 ├── athenaeum/           # Learning resources (algorithms, system design, etc.)
+├── docs/reviews/        # Weekly deep project review decks (Marp), see docs/reviews/README.md
 ├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
 ├── [other projects]     # Various projects and applications
 ├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
@@ -43,7 +44,8 @@ Contains the repository's standards and conventions in `standards/docs/` (Rust, 
 ### `/athenaeum/`
 Contains learning resources (algorithms, system design, language notes, etc.).
 
-There is no top-level `docs/` folder. The root `README.md` is a regular file, and project-specific docs live inside each project (for example `cast/core/docs/`).
+### `/docs/reviews/`
+Deep project review decks, one folder per review, written weekly by the `deep-project-review` skill. The top-level `docs/` folder holds only these reviews: standards live in `standards/docs/`, and project-specific docs live inside each project (for example `cast/core/docs/`).
 
 ### Project Directories
 All projects live in the root directory. Each project may have:
@@ -103,7 +105,7 @@ The `cast` CLI is the primary tool for managing this monorepo:
 ## Important Notes for Agents
 
 1. **Project structure**: All projects are located in the root directory, not under a "projects/" subdirectory
-2. **Docs location**: There is no root `/docs/` folder. Standards live in `/standards/docs/`; project docs live inside each project
+2. **Docs location**: The root `/docs/` folder holds only project review decks (`/docs/reviews/`). Standards live in `/standards/docs/`; project docs live inside each project
 3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
 4. **No project templates**: There are no exemplar/template projects, and they are intentionally not being restored. Create new projects by hand
 5. **TODO tracking**: Remove TODOs from ISSUES.md when completed

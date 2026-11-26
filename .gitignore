@@ -12,3 +12,5 @@ coverage/
 **/.env
 
 logs
+# Review deck builds (standards/scripts/review-decks.sh)
+/build/

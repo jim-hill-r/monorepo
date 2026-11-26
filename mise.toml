@@ -60,3 +60,8 @@ run = "bash standards/scripts/affected.sh --all"
 description = "Check every project follows the repo standards"
 dir = "{{config_root}}"
 run = "bash standards/scripts/audit.sh"
+
+[tasks."review-decks"]
+description = "Build the review decks in docs/reviews to HTML and PDF"
+dir = "{{config_root}}"
+run = "bash standards/scripts/review-decks.sh"

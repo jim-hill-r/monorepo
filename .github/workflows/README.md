@@ -48,6 +48,15 @@ dependency releases that break a quiet project show up.
 
 Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs`.
 
+
+## pull-request-review-decks.yml (Review decks)
+
+Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).
+Builds every review deck to HTML and PDF with the Marp CLI through
+`standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
+uploads them as the `review-decks` artifact. See
+[docs/reviews/README.md](../../docs/reviews/README.md).
+
 ## codeql.yml
 
 This workflow runs CodeQL security scanning on the codebase, analyzing JavaScript/TypeScript and GitHub Actions workflows but **not Rust**.

@@ -1,0 +1,167 @@
+---
+name: deep-project-review
+description: Pick the next project in this monorepo's review rotation, study it in depth (purpose, goals, features, user experience, architecture, security, performance, testing, operations) and deliver a detailed Marp slide deck in docs/reviews/ as a pull request for Jim's review. Use for the weekly deep project review or when asked for a deep review of one project.
+---
+
+# Deep project review
+
+Produce one detailed review deck for one project, so Jim can see where the
+project stands and decide what to do next. Read `AGENTS.md` and
+[`docs/reviews/README.md`](../../../docs/reviews/README.md) first. The README
+holds the rotation record and the deck format.
+
+This skill writes a review, not fixes. Don't change the project's code. The
+only files a run changes are its deck folder, the rotation table in
+`docs/reviews/README.md`, and the project's `ISSUES.md` (step 6).
+
+## 1. Pick the project
+
+Unless you were asked to review a specific project:
+
+1. Candidates are the top-level entries (no `/`) in `config_roots` in the root
+   `mise.toml`, except the repo tooling folders `standards` and `monorepo`.
+2. Drop a project that an accepted plan or decision in `standards/docs/` says
+   is being removed (for example `cast`, while the Cast to mise migration is
+   in progress), and any project with an open review pull request (a PR whose
+   branch adds a folder under `docs/reviews/`).
+3. Pick the project that has gone longest without a review, using the
+   rotation table in `docs/reviews/README.md`. A project with no row has never
+   been reviewed and goes first. Break ties in this order: projects under
+   `# Priority Projects` in the root `ISSUES.md` (in listed order), then the
+   rest alphabetically, then projects under `# On Hold Projects` last.
+
+Record the choice and the reason in the deck's title slide and in the
+rotation table.
+
+## 2. Gather evidence
+
+Take the time to read the whole project. Every claim in the deck must point
+at evidence: a `path:line`, a command and its output, a screenshot, or a
+commit or PR link. Say plainly when something is a guess.
+
+- **Purpose and goals.** The project's `README.md`, `ISSUES.md`, any
+  `docs/`, plans and decisions (its own and in `standards/docs/`), and the
+  root `ISSUES.md`. Find the long-term goal it was built for. If no goal is
+  written down anywhere, say so and infer one from the code, marked as a
+  guess, and ask Jim to confirm it.
+- **History.** `git log --stat` for the project (run `git fetch --unshallow`
+  first if the clone is shallow): when it started, when it was last active,
+  what has been done recently, what stalled and when.
+- **Features.** Every route, screen, command, API endpoint or game mode,
+  found from the code, not only the README.
+- **User experience.** Install the tooling and build and run the project as a
+  user would (see **Dev commands** in `AGENTS.md`). For a web app, start the
+  dev server and walk the main journeys with Playwright, saving 3 to 8
+  screenshots at a 1280x800 viewport. For a CLI, record `--help` and one run
+  of each main command. For a game, run it under `xvfb-run` and screenshot it
+  if it starts. Note first-run experience, empty states, error messages,
+  loading, accessibility (keyboard, contrast, labels), mobile layout, and
+  anything confusing or broken. If it doesn't build or run, that is a
+  finding: record the exact error.
+- **Architecture.** Crates or packages, modules, data model, data flow,
+  external services, deploy targets, and the dependency tree (`cargo tree
+  --depth 1`, `package.json`).
+- **Security.** A STRIDE threat model of the assets, actors and trust
+  boundaries; authentication and authorization; input handling; secrets and
+  configuration; CORS and headers for web apps; and known-vulnerable
+  dependencies (`cargo audit` and `npm audit` where they apply; install
+  `cargo-audit` with `cargo install --locked cargo-audit` if needed). Rate
+  each finding Critical, High, Medium or Low with a one-line reason.
+- **Performance.** Measure what you can: build time, binary or wasm bundle
+  size, test run time, startup time, page weight. Then read the hot paths
+  for needless allocation, blocking work in async code, N+1 lookups or
+  unbounded growth.
+- **Quality and testing.** Run the project's CI task and record the result.
+  Compare against `standards/docs/` (rust, testing, documentation, naming,
+  typescript). Note what is tested, what isn't, and lints that are off.
+- **Operations and cost.** How it is built, deployed and observed, what
+  vendors it uses, what it costs, and whether that matches the vendor rule in
+  `AGENTS.md`.
+
+## 3. Judge the state against the goals
+
+This is the heart of the deck. For each long-term goal, say how far along the
+project is (not started, early, partly there, mostly there, done) with
+evidence, and what is holding it up. Blockers can be technical (a broken
+build, a missing piece of architecture), process (no tests, no deploy), a
+decision only Jim can make, or plain lack of attention. Rank them by how much
+they slow the project down.
+
+## 4. Write the deck
+
+Create `docs/reviews/<YYYY-MM-DD>-<project>/deck.md` (the run's date in
+America/New_York; replace `/` in a project path with `-`). Put screenshots
+and other images in the same folder as PNG, each under 300 KB, and reference
+them with relative paths. Follow the format in `docs/reviews/README.md`. Use
+these sections, one or more slides each, in this order:
+
+1. **Title**: project, date, reviewer, why this project was picked this week.
+2. **Executive summary**: what the project is in one sentence, its state
+   against its goals, the three biggest blockers, a scorecard (one row each
+   for goals, UX, architecture, security, performance, quality, operations,
+   rated Good, Fair or Poor with a few words of why), and the top five
+   recommendations.
+3. **Purpose and long-term goals**: who it is for, what problem it solves,
+   the goals and where they are written down.
+4. **Progress against goals and what is holding it up** (step 3).
+5. **Features**: a table of every feature with its status (works, partial,
+   broken, stub).
+6. **User experience**: journeys walked, screenshots, what works, what hurts.
+7. **Architecture**: components, data flow, dependencies, deployment. Draw
+   diagrams as text in a fenced code block or as a table; Marp doesn't render
+   Mermaid.
+8. **Security**: threat model, then findings by severity.
+9. **Performance**: measurements, then findings.
+10. **Code quality and testing**: CI result, coverage of tests, gaps against
+    the standards.
+11. **Operations and cost**: build, deploy, observability, vendors, cost.
+12. **Risks and technical debt**.
+13. **Recommendations**: a prioritized table with impact, effort (S, M, L)
+    and the area each one moves forward.
+14. **Questions for Jim**: decisions or facts only Jim can give.
+15. **Appendix**: method, commands run with their results, and evidence
+    links.
+
+Aim for 25 to 45 slides. Keep each slide to what fits on one screen: split a
+long table across slides rather than shrinking it. Write in plain sentences
+for a reader who knows the repo but hasn't opened this project in months.
+
+Build the deck locally before pushing, and fix anything that overflows or
+fails to render:
+
+```sh
+npx --yes @marp-team/marp-cli@4.5.1 --html --allow-local-files \
+  docs/reviews/<folder>/deck.md -o /tmp/deck.html
+```
+
+## 5. Record the rotation
+
+Add a row for this review to the rotation table in `docs/reviews/README.md`
+(date, project, deck link, PR link once the PR exists). Keep one row per
+review, newest first.
+
+## 6. File the follow-ups
+
+Add each recommendation as a `TODO (agent-generated):` item under
+`# Priority Issues` in the project's `ISSUES.md` (create the file if missing,
+in the shape the `code-review` skill uses), each linking back to the deck.
+Merging the review PR accepts them; Jim can strike any he disagrees with in
+review. Don't add a TODO that duplicates an existing one.
+
+## 7. Open the pull request
+
+Deliver with the `open-pull-request` skill, with these differences:
+
+- A review PR only adds docs, so it doesn't wait for other agent PRs to
+  close, and there is no project CI to run. The `Review decks` check builds
+  the deck to HTML and PDF and attaches them to the run.
+- Title: `<project>: deep review <YYYY-MM-DD>`.
+- The description opens with the executive summary (state against goals,
+  top blockers, top recommendations), links to the deck file on the branch,
+  says where to download the HTML and PDF (the `Review decks` run's
+  artifacts), and asks Jim for feedback as PR review comments on the deck.
+- Request a review from `jimhillr`, and mark the PR ready for review once the
+  `Review decks` check is green.
+
+When Jim leaves feedback, answer each comment in the deck (or reply on the PR
+saying why not), and keep the PR ready for review.
