@@ -1,0 +1,8 @@
+# evals: rust project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+
+[task_config]
+includes = ["../standards/tasks/rust.toml"]
