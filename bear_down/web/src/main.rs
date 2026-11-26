@@ -6,7 +6,8 @@
 mod data;
 mod teams;
 
-use data::{Game, Goal, Rooting, percent, swing_percent, timestamp};
+use bear_down_core::NEGLIGIBLE_SWING;
+use data::{Game, Goal, Rooting, no_pick_label, percent, swing_percent, timestamp};
 use dioxus::prelude::*;
 
 const STYLE: &str = include_str!("style.css");
@@ -157,7 +158,8 @@ fn GameRow(game: Game, goal: Goal) -> Element {
     let away = teams::nickname(&game.away);
     let home = teams::nickname(&game.home);
     let home_p = percent(game.home_win_probability);
-    let pick = s.root_for.as_deref().map(teams::name);
+    let (root, tier) = goal.verdict(&game, NEGLIGIBLE_SWING);
+    let pick = root.as_deref().map(teams::name);
     let impact = format!("{} {}", swing_percent(s.swing), goal.odds_label());
     // Playoff odds are larger and easier to feel, so the Super Bowl view
     // shows their swing too (decision 0002).
@@ -179,7 +181,7 @@ fn GameRow(game: Game, goal: Goal) -> Element {
                             span { class: "impact secondary", "{p}" }
                         }
                     },
-                    None => rsx! { span { class: "root", "{s.no_pick_label()}" } },
+                    None => rsx! { span { class: "root", "{no_pick_label(tier)}" } },
                 }
             }
             if !s.why.is_empty() {
