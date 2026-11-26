@@ -144,7 +144,7 @@ Workflows should:
   2. Update documentation (README files, this document)
   3. Update GitHub Actions caches (cache keys include versions)
   4. Test on representative projects
-  5. Update copilot-instructions.md
+  5. Update the Dev commands section of AGENTS.md
 
 ## Installation Verification
 
@@ -222,5 +222,5 @@ In configuration files (Playwright, CI workflows, etc.), **always use cast comma
 - Pull Request CI Workflow: `.github/workflows/pull-request-ci.yml`
 - Trunk CI Workflow: `.github/workflows/trunk-ci.yml`
 - Workflow Conventions: `.github/WORKFLOW_CONVENTIONS.md`
-- Copilot Instructions: `.github/copilot-instructions.md`
+- Agent instructions: `AGENTS.md` and `.agents/skills/`
 - Cast Toolchain Epic: `/ISSUES.md` (implementation plan)

@@ -1,14 +1,14 @@
 # Repository Structure
 
-This document describes the organization and structure of this monorepo to help GitHub Copilot agents and developers understand the codebase.
+This document describes the organization and structure of this monorepo to help AI agents and developers understand the codebase.
 
 ## Top-Level Structure
 
 ```
 /
-├── .github/              # GitHub Actions workflows and agent configurations
+├── .agents/skills/       # Agent Skills (agentskills.io) for AI agents; .claude/skills links here
+├── .github/              # GitHub Actions workflows and repo configuration
 │   ├── workflows/        # CI/CD and maintenance workflows (pull-request-ci.yml, push-main-ci.yml, nightly-ci.yml, ...)
-│   ├── copilot-instructions.md # Instructions for coding agents
 │   └── dependabot.yml    # Dependency update configuration
 ├── monorepo/            # High-level monorepo functionality workspace
 │   └── workflow_tests/  # Tests for GitHub Actions workflows
@@ -18,9 +18,8 @@ This document describes the organization and structure of this monorepo to help 
 ├── standards/           # Coding, testing, workflow and documentation standards (standards/docs/)
 ├── athenaeum/           # Learning resources (algorithms, system design, etc.)
 ├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
-├── agent_copilot/       # Binary for creating GitHub Copilot agent tasks
-│   └── prompts/         # Prompts for GitHub Copilot agents
 ├── [other projects]     # Various projects and applications
+├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
 ├── ISSUES.md            # Project-wide TODO and issue tracking
 ├── REPOSITORY_STRUCTURE.md # This file
 └── README.md            # Main README
@@ -57,7 +56,6 @@ Contains GitHub Actions workflows, including:
 - `pull-request-ci.yml` - Runs `cast ci` for projects changed in a pull request
 - `push-main-ci.yml` / `push-main-cd.yml` - CI and delivery for commits on main
 - `nightly-ci.yml` / `nightly-standards-audit.yml` - Scheduled CI and standards audit
-- `all-start-a-new-task.yml` - Creates a new agent task (manual trigger only)
 - `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default)
 - `all-codeql.yml` - CodeQL code scanning
 
@@ -86,7 +84,7 @@ The `cast` CLI is the primary tool for managing this monorepo:
 
 1. Check `ISSUES.md` in the repository root and in each project
 2. Use the TODO Tree extension to find TODOs in code
-3. GitHub Copilot agents automatically work on TODOs from ISSUES.md
+3. AI agents work on TODOs from ISSUES.md using the `start-a-new-task` skill in `.agents/skills/`
 
 ## Project Dependencies
 
@@ -109,5 +107,5 @@ The `cast` CLI is the primary tool for managing this monorepo:
 3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
 4. **No project templates**: There are no exemplar/template projects, and they are intentionally not being restored. Create new projects by hand
 5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
-6. **Concurrency**: Only one agent task should run at a time (handled by workflows)
+6. **Concurrency**: Only one automated agent task should be open at a time (an open agent PR means wait)
 7. **Cast Tooling**: All projects should have a Cast.toml if it is missing.
