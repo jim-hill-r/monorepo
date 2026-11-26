@@ -1,0 +1,6 @@
+[monorepo]
+config_roots = [
+  "app",
+  "app/web",
+  "tool",
+]

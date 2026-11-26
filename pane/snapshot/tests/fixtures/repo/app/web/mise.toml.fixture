@@ -1,0 +1,5 @@
+[env]
+DEPLOY_URL = "https://app.pages.dev"
+
+[task_config]
+includes = ["../../standards/tasks/dioxus-web.toml"]
