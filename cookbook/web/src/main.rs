@@ -290,33 +290,53 @@ fn get_week_start_date() -> NaiveDate {
     now - chrono::Duration::days(days_since_monday.into())
 }
 
-/// Get recipe day information for sidebar display
-/// Returns a vector of (day_of_year, formatted_date) tuples for the current week
-/// (up to 7 days, or fewer if we reach MAX_DAY_OF_YEAR), using the same logic as
-/// get_week_recipes() to ensure the sidebar matches the Plan component.
+/// Monday-to-Sunday dates of ISO 8601 `week` in ISO year `year`, or `None` when
+/// that year has no such week (only some years have a week 53).
+fn iso_week_dates(year: i32, week: u32) -> Option<[NaiveDate; 7]> {
+    let monday = NaiveDate::from_isoywd_opt(year, week, Weekday::Mon)?;
+    Some(std::array::from_fn(|i| {
+        monday + chrono::Duration::days(i as i64)
+    }))
+}
+
+/// The dates the plan for ISO `week` covers, seen from `today`.
+///
+/// Plans are not tied to a year, so each one is placed on the occurrence of its
+/// ISO week (last, this or next ISO year) whose Monday is closest to `today`.
+/// That puts week 53 on 28 Dec 2026 to 3 Jan 2027, and week 1 seen in late
+/// December on the coming January.
+fn plan_week_dates(week: u32, today: NaiveDate) -> Option<[NaiveDate; 7]> {
+    let iso_year = today.iso_week().year();
+    [iso_year - 1, iso_year, iso_year + 1]
+        .into_iter()
+        .filter_map(|year| iso_week_dates(year, week))
+        .min_by_key(|dates| (dates[0] - today).num_days().abs())
+}
+
+/// A week's plan with the date each recipe falls on: (recipe day, title, date).
+fn get_week_plan_days(week: u32, today: NaiveDate) -> Vec<(u32, String, Option<NaiveDate>)> {
+    let dates = plan_week_dates(week, today);
+    get_week_recipes(week)
+        .into_iter()
+        .enumerate()
+        .map(|(i, (day, title))| (day, title, dates.map(|d| d[i])))
+        .collect()
+}
+
+/// Get recipe day information for sidebar display.
+/// Returns (recipe_day, formatted_date) for each day, Monday to Sunday, of the
+/// ISO week containing `today`, using the same plan as the Plan page. The label
+/// is the real date in this year, and the link is the plan's recipe for it.
+fn sidebar_recipe_days(today: NaiveDate) -> Vec<(u32, String)> {
+    get_week_plan_days(today.iso_week().week(), today)
+        .into_iter()
+        .filter_map(|(day, _title, date)| Some((day, format_recipe_day(date?))))
+        .collect()
+}
+
+/// Sidebar recipe days for the current local date.
 fn get_sidebar_recipe_days() -> Vec<(u32, String)> {
-    let current_week = get_current_week_of_year();
-    let recipes = get_week_recipes(current_week);
-    let mut days = Vec::new();
-
-    // Convert recipe data to formatted display data
-    for (day_of_year, _title) in recipes {
-        // Convert day of year to a date to format it
-        let year = Local::now().year();
-        if let Some(date) = NaiveDate::from_yo_opt(year, day_of_year) {
-            let formatted = format_recipe_day(date);
-            days.push((day_of_year, formatted));
-        } else {
-            // Log unexpected invalid day_of_year values instead of silently skipping them
-            eprintln!(
-                "get_sidebar_recipe_days: invalid day_of_year {} for year {} - \
-                 skipping this entry (sidebar may show fewer than 7 days)",
-                day_of_year, year
-            );
-        }
-    }
-
-    days
+    sidebar_recipe_days(Local::now().date_naive())
 }
 
 /// Get plan weeks to display in sidebar with their start dates
@@ -609,7 +629,14 @@ fn Plan(week: u32) -> Element {
             }
         }
     } else {
-        let recipes = get_week_recipes(week);
+        let recipes: Vec<(u32, String, String)> =
+            get_week_plan_days(week, Local::now().date_naive())
+                .into_iter()
+                .map(|(day, title, date)| {
+                    let when = date.map_or_else(|| format!("Day {day}"), format_recipe_day);
+                    (day, title, when)
+                })
+                .collect();
         let shopping_list = get_week_shopping_list(week);
 
         rsx! {
@@ -645,11 +672,11 @@ fn Plan(week: u32) -> Element {
                     } else {
                         ul {
                             class: "recipe-list",
-                            for (day, title) in recipes {
+                            for (day, title, when) in recipes {
                                 li {
                                     class: "recipe-item",
                                     Link { to: Route::Recipe { day }, "{title}" }
-                                    span { class: "recipe-day", " (Day {day})" }
+                                    span { class: "recipe-day", " ({when})" }
                                 }
                             }
                         }
@@ -791,36 +818,100 @@ mod tests {
     }
 
     #[test]
-    fn test_sidebar_recipe_days_sorted_numerically() {
-        // Test that recipe days are in chronological order for the current ISO week
-        let days = get_sidebar_recipe_days();
-
-        // Should not be empty
-        assert!(!days.is_empty(), "Recipe days should not be empty");
-
-        // Should have at most 7 entries (one week)
-        // May be fewer at year boundaries when ISO week spans two calendar years
-        assert!(
-            days.len() <= 7,
-            "Should show at most 7 days of the week, got {}",
-            days.len()
+    fn test_sidebar_recipe_days_are_monday_to_sunday_of_the_iso_week() {
+        // A Thursday in week 48 of 2026: the sidebar lists Mon 23 to Sun 29 Nov,
+        // not the 2024 day numbers (which would start on Thursday 26 Nov).
+        let days = sidebar_recipe_days(test_date(2026, 11, 26));
+        let labels: Vec<&str> = days.iter().map(|(_, label)| label.as_str()).collect();
+        assert_eq!(
+            labels,
+            [
+                "Mon, 23-Nov",
+                "Tue, 24-Nov",
+                "Wed, 25-Nov",
+                "Thu, 26-Nov",
+                "Fri, 27-Nov",
+                "Sat, 28-Nov",
+                "Sun, 29-Nov"
+            ]
         );
+        let plan_days: Vec<u32> = get_week_recipes(48).iter().map(|(d, _)| *d).collect();
+        let sidebar_days: Vec<u32> = days.iter().map(|(d, _)| *d).collect();
+        assert_eq!(sidebar_days, plan_days, "Links follow the week 48 plan");
+    }
 
-        // Verify all days are within valid range (1-366 for leap years)
-        for (day, _) in &days {
-            assert!(
-                (1..=366).contains(day),
-                "Day {} should be in valid range 1-366",
-                day
+    #[test]
+    fn test_sidebar_recipe_days_week_53() {
+        // ISO 2026 has 53 weeks; week 53 runs Mon 28 Dec 2026 to Sun 3 Jan 2027.
+        for today in [
+            test_date(2026, 12, 28),
+            test_date(2027, 1, 1),
+            test_date(2027, 1, 3),
+        ] {
+            let days = sidebar_recipe_days(today);
+            let labels: Vec<&str> = days.iter().map(|(_, label)| label.as_str()).collect();
+            assert_eq!(
+                labels,
+                [
+                    "Mon, 28-Dec",
+                    "Tue, 29-Dec",
+                    "Wed, 30-Dec",
+                    "Thu, 31-Dec",
+                    "Fri, 1-Jan",
+                    "Sat, 2-Jan",
+                    "Sun, 3-Jan"
+                ],
+                "sidebar on {today}"
             );
+            let recipe_days: Vec<u32> = days.iter().map(|(d, _)| *d).collect();
+            assert_eq!(recipe_days, [362, 363, 364, 365, 1, 2, 3]);
         }
+    }
 
-        // Days should be in ascending order (within the current year)
-        for i in 1..days.len() {
-            assert!(
-                days[i].0 > days[i - 1].0,
-                "Days should be in ascending order"
-            );
+    #[test]
+    fn test_sidebar_recipe_days_every_day_has_seven_entries() {
+        // Every day across two year boundaries (one with a week 53) shows a full week.
+        let mut date = test_date(2025, 12, 1);
+        while date <= test_date(2027, 1, 31) {
+            assert_eq!(sidebar_recipe_days(date).len(), 7, "sidebar on {date}");
+            date = date.succ_opt().unwrap();
+        }
+    }
+
+    #[test]
+    fn test_iso_week_dates() {
+        let dates = iso_week_dates(2026, 53).expect("2026 has a week 53");
+        assert_eq!(dates[0], test_date(2026, 12, 28));
+        assert_eq!(dates[6], test_date(2027, 1, 3));
+        assert!(iso_week_dates(2027, 53).is_none(), "2027 has 52 weeks");
+        assert!(iso_week_dates(2025, 53).is_none(), "2025 has 52 weeks");
+    }
+
+    #[test]
+    fn test_plan_week_dates_picks_nearest_occurrence() {
+        // Week 1 seen in late December 2026 is the coming January.
+        let week1 = plan_week_dates(1, test_date(2026, 12, 20)).unwrap();
+        assert_eq!(week1[0], test_date(2027, 1, 4));
+        // Week 53 seen in 2027 (which has none) is the one just past.
+        let week53 = plan_week_dates(53, test_date(2027, 3, 1)).unwrap();
+        assert_eq!(week53[0], test_date(2026, 12, 28));
+        // A mid-year week is in the current year.
+        let week26 = plan_week_dates(26, test_date(2026, 11, 26)).unwrap();
+        assert_eq!(week26[0], test_date(2026, 6, 22));
+        // Every week of every year has dates.
+        for week in 1..=53 {
+            assert!(plan_week_dates(week, test_date(2026, 11, 26)).is_some());
+        }
+    }
+
+    #[test]
+    fn test_every_week_plan_has_seven_dated_recipes() {
+        let today = test_date(2026, 11, 26);
+        for week in 1..=53 {
+            let days = get_week_plan_days(week, today);
+            assert_eq!(days.len(), 7, "week {week} should have 7 recipes");
+            assert!(days.iter().all(|(_, _, date)| date.is_some()));
+            assert!(!get_week_shopping_list(week).is_empty(), "week {week}");
         }
     }
 
@@ -975,42 +1066,6 @@ mod tests {
             "Current week {} should be in valid range 1-53",
             week
         );
-    }
-
-    #[test]
-    fn test_sidebar_recipe_days_uses_week_calculation() {
-        // Test that recipe days use the week calculation logic (not calendar week)
-        let current_week = get_current_week_of_year();
-        let days = get_sidebar_recipe_days();
-
-        // Should have 7 entries (or fewer if near end of year)
-        assert!(days.len() <= 7);
-        assert!(!days.is_empty());
-
-        // Calculate expected starting day based on current week
-        let expected_start_day = (current_week - 1) * 7 + 1;
-
-        // First day should match the expected start day for the current week
-        assert_eq!(days[0].0, expected_start_day);
-
-        // Verify each day is consecutive from the start day
-        for i in 0..days.len() {
-            let expected_day = expected_start_day + i as u32;
-            assert_eq!(
-                days[i].0, expected_day,
-                "Day {} should match expected day",
-                i
-            );
-        }
-
-        // All days should be in valid range (1-365)
-        for (day, _) in &days {
-            assert!(
-                (1..=365).contains(day),
-                "Day {} should be in valid range 1-365",
-                day
-            );
-        }
     }
 
     #[test]
