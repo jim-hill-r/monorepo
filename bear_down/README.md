@@ -25,8 +25,9 @@ playoff field since 2002. `bear_down_core::simulate` plays out the rest of
 the season and the playoffs (100,000 times for a weekly build, about half a
 second in a release build) and gives every team's playoff and Super Bowl
 odds, plus each of this week's games' swing on the Bears' playoff and Super
-Bowl odds and on the NFC North divisional-round goal. Nothing downloads the
-data or writes `rooting.json` yet.
+Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downloads
+the nflverse schedule, runs the simulation and writes `rooting.json`
+([format](docs/rooting-json.md)).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
 the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
 

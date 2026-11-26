@@ -143,6 +143,9 @@ name = "bear_down_cli"
 version = "0.1.0"
 dependencies = [
  "bear_down_core",
+ "reqwest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2278,6 +2281,7 @@ dependencies = [
  "bytes",
  "cookie",
  "cookie_store",
+ "futures-channel",
  "futures-core",
  "futures-util",
  "http",

@@ -10,7 +10,7 @@ pub mod sim;
 pub mod standings;
 
 pub use elo::{EloParams, Ratings};
-pub use games::{Game, GameType, Outcome, Schedule, Score, Season, Week};
+pub use games::{Date, Game, GameType, Outcome, Schedule, Score, Season, Week};
 pub use sim::{GameImpact, SimConfig, Simulation, Swing, TeamOdds, simulate};
 pub use standings::{Conference, Division, Record, Region, Standings, Team};
 
