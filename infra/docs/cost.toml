@@ -7,3 +7,10 @@ blip = "GitHub (Actions, Dependabot, CodeQL)"
 plan = "free"
 why = "PR CI runs `mise run ci` (build, tests, synth check, `tofu validate`), about a minute a run on a standard runner."
 notes = "The plan and apply workflows will add a minute or two per PR and merge that touches infra/, and one drift plan a week. They will also use Auth0 machine-to-machine tokens (about 30 to 60 a month, decision 0007), which needs Jim to raise the auth0_m2m_tokens_per_month budget from 0 first."
+
+[[service]]
+blip = "Cloudflare R2"
+plan = "free"
+why = "OpenTofu state for every stack, in the one private bucket jimhillr-infra-state (decision 0009). The account needs a payment method for R2; usage stays far inside the free tier."
+[service.usage]
+r2_storage_bytes = 100000
