@@ -1,0 +1,13 @@
+{
+  "format_version": "1.2",
+  "planned_values": {"root_module": {"resources": [
+    {"address": "cloudflare_r2_bucket.assets", "mode": "managed", "type": "cloudflare_r2_bucket", "name": "assets", "provider_name": "registry.opentofu.org/cloudflare/cloudflare", "values": {"name": "assets"}, "sensitive_values": {}}
+  ]}},
+  "resource_changes": [
+    {"address": "cloudflare_r2_bucket.assets", "mode": "managed", "type": "cloudflare_r2_bucket", "name": "assets", "provider_name": "registry.opentofu.org/cloudflare/cloudflare",
+     "change": {"actions": ["create"], "before": null, "after": {"name": "assets"}, "after_unknown": {"id": true}, "before_sensitive": false, "after_sensitive": {}}}
+  ],
+  "configuration": {"root_module": {"resources": [
+    {"address": "cloudflare_r2_bucket.assets", "mode": "managed", "type": "cloudflare_r2_bucket", "name": "assets", "expressions": {"name": {"constant_value": "assets"}}}
+  ]}}
+}

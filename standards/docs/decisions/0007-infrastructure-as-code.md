@@ -259,6 +259,25 @@ Option A. Each item is a default, so Jim can answer "yes to all".
     CDKTF and CDK Terrain, Pulumi, Crossplane, and Terraform with HCP
     Terraform go in Hold, with the reasons above.
 
+## Amendment: no secrets in state (Jim, 2026-11-26)
+
+Jim: "Never commit secrets to git or store them in tf state." This tightens
+items 6 and 9:
+
+- **IAC-002 fails on any sensitive value in state**, not only one our
+  configuration sets: a token or client secret the vendor generates
+  fails too. Write-only attributes (which never reach state) pass. The few
+  attributes a provider marks sensitive that hold nothing secret (Auth0's
+  public signing certificates) are listed with their reason in
+  `infra/src/guard.rs`.
+- **IaC never mints or copies a secret.** A token IaC creates would have its
+  value in state, so tokens and their GitHub secrets stay made by hand.
+  IaC may still change settings around them where that keeps the value out
+  of state.
+- **Where state lives (item 7) is reopened**, because a branch of the
+  public repo is still git. The options and their costs are put to Jim
+  separately; until he answers, nothing is applied.
+
 ## How it fits the cleanup plan and the eval engine
 
 Jim's rule: IaC feeds the orphaned-resources work, but that stays a

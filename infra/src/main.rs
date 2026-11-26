@@ -3,13 +3,16 @@
 //! `infra synth` writes `out/<stack>/main.tf.json` for every stack, and
 //! `infra synth --check` fails when the committed files differ from a fresh
 //! synth. OpenTofu plans and applies those files; this program never calls a
-//! vendor API.
+//! vendor API. `infra guard <plan.json>` checks a saved plan's JSON against
+//! the plan guards (IAC-001 to IAC-004) before it may be applied.
 
 mod constructs;
+mod guard;
 mod stacks;
 mod synth;
 mod tfschema;
 
+use anyhow::Context;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -32,6 +35,15 @@ enum Command {
         #[arg(long, default_value = concat!(env!("CARGO_MANIFEST_DIR"), "/out"))]
         out: PathBuf,
     },
+    /// Check a plan (`tofu show -json plan.tfplan > plan.json`) against the
+    /// plan guards; fails on any finding.
+    Guard {
+        /// The plan's JSON.
+        plan: PathBuf,
+        /// The free-tier budgets.
+        #[arg(long, default_value = concat!(env!("CARGO_MANIFEST_DIR"), "/../standards/radar/limits.toml"))]
+        limits: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -52,6 +64,25 @@ fn main() -> anyhow::Result<()> {
                     println!("wrote {}", stack.path(&out).display());
                 }
             }
+            Ok(())
+        }
+        Command::Guard { plan, limits } => {
+            let text = std::fs::read_to_string(&plan)
+                .with_context(|| format!("reading {}", plan.display()))?;
+            let json: serde_json::Value = serde_json::from_str(&text)
+                .with_context(|| format!("{} is not plan JSON", plan.display()))?;
+            let findings = guard::check(&json, &guard::read_budgets(&limits)?);
+            for finding in &findings {
+                eprintln!("{finding}");
+            }
+            if !findings.is_empty() {
+                anyhow::bail!(
+                    "{} plan guard finding(s) in {}",
+                    findings.len(),
+                    plan.display()
+                );
+            }
+            println!("guard: ok ({})", plan.display());
             Ok(())
         }
     }

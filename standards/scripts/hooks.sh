@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Git hook checks, run by lefthook (see lefthook.yml). Runs what PR CI runs:
-# `mise run //:audit`, the secret scan (secrets-check.sh, SEC-001), the
+# `mise run //:audit` (its cost check only for the affected projects), the secret scan (secrets-check.sh, SEC-001), the
 # dependency audits where a lockfile changed (deps-check.sh, SEC-003/SEC-004,
 # warnings only), then `mise run ci` in every affected project.
 #
@@ -126,8 +126,10 @@ check_tools() {
   MISE_OFFLINE=1 MISE_TASK_RUN_AUTO_INSTALL=false mise run --quiet ci:check-tools
 }
 
+# COST-*: the audit's cost check runs its per-project rules (COST-001 to
+# COST-004, COST-007 to COST-009) only for the affected projects.
 say "running //:audit"
-mise run --quiet //:audit || failed+=("//:audit")
+COST_PROJECTS=$(IFS=,; echo "${list[*]}") mise run --quiet //:audit || failed+=("//:audit")
 
 for p in "${list[@]}"; do
   if [ "$stage" = pre-push ] && grep -qxF "$p" "$cache_dir/$tree" 2>/dev/null; then

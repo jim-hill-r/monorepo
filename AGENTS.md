@@ -109,6 +109,13 @@ repo, rather than in any one agent tool's settings.
   usage and money in `docs/cost.toml`, checked by `cost check`
   ([standards/docs/cost.md](standards/docs/cost.md)); update it in any PR
   that adds a service, a deploy or a cost.
+- **No secrets in git or state (Jim, 2026-11-26).** "Never commit secrets
+  to git or store them in tf state." No secret value (token, password,
+  client secret, key) is ever committed, and none may be in OpenTofu
+  state, not even encrypted. IaC never generates or copies a secret;
+  secrets are made by a person and stored only as GitHub or vendor
+  secrets. The `infra` plan guard IAC-002 fails any plan that would put a
+  sensitive value in state.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -122,7 +129,9 @@ repo, rather than in any one agent tool's settings.
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
-  `needs-jim`).
+  `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
+  changes what the repo uses or costs, and `needs-human` when it adds a
+  vendor or money or raises a budget (standards/docs/cost.md).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own

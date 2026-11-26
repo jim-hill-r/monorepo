@@ -42,7 +42,7 @@ async function openFamilyTree(page: Page) {
   await page.waitForLoadState('networkidle');
 }
 
-test.describe('Family tree page', () => {
+test.describe('Family tree page @req:CAHO-001', () => {
   test('shows the page heading and the tree drawing', async ({ page }) => {
     await openFamilyTree(page);
 

@@ -8,8 +8,12 @@ use uuid::Uuid;
 /// Embedded recipe store that includes all recipe markdown files at compile time.
 /// This is suitable for WASM/web targets where filesystem access is not available.
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+///
+/// Recipes are keyed by UUID, with an index from each recipe's legacy ID to its UUID, the same
+/// way as [`crate::MarkdownRecipeStore`].
 pub struct EmbeddedRecipeStore {
-    recipes: HashMap<String, Recipe>,
+    recipes: HashMap<Uuid, Recipe>,
+    ids: HashMap<String, Uuid>,
 }
 
 static EMBEDDED_STORE: OnceLock<EmbeddedRecipeStore> = OnceLock::new();
@@ -21,6 +25,7 @@ impl EmbeddedRecipeStore {
         EMBEDDED_STORE.get_or_init(|| {
             let mut store = EmbeddedRecipeStore {
                 recipes: HashMap::new(),
+                ids: HashMap::new(),
             };
             store.load_embedded_recipes();
             store
@@ -37,7 +42,9 @@ impl EmbeddedRecipeStore {
         for (day, content) in recipe_files {
             match Self::parse_recipe_markdown(content, day) {
                 Ok(recipe) => {
-                    self.recipes.insert(recipe.id.clone(), recipe);
+                    if let Err(e) = self.insert(recipe) {
+                        tracing::warn!(day = day, error = %e, "Skipped recipe for day {}", day);
+                    }
                 }
                 Err(e) => {
                     // Log parsing failures to help with debugging
@@ -62,6 +69,29 @@ impl EmbeddedRecipeStore {
         }
     }
 
+    /// Adds `recipe`, unless another recipe already has its UUID or legacy ID.
+    fn insert(&mut self, recipe: Recipe) -> RecipeResult<()> {
+        if self.recipes.contains_key(&recipe.uuid) || self.ids.contains_key(&recipe.id) {
+            return Err(RecipeError::AlreadyExists(format!(
+                "Recipe with id '{}' or uuid '{}' already exists",
+                recipe.id, recipe.uuid
+            )));
+        }
+        self.ids.insert(recipe.id.clone(), recipe.uuid);
+        self.recipes.insert(recipe.uuid, recipe);
+        Ok(())
+    }
+
+    /// The UUID of the recipe that `id` names: a UUID string or a legacy ID.
+    fn resolve_id(&self, id: &str) -> Option<Uuid> {
+        if let Ok(uuid) = Uuid::parse_str(id)
+            && self.recipes.contains_key(&uuid)
+        {
+            return Some(uuid);
+        }
+        self.ids.get(id).copied()
+    }
+
     /// Parses recipe data from markdown content
     fn parse_recipe_markdown(content: &str, day: u32) -> RecipeResult<Recipe> {
         crate::parse::recipe(
@@ -74,23 +104,17 @@ impl EmbeddedRecipeStore {
 
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 impl RecipeReader for EmbeddedRecipeStore {
+    /// Accepts a UUID string or a legacy ID such as `day-1`.
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe> {
-        // Try to parse as UUID first
-        if let Ok(uuid) = Uuid::parse_str(id) {
-            return self.get_by_uuid(&uuid);
-        }
-
-        // Fall back to legacy ID lookup
-        self.recipes
-            .get(id)
+        self.resolve_id(id)
+            .and_then(|uuid| self.recipes.get(&uuid))
             .cloned()
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with id '{}' not found", id)))
     }
 
     fn get_by_uuid(&self, uuid: &Uuid) -> RecipeResult<Recipe> {
         self.recipes
-            .values()
-            .find(|r| r.uuid == *uuid)
+            .get(uuid)
             .cloned()
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
     }
@@ -100,8 +124,9 @@ impl RecipeReader for EmbeddedRecipeStore {
         Ok(self.recipes.values().cloned().collect())
     }
 
+    /// Accepts a UUID string or a legacy ID, like [`RecipeReader::get_by_id`].
     fn exists(&self, id: &str) -> bool {
-        self.recipes.contains_key(id)
+        self.resolve_id(id).is_some()
     }
 }
 
@@ -129,6 +154,57 @@ mod tests {
         assert!(recipe.prep_time_minutes.is_some());
         assert!(recipe.cook_time_minutes.is_some());
         assert!(recipe.servings.is_some());
+    }
+
+    #[test]
+    fn test_recipe_found_by_uuid_and_legacy_id() {
+        let store = EmbeddedRecipeStore::global();
+        let recipe = store.get_by_id("day-1").unwrap();
+        let uuid = recipe.uuid.to_string();
+
+        assert!(store.exists("day-1"));
+        assert!(store.exists(&uuid), "exists should accept a UUID");
+        assert_eq!(store.get_by_id(&uuid).unwrap().id, "day-1");
+        assert_eq!(store.get_by_uuid(&recipe.uuid).unwrap().id, "day-1");
+    }
+
+    #[test]
+    fn test_every_recipe_found_by_uuid() {
+        let store = EmbeddedRecipeStore::global();
+        for recipe in store.get_all().unwrap() {
+            assert!(store.exists(&recipe.uuid.to_string()));
+            assert_eq!(store.get_by_uuid(&recipe.uuid).unwrap().id, recipe.id);
+        }
+    }
+
+    #[test]
+    fn test_unknown_ids_not_found() {
+        let store = EmbeddedRecipeStore::global();
+        let unknown = "00000000-0000-0000-0000-000000000000";
+        assert!(!store.exists(unknown));
+        assert!(store.get_by_id(unknown).is_err());
+        assert!(store.get_by_uuid(&Uuid::nil()).is_err());
+        assert!(!store.exists("day-0"));
+        assert!(!store.exists("not-a-recipe"));
+    }
+
+    #[test]
+    fn test_duplicate_uuid_or_id_rejected() {
+        let mut store = EmbeddedRecipeStore {
+            recipes: HashMap::new(),
+            ids: HashMap::new(),
+        };
+        let recipe = EmbeddedRecipeStore::global().get_by_id("day-1").unwrap();
+        store.insert(recipe.clone()).unwrap();
+
+        let mut same_uuid = recipe.clone();
+        same_uuid.id = "day-999".to_string();
+        assert!(store.insert(same_uuid).is_err());
+
+        let mut same_id = recipe;
+        same_id.uuid = Uuid::nil();
+        assert!(store.insert(same_id).is_err());
+        assert_eq!(store.recipes.len(), 1);
     }
 
     #[test]

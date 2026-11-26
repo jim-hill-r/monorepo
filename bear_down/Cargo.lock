@@ -161,6 +161,7 @@ name = "bear_down_web"
 version = "0.1.0"
 dependencies = [
  "bear_down_core",
+ "design_system_dioxus",
  "dioxus",
  "serde",
  "serde_json",
@@ -555,6 +556,15 @@ dependencies = [
  "rustc_version",
  "syn 2.0.119",
  "unicode-xid",
+]
+
+[[package]]
+name = "design_system_dioxus"
+version = "0.1.0"
+dependencies = [
+ "dioxus",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
