@@ -18,8 +18,10 @@ The name comes from "Bear Down, Chicago Bears", the team's fight song.
 
 Early development. `core` parses the nflverse schedule and results
 (`bear_down_core::Schedule`) and builds Elo ratings and single-game win
-probabilities from them (`bear_down_core::Ratings`), but nothing is simulated
-yet.
+probabilities from them (`bear_down_core::Ratings`). It also computes
+standings, division winners and playoff seeds with the NFL tiebreakers from
+decision 0005 (`bear_down_core::Standings`), checked against every real
+playoff field since 2002, but nothing is simulated yet.
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
 the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
 
