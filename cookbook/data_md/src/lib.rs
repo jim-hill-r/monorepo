@@ -13,14 +13,21 @@ mod parse;
 
 /// A markdown-based implementation of RecipeReader and RecipeWriter
 /// that reads and writes recipe data from/to markdown files.
+///
+/// Recipes are keyed by UUID, with an index from each recipe's legacy ID to its UUID.
 pub struct MarkdownRecipeStore {
     content_dir: PathBuf,
-    recipes: HashMap<String, Recipe>,
+    recipes: HashMap<Uuid, Recipe>,
+    ids: HashMap<String, Uuid>,
     plans: HashMap<u32, Plan>,
+    load_errors: Vec<String>,
 }
 
 impl MarkdownRecipeStore {
-    /// Creates a new MarkdownRecipeStore with the given content directory
+    /// Creates a new MarkdownRecipeStore with the given content directory.
+    ///
+    /// A recipe or plan file that does not parse is left out of the store, logged as a warning
+    /// and listed in [`MarkdownRecipeStore::load_errors`].
     pub fn new<P: AsRef<Path>>(content_dir: P) -> RecipeResult<Self> {
         let content_dir = content_dir.as_ref().to_path_buf();
 
@@ -34,46 +41,86 @@ impl MarkdownRecipeStore {
         let mut store = Self {
             content_dir,
             recipes: HashMap::new(),
+            ids: HashMap::new(),
             plans: HashMap::new(),
+            load_errors: Vec::new(),
         };
 
-        // Load all recipes from the content directory
-        store.load_recipes()?;
+        let files = store.markdown_files()?;
+        let mut failures = store.load_recipes(&files);
+        failures.extend(store.load_plans(&files));
 
-        // Load all plans from the content directory
-        store.load_plans()?;
+        for failure in &failures {
+            tracing::warn!("Skipped content file: {}", failure);
+        }
+        store.load_errors = failures;
 
         Ok(store)
     }
 
-    /// Loads all recipe markdown files from the content directory
-    fn load_recipes(&mut self) -> RecipeResult<()> {
+    /// One message per content file that was skipped when the store loaded, naming the file
+    /// and why it failed: it did not parse, or it reused another recipe's UUID or ID.
+    pub fn load_errors(&self) -> &[String] {
+        &self.load_errors
+    }
+
+    /// The `.md` files in the content directory, sorted by path.
+    fn markdown_files(&self) -> RecipeResult<Vec<PathBuf>> {
         let entries = fs::read_dir(&self.content_dir).map_err(|e| {
             RecipeError::StorageError(format!("Failed to read content directory: {}", e))
         })?;
 
+        let mut files = Vec::new();
         for entry in entries {
             let entry = entry.map_err(|e| {
                 RecipeError::StorageError(format!("Failed to read directory entry: {}", e))
             })?;
-
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                // Skip non-recipe files like intro.md
-                let file_name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                files.push(path);
+            }
+        }
+        files.sort();
+        Ok(files)
+    }
 
-                if file_name == "intro" {
+    /// Loads every recipe file (all but `intro.md` and `week-*.md`), returning one message per
+    /// file that fails to parse or reuses another recipe's UUID or ID.
+    fn load_recipes(&mut self, files: &[PathBuf]) -> Vec<String> {
+        let mut failures = Vec::new();
+
+        for path in files {
+            let file_name = file_stem(path);
+            if file_name == "intro" || file_name.starts_with("week-") {
+                continue;
+            }
+
+            let recipe = match self.parse_recipe_file(path) {
+                Ok(recipe) => recipe,
+                Err(e) => {
+                    failures.push(format!("{}: {}", path.display(), e));
                     continue;
                 }
+            };
 
-                // Try to parse the recipe
-                if let Ok(recipe) = self.parse_recipe_file(&path) {
-                    self.recipes.insert(recipe.id.clone(), recipe);
-                }
+            if self.recipes.contains_key(&recipe.uuid) {
+                failures.push(format!(
+                    "{}: UUID {} is used by another recipe",
+                    path.display(),
+                    recipe.uuid
+                ));
+            } else if self.ids.contains_key(&recipe.id) {
+                failures.push(format!(
+                    "{}: ID '{}' is used by another recipe",
+                    path.display(),
+                    recipe.id
+                ));
+            } else {
+                self.insert_recipe(recipe);
             }
         }
 
-        Ok(())
+        failures
     }
 
     /// Parses a recipe from a markdown file
@@ -85,46 +132,40 @@ impl MarkdownRecipeStore {
         self.parse_recipe_markdown(&content, path)
     }
 
-    /// Parses recipe data from markdown content
+    /// Parses recipe data from markdown content, using the file stem as the fallback ID and title
     fn parse_recipe_markdown(&self, content: &str, path: &Path) -> RecipeResult<Recipe> {
         let file_stem = path
             .file_stem()
             .and_then(|s| s.to_str())
             .ok_or_else(|| RecipeError::InvalidData("Invalid file name".to_string()))?;
 
-        // Use file name as ID and fallback title
         let id = file_stem.to_string();
-        Ok(parse::recipe(content, id.clone(), id))
+        parse::recipe(content, id.clone(), id)
     }
 
-    /// Loads all plan markdown files from the content directory
-    fn load_plans(&mut self) -> RecipeResult<()> {
-        let entries = fs::read_dir(&self.content_dir).map_err(|e| {
-            RecipeError::StorageError(format!("Failed to read content directory: {}", e))
-        })?;
+    /// Loads every `week-*.md` plan file, returning one message per file that fails to parse.
+    fn load_plans(&mut self, files: &[PathBuf]) -> Vec<String> {
+        let mut failures = Vec::new();
 
-        for entry in entries {
-            let entry = entry.map_err(|e| {
-                RecipeError::StorageError(format!("Failed to read directory entry: {}", e))
-            })?;
+        for path in files {
+            let Some(week_str) = file_stem(path).strip_prefix("week-") else {
+                continue;
+            };
 
-            let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                let file_name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+            let result = week_str
+                .parse::<u32>()
+                .map_err(|e| PlanError::InvalidData(format!("Invalid week number: {}", e)))
+                .and_then(|week| self.parse_plan_file(path, week));
 
-                // Only parse week-*.md files
-                if let Some(week_str) = file_name.strip_prefix("week-")
-                    && let Ok(week) = week_str.parse::<u32>()
-                {
-                    // Try to parse the plan
-                    if let Ok(plan) = self.parse_plan_file(&path, week) {
-                        self.plans.insert(plan.week, plan);
-                    }
+            match result {
+                Ok(plan) => {
+                    self.plans.insert(plan.week, plan);
                 }
+                Err(e) => failures.push(format!("{}: {}", path.display(), e)),
             }
         }
 
-        Ok(())
+        failures
     }
 
     /// Parses a plan from a markdown file
@@ -141,6 +182,37 @@ impl MarkdownRecipeStore {
         parse::plan(content, week)
     }
 
+    /// The UUID of the recipe that `id` names: a UUID string or a legacy ID.
+    fn resolve_id(&self, id: &str) -> Option<Uuid> {
+        if let Ok(uuid) = Uuid::parse_str(id)
+            && self.recipes.contains_key(&uuid)
+        {
+            return Some(uuid);
+        }
+        self.ids.get(id).copied()
+    }
+
+    /// The UUID of the stored recipe that `recipe` replaces: the one with its UUID, or else the
+    /// one with its legacy ID.
+    fn existing_uuid(&self, recipe: &Recipe) -> Option<Uuid> {
+        if self.recipes.contains_key(&recipe.uuid) {
+            Some(recipe.uuid)
+        } else {
+            self.ids.get(&recipe.id).copied()
+        }
+    }
+
+    /// Adds or replaces a recipe in memory, keeping the legacy-ID index in step.
+    fn insert_recipe(&mut self, recipe: Recipe) {
+        if let Some(old) = self.recipes.get(&recipe.uuid)
+            && self.ids.get(&old.id) == Some(&recipe.uuid)
+        {
+            self.ids.remove(&old.id);
+        }
+        self.ids.insert(recipe.id.clone(), recipe.uuid);
+        self.recipes.insert(recipe.uuid, recipe);
+    }
+
     /// Writes a recipe to a markdown file
     fn write_recipe_file(&self, recipe: &Recipe) -> RecipeResult<()> {
         // Use UUID for filename instead of legacy ID
@@ -151,8 +223,12 @@ impl MarkdownRecipeStore {
         // Write title
         content.push_str(&format!("# {}\n\n", recipe.title));
 
-        // Write UUID in frontmatter
-        content.push_str(&format!("UUID: {}\n\n", recipe.uuid));
+        // Write UUID in frontmatter, and the legacy ID when the file name can't carry it
+        content.push_str(&format!("UUID: {}\n", recipe.uuid));
+        if recipe.id != recipe.uuid.to_string() {
+            content.push_str(&format!("ID: {}\n", recipe.id));
+        }
+        content.push('\n');
 
         // Write description
         if let Some(desc) = &recipe.description {
@@ -251,22 +327,15 @@ impl MarkdownRecipeStore {
 
 impl RecipeReader for MarkdownRecipeStore {
     fn get_by_id(&self, id: &str) -> RecipeResult<Recipe> {
-        // Try to parse as UUID first
-        if let Ok(uuid) = Uuid::parse_str(id) {
-            return self.get_by_uuid(&uuid);
-        }
-
-        // Fall back to legacy ID lookup
-        self.recipes
-            .get(id)
+        self.resolve_id(id)
+            .and_then(|uuid| self.recipes.get(&uuid))
             .cloned()
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with id '{}' not found", id)))
     }
 
     fn get_by_uuid(&self, uuid: &Uuid) -> RecipeResult<Recipe> {
         self.recipes
-            .values()
-            .find(|r| r.uuid == *uuid)
+            .get(uuid)
             .cloned()
             .ok_or_else(|| RecipeError::NotFound(format!("Recipe with uuid '{}' not found", uuid)))
     }
@@ -275,14 +344,38 @@ impl RecipeReader for MarkdownRecipeStore {
         Ok(self.recipes.values().cloned().collect())
     }
 
+    /// Accepts a UUID string or a legacy ID, like [`RecipeReader::get_by_id`].
     fn exists(&self, id: &str) -> bool {
-        self.recipes.contains_key(id)
+        self.resolve_id(id).is_some()
     }
 }
 
 impl RecipeWriter for MarkdownRecipeStore {
+    /// Fails if a recipe with the same UUID or legacy ID already exists.
     fn create(&mut self, recipe: Recipe) -> RecipeResult<()> {
-        if self.recipes.contains_key(&recipe.id) {
+        if self.recipes.contains_key(&recipe.uuid) || RecipeReader::exists(self, &recipe.id) {
+            return Err(RecipeError::AlreadyExists(format!(
+                "Recipe with id '{}' or uuid '{}' already exists",
+                recipe.id, recipe.uuid
+            )));
+        }
+
+        self.write_recipe_file(&recipe)?;
+        self.insert_recipe(recipe);
+        Ok(())
+    }
+
+    /// Replaces the recipe with the same UUID, or else the one with the same legacy ID. In the
+    /// second case the stored UUID is kept, so plans that reference it still resolve.
+    fn update(&mut self, mut recipe: Recipe) -> RecipeResult<()> {
+        let uuid = self.existing_uuid(&recipe).ok_or_else(|| {
+            RecipeError::NotFound(format!("Recipe with id '{}' not found", recipe.id))
+        })?;
+        recipe.uuid = uuid;
+
+        if let Some(other) = self.ids.get(&recipe.id)
+            && *other != uuid
+        {
             return Err(RecipeError::AlreadyExists(format!(
                 "Recipe with id '{}' already exists",
                 recipe.id
@@ -290,27 +383,14 @@ impl RecipeWriter for MarkdownRecipeStore {
         }
 
         self.write_recipe_file(&recipe)?;
-        self.recipes.insert(recipe.id.clone(), recipe);
-        Ok(())
-    }
-
-    fn update(&mut self, recipe: Recipe) -> RecipeResult<()> {
-        if !self.recipes.contains_key(&recipe.id) {
-            return Err(RecipeError::NotFound(format!(
-                "Recipe with id '{}' not found",
-                recipe.id
-            )));
-        }
-
-        self.write_recipe_file(&recipe)?;
-        self.recipes.insert(recipe.id.clone(), recipe);
+        self.insert_recipe(recipe);
         Ok(())
     }
 
     fn delete(&mut self, id: &str) -> RecipeResult<()> {
-        // Get the recipe first to obtain its UUID
-        let recipe = self.get_by_id(id)?;
-        let uuid = recipe.uuid;
+        let uuid = self
+            .resolve_id(id)
+            .ok_or_else(|| RecipeError::NotFound(format!("Recipe with id '{}' not found", id)))?;
 
         // Delete the file using UUID filename
         let file_path = self.content_dir.join(format!("{}.md", uuid));
@@ -318,15 +398,19 @@ impl RecipeWriter for MarkdownRecipeStore {
             RecipeError::StorageError(format!("Failed to delete recipe file: {}", e))
         })?;
 
-        // Remove from in-memory store using the legacy ID
-        self.recipes.remove(&recipe.id);
+        if let Some(recipe) = self.recipes.remove(&uuid) {
+            self.ids.remove(&recipe.id);
+        }
         Ok(())
     }
 
+    /// Updates the matching recipe (see [`RecipeWriter::update`]) or creates a new one.
     fn save(&mut self, recipe: Recipe) -> RecipeResult<()> {
-        self.write_recipe_file(&recipe)?;
-        self.recipes.insert(recipe.id.clone(), recipe);
-        Ok(())
+        if self.existing_uuid(&recipe).is_some() {
+            RecipeWriter::update(self, recipe)
+        } else {
+            RecipeWriter::create(self, recipe)
+        }
     }
 }
 
@@ -400,6 +484,11 @@ impl PlanWriter for MarkdownRecipeStore {
     }
 }
 
+/// The file name of `path` without its extension, or `""` if it has none.
+fn file_stem(path: &Path) -> &str {
+    path.file_stem().and_then(|s| s.to_str()).unwrap_or("")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -420,6 +509,21 @@ mod tests {
 
     fn cleanup_temp_dir(dir: &PathBuf) {
         let _ = fs::remove_dir_all(dir);
+    }
+
+    /// Asserts that loading `dir` reports exactly one error for each of `files`, in order.
+    fn assert_load_fails(dir: &Path, files: &[&str]) {
+        let store = MarkdownRecipeStore::new(dir).unwrap();
+        let errors = store.load_errors();
+        assert_eq!(errors.len(), files.len(), "errors: {:?}", errors);
+        for (error, file) in errors.iter().zip(files) {
+            assert!(
+                error.contains(file),
+                "error should name {}: {}",
+                file,
+                error
+            );
+        }
     }
 
     #[test]
@@ -459,6 +563,7 @@ mod tests {
 
 A classic Italian pasta dish.
 
+UUID: 550e8400-e29b-41d4-a716-446655440099
 Prep Time: 10 minutes
 Cook Time: 15 minutes
 Servings: 4
@@ -487,13 +592,9 @@ Tags: italian, pasta, quick
         let recipe = store.get_by_id("carbonara").unwrap();
         assert_eq!(recipe.id, "carbonara");
         assert_eq!(recipe.title, "Pasta Carbonara");
-        assert!(recipe.description.is_some());
-        assert!(
-            recipe
-                .description
-                .as_ref()
-                .unwrap()
-                .contains("classic Italian")
+        assert_eq!(
+            recipe.description.as_deref(),
+            Some("A classic Italian pasta dish.")
         );
         assert_eq!(recipe.prep_time_minutes, Some(10));
         assert_eq!(recipe.cook_time_minutes, Some(15));
@@ -699,7 +800,11 @@ Tags: italian, pasta, quick
         .unwrap();
 
         // Create a real recipe
-        fs::write(temp_dir.join("recipe.md"), "# Real Recipe\n").unwrap();
+        fs::write(
+            temp_dir.join("recipe.md"),
+            format!("# Real Recipe\n\nUUID: {}\n", Uuid::new_v4()),
+        )
+        .unwrap();
 
         let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
 
@@ -881,10 +986,7 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
         let plan_content = "# Week 1 Plan\n\nWeek: 1\nDays: 1, 2, 3\n";
         fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
 
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        // Plan should not be loaded due to invalid data
-        assert!(!PlanReader::exists(&store, 1));
+        assert_load_fails(&temp_dir, &["week-1.md"]);
 
         cleanup_temp_dir(&temp_dir);
     }
@@ -897,10 +999,7 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
         let plan_content = "# Week 1 Plan\n\nWeek: 1\nNo days here\n";
         fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
 
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        // Plan should not be loaded
-        assert!(!PlanReader::exists(&store, 1));
+        assert_load_fails(&temp_dir, &["week-1.md"]);
 
         cleanup_temp_dir(&temp_dir);
     }
@@ -968,10 +1067,7 @@ This week's meal plan uses the following day-of-year recipes (Monday through Sun
         );
         fs::write(temp_dir.join("week-1.md"), plan_content).unwrap();
 
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        // Plan should not be loaded due to invalid UUID count
-        assert!(!PlanReader::exists(&store, 1));
+        assert_load_fails(&temp_dir, &["week-1.md"]);
 
         cleanup_temp_dir(&temp_dir);
     }
@@ -1021,7 +1117,7 @@ Tags: test
     }
 
     #[test]
-    fn test_parse_recipe_without_uuid_generates_one() {
+    fn test_load_fails_for_recipe_without_uuid() {
         let temp_dir = create_temp_dir();
 
         // Create a recipe file without UUID
@@ -1048,19 +1144,13 @@ Tags: test
         let recipe_path = temp_dir.join("no-uuid-recipe.md");
         fs::write(&recipe_path, recipe_content).unwrap();
 
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        let recipe = store.get_by_id("no-uuid-recipe").unwrap();
-        assert_eq!(recipe.id, "no-uuid-recipe");
-        assert_eq!(recipe.title, "Recipe without UUID");
-        // Verify a UUID was generated (not nil UUID)
-        assert_ne!(recipe.uuid, Uuid::nil());
+        assert_load_fails(&temp_dir, &["no-uuid-recipe.md"]);
 
         cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
-    fn test_parse_recipe_with_invalid_uuid_generates_new_one() {
+    fn test_load_fails_for_recipe_with_malformed_uuid() {
         let temp_dir = create_temp_dir();
 
         // Create a recipe file with invalid UUID
@@ -1088,37 +1178,153 @@ Tags: test
         let recipe_path = temp_dir.join("invalid-uuid-recipe.md");
         fs::write(&recipe_path, recipe_content).unwrap();
 
-        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
-
-        let recipe = store.get_by_id("invalid-uuid-recipe").unwrap();
-        assert_eq!(recipe.id, "invalid-uuid-recipe");
-        assert_eq!(recipe.title, "Recipe with Invalid UUID");
-        // Verify a new UUID was generated (not nil UUID)
-        assert_ne!(recipe.uuid, Uuid::nil());
+        assert_load_fails(&temp_dir, &["invalid-uuid-recipe.md"]);
 
         cleanup_temp_dir(&temp_dir);
     }
 
     #[test]
-    fn test_multiple_recipes_have_different_uuids() {
+    fn test_load_reports_every_bad_file() {
         let temp_dir = create_temp_dir();
 
-        // Create two recipes without UUIDs
-        let recipe1_content = "# Recipe 1\n\nFirst recipe.\n";
-        let recipe2_content = "# Recipe 2\n\nSecond recipe.\n";
+        fs::write(temp_dir.join("recipe1.md"), "# Recipe 1\n\nFirst recipe.\n").unwrap();
+        fs::write(temp_dir.join("recipe2.md"), "# Recipe 2\n\nUUID: nope\n").unwrap();
+        fs::write(temp_dir.join("week-2.md"), "# Week 2\n\nWeek: 2\n").unwrap();
 
-        fs::write(temp_dir.join("recipe1.md"), recipe1_content).unwrap();
-        fs::write(temp_dir.join("recipe2.md"), recipe2_content).unwrap();
+        assert_load_fails(&temp_dir, &["recipe1.md", "recipe2.md", "week-2.md"]);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_load_fails_for_duplicate_uuid() {
+        let temp_dir = create_temp_dir();
+
+        let content = format!("# Twin\n\nUUID: {}\n", Uuid::new_v4());
+        fs::write(temp_dir.join("a.md"), &content).unwrap();
+        fs::write(temp_dir.join("b.md"), &content).unwrap();
+
+        assert_load_fails(&temp_dir, &["b.md"]);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_recipe_id_survives_create_and_reload() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let mut recipe = Recipe::new("day-1".to_string(), "Pancakes".to_string());
+        recipe.description = Some("Fluffy.".to_string());
+        recipe.prep_time_minutes = Some(5);
+        recipe.tags = vec!["breakfast".to_string()];
+        RecipeWriter::create(&mut store, recipe.clone()).unwrap();
 
         let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
 
-        let recipe1 = store.get_by_id("recipe1").unwrap();
-        let recipe2 = store.get_by_id("recipe2").unwrap();
+        assert_eq!(store.get_by_id("day-1").unwrap(), recipe);
+        assert!(RecipeReader::exists(&store, "day-1"));
+        assert!(RecipeReader::exists(&store, &recipe.uuid.to_string()));
+        assert!(!RecipeReader::exists(&store, &Uuid::new_v4().to_string()));
 
-        // Verify both recipes have different UUIDs
-        assert_ne!(recipe1.uuid, recipe2.uuid);
-        assert_ne!(recipe1.uuid, Uuid::nil());
-        assert_ne!(recipe2.uuid, Uuid::nil());
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_create_after_reload_rejects_existing_id() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        RecipeWriter::create(
+            &mut store,
+            Recipe::new("day-1".to_string(), "A".to_string()),
+        )
+        .unwrap();
+
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        let result = RecipeWriter::create(
+            &mut store,
+            Recipe::new("day-1".to_string(), "B".to_string()),
+        );
+
+        assert!(matches!(result, Err(RecipeError::AlreadyExists(_))));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_update_by_legacy_id_keeps_uuid_and_file() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        let original = Recipe::new("day-1".to_string(), "Old".to_string());
+        RecipeWriter::create(&mut store, original.clone()).unwrap();
+
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        // A fresh Recipe gets a new random UUID, but names the same legacy ID.
+        RecipeWriter::save(
+            &mut store,
+            Recipe::new("day-1".to_string(), "New".to_string()),
+        )
+        .unwrap();
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        let reloaded = store.get_by_id("day-1").unwrap();
+        assert_eq!(reloaded.uuid, original.uuid);
+        assert_eq!(reloaded.title, "New");
+        assert_eq!(fs::read_dir(&temp_dir).unwrap().count(), 1);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_update_rejects_id_of_another_recipe() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        let first = Recipe::new("first".to_string(), "First".to_string());
+        RecipeWriter::create(&mut store, first.clone()).unwrap();
+        RecipeWriter::create(
+            &mut store,
+            Recipe::new("second".to_string(), "Second".to_string()),
+        )
+        .unwrap();
+
+        let mut renamed = first;
+        renamed.id = "second".to_string();
+        let result = RecipeWriter::update(&mut store, renamed);
+
+        assert!(matches!(result, Err(RecipeError::AlreadyExists(_))));
+        assert_eq!(store.get_by_id("second").unwrap().title, "Second");
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_update_renames_legacy_id() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        let recipe = Recipe::new("old-id".to_string(), "Soup".to_string());
+        RecipeWriter::create(&mut store, recipe.clone()).unwrap();
+
+        let mut renamed = recipe.clone();
+        renamed.id = "new-id".to_string();
+        RecipeWriter::update(&mut store, renamed).unwrap();
+
+        assert!(!RecipeReader::exists(&store, "old-id"));
+        assert_eq!(store.get_by_id("new-id").unwrap().uuid, recipe.uuid);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_delete_by_uuid_string_clears_legacy_id() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        let recipe = Recipe::new("gone".to_string(), "Gone".to_string());
+        RecipeWriter::create(&mut store, recipe.clone()).unwrap();
+
+        RecipeWriter::delete(&mut store, &recipe.uuid.to_string()).unwrap();
+
+        assert!(!RecipeReader::exists(&store, "gone"));
+        assert!(store.get_by_uuid(&recipe.uuid).is_err());
 
         cleanup_temp_dir(&temp_dir);
     }
