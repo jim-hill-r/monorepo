@@ -97,39 +97,17 @@ Why quote expressions?
 - Handles special characters safely
 - Makes variable assignment more robust in edge cases
 
-### Concurrency Control
-Some workflows require concurrency control to prevent multiple instances from running simultaneously:
-
-- **start-a-new-task.yml**: Implements concurrency control by checking for open PRs created by the Copilot user before starting a new agent task. This prevents multiple agent tasks from running at the same time.
-
-### Agent Task Workflows
-
-#### Preventing Concurrent Agent Tasks
-The `start-a-new-task.yml` workflow ensures only one agent task runs at a time by:
-1. Checking for open PRs created by Copilot bot users ('Copilot' and 'copilot-swe-agent[bot]') using `gh pr list --state open --author <bot-name>`
-2. Skipping task creation if any active agent tasks exist (open PRs from either bot)
-3. Using conditional step execution based on the check result
-
-This pattern can be applied to other automated task workflows that need to prevent concurrent execution.
-
-#### Using agent-copilot Binary
-The `agent-copilot` binary is used to create GitHub Copilot agent tasks programmatically. It:
-- Lives in `agent_copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
-- Calls the GitHub Copilot API directly (same as `gh agent-task create`)
-- Requires a GitHub token with `copilot` scope
-
 ## Authentication
 
 ### GITHUB_TOKEN vs Custom PAT
 - **GITHUB_TOKEN**: Use for read operations like checking PR status
-- **Custom PAT (e.g., START_NEW_AI_AGENT_TASK_WORKFLOW_PAT)**: Use for operations requiring elevated permissions like creating agent tasks
+- **Custom PAT**: Use only for operations that need permissions GITHUB_TOKEN lacks
 
 ## Testing Workflows
 
 All workflows should have corresponding Rust tests in the `workflow_tests` project:
 - `cast_ci_workflow_tests.rs`: Tests for the cast CI workflow
 - `cast_cd_workflow_tests.rs`: Tests for the cast CD workflow
-- `start_a_new_task_workflow_tests.rs`: Tests for the agent task workflow
 
 Test suites validate:
 - File existence

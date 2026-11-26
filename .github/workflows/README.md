@@ -114,63 +114,6 @@ This workflow is designed to run after the Trunk CI workflow, which:
 
 When Trunk CI commits new artifacts, this CD workflow automatically triggers to deploy those projects.
 
-## start-a-new-task.yml
-
-This workflow automatically creates a GitHub Copilot agent task after a PR created by the Copilot agent is merged.
-
-### How It Works
-
-1. **Trigger**: The workflow runs when a pull request is closed and merged, but only if it was created by the GitHub Copilot agent (`user.login == 'Copilot'`).
-
-2. **Concurrency Check**: Before creating a new agent task, the workflow checks if there are any open PRs created by Copilot. If any active agent tasks exist, the workflow skips creating a new task to prevent running multiple agents concurrently.
-
-3. **Agent Task Creation**: If no active agent tasks are found, the workflow uses the `agent-copilot` binary to create a new GitHub Copilot agent task with:
-   - Title: "Start a new task"
-   - Problem Statement: Content from `agent-copilot/prompts/start-a-new-task.md`
-   - Repository: The current repository
-   - Note: This directly creates an agent task using the GitHub Copilot API, bypassing the need to create an issue first.
-
-4. **Authentication**: Uses the `START_NEW_AI_AGENT_TASK_WORKFLOW_PAT` secret for creating agent tasks, and the standard `GITHUB_TOKEN` for checking open PRs.
-
-### Setup Requirements
-
-The workflow requires:
-1. The `agent-copilot` binary must be present at `agent-copilot/artifacts/x86_64-unknown-linux-gnu/agent-copilot`
-2. The `START_NEW_AI_AGENT_TASK_WORKFLOW_PAT` secret with appropriate permissions for creating agent tasks
-3. The `GITHUB_TOKEN` provided by GitHub Actions (automatically available)
-
-### Permissions
-
-The workflow requires the following permissions (already configured):
-- `contents: write` - To checkout the repository
-- `pull-requests: write` - For PR operations and checking open PRs
-- `issues: write` - For backward compatibility (may not be needed with direct Copilot API calls)
-
-### Concurrency Control
-
-The workflow prevents multiple agent tasks from running concurrently by:
-- Checking for open PRs created by the Copilot user before starting a new task
-- Skipping task creation if any active agent tasks are found
-- Logging the number of active agent tasks when skipping
-
-This ensures that only one agent task runs at a time, preventing conflicts and resource contention.
-
-### Testing
-
-You can test this workflow configuration by running:
-
-```bash
-cd monorepo/workflow_tests
-cargo test start_a_new_task_workflow_tests
-```
-
-This Rust test suite validates:
-- File existence (prompt file and agent-copilot binary)
-- YAML syntax
-- Correct workflow trigger configuration
-- Required permissions
-- Concurrency control logic
-
 ## codeql.yml
 
 This workflow runs CodeQL security scanning on the codebase, analyzing JavaScript/TypeScript and GitHub Actions workflows but **not Rust**.
@@ -241,3 +184,14 @@ The workflow never deletes the default branch and skips any branch that is the h
 
 - `contents: write` - To delete branch refs
 - `pull-requests: read` - To find branches with open pull requests
+
+## pull-request-agent-skills.yml
+
+Validates the agent skills in `.agents/skills/` against the
+[Agent Skills specification](https://agentskills.io/specification) on pull
+requests that touch `.agents/`, `.claude/`, `AGENTS.md` or `CLAUDE.md`. It uses
+the pinned `skills-ref` reference validator and also checks that
+`.claude/skills` is still a symlink to `../.agents/skills`. Can also be run
+manually via `workflow_dispatch`.
+
+Tests: `monorepo/workflow_tests/tests/agent_skills_workflow_tests.rs`.
