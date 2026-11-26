@@ -59,3 +59,8 @@ run = "bash standards/scripts/affected.sh --all"
 description = "Check every project follows the repo standards"
 dir = "{{config_root}}"
 run = "bash standards/scripts/audit.sh"
+
+[tasks."hooks"]
+description = "Install lefthook (through mise) and the git hooks that run the CI checks"
+dir = "{{config_root}}"
+run = "bash standards/scripts/setup-hooks.sh"
