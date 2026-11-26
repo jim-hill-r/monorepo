@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T23:31:16.389749283Z",
+  "generated_at": "2026-11-26T23:34:04.177973737Z",
   "projects": [
     {
       "project": "bear_down",
@@ -90,6 +90,77 @@
       ]
     },
     {
+      "project": "cahokia",
+      "musts": 2,
+      "musts_in_production": 2,
+      "requirements": [
+        {
+          "requirement": "CAHO-001",
+          "title": "A family tree is drawn so anyone can read it",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-002",
+          "title": "Odd or broken family data never breaks the tree",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-003",
+          "title": "Anyone can sign in from any page",
+          "priority": "must",
+          "verdict": "at-risk",
+          "reasons": [
+            "setting auth0-cahokia-app has never been checked",
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-004",
+          "title": "The site loads only what it needs",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-005",
+          "title": "It is easy to move around the site",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-006",
+          "title": "The same family tree on web, desktop and mobile",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "CAHO-007",
+          "title": "A person can explore the tree around one relative",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        }
+      ]
+    },
+    {
       "project": "cookbook",
       "musts": 3,
       "musts_in_production": 3,
@@ -169,6 +240,103 @@
         {
           "requirement": "COOK-009",
           "title": "Jim can rearrange which recipes are in a plan",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "pane",
+      "musts": 2,
+      "musts_in_production": 2,
+      "requirements": [
+        {
+          "requirement": "PANE-001",
+          "title": "Today shows what needs Jim",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "PANE-002",
+          "title": "Pane shows the repo as it is on main",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "PANE-003",
+          "title": "All open work can be found and filtered",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "PANE-004",
+          "title": "Every deliverable is a click away",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "PANE-005",
+          "title": "Each project has one page with everything about it",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "PANE-006",
+          "title": "Pane is easy and safe to use on a phone",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "PANE-007",
+          "title": "Every project and system has a traffic light",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "PANE-008",
+          "title": "Executive reviews are read in pane",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "PANE-009",
+          "title": "Jim can add a TODO and close a human issue from pane",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "PANE-010",
+          "title": "Each project's revenue and cost is shown by month",
           "priority": "could",
           "verdict": "unknown",
           "reasons": [
