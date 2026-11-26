@@ -48,7 +48,7 @@ pub struct HomePreferences {
 }
 
 /// Property details returned by the Zillow API
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
 pub struct PropertyDetails {
     pub address: String,
     pub price: Option<u64>,
@@ -258,17 +258,7 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
     let meets_preferences = unmet_criteria.is_empty();
 
     PropertyEvaluation {
-        details: PropertyDetails {
-            address: details.address.clone(),
-            price: details.price,
-            bedrooms: details.bedrooms,
-            bathrooms: details.bathrooms,
-            living_area: details.living_area,
-            year_built: details.year_built,
-            home_type: details.home_type.clone(),
-            description: details.description.clone(),
-            zillow_url: details.zillow_url.clone(),
-        },
+        details: details.clone(),
         meets_preferences,
         unmet_criteria,
     }
@@ -364,6 +354,23 @@ mod tests {
             description: None,
             zillow_url: None,
         }
+    }
+
+    #[test]
+    fn test_evaluate_keeps_every_detail_field() {
+        let details = PropertyDetails {
+            address: "9 Elm St".to_string(),
+            price: Some(500_000),
+            bedrooms: Some(2),
+            bathrooms: Some(1.5),
+            living_area: Some(1100),
+            year_built: Some(1987),
+            home_type: Some("CONDO".to_string()),
+            description: Some("Sunny corner unit".to_string()),
+            zillow_url: Some("https://www.zillow.com/homedetails/9".to_string()),
+        };
+        let eval = evaluate_property(&details, &HomePreferences::default());
+        assert_eq!(eval.details, details);
     }
 
     #[test]
