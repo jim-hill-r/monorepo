@@ -1,4 +1,4 @@
 - All projects MUST be snake_case.
-- A project's directory name MUST either exactly match its Cargo package name, OR the package name MUST equal the parent directory name joined with the directory name using an underscore (e.g., a project at `cast/core` may use package name `cast_core`).
+- A project's directory name MUST either exactly match its Cargo package name, OR the package name MUST equal the parent directory name joined with the directory name using an underscore (e.g., a project at `cookbook/core` may use package name `cookbook_core`).
 - All deployments MUST be kebab-case.
 - All Proof of Concept projects must begin with poc (ie: poc_project_name)

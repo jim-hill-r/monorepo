@@ -35,7 +35,6 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 - TODO (agent-generated): Make the `review-user-sessions` skill query Analytics Engine for error counts per app and build and flag errors that rose after a deploy event.
 
 # Priority Projects
-- cast
 - cookbook
 - homer
 - controlled_chaos

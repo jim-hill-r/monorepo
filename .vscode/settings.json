@@ -1,6 +1,6 @@
 {
     "rust-analyzer.testExplorer": true,
     "chat.tools.terminal.autoApprove": {
-        "cast": true
+        "mise": true
     }
 }

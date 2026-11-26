@@ -1,224 +1,88 @@
-# GitHub Workflows Conventions
+# GitHub Workflow Conventions
 
-This document describes conventions and best practices for GitHub workflows in this repository.
+## Keep logic out of workflow YAML
 
-## General Principles
+**IMPORTANT**: GitHub workflows should have as little logic as possible. They
+should check out the repo, install tools with `jdx/mise-action`, and run mise
+tasks. If a workflow needs real logic, put it in a script under
+`standards/scripts/` exposed as a root task in `mise.toml` (like `//:audit`
+and `//:affected`), not inline in YAML.
 
-### Minimal Logic in Workflows
+Why:
 
-**IMPORTANT**: GitHub workflows should have as little logic as possible. They should primarily run `cast` CLI commands. If complex logic is required, it should be added to the `cast` CLI project, not hardcoded in workflow YAML files.
+1. **Testability**: a script can be run and tested on its own; inline YAML
+   logic cannot.
+2. **Reusability**: the same task runs locally and in CI.
+3. **Maintainability**: one place to change behaviour.
 
-#### Why Keep Workflows Minimal?
+**Workflows should contain:** triggers, permissions, concurrency, checkout,
+`jdx/mise-action`, caching, and `mise run <task>` steps.
 
-1. **Testability**: Code in `cast` CLI can be unit tested, whereas workflow YAML logic cannot
-2. **Reusability**: Logic in `cast` CLI can be used locally and in CI, not just in workflows
-3. **Maintainability**: Rust code is easier to maintain and refactor than bash scripts in YAML
-4. **Type Safety**: Rust provides compile-time guarantees that bash scripts don't
-5. **Debugging**: Easier to debug Rust code locally than workflow YAML
+**Scripts and tasks should contain:** project discovery, change detection,
+standards checks, and anything with loops or conditionals.
 
-#### What Belongs in Workflows vs Cast CLI?
-
-**Workflows should contain:**
-- Workflow triggers and event configuration
-- Environment setup (checkout, toolchain installation)
-- Simple glue code to call `cast` commands
-- Setting environment variables from GitHub context
-- Basic conditionals for workflow control
-
-**Cast CLI should contain:**
-- Business logic (git operations, file parsing, validation)
-- Data transformations (JSON parsing, filtering)
-- Complex conditionals and loops
-- Error handling and validation
-- Any logic that could be reused outside of CI
-
-#### Examples
-
-**❌ Bad - Too much logic in workflow:**
-```yaml
-- name: Find changed projects
-  run: |
-    # SHA validation with regex
-    if ! [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-      echo "Invalid SHA"
-      exit 1
-    fi
-    
-    # Complex git operations
-    git diff --name-only $BASE_SHA $HEAD_SHA | while read file; do
-      # Walk up directory tree
-      dir=$(dirname "$file")
-      while [ "$dir" != "." ]; do
-        if [ -f "$dir/Cast.toml" ]; then
-          echo "$dir"
-          break
-        fi
-        dir=$(dirname "$dir")
-      done
-    done | sort -u
-```
-
-**✅ Good - Minimal workflow, logic in cast CLI:**
-```yaml
-- name: Find changed projects
-  run: |
-    cast project with-changes --base $BASE_SHA --head $HEAD_SHA
-```
-
-#### Migration Strategy
-
-If you find complex logic in a workflow:
-1. Create a new `cast` CLI command or subcommand
-2. Move the logic to the `cast` project in Rust
-3. Add unit tests for the new functionality
-4. Update the workflow to call the new `cast` command
-5. Remove the old bash logic from the workflow
-
-## Best Practices
-
-### Quoting GitHub Actions Expressions in Bash
-
-When assigning GitHub Actions expressions to bash variables, always wrap them in double quotes to prevent errors:
-
-**❌ Bad - Unquoted expression:**
+**❌ Bad - logic in YAML:**
 ```yaml
 - run: |
-    BASE_SHA=${{ github.event.pull_request.base.sha }}
+    for dir in */; do
+      if [ -f "$dir/mise.toml" ] && git diff --name-only origin/main | grep -q "^$dir"; then
+        echo "$dir"
+      fi
+    done
 ```
 
-**✅ Good - Quoted expression:**
+**✅ Good - call a task:**
 ```yaml
-- run: |
-    BASE_SHA="${{ github.event.pull_request.base.sha }}"
+- run: mise run --quiet //:affected
 ```
 
-Why quote expressions?
-- Prevents bash errors when the expression evaluates to empty string
-- Handles special characters safely
-- Makes variable assignment more robust in edge cases
+## Shared CI workflow
+
+Pull request, main and nightly CI all call the reusable
+`.github/workflows/mise-projects.yml`, which audits the repo, lists projects
+and runs `mise run ci` (and, on main, `mise run deploy`) in each one. Add new
+per-project behaviour to the standard tasks in `standards/tasks/`, not to a
+workflow. See `.github/workflows/README.md`.
+
+## Quoting GitHub Actions expressions in Bash
+
+When assigning a GitHub Actions expression to a bash variable, wrap it in
+double quotes, or better, pass it through `env:`:
+
+**❌ Bad:**
+```yaml
+- run: BASE_SHA=${{ github.event.pull_request.base.sha }}
+```
+
+**✅ Good:**
+```yaml
+- env:
+    BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  run: echo "$BASE_SHA"
+```
+
+This avoids errors when the expression is empty, handles special characters,
+and stops untrusted values being run as shell code.
 
 ## Authentication
 
-### GITHUB_TOKEN vs Custom PAT
-- **GITHUB_TOKEN**: Use for read operations like checking PR status
-- **Custom PAT**: Use only for operations that need permissions GITHUB_TOKEN lacks
+- **GITHUB_TOKEN**: use for everything it can do.
+- **Repository secrets** (for example `CLOUDFLARE_API_TOKEN`): pass them only
+  to the step that needs them, and only on `main`, never on pull requests.
+- **Custom PAT**: only for permissions GITHUB_TOKEN lacks.
 
-## Testing Workflows
+## Testing workflows
 
-All workflows should have corresponding Rust tests in the `workflow_tests` project:
-- `cast_ci_workflow_tests.rs`: Tests for the cast CI workflow
-- `cast_cd_workflow_tests.rs`: Tests for the cast CD workflow
+Every workflow has Rust tests in `monorepo/workflow_tests/tests/` (see its
+README for the list). They check the file parses, its triggers and
+permissions, and the behaviour that matters (for example that pull requests
+never deploy). Run them with `mise run test` in `monorepo/` before committing
+workflow changes.
 
-Test suites validate:
-- File existence
-- YAML syntax
-- Workflow configuration
-- Required permissions
-- Logic correctness
-- Proper quoting of expressions
-- Required component installation
+## Tools
 
-Run tests before committing workflow changes:
-
-```bash
-cd workflow_tests
-cargo test
-```
-
-## Rust Toolchain Setup
-
-### Required Components
-
-When using `actions-rust-lang/setup-rust-toolchain@v1`, always explicitly specify the required components. The action does not guarantee installation of optional components like `rustfmt` and `clippy` by default.
-
-**✅ Correct - Explicitly specify components:**
-```yaml
-- name: Setup Rust toolchain
-  uses: actions-rust-lang/setup-rust-toolchain@v1
-  with:
-    toolchain: stable
-    components: rustfmt, clippy
-```
-
-**❌ Incorrect - Missing components specification:**
-```yaml
-- name: Setup Rust toolchain
-  uses: actions-rust-lang/setup-rust-toolchain@v1
-  with:
-    toolchain: stable
-```
-
-### Why Specify Components?
-
-The `cast ci` command requires:
-- `rustfmt` - for `cargo fmt --check`
-- `clippy` - for `cargo clippy -- -D warnings`
-
-Without explicitly specifying these components, the workflow may fail with errors like:
-```
-Cargo fmt check failed: error: 'cargo-fmt' is not installed for the toolchain 'stable-x86_64-unknown-linux-gnu'
-```
-
-## Tool Installation
-
-### Framework-Specific Tools via Cast Install
-
-Workflows should use the `cast install` command to manage framework-specific tools (Node.js, npm, Playwright, Dioxus CLI, Wrangler, etc.) instead of manually installing them.
-
-**✅ Correct - Use cast install:**
-```yaml
-- name: Setup Rust toolchain
-  uses: actions-rust-lang/setup-rust-toolchain@v1
-  with:
-    toolchain: stable
-    components: rustfmt, clippy
-
-- name: Setup Node.js
-  uses: actions/setup-node@v4
-  with:
-    node-version: '20'
-    cache: 'npm'
-    cache-dependency-path: '**/package-lock.json'
-
-- name: Build cast CLI
-  run: |
-    cd cast_workspace/cli
-    cargo build --release
-
-- name: Install toolchain for project
-  run: |
-    cd $PROJECT_DIR
-    cast install
-```
-
-**❌ Incorrect - Manually install tools:**
-```yaml
-- name: Install Playwright browsers
-  run: |
-    find . -name "package.json" ... # Complex bash script
-
-- name: Cache Dioxus CLI
-  uses: actions/cache@v4
-  ...
-
-- name: Install Dioxus CLI
-  run: cargo install dioxus-cli --version 0.7.2
-```
-
-### Why Use Cast Toolchain Install?
-
-1. **Automatic Detection**: Detects required tools based on project configuration
-2. **Built-in Caching**: Checks if tools are already installed before attempting installation
-3. **Consistency**: Same tooling logic used locally and in CI
-4. **Maintainability**: Tool versions and logic centralized in cast project
-5. **Testability**: Installation logic can be unit tested
-
-### Standard Workflow Pattern
-
-The standard pattern for CI workflows is:
-1. **Setup Rust** via `actions-rust-lang/setup-rust-toolchain@v1` (base requirement)
-2. **Setup Node.js** via `actions/setup-node@v4` (cast install requires Node.js for certain tools)
-3. **Build cast CLI** to make it available
-4. **Use cast commands** for all other logic including tool installation
-
-See `.github/workflows/cast-ci.yml` for a complete example.
+Install tools through each project's `mise.toml` and `jdx/mise-action`, not
+with separate setup actions (`actions-rust-lang/setup-rust-toolchain`,
+`actions/setup-node`, ad hoc `cargo install`). Rust components such as
+`rustfmt` and `clippy` are listed in the project's `rust` tool entry. See
+[toolchain.md](toolchain.md).

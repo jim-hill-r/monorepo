@@ -87,10 +87,9 @@ fn test_push_main_runs_ci_and_deploy() {
         Some("main"),
         "should run on pushes to main"
     );
-    assert_eq!(
-        parsed["concurrency"]["cancel-in-progress"].as_bool(),
-        Some(false),
-        "a deploy must not be cancelled midway"
+    assert!(
+        parsed["concurrency"].is_null(),
+        "a concurrency group would cancel queued pushes and skip their CI and deploys"
     );
     let job = calls_mise_projects(&parsed);
     assert_eq!(job["with"]["deploy"].as_bool(), Some(true));

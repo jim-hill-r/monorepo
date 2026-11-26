@@ -1,7 +1,7 @@
 # Building with mise
 
 Every project is built, tested and deployed with [mise](https://mise.jdx.dev).
-Cast is being retired (CI no longer runs it). Shared task files live in
+It replaced Cast in November 2026. Shared task files live in
 [`standards/tasks/`](../tasks/README.md), and the repo checks live in
 `standards/scripts/`.
 

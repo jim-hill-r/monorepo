@@ -1,4 +1,0 @@
-# Cast configuration for pane-cloudflare deployment project
-
-project_type = "iac"
-framework = "cloudflare-pages"

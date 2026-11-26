@@ -4,7 +4,8 @@
 # web app's release output. Override [tasks.release] in the project's
 # mise.toml to build that web app, and set the production URL as DEPLOY_URL
 # in its [env] (CI links it from the GitHub deployment). deploy needs
-# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment.
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment, and
+# creates the Pages project named in wrangler.toml if it does not exist yet.
 # Needs in [tools]: rust, node, "npm:wrangler".
 
 [fmt-check]
@@ -46,6 +47,13 @@ run = "echo 'dev: run dev in the web app project instead'"
 run = "echo 'release: override in mise.toml to build the web app this project deploys'"
 
 [deploy]
-description = "Deploy the built site to Cloudflare Pages"
+description = "Deploy the built site to Cloudflare Pages, creating the Pages project the first time"
 depends = ["release"]
-run = "wrangler pages deploy"
+run = '''
+name=$(sed -nE 's/^name *= *"([^"]+)".*/\1/p' wrangler.toml)
+if ! wrangler pages project list | grep -qE "(^|[^[:alnum:]-])${name}([^[:alnum:]-]|$)"; then
+  echo "Creating Cloudflare Pages project ${name}"
+  wrangler pages project create "${name}" --production-branch main
+fi
+wrangler pages deploy
+'''
