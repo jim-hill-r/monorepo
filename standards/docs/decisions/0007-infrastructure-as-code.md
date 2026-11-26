@@ -277,7 +277,8 @@ items 6 and 9:
 - **Where state lives (item 7) is reopened**, because a branch of the
   public repo is still git. The options and their costs are put to Jim
   separately; until he answers, nothing is applied. Answered in
-  [0009](0009-opentofu-state-on-r2.md): state lives in R2.
+  [0009](0009-opentofu-state-http-backend.md): state lives in a Cloudflare
+  Worker with D1, through OpenTofu's `http` backend.
 
 ## How it fits the cleanup plan and the eval engine
 

@@ -608,16 +608,13 @@
   },
   {
     "name": "Cloudflare R2",
-    "ring": "Trial",
+    "ring": "Hold",
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "OpenTofu state for the infra project only (decision 0009, Jim, 2026-11-26): one private bucket, made by hand. It needs a payment method on the account, the one exception to that rule; any other use of R2 needs its own decision record, and IaC never creates buckets (IAC-003).",
-    "exemplars": [
-      "infra"
-    ],
+    "description": "R2 bills past its free allowance once it is enabled, so don't enable it without a decision record.",
+    "exemplars": [],
     "sources": [
-      "standards/docs/decisions/0009-opentofu-state-on-r2.md",
       "standards/docs/free-tiers.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",

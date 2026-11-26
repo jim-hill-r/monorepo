@@ -4,33 +4,53 @@ use anyhow::Context;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
-/// The private R2 bucket that holds every stack's state (decision 0009).
-pub const STATE_BUCKET: &str = "jimhillr-infra-state";
-
 /// The OpenTofu variable that carries the state encryption passphrase, from
 /// the `TOFU_STATE_PASSPHRASE` secret as `TF_VAR_tofu_state_passphrase`.
 pub const PASSPHRASE_VARIABLE: &str = "tofu_state_passphrase";
 
-/// The `s3` backend for a stack's state in R2 (decision 0009). The endpoint
-/// (it holds the account ID) and the access key come from the environment
-/// (`AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), never
-/// from this code. terrars' `BackendS3` has no `skip_s3_checksum`, which R2
-/// needs, so the block is written here.
-pub fn backend(stack: &str) -> Value {
+/// The `http` backend for a stack's state, served by the
+/// `jimhillr-tofu-state` Worker with D1 (decision 0009). Only the methods are
+/// here: the workflows pass the stack's URL (`address`, `lock_address` and
+/// `unlock_address`, all `<worker>/states/<stack>`) with `-backend-config`,
+/// and the password in `TF_HTTP_PASSWORD`, so nothing environment-specific
+/// or secret is in the code.
+pub fn backend() -> Value {
     json!({
-        "s3": {
-            "bucket": STATE_BUCKET,
-            "key": format!("{stack}.tfstate"),
-            "region": "auto",
-            "use_lockfile": true,
-            "use_path_style": true,
-            "skip_credentials_validation": true,
-            "skip_region_validation": true,
-            "skip_requesting_account_id": true,
-            "skip_metadata_api_check": true,
-            "skip_s3_checksum": true,
+        "http": {
+            "lock_method": "LOCK",
+            "unlock_method": "UNLOCK",
+            "update_method": "POST",
+            "username": "tofu",
+            "retry_max": 5,
         }
     })
+}
+
+/// The backend URL path for a stack, under the Worker's origin.
+pub fn state_url_path(stack: &str) -> String {
+    format!("/states/{stack}")
+}
+
+/// The `-backend-config` arguments that point a stack at its state URL, one
+/// per line, for `tofu init $(infra backend-config <stack> <origin>)`. The
+/// stack must be one we synthesize, and the origin an `https://` URL.
+pub fn backend_config_args(stack: &str, origin: &str) -> anyhow::Result<Vec<String>> {
+    anyhow::ensure!(
+        stack
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_'),
+        "not a stack name: {stack}"
+    );
+    let origin = origin.trim_end_matches('/');
+    anyhow::ensure!(
+        origin.starts_with("https://") && !origin[8..].contains('/'),
+        "the state origin must be https://<host>, got {origin}"
+    );
+    let url = format!("{origin}{}", state_url_path(stack));
+    Ok(["address", "lock_address", "unlock_address"]
+        .iter()
+        .map(|key| format!("-backend-config={key}={url}"))
+        .collect())
 }
 
 /// OpenTofu state and plan encryption (decision 0007, item 7): AES-GCM with
@@ -81,7 +101,7 @@ impl Synth {
         self.imports.push(json!({ "to": to, "id": id }));
     }
 
-    /// Serialize the stack, then add the import blocks, the R2 backend and
+    /// Serialize the stack, then add the import blocks, the HTTP backend and
     /// state encryption.
     pub fn finish(mut self, stack: &terrars::Stack) -> anyhow::Result<Self> {
         let bytes = stack
@@ -97,7 +117,7 @@ impl Synth {
             .or_insert_with(|| json!({}))
             .as_object_mut()
             .context("the terraform block is an object")?;
-        terraform.insert("backend".into(), backend(&self.name));
+        terraform.insert("backend".into(), backend());
         terraform.insert("encryption".into(), encryption());
         let variables = object
             .entry("variable")
@@ -167,14 +187,32 @@ mod tests {
     }
 
     #[test]
-    fn state_lives_in_r2_with_a_lock_file() -> anyhow::Result<()> {
+    fn state_uses_the_http_backend_with_locking() -> anyhow::Result<()> {
         let synth = stack()?;
-        let s3 = &synth.json["terraform"]["backend"]["s3"];
-        assert_eq!(s3["bucket"], "jimhillr-infra-state");
-        assert_eq!(s3["key"], "auth0.tfstate");
-        assert_eq!(s3["use_lockfile"], true);
-        assert!(s3.get("endpoints").is_none() && s3.get("access_key").is_none());
+        let http = &synth.json["terraform"]["backend"]["http"];
+        assert_eq!(http["lock_method"], "LOCK");
+        assert_eq!(http["unlock_method"], "UNLOCK");
+        // The URL and password come from the workflow, never the code.
+        assert!(http.get("address").is_none() && http.get("password").is_none());
         assert!(synth.json["terraform"]["backend"].get("local").is_none());
+        assert_eq!(state_url_path("auth0"), "/states/auth0");
+        Ok(())
+    }
+
+    #[test]
+    fn backend_config_points_every_address_at_the_stack() -> anyhow::Result<()> {
+        let args = backend_config_args("auth0", "https://state.example.workers.dev/")?;
+        assert_eq!(
+            args,
+            [
+                "-backend-config=address=https://state.example.workers.dev/states/auth0",
+                "-backend-config=lock_address=https://state.example.workers.dev/states/auth0",
+                "-backend-config=unlock_address=https://state.example.workers.dev/states/auth0",
+            ]
+        );
+        assert!(backend_config_args("auth0", "http://state.example").is_err());
+        assert!(backend_config_args("auth0", "https://state.example/other").is_err());
+        assert!(backend_config_args("../x", "https://state.example").is_err());
         Ok(())
     }
 

@@ -93,7 +93,7 @@ itself.
 
 | Item | Free limit | Our budget | Counted | Past the limit | Source |
 | --- | --- | --- | --- | --- | --- |
-| R2 storage (also 1M Class A and 10M Class B operations a month) (`r2_storage_bytes`) | 10 GB (a month) | 100 MB (OpenTofu state only (decision 0009); proposed, Jim to confirm) | per account | Billed once R2 is enabled | [developers.cloudflare.com](https://developers.cloudflare.com/r2/pricing/) |
+| R2 storage (also 1M Class A and 10M Class B operations a month) (`r2_storage_bytes`) | 10 GB (a month) | 0 bytes (on hold: don't enable R2 without a decision record) | per account | Billed once R2 is enabled | [developers.cloudflare.com](https://developers.cloudflare.com/r2/pricing/) |
 
 #### PostHog
 
@@ -138,10 +138,7 @@ Web Analytics is free.
 
 Settings that need Workers Paid (`usage_model`, `[limits]` above the free
 CPU time, `logpush = true`) are rejected by the repo check. R2 bills past its
-free allowance once it is enabled, and turning it on needs a payment method.
-It is used for one thing only, OpenTofu state for `infra`, in one bucket made
-by hand ([decision 0009](decisions/0009-opentofu-state-on-r2.md)), with a
-billing alert on any usage-based charge.
+free allowance once it is enabled, so it stays on hold.
 
 ### PostHog (session replay, decision 0001)
 

@@ -107,32 +107,16 @@ every = "90d"
 id = "cloudflare-billing"
 vendor = "Cloudflare"
 where = "dash.cloudflare.com > Manage Account > Billing"
-expect = "The account is on the Free plan with no paid add-on (Workers Paid, Images, anything subscribed). Its one payment method is there only for R2 (decision 0009), and this month's usage-based charges are $0."
-why = "Every service stays on its free plan (standards/docs/free-tiers.md); R2 is the one exception that needs a card."
+expect = "The account is on the Free plan with no payment method and no paid add-on (Workers Paid, R2 paid, Images)."
+why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
 every = "30d"
 
 [[setting]]
-id = "cloudflare-billing-alert"
-vendor = "Cloudflare"
-where = "dash.cloudflare.com > Manage Account > Notifications"
-expect = "A billing notification fires on any usage-based charge and emails Jim."
-why = "R2 has no hard spending cap, so a bill must show up the same day (decision 0009)."
-every = "90d"
-
-[[setting]]
-id = "cloudflare-r2-infra-state"
-vendor = "Cloudflare"
-where = "dash.cloudflare.com > R2"
-expect = "jimhillr-infra-state is the only R2 bucket; it has no public access and no custom domain, and its only API tokens are infra-state-read (Object Read) and infra-state-write (Object Read & Write), both scoped to that bucket."
-why = "OpenTofu state for infra lives here (decision 0009); a second bucket or a public one would break the decision."
-every = "90d"
-
-[[setting]]
-id = "github-secrets-r2-infra"
+id = "github-secrets-tofu-state"
 vendor = "GitHub"
 where = "jimhillr/monorepo > Settings > Secrets and variables > Actions, and Environments > infra"
-expect = "R2_INFRA_ENDPOINT and the R2_INFRA_READ_* pair are repository secrets; the R2_INFRA_WRITE_* pair is only in the infra environment."
-why = "PR plans read state with the read pair; only main's apply job can write it."
+expect = "TOFU_STATE_READ_PASSWORD is a repository secret and TOFU_STATE_WRITE_PASSWORD is only in the infra environment, which is limited to main."
+why = "The OpenTofu state Worker accepts only these (decision 0009); a write password outside infra would let any PR change state."
 every = "90d"
 
 # Auth0.
