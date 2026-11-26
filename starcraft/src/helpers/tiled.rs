@@ -330,6 +330,13 @@ pub fn process_loaded_maps(
                                 TilemapType::Isometric(IsoCoordSystem::Staggered)
                             }
                             tiled::Orientation::Orthogonal => TilemapType::Square,
+                            tiled::Orientation::Oblique => {
+                                log::info!(
+                                    "Skipping layer {} because oblique maps are not supported.",
+                                    layer.id()
+                                );
+                                continue;
+                            }
                         };
 
                         let mut tile_storage = TileStorage::empty(map_size);
