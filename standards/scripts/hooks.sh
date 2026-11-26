@@ -8,9 +8,9 @@
 #   hooks.sh pre-push     projects touched since the PR base (AFFECTED_BASE,
 #                         default origin/main, fetched fresh first)
 #
-# Projects come from `affected.sh --local`: a change to the root mise.toml,
-# standards/scripts/ or the CI workflows checks only the projects that test
-# those files, not every project as PR CI does.
+# Projects come from `affected.sh --changed-only`, as in PR CI: a change to
+# the root mise.toml, standards/scripts/ or the CI workflows checks only the
+# projects that test or use those files, not every project.
 #
 # Every project runs even after a failure, so one run shows every problem.
 # A pre-push skips the projects whose `ci` already passed in a pre-commit of
@@ -53,7 +53,7 @@ case "$stage" in
     else
       changed=$(git diff --name-only HEAD)
     fi
-    projects=$(bash standards/scripts/affected.sh --local --files <<<"$changed")
+    projects=$(bash standards/scripts/affected.sh --changed-only --files <<<"$changed")
     # The committed tree, if nothing unstaged changes what CI sees.
     if git diff --quiet; then tree=$(git write-tree); else tree=""; fi
     ;;
@@ -70,7 +70,7 @@ case "$stage" in
       say "shallow clone; fetching full history to find the merge base"
       git fetch --quiet --unshallow origin || say "fetch failed; checking every project"
     fi
-    projects=$(bash standards/scripts/affected.sh --local "$base")
+    projects=$(bash standards/scripts/affected.sh --changed-only "$base")
     tree=$(git rev-parse 'HEAD^{tree}')
     ;;
   *)

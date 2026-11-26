@@ -22,8 +22,7 @@ This installs lefthook through mise (`mise exec lefthook@<version>`, the
 Both hooks run `standards/scripts/hooks.sh`, which runs `mise run //:audit`
 and then `mise run ci` in each affected project (installing its tools with
 `mise install` first). Projects are picked by
-`standards/scripts/affected.sh --local`, the script PR CI uses, with one
-difference described below.
+`standards/scripts/affected.sh --changed-only`, the same list PR CI checks.
 
 | Hook | Projects | Notes |
 | --- | --- | --- |
@@ -37,12 +36,14 @@ You can run either check by hand without committing:
 `bash standards/scripts/hooks.sh pre-commit` (or `pre-push`).
 
 A change to the root `mise.toml`, `standards/scripts/` or the mise CI
-workflows makes PR CI check every project. The hooks don't: with `--local`
-such a change checks only the projects that test those files, `standards`
-(its own scripts and `standards/tests/`) and `monorepo` (the workflow tests,
-through the `# affected-by:` lines in its `mise.toml`). PR CI remains the
-check that every project still builds. A Markdown file outside any project,
-such as `AGENTS.md`, checks only `monorepo`.
+workflows doesn't check every project, in the hooks or in PR CI
+(`--changed-only`). It checks only the projects that test those files,
+`standards` (its own scripts and `standards/tests/`) and `monorepo` (the
+workflow tests, through the `# affected-by:` lines in its `mise.toml`), plus,
+for a script, the projects whose `mise.toml` or included
+`standards/tasks/*.toml` file names it. Pushes to `main` and the nightly runs
+still check every project. A Markdown file outside any project, such as
+`AGENTS.md`, checks only `monorepo`.
 
 Before running a project's tools, the hook clears git's own variables
 (`GIT_DIR`, `GIT_INDEX_FILE` and the rest of `git rev-parse --local-env-vars`),
