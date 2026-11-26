@@ -104,7 +104,7 @@ fn test_push_main_runs_ci_and_deploy() {
 }
 
 #[test]
-fn test_nightly_ci_checks_every_project() {
+fn test_nightly_checks_and_deploys_every_project() {
     let (_, parsed) = load("nightly-ci.yml");
     assert!(!parsed["on"]["schedule"].is_null());
     let job = calls_mise_projects(&parsed);
@@ -113,7 +113,19 @@ fn test_nightly_ci_checks_every_project() {
         Some(""),
         "empty base runs all"
     );
-    assert!(job["with"]["deploy"].is_null(), "nightly must not deploy");
+    assert_eq!(
+        job["with"]["deploy"].as_bool(),
+        Some(true),
+        "nightly runs CD as well as CI (decision 0001)"
+    );
+    for secret in ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"] {
+        assert!(
+            job["secrets"][secret]
+                .as_str()
+                .is_some_and(|v| v.contains(secret)),
+            "nightly deploy needs the {secret} secret"
+        );
+    }
 }
 
 #[test]
@@ -238,6 +250,24 @@ fn test_deploy_writes_the_url_to_the_job_summary() {
         run.contains("pipefail"),
         "a failed deploy must still fail the step when its output is piped"
     );
+    let check = run
+        .find("deploy-check.sh")
+        .unwrap_or_else(|| panic!("deploy should first check it is the latest version of main"));
+    let deploy = run.find("mise run deploy").unwrap_or_default();
+    assert!(check < deploy, "the check must run before the deploy");
+    let ci = steps
+        .iter()
+        .position(|s| s["run"].as_str() == Some("mise run ci"))
+        .unwrap_or_else(|| panic!("no ci step"));
+    let deploy_step = steps
+        .iter()
+        .position(|s| {
+            s["run"]
+                .as_str()
+                .is_some_and(|r| r.contains("mise run deploy"))
+        })
+        .unwrap_or_default();
+    assert!(ci < deploy_step, "deploy only runs after CI passed");
 }
 
 #[test]

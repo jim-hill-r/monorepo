@@ -1,7 +1,12 @@
 ---
-# Runs `mise run ci` in every project each night, so breakage from new
-# toolchains or dependency releases shows up even in quiet projects.
-name: Nightly CI
+# Each night: `mise run ci` then `mise run deploy` in every project, even
+# quiet ones, so toolchain drift, dependency releases, expired secrets and
+# broken deploys show up within a day (Jim, 2026-11-26; decision 0001).
+# Most projects' deploy task does nothing; the cloudflare projects rebuild
+# and republish their site from main. Direct uploads use no Pages builds,
+# and standard runners are free on this public repo. Each deploy is skipped
+# when a newer commit on main changes the project (deploy-check.sh).
+name: Nightly CI/CD
 
 'on':
   schedule:
@@ -13,7 +18,11 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  ci-cd:
     uses: ./.github/workflows/mise-projects.yml
     with:
       base: ''
+      deploy: true
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
