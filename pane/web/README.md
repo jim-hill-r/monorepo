@@ -51,10 +51,15 @@ dx serve --verbose
 To build the project for production:
 
 ```bash
-dx bundle
+mise run release
 ```
 
-The output will be in the `dist/` directory and ready for deployment.
+This first runs [`pane_snapshot`](../snapshot) to write
+`public/data/snapshot.json` (a snapshot of the whole repo at the current
+commit, with the time it was taken), then `dx bundle`, which copies it into
+the bundle as `/data/snapshot.json`. `public/` is gitignored, so the snapshot
+is never committed. The output will be in the `dist/` directory and ready for
+deployment.
 
 **Note:** The `Dioxus.toml` configuration disables wasm-opt (by setting level to 0) to avoid SIGABRT errors during release builds. This is a known issue where wasm-opt can crash on certain builds.
 
