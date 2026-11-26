@@ -83,6 +83,17 @@ Each project's build, test and CI steps run through the repo's task runner.
 Run the CI task for every project you changed and make it pass before
 opening or readying a PR.
 
+Git hooks do that for you: once set up, every commit and push runs
+`mise run //:audit` and the CI task in each affected project, the same checks
+PR CI runs. Set them up at the start of every session, before your first
+commit, and never skip them (`LEFTHOOK=0`, `--no-verify`) to get a change
+through. If a hook fails, fix the failure and commit again. The only
+exception is a check that fails because a cloud sandbox can't install a tool;
+[standards/docs/git-hooks.md](standards/docs/git-hooks.md) has the fallback,
+and the PR must say which checks didn't run.
+
+- Set up git hooks (once per clone): `mise run //:hooks`
+- Run the hook checks without committing: `bash standards/scripts/hooks.sh pre-push`
 - Install project tooling: `mise install` (in the project directory)
 - Run CI for a project (fmt, clippy, build, tests, and npm tests where a
   `package.json` exists): `mise run ci`
