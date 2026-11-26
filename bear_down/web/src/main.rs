@@ -7,11 +7,13 @@ mod data;
 mod feedback;
 mod teams;
 
-use bear_down_core::NEGLIGIBLE_SWING;
 use data::{Game, Goal, Rooting, no_pick_label, percent, swing_percent, timestamp};
 use design_system_dioxus::{Stylesheets, ThemePicker};
 use dioxus::prelude::*;
-use feedback::{Ballot, MAX_NOTE, TELEMETRY_URL, Vote, verdict, vote_key};
+use feedback::{
+    ARM_ID_KEY, Arm, Ballot, MAX_NOTE, TELEMETRY_URL, Vote, exposure, exposure_key, verdict,
+    vote_key,
+};
 
 const STYLE: &str = include_str!("style.css");
 /// The generated "bears" theme (`design_system_cli render`).
@@ -80,6 +82,18 @@ async fn load() -> Result<Rooting, String> {
 fn Guide(rooting: Rooting) -> Element {
     let mut goal = use_signal(Goal::default);
     let goal_now = goal();
+    let arm = use_hook(current_arm);
+    // One exposure per arm, week and tab in each visit.
+    let (season, week_now) = (rooting.season, rooting.week);
+    use_effect(move || {
+        let goal = goal();
+        if let Some(week) = week_now.filter(|_| voting_allowed()) {
+            let key = exposure_key(arm, season, week, goal);
+            if mark_once(session_storage(), &key) {
+                post(exposure(arm, season, week, goal));
+            }
+        }
+    });
     let odds = &rooting.bears.odds;
     let week = match rooting.week {
         Some(w) => format!("Week {w}, {} season", rooting.season),
@@ -151,6 +165,7 @@ fn Guide(rooting: Rooting) -> Element {
                             goal: goal_now,
                             season: rooting.season,
                             week: rooting.week,
+                            arm,
                         }
                     }
                 }
@@ -186,15 +201,23 @@ fn Stat(label: &'static str, value: String) -> Element {
 }
 
 #[component]
-fn GameRow(game: Game, goal: Goal, season: u16, week: Option<u8>) -> Element {
+fn GameRow(game: Game, goal: Goal, season: u16, week: Option<u8>, arm: Arm) -> Element {
     let s = goal.swing(&game);
     let away = teams::nickname(&game.away);
     let home = teams::nickname(&game.home);
     let home_p = percent(game.home_win_probability);
-    let (root, tier) = goal.verdict(&game, NEGLIGIBLE_SWING);
+    let (root, tier) = goal.verdict(&game, arm.line());
+    // The published explanation was written for the 0.05-point line; when
+    // this arm's line turns the game into a pick, say why instead.
+    let why = match root.as_deref() {
+        Some(team) if s.root_for.as_deref() != Some(team) => {
+            vec![small_edge(team, s.swing, s.std_error, goal, arm)]
+        }
+        _ => s.why.clone(),
+    };
     let pick = root.as_deref().map(teams::name);
     let ballot = week.filter(|_| voting_allowed()).map(|week| Ballot {
-        arm: "a".to_string(),
+        arm: arm.name().to_string(),
         season,
         week,
         goal,
@@ -225,9 +248,9 @@ fn GameRow(game: Game, goal: Goal, season: u16, week: Option<u8>) -> Element {
                     None => rsx! { span { class: "root", "{no_pick_label(tier)}" } },
                 }
             }
-            if !s.why.is_empty() {
+            if !why.is_empty() {
                 ul { class: "why",
-                    for reason in s.why.iter() {
+                    for reason in why.iter() {
                         li { "{reason}" }
                     }
                 }
@@ -237,6 +260,55 @@ fn GameRow(game: Game, goal: Goal, season: u16, week: Option<u8>) -> Element {
             }
         }
     }
+}
+
+/// The explanation for a pick that only this arm's lower line makes, in
+/// the CLI's words ("A small edge: an Eagles win is better by 0.029 give or
+/// take 0.010 Super Bowl points").
+fn small_edge(team: &str, swing: f64, std_error: Option<f64>, goal: Goal, arm: Arm) -> String {
+    let name = teams::nickname(team);
+    let article = if name.starts_with(['A', 'E', 'I', 'O', 'U']) {
+        "an"
+    } else {
+        "a"
+    };
+    let points = |p: f64| percent(p).trim_end_matches('%').to_string();
+    let noise = std_error
+        .map(|se| format!(" give or take {}", points(se)))
+        .unwrap_or_default();
+    let unit = match goal {
+        Goal::Playoffs => "playoff",
+        Goal::SuperBowl | Goal::NfcNorth => "Super Bowl",
+    };
+    format!(
+        "A small edge: {article} {name} win is better by {}{noise} {unit} points, over this page's {}-point line.",
+        points(swing.abs()),
+        arm.line_label(),
+    )
+}
+
+/// This browser's A/B arm: `?arm=a` or `?arm=b` if given, otherwise from a
+/// random id kept in `localStorage`, so the browser stays in one arm all
+/// season. Without storage the page falls back to arm A.
+fn current_arm() -> Arm {
+    let search = web_sys::window()
+        .and_then(|window| window.location().search().ok())
+        .unwrap_or_default();
+    if let Some(arm) = Arm::from_query(&search) {
+        return arm;
+    }
+    let Some(storage) = local_storage() else {
+        return Arm::A;
+    };
+    let id = match storage.get_item(ARM_ID_KEY).ok().flatten() {
+        Some(id) => id,
+        None => {
+            let id = format!("{:013x}", (js_sys::Math::random() * 2f64.powi(52)) as u64);
+            let _ = storage.set_item(ARM_ID_KEY, &id);
+            id
+        }
+    };
+    Arm::for_id(&id)
 }
 
 /// Where a game's vote stands in this browser.
@@ -332,18 +404,35 @@ fn voting_allowed() -> bool {
     !(dnt || gpc)
 }
 
-fn storage() -> Option<web_sys::Storage> {
+fn local_storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
 }
 
+fn session_storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.session_storage().ok().flatten()
+}
+
+/// Records `key` in `storage` and says whether it was new. Without storage
+/// it says yes, so at worst an exposure is sent twice.
+fn mark_once(storage: Option<web_sys::Storage>, key: &str) -> bool {
+    let Some(storage) = storage else {
+        return true;
+    };
+    if storage.get_item(key).ok().flatten().is_some() {
+        return false;
+    }
+    let _ = storage.set_item(key, "1");
+    true
+}
+
 fn has_voted(key: &str) -> bool {
-    storage()
+    local_storage()
         .and_then(|storage| storage.get_item(key).ok().flatten())
         .is_some()
 }
 
 fn remember_vote(key: &str) {
-    if let Some(storage) = storage() {
+    if let Some(storage) = local_storage() {
         let _ = storage.set_item(key, "1");
     }
 }

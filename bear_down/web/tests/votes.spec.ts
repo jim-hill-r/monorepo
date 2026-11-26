@@ -7,7 +7,9 @@ import { test, expect, type Page } from '@playwright/test';
 async function stubTelemetry(page: Page): Promise<unknown[]> {
   const events: unknown[] = [];
   await page.route('**/jimhillr-telemetry.*/event', async (route) => {
-    events.push(JSON.parse(route.request().postData() ?? 'null'));
+    const event = JSON.parse(route.request().postData() ?? 'null');
+    // Exposures are covered in arms.spec.ts; keep only the votes here.
+    if (event?.kind === 'feedback') events.push(event);
     await route.fulfill({ status: 202, headers: { 'access-control-allow-origin': '*' } });
   });
   return events;
@@ -16,7 +18,7 @@ async function stubTelemetry(page: Page): Promise<unknown[]> {
 test.describe('Verdict votes', () => {
   test('@smoke every game asks whether its verdict looks right', async ({ page }) => {
     await stubTelemetry(page);
-    await page.goto('/');
+    await page.goto('/?arm=a');
     const games = page.locator('li.game');
     await expect(games.first()).toBeVisible();
     const count = await games.count();
@@ -26,7 +28,7 @@ test.describe('Verdict votes', () => {
 
   test('@smoke a vote says thanks, takes an optional note and is remembered', async ({ page }) => {
     const events = await stubTelemetry(page);
-    await page.goto('/');
+    await page.goto('/?arm=a');
     const game = page.locator('li.game').first();
     await game.getByRole('button', { name: 'No' }).click();
     await expect(game.getByText('Thanks!')).toBeVisible();
@@ -52,7 +54,7 @@ test.describe('Verdict votes', () => {
       Object.defineProperty(navigator, 'doNotTrack', { get: () => '1' });
     });
     await stubTelemetry(page);
-    await page.goto('/');
+    await page.goto('/?arm=a');
     await expect(page.locator('li.game').first()).toBeVisible();
     await expect(page.getByRole('group', { name: 'Does this verdict look right?' })).toHaveCount(0);
     await expect(page.locator('.privacy')).toHaveCount(0);
