@@ -64,6 +64,16 @@ the source of truth.
    Analytics Engine metrics and PostHog recordings, so evals never grade
    themselves or spend the recording allowance.
 
+8. **In-app feedback pins comments to the product.** Like Vercel's
+   toolbar: a Rust wasm toolbar (in every website and in the Dioxus desktop
+   and mobile webviews) and a Bevy plugin (games) let Jim click a spot and
+   comment, with the anchor, build, screenshot and recent errors attached.
+   Only Jim can send, with a 12-hour token from pane behind Cloudflare
+   Access. Comments, replies and resolves are lines in
+   `<project>/evals/feedback.jsonl` with screenshots beside it, written
+   through `pane-edit` PRs. A bug or "not met" becomes a `FIX` and counts as
+   a rating.
+
 ## Alternatives considered
 
 - **Cloudflare D1.** Free and on an approved vendor, and the first draft of
@@ -78,6 +88,10 @@ the source of truth.
 - **A hosted eval or chaos service** (Gremlin, Datadog Synthetics,
   Checkly). All paid past small free tiers or add a vendor; the browser and
   our Workers are enough for the faults that matter to our products.
+- **Vercel's toolbar, or a hosted feedback widget** (Marker.io, BugHerd,
+  Userback). Vercel's needs our sites on Vercel; the others are paid past
+  tiny free plans and keep the comments outside the repo. None works inside
+  a Bevy game or a desktop webview.
 - **Automatic rollback on a failed `cd` eval.** Safer in theory, but with
   new evals a flaky one would roll back good deploys. Revisit after a month
   of green `cd` runs.

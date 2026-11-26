@@ -23,7 +23,8 @@ what we shipped do what we said it should?**
 - Each requirement has one or more **evals**: checks that say pass or fail
   (or give a number against a threshold) for that requirement.
 - Evals run at every point Jim named: **after CI**, **after CD**, against
-  **observability** data, as **human feedback** in pane, and as **chaos
+  **observability** data, as **human feedback** (ratings in pane and
+  comments pinned inside the apps and games themselves), and as **chaos
   tests in production**. An agent **judge** covers what can't be automated.
 - Every run writes **results** to one place, so each requirement gets a
   verdict (met, at risk, not met, unknown) with a link to the evidence, and a
@@ -365,6 +366,120 @@ eval. Pane's Today page lists requirements that have never been rated by
 Jim and changed since his last rating, a few at a time, so feedback is a
 two-minute habit rather than a chore.
 
+### In-app feedback: pin a comment to the thing itself
+
+Jim asked on 2026-11-26 for feedback inside the apps, games and websites,
+like Vercel's toolbar: open the deployed product, click the spot that is
+wrong, type a comment, and have it land where the work happens. Pane's
+Rate button covers a requirement as a whole; this covers "this button,
+on this screen, in this build".
+
+**What Jim sees.** A small floating feedback button, shown only to him
+(see Who can use it). Clicking it turns on comment mode: the page dims,
+the element under the pointer is outlined, and a click drops a numbered
+pin with a comment box. He picks a kind (**bug**, **idea**, **not met**,
+**looks good**), can tie it to a requirement (the box suggests the
+requirements whose evals cover the current page), and sends. Existing open
+pins for the page show where they were left, with their replies, so he
+doesn't comment on something twice. A pin can be replied to or resolved
+from the toolbar or from pane.
+
+**What each comment captures**, so an agent can reproduce it without
+asking:
+
+| Field | Web apps and sites | Desktop and mobile (webview) | Bevy games |
+| --- | --- | --- | --- |
+| Where | URL and route, a CSS selector path plus the element's text and role, the click's offset inside the element, viewport size, scroll position | Same, plus the app's route | Scene or state name, screen position, world position and the entity under the cursor (name or marker component) |
+| Which build | `commit` and `deploy` from a `<meta name="monorepo-build">` tag every build writes | App version and commit baked in at build time | Version and commit baked in, seed, frame number |
+| Context | Screenshot of the viewport with the pin drawn on it, last 20 console errors, browser and OS | Screenshot, last 20 errors from the log, OS | Screenshot (Bevy's screenshot API), last 20 log errors, the RNG seed and recent inputs when the scripted mode from deploy feedback phase 3c exists |
+| Who and when | `by: jim`, UTC time | Same | Same |
+
+Pins re-anchor on the next build by selector, then text, then position, the
+way Vercel's comments do; a pin whose element is gone shows as "moved" at
+its old position rather than disappearing.
+
+**One toolbar, three hosts.** Everything stays in Rust:
+
+- **`feedback/toolbar`**: a small Rust crate compiled to wasm with
+  `web-sys` (no framework), loaded by one `<script type="module">` tag.
+  Because it doesn't depend on Dioxus or Sycamore, the same file works in
+  every website (the Dioxus apps, the Perseus sites on Sycamore 0.8, review
+  decks) and in **Dioxus desktop and mobile apps**, which render in a
+  webview: their shells inject the same script into the webview.
+- **`feedback/bevy`**: a Bevy plugin for controlled_chaos (and starcraft if
+  it comes off hold). A hotkey (F8) or an on-screen button pauses the game
+  and enters comment mode; a click picks the entity under the cursor
+  through Bevy's picking. In the wasm build it uses the same send path as
+  the toolbar; native builds use the same HTTP call from Rust.
+- **`feedback/model`**: the shared `Comment`, `Anchor` and `Reply` types and
+  the re-anchoring rules, used by the toolbar, the Bevy plugin, pane and the
+  `evals` engine.
+
+**Who can use it.** The toolbar is in every build but stays hidden and
+inert for everyone else:
+
+- It turns on with `?feedback` on the URL (or the hotkey in apps and
+  games), remembered per device.
+- Sending needs a feedback token. The toolbar opens a small pane window,
+  `/feedback/sign-in`, which sits behind pane's Cloudflare Access (Jim
+  only), and pane hands back a signed token (HMAC, 12-hour expiry) by
+  `postMessage`. The toolbar keeps it in `sessionStorage` and sends it with
+  each comment. A popup and a token, rather than cookies, because browsers
+  block third-party cookies between the apps' domains and pane's.
+- Desktop and mobile apps open the same sign-in page in the system browser
+  and receive the token through their deep link.
+- Public visitors never see the button, and the script loads no tracking.
+  Real-user feedback, if wanted later, goes through PostHog's free surveys
+  (1,500 responses a month), not this toolbar.
+
+**Where comments go: files in the repo, no database.** The toolbar posts to
+pane's Worker, `POST /api/feedback`, which checks the token and writes
+through pane's existing write path, the `pane-edit` PR:
+
+```
+<project>/evals/feedback.jsonl              one JSON line per comment, reply or resolve
+<project>/evals/feedback/<comment-id>.webp  the screenshot, downscaled to at most 1280 px and 200 KB
+```
+
+```json
+{"type":"comment","id":"fb-20261202-1804-k3","at":"2026-12-02T18:04:00Z","by":"jim","project":"cookbook","kind":"bug","requirement":"COOK-001","text":"Header overflows on my phone","build":{"commit":"abc1234","deploy":"123456"},"anchor":{"url":"/recipes/42","selector":"header > nav","text":"Shopping list","offset":[0.92,0.4],"viewport":[390,844]},"screenshot":"feedback/fb-20261202-1804-k3.webp","errors":[]}
+{"type":"reply","id":"fb-20261202-1804-k3","at":"2026-12-03T09:10:00Z","by":"agent","text":"Fixed in #640","pr":640}
+{"type":"resolve","id":"fb-20261202-1804-k3","at":"2026-12-03T09:10:00Z","by":"agent","pr":640}
+```
+
+It is the same file as pane's Rate and Dispute actions, with a `type` on
+every line. Comments sent in a burst go into the one open `pane-edit` PR, so
+a review session is one PR. The toolbar reads open pins for the current page
+from pane (`GET /api/feedback?project=&url=`), which serves them from its
+snapshot of `main` plus the open `pane-edit` PR.
+
+**How it feeds evals and work.**
+
+- **not met** on a requirement counts as Jim's rating of that requirement
+  for that deploy, so it can turn the requirement red (see Verdicts).
+  **looks good** counts as a "met" rating.
+- `eval-triage` turns each new **bug** or **not met** into a `FIX` in the
+  project's `ISSUES.md`, and each **idea** into a `TODO`, quoting the
+  comment and linking its screenshot and anchor. The PR that fixes it
+  appends a `reply` and a `resolve` line, so the pin closes itself in the
+  app and in pane.
+- When a pin's requirement has no eval that would have caught it, triage
+  also adds a `TODO (agent-generated)` to add one, so each piece of human
+  feedback makes the automated evals stronger.
+- The judge's calibration (see Judge evals) uses **not met** and **looks
+  good** like ratings.
+
+**Pane.** A Feedback page lists every comment, filterable by project, kind,
+status and requirement, each showing its screenshot with the pin drawn on
+it, the build, and an "Open in app" link that loads the URL with the toolbar
+on and the pin highlighted. Each Project page shows its open pins.
+
+**Cost.** No new vendor. A few pane Worker requests per comment, well inside
+100,000 a day. Screenshots are capped at 200 KB, so even 50 comments a week
+add under 10 MB a month to the repo; the yearly archive step moves
+screenshots of resolved comments older than 12 months out of the tree (they
+stay in git history).
+
 ### Chaos testing in production
 
 The goal is to check requirements under failure ("a recipe stays readable if
@@ -551,12 +666,26 @@ Needs pane phases 3 to 5 (Worker, Health page, `pane-edit` writes).
 - "Rate these" on the Today page.
 - Ratings from `feedback.jsonl` counted in the verdicts.
 
-### Phase 6: judge evals
+### Phase 6: in-app feedback
+
+Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
+
+- `feedback/model`, and pane's `/feedback/sign-in` token page and
+  `/api/feedback` routes writing `feedback.jsonl` lines and screenshots
+  through `pane-edit` PRs.
+- `feedback/toolbar` (wasm), and the `monorepo-build` meta tag, in cookbook
+  first, then every web app and Perseus site.
+- The toolbar injected into the cahokia desktop and mobile webviews, with
+  sign-in through the deep link.
+- `feedback/bevy` in controlled_chaos (native and wasm).
+- `eval-triage` handling comments, and pane's Feedback page.
+
+### Phase 7: judge evals
 
 - The `judge-requirements` skill and its weekly scheduled task.
 - Judge calibration against Jim's ratings, shown in pane.
 
-### Phase 7: process evals
+### Phase 8: process evals
 
 - `MONO-xxx` requirements and the GitHub-derived metrics above.
 - Feed them into pane's system signals and the deep project review deck.
@@ -575,7 +704,8 @@ that needs them, not before:
   `HUMAN_ISSUES.md`).
 - Phase 4: create the `EVALS_CHAOS_KEY` secret (repo and Worker), and set
   `EVALS_CHAOS=on` when he is happy with the first manual runs.
-- Phase 6: schedule the weekly `judge-requirements` Claude task.
+- Phase 6: nothing new; the toolbar uses pane's existing Access policy.
+- Phase 7: schedule the weekly `judge-requirements` Claude task.
 
 ## Cost
 
@@ -617,7 +747,11 @@ Approving the PR that adds this plan approves these (recorded in decision
 5. Agent judge evals are advisory: amber at most. Jim's rating wins.
 6. Our own eval and chaos traffic is tagged and excluded from analytics and
    PostHog.
-7. The TODOs go in the root backlog, after the deploy-feedback items they
+7. In-app feedback is one Rust toolbar (wasm) for every website and
+   webview app plus a Bevy plugin for games, usable only by Jim through a
+   token from pane, storing comments and screenshots as files through
+   `pane-edit` PRs.
+8. The TODOs go in the root backlog, after the deploy-feedback items they
    build on. Phase 0 and 1 don't depend on anything, so moving them to
    priority is a one-line change if Jim wants them sooner.
 
