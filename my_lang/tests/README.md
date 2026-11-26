@@ -10,10 +10,10 @@ Tests are run using Cargo:
 cargo test
 ```
 
-Or using Cast:
+Or using mise:
 
 ```bash
-cast test
+mise run test
 ```
 
 ## Test Organization

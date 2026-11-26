@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
  * Tests for the Cookbook sidebar navigation.
  * 
  * Before running these tests, start the Dioxus dev server:
- *   cast run
+ *   mise run dev
  * 
  * Run tests with:
  *   npm test

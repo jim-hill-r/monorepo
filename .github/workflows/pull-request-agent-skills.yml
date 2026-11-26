@@ -1,0 +1,48 @@
+name: Agent Skills
+
+# Validates every skill in .agents/skills against the Agent Skills
+# specification (https://agentskills.io/specification) and checks that
+# .claude/skills still points at the same folder.
+'on':
+  pull_request:
+    paths:
+      - '.agents/**'
+      - '.claude/**'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.github/workflows/pull-request-agent-skills.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install skills-ref
+        run: pip install skills-ref==0.1.1
+
+      - name: Validate skills
+        run: |
+          status=0
+          for dir in .agents/skills/*/; do
+            agentskills validate "$dir" || status=1
+          done
+          exit "$status"
+
+      - name: Check .claude/skills symlink
+        run: |
+          target="$(readlink .claude/skills)"
+          if [ "$target" != "../.agents/skills" ]; then
+            echo ".claude/skills must be a symlink to ../.agents/skills (found: '$target')"
+            exit 1
+          fi

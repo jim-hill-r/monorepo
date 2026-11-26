@@ -4,11 +4,11 @@
 
 ### Install Toolchain
 
-Use the Cast install command to install all required dependencies:
+Install the toolchain with mise (see the root AGENTS.md "Dev commands"):
 
 ```bash
 cd cahokia/cloudflare
-cast install
+mise install
 ```
 
 ### Build
@@ -30,5 +30,5 @@ cargo test
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash
-cast ci
+mise run ci
 ```

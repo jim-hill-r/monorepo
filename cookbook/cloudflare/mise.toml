@@ -1,0 +1,20 @@
+# cookbook/cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+# affected-by: ../web
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+node = "24"
+"npm:wrangler" = "4"
+
+[env]
+# Production URL. CI shows it on the GitHub deployment and in the job summary.
+DEPLOY_URL = "https://jimhillr-cookbook.pages.dev"
+
+[task_config]
+includes = ["../../standards/tasks/cloudflare-pages.toml"]
+
+[tasks.release]
+description = "Build the web app this project deploys"
+dir = "{{config_root}}/../web"
+run = "mise run release"

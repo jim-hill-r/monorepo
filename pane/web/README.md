@@ -78,7 +78,7 @@ pane/
 │   └── main.rs      # Main application entry point
 ├── Cargo.toml       # Rust dependencies and project metadata
 ├── Dioxus.toml      # Dioxus build configuration
-├── Cast.toml        # Cast project configuration
+├── mise.toml        # Tools and standard tasks (mise run ci, dev, ...)
 └── README.md        # This file
 ```
 

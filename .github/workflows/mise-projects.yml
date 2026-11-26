@@ -1,0 +1,190 @@
+---
+# Reusable workflow: list the projects to check, then run mise tasks in each
+# one, one job per project. Called by pull-request-ci.yml, push-main.yml and
+# nightly-ci.yml and nightly-cd.yml. Every project is a directory with a mise.toml that includes
+# one standards/tasks/<type>.toml, so every project has the same tasks.
+name: mise projects
+
+'on':
+  workflow_call:
+    inputs:
+      base:
+        description: >-
+          Git ref to diff against to find affected projects. Empty runs every
+          project.
+        type: string
+        default: ''
+      deploy:
+        description: Run `mise run deploy` after `mise run ci`
+        type: boolean
+        default: false
+      deploy_only:
+        description: >-
+          Run only the listed projects that deploy (those with DEPLOY_URL in
+          their mise.toml [env]).
+        type: boolean
+        default: false
+      project:
+        description: >-
+          Run only this project directory (for example cookbook/cloudflare),
+          ignoring base. Used to redeploy one project.
+        type: string
+        default: ''
+      ref:
+        description: Git ref to check out. Empty checks out the triggering commit.
+        type: string
+        default: ''
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+  MISE_YES: '1'
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
+    outputs:
+      projects: ${{ steps.urls.outputs.projects || steps.affected.outputs.projects }}
+      deploy_urls: ${{ steps.urls.outputs.deploy_urls }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+
+      - uses: jdx/mise-action@v2
+        with:
+          install: false
+
+      - name: Audit standards
+        run: mise run //:audit
+
+      - name: List projects
+        id: affected
+        env:
+          AFFECTED_BASE: ${{ inputs.base }}
+          ONLY_PROJECT: ${{ inputs.project }}
+        run: |
+          if [ -n "$ONLY_PROJECT" ]; then
+            all=$(mise run --quiet //:projects)
+            if ! jq -e --arg p "$ONLY_PROJECT" 'index($p)' <<<"$all" >/dev/null; then
+              echo "::error::$ONLY_PROJECT is not a project. Projects: $all"
+              exit 1
+            fi
+            projects=$(jq -cn --arg p "$ONLY_PROJECT" '[$p]')
+          elif [ -z "$AFFECTED_BASE" ]; then
+            projects=$(mise run --quiet //:projects)
+          else
+            projects=$(mise run --quiet //:affected)
+          fi
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          echo "Projects: $projects"
+
+      # A project that deploys sets DEPLOY_URL in its mise.toml [env]. Its job
+      # then runs in the `production` environment, so each deploy shows on the
+      # commit and in the repo's Deployments list with a link to the site.
+      - name: Read deploy URLs
+        id: urls
+        env:
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+          DEPLOY_ONLY: ${{ inputs.deploy_only }}
+        shell: python3 {0}
+        run: |
+          import json, os, tomllib
+          urls = {}
+          for p in json.loads(os.environ["PROJECTS"]):
+              with open(os.path.join(p, "mise.toml"), "rb") as f:
+                  url = tomllib.load(f).get("env", {}).get("DEPLOY_URL")
+              if url:
+                  urls[p] = url
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"deploy_urls={json.dumps(urls)}\n")
+              if os.environ["DEPLOY_ONLY"] == "true":
+                  out.write(f"projects={json.dumps(sorted(urls))}\n")
+          print("Deploy URLs:", urls)
+
+  project:
+    needs: plan
+    if: needs.plan.outputs.projects != '[]'
+    runs-on: ubuntu-24.04  # Playwright 1.57 has no browser builds for 26.04 yet
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.plan.outputs.projects) }}
+    name: ci (${{ matrix.project }})
+    # Empty name (no deploy, or a project without DEPLOY_URL) means no environment.
+    environment:
+      name: >-
+        ${{ inputs.deploy && fromJSON(needs.plan.outputs.deploy_urls)[matrix.project]
+        && 'production' || '' }}
+      url: >-
+        ${{ inputs.deploy && fromJSON(needs.plan.outputs.deploy_urls)[matrix.project]
+        || '' }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: jdx/mise-action@v2
+        with:
+          working_directory: ${{ matrix.project }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.project }}
+          key: ${{ matrix.project }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: mise run ci
+        run: mise run ci
+
+      - name: mise run deploy
+        if: inputs.deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ matrix.project }}
+          DEPLOY_URL: ${{ fromJSON(needs.plan.outputs.deploy_urls)[matrix.project] }}
+          ROLLBACK_REF: ${{ inputs.ref }}
+        run: |
+          set -o pipefail
+          # This step only runs once `mise run ci` passed. Deploy only the
+          # latest version of main: skip when a newer commit on main changes
+          # this project (its own run deploys it). A rollback (ref given)
+          # deploys exactly what was asked for.
+          if [ -z "$ROLLBACK_REF" ]; then
+            status=0
+            reason=$(bash "$GITHUB_WORKSPACE/standards/scripts/deploy-check.sh" "$PROJECT") || status=$?
+            echo "$reason"
+            if [ "$status" -eq 3 ]; then
+              echo "### Skipped deploy of $PROJECT" >> "$GITHUB_STEP_SUMMARY"
+              echo "$reason" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            elif [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
+          fi
+          mise run deploy 2>&1 | tee "$RUNNER_TEMP/deploy.log"
+          [ -n "$DEPLOY_URL" ] || exit 0
+          # wrangler prints the URL of this exact deployment, for example
+          # https://e339143b.<project>.pages.dev
+          version=$(grep -oE 'https://[a-z0-9]+\.[a-z0-9-]+\.pages\.dev' "$RUNNER_TEMP/deploy.log" | tail -n1 || true)
+          {
+            echo "### Deployed $PROJECT"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Production | $DEPLOY_URL |"
+            [ -z "$version" ] || echo "| This deployment | $version |"
+            echo "| Commit | \`$(git rev-parse HEAD)\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

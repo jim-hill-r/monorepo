@@ -8,6 +8,6 @@
 
 ## CI Requirements
 
-- All projects MUST run `cast ci` successfully before requesting code review.
-- All projects with code changes MUST have `cast ci` pass before merging.
+- All projects MUST run `mise run ci` successfully before requesting code review.
+- All projects with code changes MUST have `mise run ci` pass before merging.
 - CI failures MUST be addressed before requesting code review.

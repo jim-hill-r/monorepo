@@ -171,8 +171,12 @@ test.describe('Sidebar Component', () => {
     let hasOpenClass = await sidebar.evaluate((el) => el.classList.contains('open'));
     expect(hasOpenClass).toBe(true);
     
-    // Navigate to About page
-    await page.locator('.header-nav a:has-text("About")').click();
+    // Navigate to About page. Use the keyboard: on phone-width viewports the
+    // open sidebar drawer overlays the header nav, so a pointer click would
+    // land on the drawer instead of the link.
+    await page.locator('.header-nav a:has-text("About")').focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/about$/);
     await page.waitForLoadState('networkidle');
     
     // Note: The sidebar state might reset on navigation depending on implementation

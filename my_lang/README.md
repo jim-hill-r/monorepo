@@ -161,13 +161,13 @@ while let token = lexer.next_token() {
 
 This project requires LLVM to be installed on your system for code generation support.
 
-Use Cast to automatically install all required tools including LLVM 18:
+Install the Rust toolchain with mise (LLVM 18 comes from your package manager; in CI the `ci:deps` task installs it):
 
 ```bash
-cast install
+mise install
 ```
 
-Cast will automatically detect that this is a programming language project and install LLVM along with other required tools.
+`mise.toml` sets `LLVM_SYS_181_PREFIX` to `/usr/lib/llvm-18`; change it if your LLVM lives elsewhere.
 
 #### Manual Installation (Alternative)
 
@@ -207,7 +207,7 @@ cargo test
 ### CI
 
 ```bash
-cast ci
+mise run ci
 ```
 
 ## Future Work
@@ -216,4 +216,4 @@ See [ISSUES.md](./ISSUES.md) for planned features and improvements.
 
 ## Project Type
 
-This project is marked as `project_type = "programming_language"` in `Cast.toml` to indicate it's a programming language implementation project in the monorepo.
+This project uses the shared `rust` task file (`standards/tasks/rust.toml`) through its `mise.toml`.

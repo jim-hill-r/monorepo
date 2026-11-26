@@ -1,44 +1,21 @@
 ---
+# Each night: `mise run ci` in every project, even quiet ones, so toolchain
+# drift and dependency releases show up within a day. Nightly CD
+# (nightly-cd.yml) redeploys the sites separately, so the README has one badge
+# for each.
 name: Nightly CI
 
 'on':
   schedule:
-    # Run at 2 AM Pacific Time (10 AM UTC)
+    # 2 AM Pacific Time (10 AM UTC)
     - cron: '0 10 * * *'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  nightly-ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-          cache: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
-
-      - name: Run CI checks on all projects
-        run: |
-          cargo install --path ./cast/cli
-          cast ci --check --recursive 2 --headless
+  ci:
+    uses: ./.github/workflows/mise-projects.yml
+    with:
+      base: ''

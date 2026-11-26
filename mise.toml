@@ -1,0 +1,67 @@
+# Repo root. Installs no tools and builds nothing: every project directory has
+# its own mise.toml with its tools and the standard tasks for its type
+# (standards/tasks/*.toml). Run a task in one project with
+#   cd <project> && mise run ci
+# or, from anywhere, across every project:
+#   mise run '//...:ci'
+
+monorepo_root = true
+
+[settings]
+experimental = true
+
+# Every directory with its own mise.toml is a project. //:audit checks this
+# list matches.
+[monorepo]
+config_roots = [
+  "athenaeum",
+  "auth_sdk",
+  "bear_down",
+  "bear_down/web",
+  "blueeel",
+  "bogan",
+  "cahokia",
+  "cahokia/cloudflare",
+  "cahokia/web",
+  "controlled_chaos",
+  "cookbook",
+  "cookbook/cloudflare",
+  "cookbook/web",
+  "homer",
+  "luggage",
+  "monorepo",
+  "my_lang",
+  "pane",
+  "pane/cloudflare",
+  "pane/web",
+  "profiles",
+  "profiles/content_provider",
+  "profiles/jimhillr",
+  "psy_ents",
+  "royalty",
+  "sparkhill",
+  "sparkhill/webapp",
+  "sparkhill/website",
+  "standards",
+  "starcraft",
+]
+
+[tasks."affected"]
+description = "List project directories touched by changes since a base ref (JSON array)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/affected.sh"
+
+[tasks."projects"]
+description = "List every project directory (JSON array)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/affected.sh --all"
+
+[tasks."audit"]
+description = "Check every project follows the repo standards"
+dir = "{{config_root}}"
+run = "bash standards/scripts/audit.sh"
+
+[tasks."hooks"]
+description = "Install lefthook (through mise) and the git hooks that run the CI checks"
+dir = "{{config_root}}"
+run = "bash standards/scripts/setup-hooks.sh"

@@ -1,42 +1,22 @@
 ---
+# Runs `mise run ci` in every project a pull request touches. See
+# mise-projects.yml and standards/docs/mise.md.
 name: Pull Request CI
 
 'on':
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch: # Runs every project on the chosen branch
 
 permissions:
   contents: read
-  pull-requests: read
+
+concurrency:
+  group: pull-request-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  run-ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
-
-      - name: Run CI checks on changed projects
-        run: |
-          cargo install --path ./cast/cli
-          cast ci --only-changed --check --recursive 2  --headless
+  ci:
+    uses: ./.github/workflows/mise-projects.yml
+    with:
+      base: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}

@@ -3,22 +3,6 @@
 
 version: 2
 updates:
-  # Cargo/Rust dependencies for Cast Workspace
-  - package-ecosystem: "cargo"
-    directory: "/cast"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-    groups:
-      rust-dependencies:
-        patterns:
-          - "*"
-    labels:
-      - "dependencies"
-      - "rust"
-      - "cast"
-
   # Cargo/Rust dependencies for Auth SDK
   - package-ecosystem: "cargo"
     directory: "/auth_sdk"

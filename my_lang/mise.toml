@@ -1,0 +1,21 @@
+# my_lang: rust project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+
+[task_config]
+includes = ["../standards/tasks/rust.toml"]
+
+# inkwell (llvm18-1) links against LLVM 18.
+[env]
+LLVM_SYS_181_PREFIX = "/usr/lib/llvm-18"
+
+[tasks."ci:deps"]
+description = "Install LLVM 18 on Linux CI"
+run = '''
+if [ -n "${CI:-}" ] && command -v apt-get >/dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y llvm-18-dev libpolly-18-dev libzstd-dev
+fi
+'''

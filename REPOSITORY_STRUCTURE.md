@@ -1,31 +1,29 @@
 # Repository Structure
 
-This document describes the organization and structure of this monorepo to help GitHub Copilot agents and developers understand the codebase.
+This document describes the organization and structure of this monorepo to help AI agents and developers understand the codebase.
 
 ## Top-Level Structure
 
 ```
 /
-├── .github/              # GitHub Actions workflows and agent configurations
-│   ├── workflows/        # CI/CD workflows (pull-request-ci.yml, trunk-ci.yml, start-a-new-task.yml)
+├── .agents/skills/       # Agent Skills (agentskills.io) for AI agents; .claude/skills links here
+├── .github/              # GitHub Actions workflows and repo configuration
+│   ├── workflows/        # CI/CD and maintenance workflows (pull-request-ci.yml, push-main.yml, nightly-ci.yml, nightly-cd.yml, ...)
 │   └── dependabot.yml    # Dependency update configuration
 ├── monorepo/            # High-level monorepo functionality workspace
 │   └── workflow_tests/  # Tests for GitHub Actions workflows
-├── macos/               # macOS setup guide and instructions
 ├── profiles/            # User profiles and personal content
 │   ├── jimhillr/        # Personal profile website for jimhillr
 │   └── content_provider/ # Content provider library
-├── example/             # Exemplar projects and templates
-│   ├── base/            # Exemplar project with base configuration
-│   ├── example_rust_library/ # Exemplar project for libraries
-│   └── binary/          # Exemplar project for binaries
-├── docs/                # Documentation and learning resources
-├── cast/               # Cast monorepo tooling workspace (contains core, cli, vscode_ext)
-├── agent_copilot/       # Binary for creating GitHub Copilot agent tasks
-│   └── prompts/         # Prompts for GitHub Copilot agents
+├── standards/           # Standards (standards/docs/), shared mise tasks (standards/tasks/) and repo scripts
+├── athenaeum/           # Learning resources (algorithms, system design, etc.)
 ├── [other projects]     # Various projects and applications
+├── mise.toml            # mise monorepo root: lists projects, //:audit and //:affected tasks
+├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
 ├── ISSUES.md            # Project-wide TODO and issue tracking
-└── README.md            # Main README (symlink to docs/README.md)
+├── HUMAN_ISSUES.md      # Tasks only a person can do (TODO (human))
+├── REPOSITORY_STRUCTURE.md # This file
+└── README.md            # Main README
 ```
 
 ## Key Directories
@@ -34,78 +32,43 @@ This document describes the organization and structure of this monorepo to help 
 Contains high-level monorepo functionality and tools:
 - `workflow_tests/` - Rust-based tests for GitHub Actions workflows
 
-### `/macos/`
-Contains setup guide and instructions for configuring a new macOS machine with the required global dependencies for this monorepo (Rust, npm, etc.).
-
-### `/example/`
-Contains exemplar projects that serve as templates for creating new projects:
-- `base/` - Basic project structure with standard directories
-- `example_rust_library/` - Template for Rust libraries
-- `binary/` - Template for Rust binary/CLI applications
-
-These projects are marked with `exemplar = true` in their `Cast.toml` files and are used by the `cast project new` command.
-
 ### `/profiles/`
 Contains:
 - User profiles and personal content
 - Personal profile websites (e.g., jimhillr)
 - Content provider library for generating profile content
 
-### `/docs/`
-Contains:
-- Documentation and guides
-- Learning resources (algorithms, system design, etc.)
-- Standards and conventions
-- The main repository README.md
+### `/standards/`
+Contains the repository's standards and conventions in `standards/docs/` (Rust, testing, documentation, issue management, workflow conventions, toolchain, mise), the shared task files every project includes (`standards/tasks/`), and the scripts behind `//:audit` and `//:affected` (`standards/scripts/`).
 
-The root-level `README.md` is a symlink pointing to `./docs/README.md`.
+### `/athenaeum/`
+Contains learning resources (algorithms, system design, language notes, etc.).
+
+There is no top-level `docs/` folder. The root `README.md` is a regular file, and project-specific docs live inside each project (for example `cookbook/README.md`).
 
 ### Project Directories
 All projects live in the root directory. Each project may have:
-- `Cast.toml` - Cast configuration (marks exemplar projects, proof-of-concepts)
+- `mise.toml` - Tools and the standard tasks (includes one `standards/tasks/<type>.toml`)
 - `Cargo.toml` - Rust project configuration
 - Standard Rust project structure: `src/`, `tests/`, `benches/`, etc.
 
 ### `.github/workflows/`
-Contains GitHub Actions workflows:
-- `cast-ci.yml` - Automatically runs `cast ci` for projects with changes
-- `start-a-new-task.yml` - Creates a new Copilot agent task (manual trigger only)
+Contains GitHub Actions workflows, including:
+- `pull-request-ci.yml` - Runs `mise run ci` for projects changed in a pull request
+- `push-main.yml` - CI and deploy for projects changed on main
+- `nightly-ci.yml` - Runs `mise run ci` in every project each night
+- `nightly-cd.yml` - Runs `mise run ci` then `mise run deploy` in every deploying project each night
+- `mise-projects.yml` - The reusable workflow the three above call
+- `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default)
+- `all-codeql.yml` - CodeQL code scanning
 
-See `.github/workflows/README.md` and `.github/WORKFLOW_CONVENTIONS.md` for details.
-
-## Cast Workspace
-
-The Cast monorepo tooling is organized as a Cargo workspace at `cast/`:
-- **core** (`cast_core`) - Core Cast library for monorepo operations
-- **cli** (`cast_cli`) - Cast command-line interface
-- **vscode_ext** (`cast`) - VSCode extension for Cast
-
-### Cast CLI
-
-The `cast` CLI is the primary tool for managing this monorepo:
-- Located at `cast/cli/`
-- Build with: `cd cast/cli && cargo build --release`
-- Commands:
-  - `cast project new <name>` - Create new project from exemplars
-  - `cast project with-changes --base <ref> --head <ref>` - Find projects with changes between git refs
-  - `cast ci` - Run CI checks (lint, build, test)
-  - `cast session start` - Start a work session
-  - `cast install` - Install required tools for projects
-
-## Exemplar Projects
-
-The `example/` workspace contains exemplar projects marked with `exemplar = true` in `Cast.toml` that serve as templates:
-- `example/base/` - Basic project structure
-- `example/example_rust_library/` - Rust library template
-- `example/binary/` - Rust binary/CLI template
-
-When creating a new project, Cast copies exemplar projects in alphabetical order, with later ones overwriting files from earlier ones.
+See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` for details.
 
 ## Finding Issues/TODOs
 
-1. Check `ISSUES.md` in the repository root
+1. Check `ISSUES.md` in the repository root and in each project
 2. Use the TODO Tree extension to find TODOs in code
-3. GitHub Copilot agents automatically work on TODOs from ISSUES.md
+3. AI agents work on TODOs from ISSUES.md using the `start-a-new-task` skill in `.agents/skills/`
 
 ## Project Dependencies
 
@@ -115,18 +78,18 @@ When creating a new project, Cast copies exemplar projects in alphabetical order
 
 ## Testing and CI
 
-- Each project with `Cast.toml` can be tested with `cast ci`
+- Each project can be tested with `mise run ci` in its directory
 - The Pull Request CI workflow automatically validates changed projects on PRs
-- The Trunk CI workflow builds release artifacts for changed projects on main branch commits
+- The push-main workflow validates and deploys changed projects on main branch commits
 - Tests should be run before committing changes
 - Workflow tests are located at `monorepo/workflow_tests/` and validate GitHub Actions configurations
 
 ## Important Notes for Agents
 
 1. **Project structure**: All projects are located in the root directory, not under a "projects/" subdirectory
-2. **Docs location**: The docs folder is in the root directory at `/docs/`
-3. **Minimal workflow logic**: GitHub workflows should call `cast` commands, not contain complex logic
-4. **Exemplar projects**: The `example/` workspace contains template projects (base, example_rust_library, binary) - don't modify unless updating templates
+2. **Docs location**: There is no root `/docs/` folder. Standards live in `/standards/docs/`; project docs live inside each project
+3. **Minimal workflow logic**: GitHub workflows should call mise tasks, not contain complex logic
+4. **No project templates**: There are no exemplar/template projects, and they are intentionally not being restored. Create new projects by hand
 5. **TODO tracking**: Remove TODOs from ISSUES.md when completed
-6. **Concurrency**: Only one agent task should run at a time (handled by workflows)
-7. **Cast Tooling**: All projects should have a Cast.toml if it is missing.
+6. **Concurrency**: Only one automated agent task should be open at a time (an open agent PR means wait)
+7. **mise**: Every project has a `mise.toml` that includes one shared task file; `mise run //:audit` enforces this.

@@ -1,0 +1,12 @@
+[package]
+name = "bear_down_core"
+description = "Data loading, Elo, standings, simulation and rooting analysis for bear_down"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+csv.workspace = true
+serde.workspace = true
