@@ -28,6 +28,21 @@ dx serve --platform web --package pane_web
 
 "Pane" evokes a window pane — a transparent surface through which you view the world — making it an apt metaphor for a web interface that presents information clearly and directly to the user.
 
+## Tests
+
+`cargo test` runs the unit tests in `src/view.rs`. The Playwright tests in
+`tests/` check the app in Chromium: the home page loads the snapshot, the
+main nav opens every page, a project page opens, and no page logs a console
+error. They start the app with `mise run dev`, which builds the snapshot
+first, and run in CI as part of `mise run ci`.
+
+```bash
+npm ci
+npm test            # every test, in Chromium
+npm run smoke       # only the @smoke tests, recording video, screenshots and traces
+BASE_URL=https://pane.pages.dev npm run smoke   # against the live site instead
+```
+
 ## Prerequisites
 
 Before running this project, you need to have:
@@ -104,7 +119,9 @@ cargo check
 ```
 pane/
 ├── src/
-│   └── main.rs      # Main application entry point
+│   ├── main.rs      # App, routes and pages
+│   └── view.rs      # Pure helpers for the pages, with unit tests
+├── tests/           # Playwright tests (smoke.spec.ts)
 ├── Cargo.toml       # Rust dependencies and project metadata
 ├── Dioxus.toml      # Dioxus build configuration
 ├── mise.toml        # Tools and standard tasks (mise run ci, dev, ...)
@@ -117,7 +134,7 @@ This project uses Dioxus 0.7 for building web applications with Rust.
 
 ## Status
 
-This is still a placeholder. Pane is becoming one place to review the whole
+Phase 0 of the plan: the shell, the projects pages and smoke tests. Pane is becoming one place to review the whole
 monorepo; see the plan in
 [../docs/plans/2026-11-review-dashboard.md](../docs/plans/2026-11-review-dashboard.md)
 and the phased TODOs in [../ISSUES.md](../ISSUES.md).
