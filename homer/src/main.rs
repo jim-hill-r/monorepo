@@ -69,27 +69,42 @@ pub struct PropertyEvaluation {
     pub unmet_criteria: Vec<String>,
 }
 
+/// RapidAPI host for the Zillow API, sent as the `x-rapidapi-host` header.
+const RAPIDAPI_HOST: &str = "zillow-com1.p.rapidapi.com";
+
+/// Default base URL for the Zillow API on RapidAPI.
+pub const DEFAULT_BASE_URL: &str = "https://zillow-com1.p.rapidapi.com";
+
 /// Zillow API client backed by RapidAPI
 pub struct ZillowClient {
     client: Client,
     api_key: String,
+    base_url: String,
 }
 
 impl ZillowClient {
+    /// Create a client that talks to the real Zillow API on RapidAPI.
     pub fn new(api_key: String) -> Self {
+        Self::with_base_url(api_key, DEFAULT_BASE_URL.to_string())
+    }
+
+    /// Create a client that sends requests to `base_url` instead of RapidAPI,
+    /// for example a local mock server in tests.
+    pub fn with_base_url(api_key: String, base_url: String) -> Self {
         Self {
             client: Client::new(),
             api_key,
+            base_url: base_url.trim_end_matches('/').to_string(),
         }
     }
 
     /// Look up property details for a given address
     pub fn property_details(&self, address: &str) -> Result<PropertyDetails> {
-        let url = "https://zillow-com1.p.rapidapi.com/property";
+        let url = format!("{}/property", self.base_url);
         let response = self
             .client
             .get(url)
-            .header("x-rapidapi-host", "zillow-com1.p.rapidapi.com")
+            .header("x-rapidapi-host", RAPIDAPI_HOST)
             .header("x-rapidapi-key", &self.api_key)
             .query(&[("address", address)])
             .send()
@@ -109,32 +124,48 @@ impl ZillowClient {
     }
 }
 
+/// Read a JSON number as a non-negative whole number.
+///
+/// Accepts integers (`1600`) and whole-number floats (`1600.0`). Returns
+/// `None` for negative or fractional values, non-finite or out-of-range
+/// floats, and non-numbers.
+fn json_whole_number(value: &serde_json::Value) -> Option<u64> {
+    if let Some(n) = value.as_u64() {
+        return Some(n);
+    }
+    let f = value.as_f64()?;
+    // 2^64 is exactly representable as f64; anything at or above it overflows u64.
+    const U64_LIMIT: f64 = 18_446_744_073_709_551_616.0;
+    if f >= 0.0 && f.fract() == 0.0 && f < U64_LIMIT {
+        // The checks above make this cast exact.
+        Some(f as u64)
+    } else {
+        None
+    }
+}
+
+/// Read a JSON number as a `u32`, or `None` if it isn't a whole number that fits.
+fn json_u32(value: &serde_json::Value) -> Option<u32> {
+    json_whole_number(value).and_then(|n| u32::try_from(n).ok())
+}
+
 /// Parse property details from the raw Zillow API JSON response
 pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<PropertyDetails> {
     let price = raw
         .get("price")
-        .and_then(|v| v.as_u64())
-        .or_else(|| raw.get("zestimate").and_then(|v| v.as_u64()));
+        .and_then(json_whole_number)
+        .or_else(|| raw.get("zestimate").and_then(json_whole_number));
 
-    let bedrooms = raw
-        .get("bedrooms")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32);
+    let bedrooms = raw.get("bedrooms").and_then(json_u32);
 
     let bathrooms = raw
         .get("bathrooms")
         .and_then(|v| v.as_f64())
         .map(|v| v as f32);
 
-    let living_area = raw
-        .get("livingArea")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32);
+    let living_area = raw.get("livingArea").and_then(json_u32);
 
-    let year_built = raw
-        .get("yearBuilt")
-        .and_then(|v| v.as_u64())
-        .map(|v| v as u32);
+    let year_built = raw.get("yearBuilt").and_then(json_u32);
 
     let home_type = raw
         .get("homeType")
@@ -182,7 +213,7 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
         match details.bedrooms {
             Some(beds) if beds <= max_beds => {}
             Some(beds) => unmet_criteria.push(format!("Bedrooms: {} (max is {})", beds, max_beds)),
-            None => {}
+            None => unmet_criteria.push(format!("Bedrooms: unknown (max is {})", max_beds)),
         }
     }
 
@@ -432,6 +463,29 @@ mod tests {
     }
 
     #[test]
+    fn test_evaluate_missing_data_fails_max_bedrooms() {
+        let details = make_property(None, None, None, None);
+        let prefs = HomePreferences {
+            max_bedrooms: Some(4),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert!(!eval.meets_preferences);
+        assert_eq!(eval.unmet_criteria, vec!["Bedrooms: unknown (max is 4)"]);
+    }
+
+    #[test]
+    fn test_evaluate_max_bedrooms_at_limit_passes() {
+        let details = make_property(None, Some(4), None, None);
+        let prefs = HomePreferences {
+            max_bedrooms: Some(4),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert!(eval.meets_preferences);
+    }
+
+    #[test]
     fn test_parse_property_details_full() {
         let raw = json!({
             "price": 750000,
@@ -479,6 +533,88 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_property_details_accepts_whole_number_floats() {
+        let raw = json!({
+            "price": 750000.0,
+            "bedrooms": 3.0,
+            "livingArea": 1600.0,
+            "yearBuilt": 1985.0
+        });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert_eq!(details.price, Some(750_000));
+        assert_eq!(details.bedrooms, Some(3));
+        assert_eq!(details.living_area, Some(1600));
+        assert_eq!(details.year_built, Some(1985));
+    }
+
+    #[test]
+    fn test_parse_property_details_float_zestimate_used_when_no_price() {
+        let raw = json!({ "zestimate": 600000.0 });
+        let details = parse_property_details(&raw, "456 Elm St").unwrap();
+        assert_eq!(details.price, Some(600_000));
+    }
+
+    #[test]
+    fn test_parse_property_details_rejects_fractional_and_invalid_numbers() {
+        let raw = json!({
+            "price": 750000.5,
+            "bedrooms": 2.5,
+            "livingArea": -1600.0,
+            "yearBuilt": -1985
+        });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert!(details.price.is_none());
+        assert!(details.bedrooms.is_none());
+        assert!(details.living_area.is_none());
+        assert!(details.year_built.is_none());
+    }
+
+    #[test]
+    fn test_parse_property_details_u32_overflow_is_none_not_truncated() {
+        // 2^32 + 3 would truncate to 3 with an `as u32` cast.
+        let too_big = u64::from(u32::MAX) + 4;
+        let raw = json!({
+            "bedrooms": too_big,
+            "livingArea": too_big as f64,
+            "yearBuilt": too_big
+        });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert!(details.bedrooms.is_none());
+        assert!(details.living_area.is_none());
+        assert!(details.year_built.is_none());
+    }
+
+    #[test]
+    fn test_parse_property_details_u32_max_is_kept() {
+        let raw = json!({ "bedrooms": u32::MAX, "livingArea": f64::from(u32::MAX) });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert_eq!(details.bedrooms, Some(u32::MAX));
+        assert_eq!(details.living_area, Some(u32::MAX));
+    }
+
+    #[test]
+    fn test_property_details_float_numbers_from_mock_server() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"price": 650000.0, "bedrooms": 3.0, "livingArea": 1600.0, "yearBuilt": 1985.0}"#)
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let details = client
+            .property_details("123 Main St")
+            .expect("mock server returns valid property JSON");
+
+        assert_eq!(details.price, Some(650_000));
+        assert_eq!(details.bedrooms, Some(3));
+        assert_eq!(details.living_area, Some(1600));
+        assert_eq!(details.year_built, Some(1985));
+    }
+
+    #[test]
     fn test_format_property_meets_preferences() {
         let details = make_property(Some(750_000), Some(3), Some(2.0), Some(1500));
         let prefs = HomePreferences {
@@ -504,5 +640,105 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         let output = format_property(&eval);
         assert!(output.contains("✗"));
+    }
+
+    #[test]
+    fn test_property_details_success_against_mock_server() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "address".into(),
+                "123 Main St".into(),
+            ))
+            .match_header("x-rapidapi-key", "test-key")
+            .match_header("x-rapidapi-host", "zillow-com1.p.rapidapi.com")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                json!({
+                    "price": 650000,
+                    "bedrooms": 3,
+                    "bathrooms": 2.0,
+                    "livingArea": 1600
+                })
+                .to_string(),
+            )
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let details = client
+            .property_details("123 Main St")
+            .expect("mock server returns valid property JSON");
+
+        mock.assert();
+        assert_eq!(details.address, "123 Main St");
+        assert_eq!(details.price, Some(650_000));
+        assert_eq!(details.bedrooms, Some(3));
+        assert_eq!(details.living_area, Some(1600));
+    }
+
+    #[test]
+    fn test_property_details_non_2xx_status_is_error() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(429)
+            .with_body("rate limited")
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let err = client
+            .property_details("123 Main St")
+            .expect_err("a 429 response must be an error");
+
+        let message = err.to_string();
+        assert!(message.contains("429"), "unexpected error: {message}");
+        assert!(
+            message.contains("rate limited"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn test_property_details_non_json_body_is_error() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("<html>not json</html>")
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let err = client
+            .property_details("123 Main St")
+            .expect_err("a non-JSON body must be an error");
+
+        assert!(
+            err.to_string()
+                .contains("Failed to parse Zillow API response"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_with_base_url_tolerates_trailing_slash() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("{}")
+            .create();
+
+        let client =
+            ZillowClient::with_base_url("test-key".to_string(), format!("{}/", server.url()));
+        client
+            .property_details("123 Main St")
+            .expect("trailing slash in base URL still reaches /property");
+
+        mock.assert();
     }
 }

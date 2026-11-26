@@ -65,7 +65,8 @@ impl DeckBuilder {
     }
 
     /// Set the maximum number of copies of any single card (by name) allowed
-    /// in the deck.  Cards that would exceed this limit are silently ignored.
+    /// in the deck.  [`DeckBuilder::add_card`] rejects cards that would exceed
+    /// this limit and returns `false`.
     pub fn with_max_copies(mut self, max: usize) -> Self {
         self.max_copies = Some(max);
         self

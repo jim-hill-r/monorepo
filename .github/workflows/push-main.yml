@@ -1,0 +1,43 @@
+---
+# On every push to main: `mise run ci` then `mise run deploy` in each project
+# the push touched. Most projects' deploy task does nothing; the cloudflare
+# projects build their web app and publish it to Cloudflare Pages. See
+# mise-projects.yml and standards/docs/mise.md.
+name: Push Main CI/CD
+
+'on':
+  push:
+    branches:
+      - main
+  # Run by hand with no inputs to check and deploy every project. To roll
+  # back, give one project and the ref (commit SHA or tag) to redeploy.
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project to redeploy, for example cookbook/cloudflare. Empty runs every project.
+        type: string
+        default: ''
+      ref:
+        description: Commit SHA, tag or branch to deploy. Empty deploys the branch the run is on.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# No concurrency group: GitHub keeps only one pending run per group and
+# cancels the rest, which silently skipped CI and deploys for quick
+# back-to-back merges. Each run checks and deploys only what its own push
+# changed.
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/mise-projects.yml
+    with:
+      base: ${{ github.event_name == 'push' && github.event.before || '' }}
+      deploy: true
+      project: ${{ inputs.project || '' }}
+      ref: ${{ inputs.ref || '' }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

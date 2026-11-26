@@ -10,6 +10,9 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
+
+  /* Wait for the dev server's first build before running tests. */
+  globalSetup: './global-setup.ts',
   
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -19,6 +22,10 @@ export default defineConfig({
   
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
+
+  /* The unoptimised dev build loads slowly on CI runners; tests that visit
+     several pages need more than the default 30s there. */
+  timeout: process.env.CI ? 60 * 1000 : 30 * 1000,
   
   /* Use a limited number of workers on CI to balance speed and stability. */
   workers: process.env.CI ? 2 : 4,
@@ -69,14 +76,11 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    // IMPORTANT: Use 'cast run' instead of 'dx serve --port 8080'
-    // cast run is the correct command as it handles framework detection
-    // and ensures consistency with the development workflow.
-    // The CI workflow ensures cast is available in PATH before running tests.
-    command: 'cast run',
+    // `mise run dev` is the project's standard dev task (dx serve on port 8080).
+    command: 'mise run dev',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 600 * 1000, // first dx build in CI is slow
     cwd: __dirname,
     
     stdout: 'pipe',

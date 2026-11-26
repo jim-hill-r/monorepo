@@ -19,8 +19,3 @@ uuid = { version = "1.19", features = ["v4", "js"] }
 default = ["web"]
 web = []
 
-[package.metadata.cast]
-exemplar = true
-project_type = "static_website"
-framework = "dioxus"
-deploys = ["../cloudflare"]

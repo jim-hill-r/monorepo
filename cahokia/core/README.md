@@ -8,6 +8,7 @@ This crate provides core data structures and functionality for managing genealog
 - **Relationship Tracking**: Model family relationships (Parent, Child, Spouse, Sibling)
 - **Ancestry Events**: Track significant life events (Birth, Death, Marriage, Divorce, Adoption, etc.)
 - **Family Tree**: Build and query a graph-based family tree structure
+- **Layout**: Arrange a family tree into generation rows, then into boxes and lines with coordinates for drawing
 
 ## Usage
 
@@ -81,6 +82,61 @@ The FamilyTree provides several helper methods for querying relationships:
 - `get_children(person_id)` - Get all children of a person
 - `get_spouses(person_id)` - Get all spouses of a person
 - `get_siblings(person_id)` - Get all siblings of a person (people who share at least one parent)
+
+### Laying Out the Tree for Drawing
+
+`FamilyTree::generation_layout()` places everyone in a row (their generation,
+parents above children) and at a position within that row, so renderers never
+walk relationships themselves:
+
+```rust
+use core::{FamilyTree, Person, Placement, Sex};
+
+let mut tree = FamilyTree::new();
+for id in ["dad", "mom", "kid"] {
+    tree.add_person(Person::new(id.to_string(), id.to_string(), Sex::Unknown, None, None)).unwrap();
+}
+tree.add_spouse_relationship("dad".to_string(), "mom".to_string()).unwrap();
+tree.add_parent_child_relationship("dad".to_string(), "kid".to_string()).unwrap();
+
+let layout = tree.generation_layout();
+assert_eq!(layout.rows()[0], vec!["dad", "mom"]);
+assert_eq!(layout.placement("kid"), Some(Placement { generation: 1, position: 0 }));
+```
+
+Spouses sit next to each other in the same row, children follow the order of
+their parents and then birth date, and the result is the same on every run.
+Disconnected people get their own place, and relationship cycles in bad data
+are broken instead of panicking. See the `layout` module docs for the full
+rules.
+
+`FamilyTree::tree_layout()` turns those rows into what a renderer draws: a box
+with coordinates for every person and a line for every parent-child and spouse
+link, with its start and end points already worked out:
+
+```rust
+use core::{EdgeKind, FamilyTree, Person, Point, Sex};
+
+let mut tree = FamilyTree::new();
+for id in ["dad", "kid"] {
+    tree.add_person(Person::new(id.to_string(), id.to_string(), Sex::Unknown, None, None)).unwrap();
+}
+tree.add_parent_child_relationship("dad".to_string(), "kid".to_string()).unwrap();
+
+let layout = tree.tree_layout();
+for node in layout.nodes() {
+    // Draw a node.width x node.height box at (node.x, node.y).
+}
+let edge = &layout.edges()[0];
+assert_eq!(edge.kind, EdgeKind::ParentChild);
+assert_eq!(edge.start, Point { x: 90.0, y: 60.0 }); // bottom middle of dad's box
+assert_eq!(edge.end, Point { x: 90.0, y: 140.0 }); // top middle of kid's box
+```
+
+Coordinates use SVG's convention (origin top left, `y` down), and
+`layout.width()` and `layout.height()` give the area to draw into. Pass a
+`Spacing` to `tree_layout_with()` to change the box size and gaps. See the
+`tree_layout` module docs for the full rules.
 
 ## Data Structures
 

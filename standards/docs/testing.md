@@ -95,47 +95,23 @@ test('SSG bundle generates and serves correctly', async ({ page }) => {
 
 ## Running Tests
 
-### Using Cast Commands
+### Using mise tasks
 
-The `cast test` command automatically runs appropriate tests for your project:
-
-- **Rust projects**: Runs `cargo test`
-- **TypeScript/Node.js projects**: Runs `npm test`
-- **Hybrid projects** (both Cargo.toml and package.json): Runs both Rust and TypeScript tests
+Every project has the same tasks (see [mise.md](mise.md)):
 
 ```bash
-cast test
+mise run test   # the project's tests (cargo test, plus npm test / Playwright for web apps)
+mise run ci     # format check, clippy, build and tests: what CI runs
 ```
+
+Always run `mise run ci` before completing a task to ensure all tests pass.
 
 #### Code Coverage
 
-To generate code coverage reports, use the `--coverage` flag:
-
-```bash
-cast test --coverage
-```
-
-This will:
-- For **Rust projects**: Use `cargo-llvm-cov` to generate coverage (installs automatically if needed)
-  - Generates `lcov.info` file in the project directory
-  - Supports standard LCOV format for integration with coverage tools
-- For **TypeScript/Node.js projects**: Pass `--coverage` to the test framework
-  - Generates coverage reports in the `coverage/` directory
-  - Works with Jest, Vitest, and other modern test frameworks
-
-**Note**: Coverage files (`lcov.info` and `coverage/`) are excluded from git via `.gitignore`.
-
-The `cast ci` command runs all checks including tests, formatting, linting, and building:
-
-- **Rust projects**: Runs `cargo fmt`, `clippy`, `build`, and `test`
-- **TypeScript/Node.js projects**: Runs `npm install`, `npm run lint`, `npm run compile`, and `npm test`
-- **Hybrid projects**: Runs both Rust and TypeScript CI checks
-
-```bash
-cast ci
-```
-
-Always run `cast ci` before completing a task to ensure all tests pass.
+Coverage is not a standard task yet. For Rust projects, run
+`cargo llvm-cov --lcov --output-path lcov.info` (install with
+`cargo binstall cargo-llvm-cov`). Coverage files (`lcov.info` and
+`coverage/`) are excluded from git via `.gitignore`.
 
 ### Manual Test Execution
 

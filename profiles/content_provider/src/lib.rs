@@ -1,18 +1,18 @@
-struct Card {
-    title: String,
-    description: String,
-    image: String,
-    image_alt: String,
-    link: Option<String>,
+pub struct Card {
+    pub title: String,
+    pub description: String,
+    pub image: String,
+    pub image_alt: String,
+    pub link: Option<String>,
 }
 
-struct Section {
-    title: String,
-    cards: Vec<Card>,
+pub struct Section {
+    pub title: String,
+    pub cards: Vec<Card>,
 }
 
-fn get_content() {
-    return [
+pub fn get_content() -> [Section; 3] {
+    [
         Section {
             title: "My Passion".to_string(),
             cards: vec![
@@ -130,5 +130,5 @@ fn get_content() {
                     link: Some("http://wildraccoons8891.org/".to_string())
                 }
         ]}
-    ];
+    ]
 }

@@ -1,3 +1,9 @@
+pub mod layout;
+pub mod tree_layout;
+
+pub use layout::{GenerationLayout, Placement};
+pub use tree_layout::{Edge, EdgeKind, Node, Point, Spacing, TreeLayout};
+
 /// Represents a person's sex in a family tree.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Sex {
@@ -316,7 +322,7 @@ pub type FamilyTreeResult<T> = Result<T, FamilyTreeError>;
 /// let children = tree.get_related_people("p1", &Relationship::Parent);
 /// assert_eq!(children.len(), 1);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FamilyTree {
     /// Map of person ID to Person
     pub people: HashMap<String, Person>,

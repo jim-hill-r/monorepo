@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
 use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
-use crate::card::{Card, CardCategory};
-use crate::card_library::CardLibrary;
-use crate::deck::{Deck, DeckBuilder};
-use crate::rules::{BattleOutcome, Player, RulesEngine, TurnPhase};
+use crate::card::Card;
+use crate::card_library::{CardLibrary, default_action_deck};
+use crate::deck::Deck;
+use crate::rules::{Player, RulesEngine, TurnPhase};
 use crate::state::AppState;
 
 /// Plugin that sets up the core game systems.
@@ -119,81 +119,22 @@ pub const STARTING_HAND_SIZE: usize = 3;
 const EMPTY_HAND_CARD: &str = "Empty Hand";
 
 fn setup(mut commands: Commands) {
-    // Build a card library with the available cards, using proper categories
-    // from the rulebook.
-    let mut library = CardLibrary::new();
-    library.register(Card::with_category(
-        "Ace of Spades",
-        14,
-        CardCategory::Technology,
-    ));
-    library.register(Card::with_category("NASA", 13, CardCategory::Government));
-    library.register(Card::with_category(
-        "Biodome",
-        12,
-        CardCategory::Environment,
-    ));
-    library.register(Card::with_category(
-        "Stock Market",
-        11,
-        CardCategory::Economy,
-    ));
-    library.register(Card::with_category("Asteroid", 10, CardCategory::Crisis));
-    library.register(Card::with_category("Engineer", 9, CardCategory::Profession));
-    library.register(Card::with_category("Suburb", 8, CardCategory::Civilian));
-    library.register(Card::with_category(
-        "Space Station",
-        7,
-        CardCategory::Society,
-    ));
-    library.register(Card::with_category(
-        "Solar Panel",
-        6,
-        CardCategory::Technology,
-    ));
-    library.register(Card::with_category(
-        "City Hall",
-        5,
-        CardCategory::Government,
-    ));
-    library.register(Card::with_category("Forest", 4, CardCategory::Environment));
-    library.register(Card::with_category("Trade Route", 3, CardCategory::Economy));
-    library.register(Card::with_category("Flood", 2, CardCategory::Crisis));
-    library.register(Card::with_category("Farmer", 1, CardCategory::Profession));
-
+    let library = CardLibrary::default_library();
     info!(
         "Card library contains {} cards: {}",
         library.len(),
         library.card_names().join(", ")
     );
 
-    // Build the shared action deck (max 2 copies of any card).
-    let mut builder = DeckBuilder::new().with_max_copies(2);
-    for name in [
-        "Ace of Spades",
-        "NASA",
-        "Biodome",
-        "Stock Market",
-        "Asteroid",
-        "Engineer",
-        "Suburb",
-        "Space Station",
-        "Solar Panel",
-        "City Hall",
-        "Forest",
-        "Trade Route",
-        "Flood",
-        "Farmer",
-        "Ace of Spades",
-        "NASA",
-        "Biodome",
-        "Stock Market",
-    ] {
-        if let Some(card) = library.get(name) {
-            builder.add_card(card);
+    // The unit tests in `card_library` guarantee the default deck builds, so
+    // this error path only catches a broken card list during development.
+    let mut action_deck: Deck = match default_action_deck(&library) {
+        Ok(deck) => deck,
+        Err(err) => {
+            error!("Could not build the action deck: {err}");
+            return;
         }
-    }
-    let mut action_deck: Deck = builder.build();
+    };
     action_deck.shuffle();
 
     info!(
@@ -411,25 +352,14 @@ fn handle_battle_phase(
     }
 }
 
-/// Resolves the battle between `attacker` and `defender` and adjusts happiness.
+/// Resolves the battle between `attacker` and `defender` and logs the outcome.
 ///
-/// Called by [`handle_battle_phase`] after both cards have been selected.  The
-/// winner gains +5 happiness.
+/// Called by the human and AI battle handlers after both cards have been
+/// selected.  Damage and the winner's happiness reward are applied by
+/// [`RulesEngine::resolve_battle`].
 fn apply_battle_result(engine: &mut RulesEngine, attacker: &Card, defender: &Card) {
     match engine.resolve_battle(attacker, defender) {
-        Ok(outcome) => {
-            info!("Battle outcome: {outcome:?}");
-            match outcome {
-                BattleOutcome::AttackerWins => {
-                    engine.players[engine.active_player].adjust_happiness(5);
-                }
-                BattleOutcome::DefenderWins => {
-                    let defender_idx = engine.inactive_player();
-                    engine.players[defender_idx].adjust_happiness(5);
-                }
-                BattleOutcome::Draw => {}
-            }
-        }
+        Ok(outcome) => info!("Battle outcome: {outcome:?}"),
         Err(e) => warn!("resolve_battle failed: {e}"),
     }
 }
@@ -1119,7 +1049,10 @@ mod tests {
         let defender = Card::new("Two", 2);
         let initial_happiness = engine.players[0].happiness;
         apply_battle_result(&mut engine, &attacker, &defender);
-        assert_eq!(engine.players[0].happiness, initial_happiness + 5);
+        assert_eq!(
+            engine.players[0].happiness,
+            initial_happiness + Player::BATTLE_WIN_HAPPINESS as u32
+        );
     }
 
     #[test]
@@ -1132,7 +1065,10 @@ mod tests {
         let defender = Card::new("Ace", 14);
         let initial_p2_happiness = engine.players[1].happiness;
         apply_battle_result(&mut engine, &attacker, &defender);
-        assert_eq!(engine.players[1].happiness, initial_p2_happiness + 5);
+        assert_eq!(
+            engine.players[1].happiness,
+            initial_p2_happiness + Player::BATTLE_WIN_HAPPINESS as u32
+        );
     }
 
     #[test]

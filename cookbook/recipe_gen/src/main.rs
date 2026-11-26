@@ -931,11 +931,11 @@ fn generate_additional_recipes(
 
         let instructions = vec![
             format!("Prepare {} by cutting into bite-sized pieces", protein),
-            format!("Heat olive oil in a large pan"),
+            "Heat olive oil in a large pan".to_string(),
             format!("Cook {} until golden", protein),
             format!("Add {} and garlic, sauté until tender", vegetable),
             format!("Meanwhile, cook {} according to package directions", grain),
-            format!("Combine everything and season with salt and pepper"),
+            "Combine everything and season with salt and pepper".to_string(),
             "Serve hot and enjoy".to_string(),
         ];
 
@@ -983,6 +983,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\nWriting recipes to markdown files...");
     let mut store = MarkdownRecipeStore::new(content_dir)?;
+    for error in store.load_errors() {
+        eprintln!("  Warning: skipped {}", error);
+    }
 
     let mut created_count = 0;
     let mut skipped_count = 0;

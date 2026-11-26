@@ -4,11 +4,11 @@
 
 ### Install Toolchain
 
-Use the Cast install command to install all required dependencies:
+Install the toolchain with mise (see the root AGENTS.md "Dev commands"):
 
 ```bash
 cd homer
-cast install
+mise install
 ```
 
 This will automatically install:
@@ -36,8 +36,12 @@ To run Rust unit tests:
 cargo test
 ```
 
+Tests never call the real Zillow API. `ZillowClient::with_base_url` points the
+client at a local [mockito](https://docs.rs/mockito) server instead, so HTTP
+handling (success, error statuses, bad JSON) is tested offline.
+
 To run all CI checks (formatting, linting, build, and tests):
 
 ```bash
-cast ci
+mise run ci
 ```

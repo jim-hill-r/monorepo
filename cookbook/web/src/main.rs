@@ -114,21 +114,30 @@ fn App() -> Element {
     }
 }
 
-#[derive(Clone, Routable, Debug, PartialEq)]
-enum Route {
-    #[layout(Header)]
-    #[route("/")]
-    Home {},
+// dioxus 0.7.10's Routable derive generates code that rustc 1.100 flags as
+// unreachable. The allow has to cover the generated impls, so the enum sits
+// in its own module.
+mod route {
+    #![allow(unreachable_code)]
+    use super::*;
 
-    #[route("/recipe/:day")]
-    Recipe { day: u32 },
+    #[derive(Clone, Routable, Debug, PartialEq)]
+    pub enum Route {
+        #[layout(Header)]
+        #[route("/")]
+        Home {},
 
-    #[route("/plan/:week")]
-    Plan { week: u32 },
+        #[route("/recipe/:day")]
+        Recipe { day: u32 },
 
-    #[route("/:..route")]
-    PageNotFound { route: Vec<String> },
+        #[route("/plan/:week")]
+        Plan { week: u32 },
+
+        #[route("/:..route")]
+        PageNotFound { route: Vec<String> },
+    }
 }
+use route::Route;
 
 #[component]
 fn Header() -> Element {
@@ -234,10 +243,18 @@ fn render_auth_section() -> Element {
     rsx! { div { "Login (test mode)" } }
 }
 
-/// Get the current day of the year (1-366) using chrono
+/// Map a date to its recipe day (1-365).
+///
+/// The cookbook has one recipe per day for 365 days. Day 366 (31 December of a
+/// leap year) reuses the recipe for day 365, so the link never points past the
+/// last recipe.
+fn recipe_day_for_date(date: NaiveDate) -> u32 {
+    date.ordinal().min(MAX_DAY_OF_YEAR)
+}
+
+/// Get today's recipe day (1-365) in local time
 fn get_current_day_of_year() -> u32 {
-    let now = Local::now();
-    now.ordinal()
+    recipe_day_for_date(Local::now().date_naive())
 }
 
 /// Get the current ISO 8601 week of the year (1-53)
@@ -888,13 +905,65 @@ mod tests {
 
     #[test]
     fn test_current_day_of_year_in_valid_range() {
-        // Test that current day is in valid range (1-366)
+        // Today's recipe day must always be a valid recipe route (1-365)
         let day = get_current_day_of_year();
         assert!(
-            (1..=366).contains(&day),
-            "Current day {} should be in valid range 1-366",
-            day
+            (1..=MAX_DAY_OF_YEAR).contains(&day),
+            "Current day {} should be in valid range 1-{}",
+            day,
+            MAX_DAY_OF_YEAR
         );
+    }
+
+    #[test]
+    fn test_recipe_day_for_date_first_of_january() {
+        let date = test_date(2028, 1, 1);
+        assert_eq!(recipe_day_for_date(date), 1);
+    }
+
+    #[test]
+    fn test_recipe_day_for_date_end_of_common_year() {
+        let date = test_date(2027, 12, 31);
+        assert_eq!(recipe_day_for_date(date), 365);
+    }
+
+    #[test]
+    fn test_recipe_day_for_date_end_of_leap_year_reuses_day_365() {
+        let date = test_date(2028, 12, 31);
+        assert_eq!(date.ordinal(), 366);
+        assert_eq!(recipe_day_for_date(date), 365);
+    }
+
+    #[test]
+    fn test_recipe_day_for_date_leap_day_and_after() {
+        // 29 Feb 2028 is day 60, and every later day keeps its own ordinal
+        let leap_day = test_date(2028, 2, 29);
+        assert_eq!(recipe_day_for_date(leap_day), 60);
+        let penultimate = test_date(2028, 12, 30);
+        assert_eq!(recipe_day_for_date(penultimate), 365);
+    }
+
+    #[test]
+    fn test_recipe_day_for_date_always_renders_a_recipe() {
+        // Every day of a leap year maps to a route the Recipe page accepts
+        let days = test_date(2028, 1, 1)
+            .iter_days()
+            .take_while(|date| date.year() == 2028);
+        let mut count = 0;
+        for date in days {
+            let day = recipe_day_for_date(date);
+            assert!((1..=MAX_DAY_OF_YEAR).contains(&day), "{date} -> {day}");
+            count += 1;
+        }
+        assert_eq!(count, 366);
+    }
+
+    /// Build a fixed calendar date for tests
+    fn test_date(year: i32, month: u32, day: u32) -> NaiveDate {
+        match NaiveDate::from_ymd_opt(year, month, day) {
+            Some(date) => date,
+            None => panic!("invalid test date {year}-{month}-{day}"),
+        }
     }
 
     #[test]
@@ -995,15 +1064,15 @@ mod tests {
     #[test]
     fn test_format_recipe_day() {
         // Test date formatting
-        let date = NaiveDate::from_ymd_opt(2025, 12, 28).unwrap(); // Sunday, Dec 28, 2025
+        let date = test_date(2025, 12, 28); // Sunday, Dec 28, 2025
         let formatted = format_recipe_day(date);
         assert_eq!(formatted, "Sun, 28-Dec");
 
-        let date2 = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap(); // Tuesday, Dec 30, 2025
+        let date2 = test_date(2025, 12, 30); // Tuesday, Dec 30, 2025
         let formatted2 = format_recipe_day(date2);
         assert_eq!(formatted2, "Tue, 30-Dec");
 
-        let date3 = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(); // Thursday, Jan 1, 2026
+        let date3 = test_date(2026, 1, 1); // Thursday, Jan 1, 2026
         let formatted3 = format_recipe_day(date3);
         assert_eq!(formatted3, "Thu, 1-Jan");
     }
@@ -1011,16 +1080,16 @@ mod tests {
     #[test]
     fn test_format_week_start_date() {
         // Test week start date formatting (no day name, just date)
-        let date = NaiveDate::from_ymd_opt(2025, 12, 28).unwrap();
+        let date = test_date(2025, 12, 28);
         let formatted = format_week_start_date(date);
         assert_eq!(formatted, "28-Dec");
 
-        let date2 = NaiveDate::from_ymd_opt(2026, 1, 4).unwrap();
+        let date2 = test_date(2026, 1, 4);
         let formatted2 = format_week_start_date(date2);
         assert_eq!(formatted2, "4-Jan");
 
         // Test single digit date (leading zero removal)
-        let date3 = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let date3 = test_date(2026, 1, 1);
         let formatted3 = format_week_start_date(date3);
         assert_eq!(formatted3, "1-Jan");
     }
@@ -1029,19 +1098,19 @@ mod tests {
     fn test_get_week_number_from_date() {
         // Test ISO 8601 week number calculation
         // 2025-01-01 (Wednesday) is in ISO week 1 of 2025
-        let date1 = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
+        let date1 = test_date(2025, 1, 1);
         assert_eq!(get_week_number_from_date(date1), 1);
 
         // 2025-01-07 (Tuesday) is in ISO week 2
-        let date2 = NaiveDate::from_ymd_opt(2025, 1, 7).unwrap();
+        let date2 = test_date(2025, 1, 7);
         assert_eq!(get_week_number_from_date(date2), 2);
 
         // 2025-01-08 (Wednesday) is also in ISO week 2
-        let date3 = NaiveDate::from_ymd_opt(2025, 1, 8).unwrap();
+        let date3 = test_date(2025, 1, 8);
         assert_eq!(get_week_number_from_date(date3), 2);
 
         // 2025-12-31 (Wednesday) is in ISO week 1 of 2026
-        let date4 = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap();
+        let date4 = test_date(2025, 12, 31);
         assert_eq!(get_week_number_from_date(date4), 1);
     }
 
@@ -1570,11 +1639,11 @@ mod tests {
     fn test_iso_week_calculation_2026() {
         // 2026 starts on Thursday (Jan 1, 2026), so week 1 starts on Dec 29, 2025
         // Jan 1, 2026 is in ISO week 1
-        let date = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let date = test_date(2026, 1, 1);
         assert_eq!(date.iso_week().week(), 1);
 
         // Last day of 2026 (Dec 31, 2026 is Thursday) is in week 53
-        let date = NaiveDate::from_ymd_opt(2026, 12, 31).unwrap();
+        let date = test_date(2026, 12, 31);
         assert_eq!(date.iso_week().week(), 53);
     }
 
@@ -1583,11 +1652,11 @@ mod tests {
         // 2020 is a leap year starting on Wednesday
         // 2020 has 53 ISO weeks
         // Jan 1, 2020 (Wednesday) is in week 1
-        let date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let date = test_date(2020, 1, 1);
         assert_eq!(date.iso_week().week(), 1);
 
         // Dec 31, 2020 (Thursday) is in week 53
-        let date = NaiveDate::from_ymd_opt(2020, 12, 31).unwrap();
+        let date = test_date(2020, 12, 31);
         assert_eq!(date.iso_week().week(), 53);
     }
 
@@ -1595,11 +1664,11 @@ mod tests {
     fn test_iso_week_calculation_2025() {
         // 2025 starts on Wednesday (Jan 1, 2025)
         // Week 1 starts on Dec 30, 2024 (Monday)
-        let date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
+        let date = test_date(2025, 1, 1);
         assert_eq!(date.iso_week().week(), 1);
 
         // Dec 31, 2025 is Wednesday, in week 1 of 2026
-        let date = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap();
+        let date = test_date(2025, 12, 31);
         // This should be week 1 of 2026, not week 53 of 2025
         assert_eq!(date.iso_week().week(), 1);
     }
@@ -1608,10 +1677,10 @@ mod tests {
     fn test_iso_week_monday_start() {
         // ISO weeks always start on Monday
         // Test a few random Mondays to verify they're the first day of their week
-        let monday = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(); // Monday
+        let monday = test_date(2026, 1, 5); // Monday
         assert_eq!(monday.weekday(), chrono::Weekday::Mon);
 
-        let tuesday = NaiveDate::from_ymd_opt(2026, 1, 6).unwrap(); // Tuesday
+        let tuesday = test_date(2026, 1, 6); // Tuesday
         assert_eq!(tuesday.weekday(), chrono::Weekday::Tue);
         // Both Monday and Tuesday should be in the same week
         assert_eq!(monday.iso_week().week(), tuesday.iso_week().week());

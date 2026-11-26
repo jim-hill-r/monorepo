@@ -1,0 +1,24 @@
+# Shared mise tasks for documentation-only projects (Markdown, no build).
+# Every task exists so CI can call the standard names everywhere.
+
+[ci]
+description = "Nothing to check yet for docs-only projects"
+run = "echo 'ci: docs-only project, nothing to check'"
+
+[fix]
+run = "echo 'fix: nothing to fix'"
+
+[build]
+run = "echo 'build: nothing to build'"
+
+[test]
+run = "echo 'test: nothing to test'"
+
+[dev]
+run = "echo 'dev: nothing to run'"
+
+[release]
+run = "echo 'release: nothing to release'"
+
+[deploy]
+run = "echo 'deploy: nothing to deploy'"
