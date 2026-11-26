@@ -67,6 +67,11 @@ pub struct PropertyEvaluation {
     pub details: PropertyDetails,
     pub meets_preferences: bool,
     pub unmet_criteria: Vec<String>,
+    /// How many criteria the preferences set.
+    pub criteria_checked: usize,
+    /// How many of those criteria the property meets. An unknown value
+    /// counts as not met.
+    pub criteria_met: usize,
 }
 
 /// RapidAPI host for the Zillow API, sent as the `x-rapidapi-host` header.
@@ -255,12 +260,25 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
         }
     }
 
+    let criteria_checked = [
+        prefs.min_bedrooms.is_some(),
+        prefs.max_bedrooms.is_some(),
+        prefs.min_bathrooms.is_some(),
+        prefs.max_price.is_some(),
+        prefs.min_sqft.is_some(),
+    ]
+    .into_iter()
+    .filter(|set| *set)
+    .count();
+    let criteria_met = criteria_checked - unmet_criteria.len();
     let meets_preferences = unmet_criteria.is_empty();
 
     PropertyEvaluation {
         details: details.clone(),
         meets_preferences,
         unmet_criteria,
+        criteria_checked,
+        criteria_met,
     }
 }
 
@@ -297,6 +315,13 @@ pub fn format_property(evaluation: &PropertyEvaluation) -> String {
     }
 
     lines.push(String::new());
+
+    if evaluation.criteria_checked > 0 {
+        lines.push(format!(
+            "Match:      {} of {} criteria met",
+            evaluation.criteria_met, evaluation.criteria_checked
+        ));
+    }
 
     if evaluation.meets_preferences {
         lines.push("✓ This property meets all your preferences.".to_string());
@@ -386,6 +411,74 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         assert!(eval.meets_preferences);
         assert!(eval.unmet_criteria.is_empty());
+    }
+
+    #[test]
+    fn test_evaluate_match_score_counts_met_criteria() {
+        let details = make_property(Some(900_000), Some(3), Some(1.0), Some(1500));
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_bedrooms: Some(5),
+            min_bathrooms: Some(2.0),
+            max_price: Some(800_000),
+            min_sqft: Some(1200),
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert_eq!(eval.criteria_checked, 5);
+        assert_eq!(eval.criteria_met, 3);
+    }
+
+    #[test]
+    fn test_evaluate_match_score_all_met() {
+        let details = make_property(Some(750_000), Some(3), Some(2.0), Some(1500));
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_price: Some(800_000),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert_eq!((eval.criteria_met, eval.criteria_checked), (2, 2));
+    }
+
+    #[test]
+    fn test_evaluate_match_score_unknown_value_is_not_met() {
+        let details = make_property(None, Some(3), Some(2.0), Some(1500));
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_price: Some(800_000),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert_eq!((eval.criteria_met, eval.criteria_checked), (1, 2));
+    }
+
+    #[test]
+    fn test_evaluate_match_score_no_preferences() {
+        let details = make_property(Some(750_000), Some(3), Some(2.0), Some(1500));
+        let eval = evaluate_property(&details, &HomePreferences::default());
+        assert_eq!((eval.criteria_met, eval.criteria_checked), (0, 0));
+    }
+
+    #[test]
+    fn test_format_property_shows_match_score() {
+        let details = make_property(Some(900_000), Some(3), Some(2.0), Some(1500));
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_price: Some(800_000),
+            ..Default::default()
+        };
+        let output = format_property(&evaluate_property(&details, &prefs));
+        assert!(
+            output.contains("Match:      1 of 2 criteria met"),
+            "{output}"
+        );
+    }
+
+    #[test]
+    fn test_format_property_no_preferences_omits_match_score() {
+        let details = make_property(Some(750_000), Some(3), Some(2.0), Some(1500));
+        let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
+        assert!(!output.contains("Match:"), "{output}");
     }
 
     #[test]

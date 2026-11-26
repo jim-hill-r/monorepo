@@ -21,6 +21,11 @@ homer --address "123 Main St, Seattle, WA 98101" \
   --api-key YOUR_API_KEY
 ```
 
+Homer prints the property details, a match score (how many of the criteria you
+set the property meets, such as `Match:      2 of 3 criteria met`) and each
+criterion it misses. A value Zillow doesn't report counts as not met. With no
+criteria set, it leaves the score out.
+
 ## Options
 
 | Option | Description |
