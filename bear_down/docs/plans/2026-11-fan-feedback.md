@@ -1,6 +1,7 @@
 # Plan: fan feedback and an A/B test of the "doesn't matter" line
 
-- Status: proposed (2026-11-26), waiting on Jim
+- Status: accepted (Jim, 2026-11-26): Cloudflare `telemetry` Worker; arm B
+  at 0.02 points and the optional note are the defaults Jim didn't change
 - Requirements: BEAR-005 (the 0.05-point line), new BEAR-010 below
 - Builds on: [the deploy-feedback plan](../../../standards/docs/plans/2026-11-deploy-feedback.md)
   (UAT, the `telemetry` Worker, PostHog) and
@@ -122,8 +123,10 @@ Each is one PR:
 6. After the decision point, a retro in this file and, if arm B wins, a
    BEAR-005 change for Jim.
 
-## Questions for Jim
+## Decisions
 
-1. Cloudflare (`telemetry` Worker) as above, or PostHog surveys and flags?
-2. Arm B's line: 0.02 points, 0.1 points, or relative to the Bears' odds?
-3. Allow the optional one-line note, or votes only?
+1. Cloudflare `telemetry` Worker, not PostHog (Jim, 2026-11-26). Both cost
+   $0; Cloudflare has about 100 times the free-tier headroom and needs no
+   change to the vendor approvals.
+2. Arm B's line: 0.02 points (default; Jim may change it before step 4).
+3. The optional one-line note is allowed (default).
