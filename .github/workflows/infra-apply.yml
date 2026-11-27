@@ -72,7 +72,7 @@ jobs:
       - name: GitHub App token (github stack)
         id: gh-read
         if: matrix.stack == 'github' && vars.GH_INFRA_READ_APP_ID != ''
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.GH_INFRA_READ_APP_ID }}
           private-key: ${{ secrets.GH_INFRA_READ_APP_KEY }}
@@ -238,7 +238,7 @@ jobs:
       - name: GitHub App token (github stack)
         id: gh-credentials
         if: matrix.stack == 'github'
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
           private-key: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}
