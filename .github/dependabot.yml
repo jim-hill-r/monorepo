@@ -340,6 +340,20 @@ updates:
       - "javascript"
 
   - package-ecosystem: "npm"
+    directory: "/bear_down/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      javascript-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  - package-ecosystem: "npm"
     directory: "/cookbook/web"
     schedule:
       interval: "weekly"
