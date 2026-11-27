@@ -25,14 +25,12 @@ const INTRO_MD: &str = include_str!("../../content/intro.md");
 /// Maximum day of the year (non-leap year)
 const MAX_DAY_OF_YEAR: u32 = 365;
 
-#[cfg(target_arch = "wasm32")]
-const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
+/// Auth0 tenant. `ProviderConfig::auth0` builds the issuer (with the trailing
+/// slash OIDC discovery needs), authorize and token URLs from it.
+#[cfg(any(target_arch = "wasm32", test))]
+const AUTH0_DOMAIN: &str = "dev-jdadpn4pckxevrv5.us.auth0.com";
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
-#[cfg(target_arch = "wasm32")]
-const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
-#[cfg(target_arch = "wasm32")]
-const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 /// Content Security Policy for the application
 /// - default-src 'none': Block all sources by default
@@ -44,8 +42,9 @@ const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 /// - base-uri 'self': Restrict base tag to same origin
 /// - form-action 'self': Restrict form submissions to same origin
 ///
-/// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
-/// Tests verify that the CSP contains the correct Auth0 domain.
+/// Note: The Auth0 origin is hardcoded in the CSP string because it must be a
+/// const. `test_csp_connect_src_matches_auth0_domain` checks it against
+/// `Auth0Urls::origin` for AUTH0_DOMAIN.
 const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
@@ -57,14 +56,11 @@ fn App() -> Element {
     #[cfg(target_arch = "wasm32")]
     {
         let auth = use_resource(|| async move {
-            WebAuthProvider::new(ProviderConfig {
-                client_id: CLIENT_ID.into(),
-                auth_url: AUTH_URL.into(),
-                token_url: TOKEN_URL.into(),
-                redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
-                issuer_url: Some(AUTH0_DOMAIN.into()),
-            })
-            .await
+            let redirect_url = fetch_current_location_from_browser().unwrap_or_default();
+            match ProviderConfig::auth0(AUTH0_DOMAIN, CLIENT_ID, redirect_url) {
+                Ok(config) => WebAuthProvider::new(config).await,
+                Err(error) => Err(error),
+            }
         });
         use_context_provider(|| auth);
     }
@@ -1945,15 +1941,29 @@ mod tests {
         assert_eq!(monday.iso_week().week(), tuesday.iso_week().week());
     }
 
-    #[cfg(target_arch = "wasm32")]
     #[test]
-    fn test_auth0_domain_has_trailing_slash() {
-        // Verify AUTH0_DOMAIN includes trailing slash for OIDC discovery
-        // Auth0's OIDC discovery endpoint returns issuer URLs with trailing slashes,
-        // and the openidconnect crate validates exact matches
+    fn test_auth0_issuer_has_trailing_slash() {
+        // Auth0's OIDC discovery returns its issuer with a trailing slash and
+        // openidconnect compares it exactly; the auth_sdk helper adds it.
+        let urls = auth_sdk::auth0::Auth0Urls::from_domain(AUTH0_DOMAIN).ok();
+        assert_eq!(
+            urls.as_ref().map(|u| u.issuer.as_str()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/")
+        );
+        assert_eq!(
+            urls.as_ref().map(|u| u.token.as_str()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token")
+        );
+    }
+
+    #[test]
+    fn test_csp_connect_src_matches_auth0_domain() {
+        let origin = auth_sdk::auth0::Auth0Urls::from_domain(AUTH0_DOMAIN)
+            .map(|urls| urls.origin().to_string())
+            .unwrap_or_default();
         assert!(
-            AUTH0_DOMAIN.ends_with("/"),
-            "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
+            CONTENT_SECURITY_POLICY.contains(&format!("connect-src 'self' {origin};")),
+            "CSP connect-src must allow {origin}"
         );
     }
 

@@ -1,4 +1,6 @@
 #[cfg(test)]
+use auth_sdk::auth0::Auth0Urls;
+#[cfg(test)]
 use auth_sdk::provider::ProviderConfig;
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
@@ -25,16 +27,12 @@ use views::home::Home;
 
 mod views;
 
-/// Auth0 issuer. The trailing slash is required: OIDC discovery compares it
-/// to the issuer Auth0 publishes as an exact string.
+/// Auth0 tenant. `ProviderConfig::auth0` builds the issuer (with the trailing
+/// slash OIDC discovery needs), authorize and token URLs from it.
 #[cfg(any(target_arch = "wasm32", test))]
-const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
+const AUTH0_DOMAIN: &str = "dev-jdadpn4pckxevrv5.us.auth0.com";
 #[cfg(target_arch = "wasm32")]
 const CLIENT_ID: &str = "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E";
-#[cfg(any(target_arch = "wasm32", test))]
-const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
-#[cfg(any(target_arch = "wasm32", test))]
-const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 #[cfg(target_arch = "wasm32")]
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -70,8 +68,9 @@ const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 /// - base-uri 'self': Restrict base tag to same origin
 /// - form-action 'self': Restrict form submissions to same origin
 ///
-/// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
-/// Tests verify that the CSP contains the correct Auth0 domain.
+/// Note: The Auth0 origin is hardcoded in the CSP string because it must be a
+/// const. `test_csp_connect_src_matches_auth0_domain` checks it against
+/// `Auth0Urls::origin` for AUTH0_DOMAIN.
 #[cfg(any(target_arch = "wasm32", test))]
 const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
@@ -91,18 +90,15 @@ fn main() {
 #[component]
 fn App() -> Element {
     let auth = use_resource(|| async move {
-        WebAuthProvider::new(ProviderConfig {
-            client_id: CLIENT_ID.into(),
-            auth_url: AUTH_URL.into(),
-            token_url: TOKEN_URL.into(),
-            // Always the site root, so it matches Auth0's Allowed Callback
-            // URLs from any page; the user is sent back to their page after.
-            redirect_url: fetch_origin_from_browser()
-                .map(|origin| redirect_url_for_origin(&origin))
-                .unwrap_or_default(),
-            issuer_url: Some(AUTH0_DOMAIN.into()),
-        })
-        .await
+        // Always the site root, so it matches Auth0's Allowed Callback URLs
+        // from any page; the user is sent back to their page after.
+        let redirect_url = fetch_origin_from_browser()
+            .map(|origin| redirect_url_for_origin(&origin))
+            .unwrap_or_default();
+        match ProviderConfig::auth0(AUTH0_DOMAIN, CLIENT_ID, redirect_url) {
+            Ok(config) => WebAuthProvider::new(config).await,
+            Err(error) => Err(error),
+        }
     });
     use_context_provider(|| auth);
 
@@ -273,33 +269,34 @@ mod tests {
     }
 
     #[test]
-    fn test_auth0_domain_constant_used() {
-        // Verify AUTH0_DOMAIN constant is properly defined
-        assert_eq!(AUTH0_DOMAIN, "https://dev-jdadpn4pckxevrv5.us.auth0.com/");
-        // Verify it's used in AUTH_URL and TOKEN_URL
-        assert!(AUTH_URL.starts_with(AUTH0_DOMAIN));
-        assert!(TOKEN_URL.starts_with(AUTH0_DOMAIN));
-    }
-
-    #[test]
-    fn test_auth0_domain_has_trailing_slash() {
-        // Auth0 publishes its issuer with a trailing slash, and openidconnect
-        // compares the configured issuer_url to it as an exact string, so
-        // OIDC discovery fails on every page load without the slash.
-        assert!(
-            AUTH0_DOMAIN.ends_with('/'),
-            "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
+    fn test_auth0_urls_built_from_domain() {
+        // The issuer needs Auth0's trailing slash for OIDC discovery; the
+        // helper adds it, so it can't drift from the endpoint URLs.
+        let config = ProviderConfig::auth0(AUTH0_DOMAIN, "client", "https://app.example/");
+        let config = config.ok();
+        assert_eq!(
+            config.as_ref().and_then(|c| c.issuer_url.as_deref()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/")
+        );
+        assert_eq!(
+            config.as_ref().map(|c| c.auth_url.as_str()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize")
+        );
+        assert_eq!(
+            config.as_ref().map(|c| c.token_url.as_str()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token")
         );
     }
 
     #[test]
-    fn test_auth0_endpoint_urls_have_no_double_slash() {
-        for url in [AUTH_URL, TOKEN_URL] {
-            let path = url.trim_start_matches("https://");
-            assert!(!path.contains("//"), "{url} must not contain '//'");
-        }
-        assert_eq!(AUTH_URL, format!("{AUTH0_DOMAIN}authorize"));
-        assert_eq!(TOKEN_URL, format!("{AUTH0_DOMAIN}oauth/token"));
+    fn test_csp_connect_src_matches_auth0_domain() {
+        let origin = Auth0Urls::from_domain(AUTH0_DOMAIN)
+            .map(|urls| urls.origin().to_string())
+            .unwrap_or_default();
+        assert!(
+            CONTENT_SECURITY_POLICY.contains(&format!("connect-src 'self' {origin};")),
+            "CSP connect-src must allow {origin}"
+        );
     }
 
     #[test]
