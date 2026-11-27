@@ -6,6 +6,7 @@
 //! are the live app's hand-recorded letters (its `master.json` patterns),
 //! copied once so the app fetches nothing at runtime (README.md).
 
+use crate::technique::Technique;
 use serde_json::{Map, Value};
 use std::sync::LazyLock;
 
@@ -27,12 +28,16 @@ pub fn patterns_json(expression: &str) -> Option<String> {
     serde_json::to_string(&patterns).ok()
 }
 
-/// JavaScript that animates the demonstration of `expression` on the canvas,
-/// or marks the animation done at once when there is no pattern for it.
-pub fn demonstration_js(expression: &str) -> String {
+/// JavaScript that demonstrates `expression` on the canvas the way
+/// `technique` shows it (`technique.rs`), or marks the demonstration done at
+/// once when there is no pattern for it.
+pub fn demonstration_js(expression: &str, technique: Technique) -> String {
     match patterns_json(expression) {
         // A JSON array is a valid JavaScript literal.
-        Some(json) => format!("window.eelCanvas.drawLetter(JSON.stringify({json}), 'Tracing');"),
+        Some(json) => format!(
+            "window.eelCanvas.drawLetter(JSON.stringify({json}), '{}');",
+            technique.as_str()
+        ),
         None => "window._eelAnimDone = true;".to_string(),
     }
 }
@@ -97,12 +102,29 @@ mod tests {
         assert_eq!(patterns_json("é"), None);
         assert_eq!(patterns_json("1"), None);
         assert_eq!(patterns_json(""), None);
-        assert_eq!(demonstration_js("?"), "window._eelAnimDone = true;");
-        assert!(demonstration_js("a").starts_with("window.eelCanvas.drawLetter("));
+        assert_eq!(
+            demonstration_js("?", Technique::Tracing),
+            "window._eelAnimDone = true;"
+        );
+        assert!(
+            demonstration_js("a", Technique::Tracing).starts_with("window.eelCanvas.drawLetter(")
+        );
+    }
+
+    #[test]
+    fn the_demonstration_uses_the_technique() {
+        for t in Technique::ALL {
+            assert!(
+                demonstration_js("a", t).ends_with(&format!(", '{}');", t.as_str())),
+                "{t:?}"
+            );
+        }
     }
 
     #[test]
     fn no_runtime_fetch() {
-        assert!(!demonstration_js("a").contains("fetch"));
+        for t in Technique::ALL {
+            assert!(!demonstration_js("a", t).contains("fetch"));
+        }
     }
 }
