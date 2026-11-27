@@ -18,6 +18,7 @@ mod script;
 mod settings;
 mod splash;
 mod state;
+mod telemetry;
 mod theme;
 
 /// Builds the app and runs the game until the window closes, or until the
@@ -64,8 +65,12 @@ pub fn main() -> AppExit {
         .init_state::<state::AppState>()
         .add_plugins(splash::SplashPlugin)
         .add_plugins(game::GamePlugin)
-        .add_plugins(card_render::CardRenderPlugin)
-        .run()
+        .add_plugins(card_render::CardRenderPlugin);
+    // Gameplay events to the telemetry Worker, from the web build only.
+    #[cfg(target_arch = "wasm32")]
+    app.add_plugins(telemetry::web_plugin())
+        .add_systems(Startup, telemetry::send_quit_on_pagehide);
+    app.run()
 }
 
 /// The [`script::ScriptPlugin`] the command line asks for, if any. The web
