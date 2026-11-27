@@ -1,0 +1,11 @@
+[[limit]]
+key = "pages_projects"
+blip = "Cloudflare Pages"
+item = "Pages projects"
+free = 100
+budget = 25
+scope = "account"
+unit = "projects"
+past = "Creation fails"
+source = "https://developers.cloudflare.com/pages/platform/limits"
+checked = "2026-11-26"

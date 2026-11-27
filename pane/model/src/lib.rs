@@ -37,6 +37,10 @@ pub struct Snapshot {
     pub reviews: Vec<Review>,
     #[serde(default)]
     pub retros: Vec<Retro>,
+    /// What every project's `docs/cost.toml` says, with the radar's budgets
+    /// and the free limits, for the month the snapshot was taken in.
+    #[serde(default)]
+    pub costs: costs::Costs,
 }
 
 impl Snapshot {
@@ -53,6 +57,7 @@ impl Snapshot {
             deliverables: Vec::new(),
             reviews: Vec::new(),
             retros: Vec::new(),
+            costs: costs::Costs::default(),
         }
     }
 
@@ -323,6 +328,7 @@ pub struct Link {
     pub url: String,
 }
 
+pub mod costs;
 pub mod money;
 
 #[cfg(test)]

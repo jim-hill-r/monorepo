@@ -99,7 +99,7 @@ fn builds_projects_from_config_roots() -> TestResult {
 #[test]
 fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
     let repo_dir = FixtureRepo::new("items")?;
-    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
     let items: Vec<_> = s
         .work_items
         .iter()
@@ -177,7 +177,7 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
 #[test]
 fn collects_human_issues_docs_and_retros() -> TestResult {
     let repo_dir = FixtureRepo::new("docs")?;
-    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
     assert_eq!(s.human_issues.len(), 2);
     assert_eq!(
         s.human_issues[0].file,
@@ -250,7 +250,7 @@ fn collects_human_issues_docs_and_retros() -> TestResult {
 #[test]
 fn reads_the_review_rotation() -> TestResult {
     let repo_dir = FixtureRepo::new("reviews")?;
-    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
     let reviews: Vec<_> = s
         .reviews
         .iter()
@@ -277,7 +277,7 @@ fn reads_the_review_rotation() -> TestResult {
     );
 
     fs::remove_file(repo_dir.0.join("docs/reviews/README.md"))?;
-    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
     assert!(s.reviews.is_empty(), "no rotation table, no reviews");
     Ok(())
 }
@@ -365,5 +365,116 @@ fn binary_rejects_unknown_arguments() -> TestResult {
         .arg("--nope")
         .status()?;
     assert!(!status.success());
+    Ok(())
+}
+
+#[test]
+fn reads_cost_files_budgets_and_limits() -> TestResult {
+    let repo_dir = FixtureRepo::new("costs")?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
+    let costs = &s.costs;
+    assert_eq!(costs.month, "2026-11");
+
+    // app/web has no cost file, so it is left out.
+    let projects: Vec<_> = costs.projects.iter().map(|p| p.project.as_str()).collect();
+    assert_eq!(projects, ["app", "tool"]);
+    let app = &costs.projects[0];
+    assert_eq!(app.file, "app/docs/cost.toml");
+    assert_eq!(app.reviewed, "2026-11-25");
+    assert_eq!(app.services[0].blip, "Cloudflare Pages");
+    assert_eq!(app.services[0].plan, "free");
+    assert_eq!(app.services[0].usage[0].expected, 2);
+    // $12 a year is $1 a month; $5 of revenue in November.
+    assert_eq!((app.direct_cost_cents, app.revenue_cents), (100, 500));
+
+    let pages = &costs.account[0];
+    assert_eq!(pages.key, "pages_projects");
+    assert_eq!((pages.expected, pages.ceiling), (3, Some(25)));
+
+    let budgets: Vec<_> = costs
+        .budgets
+        .iter()
+        .map(|b| (b.vendor.as_str(), b.budget_cents, b.spend_cents))
+        .collect();
+    assert_eq!(
+        budgets,
+        [
+            ("Cloudflare Pages", 0, 0),
+            ("Squarespace", 500, 100),
+            ("Claude Code", 2500, 0),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn fails_on_an_invalid_cost_file() -> TestResult {
+    let repo_dir = FixtureRepo::new("bad_cost")?;
+    fs::write(repo_dir.0.join("tool/docs/cost.toml"), "summary = 1\n")?;
+    let err = repo::build(&repo_dir.0, "a", "2026-11-26T12:00:00Z")
+        .err()
+        .ok_or("an invalid cost file must fail the snapshot")?;
+    assert!(err.starts_with("tool/docs/cost.toml: "), "{err}");
+    Ok(())
+}
+
+#[test]
+fn fails_on_an_invalid_radar_or_limits_file() -> TestResult {
+    for (file, bad) in [
+        ("standards/radar/radar.json", "{"),
+        ("standards/radar/limits.toml", "[[limit]]\nkey = 1\n"),
+    ] {
+        let repo_dir = FixtureRepo::new(&format!("bad_{}", file.replace('/', "_")))?;
+        fs::write(repo_dir.0.join(file), bad)?;
+        let err = repo::build(&repo_dir.0, "a", "2026-11-26T12:00:00Z")
+            .err()
+            .ok_or("an invalid radar or limits file must fail the snapshot")?;
+        assert!(err.starts_with(file), "{err}");
+    }
+    Ok(())
+}
+
+#[test]
+fn no_radar_means_no_limits_and_only_unlisted_vendors() -> TestResult {
+    let repo_dir = FixtureRepo::new("no_radar")?;
+    fs::remove_dir_all(repo_dir.0.join("standards"))?;
+    let s = repo::build(&repo_dir.0, "a", "2026-11-26T12:00:00Z")?;
+    assert_eq!(s.costs.projects.len(), 2);
+    assert!(s.costs.account.is_empty());
+    // Only app's domain, from a vendor no radar lists.
+    let budgets: Vec<_> = s
+        .costs
+        .budgets
+        .iter()
+        .map(|b| {
+            (
+                b.vendor.as_str(),
+                b.ring.as_str(),
+                b.budget_cents,
+                b.spend_cents,
+            )
+        })
+        .collect();
+    assert_eq!(budgets, [("Squarespace", "", 0, 100)]);
+    Ok(())
+}
+
+#[test]
+fn fails_on_a_taken_at_without_a_month() -> TestResult {
+    let repo_dir = FixtureRepo::new("bad_taken_at")?;
+    assert!(repo::build(&repo_dir.0, "a", "yesterday").is_err());
+    Ok(())
+}
+
+#[test]
+fn the_real_repo_cost_files_build() -> TestResult {
+    // Every docs/cost.toml, the radar and the limits in this checkout must
+    // parse, or pane's release fails.
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let roots = pane_snapshot::parse::config_roots(&fs::read_to_string(repo.join("mise.toml"))?)?;
+    let costs = repo::costs(&repo, &roots, "2026-11-26T12:00:00Z")?;
+    assert!(costs.projects.iter().any(|p| p.project == "pane"));
+    assert!(costs.budgets.iter().any(|b| b.vendor == "Claude Code"));
+    assert!(costs.account.iter().any(|a| a.key == "pages_projects"));
     Ok(())
 }

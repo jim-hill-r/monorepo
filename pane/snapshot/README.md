@@ -18,7 +18,10 @@ cargo run -p pane_snapshot -- --out snapshot.json
 | `--taken-at TIME` | Now, UTC, RFC 3339 |
 
 It exits non-zero, writing nothing, if the root `mise.toml` has no
-`[monorepo].config_roots`.
+`[monorepo].config_roots`, if any project's `docs/cost.toml`,
+`standards/radar/radar.json` or `standards/radar/limits.toml` doesn't parse
+(so a bad file never shows up in pane as missing money), or if `--taken-at`
+doesn't start with `YYYY-MM`.
 
 ## What it reads
 
@@ -38,6 +41,9 @@ It exits non-zero, writing nothing, if the root `mise.toml` has no
 | `reviews` | Each row of the `## Rotation` table in `docs/reviews/README.md` (`\| Date \| Project \| Deck \| PR \|`, columns found by header), newest first: project, date, the deck's `deck.md` path, the PR link if it points at the repo, and the deck's scorecard: each row of the `\| Area \| Rating \| Why \|` table under a heading that says Scorecard (columns found by header; none if the deck isn't in the repo yet). The `deep-project-review` skill writes both tables, so keep their shape. |
 | `deliverables` (review decks) | Each review again, linking its slides `/reviews/<folder>/deck.html` and PDF `/reviews/<folder>/deck.pdf`, which pane's release builds. |
 | `retros` | Each retro again, with its `- [ ]` / `- [x]` items under `## Actions`. |
+| `costs.projects` | Each project's `docs/cost.toml` (`standards/docs/cost.md`), parsed by `cost_model::parse_cost_file`: summary, reviewed date, services with plan and expected usage (each per-project limit with its ceiling from `limits.toml`), the `[[cost]]` and `[[revenue]]` lines, and revenue and direct cost for the month of `taken_at`. A project without the file is left out. |
+| `costs.account` | Each account-wide limit in `standards/radar/limits.toml`: every project's expected use summed and held against the budget, or the free limit when there is none (COST-005). |
+| `costs.budgets` | Each vendor blip in `standards/radar/radar.json` with its monthly budget and what projects' own costs spend with it this month (COST-006), then any vendor a cost names that the radar doesn't list. Without `standards/radar/` there are no limits and no radar vendors. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are
 skipped, as are code blocks in Markdown.
