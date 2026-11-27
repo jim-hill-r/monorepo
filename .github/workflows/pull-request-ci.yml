@@ -140,6 +140,51 @@ jobs:
             echo "Removed cost"
           fi
 
+  # Retiring or keeping a resource is Jim's call (standards/docs/resources.md):
+  # a PR that adds a [[retired]] or [[keep]] entry to standards/resources.toml
+  # gets `needs-human`, and his approval of it is the approval to delete.
+  # RES-001 itself runs in the audit. Never removes the label.
+  resources:
+    name: Resource entries
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write         # create the label the first time
+      pull-requests: write  # set it on the PR
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Label new retirements and keeps
+        # A fork's token can't label; the entries are still in the summary.
+        continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          added=$(bash standards/scripts/resources.sh new-entries "origin/$BASE_REF")
+          if [ -z "$added" ]; then
+            echo "No new [[retired]] or [[keep]] entries."
+            exit 0
+          fi
+          {
+            echo "### New entries in standards/resources.toml (needs Jim)"
+            echo
+            echo "| List | Kind | Name |"
+            echo "| --- | --- | --- |"
+            awk -F'\t' '{ printf "| %s | %s | `%s` |\n", $1, $2, $3 }' <<<"$added"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
+            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
+          gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=needs-human" >/dev/null
+          echo "Labelled needs-human"
+
   # One check that always runs and passes only when every project passed, so
   # the ruleset on main can require it and GitHub auto-merge waits for green
   # CI. Project jobs have per-PR names, so they can't be required directly.
