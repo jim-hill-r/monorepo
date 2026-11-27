@@ -24,6 +24,29 @@ pub fn next_level(level: &str) -> Option<&'static str> {
     }
 }
 
+/// The expressions a `?practice=b,c` query asks to practise, in order and
+/// without repeats, or `None` when it names none the app has patterns for.
+/// It lets a link (or a test) practise a few chosen letters or words instead
+/// of the whole level. Anything that isn't lowercase letters a to z is
+/// ignored, as are letters without a pattern.
+pub fn practice_from_query(query: &str) -> Option<Vec<String>> {
+    let value = query
+        .trim_start_matches('?')
+        .split('&')
+        .find_map(|pair| pair.strip_prefix("practice="))?;
+    let mut expressions: Vec<String> = Vec::new();
+    for expr in value.replace("%2C", ",").replace("%2c", ",").split(',') {
+        let expr = expr.trim().to_lowercase();
+        let known = !expr.is_empty()
+            && expr.chars().all(|c| c.is_ascii_lowercase())
+            && crate::patterns::patterns_json(&expr).is_some();
+        if known && !expressions.contains(&expr) {
+            expressions.push(expr);
+        }
+    }
+    (!expressions.is_empty()).then_some(expressions)
+}
+
 /// Phase of the practice session for a single expression
 #[derive(Clone, Debug, PartialEq)]
 pub enum PracticePhase {
@@ -88,6 +111,12 @@ impl AppState {
             consecutive_fails: 0,
             stale_fails: 0,
         }
+    }
+
+    /// Practise only `expressions`, as one batch, instead of the level's
+    /// sequences. Call it before `start_practice`.
+    pub fn practise_only(&mut self, expressions: Vec<String>) {
+        self.pending_queue = vec![expressions];
     }
 
     /// Activate the next batch from the pending queue
@@ -271,6 +300,47 @@ mod tests {
             state.record_attempt(false);
         }
         assert!(!state.is_complete());
+    }
+
+    fn strings(items: &[&str]) -> Vec<String> {
+        items.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn a_practice_query_names_the_expressions_in_order() {
+        assert_eq!(
+            practice_from_query("?practice=b,c"),
+            Some(strings(&["b", "c"]))
+        );
+        assert_eq!(
+            practice_from_query("?x=1&practice=hi%2Cfun"),
+            Some(strings(&["hi", "fun"]))
+        );
+    }
+
+    #[test]
+    fn a_practice_query_drops_unknown_and_repeated_expressions() {
+        assert_eq!(
+            practice_from_query("?practice=B, b,3,,é,<x>,c"),
+            Some(strings(&["b", "c"]))
+        );
+    }
+
+    #[test]
+    fn no_practice_query_means_the_whole_level() {
+        assert_eq!(practice_from_query(""), None);
+        assert_eq!(practice_from_query("?other=b"), None);
+        assert_eq!(practice_from_query("?practice="), None);
+        assert_eq!(practice_from_query("?practice=1,!"), None);
+    }
+
+    #[test]
+    fn practising_only_some_letters_ends_once_they_are_stable() {
+        let mut state = AppState::new("letter");
+        state.practise_only(strings(&["b"]));
+        let steps = finish_level(&mut state);
+        assert_eq!(steps, STABILIZE_COUNT);
+        assert_eq!(state.stable_queue, strings(&["b"]));
     }
 
     #[test]
