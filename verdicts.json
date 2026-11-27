@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T01:41:43.546455255Z",
+  "generated_at": "2026-11-27T02:20:17.098038578Z",
   "projects": [
     {
       "project": "bear_down",
@@ -322,7 +322,7 @@
           "priority": "should",
           "verdict": "unknown",
           "reasons": [
-            "no evals"
+            "no production-stage results yet"
           ]
         },
         {
