@@ -40,4 +40,5 @@ jobs:
           name: review-decks
           path: build/reviews
           if-no-files-found: ignore
+          # RES-003: Jim reviews decks over days or weeks, so they keep 90 days.
           retention-days: 90

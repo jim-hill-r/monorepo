@@ -206,7 +206,7 @@ jobs:
         with:
           name: ${{ steps.evals.outputs.artifact }}
           path: ${{ runner.temp }}/evals-results.jsonl
-          retention-days: 14
+          retention-days: 7  # read by evals-store.yml in the same run (RES-003)
           if-no-files-found: ignore
 
       - name: mise run deploy

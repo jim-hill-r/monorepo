@@ -71,6 +71,7 @@ kind = "pages"                     # pages | worker | d1 | kv | queue | cron | d
 name = "cahokia-web"
 url = "https://cahokia-web.pages.dev"   # every address it answered on
 replaced_by = "jimhillr-cahokia"   # empty when nothing replaces it
+match_name = true                  # false: RES-002 looks only for the url
 why = "Renamed to the jimhillr-{project} scheme."
 retired = "2026-11-27"             # the date of the PR that adds the entry
 delete_after = "2026-12-04"        # at least 7 days later; remove the entry before then to undo
@@ -140,15 +141,23 @@ Worker, binding, URL or release:
 
 ## Checks
 
-| Check | Where it runs | Status |
+All in [`standards/scripts/resources.sh`](../scripts/resources.sh), tested
+in `monorepo/workflow_tests/tests/resources_tests.rs`.
+
+| Check | Where it runs | What it does |
 | --- | --- | --- |
-| RES-001 a dropped claim needs a `[[retired]]` or `[[keep]]` entry | Pre-push hook and PR CI | Planned (phase 1) |
-| RES-002 no references to retired names or addresses | `mise run //:audit` | Planned (phase 1) |
-| RES-003 artifact retention of 7 days or less | `mise run //:audit` | Planned (phase 1) |
-| `needs-human` label on PRs that add `[[retired]]` or `[[keep]]` | PR CI | Planned (phase 1) |
+| RES-001 a dropped claim needs an entry | `mise run //:audit` when it has a base: PR CI and pushes to `main` (`AFFECTED_BASE`), and the pre-push hook (`RESOURCES_BASE`) | Lists the claims on the base and in the working tree (`resources.sh claims [REF]`); each one that disappeared needs a `[[retired]]` or `[[keep]]` entry |
+| RES-002 no references to retired names or addresses | `mise run //:audit` | Searches every tracked file except `standards/resources.toml`, plans, decisions, reviews, retros, issue files and changelogs for each retired `url`, and for the `name` as a whole word unless the entry sets `match_name = false` (for a name that is also an ordinary word, such as a project name) |
+| RES-003 artifact retention of 7 days or less | `mise run //:audit` | Every `actions/upload-artifact` step sets `retention-days` of 7 or less, or has a `# RES-003:` comment in the step saying why it keeps longer |
+| RES-004 entries are well formed | `mise run //:audit` | Known `kind`, the required fields, dates as `YYYY-MM-DD`, `delete_after` at least 7 days after `retired` |
+| `needs-human` on new entries | PR CI, **Resource entries** job | `resources.sh new-entries BASE` lists the `[[retired]]` and `[[keep]]` entries a PR adds; the job lists them in its summary and labels the PR `needs-human` |
 | Weekly sweep for orphans, overdue keeps and failed deletions | [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml) | Planned (phase 1) |
 
-When a check lands, the PR that adds it updates its row here.
+What the claims are, per kind: a `wrangler.toml` gives `pages` or `worker`
+by its `name`, `d1` by `database_name`, `kv` as `<worker>/<binding>`, `r2`
+by `bucket_name`, `queue` by queue name and `cron` as `<worker>/<schedule>`;
+a project's `RELEASE_TAG` gives `release`. A retirement entry uses the same
+`kind` and `name`.
 
 ## Cost
 
