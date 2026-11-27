@@ -9,11 +9,13 @@ use pane_model::{
 mod acknowledge;
 mod approve;
 mod markdown;
+mod money;
 mod view;
 mod visits;
 
 use acknowledge::Acknowledge;
 use approve::Approve;
+use money::Money;
 use view::{Bucket, WorkFilter};
 use visits::Visits;
 
@@ -97,6 +99,8 @@ mod route {
         Health {},
         #[route("/projects")]
         Projects {},
+        #[route("/money")]
+        Money {},
         #[route("/projects/:..path")]
         ProjectPage { path: Vec<String> },
         #[route("/deliverables")]
@@ -121,13 +125,14 @@ mod route {
 use route::Route;
 
 /// The nav entries, in order.
-fn nav() -> [(Route, &'static str); 10] {
+fn nav() -> [(Route, &'static str); 11] {
     [
         (Route::Today {}, "Today"),
         (Route::Approve {}, "Approve"),
         (Route::Acknowledge {}, "Acknowledge"),
         (Route::Health {}, "Health"),
         (Route::Projects {}, "Projects"),
+        (Route::Money {}, "Money"),
         (Route::Deliverables {}, "Deliverables"),
         (Route::Reviews {}, "Reviews"),
         (Route::HumanIssues {}, "Human issues"),
@@ -611,6 +616,7 @@ fn ProjectPage(path: Vec<String>) -> Element {
                             }
                         }
                     }
+                    money::ProjectMoneySection { snapshot: s.clone(), path: p.path.clone() }
                     p { class: "muted", "Health and open PRs for each project come in Phases 3 and 4." }
                 }
             },

@@ -5,10 +5,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use cost_model::{COST_FILE, CostFile, LimitsFile, Month, Radar};
-use pane_model::costs::{Costs, build_costs};
+use pane_model::costs::{
+    Costs, ProjectCosts, build_costs, build_history, months_ending, shared_cents,
+};
 use pane_model::{DeliverableKind, Project, Snapshot, WorkKind, WorkSource};
 
-use crate::{blame, parse};
+use crate::{blame, merged, parse};
 
 /// pane's traffic-light thresholds, from the repo root.
 pub const HEALTH_TOML: &str = "pane/health.toml";
@@ -132,16 +134,62 @@ pub fn costs(root: &Path, roots: &[String], taken_at: &str) -> Result<Costs, Str
         Some(text) => cost_model::parse_limits(&text).map_err(|e| format!("{LIMITS}: {e}"))?,
         None => LimitsFile::default(),
     };
-    let mut files: Vec<(&str, CostFile)> = Vec::new();
+    let mut files: Vec<(&str, CostFile, String)> = Vec::new();
     for project in roots {
         let rel = format!("{project}/{COST_FILE}");
         if let Some(text) = read_if_exists(&root.join(&rel))? {
             let file = cost_model::parse_cost_file(&text).map_err(|e| format!("{rel}: {e}"))?;
-            files.push((project, file));
+            files.push((project, file, text));
         }
     }
-    let files: Vec<(&str, &CostFile)> = files.iter().map(|(p, f)| (*p, f)).collect();
-    Ok(build_costs(month, &files, &radar, &limits))
+    let parsed: Vec<(&str, &CostFile)> = files.iter().map(|(p, f, _)| (*p, f)).collect();
+    let mut costs = build_costs(month, &parsed, &radar, &limits);
+    for (project, (_, _, text)) in costs.projects.iter_mut().zip(&files) {
+        set_lines(project, text);
+    }
+
+    // The Money page's twelve months, for the top-level projects.
+    let months = months_ending(month, HISTORY_MONTHS);
+    let top: Vec<&str> = roots
+        .iter()
+        .map(String::as_str)
+        .filter(|r| !r.contains('/'))
+        .collect();
+    let merged = months
+        .first()
+        .and_then(|&since| merged::by_month(root, since, &top.iter().copied().collect()));
+    let rows: Vec<(&str, Option<&CostFile>)> = top
+        .iter()
+        .map(|&p| (p, parsed.iter().find(|(q, _)| *q == p).map(|(_, f)| *f)))
+        .collect();
+    costs.history_from_git = merged.is_some();
+    costs.history = build_history(
+        &months,
+        &rows,
+        shared_cents(&radar),
+        &merged.unwrap_or_default(),
+    );
+    Ok(costs)
+}
+
+/// How many months the Money page charts.
+pub const HISTORY_MONTHS: u32 = 12;
+
+/// Give each service, cost and revenue line of `project` the line of its
+/// header in `text`, its `docs/cost.toml`, so pane links to it.
+fn set_lines(project: &mut ProjectCosts, text: &str) {
+    let services = parse::table_lines(text, "service");
+    for (s, line) in project.services.iter_mut().zip(services) {
+        s.line = line;
+    }
+    let costs = parse::table_lines(text, "cost");
+    for (c, line) in project.costs.iter_mut().zip(costs) {
+        c.line = line;
+    }
+    let revenue = parse::table_lines(text, "revenue");
+    for (r, line) in project.revenue.iter_mut().zip(revenue) {
+        r.line = line;
+    }
 }
 
 /// Every file under `root`, sorted, skipping hidden directories and

@@ -418,3 +418,50 @@ h1 {
 .meta button.ack {
   font-size: 0.85rem;
 }
+
+/* The Money page: figures right-aligned in tabular digits, the net chart. */
+.money .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.money tfoot th,
+.money tfoot td {
+  border-top: 2px solid var(--ds-color-border);
+  border-bottom: none;
+}
+
+.money .loss,
+.money .over {
+  color: var(--ds-color-danger);
+}
+
+.money-chart {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  margin: var(--ds-space-3) 0;
+}
+
+.money-chart .bar {
+  fill: var(--ds-color-accent);
+}
+
+.money-chart .baseline {
+  stroke: var(--ds-color-border);
+  stroke-width: 1;
+}
+
+.money-chart .tick {
+  fill: var(--ds-color-text-muted);
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .money {
+    display: block;
+    overflow-x: auto;
+  }
+}

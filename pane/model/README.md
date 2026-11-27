@@ -25,7 +25,10 @@ radar's monthly budgets and the free limits: `build_costs` gives `Costs`,
 with each project's services, plans, expected usage, cost and revenue lines
 and this month's money, account-wide expected usage against each limit's
 ceiling, and each vendor's spend this month against its radar budget.
-`pane_snapshot` fills `Snapshot.costs` with it.
+`pane_snapshot` fills `Snapshot.costs` with it. `build_history` adds
+twelve `MonthMoney` rows (each project's `ProjectMoney` for the month,
+with the shared costs from `shared_cents` split by that month's merged
+PRs), and `MonthMoney::totals` sums a month for the Money page.
 
 ## Review queue
 

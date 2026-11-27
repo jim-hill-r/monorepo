@@ -8,9 +8,9 @@ check each requirement are in [evals.toml](../evals.toml).
 Drafted by an agent on 2026-11-26 from the Goal, The site and Phases
 sections of the [review dashboard plan](plans/2026-11-review-dashboard.md)
 and the existing tests. Pane has no deep review yet. PANE-001 to PANE-006
-cover what is built (phases 0 and 1) and PANE-008 the Reviews page (phase 2);
-PANE-007, PANE-009 and PANE-010 are the plan's later phases and have no
-evals until they are built.
+cover what is built (phases 0 and 1), PANE-008 the Reviews page (phase 2)
+and PANE-010 the Money page (phase 7); PANE-007 and PANE-009 are the plan's
+later phases and have no evals until they are built.
 
 ## PANE-001: Today shows what needs Jim
 
