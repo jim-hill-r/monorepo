@@ -1,0 +1,22 @@
+# auth_sdk: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Rust library for OAuth2 and OpenID Connect sign-in, used by cahokia and cookbook in the browser. Holds no secrets; apps pass in their public client id."
+
+[[surface]]
+name = "library"
+kind = "library"
+access = "none"
+data = "public"
+notes = "Not published. Its users' surfaces and [auth] live in their own threat models."
+
+[[threat]]
+id = "AUTH-T1"
+stride = "spoofing"
+what = "An intercepted authorization code or forged callback signs someone in as another user."
+mitigation = "PKCE, a random state checked on return (CSRF), and the ID token's nonce, issuer and audience validated through openidconnect."
+
+[[threat]]
+id = "AUTH-T2"
+stride = "information-disclosure"
+what = "A vulnerable crypto dependency leaks keys (RUSTSEC-2023-0071 in rsa, through openidconnect)."
+mitigation = "We only verify Auth0 tokens with a public key, which that attack doesn't touch; the advisory is tracked in issues/threat-check-advisories-openidconnect.md."

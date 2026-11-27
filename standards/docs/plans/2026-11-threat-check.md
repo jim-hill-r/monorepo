@@ -315,8 +315,11 @@ SEC tools, in the `evals-check.sh` shape.
 
 Status: the `threat` project and `threat check` (THR-001 to THR-003, THR-005
 to THR-009) are built and run from `//:audit` as warnings (2026-11-27). The
-format and rules are in [security.md](../security.md#threat-models). Writing
-the `docs/threat.toml` files is next.
+format and rules are in [security.md](../security.md#threat-models). Every
+project except the on-hold luggage, starcraft and profiles has a
+`docs/threat.toml` (2026-11-27). The gaps they found are FIX issues: five
+sites without security headers (THR-007), and the Android keystore secret
+had no settings check (added).
 
 - The `threat` project with THR-001 to THR-003 and THR-005 to THR-009 as
   warnings, unit-tested per rule, run from `//:audit`.

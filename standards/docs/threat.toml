@@ -1,0 +1,63 @@
+# standards: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Repo docs, shared mise tasks and scripts, and the repo-wide workflows (PR CI, push-main, nightly, the weekly free-tier and billing checks). Serves nothing; the risk is what its workflows can reach."
+
+[[surface]]
+name = "repo workflows"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Each workflow sets permissions; secrets go only to deploy and scheduled jobs on main, never to pull_request jobs."
+
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["push-main.yml", "nightly-cd.yml", "mise-projects.yml deploy step", "all-free-tier-usage.yml"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["push-main.yml", "nightly-cd.yml", "all-free-tier-usage.yml"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[[secret]]
+name = "CLOUDFLARE_BILLING_READ_TOKEN"
+where = "github"
+used_by = ["all-free-tier-usage.yml billing check"]
+scope = "jimhillr-billing-read: Billing Read only; infra environment"
+setting = "cloudflare-infra-token-scopes"
+
+[[secret]]
+name = "GITHUB_BILLING_READ_TOKEN"
+where = "github"
+used_by = ["all-free-tier-usage.yml billing check"]
+scope = "Fine-grained token: Plan read and public repositories read-only; infra environment"
+setting = "rotate-github-billing-read-token"
+
+[[secret]]
+name = "POSTHOG_BILLING_READ_KEY"
+where = "github"
+used_by = ["all-free-tier-usage.yml billing check"]
+scope = "Billing read only, once PostHog exists; infra environment"
+setting = "rotate-posthog-billing-read-key"
+
+[[threat]]
+id = "STD-T1"
+stride = "elevation-of-privilege"
+what = "PR code reaches a deploy token or writes to main."
+mitigation = "Deploy secrets are only in push-main and nightly jobs; pull_request jobs get none, and SEC-007 fails any git push to main from workflows or shared scripts."
+
+[[threat]]
+id = "STD-T2"
+stride = "tampering"
+what = "A compromised third-party action runs with a workflow's token."
+mitigation = "Workflows grant read-only permissions by default and Dependabot bumps actions; pinning actions to commits is phase 3 of the threat check plan (SEC-005)."
+
+[[threat]]
+id = "STD-T3"
+stride = "information-disclosure"
+what = "A secret is committed."
+mitigation = "gitleaks in the hooks, PR CI and a weekly full-history scan (SEC-001), plus GitHub push protection."

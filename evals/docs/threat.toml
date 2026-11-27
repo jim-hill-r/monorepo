@@ -1,0 +1,16 @@
+# evals: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Rust CLI that checks requirements and evals and stores results on the evals-results branch; no deploy, no secrets of its own."
+
+[[surface]]
+name = "evals CLI"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Runs in CI with the job's GITHUB_TOKEN; evals-store.yml is its only push, to the evals-results data branch (SEC-007)."
+
+[[threat]]
+id = "EVAL-T1"
+stride = "tampering"
+what = "A PR's code rewrites stored eval results or pushes to main."
+mitigation = "Results are pushed only by evals-store.yml, only to evals-results, and SEC-007 fails any other git push in workflows and shared scripts."

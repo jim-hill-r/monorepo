@@ -1,0 +1,60 @@
+# cahokia: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Dioxus app: a public web build on Pages with Auth0 sign-in in the browser, plus desktop and mobile builds that are not distributed yet. No server code, no stored user data."
+
+[[surface]]
+name = "site"
+kind = "pages"
+url = "https://jimhillr-cahokia.pages.dev"
+access = "public"
+data = "public"
+previews = "public"
+notes = "Static Dioxus build. Its CSP is only a <meta> tag in web/src/main.rs, which cannot set frame-ancestors, and there is no _headers file yet."
+
+[[surface]]
+name = "desktop and mobile apps"
+kind = "desktop"
+access = "none"
+data = "public"
+notes = "Built in CI, not shipped to anyone. Sign-in is a TODO there until auth_sdk supports native platforms."
+
+# Every Pages deploy (push-main.yml, nightly-cd.yml through mise-projects.yml).
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[auth]
+provider = "Auth0"
+flow = "authorization-code-pkce"
+callbacks = ["https://jimhillr-cahokia.pages.dev/", "https://*.jimhillr-cahokia.pages.dev/", "http://localhost:8080/"]
+setting = "auth0-cahokia-app"
+
+[[threat]]
+id = "CAH-T1"
+stride = "tampering"
+what = "Someone changes what the site serves."
+mitigation = "Only the deploy step on main, with CLOUDFLARE_API_TOKEN, can publish; main needs a reviewed PR (github-main-ruleset)."
+surface = "site"
+
+[[threat]]
+id = "CAH-T2"
+stride = "elevation-of-privilege"
+what = "Script injected into the page (XSS) steals the Auth0 session, or another site frames it (clickjacking)."
+mitigation = "A <meta> CSP (scripts only from self) and Dioxus escaping rendered text. Security headers on every response are still missing (see the FIX issue)."
+surface = "site"
+
+[[threat]]
+id = "CAH-T3"
+stride = "spoofing"
+what = "An attacker's site receives a sign-in code by posing as cahokia."
+mitigation = "PKCE, state and nonce checks in auth_sdk, and Auth0 callbacks limited to our own Pages hosts and localhost (tested in web/src/main.rs)."
