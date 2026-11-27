@@ -9,8 +9,8 @@ Turn DOC-001 to DOC-004 and LIN-001/LIN-002 in `standards/scripts/project-check.
 
 Progress: the first batch (bear_down, cahokia, cookbook, athenaeum,
 telemetry, monorepo, design_system/preview and the sparkhill deploy
-projects) is done, and DOC-002 now also accepts a heading with the
-project's path. Left: `pane`, `royalty` and `sparkhill` (no README or
-CONTRIBUTING), `psy_ents` and `bogan` (their own issues record the work),
-`my_lang` (LIN-001/002) and the on hold `luggage`, `starcraft` and
+projects, PR #806), then `pane` and `sparkhill`, are done, and DOC-002 now
+also accepts a heading with the project's path. Left: `royalty` (no README
+or CONTRIBUTING), `psy_ents` and `bogan` (their own issues record the work),
+`my_lang` (LIN-002, PR #787) and the on hold `luggage`, `starcraft` and
 `profiles`.
