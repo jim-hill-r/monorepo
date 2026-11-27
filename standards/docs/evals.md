@@ -163,6 +163,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
 | `human-check` | Jim checks a setting made by hand | `setting`: an `id` in `standards/settings.toml` (see [Human checks](#human-checks)) | Declared inline, `stages = ["human"]` |
+| `cost` | The project's cost analysis holds (see [Cost evals](#cost-evals)) | None | Declared inline, stages `ci` and/or `observe` only |
 
 A `human` eval (Jim's rating in pane) exists implicitly for every
 requirement and is never listed. Only `human-check` evals list the `human`
@@ -181,6 +182,30 @@ stage.
 
 `cd`, `chaos` and `observe` are the **production stages**. Every `must`
 requirement needs at least one eval in a production stage.
+
+### Cost evals
+
+A `cost` eval ties a requirement such as `COOK-010: Cookbook runs at $0 a
+month` to the project's `docs/cost.toml` ([cost.md](cost.md)), so a cost
+regression shows in the same verdicts as any other broken promise:
+
+```toml
+[[eval]]
+id = "runs-free"
+requirement = "COOK-010"
+stages = ["ci", "observe"]
+kind = "cost"
+```
+
+- **`ci`:** `cost check` writes the result itself (`cost check
+  --evals-results <file>`), so the cost rules run once. In CI, `evals.sh
+  run` calls it from the top-level project's own job. The eval fails when
+  `cost check` finds anything `--strict` would fail on (COST-001 to
+  COST-007) in the project's own files; the warning-only codes (COST-008 to
+  COST-010) are listed in the note but pass, and account-wide findings
+  belong to no one project.
+- **`observe`:** the weekly actuals compared with the file's expected
+  usage. Not collected yet (cost check phase 4).
 
 ## Checks
 
@@ -524,9 +549,23 @@ the workflow's **dry run** input, or locally with
 `bash standards/scripts/evals.sh triage --dry-run`, to see what it would
 file.
 
-The `eval-triage` skill, where it exists, is for the judgment calls the
+The `eval-triage` skill is for the judgment calls the
 workflow can't make (a disputed eval, rollback advice); it is not a daily
 task.
+
+## Fire drill
+
+The **evals fire drill** workflow (`evals-fire-drill.yml`, run by hand with a
+project and an `http` eval, default cookbook `recipe-page-live`) proves the
+loop still catches a failure. `evals drill --dir <evals-results checkout>`
+points the eval at text the live page doesn't have, runs it against the
+site, adds the failure (in memory only) to the stored results, and checks
+the requirement turns red (amber for a `should`), that triage would file it
+(a dry run of `evals triage`), and that after the real eval passes the
+verdict is back where it started. It only reads: production gets the GET
+requests a `cd` run makes, and nothing is written or pushed. Run it after
+changing the verdict rules, `evals store` or triage. The first drill's retro
+is [evals/docs/fire-drill-2026-11-27.md](../../evals/docs/fire-drill-2026-11-27.md).
 
 ## Project prefixes
 

@@ -220,6 +220,19 @@ mod tests {
     }
 
     #[test]
+    fn every_image_in_static_is_used() {
+        // Unused images would still be exported and deployed.
+        let sources = attr_values(&render(), "src");
+        let dir = Path::new("static/images");
+        let files = std::fs::read_dir(dir).unwrap_or_else(|e| panic!("{dir:?}: {e}"));
+        for file in files.flatten() {
+            let name = file.file_name().to_string_lossy().into_owned();
+            let src = format!(".perseus/static/images/{name}");
+            assert!(sources.contains(&src), "{name} isn't used by the page");
+        }
+    }
+
+    #[test]
     fn has_one_main_landmark() {
         assert_eq!(render().matches("<main").count(), 1);
     }

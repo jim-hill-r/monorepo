@@ -1,0 +1,54 @@
+---
+# Eval fire drill (standards/docs/evals.md#fire-drill): breaks one
+# production http eval on purpose, runs it against the live site, and checks
+# the requirement turns red and triage would file it, then that the next
+# good run turns it green (`evals drill`). Results stay in memory: nothing
+# is written or pushed, and production only gets the GET requests a cd run makes.
+# Run it by hand after changing the eval engine's verdict or store code,
+# and on pull requests that change the drill itself.
+name: evals fire drill
+
+'on':
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project with an evals.toml
+        type: string
+        default: cookbook
+      eval:
+        description: An http eval in that project's evals.toml
+        type: string
+        default: recipe-page-live
+  pull_request:
+    paths:
+      - .github/workflows/evals-fire-drill.yml
+      - evals/cli/src/drill.rs
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: evals
+          key: evals-audit
+          save-if: false
+
+      - name: Fire drill
+        env:
+          PROJECT: ${{ inputs.project || 'cookbook' }}
+          EVAL_ID: ${{ inputs.eval || 'recipe-page-live' }}
+        # A read-only copy of the results; the drill writes nothing.
+        run: |
+          mkdir -p "$RUNNER_TEMP/evals-results"
+          if git fetch --quiet --depth=1 origin evals-results; then
+            git archive FETCH_HEAD | tar -x -C "$RUNNER_TEMP/evals-results"
+          fi
+          cargo run --quiet --manifest-path evals/Cargo.toml -p evals_cli -- \
+            drill --dir "$RUNNER_TEMP/evals-results" --project "$PROJECT" --eval "$EVAL_ID"
