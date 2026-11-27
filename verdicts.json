@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-27T23:34:49.696364479Z",
+  "generated_at": "2026-11-27T23:40:09.684004186Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 10.7,
-    "musts_percent": 31.9,
-    "judged_percent": 13.9,
+    "percent": 12.8,
+    "musts_percent": 38.3,
+    "judged_percent": 17.6,
     "warn_below": 80.0,
     "warning": true
   },
@@ -256,7 +256,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "live-game-wasm failed in cd at 2026-11-27 21:55:17.815082384 UTC"
+            "live-game-wasm failed in cd at 2026-11-27 23:39:14.789952448 UTC"
           ]
         },
         {
@@ -330,30 +330,24 @@
       "musts_in_production": 3,
       "coverage": {
         "requirements": 9,
-        "met": 0,
-        "percent": 0.0,
-        "musts_met": 0,
-        "musts_percent": 0.0,
-        "warning": true
+        "met": 4,
+        "percent": 44.4,
+        "musts_met": 3,
+        "musts_percent": 100.0,
+        "warning": false
       },
       "requirements": [
         {
           "requirement": "COOK-001",
           "title": "There is a recipe for every day of the year",
           "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "recipe-pages has no cd results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "COOK-002",
           "title": "Every week has a meal plan with a shopping list",
           "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "plan-pages has no cd results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "COOK-003",
@@ -377,19 +371,13 @@
           "requirement": "COOK-005",
           "title": "Every page is accessible",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "COOK-006",
           "title": "It is easy to move between today, recipes and plans",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "COOK-007",
@@ -893,8 +881,8 @@
       "musts_in_production": 6,
       "coverage": {
         "requirements": 9,
-        "met": 0,
-        "percent": 0.0,
+        "met": 1,
+        "percent": 11.1,
         "musts_met": 0,
         "musts_percent": 0.0,
         "warning": true
@@ -904,54 +892,58 @@
           "requirement": "SPRK-001",
           "title": "A learner can start practising straight away",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "first-session-judged has no judge results yet",
+            "home-page-live failed 4 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-002",
           "title": "Every letter is shown being written before the learner tries it",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "app-loads-live failed 4 of its last 7 cd runs",
+            "demonstrations-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-003",
           "title": "A tracing is checked fairly",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "tracing-judged has no judge results yet",
+            "tracing-page-live failed 4 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-004",
           "title": "Learners move from letters to words to capitals",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "capital-level-live failed 4 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-005",
           "title": "Each learner's progress is kept on their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "home-page-live-for-progress failed 4 of its last 7 cd runs",
+            "progress-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-006",
           "title": "Nothing a learner types or draws leaves their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "connects-only-to-itself-live failed 4 of its last 7 cd runs"
           ]
         },
         {
@@ -960,9 +952,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-27 22:01:38.188996419 UTC",
-            "manifest-live failed in cd at 2026-11-27 22:01:38.188996419 UTC",
-            "no-zoom-live failed in cd at 2026-11-27 22:01:38.188996419 UTC"
+            "home-screen-icon-live failed 4 of its last 7 cd runs",
+            "manifest-live failed 4 of its last 7 cd runs",
+            "no-zoom-live failed 4 of its last 7 cd runs"
           ]
         },
         {
@@ -978,10 +970,7 @@
           "requirement": "SPRK-009",
           "title": "A learner can practise with less help",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         }
       ]
     },
