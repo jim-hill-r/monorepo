@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["model"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_ignored = "0.1"
+toml = "1"

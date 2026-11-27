@@ -21,7 +21,8 @@ Three promises shape the design:
 
 ## Status
 
-Design approved (Jim, 2026-11-27); nothing is built yet. The full
+Phase 1 is being built: the `royalty_model` crate (`model/`) reads and
+validates a `royalty.toml`; the `royalty` command comes next. The full
 `royalty.toml` format is in the [royalty.toml reference](docs/royalty-toml.md).
 The design, the phases and Jim's answers to its decisions are in the
 [royalty plan](docs/plans/2026-11-royalty-plan.md). The work items are in

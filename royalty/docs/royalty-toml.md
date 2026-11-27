@@ -494,7 +494,7 @@ names its code and the requirement it protects.
 
 | Code | Level | Finding |
 | --- | --- | --- |
-| RTOML-001 | error | The file isn't valid TOML, or a field has the wrong type. |
+| RTOML-001 | error | The file isn't valid TOML, a field has the wrong type, or a word field outside `[[tier]]` and `[consumer]` has a value that isn't one of its choices (such as `binding = "optional"`). |
 | RTOML-002 | error | `schema` is a number this reader doesn't know. |
 | RTOML-003 | warning | A field or table this reader doesn't know (often a typo). The rest of the file is still read. |
 | RTOML-004 | error | `[project]`, or its `name` or `description`, is missing or empty. |
@@ -505,7 +505,7 @@ names its code and the requirement it protects.
 | RTOML-009 | error | A money or count field is negative, or `[terms] currency` isn't `USD`. |
 | RTOML-010 | warning | `[terms]` or `[[tier]]` without `[[payee]]`: nobody could be paid. |
 | RTOML-011 | warning | A tier after one with an empty `when`, which can never be reached. |
-| RTOML-012 | error | A `[consumer]` field is invalid: an unknown `stage`, `entity` or `class`, a `[[consumer.deployment]]` with no `manifest`, or a `[[consumer.package]]` whose `action` misses its values. |
+| RTOML-012 | error | A `[consumer]` field is invalid: an unknown word (such as a `stage`, `entity`, `class` or `on_exceed`), a `[[consumer.deployment]]` with no `manifest`, or a `[[consumer.package]]` whose `action` misses its values. |
 | RTOML-013 | warning | `binding = "license"`: the code is source-available, not open source. |
 
 A file with only `[project]` (every file in this monorepo today) has no

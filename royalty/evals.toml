@@ -2,3 +2,46 @@
 # Format: standards/docs/evals.md. Evals are added as Phase 1 code arrives.
 
 prefix = "ROYL"
+
+# ROYL-002: Development, tests, CI and staging are always free
+
+[[eval]]
+id = "tiers-cannot-name-non-production"
+requirement = "ROYL-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_002_a_tier_cannot_name_a_non_production_environment"
+
+# ROYL-007: A file with only `[project]` stays valid for ever
+
+[[eval]]
+id = "repo-files-mean-no-terms"
+requirement = "ROYL-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_007_every_royalty_toml_in_the_repo_means_no_payment_terms"
+
+[[eval]]
+id = "project-only-file-has-no-findings"
+requirement = "ROYL-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_007_a_file_with_only_project_has_no_findings_and_all_defaults"
+
+# ROYL-008: A royalty.toml never holds a secret
+
+[[eval]]
+id = "secrets-are-rejected"
+requirement = "ROYL-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_008_"
+
+# ROYL-009: Money is whole cents, never floating point
+
+[[eval]]
+id = "negative-money-and-other-currencies-rejected"
+requirement = "ROYL-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_009_"
