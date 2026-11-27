@@ -2,7 +2,9 @@
 
 mod check;
 mod owed;
+mod period;
 mod scan;
+mod seats;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -41,6 +43,10 @@ enum Command {
         /// optionally royalty.toml). Defaults to the current directory.
         #[arg(default_value = ".")]
         path: PathBuf,
+        /// The month to work out, YYYY-MM. Defaults to the current month
+        /// (UTC).
+        #[arg(long)]
+        period: Option<period::Month>,
     },
 }
 
@@ -48,7 +54,9 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     let result = match cli.command {
         Command::Check { path, strict } => check::run(&path, strict),
-        Command::Scan { path } => owed::run(&path),
+        Command::Scan { path, period } => {
+            owed::run(&path, period.unwrap_or_else(period::Month::current))
+        }
     };
     match result {
         Ok(code) => code,

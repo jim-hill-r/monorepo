@@ -5,9 +5,11 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use anyhow::{Context, Result};
-use royalty_model::{Consumer, FamilyUse, Owed, Status, TierChoice, owe, parse};
+use royalty_model::{Consumer, FamilyUse, Owed, Status, TierChoice, Unit, owe, parse};
 
+use crate::period::Month;
 use crate::scan::{Scan, scan};
+use crate::seats;
 
 /// The consumer's side from `dir/royalty.toml`, or the defaults when there
 /// is none (a person in development: nothing is owed).
@@ -26,10 +28,19 @@ pub fn load_consumer(dir: &Path) -> Result<Consumer> {
     Ok(file.consumer_or_default())
 }
 
-/// Scans `dir` and works out what is owed.
-pub fn work_out(dir: &Path) -> Result<(Consumer, Scan, Owed)> {
+/// Scans `dir` and works out what is owed in `month`.
+pub fn work_out(dir: &Path, month: Month) -> Result<(Consumer, Scan, Owed)> {
     let consumer = load_consumer(dir)?;
-    let scan = scan(dir)?;
+    let mut scan = scan(dir, &consumer.deployments)?;
+    for family in &mut scan.families {
+        let period = family.file.terms.period;
+        family.usage.due = month.is_due(period);
+        if family.usage.due
+            && let Some(seats) = seats::count(dir, month.period_start(period), month.next())
+        {
+            family.usage.measured.insert(Unit::Seat, seats);
+        }
+    }
     let uses: Vec<FamilyUse<'_>> = scan
         .families
         .iter()
@@ -51,16 +62,17 @@ pub fn dollars(cents: u64) -> String {
 pub fn tier_label(owed: &royalty_model::FamilyOwed) -> String {
     match (&owed.status, &owed.priced.tier) {
         (Status::NotBillable, _) => "not billable (transitive)".into(),
+        (Status::NotDue, _) => "not due this month".into(),
         (_, TierChoice::NonProduction) => "non-production (free)".into(),
         (_, TierChoice::NoMatch) => "no tier matched (free)".into(),
         (_, TierChoice::Tier { id, .. }) => id.clone(),
     }
 }
 
-pub fn run(dir: &Path) -> Result<ExitCode> {
-    let (consumer, scan, owed) = work_out(dir)?;
+pub fn run(dir: &Path, month: Month) -> Result<ExitCode> {
+    let (consumer, scan, owed) = work_out(dir, month)?;
     println!(
-        "royalty scan: {} ({}, {})",
+        "royalty scan: {} ({}, {}), {month}",
         dir.display(),
         consumer.entity.as_str(),
         consumer.stage.as_str()

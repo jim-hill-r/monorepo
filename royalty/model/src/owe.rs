@@ -76,6 +76,8 @@ pub enum Status {
     NotBillable,
     /// Under `minimum_payment_cents`: owes nothing this period.
     HeldBack,
+    /// The family's quarterly or yearly period doesn't end this month.
+    NotDue,
 }
 
 /// The result for one family.
@@ -208,7 +210,7 @@ pub fn owe(consumer: &Consumer, uses: &[FamilyUse<'_>]) -> Owed {
     for (family, family_use) in families.iter_mut().zip(&uses) {
         let amount = family.current();
         family.cents = amount;
-        if family.status == Status::NotBillable {
+        if matches!(family.status, Status::NotBillable | Status::NotDue) {
             continue;
         }
         family.status = if amount == 0 {
@@ -261,6 +263,12 @@ fn one_family(consumer: &Consumer, family_use: &FamilyUse<'_>) -> FamilyOwed {
             cents: 0,
         };
         owed.status = Status::NotBillable;
+        return owed;
+    }
+    if !usage.due {
+        owed.priced.cents = 0;
+        owed.priced.lines.clear();
+        owed.status = Status::NotDue;
         return owed;
     }
     if owed.priced.cents > 0 && !consumer.policy.bindings.contains(&binding) {

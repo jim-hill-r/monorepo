@@ -18,6 +18,10 @@ pub struct Usage {
     /// `development`.
     pub production: bool,
     pub dependency: Dependency,
+    /// Whether the family's period ends in the report's month. A family
+    /// with `period = "quarter"` or `"year"` is due only in the last month
+    /// of its period.
+    pub due: bool,
     /// Measured counts. A unit that is absent was not measured.
     pub measured: BTreeMap<Unit, u64>,
 }
@@ -27,6 +31,7 @@ impl Usage {
         Usage {
             production: true,
             dependency,
+            due: true,
             measured: BTreeMap::new(),
         }
     }

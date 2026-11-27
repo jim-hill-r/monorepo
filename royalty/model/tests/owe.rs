@@ -321,3 +321,20 @@ fn royl_004_what_acme_owes_in_one_month() {
     assert_eq!(owed.budget_cents, Some(4500));
     assert!(!owed.over_budget);
 }
+
+#[test]
+fn a_family_whose_period_does_not_end_this_month_is_not_due() {
+    let lib = producer("lib", "voluntary", 3000, "");
+    let mut usage = Usage::production(Dependency::Direct).with(Unit::Flat, 1);
+    usage.due = false;
+    let owed = owe(
+        &consumer(""),
+        &[FamilyUse {
+            family: "lib".into(),
+            producer: &lib,
+            usage,
+        }],
+    );
+    assert_eq!(owed.families[0].status, Status::NotDue);
+    assert_eq!(owed.total_cents, 0);
+}

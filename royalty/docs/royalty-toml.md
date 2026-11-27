@@ -380,6 +380,12 @@ the same, so two tools (or two people) always agree to the cent.
 
 - A report covers one calendar month, in UTC. Seats and other counts are
   taken over the producer's own period that ends in that month.
+- Seats are the distinct author emails (compared ignoring case) of the
+  non-merge commits that touch the consumer's project directory, by author
+  date in the period. Authors whose name or email marks them as a bot
+  (`[bot]`, `dependabot`, `github-actions`, `renovate`) are left out. Emails
+  are read only to tell people apart and are never written out. Outside a
+  git repository, seats are "not measured" unless `[consumer] seats` says.
 - A family with `period = "month"` is due every month. With `quarter` it is
   due in March, June, September and December, and with `year` in December,
   for the whole of its period. A family that is not due in the report's

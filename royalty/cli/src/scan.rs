@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{Context, Result, bail};
-use royalty_model::{Dependency, RoyaltyFile, Unit, Usage, parse};
+use royalty_model::{Dependency, Deployment, RoyaltyFile, Unit, Usage, parse};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -66,6 +66,7 @@ type FamilyKey = (String, Vec<(String, Option<String>)>);
 /// One package of the consumer's graph (workspace members left out).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScannedPackage {
+    pub id: String,
     pub name: String,
     pub version: String,
     pub dependency: Dependency,
@@ -105,8 +106,10 @@ pub struct Scan {
     pub packages: Vec<ScannedPackage>,
 }
 
-/// Runs `cargo metadata` in `dir` and scans the result.
-pub fn scan(dir: &Path) -> Result<Scan> {
+/// Runs `cargo metadata` in `dir` and scans the result. `deployments` are
+/// the consumer's `[[consumer.deployment]]` entries: each manifest's graph
+/// is one production deployment.
+pub fn scan(dir: &Path, deployments: &[Deployment]) -> Result<Scan> {
     let output = Command::new("cargo")
         .args(["metadata", "--format-version", "1", "--locked", "--offline"])
         .current_dir(dir)
@@ -121,10 +124,31 @@ pub fn scan(dir: &Path) -> Result<Scan> {
     }
     let metadata: Metadata =
         serde_json::from_slice(&output.stdout).context("can't read cargo metadata's output")?;
-    Ok(scan_metadata(&metadata))
+    let deployments: Vec<(String, PathBuf)> = deployments
+        .iter()
+        .map(|d| {
+            let path = dir.join(&d.manifest);
+            (d.name.clone(), fs::canonicalize(&path).unwrap_or(path))
+        })
+        .collect();
+    Ok(scan_metadata(&metadata, &deployments))
 }
 
-fn scan_metadata(metadata: &Metadata) -> Scan {
+/// The packages reachable from `start` through normal dependencies.
+fn reachable<'a>(start: &[&'a str], nodes: &HashMap<&'a str, &'a Node>) -> BTreeSet<&'a str> {
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    let mut queue: VecDeque<&str> = start.iter().copied().collect();
+    while let Some(id) = queue.pop_front() {
+        for dep in nodes.get(id).map(|n| n.deps.as_slice()).unwrap_or(&[]) {
+            if dep.is_normal() && seen.insert(dep.pkg.as_str()) {
+                queue.push_back(dep.pkg.as_str());
+            }
+        }
+    }
+    seen
+}
+
+fn scan_metadata(metadata: &Metadata, deployments: &[(String, PathBuf)]) -> Scan {
     let members: BTreeSet<&str> = metadata
         .workspace_members
         .iter()
@@ -148,17 +172,30 @@ fn scan_metadata(metadata: &Metadata) -> Scan {
     }
 
     // Production: reachable from a member through normal edges only.
-    let mut production: BTreeSet<&str> = BTreeSet::new();
-    let mut queue: VecDeque<&str> = members.iter().copied().collect();
-    while let Some(id) = queue.pop_front() {
-        for dep in nodes.get(id).map(|n| n.deps.as_slice()).unwrap_or(&[]) {
-            if dep.is_normal() && production.insert(dep.pkg.as_str()) {
-                queue.push_back(dep.pkg.as_str());
-            }
-        }
-    }
+    let member_list: Vec<&str> = members.iter().copied().collect();
+    let production = reachable(&member_list, &nodes);
 
     let mut scan = Scan::default();
+
+    // Each deployment's graph: the packages its manifest's member reaches.
+    let mut deployment_graphs: Vec<BTreeSet<&str>> = Vec::new();
+    for (name, manifest) in deployments {
+        let member = metadata.packages.iter().find(|p| {
+            members.contains(p.id.as_str())
+                && fs::canonicalize(&p.manifest_path).unwrap_or(p.manifest_path.clone())
+                    == *manifest
+        });
+        match member {
+            Some(member) => deployment_graphs.push(reachable(&[member.id.as_str()], &nodes)),
+            None => scan.notices.push(Notice {
+                package: name.clone(),
+                message: format!(
+                    "deployment manifest {} is not a member of this workspace; not counted",
+                    manifest.display()
+                ),
+            }),
+        }
+    }
     // family key (family + payees) -> packages and their files.
     let mut grouped: BTreeMap<FamilyKey, Vec<(ScannedPackage, RoyaltyFile)>> = BTreeMap::new();
     let mut packages: Vec<&MetaPackage> = metadata
@@ -175,6 +212,7 @@ fn scan_metadata(metadata: &Metadata) -> Scan {
             .map(Path::to_path_buf)
             .unwrap_or_default();
         let scanned = ScannedPackage {
+            id: package.id.clone(),
             name: package.name.clone(),
             version: package.version.clone(),
             dependency: if direct.contains(package.id.as_str()) {
@@ -256,11 +294,23 @@ fn scan_metadata(metadata: &Metadata) -> Scan {
         let mut usage = Usage {
             production: is_production,
             dependency,
+            due: true,
             measured: BTreeMap::new(),
         };
         // Counted from the graph: the family is used, in this one project.
         usage.measured.insert(Unit::Flat, 1);
         usage.measured.insert(Unit::Project, 1);
+        // Deployments: each listed deployment whose graph holds the family,
+        // or the project itself when none is listed.
+        let deployed = if deployments.is_empty() {
+            u64::from(is_production)
+        } else {
+            deployment_graphs
+                .iter()
+                .filter(|graph| members.iter().any(|(p, _)| graph.contains(p.id.as_str())))
+                .count() as u64
+        };
+        usage.measured.insert(Unit::Deployment, deployed);
 
         let mut labels: Vec<String> = members
             .iter()

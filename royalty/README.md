@@ -24,8 +24,8 @@ Three promises shape the design:
 Phase 1 is being built. The `royalty_model` crate (`model/`) reads and
 validates a `royalty.toml` and works out what a consumer owes; the
 `royalty` command (`cli/`) checks a file and scans a consumer's Cargo
-dependencies. Counting seats and deployments and writing a report come
-next. The full
+dependencies, counting seats from git and deployments from the consumer's
+manifests. Writing a report comes next. The full
 `royalty.toml` format is in the [royalty.toml reference](docs/royalty-toml.md).
 The design, the phases and Jim's answers to its decisions are in the
 [royalty plan](docs/plans/2026-11-royalty-plan.md). The work items are in
@@ -52,7 +52,7 @@ It exits 0 when there are only warnings, 1 on any error (or any warning
 with `--strict`), and 2 when the file can't be read. The codes are listed
 in [What `royalty check` reports](docs/royalty-toml.md#what-royalty-check-reports).
 
-### `royalty scan [path]`
+### `royalty scan [path] [--period YYYY-MM]`
 
 Scans a consumer's Cargo project (the default is the current directory):
 it runs `cargo metadata --locked --offline`, so it needs a `Cargo.lock` and
@@ -62,8 +62,8 @@ each dependency's manifest, groups packages into families, and prints what
 the consumer's own `royalty.toml` makes them owe this period:
 
 ```text
-$ royalty scan
-royalty scan: . (organization, production)
+$ royalty scan --period 2026-11
+royalty scan: . (organization, production), 2026-11
   chartlib 0.4.2 (direct): team, $25.00 (priced at $70.00), set by the consumer's total budget
   testkit 0.9.0 (transitive): non-production (free), $0.00
   tinycolor 1.0.3 (transitive): not billable (transitive), $0.00
@@ -73,8 +73,12 @@ royalty scan: . (organization, production)
 total: $45.00 of a $45.00 budget
 ```
 
-A unit the scan can't count yet is printed as "not measured" and adds
-nothing; it is never guessed.
+`--period` picks the month (the default is the current month, UTC). Seats
+are the people who committed to the project's directory in the period,
+from `git log`, bots left out; only the count is ever printed. Deployments
+are the `[[consumer.deployment]]` manifests whose graph holds the family, or
+one for the project when none is listed. A unit the scan can't count is
+printed as "not measured" and adds nothing; it is never guessed.
 
 ## The file today
 
