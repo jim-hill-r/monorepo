@@ -20,7 +20,12 @@ cat >"$work/bin/tofu" <<EOF
   echo "tofu \$*"
   echo "  AUTH0_DOMAIN=\${AUTH0_DOMAIN:-} AUTH0_CLIENT_ID=\${AUTH0_CLIENT_ID:-} CLOUDFLARE_API_TOKEN=\${CLOUDFLARE_API_TOKEN:-} GITHUB_TOKEN=\${GITHUB_TOKEN:-}"
   echo "  TF_VAR_tofu_state_passphrase=\${TF_VAR_tofu_state_passphrase:-} TF_HTTP_PASSWORD=\${TF_HTTP_PASSWORD:-}"
+  echo "  TF_VAR_tofu_state_passphrase_old=\${TF_VAR_tofu_state_passphrase_old-unset} TF_ENCRYPTION=\${TF_ENCRYPTION-unset}"
 } >>"$work/tofu.log"
+case "\$1 \${2:-}" in
+  "state pull") echo '{"plain":"state"}' ;;
+  "state push") echo "  pushed: \$(cat)" >>"$work/tofu.log" ;;
+esac
 case "\$1" in
   plan)
     for a in "\$@"; do
@@ -36,6 +41,8 @@ cat >"$work/bin/cargo" <<EOF
 # cargo run --quiet -- <subcommand> ...
 shift 3
 case "\$1" in
+  encryption)
+    if [ "\$2" -gt 1 ]; then echo "{\"state\":{\"method\":\"method.aes_gcm.gen_\$2\"}}"; else echo '{"state":{"method":"method.aes_gcm.state"}}'; fi ;;
   backend-config)
     echo "-backend-config=address=\$3/states/\$2" ;;
   guard)
@@ -46,7 +53,13 @@ case "\$1" in
     exit "\${STUB_GUARD_EXIT:-0}" ;;
 esac
 EOF
-chmod +x "$work/bin/tofu" "$work/bin/cargo"
+# curl: the raw state from the Worker, as STUB_STATE (empty: no state yet).
+cat >"$work/bin/curl" <<EOF
+#!/usr/bin/env bash
+{ echo "curl \$*"; echo "  config: \$(cat)"; } >>"$work/curl.log"
+printf '%s' "\${STUB_STATE:-}"
+EOF
+chmod +x "$work/bin/tofu" "$work/bin/cargo" "$work/bin/curl"
 export PATH="$work/bin:$PATH"
 
 base_env() {
@@ -109,6 +122,43 @@ code=0
 base_env STUB_PLAN_EXIT=2 bash "$script" drift auth0 >/dev/null 2>&1 || code=$?
 [ "$code" = 2 ] && grep -q -- "-refresh-only -lock=false" "$work/tofu.log" && ok "drift exits 2 on drift" || fail "drift: code $code"
 base_env STUB_PLAN_EXIT=0 bash "$script" drift auth0 >/dev/null 2>&1 && ok "no drift passes" || fail "no drift"
+
+# Passphrase generations: 1 sets no TF_ENCRYPTION; later ones pass the
+# generation's block and the old passphrase.
+: >"$work/tofu.log"
+base_env bash "$script" plan auth0 read "$work/gen1" >/dev/null 2>&1 || fail "generation 1 plan"
+grep -q "TF_VAR_tofu_state_passphrase_old=unset TF_ENCRYPTION=unset" "$work/tofu.log" &&
+  ok "generation 1 uses the committed encryption block" || fail "generation 1: $(cat "$work/tofu.log")"
+: >"$work/tofu.log"
+base_env TOFU_STATE_KEY_GEN=3 TOFU_STATE_PASSPHRASE_OLD=old-pass bash "$script" plan auth0 read "$work/gen3" >/dev/null 2>&1 || fail "generation 3 plan"
+grep -q 'TF_VAR_tofu_state_passphrase_old=old-pass TF_ENCRYPTION={"state":{"method":"method.aes_gcm.gen_3"}}' "$work/tofu.log" &&
+  ok "a later generation passes its block and the old passphrase" || fail "generation 3: $(cat "$work/tofu.log")"
+bad_gen=no
+for gen in 0 x 1.5 -2; do
+  base_env TOFU_STATE_KEY_GEN=$gen bash "$script" plan auth0 read "$work/badgen" >/dev/null 2>&1 && bad_gen=$gen
+done
+[ "$bad_gen" = no ] && ok "bad generations are refused" || fail "generation '$bad_gen' accepted"
+
+# rekey: skips a stack with no state or already on the current key, and
+# otherwise pipes state pull into state push.
+: >"$work/tofu.log"
+: >"$work/curl.log"
+code=0
+env -i PATH="$PATH" TOFU_STATE_ORIGIN=https://state.example.com bash "$script" rekey auth0 >/dev/null 2>&1 || code=$?
+[ "$code" = 3 ] && ok "rekey names what is missing" || fail "rekey without secrets: code $code"
+base_env TOFU_STATE_KEY_GEN=2 bash "$script" rekey auth0 >/dev/null 2>&1 || fail "rekey with no state"
+grep -q "^curl .*https://state.example.com/states/auth0" "$work/curl.log" && grep -q 'config: user = "tofu:state-pw"' "$work/curl.log" &&
+  ok "rekey reads the raw state with the password on stdin" || fail "rekey curl: $(cat "$work/curl.log")"
+! grep "^curl " "$work/curl.log" | grep -q state-pw && ok "the password isn't a curl argument" || fail "password on the command line"
+! grep -q "tofu state" "$work/tofu.log" && ok "no state, nothing to rekey" || fail "rekeyed an empty state"
+base_env TOFU_STATE_KEY_GEN=2 STUB_STATE='{"meta":{"key_provider.pbkdf2.gen_2":"x"}}' bash "$script" rekey auth0 >/dev/null 2>&1 || fail "rekey current"
+! grep -q "tofu state" "$work/tofu.log" && ok "state on the current key is left alone" || fail "rekeyed current state"
+base_env TOFU_STATE_KEY_GEN=2 TOFU_STATE_PASSPHRASE_OLD=old-pass STUB_STATE='{"meta":{"key_provider.pbkdf2.state":"x"}}' \
+  bash "$script" rekey auth0 >/dev/null 2>&1 || fail "rekey old"
+grep -q "tofu state pull" "$work/tofu.log" && grep -q 'pushed: {"plain":"state"}' "$work/tofu.log" &&
+  grep -q "TF_VAR_tofu_state_passphrase_old=old-pass" "$work/tofu.log" &&
+  ok "state on the old key is pulled and pushed back" || fail "rekey: $(cat "$work/tofu.log")"
+grep -q "Rekey: auth0: re-encrypted with key_provider.pbkdf2.gen_2" "$work/summary.md" && ok "rekey writes a summary" || fail "rekey summary"
 
 # github: the read App's token for plans, the infra App's for credential
 # applies, and no everyday apply tier (decision 0010).

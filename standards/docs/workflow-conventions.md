@@ -73,10 +73,10 @@ and stops untrusted values being run as shell code.
 
 ## Testing workflows
 
-Every workflow has Rust tests in `monorepo/workflow_tests/tests/` (see its
+Every workflow has Rust tests in `jimhillr/workflow_tests/tests/` (see its
 README for the list). They check the file parses, its triggers and
 permissions, and the behaviour that matters (for example that pull requests
-never deploy). Run them with `mise run test` in `monorepo/` before committing
+never deploy). Run them with `mise run test` in `jimhillr/` before committing
 workflow changes.
 
 ## Tools

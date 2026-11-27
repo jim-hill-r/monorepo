@@ -10,6 +10,8 @@
 #   tofu.sh apply   STACK ROLE DIR     apply exactly DIR/plan.tfplan after
 #                                      checking DIR/plan.sha256
 #   tofu.sh drift   STACK              refresh-only plan; exit 2 on drift
+#   tofu.sh rekey   STACK              re-encrypt STACK's state with the
+#                                      current passphrase, after a rotation
 #
 # ROLE picks the vendor credentials: `read` (PR plans, plans on main and
 # drift), `apply` (the infra environment) or `credentials` (the
@@ -20,6 +22,12 @@
 # Always needs TOFU_STATE_ORIGIN, TF_HTTP_PASSWORD (the read password for PR
 # plans and drift, the write password otherwise) and TOFU_STATE_PASSPHRASE.
 # A PR plan (TOFU_LOCK=false) reads state without locking.
+#
+# The passphrase has generations (issues/iac-rotate-state-passphrase.md).
+# TOFU_STATE_KEY_GEN (default 1) is the current one; from 2 on, the state is
+# encrypted under that generation's key name and TOFU_STATE_PASSPHRASE_OLD,
+# the previous passphrase, is the fallback, so state written before a
+# rotation still reads until `rekey` re-encrypts it.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")/.." && pwd)
@@ -27,7 +35,7 @@ die() { echo "tofu.sh: $*" >&2; exit 1; }
 
 mode=${1:-}
 stack=${2:-}
-[ -n "$mode" ] && [ -n "$stack" ] || die "usage: tofu.sh ready|plan|apply|drift STACK [ROLE] [DIR]"
+[ -n "$mode" ] && [ -n "$stack" ] || die "usage: tofu.sh ready|plan|apply|drift|rekey STACK [ROLE] [DIR]"
 [[ "$stack" =~ ^[a-z0-9_-]+$ ]] || die "bad stack name '$stack'"
 [ -d "$here/out/$stack" ] || die "no stack $stack in infra/out/"
 
@@ -98,7 +106,22 @@ credentials() {
       export GITHUB_TOKEN=${!t}
       ;;
   esac
+  passphrase
+}
+
+# The state passphrase, and from generation 2 the encryption block with the
+# previous one as the fallback (OpenTofu merges TF_ENCRYPTION over the
+# committed generation 1 block).
+passphrase() {
+  local gen=${TOFU_STATE_KEY_GEN:-1}
+  [[ "$gen" =~ ^[1-9][0-9]{0,5}$ ]] || die "TOFU_STATE_KEY_GEN must be a whole number from 1, got '$gen'"
   export TF_VAR_tofu_state_passphrase=$TOFU_STATE_PASSPHRASE
+  unset TF_ENCRYPTION TF_VAR_tofu_state_passphrase_old
+  if [ "$gen" -gt 1 ]; then
+    TF_ENCRYPTION=$(infra encryption "$gen")
+    export TF_ENCRYPTION
+    export TF_VAR_tofu_state_passphrase_old=${TOFU_STATE_PASSPHRASE_OLD:-}
+  fi
   export TF_IN_AUTOMATION=1 TF_INPUT=0
 }
 
@@ -184,10 +207,44 @@ drift() {
   esac
 }
 
+# Re-encrypt a stack's state under the current generation's key. The key
+# names in the state's `meta` are plain text, so a stack already on the
+# current key, or with no state yet, is left alone: each push is a new
+# version in D1, and the Worker keeps only the last 10.
+rekey() {
+  local key raw
+  key="key_provider.pbkdf2.$(jq -r '.state.method' <<<"${TF_ENCRYPTION:-$(infra encryption 1)}" | sed 's/^method\.aes_gcm\.//')"
+  raw=$(curl -sS --fail --max-time 30 -K- "$TOFU_STATE_ORIGIN/states/$1" <<<"user = \"tofu:$TF_HTTP_PASSWORD\"") ||
+    die "can't read the $1 state"
+  if [ -z "$raw" ]; then
+    echo "### Rekey: $1: no state yet" | summary
+    return 0
+  fi
+  if jq -e --arg key "$key" '.meta | has($key)' <<<"$raw" >/dev/null; then
+    echo "### Rekey: $1: already on $key" | summary
+    return 0
+  fi
+  init "$1"
+  # The decrypted state goes through the pipe only, never to a file.
+  (cd "$here/out/$1" && tofu state pull | tofu state push -no-color -) >/dev/null ||
+    die "rekey failed for $1"
+  echo "### Rekey: $1: re-encrypted with $key" | summary
+}
+
+# The state secrets alone: rekey touches no vendor.
+state_ready() {
+  local missing="" name
+  for name in TOFU_STATE_ORIGIN TF_HTTP_PASSWORD TOFU_STATE_PASSPHRASE; do
+    [ -n "${!name:-}" ] || missing="$missing $name"
+  done
+  [ -z "$missing" ] || { echo "tofu.sh: rekey $1 is not set up yet; missing:$missing" >&2; return 3; }
+}
+
 case "$mode" in
   ready) ready "$stack" "${3:?role}" ;;
   plan) ready "$stack" "${3:?role}" >&2 || exit 3; credentials "$stack" "$3"; plan "$stack" "$3" "${4:?out dir}" ;;
   apply) ready "$stack" "${3:?role}" >&2 || exit 3; credentials "$stack" "$3"; apply "$stack" "$3" "${4:?plan dir}" ;;
   drift) ready "$stack" read >&2 || exit 3; credentials "$stack" read; drift "$stack" ;;
+  rekey) state_ready "$stack" || exit 3; passphrase; rekey "$stack" ;;
   *) die "unknown mode '$mode'" ;;
 esac

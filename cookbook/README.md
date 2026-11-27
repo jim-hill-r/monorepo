@@ -1,5 +1,7 @@
 # Cookbook
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/cookbook.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A Dioxus workspace for building web applications with Rust.
 
 ## Development

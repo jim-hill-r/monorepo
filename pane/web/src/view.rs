@@ -503,6 +503,7 @@ mod tests {
             section: None,
             epic: None,
             tags: vec![],
+            added: None,
         }
     }
 
@@ -603,6 +604,7 @@ mod tests {
             section: section.map(str::to_owned),
             epic: None,
             tags: tags.iter().map(|t| (*t).to_owned()).collect(),
+            added: None,
         }
     }
 

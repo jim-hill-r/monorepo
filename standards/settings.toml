@@ -207,18 +207,34 @@ every = "90d"
 # (standards/docs/free-tiers.md#billing-checks).
 
 [[setting]]
+id = "github-reviewer-account"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Collaborators and teams, and > Environments > reviewer"
+expect = "jimhillr-reviewer has the Write role (not Maintain or Admin) and two-factor sign-in on; the reviewer environment deploys from main only, has no other secrets than REVIEWER_TOKEN, and the Default ruleset still asks for one approval (standards/docs/runbooks/jimhillr-reviewer-account.md)."
+why = "jimhillr-reviewer's approvals merge agent PRs without Jim; more access, or the token usable from a PR branch, would let a PR approve itself (decision 0014)."
+every = "90d"
+
+[[setting]]
+id = "rotate-reviewer-token"
+vendor = "GitHub"
+where = "github.com/settings/personal-access-tokens (signed in as jimhillr-reviewer) > jimhillr-reviewer-approve"
+expect = "The fine-grained token jimhillr-reviewer-approve was regenerated within the last 365 days, is limited to jimhillr/monorepo with Pull requests read and write and Contents, Checks and Commit statuses read only, and the reviewer environment secret REVIEWER_TOKEN has the new value."
+why = "All Auto Review approves with it; when it expires, every agent PR waits for Jim again."
+every = "365d"
+
+[[setting]]
 id = "rotate-github-billing-read-token"
 vendor = "GitHub"
-where = "github.com/settings/personal-access-tokens > monorepo-billing-read"
-expect = "The fine-grained token monorepo-billing-read was regenerated within the last 365 days, has only the Plan account permission (read) and public repositories read-only, and the infra environment secret GITHUB_BILLING_READ_TOKEN has the new value (standards/docs/runbooks/billing-read-credentials.md)."
+where = "github.com/settings/personal-access-tokens > jimhillr-billing-read"
+expect = "The fine-grained token jimhillr-billing-read was regenerated within the last 365 days, has only the Plan account permission (read) and public repositories read-only, and the infra environment secret GITHUB_BILLING_READ_TOKEN has the new value (standards/docs/runbooks/billing-read-credentials.md)."
 why = "The weekly Billing check reads GitHub billing usage with it; it expires after a year, and the check then shows GitHub as failed."
 every = "365d"
 
 [[setting]]
 id = "rotate-posthog-billing-read-key"
 vendor = "PostHog"
-where = "PostHog > Account settings > Personal API keys > monorepo-billing-read"
-expect = "Once PostHog exists: the key monorepo-billing-read has only billing read, was rolled within the last 180 days, and the infra environment secret POSTHOG_BILLING_READ_KEY has the new value (standards/docs/runbooks/posthog-sign-up.md)."
+where = "PostHog > Account settings > Personal API keys > jimhillr-billing-read"
+expect = "Once PostHog exists: the key jimhillr-billing-read has only billing read, was rolled within the last 180 days, and the infra environment secret POSTHOG_BILLING_READ_KEY has the new value (standards/docs/runbooks/posthog-sign-up.md)."
 why = "The weekly Billing check reads PostHog billing with it; billing read covers the whole organization, so it is rolled like the other personal key."
 every = "180d"
 

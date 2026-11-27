@@ -388,6 +388,23 @@
     "budget": 0
   },
   {
+    "name": "zizmor",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "GitHub Actions workflow audit (SEC-005), as warnings: in the hooks and PR CI (Workflow audit) where a workflow changed, and nightly over all of them. Offline. Pinned in standards/scripts/workflows-check.sh; ignores in .github/zizmor.yml.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/security.md",
+      ".github/zizmor.yml"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "cargo-llvm-cov",
     "ring": "Adopt",
     "quadrant": "Tools",
@@ -564,7 +581,7 @@
     "description": "Approved vendor. Hosts the repo and runs all CI, CD, nightly runs and maintenance workflows on standard runners, which are free on this public repo.",
     "exemplars": [
       ".github/workflows",
-      "monorepo/workflow_tests",
+      "jimhillr/workflow_tests",
       "infra/src/stacks/github.rs"
     ],
     "sources": [

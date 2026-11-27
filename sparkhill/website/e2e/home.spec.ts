@@ -125,3 +125,27 @@ test.describe('nav on a phone', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('a page that does not exist', () => {
+  for (const path of ['/no-such-page', '/en-US/no-such-page']) {
+    test(`${path} answers 404 with a way back home`, async ({ page }) => {
+      const problems: string[] = [];
+      page.on('pageerror', (err) => problems.push(`page error: ${err.message}`));
+      page.on('response', (res) => {
+        // The page itself is meant to be a 404; anything it loads isn't.
+        if (res.url().startsWith('http://localhost') && res.status() >= 400 && !res.url().endsWith(path)) {
+          problems.push(`${res.status()} ${res.url()}`);
+        }
+      });
+      const response = await page.goto(path);
+      expect(response?.status()).toBe(404);
+      await page.waitForLoadState('networkidle');
+      await expect(page).toHaveTitle('Page not found');
+      await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+      await page.getByRole('link', { name: 'Go to the home page' }).click();
+      await expect(page).toHaveURL(/\/en-US\/?$/);
+      await expect(page.getByText('Everyone deserves to read')).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+  }
+});

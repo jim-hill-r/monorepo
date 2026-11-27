@@ -9,19 +9,19 @@ design, the file format, the phases, the costs and the open questions are in
 [docs/plans/2026-11-royalty-plan.md](../docs/plans/2026-11-royalty-plan.md).
 Work the phases in order; within a phase, by `order`.
 
-The plan is **proposed**, not approved. An issue with a "Blocked on" line
-waits until Jim has answered the decisions it names in the plan's
-"Decisions for Jim". Don't start it before then.
+The plan is **approved** (Jim, 2026-11-27, every recommended option in its
+"Decisions for Jim"). An issue with a "Blocked on" or "Waits on" line
+waits for what it names; every other issue is workable in phase order.
 
 ### Phase 0: agree the design
 
-Needs Jim's answers. Both issues are docs PRs.
+Jim has answered. Both issues are docs PRs.
 
 ### Phase 1: MVP scanner and report
 
 A Rust CLI that scans a consumer's Cargo dependency graph for
 `royalty.toml` files, works out what is owed, and writes a report for
-manual payment. Needs Phase 0 and decision 11 (go ahead). The first issue
+manual payment. Needs Phase 0; Jim said go ahead (decision 11). The first issue
 turns the project from a docs project into a Rust one. Each issue is one
 PR.
 

@@ -32,7 +32,7 @@ Inventory of every project with a `mise.toml`, 2026-11-26.
 | HTTP API | luggage (on hold, not deployed) | HTTP smoke test of the OpenAPI routes against `cargo run` | Same test against the deployed URL | Workers Logs, or `tracing` output to the `telemetry` Worker |
 | Library | auth_sdk, cahokia/ui, cookbook/core, profiles/content_provider, luggage crates | Unit tests plus the consumers' CI (`affected-by`) | Nothing to release | Through the apps that use it |
 | Content and docs | cookbook/content and data_md, athenaeum, bogan, psy_ents, royalty, bear_down docs | Markdown and link checks; cookbook content is checked by building and smoke testing the site | Nothing to release | None |
-| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, monorepo/workflow_tests | Existing CI until removed | None | None |
+| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, jimhillr/workflow_tests | Existing CI until removed | None | None |
 
 Cloudflare adds the numbers (errors, page performance, deploys) next to those
 recordings.
@@ -150,7 +150,10 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
   writes screenshots and the video next to the UAT report.
 - Check whether controlled_chaos builds for `wasm32-unknown-unknown`. If it
   does, deploy the web build as a Pages preview per PR and to production on
-  main, so the PR comment has a playable link.
+  main, so the PR comment has a playable link. Done for production
+  (2026-11-27): it builds, and `bevy-game.toml`'s `deploy` task publishes it
+  to `jimhillr-controlled-chaos.pages.dev` from main. The per-PR preview is
+  part of the phase 2 preview issue, which covers `bevy-game.toml` too.
 - Native builds go to a GitHub Release, as for CLIs.
 
 ## Phase 3d: native apps and the API
