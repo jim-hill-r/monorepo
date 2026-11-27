@@ -353,10 +353,15 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
     if let Some(max_price) = prefs.max_price {
         match details.price {
             Some(price) if price <= max_price => {}
-            Some(price) => {
-                unmet_criteria.push(format!("Price: ${} (max is ${})", price, max_price))
-            }
-            None => unmet_criteria.push(format!("Price: unknown (max is ${})", max_price)),
+            Some(price) => unmet_criteria.push(format!(
+                "Price: {} (max is {})",
+                format_dollars(price),
+                format_dollars(max_price)
+            )),
+            None => unmet_criteria.push(format!(
+                "Price: unknown (max is {})",
+                format_dollars(max_price)
+            )),
         }
     }
 
@@ -396,6 +401,20 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
     }
 }
 
+/// Format a whole-dollar amount with thousands separators, such as `$750,000`.
+fn format_dollars(amount: u64) -> String {
+    let digits = amount.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3 + 1);
+    out.push('$');
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
+}
+
 /// Format property details for display
 pub fn format_property(evaluation: &PropertyEvaluation) -> String {
     let details = &evaluation.details;
@@ -405,7 +424,7 @@ pub fn format_property(evaluation: &PropertyEvaluation) -> String {
         lines.push(format!("Type:       {}", home_type));
     }
     if let Some(price) = details.price {
-        lines.push(format!("Price:      ${}", price));
+        lines.push(format!("Price:      {}", format_dollars(price)));
     }
     if let Some(beds) = details.bedrooms {
         lines.push(format!("Bedrooms:   {}", beds));
@@ -629,7 +648,7 @@ mod tests {
                 "criteria_checked": 2,
                 "criteria_met": 1,
                 "meets_preferences": false,
-                "unmet_criteria": ["Price: $900000 (max is $800000)"],
+                "unmet_criteria": ["Price: $900,000 (max is $800,000)"],
             })
         );
     }
@@ -673,7 +692,39 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         assert!(!eval.meets_preferences);
         assert_eq!(eval.unmet_criteria.len(), 1);
-        assert!(eval.unmet_criteria[0].contains("Price"));
+        assert_eq!(eval.unmet_criteria[0], "Price: $900,000 (max is $800,000)");
+    }
+
+    #[test]
+    fn test_evaluate_unknown_price_formats_max() {
+        let details = make_property(None, None, None, None);
+        let prefs = HomePreferences {
+            max_price: Some(1_250_000),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert_eq!(
+            eval.unmet_criteria,
+            vec!["Price: unknown (max is $1,250,000)".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_format_property_price_has_separators() {
+        let details = make_property(Some(750_000), None, None, None);
+        let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
+        assert!(output.contains("Price:      $750,000"), "{output}");
+    }
+
+    #[test]
+    fn test_format_dollars() {
+        assert_eq!(format_dollars(0), "$0");
+        assert_eq!(format_dollars(999), "$999");
+        assert_eq!(format_dollars(1_000), "$1,000");
+        assert_eq!(format_dollars(12_345), "$12,345");
+        assert_eq!(format_dollars(750_000), "$750,000");
+        assert_eq!(format_dollars(1_000_000), "$1,000,000");
+        assert_eq!(format_dollars(u64::MAX), "$18,446,744,073,709,551,615");
     }
 
     #[test]
@@ -947,7 +998,7 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         let output = format_property(&eval);
         assert!(output.contains("✓"));
-        assert!(output.contains("750000"));
+        assert!(output.contains("$750,000"));
         assert!(output.contains("3"));
     }
 

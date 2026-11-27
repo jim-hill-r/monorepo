@@ -9,15 +9,16 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
+/// A binary tree node, filled level by level from a list of values.
 #[derive(Debug, Clone)]
-struct Tree<T: Clone + Debug> {
-    value: T,
-    left: Option<Box<Tree<T>>>,
-    right: Option<Box<Tree<T>>>,
+pub struct Tree<T: Clone + Debug> {
+    pub value: T,
+    pub left: Option<Box<Tree<T>>>,
+    pub right: Option<Box<Tree<T>>>,
 }
 
 impl<T: Clone + Debug> Tree<T> {
-    fn new(value: T) -> Self {
+    pub fn new(value: T) -> Self {
         Self {
             value,
             left: None,
@@ -25,45 +26,42 @@ impl<T: Clone + Debug> Tree<T> {
         }
     }
 
-    fn from_vec(values: &Vec<T>) -> Option<Tree<T>> {
-        if values.len() < 1 {
-            return None;
+    pub fn from_vec(values: &[T]) -> Option<Tree<T>> {
+        let (first, rest) = values.split_first()?;
+        let mut root: Tree<T> = Self::new(first.clone());
+        for value in rest {
+            root.insert(value.clone());
         }
-
-        let mut root: Tree<T> = Self::new(values[0].clone());
-        for i in 1..values.len() {
-            root.insert(values[i].clone());
-        }
-        return Some(root);
+        Some(root)
     }
 
     // Breadth first traverse
-    fn to_vec(&mut self) -> Vec<T> {
+    pub fn to_vec(&self) -> Vec<T> {
         let mut ret: Vec<T> = vec![];
-        let mut queue: VecDeque<&mut Tree<T>> = VecDeque::new();
+        let mut queue: VecDeque<&Tree<T>> = VecDeque::new();
         queue.push_front(self);
 
-        while queue.len() > 0 {
-            let current = queue.pop_back().unwrap();
+        while let Some(current) = queue.pop_back() {
             ret.push(current.value.clone());
-            let Tree { left, right, .. } = current;
-            if let Some(node) = left {
+            if let Some(node) = &current.left {
                 queue.push_front(node);
             }
-            if let Some(node) = right {
+            if let Some(node) = &current.right {
                 queue.push_front(node);
             }
         }
 
-        return ret;
+        ret
     }
 
-    fn insert(&mut self, value: T) {
+    /// Puts the value in the first free child slot, level by level.
+    pub fn insert(&mut self, value: T) {
         let mut queue: VecDeque<&mut Tree<T>> = VecDeque::new();
         queue.push_front(self);
 
-        loop {
-            let current = queue.pop_back().unwrap();
+        // The queue only empties after a free slot is found, because every
+        // tree has one.
+        while let Some(current) = queue.pop_back() {
             let Tree { left, right, .. } = current;
 
             match left {
@@ -90,15 +88,14 @@ impl<T: Clone + Debug> Tree<T> {
 }
 
 // Time: O(n) Space: O(n)
-fn invert_binary_tree_breadth_first_search<T: Clone + Debug>(
+pub fn invert_binary_tree_breadth_first_search<T: Clone + Debug>(
     node: Option<Box<Tree<T>>>,
 ) -> Option<Box<Tree<T>>> {
     let mut tree = node?;
     let mut queue: VecDeque<&mut Tree<T>> = VecDeque::new();
     queue.push_front(&mut tree);
 
-    while queue.len() > 0 {
-        let current = queue.pop_back().unwrap();
+    while let Some(current) = queue.pop_back() {
         let Tree { left, right, .. } = current;
         std::mem::swap(left, right);
 
@@ -110,11 +107,11 @@ fn invert_binary_tree_breadth_first_search<T: Clone + Debug>(
         }
     }
 
-    return Some(tree);
+    Some(tree)
 }
 
 // Time: O(n) Space: O(n)
-fn invert_binary_tree_depth_first_search<T: Clone + Debug>(
+pub fn invert_binary_tree_depth_first_search<T: Clone + Debug>(
     node: Option<Box<Tree<T>>>,
 ) -> Option<Box<Tree<T>>> {
     let tree = node?;
@@ -122,19 +119,18 @@ fn invert_binary_tree_depth_first_search<T: Clone + Debug>(
     new_tree.left = invert_binary_tree_depth_first_search(tree.right);
     new_tree.right = invert_binary_tree_depth_first_search(tree.left);
 
-    return Some(Box::new(new_tree));
+    Some(Box::new(new_tree))
 }
 
-// Time: O() Space: O()
-fn invert_binary_tree_depth_first_search_stack<T: Clone + Debug>(
+// Time: O(n) Space: O(n)
+pub fn invert_binary_tree_depth_first_search_stack<T: Clone + Debug>(
     node: Option<Box<Tree<T>>>,
 ) -> Option<Box<Tree<T>>> {
     let mut tree = node?;
     let mut stack: Vec<&mut Tree<T>> = Vec::new();
     stack.push(&mut tree);
 
-    while stack.len() > 0 {
-        let current = stack.pop().unwrap();
+    while let Some(current) = stack.pop() {
         let Tree { left, right, .. } = current;
         std::mem::swap(left, right);
 
@@ -146,68 +142,64 @@ fn invert_binary_tree_depth_first_search_stack<T: Clone + Debug>(
         }
     }
 
-    return Some(tree);
+    Some(tree)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    type Invert = fn(Option<Box<Tree<i64>>>) -> Option<Box<Tree<i64>>>;
+
+    const INVERTS: [Invert; 3] = [
+        invert_binary_tree_breadth_first_search,
+        invert_binary_tree_depth_first_search,
+        invert_binary_tree_depth_first_search_stack,
+    ];
+
+    fn check(root: &[i64], expected: &[i64]) {
+        let tree = Tree::from_vec(root).map(Box::new);
+        for invert in INVERTS {
+            let inverted = invert(tree.clone()).map(|t| t.to_vec());
+            assert_eq!(inverted.as_deref(), Some(expected));
+        }
+    }
+
     #[test]
     fn example_1() {
-        let root = vec![1, 2, 3, 4, 5, 6, 7];
-        let expected = vec![1, 3, 2, 7, 6, 5, 4];
-        let tree = Tree::from_vec(&root).unwrap();
-        assert_eq!(
-            invert_binary_tree_breadth_first_search(Some(Box::new(tree.clone())))
-                .unwrap()
-                .to_vec(),
-            expected
-        );
-        assert_eq!(
-            invert_binary_tree_depth_first_search(Some(Box::new(tree.clone())))
-                .unwrap()
-                .to_vec(),
-            expected
-        );
-        assert_eq!(
-            invert_binary_tree_depth_first_search_stack(Some(Box::new(tree.clone())))
-                .unwrap()
-                .to_vec(),
-            expected
-        );
+        check(&[1, 2, 3, 4, 5, 6, 7], &[1, 3, 2, 7, 6, 5, 4]);
     }
 
     #[test]
     fn example_2() {
-        let root = vec![3, 2, 1];
-        let expected = vec![3, 1, 2];
-        let tree = Tree::from_vec(&root).unwrap();
-        assert_eq!(
-            invert_binary_tree_breadth_first_search(Some(Box::new(tree.clone())))
-                .unwrap()
-                .to_vec(),
-            expected
-        );
-        assert_eq!(
-            invert_binary_tree_depth_first_search(Some(Box::new(tree.clone())))
-                .unwrap()
-                .to_vec(),
-            expected
-        );
-        assert_eq!(
-            invert_binary_tree_depth_first_search_stack(Some(Box::new(tree.clone())))
-                .unwrap()
-                .to_vec(),
-            expected
-        );
+        check(&[3, 2, 1], &[3, 1, 2]);
     }
 
     #[test]
     fn example_3() {
-        let root: Vec<i64> = vec![];
-        //let expected = vec![];
-        let tree = Tree::from_vec(&root);
-        assert!(tree.is_none());
+        assert!(Tree::<i64>::from_vec(&[]).is_none());
+        for invert in INVERTS {
+            assert!(invert(None).is_none());
+        }
+    }
+
+    #[test]
+    fn single_node() {
+        check(&[9], &[9]);
+    }
+
+    #[test]
+    fn incomplete_last_level() {
+        // 1 has children 2 and 3; 2 has only a left child, 4.
+        check(&[1, 2, 3, 4], &[1, 3, 2, 4]);
+    }
+
+    #[test]
+    fn from_vec_round_trips() {
+        let values = [1, 2, 3, 4, 5];
+        assert_eq!(
+            Tree::from_vec(&values).map(|t| t.to_vec()),
+            Some(values.to_vec())
+        );
     }
 }

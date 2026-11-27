@@ -14,71 +14,71 @@
 
 // Hint 4: Because the array is sorted, all elements to the left of mid (including 3) are guaranteed to be smaller than the target. Therefore, we can safely eliminate that half of the array from consideration, narrowing the search to the right half and repeat this search until we find the target.
 
+// Every search keeps a half-open range `left..right` of indices that may
+// still hold the target, so an empty slice or a miss at either end never
+// underflows or reads past the end.
+
 // Time: O(logn) Space: O(logn)
-fn search_recursive(nums: &[i32], target: &i32) -> isize {
-    return search_recursive_inner(0, nums.len(), nums, target);
+pub fn search_recursive(nums: &[i32], target: &i32) -> isize {
+    search_recursive_inner(0, nums.len(), nums, target)
 }
 
 fn search_recursive_inner(left: usize, right: usize, nums: &[i32], target: &i32) -> isize {
-    if left > right {
+    if left >= right {
         return -1;
     }
     let mid = left + (right - left) / 2;
-    let guess = nums[mid];
-    if &guess == target {
-        return mid as isize;
-    }
-    if &guess < target {
-        return search_recursive_inner(mid + 1, right, nums, target);
-    } else {
-        return search_recursive_inner(0, mid - 1, nums, target);
+    match nums[mid].cmp(target) {
+        std::cmp::Ordering::Equal => mid as isize,
+        std::cmp::Ordering::Less => search_recursive_inner(mid + 1, right, nums, target),
+        std::cmp::Ordering::Greater => search_recursive_inner(left, mid, nums, target),
     }
 }
 
 // Time: O(logn) Space: O(1)
-fn search_iterative(nums: &[i32], target: &i32) -> isize {
-    let (mut left, mut right) = (0, nums.len() - 1);
-
-    while left <= right {
-        let mid = left + ((right - left) / 2);
-
-        if &nums[mid] > target {
-            right = mid - 1;
-        } else if &nums[mid] < target {
-            left = mid + 1;
-        } else {
-            return mid as isize;
-        }
-    }
-    return -1;
-}
-// Time: O(logn) Space: O(1)
-pub fn search_upper_bound(nums: &[i32], target: &i32) -> isize {
-    let (mut left, mut right) = (0, nums.len() - 1);
+pub fn search_iterative(nums: &[i32], target: &i32) -> isize {
+    let (mut left, mut right) = (0, nums.len());
 
     while left < right {
-        let mid = left + ((right - left) / 2);
+        let mid = left + (right - left) / 2;
+        match nums[mid].cmp(target) {
+            std::cmp::Ordering::Greater => right = mid,
+            std::cmp::Ordering::Less => left = mid + 1,
+            std::cmp::Ordering::Equal => return mid as isize,
+        }
+    }
+    -1
+}
 
+// Finds the first index whose value is greater than the target, then checks
+// the one before it.
+// Time: O(logn) Space: O(1)
+pub fn search_upper_bound(nums: &[i32], target: &i32) -> isize {
+    let (mut left, mut right) = (0, nums.len());
+
+    while left < right {
+        let mid = left + (right - left) / 2;
         if &nums[mid] > target {
             right = mid;
-        } else if &nums[mid] <= target {
+        } else {
             left = mid + 1;
         }
     }
     if left > 0 && &nums[left - 1] == target {
-        return (left - 1) as isize;
+        (left - 1) as isize
     } else {
-        return -1;
+        -1
     }
 }
 
+// Finds the first index whose value is not less than the target, then checks
+// it.
 // Time: O(logn) Space: O(1)
 pub fn search_lower_bound(nums: &[i32], target: &i32) -> isize {
-    let (mut left, mut right) = (0, nums.len() - 1);
+    let (mut left, mut right) = (0, nums.len());
 
     while left < right {
-        let mid = left + ((right - left) / 2);
-
+        let mid = left + (right - left) / 2;
         if &nums[mid] >= target {
             right = mid;
         } else {
@@ -86,19 +86,20 @@ pub fn search_lower_bound(nums: &[i32], target: &i32) -> isize {
         }
     }
     if left < nums.len() && &nums[left] == target {
-        return left as isize;
+        left as isize
     } else {
-        return -1;
+        -1
     }
 }
 
 // Time: O(logn) Space: O(1)
 pub fn search_built_in(nums: &[i32], target: &i32) -> isize {
     match nums.binary_search(target) {
-        Ok(mid) => return mid as isize,
-        Err(_) => return -1,
+        Ok(mid) => mid as isize,
+        Err(_) => -1,
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,5 +124,43 @@ mod tests {
         assert_eq!(search_upper_bound(&nums, &target), -1);
         assert_eq!(search_lower_bound(&nums, &target), -1);
         assert_eq!(search_built_in(&nums, &target), -1);
+    }
+
+    fn all(nums: &[i32], target: i32) -> [isize; 5] {
+        [
+            search_recursive(nums, &target),
+            search_iterative(nums, &target),
+            search_upper_bound(nums, &target),
+            search_lower_bound(nums, &target),
+            search_built_in(nums, &target),
+        ]
+    }
+
+    #[test]
+    fn target_above_every_element() {
+        assert_eq!(all(&[-1, 0, 2, 4, 6, 8], 10), [-1; 5]);
+    }
+
+    #[test]
+    fn target_below_every_element() {
+        assert_eq!(all(&[-1, 0, 2, 4, 6, 8], -5), [-1; 5]);
+    }
+
+    #[test]
+    fn empty_input() {
+        assert_eq!(all(&[], 1), [-1; 5]);
+    }
+
+    #[test]
+    fn first_and_last_elements() {
+        let nums = [-1, 0, 2, 4, 6, 8];
+        assert_eq!(all(&nums, -1), [0; 5]);
+        assert_eq!(all(&nums, 8), [5; 5]);
+    }
+
+    #[test]
+    fn single_element() {
+        assert_eq!(all(&[5], 5), [0; 5]);
+        assert_eq!(all(&[5], 4), [-1; 5]);
     }
 }

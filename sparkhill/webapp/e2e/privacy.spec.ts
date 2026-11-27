@@ -33,7 +33,7 @@ async function traceRight(page: Page): Promise<void> {
   await page.getByRole('button', { name: '✓' }).click();
 }
 
-test('a learner\'s name and tracings never leave the device @req:SPRK-006', async ({ page, baseURL }) => {
+test('a learner\'s name and tracings never leave the device @smoke @req:SPRK-006', async ({ page, baseURL }) => {
   const site = new URL(baseURL!).host;
   const requests: Request[] = [];
   page.on('request', (request) => requests.push(request));
