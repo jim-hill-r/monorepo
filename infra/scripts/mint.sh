@@ -93,7 +93,7 @@ ready() {
   done
   if [ -n "$missing" ]; then
     echo "mint.sh: the bootstrap credentials are not set up yet; missing:$missing"
-    echo "  (issues/human/infra-credentials-environment.md and github-app-infra-credentials.md)"
+    echo "  (standards/docs/runbooks/infra-credentials-environment.md and github-app-infra.md)"
     return 3
   fi
 }

@@ -1,6 +1,6 @@
 # Mint the infra tokens and passwords into GitHub secrets (Jim, 2026-11-27).
 # A person makes only the bootstrap credentials in `infra-credentials`
-# (issues/human/infra-credentials-environment.md); this workflow makes
+# (standards/docs/runbooks/infra-credentials-environment.md); this workflow makes
 # everything else, so no one makes or sees those values, and none is ever in
 # git or OpenTofu state. Run it by hand; it runs in `infra-credentials`, so
 # it waits for Jim's approval every time (decision 0010).
@@ -60,7 +60,7 @@ jobs:
           APP_KEY: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}
         run: |
           if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
-            echo "::error::the infra GitHub App isn't set up (issues/human/github-app-infra-credentials.md)"
+            echo "::error::the infra GitHub App isn't set up (standards/docs/runbooks/github-app-infra.md)"
             exit 1
           fi
 
