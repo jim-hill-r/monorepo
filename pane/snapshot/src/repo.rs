@@ -6,9 +6,12 @@ use std::path::{Path, PathBuf};
 
 use cost_model::{COST_FILE, CostFile, LimitsFile, Month, Radar};
 use pane_model::costs::{Costs, build_costs};
-use pane_model::{DeliverableKind, Project, Snapshot};
+use pane_model::{DeliverableKind, Project, Snapshot, WorkKind, WorkSource};
 
-use crate::parse;
+use crate::{blame, parse};
+
+/// pane's traffic-light thresholds, from the repo root.
+pub const HEALTH_TOML: &str = "pane/health.toml";
 
 /// The vendor blips and their monthly budgets.
 pub const RADAR: &str = "standards/radar/radar.json";
@@ -25,6 +28,10 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
     let lists = parse::root_lists(&read_optional(&root.join("issues/README.md")));
 
     let mut snapshot = Snapshot::new(commit, taken_at);
+    let health = root.join(HEALTH_TOML);
+    if health.exists() {
+        snapshot.thresholds = parse::health_thresholds(&read(&health)?)?;
+    }
     for path in &roots {
         let dir = root.join(path);
         let mise = read_optional(&dir.join("mise.toml"));
@@ -79,6 +86,16 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
                     .work_items
                     .extend(parse::code_comments(&rel, project, &contents));
             }
+        }
+    }
+
+    // Age each FIX comment by the commit that added its line. TODOs don't
+    // need an age, and there are few FIXes, so this stays cheap. A shallow
+    // clone can't date old lines, so they stay unknown there.
+    let blame = !blame::is_shallow(root);
+    for item in &mut snapshot.work_items {
+        if blame && item.kind == WorkKind::Fix && item.source == WorkSource::CodeComment {
+            item.added = blame::line_date(root, &item.file, item.line);
         }
     }
 

@@ -11,6 +11,22 @@ Complete exactly one issue in this repo. Read `AGENTS.md` at the repo root first
 
 ## 1. Find one issue
 
+Run the pick first; it applies every rule below and prints the issue's
+text and its epic notes, so you don't need to read the issue list or the
+READMEs yourself:
+
+```bash
+cargo run --quiet --manifest-path chores/Cargo.toml -- next-task
+```
+
+Add `--project <name>` when your thread is scoped to a project, and
+`--skip <path>` for an issue an open PR already handles. A coordinator
+starting several threads runs it once with `--count <n> --exclude
+<projects or epic:names other threads have>` to get one issue per project.
+Your judgment is only whether the pick is really workable now (a phase
+that needs something first, a human task it waits on); if not, run it
+again with `--skip`. The rules it applies, for reference:
+
 Be eager: take the first issue that qualifies under these rules.
 
 1. An issue is a file in an `issues/` folder (one file per issue, format in
@@ -45,7 +61,8 @@ of `AGENTS.md`, from the repo root and again inside the project you will change.
 ## 3. Do the work
 
 - If the issue is too big for one PR, break it into smaller issues instead:
-  one issue file each (tagged `[agent-generated]`, sharing an `epic` and an
+  one issue file each, written with the `write-issue` skill (tagged
+  `[agent-generated]`, sharing an `epic` and an
   `order` when they are phases of one piece of work), delete the original
   issue's file, and open a PR with only that change.
 - Otherwise, use test-driven development:
@@ -58,7 +75,7 @@ of `AGENTS.md`, from the repo root and again inside the project you will change.
   5. Delete the issue's file (or remove the `TODO`/`FIX` comment) in the same
      PR.
 - Out-of-scope improvements you spot: add an issue file tagged
-  `[agent-generated]`, or leave a `TODO (agent-generated): ...` comment next
+  `[agent-generated]` (the `write-issue` skill), or leave a `TODO (agent-generated): ...` comment next
   to the code, instead of fixing them.
 - If you learned something that would help the next agent, add it to
   `AGENTS.md` or the relevant skill rather than a tool-specific file.

@@ -8,6 +8,7 @@
 use std::fmt;
 
 pub mod health;
+pub mod signals;
 
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +44,10 @@ pub struct Snapshot {
     /// and the free limits, for the month the snapshot was taken in.
     #[serde(default)]
     pub costs: costs::Costs,
+    /// The traffic-light thresholds from `pane/health.toml`, so the web app
+    /// applies the same rules the snapshot was built with.
+    #[serde(default)]
+    pub thresholds: health::Thresholds,
 }
 
 impl Snapshot {
@@ -60,6 +65,7 @@ impl Snapshot {
             reviews: Vec::new(),
             retros: Vec::new(),
             costs: costs::Costs::default(),
+            thresholds: health::Thresholds::default(),
         }
     }
 
@@ -162,6 +168,11 @@ pub struct WorkItem {
     /// comment's marker, such as `agent-generated`.
     #[serde(default)]
     pub tags: Vec<String>,
+    /// `YYYY-MM-DD` it was added: an issue file's `added`, or the `git
+    /// blame` date of a `FIX` comment's line. `None` when unknown, such as
+    /// a `TODO` comment or a line from a shallow clone's boundary commit.
+    #[serde(default)]
+    pub added: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -358,6 +369,7 @@ mod tests {
             section: Some("Priority Issues".into()),
             epic: Some("Phase 0: foundations".into()),
             tags: vec!["agent-generated".into()],
+            added: Some("2026-11-26".into()),
         });
         s.human_issues.push(HumanIssue {
             text: "Create the Access application.".into(),

@@ -1,0 +1,183 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# The `cargo` evals name existing tests with `filter` (model/tests,
+# dioxus/src, palette/src and preview/src). The contrast and up-to-date
+# check (`design_system_cli check`) also runs in `mise run ci`, but isn't a
+# report the engine reads. The `http` evals check the preview site, the
+# sub-project that deploys (design_system/preview, DEPLOY_URL). DSGN-002
+# has no production eval yet: the app themes ship inside each app's wasm
+# (issues/dsgn-002-production-eval.md).
+
+prefix = "DSGN"
+
+# DSGN-001: Every theme is readable for everyone
+
+[[eval]]
+id = "standard-themes-pass-contrast"
+requirement = "DSGN-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_standard_theme_is_complete_and_passes"
+
+[[eval]]
+id = "accessible-mode-not-only-colour"
+requirement = "DSGN-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "accessible_mode_changes_more_than_colour"
+
+[[eval]]
+id = "missing-token-reported"
+requirement = "DSGN-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_standard_theme_missing_a_token_is_reported"
+
+[[eval]]
+id = "wcag-contrast-maths"
+requirement = "DSGN-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "wcag_"
+description = "Relative luminance and contrast ratio match the WCAG formulas."
+
+[[eval]]
+id = "live-tokens-have-accessible-mode"
+requirement = "DSGN-001"
+stages = ["cd"]
+kind = "http"
+path = "/tokens.css"
+body_contains = "[data-a11y=\"on\"]"
+description = "The live token stylesheet carries the accessible-mode overrides."
+
+# DSGN-002: An app theme can't make an app harder to use
+
+[[eval]]
+id = "custom-theme-cant-reduce-usability"
+requirement = "DSGN-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_custom_theme_cannot_make_an_app_less_usable"
+
+[[eval]]
+id = "failing-brand-colour-fails"
+requirement = "DSGN-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_brand_colour_that_fails_contrast_fails_the_check"
+
+[[eval]]
+id = "custom-theme-must-extend"
+requirement = "DSGN-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_custom_theme_must_extend_a_standard_theme"
+
+[[eval]]
+id = "custom-theme-overrides-only-what-it-sets"
+requirement = "DSGN-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_custom_theme_overrides_only_what_it_sets"
+
+[[eval]]
+id = "light-only-theme"
+requirement = "DSGN-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_light_only_custom_theme_has_two_combinations"
+
+# DSGN-003: People can pick a theme, and the choice sticks
+
+[[eval]]
+id = "choice-saved"
+requirement = "DSGN-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "choice_script_saves_json"
+
+[[eval]]
+id = "default-recorded"
+requirement = "DSGN-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "head_script_records_the_default"
+
+[[eval]]
+id = "attributes-match-theme-js"
+requirement = "DSGN-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "attributes_match_theme_js"
+
+[[eval]]
+id = "no-inline-script"
+requirement = "DSGN-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "page_has_no_inline_script"
+
+[[eval]]
+id = "live-theme-script-saves-choice"
+requirement = "DSGN-003"
+stages = ["cd"]
+kind = "http"
+path = "/theme.js"
+body_contains = "localStorage"
+
+# DSGN-004: Apps, games and tools get the same values
+
+[[eval]]
+id = "palette-matches-tokens"
+requirement = "DSGN-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "standard_themes_match_the_tokens"
+
+[[eval]]
+id = "palette-has-every-theme"
+requirement = "DSGN-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "finds_every_standard_theme"
+
+[[eval]]
+id = "hex-round-trips"
+requirement = "DSGN-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "hex_round_trips"
+
+# DSGN-005: The preview site shows every combination
+
+[[eval]]
+id = "every-combination-has-a-panel"
+requirement = "DSGN-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_combination_gets_a_pinned_panel"
+
+[[eval]]
+id = "preview-security-headers"
+requirement = "DSGN-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "headers_file_sends_the_security_headers"
+
+[[eval]]
+id = "live-preview-shows-gamey"
+requirement = "DSGN-005"
+stages = ["cd"]
+kind = "http"
+path = "/"
+body_contains = "data-theme=\"gamey\""
+description = "The live page has the panels, not just a shell (gamey is the last standard theme)."
+
+[[eval]]
+id = "live-preview-loads-only-its-own-files"
+requirement = "DSGN-005"
+stages = ["cd"]
+kind = "http"
+path = "/"
+header = "content-security-policy: default-src 'none'"

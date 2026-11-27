@@ -136,7 +136,12 @@ check_tools() {
 # rules (COST-001 to COST-004, COST-007 to COST-009, and THR-*) only for the
 # affected projects.
 say "running //:audit"
-COST_PROJECTS=$(IFS=,; echo "${list[*]}") mise run --quiet //:audit || failed+=("//:audit")
+# RES-001 (a dropped resource claim needs a retirement) compares with the
+# PR base, so only the pre-push audit gets one.
+resources_base=""
+[ "$stage" = pre-push ] && resources_base=$base
+COST_PROJECTS=$(IFS=,; echo "${list[*]}") RESOURCES_BASE=$resources_base \
+  mise run --quiet //:audit || failed+=("//:audit")
 
 for p in "${list[@]}"; do
   if [ "$stage" = pre-push ] && grep -qxF "$p" "$cache_dir/$tree" 2>/dev/null; then

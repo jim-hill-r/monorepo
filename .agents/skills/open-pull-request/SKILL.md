@@ -39,8 +39,36 @@ as "Pull request descriptions" in `standards/docs/pull-requests.md` says
      and their result, and any check you couldn't run),
    - anything a reviewer should look at closely.
 
+Build it with the `pr-body` command rather than by hand. It writes that
+shape and exits 1, printing the PR-001 warnings, until the summary is at
+most 75 words and has a link, so the description is right before the PR
+exists:
+
+```bash
+cargo run --quiet --manifest-path chores/Cargo.toml -- pr-body \
+  --login <github login> --requested-by <name> --thread-url <project thread link> \
+  --summary "<what, why, tradeoffs; link the plan, decision or issue file>" \
+  --testing "<issue it closes; hooks passed, or what you ran; checks that didn't run>" \
+  --review-notes "<what to look at closely; leave the flag out if nothing>" \
+  --footer "<closing lines your platform asks for>" --out /tmp/pr-body.md
+```
+
+Pass the attribution and footer exactly as your platform's instructions
+give them, and leave out the flags it doesn't ask for. Your judgment is
+only the words. Send the printed body as the PR description.
+
+It also puts the **attention badges** under the attribution lines (from
+`chores badges --base origin/main`; commit first so the diff is complete):
+🔴 when a `must` requirement changes, 🟡 for other requirement changes,
+🟠 when a threat or risk file changes, 🟢 otherwise ("Attention badges"
+in `standards/docs/pull-requests.md`). Never edit the line by hand. When a
+later push changes which files the PR touches, run `chores badges` and
+replace the line in the description. A red requirement badge means the PR
+gets `needs-human` and waits for Jim.
+
 The **PR summary** check (PR-001) warns when the summary is missing, over 75
-words or has no link; fix the description, and it reruns on the edit.
+words or has no link; fix the description (`pr-body --check <file>` checks
+an edited one), and it reruns on the edit.
 
 ## Mark it ready for review
 

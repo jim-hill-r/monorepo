@@ -32,7 +32,7 @@ doesn't start with `YYYY-MM`.
 | `projects[].deploy_url` | `DEPLOY_URL` in the project's `[env]` |
 | `projects[].summary` | The first prose paragraph of the project's README (headings, badges, quotes, lists, tables and code skipped) |
 | `projects[].status` | `# Priority Projects` and `# On Hold Projects` in the root `issues/README.md`; a sub-project takes its top-level project's status, and on hold wins |
-| `work_items` (from issue files) | Every issue file (`issues/<slug>.md` or `<project>/issues/<slug>.md`, not `README.md`) with front matter: `kind` (`todo` or `fix`), the section from `priority` (`Priority Issues` or `Backlog`), `epic`, `tags`, the body as the text, the line the body starts on, and the owning project (the longest config root containing the file). |
+| `work_items` (from issue files) | Every issue file (`issues/<slug>.md` or `<project>/issues/<slug>.md`, not `README.md`) with front matter: `kind` (`todo` or `fix`), the section from `priority` (`Priority Issues` or `Backlog`), `epic`, `tags`, the body as the text, the line the body starts on, the owning project (the longest config root containing the file), and `added` as the date. |
 | `work_items` (from code) | Every `TODO` / `FIX` that follows a comment opener (`//`, `#`, `/*`, `<!--`, `--`, `;`) in `.rs`, `.toml`, `.sh`, `.yml`, `.ts`, `.js`, `.py`, `.css`, `.html`, `.sql` and similar files. Openers inside a `"string"` or a `` `code span` `` are ignored. |
 | `human_issues` | Each file in the root `issues/human/` (not `README.md`), with its body as the text and `added` and `unblocks` from its front matter. Pane works out the age from `taken_at`. |
 | `deliverables` (live sites) | Each project with a `DEPLOY_URL` in its `[env]`. |
@@ -44,6 +44,7 @@ doesn't start with `YYYY-MM`.
 | `costs.projects` | Each project's `docs/cost.toml` (`standards/docs/cost.md`), parsed by `cost_model::parse_cost_file`: summary, reviewed date, services with plan and expected usage (each per-project limit with its ceiling from `limits.toml`), the `[[cost]]` and `[[revenue]]` lines, and revenue and direct cost for the month of `taken_at`. A project without the file is left out. |
 | `costs.account` | Each account-wide limit in `standards/radar/limits.toml`: every project's expected use summed and held against the budget, or the free limit when there is none (COST-005). |
 | `costs.budgets` | Each vendor blip in `standards/radar/radar.json` with its monthly budget and what projects' own costs spend with it this month (COST-006), then any vendor a cost names that the radar doesn't list. Without `standards/radar/` there are no limits and no radar vendors. |
+| `thresholds` | `pane/health.toml`, so the web app lights signals with the same thresholds. Missing keys take the plan's values; an unknown key fails the snapshot. The plan's values when the file isn't there. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are
 skipped, as are code blocks in Markdown.

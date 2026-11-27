@@ -368,6 +368,99 @@ fn binary_rejects_unknown_arguments() -> TestResult {
     Ok(())
 }
 
+/// Run git in `dir` with a fixed identity and dates, failing on error.
+fn git(dir: &Path, args: &[&str]) -> TestResult {
+    let status = Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(["-c", "user.name=Test", "-c", "user.email=test@example.com"])
+        .args(args)
+        .env("GIT_AUTHOR_DATE", "2026-11-01T10:00:00Z")
+        .env("GIT_COMMITTER_DATE", "2026-11-01T10:00:00Z")
+        .status()?;
+    if !status.success() {
+        return Err(format!("git {args:?} failed").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn dates_fix_comments_by_git_blame() -> TestResult {
+    let repo_dir = FixtureRepo::new("blame")?;
+    // The fixture's fake .git folder is only there to be skipped.
+    fs::remove_dir_all(repo_dir.0.join(".git"))?;
+    git(&repo_dir.0, &["init", "-q"])?;
+    git(&repo_dir.0, &["add", "-A"])?;
+    git(&repo_dir.0, &["commit", "-q", "-m", "fixture"])?;
+
+    let s = repo::build(&repo_dir.0, "abc1234", "2026-11-26T12:00:00Z")?;
+    let fix = s
+        .work_items
+        .iter()
+        .find(|w| w.kind == WorkKind::Fix && w.file == "app/src/main.rs")
+        .ok_or("no FIX comment")?;
+    assert_eq!(fix.added.as_deref(), Some("2026-11-01"));
+    // TODO comments aren't blamed.
+    assert!(
+        s.work_items
+            .iter()
+            .filter(|w| w.kind == WorkKind::Todo && w.file == "app/src/main.rs")
+            .all(|w| w.added.is_none())
+    );
+    Ok(())
+}
+
+#[test]
+fn fix_comments_outside_git_have_no_date() -> TestResult {
+    let repo_dir = FixtureRepo::new("noblame")?;
+    let s = repo::build(&repo_dir.0, "abc1234", "2026-11-26T12:00:00Z")?;
+    let fix = s
+        .work_items
+        .iter()
+        .find(|w| w.kind == WorkKind::Fix && w.file == "app/src/main.rs")
+        .ok_or("no FIX comment")?;
+    assert_eq!(fix.added, None);
+    Ok(())
+}
+
+#[test]
+fn reads_health_thresholds_into_the_snapshot() -> TestResult {
+    let repo_dir = FixtureRepo::new("health")?;
+    let s = repo::build(&repo_dir.0, "abc1234", "2026-11-26T12:00:00Z")?;
+    assert_eq!(s.thresholds, pane_model::health::Thresholds::default());
+
+    fs::create_dir_all(repo_dir.0.join("pane"))?;
+    fs::write(
+        repo_dir.0.join(repo::HEALTH_TOML),
+        "[open_issues]\nred_fix_open_days = 3\n",
+    )?;
+    let s = repo::build(&repo_dir.0, "abc1234", "2026-11-26T12:00:00Z")?;
+    assert_eq!(s.thresholds.open_issues.red_fix_open_days, 3);
+    assert_eq!(s.thresholds.build.stale_after_days, 2);
+
+    fs::write(
+        repo_dir.0.join(repo::HEALTH_TOML),
+        "[open_issues]\ntypo = 3\n",
+    )?;
+    let err = repo::build(&repo_dir.0, "abc1234", "2026-11-26T12:00:00Z")
+        .err()
+        .ok_or("a bad health.toml must fail the snapshot")?;
+    assert!(err.contains("pane/health.toml"), "{err}");
+    Ok(())
+}
+
+#[test]
+fn the_real_health_toml_lights_real_projects() -> TestResult {
+    // The real repo: every project gets its four snapshot signals.
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let s = repo::build(&root, "abc1234", "2026-11-27T12:00:00Z")?;
+    for project in &s.projects {
+        let signals = pane_model::signals::project_signals(&s, &project.path);
+        assert_eq!(signals.len(), 4, "{}", project.path);
+    }
+    Ok(())
+}
+
 #[test]
 fn reads_cost_files_budgets_and_limits() -> TestResult {
     let repo_dir = FixtureRepo::new("costs")?;
