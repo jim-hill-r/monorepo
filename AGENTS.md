@@ -220,9 +220,9 @@ repo, rather than in any one agent tool's settings.
 - **Credit window (Jim, 2026-11-27).** "Kick off work as our credit
   window begins to close to maximize our use of the 5 hr credits. Have
   that process run all the time." The hourly "Credit window check"
-  scheduled task wakes the coordinating agent, which reads the five-hour
-  and seven-day usage from its session's rate-limit events and starts
-  extra threads when the five-hour window would otherwise end under 85%
+  scheduled task wakes a standing credit window thread, which reads the
+  five-hour and seven-day usage from the sessions' rate-limit events and
+  asks the coordinating agent to start extra threads when the five-hour window would otherwise end under 85%
   used, aiming at 95% without running the seven-day window out early.
   Keeping at least 5 threads working is its floor, and the overage pause
   still wins. The
