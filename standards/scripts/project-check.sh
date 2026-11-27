@@ -10,7 +10,8 @@
 #   NAM-004  A proof of concept project (its package name or path says poc
 #            or proof) is named poc_<name>. standards/docs/naming.md.
 #   DOC-001  A project has a README.md.
-#   DOC-002  Its README.md has a heading with the project's name.
+#   DOC-002  Its README.md has a heading with the project's name: its package
+#            name, its directory name or its path (bear_down/cloudflare).
 #   DOC-003  A project has a CONTRIBUTING.md.
 #   DOC-004  Its CONTRIBUTING.md has a "Getting Started" heading.
 #            standards/docs/documentation.md.
@@ -121,7 +122,8 @@ for d in $projects; do
 
   if [ ! -f "$d/README.md" ]; then
     warn DOC-001 "$d has no README.md"
-  elif ! has_heading "$d/README.md" "${name:-$base}" && ! has_heading "$d/README.md" "$base"; then
+  elif ! has_heading "$d/README.md" "${name:-$base}" && ! has_heading "$d/README.md" "$base" &&
+    ! has_heading "$d/README.md" "$d"; then
     warn DOC-002 "$d/README.md has no '# ${name:-$base}' heading"
   fi
   if [ ! -f "$d/CONTRIBUTING.md" ]; then
