@@ -100,8 +100,10 @@ nothing.
    burst of threads started, both in the same window (same `resetsAt`).
    Freshly started threads burn fastest (on 2026-11-27, 8 new threads
    took the window from 3% to 19% in 8 minutes), so an hour-old sample
-   must not hide a recent burst. With no usable pair, `r = 0.02 × W`. The
-   cost of one more thread is `t = r / W`, or 0.02 an hour when `W` is 0.
+   must not hide a recent burst. With no usable pair, `r = 0.04 × W`. The
+   cost of one more thread is `t = r / W`, or 0.04 an hour when `W` is 0
+   (measured on 2026-11-27: a working thread uses about 4% of a window
+   per hour, so about 5 working threads fill one).
 3. **Projection.** `p = u5 + r × h`, the use expected when the window resets.
 4. **Weekly guard.** The week's elapsed share is `e = 1 − d / 7`. If
    `u7 > e + 0.15` (ahead of an even pace through the week) and `d > 0.5`,
@@ -133,7 +135,7 @@ unused points.
   task bound to itself.
 - The coordinator's "at least 5 threads" rule becomes the floor of this
   rule rather than the whole rule (AGENTS.md "Credit window").
-- The 0.02-per-thread default and the 0.85/0.95 thresholds are first
+- The 0.04-per-thread default and the 0.85/0.95 thresholds are first
   guesses. Each run states the numbers it used in its turn, so they can be
   tuned from real windows in a later PR.
 - If Claude stops recording `rate_limit_event`s, or renames their fields,
