@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T23:04:24.461602485Z",
+  "generated_at": "2026-11-27T23:15:44.070203739Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -745,7 +745,7 @@
           "priority": "could",
           "verdict": "unknown",
           "reasons": [
-            "no evals"
+            "no production-stage results yet"
           ]
         },
         {
