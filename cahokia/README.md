@@ -1,6 +1,17 @@
-# Development
+# cahokia
 
-Your new workspace contains a member crate for each of the web, desktop and mobile platforms, and a `ui` crate for components that are shared between multiple platforms:
+Cahokia is a genealogy app: people, their relationships and life events,
+drawn as a family tree you can pan, zoom and focus on one person's lineage.
+It runs on the web, desktop and mobile from one Dioxus codebase. The data
+model and layout maths are in [core](core/README.md), the shared pages and
+components in [ui](ui/README.md), one crate per platform adds its entry
+point, and [cloudflare](cloudflare/README.md) deploys the web app. Sign-in
+uses Auth0 through `auth_sdk`. How to build and test it is in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Development
+
+The workspace contains a member crate for each of the web, desktop and mobile platforms, and a `ui` crate for components that are shared between multiple platforms:
 
 ```
 your_project/

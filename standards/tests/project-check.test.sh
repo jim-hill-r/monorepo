@@ -106,6 +106,9 @@ expect "README.md without the project heading" "$r" 0 "warning[DOC-002] app/READ
 r=$(new_repo doc2dir); add_all "$r"
 expect "a heading with the directory name is enough" "$r" 0 "" "DOC-002"
 
+r=$(new_repo doc2path); printf '# app/web\n\nWhat it is.\n' >"$r/app/web/README.md"; add_all "$r"
+expect "a heading with the project's path is enough" "$r" 0 "" "DOC-002"
+
 r=$(new_repo doc3); rm "$r/tool/CONTRIBUTING.md"; add_all "$r"
 expect "no CONTRIBUTING.md is a warning" "$r" 0 "warning[DOC-003] tool has no CONTRIBUTING.md"
 
