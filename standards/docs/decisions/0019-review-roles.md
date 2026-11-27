@@ -1,6 +1,6 @@
 # 0019. Review roles: who may approve what, as relationships in one file
 
-- Status: Proposed (Jim answered the first four questions on 2026-11-27; three follow-ups are at the end)
+- Status: Proposed (Jim answered the first four questions on 2026-11-27; two follow-ups are at the end)
 - Date: 2026-11-27
 - Asked by: Jim
 - Builds on: [0010](0010-credential-second-approval.md) (the second
@@ -224,7 +224,8 @@ What changes from today's behavior:
   `jimhillr-reviewer`.
 - Every change to a platform project needs Jim. Today `jimhillr-reviewer`
   may approve small green changes in `chores`, `evals`, `cost`, `pane`,
-  `telemetry`, `design_system` and `athenaeum` (follow-up question 1).
+  `telemetry`, `design_system` and `athenaeum` (Jim chose this on
+  2026-11-27).
 
 ## Where it is enforced
 
@@ -308,14 +309,9 @@ Each phase is one PR, and each leaves behavior the same or stricter.
 Each costs $0 either way; the difference is how many PRs wait for you.
 
 1. **Does every change to a platform project need the
-   technical-platform-reviewer, or only changes to the rules?**
-   Recommended: every change. It is the simple reading of "platform versus
-   products", and a platform bug reaches every product. It means
-   `jimhillr-reviewer` approves product changes only, so the small green
-   PRs in `chores`, `evals`, `cost`, `pane`, `telemetry`, `design_system`
-   and `athenaeum` start waiting for you. The other choice keeps the fast
-   lane for those and holds only the rules (`AGENTS.md`, `standards/`,
-   `.github/`, `.agents/`, `infra/`).
+   technical-platform-reviewer, or only changes to the rules?** Answered
+   on 2026-11-27 (decision card): "Every platform change". So
+   `jimhillr-reviewer` approves product changes only.
 2. **Is the split right?** The ones I was least sure of: `pane` (your
    review dashboard, listed as platform), `royalty` (listed as a product,
    since others would use it), `auth_sdk` and `design_system` (platform,
