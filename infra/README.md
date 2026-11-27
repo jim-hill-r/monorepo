@@ -42,11 +42,26 @@ workflows run it on every plan before it is shown or applied.
 | IAC-002 | any attribute the provider marks sensitive would hold a value in state, whether we set it or the vendor generates it (secrets never go in git or state, even encrypted); write-only attributes pass |
 | IAC-003 | a resource type that can bill (R2, subscriptions and the like), or more Pages projects, Workers or Cron Trigger schedules than the budgets in `standards/radar/limits.toml` |
 | IAC-004 | a provider or resource type not allowlisted in `src/guard.rs` |
+| IAC-005 | the plan changes the `infra-credentials` environment (its reviewers, secrets or deployment policy) or a ruleset's bypass list, which IaC never manages ([decision 0010](../standards/docs/decisions/0010-credential-second-approval.md)) |
 
 The lists live in `src/guard.rs`. Add a resource type to the allowlist in the
 PR that first uses it, after checking it can't bill; a test fails if a stack
 uses a type that isn't listed. The guards are tested on fixture plans in
 `tests/fixtures/plans/`, one of them real OpenTofu output.
+
+### Credential changes
+
+The guard also lists every **credential change** in the plan, without
+failing it: a create or update of an Auth0 client grant, resource server,
+connection or role, a new Auth0 client, an `auth0_client` change to
+anything but its names and URLs, a Cloudflare API token or Access
+resource, or anything in the `github` stack. `--report report.json` writes
+`{"credential_change": true, "changes": [...]}` for the workflows: a stack
+with a credential change applies only in the `infra-credentials` GitHub
+environment, after Jim approves that run (decision 0010). The lists are
+`CREDENTIAL_TYPE_PREFIXES` and `AUTH0_CLIENT_NOT_CREDENTIAL` in
+`src/guard.rs`; the second is a list of what's safe, so a new attribute
+counts as a credential until it is added there.
 
 ## Changing a setting
 

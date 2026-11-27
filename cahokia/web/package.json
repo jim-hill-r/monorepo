@@ -11,6 +11,7 @@
     "test:report": "playwright show-report"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@playwright/test": "^1.48.2",
     "@types/node": "^20.17.10",
     "typescript": "^5.7.3"

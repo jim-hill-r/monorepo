@@ -1,0 +1,18 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {"address": "github_repository.monorepo", "mode": "managed", "type": "github_repository", "name": "monorepo", "provider_name": "registry.opentofu.org/integrations/github",
+     "change": {"actions": ["update"], "before": {"name": "monorepo", "delete_branch_on_merge": false}, "after": {"name": "monorepo", "delete_branch_on_merge": true},
+       "after_unknown": {}, "after_sensitive": {}}},
+    {"address": "github_repository_environment.credentials", "mode": "managed", "type": "github_repository_environment", "name": "credentials", "provider_name": "registry.opentofu.org/integrations/github",
+     "change": {"actions": ["update"],
+       "before": {"environment": "infra-credentials", "can_admins_bypass": false, "reviewers": [{"users": [25872250]}]},
+       "after": {"environment": "infra-credentials", "can_admins_bypass": false, "reviewers": []},
+       "after_unknown": {}, "after_sensitive": {}}},
+    {"address": "github_repository_ruleset.main", "mode": "managed", "type": "github_repository_ruleset", "name": "main", "provider_name": "registry.opentofu.org/integrations/github",
+     "change": {"actions": ["update"],
+       "before": {"name": "main", "bypass_actors": []},
+       "after": {"name": "main", "bypass_actors": [{"actor_id": 361315700, "actor_type": "User", "bypass_mode": "always"}]},
+       "after_unknown": {}, "after_sensitive": {}}}
+  ]
+}

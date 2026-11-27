@@ -32,6 +32,15 @@ desktop/ # The desktop crate contains all platform specific UI, logic and depend
 
 When you start developing with the workspace setup each of the platform crates will look almost identical. The UI starts out exactly the same on all platforms. However, as you continue developing your application, this setup makes it easy to let the views for each platform change independently.
 
+## Theme
+
+Every Cahokia app uses the shared [design system](../design_system/README.md),
+earthy by default (`ui::DEFAULT_THEME`), and offers its appearance picker (in
+the web sidebar, and at the foot of the desktop and mobile pages). The CSS in
+`ui/assets` and each app's `assets` uses only `--ds-` tokens.
+`web/tests/design-system.spec.ts` runs axe on the web pages in all 20
+combinations of theme, light or dark, and accessible mode.
+
 ## Shared UI crate
 
 The workspace contains a `ui` crate with components that are shared between multiple platforms. You should put any UI elements you want to use in multiple platforms in this crate. You can also put some shared client side logic in this crate, but be careful to not pull in platform specific dependencies. The `ui` crate starts out something like this:
