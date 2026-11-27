@@ -105,6 +105,7 @@ never written to git, state or a file, and no one sees it (Jim, 2026-11-27).
 | `TOFU_STATE_ORIGIN` | repository variable | the account's workers.dev subdomain |
 | `CLOUDFLARE_API_TOKEN` (`jimhillr-deploy`: Pages, Workers Scripts, D1 Write, Account Analytics Read) | repository secret | Cloudflare account-owned token |
 | `CLOUDFLARE_INFRA_READ_TOKEN` / `_APPLY_TOKEN` | repository / `infra` | Cloudflare account-owned tokens |
+| `CLOUDFLARE_BILLING_READ_TOKEN` (`jimhillr-billing-read`: Billing Read) | `infra` | Cloudflare account-owned token, for the weekly billing check |
 | `AUTH0_INFRA_READ_*` / `AUTH0_INFRA_APPLY_*` | repository / `infra` | Auth0 Machine to Machine apps `infra-read` and `infra-apply` |
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository secrets | `keytool`, in the job |
 

@@ -178,7 +178,13 @@ anything reaches its budget in
 [standards/docs/free-tiers.md](../../standards/docs/free-tiers.md). It only
 reads.
 
-A second job, **Secret scan (full history)**, runs gitleaks over every commit
+A **Billing check** job runs `standards/scripts/billing-check.sh all` in
+the `infra` environment, from `main` only: read-only billing credentials
+show that Cloudflare, GitHub and PostHog still have no payment method, paid
+plan or charge (see "Billing checks" in
+[free-tiers.md](../../standards/docs/free-tiers.md#billing-checks)).
+
+A further job, **Secret scan (full history)**, runs gitleaks over every commit
 (`standards/scripts/secrets-check.sh history`), so a new rule catches an old
 commit within a week.
 

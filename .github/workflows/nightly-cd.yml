@@ -28,3 +28,14 @@ jobs:
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # Commit the cd eval results to the evals-results branch, even when a
+  # project failed. Nightly CI stores this night's ci results.
+  store-evals:
+    needs: cd
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/evals-store.yml
+    permissions:
+      contents: write
+    with:
+      pattern: evals-results-cd-*

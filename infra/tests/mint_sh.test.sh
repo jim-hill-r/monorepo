@@ -49,7 +49,7 @@ echo "curl \$method \$url \$body" >>"$work/curl.log"
 auth0() { printf '%s\n200' "\$1"; }
 case "\$method \$url" in
   "GET https://cf/accounts/acct/tokens/permission_groups"*)
-    echo '{"success":true,"result":[{"id":"p1","name":"Pages Write"},{"id":"w1","name":"Workers Scripts Write"},{"id":"d1","name":"D1 Write"},{"id":"a1","name":"Account Analytics Read"},{"id":"r1","name":"Account Settings Read"},{"id":"e1","name":"Account Settings Write"}]}' ;;
+    echo '{"success":true,"result":[{"id":"p1","name":"Pages Write"},{"id":"w1","name":"Workers Scripts Write"},{"id":"d1","name":"D1 Write"},{"id":"a1","name":"Account Analytics Read"},{"id":"r1","name":"Account Settings Read"},{"id":"e1","name":"Account Settings Write"},{"id":"b1","name":"Billing Read"}]}' ;;
   "GET https://cf/accounts/acct/tokens?"*)
     echo '{"success":true,"result":[{"id":"tok-deploy","name":"jimhillr-deploy"}]}' ;;
   "POST https://cf/accounts/acct/tokens")
@@ -107,6 +107,9 @@ mint bash "$script" run all >"$work/run.log" 2>&1 || fail "first run: $(grep -v 
   [ "$(secret infra CLOUDFLARE_INFRA_APPLY_TOKEN)" = cf-value-jimhillr-infra-apply ] && ok "Cloudflare read token in the repo, apply token in infra" || fail "cloudflare tokens"
 [ "$(secret repo CLOUDFLARE_API_TOKEN)" = cf-rolled-deploy ] && grep -q "PUT https://cf/accounts/acct/tokens/tok-deploy " "$work/curl.log" &&
   ok "an existing Cloudflare token is updated and rolled, not duplicated" || fail "deploy token roll: $(secret repo CLOUDFLARE_API_TOKEN)"
+[ "$(secret infra CLOUDFLARE_BILLING_READ_TOKEN)" = cf-value-jimhillr-billing-read ] && [ ! -e "$work/gh/repo/CLOUDFLARE_BILLING_READ_TOKEN" ] &&
+  grep -q '"name":"jimhillr-billing-read","policies":\[{[^]]*"permission_groups":\[{"id":"b1"}\]' "$work/curl.log" &&
+  ok "the billing read token has only Billing Read, only in infra" || fail "billing read token: $(grep billing-read "$work/curl.log")"
 grep -q '"permission_groups":\[{"id":"p1"},{"id":"w1"},{"id":"d1"},{"id":"a1"}\]' "$work/curl.log" && ok "the deploy token gets Pages, Workers, D1 and Analytics" || fail "deploy permissions"
 [ "$(cat "$work/gh/vars/TOFU_STATE_ORIGIN")" = https://jimhillr-tofu-state.jim.workers.dev ] && ok "origin variable from the workers.dev subdomain" || fail "origin"
 [ "$(secret repo AUTH0_INFRA_READ_CLIENT_SECRET)" = rotated-read ] && [ "$(secret repo AUTH0_INFRA_READ_CLIENT_ID)" = id-read ] &&

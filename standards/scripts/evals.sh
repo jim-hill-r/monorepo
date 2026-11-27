@@ -12,6 +12,11 @@
 #       $EVALS_RESULTS (default target/evals-reports/evals-results.jsonl).
 #       Does nothing when the top-level project has no evals.toml. This is
 #       the shared `evals` task.
+#       With EVALS_STAGE=cd (the step after `deploy` in mise-projects.yml)
+#       it reads reports from target/evals-reports/cd/ instead (a `smoke`
+#       task's), makes the requests of the `http` evals against
+#       $DEPLOY_URL, and exits 1 when an eval of a `must` requirement
+#       failed.
 #   evals.sh publish
 #       Writes the job summary for $EVALS_RESULTS ($GITHUB_STEP_SUMMARY, or
 #       standard output). Does nothing when the file doesn't exist.
@@ -53,7 +58,14 @@ case "${1:-}" in
       echo "evals: $top has no evals.toml, nothing to collect"
       exit 0
     fi
-    args=(run --root "$root" --stage "${EVALS_STAGE:-ci}" --project "$top" --out "$results")
+    stage=${EVALS_STAGE:-ci}
+    args=(run --root "$root" --stage "$stage" --project "$top" --out "$results")
+    # The ci task's reports are for the build in the runner; cd evals read
+    # only what ran against the deployed site.
+    if [ "$stage" = cd ]; then
+      reports_dir="$reports_dir/cd"
+      args+=(--fail-on-must)
+    fi
     [ -f "$reports_dir/cargo-test.log" ] && args+=(--cargo-output "$reports_dir/cargo-test.log")
     [ -f "$reports_dir/playwright.json" ] && args+=(--playwright-report "$reports_dir/playwright.json")
     # A sub-project (cookbook/web), or a top-level project that has
@@ -85,7 +97,8 @@ case "${1:-}" in
     set -e
     branch=evals-results
     projects=$(cat "${files[@]}" | jq -rs 'map(.project) | unique | join(" ")')
-    message="evals: ${EVALS_STAGE:-ci} ${projects} run ${GITHUB_RUN_ID:-local}"
+    stages=$(cat "${files[@]}" | jq -rs 'map(.stage) | unique | join("+")')
+    message="evals: ${stages} ${projects} run ${GITHUB_RUN_ID:-local}"
     # Build once, before the retry loop.
     cargo build --quiet --manifest-path "$root/evals/Cargo.toml" -p evals_cli
     work=$(mktemp -d)

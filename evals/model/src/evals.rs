@@ -84,6 +84,9 @@ pub enum Kind {
         header: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         body_contains: Option<String>,
+        /// The slowest acceptable response, in milliseconds.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max_ms: Option<u64>,
     },
     /// A threshold on observability data over a window.
     Metric {
@@ -130,7 +133,15 @@ impl Kind {
             "playwright" => &["grep"],
             "trycmd" => &["glob"],
             "script" => &["script", "check"],
-            "http" => &["url", "path", "method", "status", "header", "body_contains"],
+            "http" => &[
+                "url",
+                "path",
+                "method",
+                "status",
+                "header",
+                "body_contains",
+                "max_ms",
+            ],
             "metric" => &["source", "metric", "min", "max", "window"],
             "fault" => &["fault", "grep"],
             "judge" => &["rubric"],
@@ -325,6 +336,8 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
             path,
             method,
             status,
+            header,
+            max_ms,
             ..
         } => {
             match (url, path) {
@@ -349,6 +362,16 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
                 && !(100..=599).contains(status)
             {
                 problems.push(format!("status {status} is not an HTTP status"));
+            }
+            if let Some(header) = header
+                && !header
+                    .split_once(':')
+                    .is_some_and(|(name, _)| !name.trim().is_empty())
+            {
+                problems.push(format!("header `{header}` must be \"name: value\""));
+            }
+            if *max_ms == Some(0) {
+                problems.push("max_ms must be more than 0".into());
             }
         }
         Kind::Metric {
@@ -655,6 +678,8 @@ body_contains = "Cookbook"
             ("path = \"about\"", "path must start with /"),
             ("path = \"/\"\nmethod = \"get\"", "uppercase"),
             ("path = \"/\"\nstatus = 999", "not an HTTP status"),
+            ("path = \"/\"\nheader = \"text/html\"", "\"name: value\""),
+            ("path = \"/\"\nmax_ms = 0", "max_ms must be more than 0"),
         ];
         for (fields, expected) in cases {
             let found = errors(&one_eval(&format!(
