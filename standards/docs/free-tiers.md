@@ -239,7 +239,7 @@ What no API shows stays on Jim's 30-day check
 | Auth0 | The Management API has no plan, subscription or payment endpoint; plans are only on the dashboard. |
 | RapidAPI | No consumer billing API. The Zillow responses' quota headers show the plan, but polling them on a schedule would break homer's free-plan-only rule. |
 | Claude | claude.ai subscription billing has no API. |
-| Squarespace | No public API for account billing. Jim pays for several domains there (2026-11-27), so it isn't $0: the check is that only those domain renewals are billed, with nothing new. Bringing the domains into the cost framework is a separate todo. |
+| Squarespace | No public API for account billing. Jim pays for several domains there (2026-11-27), so it isn't $0: the check is that only those domain renewals are billed, with nothing new. Bringing the domains into the cost framework is `issues/cost-tracking-phase-4-domains-as-costs.md`. |
 | Assess and Hold vendors (Neon, Supabase, Turso, Pulumi and the rest) | We have no account, so nothing can bill. One that moves into Trial or Adopt gets a check first (RAD-007). |
 
 ## Things only Jim can check
