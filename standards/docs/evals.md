@@ -169,6 +169,7 @@ error, and the rest follow once every shipping project has its files.
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
+| EVL-005 | A `playwright.config.ts` (or `.js`) anywhere in the repo doesn't add `jimhillr-evals` to its browsers' user agent. |
 
 For EVL-003 a test matches when a Rust `fn` name in the project starts with
 the eval's `filter`, a `.ts` or `.js` file contains its `grep`, or a file
@@ -223,7 +224,12 @@ deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
    seconds apart, since a fresh deploy can take a moment to reach every
    edge. A site that never answers fails; an eval with a `path` and no
    `DEPLOY_URL` is an `error`. Requests send the user agent
-   `jimhillr-evals/0.1 (synthetic check)`.
+   `jimhillr-evals/0.1 (synthetic check)` and the header
+   `x-jimhillr-synthetic: 1`, so analytics and the `telemetry` Worker skip
+   them. Playwright runs (CI, smoke and UAT) add `jimhillr-evals` to every
+   browser's user agent through the `synthetic()` helper in each
+   `playwright.config.ts` (EVL-005); a browser can't add the header to a
+   beacon, so the user agent is what marks it.
 2. Report kinds (`playwright`, `trycmd`) read only
    `target/evals-reports/cd/`, where a `smoke` task run against production
    writes its report, never the `ci` task's reports.

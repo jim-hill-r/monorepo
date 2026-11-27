@@ -22,7 +22,7 @@ pub const SETTING_CHECKS: &str = "standards/settings-checks.jsonl";
 /// One problem, printed as `warning[EVL-001] cookbook/evals.toml: ...`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Finding {
-    /// `EVL-001` to `EVL-004`, or `None` for a malformed file.
+    /// `EVL-001` to `EVL-005`, or `None` for a malformed file.
     pub code: Option<&'static str>,
     pub path: String,
     pub line: Option<usize>,
@@ -300,6 +300,7 @@ pub fn check_repo(root: &Path) -> Result<Vec<Finding>> {
     let prefixes = parse_prefixes(&naming);
 
     let (mut findings, settings) = check_settings(root)?;
+    findings.extend(check_playwright_configs(root)?);
     for project in top_level_dirs(root)? {
         let dir = root.join(&project);
         let requirements = read_optional(&dir.join(REQUIREMENTS))?;
@@ -317,6 +318,68 @@ pub fn check_repo(root: &Path) -> Result<Vec<Finding>> {
             &settings,
         ));
     }
+    Ok(findings)
+}
+
+/// The text every Playwright config adds to its browsers' user agent, so
+/// the PostHog snippet, the `telemetry` Worker and analytics can tell our
+/// runs from people (eval engine phase 3).
+pub const SYNTHETIC_AGENT: &str = "jimhillr-evals";
+
+/// True for a Playwright config file name.
+fn is_playwright_config(name: &str) -> bool {
+    matches!(
+        name,
+        "playwright.config.ts" | "playwright.config.js" | "playwright.config.mjs"
+    )
+}
+
+/// EVL-005: a Playwright config that doesn't tag its user agent.
+pub fn check_playwright_config(path: &str, text: &str) -> Option<Finding> {
+    (!text.contains(SYNTHETIC_AGENT)).then(|| Finding {
+        code: Some("EVL-005"),
+        path: path.to_string(),
+        line: None,
+        message: format!(
+            "every browser here must add `{SYNTHETIC_AGENT}` to its user agent, so its runs stay out of analytics"
+        ),
+    })
+}
+
+/// Runs EVL-005 on every Playwright config in the repo.
+fn check_playwright_configs(root: &Path) -> Result<Vec<Finding>> {
+    let mut findings = Vec::new();
+    let mut stack: Vec<PathBuf> = top_level_dirs(root)?
+        .into_iter()
+        .map(|d| root.join(d))
+        .collect();
+    while let Some(current) = stack.pop() {
+        for entry in
+            fs::read_dir(&current).with_context(|| format!("listing {}", current.display()))?
+        {
+            let entry = entry?;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let file_type = entry.file_type()?;
+            if file_type.is_dir() {
+                if !name.starts_with('.') && !SKIP_DIRS.contains(&name.as_str()) {
+                    stack.push(entry.path());
+                }
+            } else if file_type.is_file() && is_playwright_config(&name) {
+                let path = entry.path();
+                let text = fs::read_to_string(&path)
+                    .with_context(|| format!("reading {}", path.display()))?;
+                let relative = path
+                    .strip_prefix(root)
+                    .unwrap_or(&path)
+                    .components()
+                    .map(|c| c.as_os_str().to_string_lossy())
+                    .collect::<Vec<_>>()
+                    .join("/");
+                findings.extend(check_playwright_config(&relative, &text));
+            }
+        }
+    }
+    findings.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(findings)
 }
 
@@ -848,6 +911,45 @@ kind = "trycmd"
         let (findings, ids) = check_settings(&root)?;
         assert_eq!(findings, vec![]);
         assert!(!ids.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn evl_005_playwright_config_without_the_synthetic_agent() {
+        let tagged = "use: { userAgent: `${d.userAgent} jimhillr-evals` }";
+        assert_eq!(
+            check_playwright_config("web/playwright.config.ts", tagged),
+            None
+        );
+        let finding = check_playwright_config("web/playwright.config.ts", "use: {}");
+        assert_eq!(finding.as_ref().and_then(|f| f.code), Some("EVL-005"));
+        assert!(is_playwright_config("playwright.config.ts"));
+        assert!(!is_playwright_config("playwright.config.ts.bak"));
+    }
+
+    #[test]
+    fn finds_playwright_configs_on_disk() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let root = root.path();
+        fs::create_dir_all(root.join("a/web"))?;
+        fs::create_dir_all(root.join("b/web/node_modules/pkg"))?;
+        fs::write(root.join("a/web/playwright.config.ts"), "export {}")?;
+        fs::write(root.join("b/web/playwright.config.ts"), "'jimhillr-evals'")?;
+        fs::write(
+            root.join("b/web/node_modules/pkg/playwright.config.js"),
+            "export {}",
+        )?;
+        let findings = check_playwright_configs(root)?;
+        let paths: Vec<&str> = findings.iter().map(|f| f.path.as_str()).collect();
+        assert_eq!(paths, vec!["a/web/playwright.config.ts"]);
+        Ok(())
+    }
+
+    #[test]
+    fn every_real_playwright_config_is_tagged() -> Result<()> {
+        let root = find_root(Path::new(env!("CARGO_MANIFEST_DIR")))
+            .ok_or_else(|| anyhow::anyhow!("no repo root"))?;
+        assert_eq!(check_playwright_configs(&root)?, vec![]);
         Ok(())
     }
 
