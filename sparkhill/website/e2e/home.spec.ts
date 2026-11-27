@@ -34,6 +34,8 @@ test.describe('home page', () => {
     const problems = await openHome(page);
     await expect(page).toHaveURL(/\/en-US\/?$/);
     await expect(page).toHaveTitle('Spark Hill - Reading Instruction');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /readers/i);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /^https:\/\//);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await expect(page.locator('main')).toHaveCount(1);
     for (const id of [...SECTIONS, 'testimonials']) {
