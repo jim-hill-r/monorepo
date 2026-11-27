@@ -14,6 +14,8 @@ pub struct Parts {
     pub requested_by: Option<String>,
     /// The project thread link for the "Requested by" line.
     pub thread_url: Option<String>,
+    /// The attention line (`chores badges`), right under the attribution.
+    pub attention: Option<String>,
     pub summary: String,
     pub testing: String,
     pub review_notes: Option<String>,
@@ -35,6 +37,10 @@ pub fn render(parts: &Parts) -> String {
             )),
             None => s.push_str(&format!("_Requested by **{who}**_\n")),
         }
+    }
+    if let Some(line) = &parts.attention {
+        s.push_str(line.trim());
+        s.push('\n');
     }
     if !s.is_empty() {
         s.push('\n');
@@ -89,7 +95,10 @@ pub fn summary(body: &str) -> String {
     let mut out = Vec::new();
     for line in body.lines() {
         if !started {
-            if line.starts_with("_Requested by ") || line.trim().is_empty() {
+            if line.starts_with("_Requested by ")
+                || line.starts_with(crate::badges::PREFIX)
+                || line.trim().is_empty()
+            {
                 continue;
             }
             let heading = line.trim_start_matches('#');
@@ -176,7 +185,20 @@ mod tests {
             testing: "Hooks passed.".into(),
             review_notes: None,
             footer: Some("Generated with Claude Code".into()),
+            attention: None,
         }
+    }
+
+    #[test]
+    fn attention_line_goes_under_the_attribution_and_is_not_summary() {
+        let mut p = parts("Adds chores. See [the plan](p.md).");
+        p.attention = Some(crate::badges::render(&crate::badges::Attention::default()));
+        let body = render(&p);
+        let lines: Vec<&str> = body.lines().collect();
+        assert!(lines[1].starts_with("_Requested by"));
+        assert!(lines[2].starts_with("> **Attention:**"));
+        assert_eq!(lines[3], "");
+        assert_eq!(check(&body), (5, vec![]));
     }
 
     #[test]

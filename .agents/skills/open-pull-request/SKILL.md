@@ -57,6 +57,15 @@ Pass the attribution and footer exactly as your platform's instructions
 give them, and leave out the flags it doesn't ask for. Your judgment is
 only the words. Send the printed body as the PR description.
 
+It also puts the **attention badges** under the attribution lines (from
+`chores badges --base origin/main`; commit first so the diff is complete):
+🔴 when a `must` requirement changes, 🟡 for other requirement changes,
+🟠 when a threat or risk file changes, 🟢 otherwise ("Attention badges"
+in `standards/docs/pull-requests.md`). Never edit the line by hand. When a
+later push changes which files the PR touches, run `chores badges` and
+replace the line in the description. A red requirement badge means the PR
+gets `needs-human` and waits for Jim.
+
 The **PR summary** check (PR-001) warns when the summary is missing, over 75
 words or has no link; fix the description (`pr-body --check <file>` checks
 an edited one), and it reruns on the edit.

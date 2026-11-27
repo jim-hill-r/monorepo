@@ -53,6 +53,14 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   is under "Pull request descriptions" in `standards/docs/pull-requests.md`
   and in `.github/pull_request_template.md`; the PR summary check (PR-001)
   warns when it is missing, too long or unlinked.
+- **Attention badges (Jim, 2026-11-27).** "There are some badges I want at
+  the top of a PR to let me know how much attention I should give. First
+  is if a fundamental requirement is changing. Second if anything
+  affecting a threat/risk is changing." Right under the attribution lines
+  every agent PR has the `> **Attention:**` line from `chores badges`
+  (`chores pr-body` writes it), kept current when pushes change the diff.
+  The rules are under "Attention badges" in
+  `standards/docs/pull-requests.md`.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for

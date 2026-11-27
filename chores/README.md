@@ -32,6 +32,10 @@ c pr-body --login jimhillr-agt --requested-by Jim --thread-url <url> \
   --testing "Hooks passed (audit, chores CI)." --footer "<platform lines>" --out body.md
 c pr-body --check body.md                 # check an existing description
 
+# The attention badges pr-body puts under the attribution lines: requirement
+# changes (red for a must) and threat/risk file changes, against the base.
+c badges --base origin/main
+
 # Issue files that pass the audit the first time.
 c new-issue --folder cookbook --slug fix-week-header --kind fix --priority backlog \
   --text "The week header overlaps on phones; see ..."
@@ -47,7 +51,7 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 | Command | Skill that calls it | Replaces |
 | --- | --- | --- |
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
-| `pr-body` | `open-pull-request` | Rebuilding the description shape and fixing PR-001 warnings after the fact |
+| `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command

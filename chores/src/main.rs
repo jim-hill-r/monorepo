@@ -4,6 +4,7 @@
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
+mod badges;
 mod issues;
 mod new_issue;
 mod next_task;
@@ -83,9 +84,27 @@ enum Command {
         /// Closing lines, such as the session link the platform asks for.
         #[arg(long)]
         footer: Option<String>,
+        /// The branch the PR merges into, for the attention badges.
+        #[arg(long, default_value = "origin/main")]
+        base: String,
+        /// Leave out the attention badges (only when git can't compare
+        /// with the base; say so in the PR).
+        #[arg(long)]
+        no_badges: bool,
         /// Also write the description to this file.
         #[arg(long)]
         out: Option<PathBuf>,
+    },
+    /// Print the attention line for the top of a PR description: whether
+    /// a requirement changed (red for a must) and whether a threat or risk
+    /// file changed, against the merge base with --base.
+    Badges {
+        /// The branch the PR merges into.
+        #[arg(long, default_value = "origin/main")]
+        base: String,
+        /// Print JSON instead of the Markdown line.
+        #[arg(long)]
+        json: bool,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
     /// agent-generated and dated today.
@@ -204,6 +223,8 @@ fn run() -> Result<ExitCode> {
             requested_by,
             thread_url,
             footer,
+            base,
+            no_badges,
             out,
         } => {
             let body = match check {
@@ -212,6 +233,11 @@ fn run() -> Result<ExitCode> {
                     login,
                     requested_by,
                     thread_url,
+                    attention: if no_badges {
+                        None
+                    } else {
+                        Some(badges::render(&badges::for_repo(&root, &base)?))
+                    },
                     summary: summary.unwrap_or_default(),
                     testing: testing.unwrap_or_default(),
                     review_notes,
@@ -230,6 +256,14 @@ fn run() -> Result<ExitCode> {
                     eprintln!("warning[PR-001] {w}");
                 }
                 return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Badges { base, json } => {
+            let attention = badges::for_repo(&root, &base)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&attention)?);
+            } else {
+                println!("{}", badges::render(&attention));
             }
         }
         Command::NewIssue {
