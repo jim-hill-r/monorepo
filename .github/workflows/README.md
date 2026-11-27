@@ -45,6 +45,14 @@ only, and its only push is to `evals-results` (SEC-007). It never fails the
 run. It is a separate workflow because a reusable workflow whose job asks
 for write fails to start when a caller (pull requests) grants only read.
 
+### evals-fire-drill.yml
+
+Run by hand (and on pull requests that change the drill): breaks one
+production `http` eval on purpose against the live site and checks the
+requirement turns red and then green again, all in a temporary copy of the
+`evals-results` branch. Read-only; it never pushes. See "Fire drill" in
+[standards/docs/evals.md](../../standards/docs/evals.md#fire-drill).
+
 ### pull-request-ci.yml
 
 Runs on every pull request against the projects it changes. Never deploys.

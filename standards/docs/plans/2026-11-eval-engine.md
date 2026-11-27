@@ -239,7 +239,7 @@ engine and in pane:
 | **Not met** (red) | The latest result of any eval in `cd`, `chaos` or `observe` failed, or Jim's latest rating since the last deploy is "not met". For a `should` or `could` requirement this shows as amber. |
 | **At risk** (amber) | An eval failed 2 or more of its last 7 runs (flaky), a `metric` is within 10% of its threshold, the judge says not met, a `ci` eval is failing on main, or the newest production result is older than 3 days. |
 | **Met** (green) | Every eval's latest result passes, and at least one production-stage result is under 2 days old. |
-| **Unknown** (grey) | No evals, or no production-stage results yet. |
+| **Unknown** (grey) | No evals, or no production-stage results yet, unless a `ci` eval is failing (then at risk: a known failure never shows grey). |
 
 `error` results count as at risk, not as failures of the product: the fix is
 in the eval. A project's requirement coverage ("9 of 12 musts evaluated in

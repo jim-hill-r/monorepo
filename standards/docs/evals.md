@@ -380,6 +380,21 @@ cookbook: 4 met, 1 at risk, 0 not met, 4 unknown (3 of 3 musts evaluated in prod
 The `evals-results` branch is never merged into `main` and must never be
 deleted, by `all-delete-branches.yml` or by hand.
 
+
+## Fire drill
+
+The **evals fire drill** workflow (`evals-fire-drill.yml`, run by hand with a
+project and an `http` eval, default cookbook `recipe-page-live`) proves the
+loop still catches a failure: `standards/scripts/evals-fire-drill.sh` points
+the eval at a string the live page doesn't have, runs stage `cd` against the
+site, stores the result in a temporary copy of `evals-results`, and checks
+the requirement turns red (amber for a `should`), lists the issue triage
+should file, then runs the real eval and checks the verdict is back to where
+it started. It only reads: production gets the GET requests a `cd` run makes,
+and nothing is pushed. Run it after changing the verdict rules, `evals store`
+or triage. The first drill's retro is
+[evals/docs/fire-drill-2026-11-27.md](../../evals/docs/fire-drill-2026-11-27.md).
+
 ## Project prefixes
 
 Every project's requirement prefix is listed in

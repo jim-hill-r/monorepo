@@ -1,0 +1,47 @@
+---
+# Eval fire drill (standards/docs/evals.md#fire-drill): breaks one
+# production http eval on purpose, runs it against the live site, and checks
+# the requirement turns red, then that the next good run turns it green.
+# All in a temporary copy of the evals-results branch: read-only, nothing is
+# pushed, and production only gets the GET requests a cd run makes.
+# Run it by hand after changing the eval engine's verdict or store code,
+# and on pull requests that change the drill itself.
+name: evals fire drill
+
+'on':
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project with an evals.toml
+        type: string
+        default: cookbook
+      eval:
+        description: An http eval in that project's evals.toml
+        type: string
+        default: recipe-page-live
+  pull_request:
+    paths:
+      - .github/workflows/evals-fire-drill.yml
+      - standards/scripts/evals-fire-drill.sh
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: evals
+          key: evals-audit
+          save-if: false
+
+      - name: Fire drill
+        env:
+          PROJECT: ${{ inputs.project || 'cookbook' }}
+          EVAL_ID: ${{ inputs.eval || 'recipe-page-live' }}
+        run: bash standards/scripts/evals-fire-drill.sh "$PROJECT" "$EVAL_ID"

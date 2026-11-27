@@ -6,4 +6,4 @@ Its http evals (stage cd) make a few GET requests to each project's own \
 Cloudflare Pages site right after a deploy: about 30 a night across every \
 project, and at most 3 tries each. Static asset requests are free and \
 unlimited; a route served by Pages Functions counts against that project's \
-own Workers requests, which its cost.toml already covers."""
+own Workers requests, which its cost.toml already covers. The fire drill workflow, run by hand, adds a few more GET requests and a few minutes of free Actions time per run."""
