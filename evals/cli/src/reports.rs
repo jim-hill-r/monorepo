@@ -4,6 +4,8 @@
 //! - Cargo: the text `cargo test` prints (`test a::b ... ok`). Stable Cargo
 //!   has no JSON test output.
 //! - Playwright: the JSON reporter's file.
+//! - trycmd: the `Testing tests/cmd/<case>.toml ... ok` lines trycmd prints
+//!   while `cargo test` runs, so they are in the same saved output.
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -44,6 +46,54 @@ pub fn parse_cargo_output(text: &str) -> Vec<TestCase> {
             })
         })
         .collect()
+}
+
+/// Parses the case lines trycmd prints inside `cargo test` output, one
+/// [`TestCase`] per case file, named by its path (`tests/cmd/help.toml`).
+/// Colour codes are stripped, and the `:setup`/`:teardown` lines of a
+/// case's sandbox are left out.
+pub fn parse_trycmd_output(text: &str) -> Vec<TestCase> {
+    text.lines()
+        .filter_map(|line| {
+            let line = strip_ansi(line);
+            let rest = line.trim().strip_prefix("Testing ")?;
+            let (name, result) = rest.split_once(" ... ")?;
+            let name = name.trim();
+            if !name.ends_with(".toml") && !name.ends_with(".trycmd") && !name.ends_with(".md") {
+                return None;
+            }
+            let outcome = match result.split_whitespace().next()? {
+                "ok" => Outcome::Passed,
+                "failed" => Outcome::Failed,
+                "ignored" => Outcome::Skipped,
+                _ => return None,
+            };
+            Some(TestCase {
+                name: name.to_string(),
+                outcome,
+            })
+        })
+        .collect()
+}
+
+/// Removes ANSI escape sequences (`ESC [ ... letter`).
+fn strip_ansi(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut chars = line.chars();
+    while let Some(c) = chars.next() {
+        if c == '\u{1b}' {
+            if chars.next() == Some('[') {
+                for c in chars.by_ref() {
+                    if c.is_ascii_alphabetic() {
+                        break;
+                    }
+                }
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }
 
 /// True if a Cargo test's own name (the last `::` segment) starts with
@@ -227,5 +277,40 @@ test src/lib.rs - units::convert (line 12) ... ok
     #[test]
     fn rejects_a_report_that_is_not_json() {
         assert!(parse_playwright_report("<html>").is_err());
+    }
+
+    #[test]
+    fn reads_trycmd_cases_from_cargo_output() {
+        let text = "\
+running 1 test
+Testing tests/cmd/HOME-001-score.toml ... ok 16ms 614us 3ns
+Testing tests/cmd/HOME-001-score.toml:teardown ... ok
+\u{1b}[2mTesting\u{1b}[0m tests/cmd/HOME-002-help.toml ... \u{1b}[31mfailed\u{1b}[0m 2ms
+Testing tests/cmd/skip.toml ... ignored
+Testing is a word in a sentence ... ok
+test cli_transcripts ... FAILED
+";
+        assert_eq!(
+            parse_trycmd_output(text),
+            vec![
+                TestCase {
+                    name: "tests/cmd/HOME-001-score.toml".into(),
+                    outcome: Outcome::Passed,
+                },
+                TestCase {
+                    name: "tests/cmd/HOME-002-help.toml".into(),
+                    outcome: Outcome::Failed,
+                },
+                TestCase {
+                    name: "tests/cmd/skip.toml".into(),
+                    outcome: Outcome::Skipped,
+                },
+            ]
+        );
+        assert!(
+            parse_cargo_output(text)
+                .iter()
+                .all(|c| c.name == "cli_transcripts")
+        );
     }
 }

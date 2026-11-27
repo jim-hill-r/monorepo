@@ -50,6 +50,7 @@ row here before a project's first `docs/requirements.md`.
 | cahokia | `CAHO` |
 | controlled_chaos | `CHAOS` |
 | cookbook | `COOK` |
+| design_system | `DSGN` |
 | evals | `EVAL` |
 | homer | `HOME` |
 | luggage | `LUGG` |
@@ -62,7 +63,8 @@ row here before a project's first `docs/requirements.md`.
 | sparkhill | `SPRK` |
 | standards | `STND` |
 | starcraft | `STAR` |
+| telemetry | `TELE` |
 
-`EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-005), so
+`EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-006), so
 it is not a project prefix. `MONO` covers repo-wide process requirements
 such as change failure rate and lead time.

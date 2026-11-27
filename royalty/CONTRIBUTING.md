@@ -40,15 +40,15 @@ mise run //:audit
 
 ## Changing the design
 
-The `royalty.toml` format and the design rules are in the
-[plan](docs/plans/2026-11-royalty-plan.md). A change to the format updates
-the plan (or, once it exists, `docs/royalty-toml.md`) in the same PR. A
-change that answers or reopens one of the plan's "Decisions for Jim" is
+The `royalty.toml` format is in the
+[reference](docs/royalty-toml.md), and the design rules and decisions are in
+the [plan](docs/plans/2026-11-royalty-plan.md). A change to the format
+updates the reference in the same PR. A change that alters what a consumer
+owes, or answers or reopens one of the plan's "Decisions for Jim", is
 labelled `needs-human`.
 
 ## Working an issue
 
 Issues are one file each in [issues/](issues/README.md), in the format of
-[issue-management.md](../standards/docs/issue-management.md). An issue that
-names a decision in its "Blocked on" line waits until Jim has answered that
-decision in the plan.
+[issue-management.md](../standards/docs/issue-management.md). An issue with a
+"Blocked on" or "Waits on" line waits for what it names.

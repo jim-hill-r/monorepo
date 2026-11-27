@@ -1,5 +1,7 @@
 # Homer
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/homer.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A CLI tool for looking up and evaluating house details from Zillow. Provide an address to get
 property details, or provide filtering criteria to score how well a property matches your preferences.
 
@@ -22,9 +24,28 @@ homer --address "123 Main St, Seattle, WA 98101" \
 ```
 
 Homer prints the property details, a match score (how many of the criteria you
-set the property meets, such as `Match:      2 of 3 criteria met`) and each
-criterion it misses. A value Zillow doesn't report counts as not met. With no
-criteria set, it leaves the score out.
+set the property meets) and each criterion it misses:
+
+```text
+Address:    123 Main St, Seattle, WA 98101
+Type:       SINGLE_FAMILY
+Price:      $750,000
+Bedrooms:   3
+Bathrooms:  2.5
+Sqft:       1850
+Year Built: 1998
+
+Match:      2 of 3 criteria met
+✗ This property does not meet all your preferences:
+  - Square footage: 1850 sqft (need at least 2000 sqft)
+```
+
+Prices print with thousands separators. A value Zillow doesn't report counts
+as not met. With no criteria set, it leaves the score out.
+
+If Zillow has no property for the address (RapidAPI answers with no property
+fields), homer stops with an error that says so, quoting RapidAPI's message
+if it sent one, rather than printing an empty report.
 
 ### Print the result as JSON
 

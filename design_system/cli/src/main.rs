@@ -2,7 +2,7 @@
 //! files, and check them.
 //!
 //! ```text
-//! design_system_cli render [--app <dir>]   write dist/, palette/src/generated.rs,
+//! design_system_cli render [--app <dir>]   write dist/ (and its CSS in dioxus/assets/), palette/src/generated.rs,
 //!                                          docs/contrast.md and every app theme
 //! design_system_cli check [--app <dir>]    contrast, completeness, outputs up to date
 //! ```
@@ -222,6 +222,22 @@ fn base_css(dir: &Path, repo: &Path) -> Result<(PathBuf, String), String> {
     ))
 }
 
+/// Copies of `dist/tokens.css` and `dist/base.css` in `dioxus/assets/`, which
+/// `design_system_dioxus` links as files: Dioxus's `asset!` only reads files
+/// inside the crate that uses it.
+fn dioxus_copies(dir: &Path, files: &[(PathBuf, String)]) -> Vec<(PathBuf, String)> {
+    ["tokens.css", "base.css"]
+        .iter()
+        .filter_map(|name| {
+            let source = dir.join("dist").join(name);
+            files
+                .iter()
+                .find(|(p, _)| *p == source)
+                .map(|(_, text)| (dir.join("dioxus/assets").join(name), text.clone()))
+        })
+        .collect()
+}
+
 fn rel(path: &Path, repo: &Path) -> String {
     path.strip_prefix(repo)
         .unwrap_or(path)
@@ -240,6 +256,7 @@ fn run() -> Result<bool, String> {
     let mut files = outputs(&state, &dir, &repo, args.app.is_some());
     if args.app.is_none() {
         files.push(base_css(&dir, &repo)?);
+        files.extend(dioxus_copies(&dir, &files));
     }
 
     let combos = state.reports.len();

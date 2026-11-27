@@ -13,6 +13,14 @@ items are issue files in the root [issues/](../../../issues/) with
 `epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
 pane pages, one group per phase below.
 
+> **Update, 2026-11-27.** Jim: "The eval process is a continuous
+> improvement process and should not be considered a one off project." The
+> phases below are the order the engine's capabilities arrive; keeping
+> every requirement green and growing coverage through issue files runs
+> continuously. See "Continuous improvement" in
+> [evals.md](../evals.md#continuous-improvement) and the
+> [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
+
 ## Goal
 
 For every project, at any time, answer one question with evidence: **does
@@ -681,7 +689,8 @@ phase 3.
   the `smoke` reports from `target/evals-reports/cd/` once projects have
   `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
-  released binaries.
+  released binaries. Done (2026-11-27): the `trycmd` kind, collected from
+  the saved `cargo test` output.
 - The `eval-triage` skill and its daily scheduled task, replacing the
   planned nightly FIX task.
 - `evals check` makes "every `must` has a production eval" an error.

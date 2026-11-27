@@ -2,7 +2,10 @@
 # Git hook checks, run by lefthook (see lefthook.yml). Runs what PR CI runs:
 # `mise run //:audit` (its cost check only for the affected projects), the secret scan (secrets-check.sh, SEC-001), the
 # dependency audits where a lockfile changed (deps-check.sh, SEC-003/SEC-004,
-# warnings only), then `mise run ci` in every affected project.
+# warnings only), zizmor where a workflow changed (workflows-check.sh,
+# SEC-005, warnings only), then `mise run ci` in every affected project.
+# The audit's threat check (threat-check.sh) also gets the affected
+# projects, through COST_PROJECTS.
 #
 #   hooks.sh pre-commit   projects touched by the staged and unstaged changes;
 #                         while a merge is being committed, the projects the
@@ -98,6 +101,9 @@ bash standards/scripts/secrets-check.sh "${secrets[@]}" || failed+=("secrets")
 # SEC-003, SEC-004: only for lockfiles this change touches. Warnings only.
 bash standards/scripts/deps-check.sh --files <<<"$changed"
 
+# SEC-005: only for the workflows this change touches. Warnings only.
+bash standards/scripts/workflows-check.sh --files <<<"$changed"
+
 # The hook runs with GIT_DIR and GIT_INDEX_FILE (a temporary index during
 # `git commit -a`) set for this repo. Tests that run git in their own temp
 # repos would use them too, so clear them now that git work here is done.
@@ -126,10 +132,16 @@ check_tools() {
   MISE_OFFLINE=1 MISE_TASK_RUN_AUTO_INSTALL=false mise run --quiet ci:check-tools
 }
 
-# COST-*: the audit's cost check runs its per-project rules (COST-001 to
-# COST-004, COST-007 to COST-009) only for the affected projects.
+# COST-*, THR-*: the audit's cost and threat checks run their per-project
+# rules (COST-001 to COST-004, COST-007 to COST-009, and THR-*) only for the
+# affected projects.
 say "running //:audit"
-COST_PROJECTS=$(IFS=,; echo "${list[*]}") mise run --quiet //:audit || failed+=("//:audit")
+# RES-001 (a dropped resource claim needs a retirement) compares with the
+# PR base, so only the pre-push audit gets one.
+resources_base=""
+[ "$stage" = pre-push ] && resources_base=$base
+COST_PROJECTS=$(IFS=,; echo "${list[*]}") RESOURCES_BASE=$resources_base \
+  mise run --quiet //:audit || failed+=("//:audit")
 
 for p in "${list[@]}"; do
   if [ "$stage" = pre-push ] && grep -qxF "$p" "$cache_dir/$tree" 2>/dev/null; then

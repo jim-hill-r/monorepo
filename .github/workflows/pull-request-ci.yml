@@ -1,9 +1,11 @@
 ---
 # Runs `mise run ci` in every project a pull request changes (affected.sh
 # --changed-only: shared scripts and root config don't fan out to every
-# project), scans the PR's commits for secrets (SEC-001), and writes the
-# PR's cost summary and labels (standards/docs/cost.md). See
-# mise-projects.yml, standards/docs/mise.md and standards/docs/security.md.
+# project), scans the PR's commits for secrets (SEC-001), audits changed
+# lockfiles and workflows (SEC-003 to SEC-005), and writes the PR's cost and
+# security summaries and labels (standards/docs/cost.md,
+# standards/docs/security.md). See mise-projects.yml and
+# standards/docs/mise.md.
 name: Pull Request CI
 
 'on':
@@ -32,12 +34,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
           install: false
 
@@ -61,12 +63,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
           install: false
 
@@ -78,6 +80,92 @@ jobs:
         run: |
           git diff --name-only "origin/$BASE_REF...HEAD" \
             | bash standards/scripts/deps-check.sh --files
+
+  # SEC-005: zizmor over the workflows the PR changes. Warnings only for
+  # now (annotations on the lines), so CI result doesn't wait for it.
+  workflows:
+    name: Workflow audit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
+        with:
+          install: false
+
+      - name: zizmor
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ github.token }}  # mise's zizmor download
+          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+        run: |
+          git diff --name-only "origin/$BASE_REF...HEAD" \
+            | bash standards/scripts/workflows-check.sh --files
+
+  # The PR's security summary (`threat summary`, standards/docs/security.md):
+  # security files changed, what moved in threat models, workflows and
+  # exceptions, in the job summary. Labels the PR `security` when a security
+  # file changed, and `needs-human` when the change weakens security, so PR
+  # triage waits for Jim. Informational, so CI result doesn't wait for it.
+  security:
+    name: Security summary
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write         # create the labels the first time
+      pull-requests: write  # set them on the PR
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: threat
+          key: threat-summary
+          save-if: false
+
+      - name: Summarize
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          cargo run --quiet --manifest-path threat/Cargo.toml -p threat_cli -- \
+            summary --base "origin/$BASE_REF" --labels "$RUNNER_TEMP/security-labels" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Adds `security` and `needs-human` as the summary says, and takes
+      # `security` off when no security file changes any more. Never removes
+      # `needs-human`: a person or another check may have set it.
+      - name: Label
+        # A fork's token can't label; the summary is still there.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HAS_SECURITY: ${{ contains(github.event.pull_request.labels.*.name, 'security') }}
+        run: |
+          want=$(cat "$RUNNER_TEMP/security-labels")
+          gh api "repos/$GH_REPO/labels" -f name=security -f color=5319E7 \
+            -f description="Changes a security file (security summary)" >/dev/null 2>&1 || true
+          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
+            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
+          for label in $want; do
+            gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=$label" >/dev/null
+            echo "Labelled $label"
+          done
+          if [ "$HAS_SECURITY" = true ] && ! grep -qx security <<<"$want"; then
+            gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/security" >/dev/null
+            echo "Removed security"
+          fi
 
   # The PR's cost summary (`cost summary`, standards/docs/cost.md): cost
   # files changed, and services, usage, money and budgets that moved, in the
@@ -94,12 +182,12 @@ jobs:
       issues: write         # create the labels the first time
       pull-requests: write  # set them on the PR
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: cost
           key: cost-summary
@@ -139,6 +227,51 @@ jobs:
             gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/cost" >/dev/null
             echo "Removed cost"
           fi
+
+  # Retiring or keeping a resource is Jim's call (standards/docs/resources.md):
+  # a PR that adds a [[retired]] or [[keep]] entry to standards/resources.toml
+  # gets `needs-human`, and his approval of it is the approval to delete.
+  # RES-001 itself runs in the audit. Never removes the label.
+  resources:
+    name: Resource entries
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write         # create the label the first time
+      pull-requests: write  # set it on the PR
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Label new retirements and keeps
+        # A fork's token can't label; the entries are still in the summary.
+        continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          added=$(bash standards/scripts/resources.sh new-entries "origin/$BASE_REF")
+          if [ -z "$added" ]; then
+            echo "No new [[retired]] or [[keep]] entries."
+            exit 0
+          fi
+          {
+            echo "### New entries in standards/resources.toml (needs Jim)"
+            echo
+            echo "| List | Kind | Name |"
+            echo "| --- | --- | --- |"
+            awk -F'\t' '{ printf "| %s | %s | `%s` |\n", $1, $2, $3 }' <<<"$added"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
+            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
+          gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=needs-human" >/dev/null
+          echo "Labelled needs-human"
 
   # One check that always runs and passes only when every project passed, so
   # the ruleset on main can require it and GitHub auto-merge waits for green
