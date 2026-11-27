@@ -39,4 +39,6 @@ project's README and CONTRIBUTING included.
   the original owner and links the original. The knowledge base is for our
   own use: never sell third-party content or expose it as part of a product
   (Jim, 2026-11-27). PDFs are stored through Git LFS.
+- A code quality or design source (a book, article, blog post or pattern)
+  goes in `resources/code_quality/`, in the note shape its README gives.
 - Keep notes short and current; when a note goes stale, fix it or delete it.

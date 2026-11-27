@@ -20,7 +20,7 @@ radar (step 6).
 Unless you were asked to review a specific project:
 
 1. Candidates are the top-level entries (no `/`) in `config_roots` in the root
-   `mise.toml`, except the repo tooling folders `standards` and `monorepo`.
+   `mise.toml`, except the repo tooling folders `standards` and `jimhillr`.
 2. Drop a project that an accepted plan or decision in `standards/docs/` says
    is being removed, and any project with an open review pull request (a PR whose
    branch adds a folder under `docs/reviews/`).

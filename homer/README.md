@@ -41,8 +41,11 @@ Match:      2 of 3 criteria met
 ```
 
 Prices print with thousands separators. A value Zillow doesn't report counts
-as not met. A value Zillow doesn't report counts as not met. With no
-criteria set, it leaves the score out.
+as not met. With no criteria set, it leaves the score out.
+
+If Zillow has no property for the address (RapidAPI answers with no property
+fields), homer stops with an error that says so, quoting RapidAPI's message
+if it sent one, rather than printing an empty report.
 
 ### Print the result as JSON
 

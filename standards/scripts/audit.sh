@@ -16,6 +16,9 @@
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
 #   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh); warnings only for now.
 #   THR-*    Each project's docs/threat.toml (threat-check.sh); warnings only for now.
+#   RES-*    Resources (resources.sh check, standards/docs/resources.md):
+#            dropped claims retired (with a base), no references to
+#            retired names, artifact retention, valid resources.toml.
 #   SEC-*    Secret files ignored and Dependabot covering every lockfile
 #            (security-check.sh, standards/docs/security.md).
 #   DS-*     Projects that adopted the design system use its tokens, not raw
@@ -87,6 +90,10 @@ bash standards/scripts/security-check.sh || errors=$((errors + 1))
 
 # DS-*: no raw colours in projects that adopted the design system.
 bash standards/scripts/design-check.sh || errors=$((errors + 1))
+
+# RES-*: resource claims and retirements (see standards/docs/resources.md).
+# RES-001 runs when RESOURCES_BASE or AFFECTED_BASE names the PR base.
+bash standards/scripts/resources.sh check || errors=$((errors + 1))
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))

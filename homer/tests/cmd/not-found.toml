@@ -1,0 +1,6 @@
+# An address Zillow has no property for is an error, not an empty report.
+bin.name = "homer"
+args = ["--address", "1 Nowhere Rd, Nowhere, WA 00000", "--api-key", "test-key", "--quota-file", "quota.json", "--min-bedrooms", "3"]
+status.code = 1
+env.remove = ["RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+fs.sandbox = true

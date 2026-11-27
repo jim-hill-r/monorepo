@@ -44,7 +44,7 @@ surface = "site"
 id = "COOK-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into the page (XSS) steals the Auth0 session."
-mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts only from self), frame-ancestors 'none', and Dioxus escaping rendered text."
+mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts and stylesheets only from self, no inline styles), frame-ancestors 'none', and Dioxus escaping rendered text."
 surface = "site"
 
 [[threat]]
