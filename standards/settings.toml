@@ -231,6 +231,14 @@ why = "The weekly Billing check reads GitHub billing usage with it; it expires a
 every = "365d"
 
 [[setting]]
+id = "posthog-session-replay-settings"
+vendor = "PostHog"
+where = "PostHog > Settings > Project > Session replay"
+expect = "Record user sessions is on, mask all inputs is on (and mask all text if offered), the project is on the free plan with no card, and the project token matches the phc_ key in cookbook/web/public/posthog.js (standards/docs/runbooks/posthog-sign-up.md)."
+why = "Made by hand at sign-up (2026-11-27); the sites' snippet masks inputs too, but only this check notices if recording or masking is changed in PostHog."
+every = "180d"
+
+[[setting]]
 id = "rotate-posthog-billing-read-key"
 vendor = "PostHog"
 where = "PostHog > Account settings > Personal API keys > monorepo-billing-read"

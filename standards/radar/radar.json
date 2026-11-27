@@ -747,8 +747,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved exception, free tier, for one job: real-user session replay (and game events) on production sites, with all text input masked. Not integrated in any project yet.",
-    "exemplars": [],
+    "description": "Approved exception, free tier, for one job: real-user session replay (and game events) on production sites, with all text input masked. First used in cookbook (2026-11-27), loaded only on the production host.",
+    "exemplars": [
+      "cookbook/web"
+    ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",
       "AGENTS.md"
