@@ -1,4 +1,4 @@
-# Contributing to monorepo
+# Contributing to jimhillr
 
 ## Getting Started
 
@@ -8,7 +8,7 @@ Install the toolchain with mise (see the root AGENTS.md "Dev commands"). It
 installs Rust with rustfmt and clippy:
 
 ```bash
-cd monorepo
+cd jimhillr
 mise install
 ```
 

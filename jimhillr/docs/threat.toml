@@ -1,4 +1,4 @@
-# monorepo: threat model. Format and rules: standards/docs/security.md
+# jimhillr: threat model. Format and rules: standards/docs/security.md
 reviewed = "2026-11-27"
 summary = "Repo tooling and workflow tests that run locally and in CI; no deploy, no secrets of its own."
 

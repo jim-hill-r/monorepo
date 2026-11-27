@@ -1,4 +1,4 @@
-# monorepo
+# jimhillr
 
 [![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/monorepo.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
 

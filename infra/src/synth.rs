@@ -119,6 +119,7 @@ pub struct Synth {
     /// committed file diffs cleanly.
     pub json: Value,
     imports: Vec<Value>,
+    moves: Vec<Value>,
 }
 
 impl Synth {
@@ -127,6 +128,7 @@ impl Synth {
             name: name.to_string(),
             json: Value::Null,
             imports: Vec::new(),
+            moves: Vec::new(),
         }
     }
 
@@ -140,7 +142,17 @@ impl Synth {
         self.imports.push(json!({ "to": to, "id": id }));
     }
 
-    /// Serialize the stack, then add the import blocks, the HTTP backend and
+    /// Rename a resource's address from `from` to `to`, such as
+    /// `github_repository.monorepo` to `github_repository.jimhillr`, so
+    /// OpenTofu moves it in state instead of destroying and recreating it.
+    ///
+    /// terrars 0.4.0 has no `moved` blocks either, so they are added to the
+    /// JSON here, like the import blocks.
+    pub fn moved(&mut self, from: &str, to: String) {
+        self.moves.push(json!({ "from": from, "to": to }));
+    }
+
+    /// Serialize the stack, then add the import and moved blocks, the HTTP backend and
     /// state encryption.
     pub fn finish(mut self, stack: &terrars::Stack) -> anyhow::Result<Self> {
         let bytes = stack
@@ -175,6 +187,12 @@ impl Synth {
             object.insert(
                 "import".into(),
                 Value::Array(std::mem::take(&mut self.imports)),
+            );
+        }
+        if !self.moves.is_empty() {
+            object.insert(
+                "moved".into(),
+                Value::Array(std::mem::take(&mut self.moves)),
             );
         }
         self.json = json;
