@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T19:30:29.830996134Z",
+  "generated_at": "2026-11-27T19:52:26.548787502Z",
   "coverage": {
     "projects": 26,
     "projects_with_requirements": 6,
@@ -623,7 +623,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "home-page-live failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
@@ -632,7 +632,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "app-loads-live failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
@@ -641,7 +641,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "tracing-page-live failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
@@ -650,7 +650,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "capital-level-live failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
@@ -659,7 +659,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "home-page-live-for-progress failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
@@ -668,7 +668,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "connects-only-to-itself-live failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
@@ -677,9 +677,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-27 19:15:37.644672405 UTC",
-            "manifest-live failed in cd at 2026-11-27 19:15:37.644672405 UTC",
-            "no-zoom-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+            "home-screen-icon-live failed in cd at 2026-11-27 19:38:35.754820032 UTC",
+            "manifest-live failed in cd at 2026-11-27 19:38:35.754820032 UTC",
+            "no-zoom-live failed in cd at 2026-11-27 19:38:35.754820032 UTC"
           ]
         },
         {
