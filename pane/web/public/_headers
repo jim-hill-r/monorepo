@@ -8,9 +8,11 @@
 # document::Title (src/main.rs) run their JavaScript with new Function().
 # img-src allows any https image, since project docs rendered from Markdown
 # show badges and pictures from other hosts. Pane frames its own review
-# decks, so frames are same-origin only rather than none.
+# decks, so frames are same-origin only rather than none. connect-src allows
+# api.github.com for the Approve page, which reads public pull request data
+# without a token (decision 0014).
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com https://api.github.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN

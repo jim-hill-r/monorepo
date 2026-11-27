@@ -9,7 +9,8 @@ url = "https://jimhillr-controlled-chaos.pages.dev"
 access = "public"
 data = "public"
 previews = "public"
-notes = "Static wasm build."
+headers = "controlled_chaos/web/_headers"
+notes = "Static Bevy wasm build. bevy-release.sh copies web/_headers into dist/web."
 
 [[surface]]
 name = "nightly downloads"
@@ -59,7 +60,7 @@ surface = "site"
 id = "CC-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into the page (XSS) or the site framed by another (clickjacking)."
-mitigation = "Dioxus escapes text it renders and the page loads only its own scripts. Security headers on every response are still missing (see the FIX issue)."
+mitigation = "The game draws to a canvas and renders no HTML from input; the CSP in web/_headers allows scripts only from self (plus 'wasm-unsafe-eval' and the Web Analytics beacon), and frame-ancestors 'none' with X-Frame-Options: DENY stops framing."
 surface = "site"
 
 [[threat]]

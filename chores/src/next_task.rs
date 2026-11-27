@@ -1,0 +1,498 @@
+//! `chores next-task`: pick the next issue the way the `start-a-new-task`
+//! skill orders them.
+//!
+//! 1. `priority` issues in the root `issues/` folder.
+//! 2. `priority` issues of each project under `# Priority Projects` in the
+//!    root `issues/README.md`, in list order.
+//! 3. Any other `priority` issue, then backlog issues (root first, then the
+//!    priority projects in list order, then the rest by name).
+//!
+//! Within a group, issues sort by project, epic, phase, `order` and path, so
+//! an epic's earliest phase and lowest order come first. Human tasks,
+//! `agent-ignore` issues and on-hold projects are never picked.
+
+use std::fs;
+use std::path::Path;
+
+use anyhow::Result;
+use serde::Serialize;
+
+use crate::issues::{self, Issue, ProjectLists};
+
+/// What to leave out and how many to pick.
+#[derive(Debug, Default)]
+pub struct Options {
+    /// Only issues of these projects (a top-level folder, or a path prefix
+    /// such as `cahokia/web`). `repo` means the root `issues/` folder.
+    pub projects: Vec<String>,
+    /// Skip these projects or epics: work another thread already has.
+    pub exclude: Vec<String>,
+    /// Skip these issue files (paths from the repo root), such as ones an
+    /// open PR already deletes.
+    pub skip: Vec<String>,
+    /// How many to pick. With more than one, each pick is from a different
+    /// project (or, in the root folder, a different epic).
+    pub count: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Pick {
+    pub issue: Issue,
+    /// Which project or epic this pick takes; pass it to `--exclude` to
+    /// keep another thread off it.
+    pub key: String,
+    /// Why it was chosen, in words.
+    pub reason: String,
+    /// The folder's README.md, when it has one.
+    pub readme: Option<String>,
+    /// The README section named after the issue's epic.
+    pub epic_notes: Option<String>,
+}
+
+/// A `TODO` or `FIX` comment, the last place to look.
+#[derive(Debug, Serialize)]
+pub struct Todo {
+    pub path: String,
+    pub line: usize,
+    pub text: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Outcome {
+    pub picks: Vec<Pick>,
+    /// Only filled when no issue file qualified.
+    pub todos: Vec<Todo>,
+}
+
+pub fn run(root: &Path, options: &Options) -> Result<Outcome> {
+    let lists = issues::project_lists(root)?;
+    let all = issues::load(root)?;
+    let mut picks = pick(&all, &lists, options);
+    for p in &mut picks {
+        let readme = format!("{}/README.md", p.issue.folder());
+        if let Ok(text) = fs::read_to_string(root.join(&readme)) {
+            p.epic_notes = p
+                .issue
+                .epic_name()
+                .and_then(|e| issues::epic_notes(&text, e));
+            p.readme = Some(readme);
+        }
+    }
+    let todos = if picks.is_empty() {
+        find_todos(root, &lists, options)?
+    } else {
+        Vec::new()
+    };
+    Ok(Outcome { picks, todos })
+}
+
+/// The ordering key: (group, rank within the group's project list).
+fn group(issue: &Issue, lists: &ProjectLists) -> (u8, usize, String) {
+    let project = issue.project();
+    let listed = project.and_then(|p| lists.priority.iter().position(|l| l == p));
+    let name = project.unwrap_or("").to_string();
+    let priority = issue.priority == "priority";
+    match (priority, project, listed) {
+        (true, None, _) => (0, 0, name),
+        (true, Some(_), Some(i)) => (1, i, name),
+        (true, Some(_), None) => (2, 0, name),
+        (false, None, _) => (3, 0, name),
+        (false, Some(_), Some(i)) => (4, i, name),
+        (false, Some(_), None) => (5, 0, name),
+    }
+}
+
+fn reason(issue: &Issue, lists: &ProjectLists) -> String {
+    let (g, i, name) = group(issue, lists);
+    match g {
+        0 => "priority issue in the root issues/ folder".to_string(),
+        1 => format!("priority issue of priority project #{} ({name})", i + 1),
+        2 => format!("priority issue of {name}"),
+        3 => "backlog issue in the root issues/ folder".to_string(),
+        4 => format!("backlog issue of priority project #{} ({name})", i + 1),
+        _ => format!("backlog issue of {name}"),
+    }
+}
+
+/// The project or epic a pick takes up.
+pub fn key(issue: &Issue) -> String {
+    match issue.project() {
+        Some(p) => p.to_string(),
+        None => match issue.epic_name() {
+            Some(e) => format!("epic:{e}"),
+            None => format!("repo:{}", issue.path),
+        },
+    }
+}
+
+fn matches_project(issue: &Issue, wanted: &str) -> bool {
+    let wanted = wanted.trim_end_matches('/');
+    match issue.project() {
+        None => wanted == "repo" || wanted == "issues",
+        Some(_) => issue.path.starts_with(&format!("{wanted}/")),
+    }
+}
+
+fn excluded(issue: &Issue, exclude: &[String]) -> bool {
+    let key = key(issue);
+    exclude.iter().any(|e| {
+        let e = e.trim();
+        e == key
+            || matches_project(issue, e)
+            || issue
+                .epic_name()
+                .is_some_and(|epic| epic.eq_ignore_ascii_case(e.trim_start_matches("epic:")))
+    })
+}
+
+pub fn pick(all: &[Issue], lists: &ProjectLists, options: &Options) -> Vec<Pick> {
+    let mut candidates: Vec<&Issue> = all
+        .iter()
+        .filter(|i| !i.is_human() && !i.has_tag("agent-ignore"))
+        .filter(|i| matches!(i.kind.as_str(), "todo" | "fix"))
+        .filter(|i| {
+            i.project()
+                .is_none_or(|p| !lists.on_hold.iter().any(|h| h == p))
+        })
+        .filter(|i| {
+            options.projects.is_empty() || options.projects.iter().any(|p| matches_project(i, p))
+        })
+        .filter(|i| !excluded(i, &options.exclude))
+        .filter(|i| {
+            !options
+                .skip
+                .iter()
+                .any(|s| s.trim_start_matches("./") == i.path)
+        })
+        .collect();
+    candidates.sort_by_key(|i| {
+        (
+            group(i, lists),
+            i.epic_name().unwrap_or("").to_string(),
+            i.phase().unwrap_or(0),
+            i.order.unwrap_or(u64::MAX),
+            i.path.clone(),
+        )
+    });
+    let count = options.count.max(1);
+    let mut picks: Vec<Pick> = Vec::new();
+    for issue in candidates {
+        if picks.len() == count {
+            break;
+        }
+        let k = key(issue);
+        if picks.iter().any(|p| p.key == k) {
+            continue;
+        }
+        picks.push(Pick {
+            reason: reason(issue, lists),
+            key: k,
+            issue: issue.clone(),
+            readme: None,
+            epic_notes: None,
+        });
+    }
+    picks
+}
+
+/// `TODO` and `FIX` comments in code, skipping `agent-ignore` ones,
+/// Markdown, on-hold projects and build output. At most `count` (min 5).
+fn find_todos(root: &Path, lists: &ProjectLists, options: &Options) -> Result<Vec<Todo>> {
+    let mut out = Vec::new();
+    let limit = options.count.max(5);
+    scan(root, root, lists, options, limit, &mut out)?;
+    Ok(out)
+}
+
+const CODE: &[&str] = &[
+    "rs", "ts", "tsx", "js", "mjs", "sh", "toml", "yml", "yaml", "py", "css", "html",
+];
+const MARKERS: &[&str] = &["// ", "# ", "/* ", "<!-- ", "-- ", "* "];
+
+fn scan(
+    root: &Path,
+    dir: &Path,
+    lists: &ProjectLists,
+    options: &Options,
+    limit: usize,
+    out: &mut Vec<Todo>,
+) -> Result<()> {
+    let mut entries: Vec<_> = fs::read_dir(dir)?.filter_map(Result::ok).collect();
+    entries.sort_by_key(|e| e.file_name());
+    for entry in entries {
+        if out.len() >= limit {
+            return Ok(());
+        }
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let rel = issues::relative(root, &path);
+        let top = rel.split('/').next().unwrap_or("");
+        if dir == root
+            && (lists.on_hold.iter().any(|h| h == top)
+                || options.exclude.iter().any(|e| e == top)
+                || (!options.projects.is_empty() && !options.projects.iter().any(|p| p == top)))
+        {
+            continue;
+        }
+        if entry.file_type()?.is_dir() {
+            if !(name.starts_with('.')
+                || name == "target"
+                || name == "node_modules"
+                || name == "dist")
+            {
+                scan(root, &path, lists, options, limit, out)?;
+            }
+            continue;
+        }
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if !CODE.contains(&ext) {
+            continue;
+        }
+        let Ok(text) = fs::read_to_string(&path) else {
+            continue;
+        };
+        for (n, line) in text.lines().enumerate() {
+            if out.len() >= limit {
+                break;
+            }
+            let t = line.trim_start();
+            let hit = MARKERS.iter().any(|m| {
+                t.strip_prefix(m.trim_end()).is_some_and(|rest| {
+                    let rest = rest.trim_start();
+                    rest.starts_with("TODO") || rest.starts_with("FIX")
+                })
+            });
+            if hit && !t.contains("agent-ignore") {
+                out.push(Todo {
+                    path: rel.clone(),
+                    line: n + 1,
+                    text: t.to_string(),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The plain-text report agents read.
+pub fn render(outcome: &Outcome) -> String {
+    let mut s = String::new();
+    if outcome.picks.is_empty() && outcome.todos.is_empty() {
+        s.push_str(
+            "No issue qualifies. Investigate the codebase and record a few real issues \
+             (start-a-new-task step 1.5).\n",
+        );
+        return s;
+    }
+    if outcome.picks.is_empty() {
+        s.push_str("No issue file qualifies. TODO/FIX comments to work instead:\n");
+        for t in &outcome.todos {
+            s.push_str(&format!("- {}:{}: {}\n", t.path, t.line, t.text));
+        }
+        return s;
+    }
+    for (n, p) in outcome.picks.iter().enumerate() {
+        let i = &p.issue;
+        s.push_str(&format!("{}. {}\n", n + 1, i.path));
+        s.push_str(&format!(
+            "   {} {} | {} | key: {}\n",
+            i.priority,
+            i.kind.to_uppercase(),
+            p.reason,
+            p.key
+        ));
+        if let Some(epic) = &i.epic {
+            let order = i.order.map(|o| format!(", order {o}")).unwrap_or_default();
+            s.push_str(&format!("   epic: {epic}{order}\n"));
+        }
+        if !i.tags.is_empty() {
+            s.push_str(&format!("   tags: {}\n", i.tags.join(", ")));
+        }
+        if let Some(readme) = &p.readme {
+            s.push_str(&format!("   folder notes: {readme}\n"));
+        }
+        s.push('\n');
+        for line in i.body.lines() {
+            s.push_str(&format!("   {line}\n"));
+        }
+        if let Some(notes) = &p.epic_notes {
+            s.push_str("\n   Epic notes from the folder README:\n");
+            for line in notes.lines() {
+                s.push_str(&format!("   > {line}\n"));
+            }
+        }
+        s.push('\n');
+    }
+    s
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn issue(path: &str, priority: &str, extra: &str) -> Issue {
+        let text = format!(
+            "---\nkind: todo\npriority: {priority}\n{extra}added: 2026-11-27\n---\n\nDo {path}.\n"
+        );
+        issues::parse(path, &text).expect("front matter")
+    }
+
+    fn lists() -> ProjectLists {
+        ProjectLists {
+            priority: vec!["sparkhill".into(), "cookbook".into()],
+            on_hold: vec!["luggage".into()],
+        }
+    }
+
+    fn paths(picks: &[Pick]) -> Vec<&str> {
+        picks.iter().map(|p| p.issue.path.as_str()).collect()
+    }
+
+    fn all() -> Vec<Issue> {
+        vec![
+            issue("pane/issues/p.md", "priority", ""),
+            issue("cookbook/issues/c.md", "priority", ""),
+            issue("sparkhill/webapp/issues/s.md", "priority", ""),
+            issue("issues/r.md", "priority", ""),
+            issue("issues/b.md", "backlog", ""),
+            issue("luggage/issues/l.md", "priority", ""),
+            issue("homer/issues/h.md", "backlog", ""),
+            issue("issues/human/x.md", "priority", ""),
+            issue("bogan/issues/i.md", "priority", "tags: [agent-ignore]\n"),
+        ]
+    }
+
+    #[test]
+    fn follows_the_skill_order() {
+        let opts = Options {
+            count: 10,
+            ..Options::default()
+        };
+        assert_eq!(
+            paths(&pick(&all(), &lists(), &opts)),
+            vec![
+                "issues/r.md",
+                "sparkhill/webapp/issues/s.md",
+                "cookbook/issues/c.md",
+                "pane/issues/p.md",
+                "issues/b.md",
+                "homer/issues/h.md",
+            ]
+        );
+    }
+
+    #[test]
+    fn earliest_phase_and_lowest_order_first() {
+        let all = vec![
+            issue(
+                "issues/b.md",
+                "priority",
+                "epic: \"Cost / Phase 2: x\"\norder: 10\n",
+            ),
+            issue(
+                "issues/a.md",
+                "priority",
+                "epic: \"Cost / Phase 1: y\"\norder: 20\n",
+            ),
+            issue(
+                "issues/c.md",
+                "priority",
+                "epic: \"Cost / Phase 1: y\"\norder: 10\n",
+            ),
+        ];
+        let picks = pick(&all, &lists(), &Options::default());
+        assert_eq!(paths(&picks), vec!["issues/c.md"]);
+        assert_eq!(picks[0].key, "epic:Cost");
+    }
+
+    #[test]
+    fn one_pick_per_project_and_exclusions() {
+        let mut all = all();
+        all.push(issue("cookbook/web/issues/w.md", "priority", ""));
+        let opts = Options {
+            count: 3,
+            exclude: vec!["sparkhill".into()],
+            ..Options::default()
+        };
+        assert_eq!(
+            paths(&pick(&all, &lists(), &opts)),
+            vec!["issues/r.md", "cookbook/issues/c.md", "pane/issues/p.md"]
+        );
+    }
+
+    #[test]
+    fn scoped_to_a_project_and_skips() {
+        let opts = Options {
+            projects: vec!["cookbook".into()],
+            ..Options::default()
+        };
+        assert_eq!(
+            paths(&pick(&all(), &lists(), &opts)),
+            vec!["cookbook/issues/c.md"]
+        );
+        let opts = Options {
+            projects: vec!["cookbook".into()],
+            skip: vec!["cookbook/issues/c.md".into()],
+            ..Options::default()
+        };
+        assert!(pick(&all(), &lists(), &opts).is_empty());
+        let opts = Options {
+            projects: vec!["repo".into()],
+            exclude: vec!["epic:Nope".into()],
+            ..Options::default()
+        };
+        assert_eq!(paths(&pick(&all(), &lists(), &opts)), vec!["issues/r.md"]);
+    }
+
+    #[test]
+    fn falls_back_to_todo_comments() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let root = dir.path();
+        fs::create_dir_all(root.join("issues"))?;
+        fs::write(
+            root.join("issues/README.md"),
+            "# Priority Projects\n\n# On Hold Projects\n- luggage\n",
+        )?;
+        fs::create_dir_all(root.join("homer/src"))?;
+        fs::create_dir_all(root.join("luggage/src"))?;
+        fs::write(
+            root.join("homer/src/lib.rs"),
+            "fn a() {}\n// TODO (agent-generated): validate input\n// TODO (agent-ignore): leave\nlet todo = 1;\n",
+        )?;
+        fs::write(root.join("luggage/src/lib.rs"), "// FIX: on hold\n")?;
+        let outcome = run(root, &Options::default())?;
+        assert!(outcome.picks.is_empty());
+        assert_eq!(outcome.todos.len(), 1);
+        assert_eq!(outcome.todos[0].path, "homer/src/lib.rs");
+        assert_eq!(outcome.todos[0].line, 2);
+        assert!(render(&outcome).contains("homer/src/lib.rs:2"));
+        Ok(())
+    }
+
+    #[test]
+    fn reads_epic_notes_from_the_folder_readme() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let root = dir.path();
+        fs::create_dir_all(root.join("issues"))?;
+        fs::write(
+            root.join("issues/README.md"),
+            "# Priority Projects\n- cookbook\n\n# Epic notes\n\n## Cost check\n\nSee the plan.\n",
+        )?;
+        fs::write(
+            root.join("issues/x.md"),
+            "---\nkind: fix\npriority: priority\nepic: \"Cost check / Phase 3: strict\"\norder: 10\nadded: 2026-11-27\n---\n\nMake it strict.\n",
+        )?;
+        let outcome = run(root, &Options::default())?;
+        assert_eq!(outcome.picks.len(), 1);
+        assert_eq!(
+            outcome.picks[0].epic_notes.as_deref(),
+            Some("See the plan.")
+        );
+        let text = render(&outcome);
+        assert!(text.contains("1. issues/x.md"));
+        assert!(text.contains("priority FIX | priority issue in the root issues/ folder"));
+        assert!(text.contains("   Make it strict."));
+        assert!(text.contains("   > See the plan."));
+        Ok(())
+    }
+}

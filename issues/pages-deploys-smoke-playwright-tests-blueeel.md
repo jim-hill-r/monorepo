@@ -7,6 +7,8 @@ order: 70
 added: 2026-11-26
 ---
 
-Add `@smoke` Playwright tests for sparkhill/webapp (deployed by
-`sparkhill/webapp_cloudflare`), and a Pages deploy and `@smoke` tests for
-blueeel, matching cookbook, pane and cahokia.
+Add a Pages deploy and `@smoke` Playwright tests for `blueeel` (the older
+top-level stub, not the Blue Eel app), matching cookbook, pane and cahokia.
+Blue Eel itself (sparkhill/webapp) already has its `@smoke` tests, which run
+against its live site after each deploy (`SMOKE_DIR` in
+`sparkhill/webapp_cloudflare/mise.toml`).

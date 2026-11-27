@@ -4,7 +4,8 @@ use sycamore::prelude::*;
 /// Where people reach Spark Hill. The site has no contact page or form (it
 /// is static files with no server), so "Contact Us" goes to the Nextdoor
 /// page, which takes messages.
-const CONTACT_URL: &str = "https://nextdoor.com/pages/private-reading-tutor-oceanside-ca/";
+pub(crate) const CONTACT_URL: &str =
+    "https://nextdoor.com/pages/private-reading-tutor-oceanside-ca/";
 
 fn index_page<G: Html>(cx: Scope) -> View<G> {
     page(cx, t!(cx, "tagline"), link!(cx, ""))

@@ -9,8 +9,9 @@
 #            directory exists (and, for cargo and npm, holds that lockfile).
 #   SEC-007  CI's only git pushes are evals.sh's push of eval results to the
 #            evals-results data branch, coverage.sh's push of coverage
-#            results to the coverage-results data branch and feedback.sh's
-#            push of fan feedback to feedback-data: no other `git push`
+#            results to the coverage-results data branch, feedback.sh's
+#            push of fan feedback to feedback-data, and evals.sh triage's
+#            push (and delete) of the evals-triage branch: no other `git push`
 #            in a workflow, shared script or shared task file, and never to
 #            main.
 #
@@ -83,13 +84,16 @@ else
 fi
 
 # SEC-007: the eval workflows push only to evals-results, the coverage
-# workflow only to coverage-results, and the feedback export only to
-# feedback-data. Comment lines are skipped; every other
+# workflow only to coverage-results, the feedback export only to
+# feedback-data, and eval triage only to evals-triage (a branch PR triage
+# opens a pull request from, so main still changes only through review). Comment lines are skipped; every other
 # line running `git ... push` must be evals.sh's or coverage.sh's one push,
 # which names its target ref in full. This file holds the patterns.
 allowed='git -C "$work" push --quiet origin HEAD:refs/heads/evals-results'
 allowed_coverage='git -C "$work" push --quiet origin HEAD:refs/heads/coverage-results'
 allowed_feedback='git -C "$work" push --quiet origin HEAD:refs/heads/feedback-data'
+allowed_triage='git -C "$work" push --quiet --force origin HEAD:refs/heads/evals-triage'
+allowed_triage_delete='git -C "$work" push --quiet origin --delete refs/heads/evals-triage'
 while IFS=: read -r file line text; do
   [ -n "$file" ] || continue
   [[ "$text" =~ ^[[:space:]]*# ]] && continue
@@ -103,7 +107,11 @@ while IFS=: read -r file line text; do
   if [ "$file" = standards/scripts/feedback.sh ] && [[ "$text" == *"$allowed_feedback"* ]]; then
     continue
   fi
-  err SEC-007 "$file:$line runs git push; CI may push only eval results to evals-results (standards/scripts/evals.sh store), coverage results to coverage-results (standards/scripts/coverage.sh store) and fan feedback to feedback-data (standards/scripts/feedback.sh store)"
+  if [ "$file" = standards/scripts/evals.sh ] \
+    && { [[ "$text" == *"$allowed_triage"* ]] || [[ "$text" == *"$allowed_triage_delete"* ]]; }; then
+    continue
+  fi
+  err SEC-007 "$file:$line runs git push; CI may push only eval results to evals-results (standards/scripts/evals.sh store), coverage results to coverage-results (standards/scripts/coverage.sh store), fan feedback to feedback-data (standards/scripts/feedback.sh store) and triage issue files to evals-triage (standards/scripts/evals.sh triage)"
 done < <(git grep -nE 'git( +-[cC] +[^ ]+)* +push( |$)' -- '.github/workflows/*.yml' '.github/workflows/*.yaml' \
   'standards/scripts/*.sh' 'standards/tasks/*.toml' || true)
 
