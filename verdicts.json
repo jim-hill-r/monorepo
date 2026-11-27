@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T19:18:11.057532231Z",
+  "generated_at": "2026-11-27T19:30:29.830996134Z",
   "coverage": {
     "projects": 26,
-    "projects_with_requirements": 5,
+    "projects_with_requirements": 6,
     "percent": 4.9,
-    "musts_percent": 57.9,
+    "musts_percent": 50.0,
     "judged_percent": 12.2,
     "warn_below": 80.0,
     "warning": true
@@ -420,16 +420,54 @@
     },
     {
       "project": "my_lang",
-      "musts": 0,
+      "musts": 3,
       "musts_in_production": 0,
       "coverage": {
-        "requirements": 0,
+        "requirements": 4,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "LANG-001",
+          "title": "A program runs and gives the right answer",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "LANG-002",
+          "title": "A mistake gives a clear error, never a crash",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "LANG-003",
+          "title": "Side effects stay where they are declared",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "LANG-004",
+          "title": "The compiled LLVM IR can be read",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "pane",
