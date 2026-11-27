@@ -59,16 +59,21 @@ pub fn net(revenue_cents: u64, direct_cost_cents: u64, shared_cost_cents: u64) -
     i64::try_from(net).unwrap_or(if net < 0 { i64::MIN } else { i64::MAX })
 }
 
+/// The project that carries repo-wide work and anything no project's PRs
+/// can carry, so every cent of a shared cost lands on some project
+/// (decision 0016: full attribution, no unattributed remainder).
+pub const REPO_WIDE: &str = "standards";
+
 /// Split `shared_cents` across projects by their share of the PRs merged in
 /// the month.
 ///
 /// `merged_prs` has one entry per merged PR: the projects it touched. A PR
 /// touching `n` projects counts `1/n` to each; a project listed twice in one
-/// PR counts once. A PR touching no project (a repo-wide change) is left
-/// out, and projects with no merged PRs get nothing. Shares are whole cents
-/// that always add up to `shared_cents` (largest remainder, ties to the
-/// project name that sorts first), unless no PR touched a project, when the
-/// result is empty and the cost is not split.
+/// PR counts once. A PR touching no project (a repo-wide change) counts to
+/// [`REPO_WIDE`], and so does the whole cost in a month with no merged PRs.
+/// Projects with no merged PRs get nothing. Shares are whole cents that
+/// always add up to `shared_cents` (largest remainder, ties to the project
+/// name that sorts first); only a zero cost with no PRs gives no shares.
 pub fn split_shared_costs<S: AsRef<str>>(
     shared_cents: u64,
     merged_prs: &[Vec<S>],
@@ -79,12 +84,18 @@ pub fn split_shared_costs<S: AsRef<str>>(
             let mut projects: Vec<&str> = pr.iter().map(AsRef::as_ref).collect();
             projects.sort_unstable();
             projects.dedup();
+            if projects.is_empty() {
+                projects.push(REPO_WIDE);
+            }
             projects
         })
-        .filter(|projects| !projects.is_empty())
         .collect();
     if prs.is_empty() {
-        return BTreeMap::new();
+        return if shared_cents == 0 {
+            BTreeMap::new()
+        } else {
+            BTreeMap::from([(REPO_WIDE.to_string(), shared_cents)])
+        };
     }
 
     // Weigh every PR in units of 1/denominator so the fractions stay exact.
@@ -167,26 +178,95 @@ pub fn project_money(
     }
 }
 
-/// Every project's money for `month`, in the order given: `projects` pairs
-/// each project's path with its parsed `docs/cost.toml`, `shared_cents` is
-/// the month's shared costs and `merged_prs` the projects each PR merged that
-/// month touched (see [`split_shared_costs`]). A PR project not in
-/// `projects` takes its share but gets no row, so the rows add up to less
-/// than `shared_cents`; the caller lists every project to avoid that.
+/// Every project's money for `month`: `projects` pairs each project's path
+/// with its parsed `docs/cost.toml`, `shared_cents` is the month's shared
+/// costs and `merged_prs` the projects each PR merged that month touched
+/// (see [`split_shared_costs`]). Rows come in the order given, then a row
+/// for any project that takes a share without being listed (such as
+/// [`REPO_WIDE`]), so the rows always add up to the month's totals.
 pub fn month_money<S: AsRef<str>>(
     month: Month,
     projects: &[(&str, Option<&CostFile>)],
     shared_cents: u64,
     merged_prs: &[Vec<S>],
 ) -> Vec<ProjectMoney> {
-    let shares = split_shared_costs(shared_cents, merged_prs);
-    projects
+    let mut shares = split_shared_costs(shared_cents, merged_prs);
+    let mut rows: Vec<ProjectMoney> = projects
         .iter()
         .map(|&(project, file)| {
-            let shared = shares.get(project).copied().unwrap_or(0);
+            let shared = shares.remove(project).unwrap_or(0);
             project_money(project, month, file, shared)
         })
-        .collect()
+        .collect();
+    rows.extend(
+        shares
+            .into_iter()
+            .map(|(project, shared)| project_money(&project, month, None, shared)),
+    );
+    rows
+}
+
+/// A month's totals, worked out apart from the per-project rows: every
+/// project's revenue and direct cost, and the shared cost before the split.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MonthTotals {
+    pub revenue_cents: u64,
+    pub direct_cost_cents: u64,
+    pub shared_cost_cents: u64,
+}
+
+impl MonthTotals {
+    /// The totals for `month` straight from the cost files and the shared cost.
+    pub fn of(month: Month, files: &[Option<&CostFile>], shared_cost_cents: u64) -> Self {
+        let (revenue_cents, direct_cost_cents) =
+            files.iter().flatten().fold((0, 0), |(r, c), f| {
+                (
+                    u64::saturating_add(r, monthly_revenue(&f.revenue, month)),
+                    u64::saturating_add(c, direct_cost(&f.cost, month)),
+                )
+            });
+        Self {
+            revenue_cents,
+            direct_cost_cents,
+            shared_cost_cents,
+        }
+    }
+}
+
+/// The attribution check (decision 0016): one line for each way the rows
+/// fail to add up to `totals`, or for a row whose net isn't its revenue less
+/// its costs. Empty when every cent is attributed exactly once.
+pub fn attribution_gaps(rows: &[ProjectMoney], totals: MonthTotals) -> Vec<String> {
+    let mut gaps = Vec::new();
+    let sum = |f: fn(&ProjectMoney) -> u64| -> u128 { rows.iter().map(|m| u128::from(f(m))).sum() };
+    for (what, rows_sum, total) in [
+        ("revenue", sum(|m| m.revenue_cents), totals.revenue_cents),
+        (
+            "direct cost",
+            sum(|m| m.direct_cost_cents),
+            totals.direct_cost_cents,
+        ),
+        (
+            "shared cost",
+            sum(|m| m.shared_cost_cents),
+            totals.shared_cost_cents,
+        ),
+    ] {
+        if rows_sum != u128::from(total) {
+            gaps.push(format!(
+                "{what}: the projects add up to {rows_sum} cents but the total is {total}"
+            ));
+        }
+    }
+    for m in rows {
+        if m.net_cents != net(m.revenue_cents, m.direct_cost_cents, m.shared_cost_cents) {
+            gaps.push(format!(
+                "{} {}: net isn't revenue less costs",
+                m.project, m.month
+            ));
+        }
+    }
+    gaps
 }
 
 #[cfg(test)]
@@ -283,11 +363,21 @@ source = "Store"
     }
 
     #[test]
-    fn no_prs_splits_nothing() {
+    fn a_month_with_no_prs_charges_the_whole_shared_cost_to_repo_wide_work() {
         let none: [Vec<&str>; 0] = [];
-        assert!(split_shared_costs(2500, &none).is_empty());
-        // A repo-wide PR touches no project, so it doesn't count either.
-        assert!(split_shared_costs(2500, &[Vec::<&str>::new()]).is_empty());
+        let all = BTreeMap::from([(REPO_WIDE.to_string(), 2500)]);
+        assert_eq!(split_shared_costs(2500, &none), all);
+        // Only a zero cost with no PRs has nothing to split.
+        assert!(split_shared_costs(0, &none).is_empty());
+    }
+
+    #[test]
+    fn a_repo_wide_pr_counts_to_repo_wide_work() {
+        let all = BTreeMap::from([(REPO_WIDE.to_string(), 2500)]);
+        assert_eq!(split_shared_costs(2500, &[Vec::<&str>::new()]), all);
+        let shares = split_shared_costs(2000, &[vec!["pane"], Vec::new()]);
+        assert_eq!(shares["pane"], 1000);
+        assert_eq!(shares[REPO_WIDE], 1000);
     }
 
     #[test]
@@ -386,6 +476,50 @@ source = "Store"
             ]
         );
         assert!(rows.iter().all(|m| m.month == "2026-11"));
+    }
+
+    #[test]
+    fn project_money_adds_up_to_the_month_totals() {
+        let pane = file(MONEY);
+        let cookbook = file("");
+        // `bogan` and repo-wide work take shares without being listed.
+        let prs = [vec!["pane"], vec!["bogan", "cookbook"], Vec::new()];
+        let rows = month_money(
+            nov(),
+            &[("pane", Some(&pane)), ("cookbook", Some(&cookbook))],
+            2501,
+            &prs,
+        );
+        let names: Vec<&str> = rows.iter().map(|m| m.project.as_str()).collect();
+        assert_eq!(names, ["pane", "cookbook", "bogan", REPO_WIDE]);
+        let totals = MonthTotals::of(nov(), &[Some(&pane), Some(&cookbook)], 2501);
+        assert_eq!(
+            totals,
+            MonthTotals {
+                revenue_cents: 500,
+                direct_cost_cents: 2600,
+                shared_cost_cents: 2501,
+            }
+        );
+        assert_eq!(attribution_gaps(&rows, totals), Vec::<String>::new());
+        let nets: i64 = rows.iter().map(|m| m.net_cents).sum();
+        assert_eq!(nets, 500 - 2600 - 2501);
+    }
+
+    #[test]
+    fn attribution_gaps_name_every_mismatch() {
+        let mut rows = vec![project_money("homer", nov(), None, 10)];
+        let totals = MonthTotals {
+            revenue_cents: 1,
+            direct_cost_cents: 0,
+            shared_cost_cents: 10,
+        };
+        assert_eq!(
+            attribution_gaps(&rows, totals),
+            ["revenue: the projects add up to 0 cents but the total is 1"]
+        );
+        rows[0].net_cents = 0;
+        assert_eq!(attribution_gaps(&rows, totals).len(), 2);
     }
 
     #[test]

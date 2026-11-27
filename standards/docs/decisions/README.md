@@ -25,4 +25,5 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0013](0013-credit-window-scheduler.md) | Start work by the Claude usage window, checked every hour | Accepted |
 | [0014](0014-faster-pr-approvals.md) | Faster PR approvals: an Approve page in pane, one approval per stack, a `jimhillr-reviewer` account for low-risk PRs and post-merge acknowledgement | Accepted |
 | [0015](0015-code-quality-process.md) | A standing code quality process: one standard, a ratchet, triage into issues | Accepted |
+| [0016](0016-holding-and-handling-money.md) | Holding and handling money: a separate free account, accounting books in the repo, a merchant of record for card sales | Accepted |
 | [0017](0017-user-docs.md) | Every project has a user guide, checked by the audit with a shrinking baseline | Accepted |

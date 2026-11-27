@@ -187,6 +187,16 @@ repo, rather than in any one agent tool's settings.
   [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
   findings in files you touch. Scripts stay Rust-only: add no new `.sh`
   files, and port existing ones into `chores` commands over time.
+- **GAAP books (Jim, 2026-11-27).** "All of our cost software should
+  follow GAP accounting so that everything is double counted on the ledger
+  and also we should have attribution in such a way that if you sum up all
+  service costs/revenue it equals total revenue/costs." Cost, money and
+  ledger code is double-entry (every entry's postings sum to zero), books
+  costs in the months they serve, and attributes every cent to exactly one
+  project by a stated rule, so the projects sum to the totals with no
+  remainder. The rules are under "Accounting rules" in
+  [standards/docs/cost.md](standards/docs/cost.md)
+  ([decision 0016](standards/docs/decisions/0016-holding-and-handling-money.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON

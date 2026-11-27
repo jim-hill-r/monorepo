@@ -359,3 +359,19 @@ requirement = "PANE-012"
 stages = ["cd"]
 kind = "http"
 path = "/acknowledge"
+
+# PANE-013: Project money adds up to the totals (decision 0016).
+
+[[eval]]
+id = "money-attribution-adds-up"
+requirement = "PANE-013"
+stages = ["ci"]
+kind = "cargo"
+filter = "project_money_adds_up_to_the_month_totals"
+
+[[eval]]
+id = "money-attribution-gaps"
+requirement = "PANE-013"
+stages = ["ci"]
+kind = "cargo"
+filter = "attribution_gaps_name_every_mismatch"
