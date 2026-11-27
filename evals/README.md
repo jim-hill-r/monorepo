@@ -27,7 +27,8 @@ failures make an eval flaky, how fresh a production result must be) are in
 ## Commands
 
 ```bash
-# Check every project's requirements.md and evals.toml (EVL-001 to EVL-006).
+# Check every project's requirements.md and evals.toml (EVL-001 to EVL-006;
+# EVL-005 checks that every Playwright config tags its user agent).
 cargo run -p evals_cli -- check            # warnings, exit 0
 cargo run -p evals_cli -- check --strict   # exit 1 on any finding
 

@@ -701,7 +701,9 @@ Needs the `telemetry` Worker, Web Analytics and PostHog from deploy feedback,
 phases 4 and 5.
 
 - Synthetic traffic tagging in every runner, the PostHog snippet and the
-  `telemetry` Worker.
+  `telemetry` Worker. Done for the runners (Playwright configs, EVL-005,
+  and the `evals` HTTP client) and the Worker; the PostHog snippet skips
+  the `jimhillr-evals` user agent when session replay adds it.
 - The `metric` kind with the Web Analytics, Analytics Engine, PostHog and
   GitHub sources; `daily-observe-evals.yml` and the post-deploy run.
 
