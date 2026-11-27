@@ -80,6 +80,10 @@ Sign up for the free plan and set your API key via:
 - The `--api-key` flag
 - The `RAPIDAPI_KEY` environment variable
 
+When RapidAPI answers with an error status, homer stops with that status and
+the start of the response body, whitespace collapsed and cut to about 300
+characters, so a long gateway error page doesn't flood the terminal.
+
 ## Free quota
 
 homer must stay on RapidAPI's free plan, so it never makes a request past the
