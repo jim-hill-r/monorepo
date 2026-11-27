@@ -113,6 +113,19 @@ job gets `contents: write`. The optional `ANDROID_KEYSTORE_BASE64` and
 Tests: `monorepo/workflow_tests/tests/downloads_workflow_tests.rs`.
 
 
+## Infrastructure as code
+
+`infra-plan.yml` plans every infra stack on PRs that change `infra/`, with
+read-only credentials and no lock. `infra-apply.yml` plans on `main` in the
+`infra` environment and applies exactly that saved plan, in `infra`, or in
+`infra-credentials` after Jim's approval when it changes a credential
+(decision 0010). `infra-drift.yml` runs a refresh-only plan every Monday.
+`tofu-state-deploy.yml` deploys the OpenTofu state Worker (`tofu_state`,
+decision 0009) in `infra`. Every job that touches state on `main` shares the
+`infra` concurrency group. Details are in `infra/README.md` and
+`tofu_state/README.md`. Tests: `monorepo/workflow_tests/tests/infra_workflows_tests.rs`
+and `tofu_state_deploy_tests.rs`.
+
 ## pull-request-review-decks.yml (Review decks)
 
 Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).

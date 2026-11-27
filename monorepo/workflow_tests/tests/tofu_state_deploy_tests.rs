@@ -85,8 +85,9 @@ fn checks_secrets_then_deploys_then_smoke_checks() {
     );
 }
 
-/// The write password may only reach jobs in the `infra` environment
-/// (decision 0009, item 4), in any workflow.
+/// The write password may only reach jobs in the `infra` environment, or
+/// `infra-credentials` for credential applies (decisions 0009 and 0010), in
+/// any workflow.
 #[test]
 fn write_password_is_only_used_in_the_infra_environment() {
     let dir = get_repo_root().join(".github/workflows");
@@ -103,9 +104,8 @@ fn write_password_is_only_used_in_the_infra_environment() {
                 let env = job["environment"]
                     .as_str()
                     .or_else(|| job["environment"]["name"].as_str());
-                assert_eq!(
-                    env,
-                    Some("infra"),
+                assert!(
+                    matches!(env, Some("infra" | "infra-credentials")),
                     "{}: job {:?} uses the write password outside infra",
                     path.display(),
                     name

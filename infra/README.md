@@ -64,6 +64,32 @@ environment, after Jim approves that run (decision 0010). The lists are
 `src/guard.rs`; the second is a list of what's safe, so a new attribute
 counts as a credential until it is added there.
 
+## Workflows
+
+`scripts/tofu.sh` does the work; the workflows only pass it secrets
+(tested by `tests/tofu_sh.test.sh` and `monorepo/workflow_tests`).
+
+| Workflow | When | State password | Vendor credentials | Environment |
+| --- | --- | --- | --- | --- |
+| `infra-plan.yml` | PRs changing `infra/` | read, `-lock=false` | read | none |
+| `infra-apply.yml`, plan | push to `main` | write, locks | read | `infra` |
+| `infra-apply.yml`, apply | a stack with changes | write | apply | `infra` |
+| `infra-apply.yml`, apply credentials | a stack with a credential change | write | credentials | `infra-credentials` (waits for Jim) |
+| `infra-drift.yml` | Mondays | read, `-lock=false` | read | none |
+
+Each plan is written to the job summary with its SHA-256, the guard result
+and whether it changes a credential. A PR whose plan changes a credential
+gets the `credential-change` label. The apply jobs apply exactly the saved,
+encrypted plan after checking its hash; OpenTofu refuses it if state moved
+since. The JSON plan is only for the guards and is never uploaded. Every job
+that touches state on `main` shares the `infra` concurrency group with the
+state Worker's deploy.
+
+A stack whose secrets aren't set yet is skipped with a notice rather than
+failed, so the workflows can merge before the human setup in `issues/human/`
+is done. `TOFU_STATE_ORIGIN` is a repository variable
+(`issues/human/tofu-state-origin-variable.md`).
+
 ## Changing a setting
 
 Edit the construct or stack, run `mise run synth`, and commit the change to
