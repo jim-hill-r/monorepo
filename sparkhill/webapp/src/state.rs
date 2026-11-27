@@ -16,6 +16,14 @@ pub const RETRY_LIMIT: usize = 3;
 pub const STABILIZE_COUNT: usize = 3;
 pub const REINTRODUCE_COUNT: usize = 8;
 
+/// The level that follows `level`, or `None` after the last one.
+pub fn next_level(level: &str) -> Option<&'static str> {
+    match level {
+        "letter" => Some("word"),
+        _ => None,
+    }
+}
+
 /// Phase of the practice session for a single expression
 #[derive(Clone, Debug, PartialEq)]
 pub enum PracticePhase {
@@ -106,14 +114,15 @@ impl AppState {
         }
     }
 
-    /// Determine what to activate next
+    /// Open the next batch, bringing back up to `reintroduce_count` stable
+    /// expressions to review alongside it. Once every batch has been opened
+    /// and stabilized nothing comes back, so the level ends.
     pub fn activate_expressions(&mut self) {
-        let reintro_count = if !self.pending_queue.is_empty() {
-            self.activate_next_batch();
-            self.reintroduce_count.min(self.stable_queue.len())
-        } else {
-            self.stable_queue.len()
-        };
+        if self.pending_queue.is_empty() {
+            return;
+        }
+        self.activate_next_batch();
+        let reintro_count = self.reintroduce_count.min(self.stable_queue.len());
         for _ in 0..reintro_count {
             if let Some(expr) = self.stable_queue.first().cloned() {
                 self.stable_queue.remove(0);
@@ -164,7 +173,8 @@ impl AppState {
         }
     }
 
-    /// Whether the session is complete (no active, stable, or pending)
+    /// Whether the level is done: every batch has been opened and every
+    /// expression in it has stabilized, so nothing is left to practise.
     pub fn is_complete(&self) -> bool {
         self.expression.is_none() && self.active_queue.is_empty() && self.pending_queue.is_empty()
     }
@@ -215,5 +225,62 @@ mod tests {
             assert!(steps < 1_000, "the next batch never opens");
         }
         assert!(state.history["b"].single_attempt_successes >= STABILIZE_COUNT);
+    }
+
+    /// Trace every expression right first time until the level ends.
+    fn finish_level(state: &mut AppState) -> usize {
+        state.start_practice();
+        let mut steps = 0;
+        while !state.is_complete() {
+            state.record_attempt(true);
+            steps += 1;
+            assert!(steps < 1_000, "the level never ends");
+        }
+        steps
+    }
+
+    #[test]
+    fn the_letter_level_ends_once_every_letter_is_stable() {
+        let mut state = AppState::new("letter");
+        finish_level(&mut state);
+        assert!(state.pending_queue.is_empty());
+        assert!(state.active_queue.is_empty());
+        assert_eq!(state.expression, None);
+        for group in DEFAULT_LETTER_SEQUENCES {
+            for letter in *group {
+                assert!(
+                    state.stable_queue.iter().any(|e| e == letter),
+                    "{letter} is not stable"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_word_level_ends_once_every_word_is_stable() {
+        let mut state = AppState::new("word");
+        let steps = finish_level(&mut state);
+        assert_eq!(steps, DEFAULT_WORD_SEQUENCES[0].len() * STABILIZE_COUNT);
+    }
+
+    #[test]
+    fn misses_alone_never_end_a_level() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        for _ in 0..RETRY_LIMIT * 50 {
+            state.record_attempt(false);
+        }
+        assert!(!state.is_complete());
+    }
+
+    #[test]
+    fn a_level_is_not_complete_before_it_starts() {
+        assert!(!AppState::new("letter").is_complete());
+    }
+
+    #[test]
+    fn letters_lead_to_words_and_words_to_the_end() {
+        assert_eq!(next_level("letter"), Some("word"));
+        assert_eq!(next_level("word"), None);
     }
 }

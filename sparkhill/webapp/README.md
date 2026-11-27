@@ -10,6 +10,7 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
 - **Letter practice**: Canvas-based letter tracing with animated demonstrations and writing guidelines
 - **Word practice**: Word-level tracing practice
 - **Progress tracking**: Letter sequences matching the original app, with retry and stabilize logic
+- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). "Go" then opens the word level after letters, and the congratulations page after words
 - **Congratulations page**: Shown when all expressions are mastered
 
 ## Technical Details
