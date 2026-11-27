@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-27T21:35:42.856922314Z",
+  "generated_at": "2026-11-27T21:43:36.934644376Z",
   "coverage": {
-    "projects": 26,
-    "projects_with_requirements": 8,
-    "percent": 5.0,
-    "musts_percent": 44.8,
-    "judged_percent": 12.2,
+    "projects": 27,
+    "projects_with_requirements": 10,
+    "percent": 4.8,
+    "musts_percent": 38.2,
+    "judged_percent": 11.7,
     "warn_below": 80.0,
     "warning": true
   },
@@ -225,6 +225,19 @@
       ]
     },
     {
+      "project": "chores",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
       "project": "controlled_chaos",
       "musts": 1,
       "musts_in_production": 1,
@@ -425,16 +438,63 @@
     },
     {
       "project": "design_system",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 2,
+      "musts_in_production": 1,
       "coverage": {
-        "requirements": 0,
+        "requirements": 5,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "DSGN-001",
+          "title": "Every theme is readable for everyone",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-002",
+          "title": "An app theme can't make an app harder to use",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-003",
+          "title": "People can pick a theme, and the choice sticks",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-004",
+          "title": "Apps, games and tools get the same values",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-005",
+          "title": "The preview site shows every combination",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "evals",
@@ -892,16 +952,63 @@
     },
     {
       "project": "tofu_state",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 3,
+      "musts_in_production": 2,
       "coverage": {
-        "requirements": 0,
+        "requirements": 5,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "TOFU-001",
+          "title": "infra's state is kept and read back",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-002",
+          "title": "Only infra can read or change state",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-003",
+          "title": "Two applies never overwrite each other",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-004",
+          "title": "A bad apply can be rolled back",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-005",
+          "title": "Errors and logs never show state",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     }
   ]
 }
