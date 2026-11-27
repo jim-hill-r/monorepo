@@ -108,10 +108,42 @@ Always run `mise run ci` before completing a task to ensure all tests pass.
 
 #### Code Coverage
 
-Coverage is not a standard task yet. For Rust projects, run
-`cargo llvm-cov --lcov --output-path lcov.info` (install with
-`cargo binstall cargo-llvm-cov`). Coverage files (`lcov.info` and
-`coverage/`) are excluded from git via `.gitignore`.
+Line coverage of every Rust project is measured each night (Jim,
+2026-11-27) by `nightly-coverage.yml` with
+[cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), through
+`standards/scripts/coverage.sh`. It runs the same tests as `mise run ci`
+(`cargo test`, so a workspace's default members), one job per top-level
+Rust project; a project inside another Cargo workspace is counted in that
+workspace.
+
+| Rule | What it checks | Where | Status |
+| --- | --- | --- | --- |
+| COV-001 | A Rust project's line coverage is at least 80%. | `nightly-coverage.yml` | Warning (`::warning::` on the run) until Jim makes it an error |
+
+Results go to the `coverage-results` data branch (never merged into
+`main`): `projects/<project>.json` holds each project's latest number,
+`history/<yyyy-mm>.jsonl` every run, and `summary.json` the total (covered
+lines over all lines). The README's coverage badge is `badge.svg` on that
+branch, and `badges/<project>.svg` is one per project for a project's own
+README. Green is 80% or more, yellow 60% or more, red below. It is the
+second data branch CI may push to, after `evals-results` (SEC-007).
+
+Coverage isn't measured on PRs, so they stay fast. To see a project's
+number locally:
+
+```bash
+cd <project>
+bash ../standards/scripts/coverage.sh run   # writes target/coverage/coverage.json
+cargo llvm-cov --open                       # the HTML report
+```
+
+`coverage.sh` uses `cargo-llvm-cov` from your PATH, or else downloads the
+pinned release with mise. Coverage files (`lcov.info` and `coverage/`) are
+excluded from git via `.gitignore`.
+
+Cost: $0. The repo is public, so Actions minutes are free; the workflow
+uses no Rust cache, so it doesn't eat the 10 GB Actions cache budget, and
+its artifacts are a few hundred bytes kept for 3 days.
 
 ### Manual Test Execution
 
@@ -148,7 +180,8 @@ npx playwright test  # Runs only Playwright tests
 
 ## Test Coverage Goals
 
-While not strictly enforced, aim for:
+COV-001 above measures the first goal repo-wide (as a warning for now);
+the others are for review. Aim for:
 - At least 80% code coverage for critical business logic
 - 100% coverage for public APIs and error handling paths
 - All edge cases and error conditions should be tested

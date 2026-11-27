@@ -1,0 +1,106 @@
+# Each night: line coverage of every Rust project with cargo-llvm-cov
+# (COV-001, standards/docs/testing.md#code-coverage), stored on the
+# coverage-results data branch, where the README's coverage badge lives.
+# It runs the same tests as `mise run ci`. A project under the minimum is a
+# warning; a project whose tests fail turns the run red.
+#
+# No Rust cache: coverage builds go to their own target dir, and a cache
+# per project would eat the 10 GB Actions cache budget
+# (standards/docs/free-tiers.md). Public repo, so the minutes are free.
+name: Nightly coverage
+
+'on':
+  schedule:
+    # 3:30 AM Pacific Time (11:30 AM UTC), after Nightly CI and CD
+    - cron: '30 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-coverage
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      projects: ${{ steps.list.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
+      - id: list
+        run: echo "projects=$(bash standards/scripts/coverage.sh projects)" >> "$GITHUB_OUTPUT"
+
+  coverage:
+    needs: plan
+    if: needs.plan.outputs.projects != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.plan.outputs.projects) }}
+    name: coverage (${{ matrix.project }})
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5
+        with:
+          working_directory: ${{ matrix.project }}
+
+      - name: mise run ci:deps
+        run: mise run ci:deps
+
+      - name: Line coverage
+        id: run
+        env:
+          GITHUB_TOKEN: ${{ github.token }}  # mise's cargo-llvm-cov download
+          PROJECT: ${{ matrix.project }}
+          COVERAGE_RESULT: ${{ runner.temp }}/coverage.json
+        run: |
+          echo "artifact=coverage-${PROJECT//\//-}" >> "$GITHUB_OUTPUT"
+          bash "$GITHUB_WORKSPACE/standards/scripts/coverage.sh" run
+
+      - name: Upload result
+        if: ${{ !cancelled() && steps.run.outputs.artifact }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.run.outputs.artifact }}
+          path: ${{ runner.temp }}/coverage.json
+          retention-days: 3
+          if-no-files-found: ignore
+
+  # Commit the results to coverage-results, even when a project failed, so
+  # the others still update. The only job with contents: write, and its only
+  # push is to coverage-results (SEC-007).
+  store:
+    needs: coverage
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: ${{ runner.temp }}/coverage
+
+      - name: Store coverage results
+        run: |
+          shopt -s nullglob
+          bash standards/scripts/coverage.sh store "$RUNNER_TEMP"/coverage/*/coverage.json

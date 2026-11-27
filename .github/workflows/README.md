@@ -1,5 +1,14 @@
 # GitHub Actions Workflows
 
+## Repo health badges
+
+Every workflow that runs on `main` by itself (a push to `main` or a
+schedule) has a status badge in the "Repo health" table of the root
+README, and PR triage checks them three times a day
+([standards/docs/repo-health.md](../../standards/docs/repo-health.md)).
+A new workflow like that adds its badge in the same PR;
+`monorepo/workflow_tests/tests/readme_badges_tests.rs` fails otherwise.
+
 ## CI/CD with mise
 
 Every project is a directory with a `mise.toml` that includes one shared task
@@ -135,6 +144,21 @@ Builds every review deck to HTML and PDF with the Marp CLI through
 `standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
 uploads them as the `review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
+
+## nightly-coverage.yml
+
+**Nightly coverage** runs at 3:30 AM Pacific and by hand: one job per
+top-level Rust project (`standards/scripts/coverage.sh projects`) runs
+`mise run ci:deps` and then `coverage.sh run`, which runs the project's
+tests under cargo-llvm-cov and writes its line coverage. A last **store**
+job, the only one with `contents: write`, commits every result to the
+`coverage-results` data branch with `coverage.sh store`, including the
+README's coverage badge (COV-001 in
+[standards/docs/testing.md](../../standards/docs/testing.md#code-coverage)).
+No Rust cache, so the Actions cache budget is untouched.
+
+Tests: `monorepo/workflow_tests/tests/coverage_workflow_tests.rs` and
+`standards/tests/coverage.test.sh`.
 
 ## all-dependency-audit.yml
 
