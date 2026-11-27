@@ -1,6 +1,7 @@
 ---
 added: 2026-11-27
 unblocks: "the infra minting workflow, which writes every other infra token and password into GitHub secrets so no one makes or sees them (Jim chose this on 2026-11-27), and later the `github` stack"
+runbook: standards/docs/runbooks/github-app-infra.md
 ---
 
 ## Requirement
