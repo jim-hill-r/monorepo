@@ -45,6 +45,7 @@ run book in the task."
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
 | [Make the Android release key](android-release-key.md) | one-time, optional | `optional-create-android-release-key-controlled.md` |
+| [Set the TOFU_STATE_ORIGIN variable](tofu-state-origin-variable.md) | one-time | `tofu-state-origin-variable.md` |
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
 
 Coming in open PRs, written by the infrastructure thread in the same
