@@ -28,10 +28,13 @@ Everything else is minted from these three credentials, so they come first. Crea
 1. **Create the `infra` environment.** In jimhillr/monorepo > Settings > Environments > New environment, name it `infra`. Set Deployment branches to Selected branches, add `main`, and add no reviewers.
 
 2. **Create the `infra-credentials` environment.** Use the same page, with these settings:
-   - Required reviewers: `jimhillr` only.
+   - Required reviewers: tick the box, add `jimhillr` only, and click **Save protection rules**. Until you save, nothing is protected, and a run goes ahead without asking.
+   - "Prevent self-review": off. You are the only reviewer, so you approve your own runs.
    - "Allow administrators to bypass configured protection rules": off.
    - Deployment branches: `main` only.
    - No wait timer.
+
+   Infra Mint and Infra Apply check these settings at the start of every credential job (`infra/scripts/env-gate.sh`). If any setting is missing, the job stops before it touches a secret.
 
 3. **Set up the GitHub App.** Follow [github-app-infra.md](github-app-infra.md).
 

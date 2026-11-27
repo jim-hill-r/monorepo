@@ -229,3 +229,42 @@ fn mint_runs_by_hand_from_main_in_infra_credentials() {
         }
     }
 }
+
+#[test]
+fn every_infra_credentials_job_first_checks_its_approval_gate() {
+    // Decision 0010. GitHub runs a job in an environment with no saved
+    // reviewer without asking anyone, as the first Infra Mint runs did, so
+    // every such job stops itself unless env-gate.sh finds the gate.
+    let dir = get_workflow_path("infra-mint.yml")
+        .parent()
+        .expect("workflows dir")
+        .to_path_buf();
+    let mut found = 0;
+    for entry in fs::read_dir(&dir).expect("read workflows") {
+        let path = entry.expect("entry").path();
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if !(name.ends_with(".yml") || name.ends_with(".yaml")) {
+            continue;
+        }
+        let (_, wf) = load(name);
+        let Some(jobs) = wf["jobs"].as_mapping() else {
+            continue;
+        };
+        for (id, job) in jobs {
+            let env = job["environment"]
+                .as_str()
+                .or_else(|| job["environment"]["name"].as_str());
+            if env != Some("infra-credentials") {
+                continue;
+            }
+            found += 1;
+            let steps = job["steps"].as_sequence().expect("steps");
+            let first_run = steps.iter().find_map(|s| s["run"].as_str()).unwrap_or("");
+            assert!(
+                first_run.contains("infra/scripts/env-gate.sh infra-credentials"),
+                "{name} job {id:?}: the first run step must be env-gate.sh, got {first_run:?}"
+            );
+        }
+    }
+    assert!(found >= 2, "expected the mint and apply-credentials jobs");
+}

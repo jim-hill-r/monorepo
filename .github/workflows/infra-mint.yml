@@ -54,6 +54,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Decision 0010: never mint unless this environment really waited for
+      # Jim. GitHub runs the job anyway when no reviewer is saved.
+      - name: Stop unless infra-credentials needs an approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash infra/scripts/env-gate.sh infra-credentials
+
       - name: Stop when the setup isn't done
         env:
           APP_ID: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
