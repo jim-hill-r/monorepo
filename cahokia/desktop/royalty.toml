@@ -1,0 +1,3 @@
+[project]
+name = "desktop"
+description = "The Cahokia genealogy app for desktop, a Dioxus webview app that shares its pages with web and mobile through the ui crate."

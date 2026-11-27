@@ -1,0 +1,3 @@
+[project]
+name = "ui"
+description = "Dioxus components and pages shared by the Cahokia web, desktop and mobile apps, including the pan and zoom family tree view."
