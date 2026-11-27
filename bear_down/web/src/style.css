@@ -53,3 +53,17 @@ footer.appearance { margin-top: 24px; }
   .banner-bear { animation: banner-bounce 1.2s ease-in-out 3; }
 }
 @keyframes banner-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.vote { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.85rem; color: var(--ds-color-text-muted); }
+.vote-question { margin-right: 4px; }
+.vote-button {
+  border: var(--ds-border-width) solid var(--ds-color-border); border-radius: var(--ds-radius-pill); padding: 4px 12px;
+  background: transparent; color: var(--ds-color-text); font: inherit; cursor: pointer;
+}
+.vote-button:hover, .vote-button:focus-visible { border-color: var(--ds-color-accent); }
+.vote-thanks { color: var(--ds-color-text); font-weight: 600; }
+.vote-note { display: flex; align-items: center; gap: 6px; flex: 1 1 220px; }
+.vote-note input {
+  flex: 1; min-width: 0; font: inherit; padding: 4px 8px; color: var(--ds-color-text);
+  background: var(--ds-color-surface); border: var(--ds-border-width) solid var(--ds-color-border); border-radius: var(--ds-radius-sm);
+}
+.privacy { font-size: 0.8rem; }

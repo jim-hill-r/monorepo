@@ -118,9 +118,13 @@ Each is one PR:
    backlog's Worker TODO), deployed with `free-tiers.sh` guards. Built in
    the root `telemetry/` project, with the other four kinds too.
 3. The vote buttons and note box on the page, with the privacy note and
-   `@smoke` tests.
+   `@smoke` tests. Done: a vote posts at once; the optional note follows
+   as a second `feedback` event with `vote` set to `note`, so each vote
+   counts once. The arm is `a` until step 4.
 4. The A/B arms (`localStorage` id, `?arm=`), with screenshots of both arms
-   in UAT.
+   in UAT. Done: a page in arm B that turns a game into a pick
+   explains it with a "small edge" line over the 0.02-point line, and each
+   visit sends one `exposure` per arm, week and tab (`sessionStorage`).
 5. The weekly export workflow and per-arm summary, and the evals.
 6. After the decision point, a retro in this file and, if arm B wins, a
    BEAR-005 change for Jim.

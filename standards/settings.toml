@@ -112,6 +112,14 @@ why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
 every = "30d"
 
 [[setting]]
+id = "cloudflare-analytics-engine"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Workers & Pages > Analytics Engine"
+expect = "Analytics Engine is enabled, on the Free plan (turned on by Jim 2026-11-27)."
+why = "The telemetry Worker's deploy fails without it; Cloudflare has no API to turn it on (standards/docs/runbooks/cloudflare-account.md, step 5)."
+every = "90d"
+
+[[setting]]
 id = "cloudflare-infra-token-scopes"
 vendor = "Cloudflare"
 where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
