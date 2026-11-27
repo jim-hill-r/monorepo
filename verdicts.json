@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-27T19:15:59.661149140Z",
+  "generated_at": "2026-11-27T19:16:29.619408848Z",
   "coverage": {
     "projects": 26,
-    "projects_with_requirements": 6,
-    "percent": 6.3,
-    "musts_percent": 59.1,
-    "judged_percent": 13.5,
+    "projects_with_requirements": 4,
+    "percent": 4.9,
+    "musts_percent": 84.6,
+    "judged_percent": 12.2,
     "warn_below": 80.0,
     "warning": true
   },
@@ -420,54 +420,16 @@
     },
     {
       "project": "my_lang",
-      "musts": 3,
+      "musts": 0,
       "musts_in_production": 0,
       "coverage": {
-        "requirements": 4,
+        "requirements": 0,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
-        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": [
-        {
-          "requirement": "LANG-001",
-          "title": "A program runs and gives the right answer",
-          "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
-        },
-        {
-          "requirement": "LANG-002",
-          "title": "A mistake gives a clear error, never a crash",
-          "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
-        },
-        {
-          "requirement": "LANG-003",
-          "title": "Side effects stay where they are declared",
-          "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
-        },
-        {
-          "requirement": "LANG-004",
-          "title": "The compiled LLVM IR can be read",
-          "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
-        }
-      ]
+      "requirements": []
     },
     {
       "project": "pane",
@@ -606,81 +568,16 @@
     },
     {
       "project": "sparkhill",
-      "musts": 6,
-      "musts_in_production": 6,
+      "musts": 0,
+      "musts_in_production": 0,
       "coverage": {
-        "requirements": 8,
-        "met": 3,
-        "percent": 37.5,
-        "musts_met": 2,
-        "musts_percent": 33.3,
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
         "warning": true
       },
-      "requirements": [
-        {
-          "requirement": "SPRK-001",
-          "title": "A learner can start practising straight away",
-          "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "first-session-judged has no judge results yet"
-          ]
-        },
-        {
-          "requirement": "SPRK-002",
-          "title": "Every letter is shown being written before the learner tries it",
-          "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "demonstrations-judged has no judge results yet"
-          ]
-        },
-        {
-          "requirement": "SPRK-003",
-          "title": "A tracing is checked fairly",
-          "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "tracing-judged has no judge results yet"
-          ]
-        },
-        {
-          "requirement": "SPRK-004",
-          "title": "Learners move from letters to words to capitals",
-          "priority": "must",
-          "verdict": "met"
-        },
-        {
-          "requirement": "SPRK-005",
-          "title": "Each learner's progress is kept on their device",
-          "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "progress-judged has no judge results yet"
-          ]
-        },
-        {
-          "requirement": "SPRK-006",
-          "title": "Nothing a learner types or draws leaves their device",
-          "priority": "must",
-          "verdict": "met"
-        },
-        {
-          "requirement": "SPRK-007",
-          "title": "Blue Eel works and installs like an app on a phone or tablet",
-          "priority": "should",
-          "verdict": "met"
-        },
-        {
-          "requirement": "SPRK-008",
-          "title": "A few letters or words can be practised on their own",
-          "priority": "could",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
-        }
-      ]
+      "requirements": []
     },
     {
       "project": "standards",
