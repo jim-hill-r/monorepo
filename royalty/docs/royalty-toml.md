@@ -513,11 +513,15 @@ names its code and the requirement it protects.
 | RTOML-011 | warning | A tier after one with an empty `when`, which can never be reached. |
 | RTOML-012 | error | A `[consumer]` field is invalid: an unknown word (such as a `stage`, `entity`, `class` or `on_exceed`), a `[[consumer.deployment]]` with no `manifest`, or a `[[consumer.package]]` whose `action` misses its values. |
 | RTOML-013 | warning | `binding = "license"`: the code is source-available, not open source. |
+| RTOML-014 | error | In a consumer's Cargo project, the scan breaks the consumer's budget or policy: an `agreement` or `license` amount over `per_producer_period_cents`, a total over the budget that can't be scaled (`on_exceed = "fail"`, or amounts that are never scaled), or a dependency whose `binding` isn't in `[consumer.policy] bindings`. The message names the dependency and the limit. |
 
 A file with only `[project]` (every file in this monorepo today) has no
-findings. With a consumer's `[consumer.budget]`, `royalty check` also runs
-the scan and fails when the result is "over budget" or a dependency's
-`binding` isn't in `[consumer.policy] bindings`.
+findings. When the file has a `[consumer]` table and sits beside a
+`Cargo.toml`, `royalty check` also runs the scan for the month (`--period`,
+the current month by default) and reports RTOML-014 when the result is
+"over budget" or a dependency's `binding` isn't in `[consumer.policy]
+bindings`. Run in the consumer's CI, that stops a pull request that would
+break the budget before it merges.
 
 ## Transitive dependencies
 

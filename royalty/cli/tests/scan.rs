@@ -360,3 +360,92 @@ fn royl_004_the_report_shows_every_cap_and_how_to_pay() {
     assert_eq!(chartlib["steps"][0]["cents"], 4000);
     assert_eq!(chartlib["steps"][1]["cents"], 2500);
 }
+
+fn check(dir: &Path) -> Output {
+    run(
+        env!("CARGO_BIN_EXE_royalty"),
+        &["check", "--period", "2026-11"],
+        dir,
+    )
+}
+
+fn edit(path: &Path, from: &str, to: &str) {
+    let text = fs::read_to_string(path).unwrap_or_default();
+    assert!(text.contains(from), "{} has no {from:?}", path.display());
+    if fs::write(path, text.replace(from, to)).is_err() {
+        panic!("can't write {}", path.display());
+    }
+}
+
+#[test]
+fn royl_004_check_passes_within_budget() {
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    let output = check(&acme);
+    let out = stdout_of(&output);
+    assert!(output.status.success(), "{out}");
+    assert!(
+        out.contains("royalty check: 2026-11: $45.00 owed of a $45.00 budget"),
+        "{out}"
+    );
+    assert!(out.contains("ok (within budget)"), "{out}");
+}
+
+#[test]
+fn royl_004_check_fails_when_an_agreement_breaks_the_budget() {
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    // webframe now asks $60 a deployment: $60 is over $45 and over the
+    // $40 per-producer limit, and an agreement is never scaled.
+    // Both packages of the family ship the terms; edit both.
+    for package in ["webframe", "webframe_router"] {
+        edit(
+            &dir.path().join(format!("producers/{package}/royalty.toml")),
+            "cents = 2000",
+            "cents = 6000",
+        );
+    }
+    let output = check(&acme);
+    let out = stdout_of(&output);
+    assert_eq!(output.status.code(), Some(1), "{out}");
+    assert!(
+        out.contains("error[RTOML-014] ./royalty.toml: webframe owes $60.00, over per_producer_period_cents ($40.00)"),
+        "{out}"
+    );
+    assert!(
+        out.contains("the total owed, $60.00, is over the budget ($45.00)"),
+        "{out}"
+    );
+}
+
+#[test]
+fn royl_004_check_fails_on_fail_mode_and_on_a_refused_binding() {
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    let consumer = acme.join("royalty.toml");
+    edit(&consumer, "on_exceed = \"scale\"", "on_exceed = \"fail\"");
+    let out = stdout_of(&check(&acme));
+    assert!(
+        out.contains("the total owed, $60.00, is over the budget ($45.00) and on_exceed is \"fail\": chartlib $40.00, webframe $20.00"),
+        "{out}"
+    );
+    edit(
+        &consumer,
+        "bindings = [\"voluntary\", \"agreement\"]",
+        "bindings = [\"voluntary\"]",
+    );
+    let output = check(&acme);
+    let out = stdout_of(&output);
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        out.contains("webframe asks for payment under binding \"agreement\", which [consumer.policy] bindings (voluntary) does not accept"),
+        "{out}"
+    );
+}
+
+fn stdout_of(output: &Output) -> String {
+    String::from_utf8_lossy(&output.stdout).to_string()
+}

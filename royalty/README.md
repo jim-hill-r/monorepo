@@ -36,7 +36,7 @@ The design, the phases and Jim's answers to its decisions are in the
 Build the command from this directory with `cargo build --release`; it is
 then `target/release/royalty`. It makes no network calls.
 
-### `royalty check [path] [--strict]`
+### `royalty check [path] [--strict] [--period YYYY-MM]`
 
 Checks one `royalty.toml` (or the one in a directory; the default is the
 current directory) and prints each finding with its code and, where one
@@ -49,7 +49,18 @@ royalty check: ./royalty.toml: 1 error(s), 0 warning(s)
 ```
 
 It exits 0 when there are only warnings, 1 on any error (or any warning
-with `--strict`), and 2 when the file can't be read. The codes are listed
+with `--strict`), and 2 when the file can't be read. In a consumer's Cargo
+project (a `[consumer]` table beside a `Cargo.toml`) it also runs the scan
+and fails with RTOML-014 when what is owed breaks the consumer's budget or
+policy, naming the dependency and the limit:
+
+```text
+$ royalty check --period 2026-11
+error[RTOML-014] ./royalty.toml: webframe owes $60.00, over per_producer_period_cents ($40.00); binding "agreement" is never scaled (ROYL-004)
+```
+
+Run it in CI so a pull request that would break the budget fails before it
+merges. The codes are listed
 in [What `royalty check` reports](docs/royalty-toml.md#what-royalty-check-reports).
 
 ### `royalty scan [path] [--period YYYY-MM]`

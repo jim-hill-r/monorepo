@@ -26,7 +26,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check a royalty.toml (RTOML-001 onwards in docs/royalty-toml.md).
-    /// Exits 1 on an error, or on a warning with --strict.
+    /// In a consumer's Cargo project (a [consumer] table beside a
+    /// Cargo.toml) it also scans and fails when the amount owed breaks the
+    /// budget or policy (RTOML-014). Exits 1 on an error, or on a warning
+    /// with --strict.
     Check {
         /// A royalty.toml, or a directory that holds one. Defaults to the
         /// current directory.
@@ -35,6 +38,10 @@ enum Command {
         /// Treat warnings as errors.
         #[arg(long)]
         strict: bool,
+        /// The month the budget gate works out, YYYY-MM. Defaults to the
+        /// current month (UTC).
+        #[arg(long)]
+        period: Option<period::Month>,
     },
     /// Scan a consumer's Cargo dependencies for royalty.toml files and
     /// print what is owed this period. Runs `cargo metadata --locked
@@ -70,7 +77,11 @@ enum Command {
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let result = match cli.command {
-        Command::Check { path, strict } => check::run(&path, strict),
+        Command::Check {
+            path,
+            strict,
+            period,
+        } => check::run(&path, strict, period.unwrap_or_else(period::Month::current)),
         Command::Scan { path, period } => {
             owed::run(&path, period.unwrap_or_else(period::Month::current))
         }
