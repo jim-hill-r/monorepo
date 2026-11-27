@@ -1,0 +1,17 @@
+# Project reviews
+
+Intro.
+
+## Rotation
+
+| Date | Project | Deck | PR |
+| --- | --- | --- | --- |
+| 2026-11-18 | tool | [deck](./2026-11-18-tool/deck.md) | not yet |
+| 2026-11-25 | app | [deck](2026-11-25-app/deck.md) | [#12](https://github.com/jimhillr/monorepo/pull/12) |
+| 2026-11-11 | `app/web` | [deck](2026-11-11-web/deck.md) | [elsewhere](https://example.com/pull/1) |
+
+## Deck format
+
+| Date | Project | Deck | PR |
+| --- | --- | --- | --- |
+| 2026-12-01 | ignored | [deck](x/deck.md) | |

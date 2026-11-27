@@ -3,7 +3,7 @@
 
 use pane_model::{
     Deliverable, DeliverableKind, HumanIssue, Link, ProjectStatus, REPO_URL, Retro, RetroAction,
-    WorkItem, WorkKind, WorkSource,
+    Review, WorkItem, WorkKind, WorkSource,
 };
 
 /// The project paths in the root `mise.toml`'s `[monorepo].config_roots`.
@@ -111,6 +111,110 @@ pub fn release(project: &str, tag: &str, package: &str) -> Deliverable {
                 url: format!("{base}/{package}-android.apk"),
             },
         ],
+        body: None,
+    }
+}
+
+/// Where the review decks and their rotation table live.
+pub const REVIEWS_DIR: &str = "docs/reviews";
+
+/// The reviews in the `## Rotation` table of `docs/reviews/README.md`
+/// (`| Date | Project | Deck | PR |`), newest first. Columns are found by
+/// their header, so the table may gain columns. A row without a deck link
+/// points at `<date>-<project>/deck.md`; a PR cell without a link to GitHub
+/// gives no PR. Rows without a date and project are skipped.
+pub fn reviews(readme: &str) -> Vec<Review> {
+    let mut found = Vec::new();
+    let mut in_rotation = false;
+    let mut header: Option<Vec<String>> = None;
+    for line in readme.lines() {
+        if let Some(h) = line.strip_prefix("## ") {
+            in_rotation = h.trim() == "Rotation";
+            header = None;
+            continue;
+        }
+        let line = line.trim();
+        if !in_rotation || !line.starts_with('|') {
+            if header.is_some() && !line.starts_with('|') {
+                // The table has ended.
+                in_rotation = false;
+            }
+            continue;
+        }
+        let cells = table_cells(line);
+        let Some(columns) = &header else {
+            header = Some(cells.iter().map(|c| c.to_lowercase()).collect());
+            continue;
+        };
+        if cells
+            .iter()
+            .all(|c| c.chars().all(|ch| ch == '-' || ch == ':'))
+        {
+            continue;
+        }
+        let cell = |name: &str| {
+            columns
+                .iter()
+                .position(|c| c == name)
+                .and_then(|i| cells.get(i))
+                .map(String::as_str)
+                .unwrap_or("")
+        };
+        let (date, project) = (cell("date"), cell("project").trim_matches('`'));
+        if leading_date(date) != Some(date) || project.is_empty() {
+            continue;
+        }
+        let deck = link_target(cell("deck"))
+            .map(|t| t.trim_start_matches("./").to_owned())
+            .unwrap_or_else(|| format!("{date}-{project}/deck.md"));
+        let pr = link_target(cell("pr"))
+            .filter(|t| t.starts_with(REPO_URL))
+            .map(str::to_owned);
+        found.push(Review {
+            project: project.to_owned(),
+            date: date.to_owned(),
+            path: format!("{REVIEWS_DIR}/{deck}"),
+            pr,
+            scorecard: Vec::new(),
+        });
+    }
+    // Newest first, keeping the table's order within a day.
+    found.sort_by(|a, b| b.date.cmp(&a.date));
+    found
+}
+
+/// The trimmed cells of a Markdown table row.
+fn table_cells(line: &str) -> Vec<String> {
+    let inner = line.trim().trim_start_matches('|');
+    let inner = inner.strip_suffix('|').unwrap_or(inner);
+    inner.split('|').map(|c| c.trim().to_owned()).collect()
+}
+
+/// The target of the first `[text](target)` link in `cell`.
+fn link_target(cell: &str) -> Option<&str> {
+    let start = cell.find("](")? + 2;
+    let rest = &cell[start..];
+    let target = rest[..rest.find(')')?].trim();
+    (!target.is_empty()).then_some(target)
+}
+
+/// A review as a deliverable: its slides at `/reviews/<folder>/deck.html`
+/// in pane, and its PDF at `/reviews/<folder>/deck.pdf` (pane's release
+/// builds both with `standards/scripts/review-decks.sh`).
+pub fn review_deliverable(review: &Review) -> Deliverable {
+    let base = format!("/reviews/{}", review.folder());
+    Deliverable {
+        kind: DeliverableKind::ReviewDeck,
+        title: format!("{} deep review", review.project),
+        project: Some(review.project.clone()),
+        path: Some(review.path.clone()),
+        url: Some(format!("{base}/deck.html")),
+        date: Some(review.date.clone()),
+        status: None,
+        downloads: vec![Link {
+            label: "PDF".to_owned(),
+            url: format!("{base}/deck.pdf"),
+        }],
         body: None,
     }
 }
@@ -632,6 +736,75 @@ mod tests {
         include_str!("../tests/fixtures/repo/app/docs/decisions/0001-pick-a-thing.md.fixture");
     const RETRO: &str =
         include_str!("../tests/fixtures/repo/app/docs/retros/2026-11-20-launch.md.fixture");
+
+    const REVIEWS: &str = include_str!("../tests/fixtures/repo/docs/reviews/README.md.fixture");
+
+    #[test]
+    fn reads_the_review_rotation_newest_first() {
+        let found = reviews(REVIEWS);
+        let rows: Vec<_> = found
+            .iter()
+            .map(|r| {
+                (
+                    r.date.as_str(),
+                    r.project.as_str(),
+                    r.path.as_str(),
+                    r.pr.as_deref(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            rows,
+            [
+                (
+                    "2026-11-25",
+                    "app",
+                    "docs/reviews/2026-11-25-app/deck.md",
+                    Some("https://github.com/jimhillr/monorepo/pull/12"),
+                ),
+                (
+                    "2026-11-18",
+                    "tool",
+                    "docs/reviews/2026-11-18-tool/deck.md",
+                    None,
+                ),
+                (
+                    "2026-11-11",
+                    "app/web",
+                    "docs/reviews/2026-11-11-web/deck.md",
+                    None,
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn review_rotation_ignores_other_tables_and_bad_rows() {
+        let readme = "## Other\n\n| Date | Project |\n| --- | --- |\n| 2026-01-01 | x |\n\n## Rotation\n\n| Project | Date |\n| --- | --- |\n| y | 2026-02-02 |\n| z | soon |\n| | 2026-02-03 |\n\nAfter.\n\n| Date | Project |\n| 2026-03-03 | w |\n";
+        let found = reviews(readme);
+        assert_eq!(found.len(), 1, "{found:?}");
+        assert_eq!(found[0].project, "y");
+        assert_eq!(found[0].path, "docs/reviews/2026-02-02-y/deck.md");
+        assert!(reviews("").is_empty());
+    }
+
+    #[test]
+    fn a_review_deliverable_links_its_slides_and_pdf() {
+        let r = Review {
+            project: "app".into(),
+            date: "2026-11-25".into(),
+            path: "docs/reviews/2026-11-25-app/deck.md".into(),
+            pr: None,
+            scorecard: vec![],
+        };
+        let d = review_deliverable(&r);
+        assert_eq!(d.kind, DeliverableKind::ReviewDeck);
+        assert_eq!(d.title, "app deep review");
+        assert_eq!(d.project.as_deref(), Some("app"));
+        assert_eq!(d.date.as_deref(), Some("2026-11-25"));
+        assert_eq!(d.url.as_deref(), Some("/reviews/2026-11-25-app/deck.html"));
+        assert_eq!(d.downloads[0].url, "/reviews/2026-11-25-app/deck.pdf");
+    }
 
     #[test]
     fn reads_human_issue_files() -> Result<(), String> {

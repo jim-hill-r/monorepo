@@ -351,7 +351,8 @@ PR #585 is merged.
 - pane's release runs `standards/scripts/review-decks.sh` and copies the
   HTML and PDF decks into the static assets under `/reviews/`.
 - The Reviews page: rotation table, deck viewer, PDF download, link to the
-  review PR for comments.
+  review PR for comments. Built: `/reviews` and `/review/<folder>`, with
+  review decks on Deliverables and the latest review on each Project page.
 - The snapshot parses each deck's Scorecard slide (`| Area | Rating | Why |`)
   so Phase 4 can use it. The `deep-project-review` skill should keep that
   table's shape; Phase 2 adds a line saying so to the skill.
