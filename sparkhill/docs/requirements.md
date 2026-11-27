@@ -32,7 +32,8 @@ its public pattern data show.
 - Why: Learners copy the stroke order and direction they are shown, so
   the demonstration must draw each letter the way Blue Eel teaches it.
 - Accept: every lowercase letter, capital and practice word has a
-  demonstration, drawn stroke by stroke from the live app's own recorded
+  demonstration which, with the Tracing technique (the default, see
+  SPRK-009), is drawn stroke by stroke from the live app's own recorded
   pattern on the four writing guide lines (cap, mean, base and beard), in
   Blue Eel's colours; the patterns ship with the app, so a demonstration
   never waits on another site.
@@ -101,3 +102,16 @@ its public pattern data show.
   `/capital?practice=T` practises only those, in that order, as one group,
   ignoring anything that has no pattern; such a session never changes the
   learner's saved progress.
+
+## SPRK-009: A learner can practise with less help
+
+- Priority: should
+- Why: As on the live app, a learner who can trace a letter moves on to
+  writing it from its start and end dots, then from memory, which is how
+  they learn to write it alone.
+- Accept: a Technique picker on the home page, and a link with
+  `?tech=Tracing`, `?tech=Pattern` or `?tech=Freeform`, chooses how
+  letters are shown: Tracing animates every stroke; Pattern shows only
+  each stroke's start and end dots, which stay while the learner draws;
+  Freeform shows nothing. Tracing is the default, the choice is kept on
+  the device, and a letter written right passes with any technique.

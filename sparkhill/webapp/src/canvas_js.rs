@@ -22,6 +22,8 @@ window.eelCanvas = (function() {
   let then = 0;
   let onAnimationComplete = null;
   let demonstration = [];
+  let lastCombined = null;
+  let lastTechnique = '';
 
   function computeBoundary() {
     return {
@@ -221,6 +223,24 @@ window.eelCanvas = (function() {
 
     clear() { if (canvas) { isAnimating = false; clearCanvas(); } },
 
+    // A clean canvas with only the last demonstration's start and end dots,
+    // for the Pattern technique: the learner draws between them.
+    showMarks() {
+      if (!canvas) return;
+      isAnimating = false;
+      clearCanvas();
+      if (!lastCombined) return;
+      // Fitted again, as clearCanvas may have resized the canvas.
+      for (const pt of fitToCanvas(lastCombined)) {
+        if (pt.type === 'start') { setStyle('START_CIRCLE'); paintCircle(pt, 13); }
+        else if (pt.type === 'end') { setStyle('END_CIRCLE'); paintCircle(pt, 13); }
+      }
+      setStyle('USER');
+    },
+
+    // The technique the last demonstration used.
+    technique() { return lastTechnique; },
+
     startRecording() { recordedPoints = []; isRecording = true; },
 
     // The learner's strokes and the guide lines, as JSON; src/tracing_check.rs
@@ -238,6 +258,8 @@ window.eelCanvas = (function() {
       if (!canvas) return;
       const patterns = JSON.parse(patternsJson);
       const combined = combinePatterns(patterns);
+      lastCombined = combined;
+      lastTechnique = technique;
       clearCanvas();
       const fitted = fitToCanvas(combined);
       demonstration = fitted.map(p => ({x: p.x, y: p.y, type: p.type}));
