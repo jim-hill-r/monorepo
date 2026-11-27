@@ -1,0 +1,58 @@
+# Deletes the Actions caches a pull request made once it closes (merged or
+# not), following GitHub's documented clean-up pattern. A PR's caches are
+# scoped to refs/pull/N/merge, so nothing but that PR could ever restore
+# them, yet they count toward the repo's 10 GB cache limit until GitHub
+# evicts them after 7 unused days. Phase 2 of the resource cleanup plan
+# (standards/docs/plans/2026-11-resource-cleanup.md, "Temporary resources").
+#
+# Safety rules:
+# - Only caches whose ref is exactly refs/pull/<this PR>/merge are listed,
+#   so main's caches and other PRs' caches are never touched.
+# - Caches are rebuilt from git, so deleting them loses nothing.
+# - The token gets actions: write and nothing else.
+name: Pull request closed cleanup
+
+'on':
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+
+concurrency:
+  group: pull-request-closed-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  delete-caches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete this pull request's caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          ref="refs/pull/$PR_NUMBER/merge"
+          ids=$(gh cache list --ref "$ref" --limit 1000 --json id,ref \
+            --jq ".[] | select(.ref == \"$ref\") | .id")
+
+          deleted=0; failed=0
+          for id in $ids; do
+            if gh cache delete "$id"; then
+              deleted=$((deleted + 1))
+            else
+              echo "::warning::Failed to delete cache $id"
+              failed=$((failed + 1))
+            fi
+          done
+
+          {
+            echo "### Pull request closed cleanup"
+            echo "- Caches for \`$ref\` deleted: $deleted"
+            echo "- Failed: $failed"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          [ "$failed" -eq 0 ]
