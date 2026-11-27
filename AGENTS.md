@@ -205,7 +205,7 @@ repo, rather than in any one agent tool's settings.
   for`, `## Getting started`, `## How to ...` and `## Getting help`
   sections ("User docs" in
   [standards/docs/documentation.md](standards/docs/documentation.md#user-docs),
-  [decision 0016](standards/docs/decisions/0016-user-docs.md)). The audit
+  [decision 0017](standards/docs/decisions/0017-user-docs.md)). The audit
   (`chores user-docs`, DOC-005 to DOC-008) fails a project without one
   unless it is in the shrinking baseline `standards/user-docs.toml`. A PR
   that changes what users see or do updates the guide, and a new project

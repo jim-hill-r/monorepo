@@ -8,7 +8,7 @@
 
 Every top-level project has a user guide for the people who use what it
 ships (Jim, 2026-11-27: "All projects should have user docs for supporting
-our end users"; [decision 0016](decisions/0016-user-docs.md)). The README
+our end users"; [decision 0017](decisions/0017-user-docs.md)). The README
 says what a project is and CONTRIBUTING how to build it; the guide says how
 to use it.
 

@@ -1,4 +1,4 @@
-# 0016. Every project has a user guide, checked by the audit with a shrinking baseline
+# 0017. Every project has a user guide, checked by the audit with a shrinking baseline
 
 - Status: Accepted
 - Decided by: Jim (project thread, 2026-11-27)

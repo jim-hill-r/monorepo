@@ -2,7 +2,7 @@
 # yet (DOC-005 to DOC-007), each with the issue file that tracks writing it,
 # or "on hold" for a project under "# On Hold Projects" in issues/README.md.
 # Checked by `chores user-docs` in `mise run //:audit` (DOC-008). Rules in
-# "User docs" in standards/docs/documentation.md, decision 0016.
+# "User docs" in standards/docs/documentation.md, decision 0017.
 #
 # The list only shrinks: remove a project's line in the PR that adds its
 # guide (the check fails while a passing project is still listed), and never

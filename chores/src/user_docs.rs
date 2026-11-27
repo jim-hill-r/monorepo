@@ -1,6 +1,6 @@
 //! User docs: every top-level project has a user guide for the people who
 //! use what it ships, at `<project>/docs/user/README.md`, with the sections
-//! in "User docs" in standards/docs/documentation.md (decision 0016).
+//! in "User docs" in standards/docs/documentation.md (decision 0017).
 //!
 //!   DOC-005  The project has no `docs/user/README.md`.
 //!   DOC-006  The guide is missing one of the required `##` sections.
