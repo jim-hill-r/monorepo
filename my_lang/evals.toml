@@ -1,0 +1,193 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# my_lang is a library with no CLI, release or deploy yet, so every eval
+# is a `cargo` eval in the `ci` stage, naming existing tests with `filter`.
+# The `must` requirements get production-stage (`cd`) trycmd evals against
+# the release binary once the CLI exists
+# (issues/production-evals-with-the-cli.md); until then `evals check`
+# warns EVL-004 for them.
+
+prefix = "LANG"
+
+# LANG-001: A program runs and gives the right answer
+
+[[eval]]
+id = "jit-runs-programs"
+requirement = "LANG-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_"
+description = "Arithmetic, comparisons, variables, calls and up to 4 arguments run through the JIT, plus its argument errors."
+
+[[eval]]
+id = "jit-end-to-end"
+requirement = "LANG-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_e2e_"
+description = "Source text to result through the public API (tests/integration_tests.rs)."
+
+[[eval]]
+id = "codegen-arithmetic"
+requirement = "LANG-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_addition"
+
+[[eval]]
+id = "codegen-variables"
+requirement = "LANG-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_variable_assignment_and_use"
+
+[[eval]]
+id = "codegen-calls"
+requirement = "LANG-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_function_call"
+
+# LANG-002: A mistake gives a clear error, never a crash
+
+[[eval]]
+id = "lexer-illegal-character"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_illegal_character"
+
+[[eval]]
+id = "lexer-unterminated-string"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_unterminated_string"
+
+[[eval]]
+id = "lexer-integer-overflow"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_integer_overflow"
+
+[[eval]]
+id = "parser-errors"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_parser_error_"
+description = "A missing bracket and an unexpected token are parse errors."
+
+[[eval]]
+id = "undefined-names"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_undefined_"
+description = "An undefined variable or function is a codegen error."
+
+[[eval]]
+id = "jit-parse-error"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_parse_error"
+
+[[eval]]
+id = "jit-function-not-found"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_function_not_found"
+
+[[eval]]
+id = "jit-argument-count"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_too_"
+description = "Too many (over 8) and too few arguments are errors."
+
+[[eval]]
+id = "jit-extra-arguments"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_extra_arguments_are_an_error"
+
+[[eval]]
+id = "error-messages"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_argument_count_mismatch_message"
+
+# LANG-003: Side effects stay where they are declared
+
+[[eval]]
+id = "input-rejects-return"
+requirement = "LANG-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_input_declaration_return_error"
+
+[[eval]]
+id = "output-allows-return"
+requirement = "LANG-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_output_declaration_allows_return"
+
+[[eval]]
+id = "jit-return-in-output-and-function"
+requirement = "LANG-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_e2e_return_keyword_in_"
+
+[[eval]]
+id = "parse-input-and-output"
+requirement = "LANG-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_parser_input_declaration"
+
+[[eval]]
+id = "parse-output"
+requirement = "LANG-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_parser_output_declaration"
+
+[[eval]]
+id = "compile-input"
+requirement = "LANG-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_input_declaration_compiled"
+
+# LANG-004: The compiled LLVM IR can be read
+
+[[eval]]
+id = "ir-end-to-end"
+requirement = "LANG-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_e2e_"
+description = "Source text to LLVM IR: function signatures and integer instructions (tests/integration_tests.rs)."
+
+[[eval]]
+id = "ir-multiple-functions"
+requirement = "LANG-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_multiple_functions"
+
+[[eval]]
+id = "ir-string-literal"
+requirement = "LANG-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_string_literal_as_pointer"

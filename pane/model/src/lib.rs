@@ -7,6 +7,8 @@
 
 use std::fmt;
 
+pub mod health;
+
 use serde::{Deserialize, Serialize};
 
 /// The repo pane reviews, for links to files and releases on GitHub.
@@ -322,6 +324,8 @@ pub struct Link {
     pub label: String,
     pub url: String,
 }
+
+pub mod money;
 
 #[cfg(test)]
 mod tests {

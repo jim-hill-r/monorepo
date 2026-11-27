@@ -296,6 +296,11 @@ vendor = "Squarespace"     # must be a blip in radar.json
 Every number has a source line, because pane shows it as evidence the same
 way the health lights do.
 
+Update 2026-11-27: revenue and project-only costs live in each project's
+`docs/cost.toml` ([standards/docs/cost.md](../../../standards/docs/cost.md)),
+which replaces `finance.toml` with the same fields. The rules below are the
+`money` module in [`pane/model`](../../model/README.md#money).
+
 ### Splitting shared costs
 
 A fixed cost such as Claude Code isn't any one project's. Pane splits each

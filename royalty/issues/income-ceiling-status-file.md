@@ -8,5 +8,3 @@ added: 2026-11-27
 ---
 
 Define `royalty-status.toml`, the producer's public record of income received in the window, and add `royalty status` for a producer to update it from their own ledger. A consumer who runs `royalty verify` reads it, and the calculation applies `[income] on_reach`.
-
-Blocked on: decision 5 in the plan.

@@ -18,6 +18,7 @@ use evals_model::{
 use serde::{Deserialize, Serialize};
 
 use crate::check::{EVALS, REQUIREMENTS, read_optional, top_level_dirs};
+use crate::coverage::{Coverage, RepoCoverage, summary};
 use crate::human_checks::{read_checks, read_settings};
 use crate::publish::{parse_results, to_jsonl};
 
@@ -110,6 +111,8 @@ pub fn read_results(dir: &Path) -> Result<Vec<EvalResult>> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VerdictsFile {
     pub generated_at: DateTime<Utc>,
+    /// The repo's eval coverage, over every project.
+    pub coverage: RepoCoverage,
     pub projects: Vec<ProjectVerdicts>,
 }
 
@@ -122,6 +125,8 @@ pub struct ProjectVerdicts {
     pub musts: usize,
     /// Active `must` requirements with an eval in a production stage.
     pub musts_in_production: usize,
+    /// The project's eval coverage (`coverage.rs`).
+    pub coverage: Coverage,
     pub requirements: Vec<RequirementVerdict>,
 }
 
@@ -137,7 +142,9 @@ pub struct RequirementVerdict {
 
 /// Computes every project's verdicts from the requirements, evals and
 /// human-check answers on `main` (the repo at `root`) and the stored
-/// `results`. Projects whose files don't parse are left out with a
+/// `results`. Every top-level project (a folder with a `mise.toml` or a
+/// `docs/requirements.md`) is listed, so one with no requirements shows
+/// 0% eval coverage. Projects whose files don't parse are left out with a
 /// warning on standard error (`evals check` reports them).
 pub fn compute(
     root: &Path,
@@ -163,8 +170,10 @@ pub fn compute(
             continue;
         }
         let dir = root.join(&project);
-        let Some(text) = read_optional(&dir.join(REQUIREMENTS))? else {
-            continue;
+        let text = match read_optional(&dir.join(REQUIREMENTS))? {
+            Some(text) => text,
+            None if dir.join("mise.toml").is_file() => String::new(),
+            None => continue,
         };
         let (requirements, errors) = parse_requirements(&text);
         if !errors.is_empty() {
@@ -227,11 +236,21 @@ pub fn compute(
             project,
             musts: musts.len(),
             musts_in_production,
+            coverage: Coverage::of(&verdicts, thresholds.coverage_warn),
             requirements: verdicts,
         });
     }
+    let coverage = RepoCoverage::of(
+        &projects
+            .iter()
+            .map(|p| p.coverage.clone())
+            .collect::<Vec<_>>(),
+        projects.iter().map(|p| p.musts).sum(),
+        thresholds.coverage_warn,
+    );
     Ok(VerdictsFile {
         generated_at: now,
+        coverage,
         projects,
     })
 }
@@ -247,10 +266,19 @@ pub fn write_verdicts(dir: &Path, file: &VerdictsFile) -> Result<()> {
 /// Plain-text verdicts: one block per project, one line per requirement.
 pub fn render(file: &VerdictsFile) -> String {
     if file.projects.is_empty() {
-        return "No project has docs/requirements.md yet.\n".to_string();
+        return "No projects found.\n".to_string();
     }
     let mut out = String::new();
     for project in &file.projects {
+        let coverage = &project.coverage;
+        let warning = if coverage.warning { ", warning" } else { "" };
+        if project.requirements.is_empty() {
+            out.push_str(&format!(
+                "{}: no requirements yet (eval coverage 0%{warning})\n",
+                project.project
+            ));
+            continue;
+        }
         let count = |v| {
             project
                 .requirements
@@ -259,7 +287,7 @@ pub fn render(file: &VerdictsFile) -> String {
                 .count()
         };
         out.push_str(&format!(
-            "{}: {} met, {} at risk, {} not met, {} unknown ({} of {} musts evaluated in production)\n",
+            "{}: {} met, {} at risk, {} not met, {} unknown ({} of {} musts evaluated in production; eval coverage {}{warning})\n",
             project.project,
             count(Verdict::Met),
             count(Verdict::AtRisk),
@@ -267,6 +295,7 @@ pub fn render(file: &VerdictsFile) -> String {
             count(Verdict::Unknown),
             project.musts_in_production,
             project.musts,
+            summary(coverage.percent, coverage.musts_percent),
         ));
         for r in &project.requirements {
             let reasons = if r.reasons.is_empty() {
@@ -282,6 +311,18 @@ pub fn render(file: &VerdictsFile) -> String {
                 priority_word(r.priority),
             ));
         }
+    }
+    let repo = &file.coverage;
+    if file.projects.len() > 1 {
+        out.push_str(&format!(
+            "eval coverage: {} over {} projects ({} with requirements); {:.0}% of musts met per project on average, warning below {:.0}%{}\n",
+            summary(repo.percent, repo.musts_percent),
+            repo.projects,
+            repo.projects_with_requirements,
+            repo.judged_percent,
+            repo.warn_below,
+            if repo.warning { " (warning)" } else { "" },
+        ));
     }
     out
 }
@@ -475,13 +516,63 @@ every = "30d"
 
         let text = render(&file);
         assert!(text.starts_with(
-            "cookbook: 1 met, 1 at risk, 0 not met, 0 unknown (1 of 1 musts evaluated in production)\n  COOK-001 met      A recipe is easy to cook from on a phone (must)\n"
+            "cookbook: 1 met, 1 at risk, 0 not met, 0 unknown (1 of 1 musts evaluated in production; eval coverage 50%, musts 100%)\n  COOK-001 met      A recipe is easy to cook from on a phone (must)\n"
         ), "{text}");
 
         assert!(
             compute(root.path(), &results, Some("pane"), now())?
                 .projects
                 .is_empty()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_project_with_no_requirements_shows_zero_coverage() -> Result<()> {
+        let root = repo()?;
+        fs::create_dir_all(root.path().join("homer"))?;
+        fs::write(root.path().join("homer/mise.toml"), "")?;
+        fs::create_dir_all(root.path().join("notes"))?;
+        let results = parse_results(
+            &[
+                line("layout", "ci", "pass", "2026-12-10T08:00:00Z"),
+                line("layout", "cd", "pass", "2026-12-10T09:00:00Z"),
+            ]
+            .join("\n"),
+        )?;
+        let file = compute(root.path(), &results, None, now())?;
+        let names: Vec<_> = file.projects.iter().map(|p| p.project.as_str()).collect();
+        assert_eq!(
+            names,
+            vec!["cookbook", "homer"],
+            "a folder with neither mise.toml nor requirements is not a project"
+        );
+        let homer = &file.projects[1];
+        assert_eq!(homer.coverage.percent, 0.0);
+        assert!(homer.coverage.warning);
+        // cookbook 50% (1 of 2 met), homer 0%: the mean is 25%.
+        assert_eq!(file.coverage.percent, 25.0);
+        assert_eq!(file.coverage.musts_percent, Some(100.0));
+        let text = render(&file);
+        assert!(
+            text.contains("homer: no requirements yet (eval coverage 0%, warning)\n"),
+            "{text}"
+        );
+        assert!(
+            text.ends_with("eval coverage: 25%, musts 100% over 2 projects (1 with requirements); 50% of musts met per project on average, warning below 80% (warning)\n"),
+            "{text}"
+        );
+
+        let dir = tempfile::tempdir()?;
+        let written = crate::coverage::write_badges(dir.path(), &file)?;
+        assert_eq!(
+            written,
+            vec!["badge.svg", "badges/cookbook.svg", "badges/homer.svg"]
+        );
+        let homer_badge = fs::read_to_string(dir.path().join("badges/homer.svg"))?;
+        assert!(
+            homer_badge.contains("eval coverage: 0%, no requirements"),
+            "{homer_badge}"
         );
         Ok(())
     }

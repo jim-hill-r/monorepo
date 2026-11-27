@@ -14,3 +14,8 @@ fresh_days = 2
 
 # A requirement whose newest production-stage result is older than this is at risk.
 stale_days = 3
+
+# Eval coverage: a project with fewer than this percentage of its `must`
+# requirements met is a warning, and its badge turns yellow or red
+# (standards/docs/evals.md#eval-coverage).
+coverage_warn = 80

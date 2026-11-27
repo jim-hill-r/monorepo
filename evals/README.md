@@ -1,5 +1,7 @@
 # evals
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/evals.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The eval engine: it checks that each project's product requirements hold
 as built, at every stage from CI to production. The name is plain: an eval
 is one check of one requirement.
@@ -29,8 +31,9 @@ failures make an eval flaky, how fresh a production result must be) are in
 cargo run -p evals_cli -- check            # warnings, exit 0
 cargo run -p evals_cli -- check --strict   # exit 1 on any finding
 
-# Turn saved test reports into one result per eval (cargo and playwright
-# kinds), appended to evals-results.jsonl. Runs no tests itself.
+# Turn saved test reports into one result per eval (cargo, trycmd and
+# playwright kinds; trycmd's case lines are in the cargo output), appended
+# to evals-results.jsonl. Runs no tests itself.
 cargo test 2>&1 | tee cargo-test.log
 cargo run -p evals_cli -- run --stage ci --project cookbook \
   --cargo-output cargo-test.log --playwright-report web/results.json
@@ -54,6 +57,11 @@ cargo run -p evals_cli -- human-checks answer claude-connectors --not-ok "GitHub
 # Add results to a checkout of the evals-results branch and rewrite its
 # verdicts.json (standards/scripts/evals.sh store does the git part).
 cargo run -p evals_cli -- store --results evals-results.jsonl --dir ../evals-results
+
+# File the work the verdicts call for: a FIX or TODO issue file for each
+# requirement that is not green and has no open issue (--write writes them,
+# at most --limit). standards/scripts/evals.sh triage runs it daily.
+cargo run -p evals_cli -- triage --dir ../evals-results --write
 
 # Every requirement's current verdict, from a checkout of that branch
 # (standards/scripts/evals.sh verdicts fetches it for you).
