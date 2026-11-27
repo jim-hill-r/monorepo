@@ -70,10 +70,12 @@ jobs:
         with:
           app-id: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
           private-key: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}
+          # No permission-* inputs: the token gets what the app is installed
+          # with (Secrets, Environments, Variables, Administration; see
+          # standards/docs/runbooks/github-app-infra.md). The action has no
+          # input for Variables, and asking for any permission the
+          # installation lacks fails the whole step.
           repositories: ${{ github.event.repository.name }}
-          permission-secrets: write
-          permission-environments: write
-          permission-variables: write
 
       - name: Mint
         id: mint
