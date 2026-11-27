@@ -111,6 +111,35 @@ GitHub also waits for green CI on the new head before auto-merging. Until
 then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
 
+## Stacked pull requests
+
+A stack is a chain of PRs where each one's base is the branch of the one
+below it, so they reach `main` only together. Each step stays its own
+reviewable PR, but Jim approves the stack once (decision
+[0014](decisions/0014-faster-pr-approvals.md)):
+
+1. When every PR in the stack is complete and green, the thread retargets
+   the **top** PR to `main`. Its diff is now the whole stack.
+2. It edits the top PR's description: the executive summary covers the
+   whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
+   first, the top one last. Pane's Approve page reads that line.
+3. It moves every other PR in the stack back to draft, with a one-line
+   comment naming the top PR, and turns off their auto-merge.
+4. It marks the top PR ready and turns on auto-merge as usual. One
+   approval squash-merges the whole stack as one commit.
+5. Once it merges, the thread (or PR triage) closes the step PRs with a
+   comment saying they merged in the top PR.
+
+A change to a step after this is made on that step's branch and merged up
+through the stack to the top branch, which needs a fresh approval like any
+push. PR triage treats the draft step PRs of a stack whose top PR is open
+as part of it, not as orphans.
+
+Jim reviews from pane's **Approve** page (`/approve` on
+<https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
+ones first, with its summary, attention badges and a link to its review
+form.
+
 ## PR triage
 
 The scheduled task runs three times a day, at 7:50, 12:50 and 17:50
@@ -185,6 +214,8 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   for review, turn on auto-merge (see "Auto-merge") and flag it.
 - If it's ready for review, green, not `needs-human` and auto-merge is off,
   turn auto-merge on.
+- If it's an orphaned stack whose steps are all green, collapse it as
+  "Stacked pull requests" says, so it needs one approval.
 - Otherwise add `needs-human` and flag it.
 
 ### Main health

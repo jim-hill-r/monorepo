@@ -324,6 +324,7 @@ pub struct Link {
 }
 
 pub mod money;
+pub mod queue;
 
 #[cfg(test)]
 mod tests {

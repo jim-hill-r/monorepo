@@ -9,6 +9,7 @@ one column under 720 px.
 | Route | Page |
 | --- | --- |
 | `/` | Today: counts, human issues waiting on Jim oldest first, and what is new since the last visit (human issues, deliverables, TODOs and FIXes; see below) |
+| `/approve` | Approve: green PRs waiting on Jim's review, clear ones first, each with its summary, attention badges and an "Approve on GitHub" link to its review form, then red-labelled PRs and stacks. It reads GitHub's public API from the browser with no token; the rules are `pane_model::queue` ([decision 0014](../../standards/docs/decisions/0014-faster-pr-approvals.md)) |
 | `/projects` | Every project, priority first, with type, status, README summary and open items |
 | `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its latest review and its scorecard counts, its deliverables, and its open TODOs and FIXes (sub-projects included) |
 | `/work` | Every `TODO` and `FIX` from issue files and code comments, FIXes first, filterable by project, kind, where it sits (priority, backlog, other, code comments) and tag, each linking to its line on GitHub |

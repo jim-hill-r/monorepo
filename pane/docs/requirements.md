@@ -93,3 +93,16 @@ evals until they are built.
 - Why: Jim wants to know whether each project pays for itself.
 - Accept: a project shows its revenue and its costs per month and whether
   it covers them.
+
+## PANE-011: Jim can approve the waiting pull requests in a row
+
+- Priority: must
+- Why: Jim approves many agent PRs a day, and finding and opening each one
+  took 5 or 6 clicks
+  ([decision 0014](../../standards/docs/decisions/0014-faster-pr-approvals.md)).
+- Accept: the Approve page lists every open pull request out of draft whose
+  checks passed and that still needs a review, clear ones first, with its
+  summary (at most 75 words), its attention badges (red for `needs-human`
+  or `credential-change`, orange for `security` or `cost`) and a link
+  straight to its review form on GitHub. Stacked pull requests show as one
+  stack. It reads GitHub without a token and says so when GitHub refuses.

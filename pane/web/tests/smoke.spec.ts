@@ -10,7 +10,20 @@ import { test as base, expect } from '@playwright/test';
  */
 
 /** Fails the test if the page logs a console error or throws. */
-const test = base.extend<{ consoleErrors: string[] }>({
+const test = base.extend<{ consoleErrors: string[]; githubApi: void }>({
+  // The Approve page reads GitHub's public API; answer it with empty lists
+  // so the smoke tests never depend on GitHub or its rate limit.
+  githubApi: [
+    async ({ page }, use) => {
+      await page.route('https://api.github.com/**', (route) =>
+        route.fulfill({
+          json: route.request().url().includes('/search/') ? { total_count: 0, items: [] } : [],
+        }),
+      );
+      await use();
+    },
+    { auto: true },
+  ],
   consoleErrors: [
     async ({ page }, use) => {
       const errors: string[] = [];
@@ -28,6 +41,7 @@ const test = base.extend<{ consoleErrors: string[] }>({
 const NAV: [string, string, string][] = [
   // [nav label, path, page heading]
   ['Today', '/', 'Today'],
+  ['Approve', '/approve', 'Approve'],
   ['Health', '/health', 'Health'],
   ['Projects', '/projects', 'Projects'],
   ['Deliverables', '/deliverables', 'Deliverables'],

@@ -6,10 +6,12 @@ use pane_model::{
     Deliverable, DeliverableKind, HumanIssue, Review, ScorecardRow, Snapshot, WorkItem, WorkKind,
 };
 
+mod approve;
 mod markdown;
 mod view;
 mod visits;
 
+use approve::Approve;
 use view::{Bucket, WorkFilter};
 use visits::Visits;
 
@@ -85,6 +87,8 @@ mod route {
         #[layout(Shell)]
         #[route("/")]
         Today {},
+        #[route("/approve")]
+        Approve {},
         #[route("/health")]
         Health {},
         #[route("/projects")]
@@ -113,9 +117,10 @@ mod route {
 use route::Route;
 
 /// The nav entries, in order.
-fn nav() -> [(Route, &'static str); 8] {
+fn nav() -> [(Route, &'static str); 9] {
     [
         (Route::Today {}, "Today"),
+        (Route::Approve {}, "Approve"),
         (Route::Health {}, "Health"),
         (Route::Projects {}, "Projects"),
         (Route::Deliverables {}, "Deliverables"),

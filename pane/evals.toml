@@ -238,3 +238,40 @@ kind = "http"
 description = "pane's release builds each review deck to a PDF under /reviews/<folder>/."
 path = "/reviews/2026-11-25-cookbook/deck.pdf"
 header = "content-type: application/pdf"
+
+# PANE-011: Jim can approve the waiting pull requests in a row
+
+[[eval]]
+id = "queue-build"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "builds_the_queue_from_pulls_and_the_ready_search"
+
+[[eval]]
+id = "queue-summary"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "summary_skips_attribution_and_keeps_link_text"
+
+[[eval]]
+id = "queue-stacks"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "stacked_prs_group_into_one_stack"
+
+[[eval]]
+id = "approve-page"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "playwright"
+description = "The Approve page lists green PRs with summaries, badges, approve links and stacks, and says when GitHub refuses."
+
+[[eval]]
+id = "approve-page-live"
+requirement = "PANE-011"
+stages = ["cd"]
+kind = "http"
+path = "/approve"

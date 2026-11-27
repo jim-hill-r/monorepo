@@ -95,7 +95,8 @@ h1 {
   gap: 0.75rem;
 }
 
-.stats a {
+.stats a,
+.stats .stat {
   display: block;
   padding: 0.75rem 1rem;
   border: 1px solid var(--ds-color-border);
@@ -391,4 +392,24 @@ h1 {
 .scorecard-line {
   margin: 0.4rem 0 0;
   font-size: 0.9rem;
+}
+
+/* The Approve page (decision 0014): attention badges and the approve link. */
+.badge.attention-clear {
+  color: var(--ds-color-success);
+  border-color: var(--ds-color-success);
+}
+
+.badge.attention-look {
+  color: var(--ds-color-warning);
+  border-color: var(--ds-color-warning);
+}
+
+.badge.attention-decide {
+  color: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
+}
+
+.meta a.approve {
+  font-weight: 600;
 }
