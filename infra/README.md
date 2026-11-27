@@ -1,5 +1,7 @@
 # infra
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/infra.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Infrastructure as code for the monorepo: the settings we used to click
 through vendor dashboards (Auth0 applications first, then GitHub and
 Cloudflare) written as Rust, in the style of the AWS CDK. It is named for

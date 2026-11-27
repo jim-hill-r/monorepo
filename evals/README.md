@@ -1,5 +1,7 @@
 # evals
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/evals.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The eval engine: it checks that each project's product requirements hold
 as built, at every stage from CI to production. The name is plain: an eval
 is one check of one requirement.

@@ -1,5 +1,7 @@
 # design_system
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/design_system.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 One design system for every app in the monorepo: five themes (earthy, airy,
 professional, colorful and gamey 8-bit), each in light and dark, each with an
 accessible mode on top. That is 20 combinations, and CI proves every one

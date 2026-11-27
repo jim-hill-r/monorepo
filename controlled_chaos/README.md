@@ -1,5 +1,7 @@
 # controlled_chaos
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/controlled_chaos.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A digital tabletop card game built with [Bevy](https://bevyengine.org/), featuring turn-based card game mechanics and deck-building gameplay.
 
 ## Overview
