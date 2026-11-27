@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T22:36:10.463670612Z",
+  "generated_at": "2026-11-27T23:00:13.717670310Z",
   "coverage": {
     "projects": 27,
-    "projects_with_requirements": 11,
+    "projects_with_requirements": 12,
     "percent": 11.2,
-    "musts_percent": 44.7,
+    "musts_percent": 36.2,
     "judged_percent": 16.4,
     "warn_below": 80.0,
     "warning": true
@@ -790,16 +790,99 @@
     },
     {
       "project": "royalty",
-      "musts": 0,
+      "musts": 9,
       "musts_in_production": 0,
       "coverage": {
-        "requirements": 0,
+        "requirements": 9,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "ROYL-001",
+          "title": "Royalty adds nothing to a consumer's running program",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "ROYL-002",
+          "title": "Development, tests, CI and staging are always free",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "ROYL-003",
+          "title": "Royalty never stops or slows a program",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no evals"
+          ]
+        },
+        {
+          "requirement": "ROYL-004",
+          "title": "The lowest ceiling wins, and the report says which",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "ROYL-005",
+          "title": "Offline and private by default",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "ROYL-006",
+          "title": "The same files give the same report",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "ROYL-007",
+          "title": "A file with only `[project]` stays valid for ever",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "ROYL-008",
+          "title": "A royalty.toml never holds a secret",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "ROYL-009",
+          "title": "Money is whole cents, never floating point",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "sparkhill",
