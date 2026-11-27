@@ -47,7 +47,7 @@ jobs:
 
       # Every project job's evals-results-<project> (stage ci) and
       # evals-results-cd-<project> artifact from this run.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: ${{ inputs.pattern }}
           path: ${{ runner.temp }}/evals
