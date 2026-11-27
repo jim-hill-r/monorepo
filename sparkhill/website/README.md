@@ -9,7 +9,9 @@ only runs at build time
 - `mise run dev` exports the site and serves the static files, rebuilding on
   changes (`perseus export -s -w`).
 - `mise run release` writes the release export to `dist/exported`, which
-  `../cloudflare` uploads.
+  `../cloudflare` uploads. It also writes the 404 error view to
+  `dist/exported/404.html`: without one, Cloudflare Pages answers every
+  unknown URL with the home page and status 200.
 - `mise run ci` checks formatting, lints, the build and the tests.
 - `mise run e2e` makes the release export and runs the Playwright smoke
   tests in `e2e/` on it at desktop and phone widths. `e2e/serve.mjs` serves
