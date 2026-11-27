@@ -1,0 +1,10 @@
+
+/* The section headings are h2s (the tagline is the page's one h1), styled
+   like the prose h1s they used to be. */
+.prose h2.section-heading {
+    font-weight: 800;
+    font-size: 2.25em;
+    margin-top: 0;
+    margin-bottom: .8888889em;
+    line-height: 1.1111111;
+}
