@@ -681,7 +681,8 @@ phase 3.
   the `smoke` reports from `target/evals-reports/cd/` once projects have
   `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
-  released binaries.
+  released binaries. Done (2026-11-27): the `trycmd` kind, collected from
+  the saved `cargo test` output.
 - The `eval-triage` skill and its daily scheduled task, replacing the
   planned nightly FIX task.
 - `evals check` makes "every `must` has a production eval" an error.

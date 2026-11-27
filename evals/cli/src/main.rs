@@ -42,8 +42,8 @@ enum Command {
         strict: bool,
     },
     /// Turn the test reports a project's tasks already wrote into one result
-    /// per eval, appended to a JSONL file. Collects `cargo` and `playwright`
-    /// evals (it runs no tests itself) and makes the requests of `http`
+    /// per eval, appended to a JSONL file. Collects `cargo`, `trycmd` and
+    /// `playwright` evals (it runs no tests itself) and makes the requests of `http`
     /// evals.
     Run {
         /// The stage to collect, such as `ci`.
@@ -55,7 +55,8 @@ enum Command {
         /// Repo root. Defaults as for `check`.
         #[arg(long)]
         root: Option<PathBuf>,
-        /// Saved `cargo test` output. Repeat for several crates.
+        /// Saved `cargo test` output, which holds trycmd's case lines too.
+        /// Repeat for several crates.
         #[arg(long = "cargo-output")]
         cargo_output: Vec<PathBuf>,
         /// A Playwright JSON reporter file. Repeat for several apps.
@@ -249,11 +250,18 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 anyhow!("{} is invalid: {}", evals_path.display(), list.join("; "))
             })?;
 
+            let cargo_texts = read_all(&cargo_output)?;
             let reports = run::Reports {
-                cargo: read_all(&cargo_output)?.map(|texts| {
+                cargo: cargo_texts.as_ref().map(|texts| {
                     texts
                         .iter()
                         .flat_map(|t| reports::parse_cargo_output(t))
+                        .collect()
+                }),
+                trycmd: cargo_texts.as_ref().map(|texts| {
+                    texts
+                        .iter()
+                        .flat_map(|t| reports::parse_trycmd_output(t))
                         .collect()
                 }),
                 playwright: match read_all(&playwright_report)? {
