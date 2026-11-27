@@ -21,12 +21,35 @@ Three promises shape the design:
 
 ## Status
 
-Phase 1 is being built: the `royalty_model` crate (`model/`) reads and
-validates a `royalty.toml`; the `royalty` command comes next. The full
+Phase 1 is being built. The `royalty_model` crate (`model/`) reads and
+validates a `royalty.toml` and works out what a consumer owes; the
+`royalty` command (`cli/`) checks a file. Scanning a consumer's
+dependencies and writing a report come next. The full
 `royalty.toml` format is in the [royalty.toml reference](docs/royalty-toml.md).
 The design, the phases and Jim's answers to its decisions are in the
 [royalty plan](docs/plans/2026-11-royalty-plan.md). The work items are in
 [issues/](issues/README.md).
+
+## Usage
+
+Build the command from this directory with `cargo build --release`; it is
+then `target/release/royalty`. It makes no network calls.
+
+### `royalty check [path] [--strict]`
+
+Checks one `royalty.toml` (or the one in a directory; the default is the
+current directory) and prints each finding with its code and, where one
+applies, the requirement it protects:
+
+```text
+$ royalty check
+error[RTOML-008] ./royalty.toml tier[0].when.environment[0]: "staging": a tier can only name "production"; development, test, ci and staging are always free (ROYL-002)
+royalty check: ./royalty.toml: 1 error(s), 0 warning(s)
+```
+
+It exits 0 when there are only warnings, 1 on any error (or any warning
+with `--strict`), and 2 when the file can't be read. The codes are listed
+in [What `royalty check` reports](docs/royalty-toml.md#what-royalty-check-reports).
 
 ## The file today
 

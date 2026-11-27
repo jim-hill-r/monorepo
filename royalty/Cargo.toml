@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["model"]
+members = ["model", "cli"]
 
 [workspace.package]
 version = "0.1.0"
@@ -14,6 +14,8 @@ expect_used = "warn"
 unsafe_code = "forbid"
 
 [workspace.dependencies]
+anyhow = "1.0"
+clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_ignored = "0.1"
 toml = "1"
