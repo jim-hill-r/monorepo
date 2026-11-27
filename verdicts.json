@@ -1,10 +1,53 @@
 {
-  "generated_at": "2026-11-27T19:07:33.219674525Z",
+  "generated_at": "2026-11-27T19:09:46.886009260Z",
+  "coverage": {
+    "projects": 26,
+    "projects_with_requirements": 5,
+    "percent": 6.3,
+    "musts_percent": 68.4,
+    "judged_percent": 13.5,
+    "warn_below": 80.0,
+    "warning": true
+  },
   "projects": [
+    {
+      "project": "athenaeum",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "auth_sdk",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
     {
       "project": "bear_down",
       "musts": 6,
       "musts_in_production": 6,
+      "coverage": {
+        "requirements": 10,
+        "met": 6,
+        "percent": 60.0,
+        "musts_met": 6,
+        "musts_percent": 100.0,
+        "warning": false
+      },
       "requirements": [
         {
           "requirement": "BEAR-001",
@@ -81,9 +124,43 @@
       ]
     },
     {
+      "project": "blueeel",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "bogan",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
       "project": "cahokia",
       "musts": 2,
       "musts_in_production": 2,
+      "coverage": {
+        "requirements": 7,
+        "met": 1,
+        "percent": 14.3,
+        "musts_met": 1,
+        "musts_percent": 50.0,
+        "warning": true
+      },
       "requirements": [
         {
           "requirement": "CAHO-001",
@@ -148,9 +225,30 @@
       ]
     },
     {
+      "project": "controlled_chaos",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
       "project": "cookbook",
       "musts": 3,
       "musts_in_production": 3,
+      "coverage": {
+        "requirements": 9,
+        "met": 2,
+        "percent": 22.2,
+        "musts_met": 2,
+        "musts_percent": 66.7,
+        "warning": true
+      },
       "requirements": [
         {
           "requirement": "COOK-001",
@@ -230,9 +328,121 @@
       ]
     },
     {
+      "project": "cost",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "design_system",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "evals",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "homer",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "infra",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "luggage",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "monorepo",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "my_lang",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
       "project": "pane",
       "musts": 2,
       "musts_in_production": 2,
+      "coverage": {
+        "requirements": 10,
+        "met": 3,
+        "percent": 30.0,
+        "musts_met": 2,
+        "musts_percent": 100.0,
+        "warning": false
+      },
       "requirements": [
         {
           "requirement": "PANE-001",
@@ -316,6 +526,188 @@
           ]
         }
       ]
+    },
+    {
+      "project": "profiles",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "psy_ents",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "royalty",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "sparkhill",
+      "musts": 6,
+      "musts_in_production": 6,
+      "coverage": {
+        "requirements": 8,
+        "met": 3,
+        "percent": 37.5,
+        "musts_met": 2,
+        "musts_percent": 33.3,
+        "warning": true
+      },
+      "requirements": [
+        {
+          "requirement": "SPRK-001",
+          "title": "A learner can start practising straight away",
+          "priority": "must",
+          "verdict": "at-risk",
+          "reasons": [
+            "first-session-judged has no judge results yet"
+          ]
+        },
+        {
+          "requirement": "SPRK-002",
+          "title": "Every letter is shown being written before the learner tries it",
+          "priority": "must",
+          "verdict": "at-risk",
+          "reasons": [
+            "demonstrations-judged has no judge results yet"
+          ]
+        },
+        {
+          "requirement": "SPRK-003",
+          "title": "A tracing is checked fairly",
+          "priority": "must",
+          "verdict": "at-risk",
+          "reasons": [
+            "tracing-judged has no judge results yet"
+          ]
+        },
+        {
+          "requirement": "SPRK-004",
+          "title": "Learners move from letters to words to capitals",
+          "priority": "must",
+          "verdict": "met"
+        },
+        {
+          "requirement": "SPRK-005",
+          "title": "Each learner's progress is kept on their device",
+          "priority": "must",
+          "verdict": "at-risk",
+          "reasons": [
+            "progress-judged has no judge results yet"
+          ]
+        },
+        {
+          "requirement": "SPRK-006",
+          "title": "Nothing a learner types or draws leaves their device",
+          "priority": "must",
+          "verdict": "met"
+        },
+        {
+          "requirement": "SPRK-007",
+          "title": "Blue Eel works and installs like an app on a phone or tablet",
+          "priority": "should",
+          "verdict": "met"
+        },
+        {
+          "requirement": "SPRK-008",
+          "title": "A few letters or words can be practised on their own",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "standards",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "starcraft",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "telemetry",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "threat",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
+    },
+    {
+      "project": "tofu_state",
+      "musts": 0,
+      "musts_in_production": 0,
+      "coverage": {
+        "requirements": 0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "warning": true
+      },
+      "requirements": []
     }
   ]
 }
