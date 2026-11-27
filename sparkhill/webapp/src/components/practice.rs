@@ -1,6 +1,7 @@
+use crate::Route;
 use crate::canvas_js::CANVAS_JS;
 use crate::patterns::demonstration_js;
-use crate::state::{AppState, PracticePhase};
+use crate::state::{AppState, PracticePhase, next_level};
 use crate::tracing_check;
 use dioxus::document::eval;
 use dioxus::prelude::*;
@@ -94,10 +95,9 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
     };
 
     let on_go = move |_| {
-        // Move to word level or restart
-        phase.set(PracticePhase::Start);
-        state.set(AppState::new(&level));
+        // After letters come words; after words, the congratulations page.
         eval("window.eelCanvas.clear();");
+        navigator().push(next_route(&level));
     };
 
     rsx! {
@@ -169,5 +169,25 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 }
             }
         }
+    }
+}
+
+/// Where "Go" leads once `level` is done.
+fn next_route(level: &str) -> Route {
+    match next_level(level) {
+        Some("word") => Route::Word {},
+        Some("letter") => Route::Letter {},
+        _ => Route::Congratulations {},
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn go_after_letters_opens_words_and_after_words_congratulates() {
+        assert_eq!(next_route("letter"), Route::Word {});
+        assert_eq!(next_route("word"), Route::Congratulations {});
     }
 }
