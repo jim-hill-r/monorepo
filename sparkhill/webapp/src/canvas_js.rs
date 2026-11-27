@@ -21,6 +21,7 @@ window.eelCanvas = (function() {
   let timePerPoint = 0;
   let then = 0;
   let onAnimationComplete = null;
+  let demonstration = [];
 
   function computeBoundary() {
     return {
@@ -129,24 +130,6 @@ window.eelCanvas = (function() {
     return translatePath(scaled, {x: canvas.width/2 - bounds.c.x, y: 0});
   }
 
-  function pathLength(path) {
-    let total = 0;
-    for (let i = 0; i < path.length - 1; i++) total += mag(sub(path[i+1], path[i]));
-    return total;
-  }
-
-  function downsample(path, target) {
-    const res = path.slice();
-    const step = res.length / (res.length - target);
-    for (let i = res.length - 1; i > 0; i -= step) {
-      const idx = Math.floor(i);
-      if (res[idx] && res[idx].type !== 'start' && res[idx].type !== 'end' && res[idx].type !== 'critical') {
-        res.splice(idx, 1);
-      }
-    }
-    return res;
-  }
-
   // --- Animation ---
   function animateStep() {
     if (!isAnimating) return;
@@ -182,6 +165,16 @@ window.eelCanvas = (function() {
       ctx = canvas.getContext('2d');
       onAnimationComplete = animComplete;
       clearCanvas();
+      // init runs on mount and on every Start: add the listeners only once
+      // per canvas, or each stroke would be recorded once per call.
+      if (canvas.dataset.eelListeners) return true;
+      canvas.dataset.eelListeners = 'true';
+      // A stroke ends where the pen or finger lifts or leaves the canvas.
+      const endStroke = () => {
+        if (!drawing) return;
+        if (prevPoint && isRecording) recordedPoints.push({x: prevPoint.x, y: prevPoint.y, type: 'end'});
+        drawing = false;
+      };
       // Set up mouse listeners
       canvas.addEventListener('mousedown',  e => {
         if (isAnimating) return;
@@ -199,12 +192,8 @@ window.eelCanvas = (function() {
         if (isRecording) recordedPoints.push(pt);
         prevPoint = pt;
       });
-      canvas.addEventListener('mouseup', () => {
-        if (!drawing) return;
-        if (prevPoint) { prevPoint.type = 'end'; if (isRecording) recordedPoints.push(prevPoint); }
-        drawing = false;
-      });
-      canvas.addEventListener('mouseleave', () => { drawing = false; });
+      canvas.addEventListener('mouseup',    endStroke);
+      canvas.addEventListener('mouseleave', endStroke);
       // Touch listeners
       canvas.addEventListener('touchstart', e => {
         e.preventDefault();
@@ -225,8 +214,8 @@ window.eelCanvas = (function() {
         if (isRecording) recordedPoints.push(pt);
         prevPoint = pt;
       }, {passive: true});
-      canvas.addEventListener('touchend',   () => { drawing = false; });
-      canvas.addEventListener('touchcancel',() => { drawing = false; });
+      canvas.addEventListener('touchend',    endStroke);
+      canvas.addEventListener('touchcancel', endStroke);
       return true;
     },
 
@@ -234,10 +223,16 @@ window.eelCanvas = (function() {
 
     startRecording() { recordedPoints = []; isRecording = true; },
 
+    // The learner's strokes and the guide lines, as JSON; src/tracing_check.rs
+    // checks them against the letter's pattern.
     stopRecording() {
       isRecording = false;
       return JSON.stringify({boundary, path: recordedPoints});
     },
+
+    // The last demonstration's path in canvas pixels, with each stroke's
+    // `start` and `end`. The Playwright tests trace it to pass a letter.
+    demonstrationPath() { return demonstration; },
 
     drawLetter(patternsJson, technique) {
       if (!canvas) return;
@@ -245,6 +240,7 @@ window.eelCanvas = (function() {
       const combined = combinePatterns(patterns);
       clearCanvas();
       const fitted = fitToCanvas(combined);
+      demonstration = fitted.map(p => ({x: p.x, y: p.y, type: p.type}));
       if (!fitted || fitted.length === 0 || technique === 'Freeform') {
         setTimeout(() => { if (onAnimationComplete) onAnimationComplete(); }, 1200);
         return;
@@ -257,47 +253,6 @@ window.eelCanvas = (function() {
       then = Date.now();
       isAnimating = true;
       animateStep();
-    },
-
-    validateSuccess(patternsJson, recordingJson) {
-      try {
-        const patterns = JSON.parse(patternsJson);
-        const recording = JSON.parse(recordingJson);
-        if (!recording || recording.path.length < 10) return false;
-        const template = combinePatterns(patterns.map(p => normalizePattern(p)));
-        const user = recording.path;
-        const tmpl = template.path;
-
-        // Length check
-        let t = tmpl.length > user.length ? downsample(tmpl, user.length) : tmpl;
-        let u = user.length > tmpl.length ? downsample(user, tmpl.length) : user;
-        const tLen = pathLength(t), uLen = pathLength(u);
-        if (Math.abs(tLen - uLen) / (tLen || 1) > 0.125) return false;
-
-        // Start/end point proximity check
-        const check = (arr, type) => {
-          const tPts = t.filter(p => p.type === type);
-          const uPts = u.filter(p => p.type === type);
-          const bnd  = getBounds(t);
-          const sc   = Math.max(bnd.w, bnd.h) || 1;
-          for (const tp of tPts) {
-            const minD = uPts.reduce((m, up) => Math.min(m, mag(sub(tp, up))), sc);
-            if (minD / sc > 0.1) return false;
-          }
-          return true;
-        };
-        if (!check(t, 'start') || !check(u, 'end')) return false;
-
-        // Bounding-box similarity
-        const tb = getBounds(t), ub = getBounds(u);
-        const sc = Math.max(tb.w, tb.h) || 1;
-        if (Math.abs(tb.w - ub.w) / sc > 0.125) return false;
-        if (Math.abs(tb.h - ub.h) / sc > 0.125) return false;
-        if (Math.abs(tb.c.x - ub.c.x) / sc > 0.1)  return false;
-        if (Math.abs(tb.c.y - ub.c.y) / sc > 0.1)  return false;
-
-        return true;
-      } catch(_) { return false; }
     }
   };
 })();

@@ -1,8 +1,11 @@
 use bevy::prelude::*;
+use design_system_palette::Tokens;
+
+use crate::theme;
 
 /// The category of a card, corresponding to the card types defined in the
-/// rulebook.  Each category has an associated color used when rendering the
-/// card frame.
+/// rulebook.  Each category is drawn in one of the design system's eight
+/// categorical colours (`data-1` to `data-8`).
 ///
 /// From the rulebook:
 /// - 13 Technology Cards (Blue)
@@ -35,18 +38,38 @@ pub enum CardCategory {
 }
 
 impl CardCategory {
-    /// Returns the frame color used when rendering cards of this category.
-    pub fn frame_color(&self) -> Color {
+    /// Every category, in rulebook order.
+    #[cfg(test)]
+    pub const ALL: [CardCategory; 8] = [
+        CardCategory::Technology,
+        CardCategory::Government,
+        CardCategory::Environment,
+        CardCategory::Economy,
+        CardCategory::Crisis,
+        CardCategory::Profession,
+        CardCategory::Civilian,
+        CardCategory::Society,
+    ];
+
+    /// The category's place in [`Self::ALL`], 0 to 7: which of the design
+    /// system's `data-1` to `data-8` colours it is drawn in.
+    pub fn index(&self) -> usize {
         match self {
-            CardCategory::Technology => Color::srgb(0.15, 0.35, 0.75),
-            CardCategory::Government => Color::srgb(0.65, 0.15, 0.15),
-            CardCategory::Environment => Color::srgb(0.15, 0.55, 0.25),
-            CardCategory::Economy => Color::srgb(0.65, 0.60, 0.10),
-            CardCategory::Crisis => Color::srgb(0.50, 0.10, 0.10),
-            CardCategory::Profession => Color::srgb(0.40, 0.15, 0.55),
-            CardCategory::Civilian => Color::srgb(0.15, 0.50, 0.55),
-            CardCategory::Society => Color::srgb(0.65, 0.35, 0.10),
+            CardCategory::Technology => 0,
+            CardCategory::Government => 1,
+            CardCategory::Environment => 2,
+            CardCategory::Economy => 3,
+            CardCategory::Crisis => 4,
+            CardCategory::Profession => 5,
+            CardCategory::Civilian => 6,
+            CardCategory::Society => 7,
         }
+    }
+
+    /// The category's colour in the given theme: its design system data
+    /// colour, used for the card frame and artwork block.
+    pub fn frame_color(&self, tokens: &Tokens) -> Color {
+        theme::color(tokens.data[self.index()])
     }
 
     /// Returns a human-readable label for this category.
@@ -65,7 +88,7 @@ impl CardCategory {
 }
 
 /// A card in the game with a name, numeric value, and category.
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
 pub struct Card {
     pub name: String,
     pub value: u32,
@@ -164,14 +187,25 @@ mod tests {
     }
 
     #[test]
-    fn card_category_crisis_frame_color_is_not_technology_color() {
-        let crisis_color = CardCategory::Crisis.frame_color();
-        let tech_color = CardCategory::Technology.frame_color();
-        // Different categories must produce different colors.
-        assert_ne!(
-            format!("{crisis_color:?}"),
-            format!("{tech_color:?}"),
-            "Crisis and Technology should have different frame colors"
-        );
+    fn index_matches_position_in_all() {
+        for (i, category) in CardCategory::ALL.iter().enumerate() {
+            assert_eq!(category.index(), i, "{category:?}");
+        }
+    }
+
+    #[test]
+    fn every_category_has_its_own_colour_in_every_mode() {
+        use design_system_palette::{GAMEY, Scheme};
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            for accessible in [false, true] {
+                let tokens = GAMEY.tokens(scheme, accessible);
+                let colours: Vec<String> = CardCategory::ALL
+                    .iter()
+                    .map(|c| format!("{:?}", c.frame_color(tokens)))
+                    .collect();
+                let unique: std::collections::HashSet<&String> = colours.iter().collect();
+                assert_eq!(unique.len(), 8, "{scheme:?} accessible={accessible}");
+            }
+        }
     }
 }

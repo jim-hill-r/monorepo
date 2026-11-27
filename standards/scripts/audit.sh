@@ -7,18 +7,22 @@
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
 #   NAM-001  Project directory names are snake_case.
-#   HUM-001  TODO (human) lines live only in the root HUMAN_ISSUES.md.
+#   ISS-*    Issue files (issues.sh --check): one file per issue, valid
+#            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
+#   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
+#   SEC-*    Secret files ignored and Dependabot covering every lockfile
+#            (security-check.sh, standards/docs/security.md).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-standard_tasks=(ci fix build test dev release deploy)
+standard_tasks=(ci fix build test dev release deploy evals)
 errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
 
 # Top-level directories that are not projects.
-skip_top='^(\.[^/]*|docs)$'  # hidden directories are not projects; docs/ holds only review decks (docs/reviews)
+skip_top='^(\.[^/]*|docs|issues)$'  # hidden directories are not projects; docs/ holds only review decks (docs/reviews), issues/ only repo-wide issue files
 
 for d in $(git ls-files | cut -d/ -f1 | sort -u); do
   [ -d "$d" ] || continue
@@ -47,10 +51,8 @@ if [ "$listed" != "$actual" ]; then
   err STD-004 "[monorepo].config_roots in mise.toml does not match the project list: $(diff <(echo "$listed") <(echo "$actual") | grep '^[<>]' | tr '\n' ' ')"
 fi
 
-# HUM-001: tasks for a person live in HUMAN_ISSUES.md, not in an ISSUES.md.
-while IFS= read -r hit; do
-  err HUM-001 "$hit: move this TODO (human) line to HUMAN_ISSUES.md"
-done < <(git grep -n -F 'TODO (human)' -- '*ISSUES.md' ':!HUMAN_ISSUES.md' || true)
+# ISS-*: issue files (see standards/docs/issue-management.md).
+bash standards/scripts/issues.sh --check || errors=$((errors + 1))
 
 for t in standards/tasks/*.toml; do
   for task in "${standard_tasks[@]}"; do
@@ -60,6 +62,12 @@ done
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.
 bash standards/scripts/evals-check.sh
+
+# COST-*: per-project cost analyses against the budgets. Warnings only.
+bash standards/scripts/cost-check.sh
+
+# SEC-002, SEC-006: repo-wide security guards (see standards/docs/security.md).
+bash standards/scripts/security-check.sh || errors=$((errors + 1))
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))

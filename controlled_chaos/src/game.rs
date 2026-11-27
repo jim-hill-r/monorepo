@@ -4,31 +4,37 @@ use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
 use crate::card::Card;
 use crate::card_library::{CardLibrary, default_action_deck};
 use crate::deck::Deck;
+use crate::input::{
+    ActionButton, HAND_SLOTS, PlayerAction, send_button_actions, send_keyboard_actions,
+};
 use crate::rules::{Player, RulesEngine, TurnPhase};
 use crate::state::AppState;
+use crate::theme::{self, GameTheme};
 
 /// Plugin that sets up the core game systems.
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(GameState::default())
+        app.add_event::<PlayerAction>()
             .add_systems(OnEnter(AppState::InGame), (setup, spawn_game_ui))
             .add_systems(
                 Update,
                 (
-                    log_game_state,
-                    // Phase handlers first: they mutate RulesEngineResource and insert/
-                    // remove AttackerCardResource via Commands.  apply_deferred flushes
-                    // those commands so the UI systems below read the latest state.
+                    // Input first: keys and on-screen buttons become
+                    // PlayerAction events, which handle_player_actions applies
+                    // to RulesEngineResource (inserting or removing
+                    // AttackerCardResource via Commands). apply_deferred
+                    // flushes those commands so the UI systems below read the
+                    // latest state.
                     (
-                        handle_draw_phase,
-                        handle_play_phase,
-                        handle_battle_phase,
-                        handle_end_phase,
-                        // AI handlers run after human handlers so human input is
-                        // processed first.  The AI acts automatically when it is
-                        // Player 2's turn or when it needs to defend.
+                        send_keyboard_actions,
+                        send_button_actions,
+                        handle_player_actions,
+                        // AI handlers run after the human handler so human
+                        // input is processed first.  The AI acts automatically
+                        // when it is Player 2's turn or when it needs to
+                        // defend.
                         ai_handle_draw_phase,
                         ai_handle_play_phase,
                         ai_handle_battle_phase,
@@ -37,7 +43,7 @@ impl Plugin for GamePlugin {
                         .chain(),
                     apply_deferred,
                     // UI systems run after deferred commands are applied.
-                    (update_game_ui, update_pvp_ui).chain(),
+                    (update_game_ui, update_pvp_ui, update_action_buttons).chain(),
                 )
                     .chain()
                     .run_if(in_state(AppState::InGame)),
@@ -47,12 +53,6 @@ impl Plugin for GamePlugin {
                 (despawn_game_ui, cleanup_pvp_resources),
             );
     }
-}
-
-/// Tracks the overall state of the game.
-#[derive(Resource, Default, Debug)]
-pub struct GameState {
-    pub turn: u32,
 }
 
 /// Wraps the [`RulesEngine`] as a Bevy [`Resource`] so it can be accessed by
@@ -176,101 +176,85 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(AiOpponent);
 }
 
-fn log_game_state(state: Res<GameState>, mut ran: Local<bool>) {
-    if !*ran {
-        info!("Game started. Turn: {}", state.turn);
-        *ran = true;
+/// What [`apply_player_action`] did, so the calling system can mirror it in
+/// the ECS resources.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ActionOutcome {
+    /// The action doesn't apply now (wrong phase, the CPU's turn, no such
+    /// card, or the game is over), so nothing changed.
+    Ignored,
+    /// The active player drew a card.
+    Drew,
+    /// The deck was empty when the player tried to draw, so the game ended.
+    DeckExhausted,
+    /// The active player played this card to attack.
+    Attacked(Card),
+    /// The defender picked a card and the battle was resolved.
+    Defended,
+    /// The active player ended the turn.
+    TurnEnded,
+}
+
+/// Returns the index of the player who acts in the current phase: the
+/// defender in the Battle phase, the active player otherwise.
+pub fn acting_player(engine: &RulesEngine) -> usize {
+    match engine.phase {
+        TurnPhase::Battle => engine.inactive_player(),
+        _ => engine.active_player,
     }
 }
 
-/// Handles player input during the Draw phase.
+/// Returns `true` when the game is waiting on the human at this device.
 ///
-/// The active player presses **Space** to draw the top card from the shared
-/// action deck.  If the deck is empty the game signals deck exhaustion and the
-/// game ends.
-///
-/// In single-player mode (when [`AiOpponent`] is present) this handler only
-/// responds when it is Player 1's turn (`active_player == 0`).
-fn handle_draw_phase(
-    keys: Res<ButtonInput<KeyCode>>,
-    engine_res: Option<ResMut<RulesEngineResource>>,
-    deck_res: Option<ResMut<ActionDeckResource>>,
-    ai: Option<Res<AiOpponent>>,
-) {
-    let (Some(mut engine_res), Some(mut deck_res)) = (engine_res, deck_res) else {
-        return;
-    };
-    let engine = &mut engine_res.0;
+/// In single-player mode (`ai_present`) the human is Player 1 (index 0), so
+/// it is their move only when they are the acting player.  In hot-seat mode
+/// both players share the device, so any open phase waits on the human.
+pub fn awaits_human(engine: &RulesEngine, ai_present: bool) -> bool {
+    !engine.is_game_over() && (!ai_present || acting_player(engine) == 0)
+}
 
-    if engine.phase != TurnPhase::Draw || engine.is_game_over() {
-        return;
+/// Applies one [`PlayerAction`] from the human to the game.
+///
+/// This is the one place keyboard and touch input change the game:
+///
+/// - **Advance** draws a card in the Draw phase (or ends the game when the
+///   deck is empty) and ends the turn in the End phase.
+/// - **PickCard(i)** plays card `i` to attack in the Play phase, or defends
+///   with card `i` against `attacker` in the Battle phase.
+///
+/// Anything else, including any action while it is the CPU's move, is
+/// [`ActionOutcome::Ignored`].
+pub fn apply_player_action(
+    engine: &mut RulesEngine,
+    deck: &mut Deck,
+    attacker: Option<&Card>,
+    ai_present: bool,
+    action: PlayerAction,
+) -> ActionOutcome {
+    if !awaits_human(engine, ai_present) {
+        return ActionOutcome::Ignored;
     }
 
-    // In single-player mode, only Player 1 controls this phase.
-    if ai.is_some() && engine.active_player != 0 {
-        return;
-    }
-
-    if keys.just_pressed(KeyCode::Space) {
-        let deck = &mut deck_res.0;
-        if let Some(card) = deck.draw() {
-            if let Err(e) = engine.draw_card(card) {
-                warn!("draw_card failed: {e}");
+    match (&engine.phase, action) {
+        (TurnPhase::Draw, PlayerAction::Advance) => match deck.draw() {
+            Some(card) => match engine.draw_card(card) {
+                Ok(()) => ActionOutcome::Drew,
+                Err(e) => {
+                    warn!("draw_card failed: {e}");
+                    ActionOutcome::Ignored
+                }
+            },
+            None => {
+                // Deck is empty: end the game by scoring on happiness.
+                engine.signal_deck_exhausted();
+                ActionOutcome::DeckExhausted
             }
-        } else {
-            // Deck is empty — end the game by scoring on happiness.
-            engine.signal_deck_exhausted();
-        }
-    }
-}
-
-/// Handles player input during the Play phase.
-///
-/// The active player presses **1–8** to select a card from their hand to play
-/// as the attacker.  The selected card is stored in [`AttackerCardResource`]
-/// and removed from the player's hand.
-///
-/// In single-player mode (when [`AiOpponent`] is present) this handler only
-/// responds when it is Player 1's turn (`active_player == 0`).
-fn handle_play_phase(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
-    engine_res: Option<ResMut<RulesEngineResource>>,
-    ai: Option<Res<AiOpponent>>,
-) {
-    let Some(mut engine_res) = engine_res else {
-        return;
-    };
-    let engine = &mut engine_res.0;
-
-    if engine.phase != TurnPhase::Play || engine.is_game_over() {
-        return;
-    }
-
-    // In single-player mode, only Player 1 controls this phase.
-    if ai.is_some() && engine.active_player != 0 {
-        return;
-    }
-
-    let hand_len = engine.players[engine.active_player].hand.len();
-    if hand_len == 0 {
-        return;
-    }
-
-    let key_indices = [
-        (KeyCode::Digit1, 0usize),
-        (KeyCode::Digit2, 1),
-        (KeyCode::Digit3, 2),
-        (KeyCode::Digit4, 3),
-        (KeyCode::Digit5, 4),
-        (KeyCode::Digit6, 5),
-        (KeyCode::Digit7, 6),
-        (KeyCode::Digit8, 7),
-    ];
-
-    for (key, idx) in &key_indices {
-        if keys.just_pressed(*key) && *idx < hand_len {
-            match engine.play_card(*idx) {
+        },
+        (TurnPhase::Play, PlayerAction::PickCard(idx)) => {
+            if idx >= engine.players[engine.active_player].hand.len() {
+                return ActionOutcome::Ignored;
+            }
+            match engine.play_card(idx) {
                 Ok(card) => {
                     info!(
                         "{} plays {} ({}, value: {})",
@@ -279,83 +263,98 @@ fn handle_play_phase(
                         card.category.label(),
                         card.value
                     );
-                    commands.insert_resource(AttackerCardResource(card));
+                    ActionOutcome::Attacked(card)
                 }
-                Err(e) => warn!("play_card failed: {e}"),
+                Err(e) => {
+                    warn!("play_card failed: {e}");
+                    ActionOutcome::Ignored
+                }
             }
-            return;
         }
+        (TurnPhase::Battle, PlayerAction::PickCard(idx)) => {
+            let Some(attacker) = attacker else {
+                return ActionOutcome::Ignored;
+            };
+            let defender_idx = engine.inactive_player();
+            let Some(defender_card) = engine.players[defender_idx].play_card(idx) else {
+                return ActionOutcome::Ignored;
+            };
+            apply_battle_result(engine, attacker, &defender_card);
+            ActionOutcome::Defended
+        }
+        (TurnPhase::End, PlayerAction::Advance) => match engine.end_turn() {
+            Ok(()) => ActionOutcome::TurnEnded,
+            Err(e) => {
+                warn!("end_turn failed: {e}");
+                ActionOutcome::Ignored
+            }
+        },
+        _ => ActionOutcome::Ignored,
     }
 }
 
-/// Handles player input during the Battle phase.
+/// Resolves the battle at once when the defender has no cards in hand: the
+/// defender loses to `attacker`, as if they played a card of value `0`.
 ///
-/// The *defending* player (the one who is not active) presses **1–8** to
-/// select a card from their hand to defend with.  The two cards are then
-/// compared by [`RulesEngine::resolve_battle`], damage is applied, and the
-/// [`AttackerCardResource`] is removed to signal that the battle is complete.
+/// Returns `true` when it resolved the battle.  Both the human and the AI
+/// battle handlers use it.
+pub fn defend_with_empty_hand(engine: &mut RulesEngine, attacker: &Card) -> bool {
+    if !engine.players[engine.inactive_player()].hand.is_empty() {
+        return false;
+    }
+    apply_battle_result(engine, attacker, &Card::new(EMPTY_HAND_CARD, 0));
+    true
+}
+
+/// Applies the human's [`PlayerAction`] events (from the keyboard and the
+/// on-screen buttons) through [`apply_player_action`], and keeps
+/// [`AttackerCardResource`] in step: inserted when the human attacks, removed
+/// once a battle is resolved.
 ///
-/// If the defender has no cards in hand they automatically lose the battle.
-///
-/// In single-player mode (when [`AiOpponent`] is present) this handler only
-/// responds when Player 1 is the defender (`inactive_player == 0`), i.e. when
-/// the AI is attacking.  When the AI is defending, [`ai_handle_battle_phase`]
-/// handles the response instead.
-fn handle_battle_phase(
-    keys: Res<ButtonInput<KeyCode>>,
+/// When the human must defend with an empty hand, the battle resolves
+/// without input and the attacker wins.
+fn handle_player_actions(
+    mut actions: EventReader<PlayerAction>,
     mut commands: Commands,
     engine_res: Option<ResMut<RulesEngineResource>>,
+    deck_res: Option<ResMut<ActionDeckResource>>,
     attacker_res: Option<Res<AttackerCardResource>>,
     ai: Option<Res<AiOpponent>>,
 ) {
-    let (Some(mut engine_res), Some(attacker_res)) = (engine_res, attacker_res) else {
+    let (Some(mut engine_res), Some(mut deck_res)) = (engine_res, deck_res) else {
+        actions.clear();
         return;
     };
     let engine = &mut engine_res.0;
+    let ai_present = ai.is_some();
+    let mut attacker = attacker_res.map(|res| res.0.clone());
 
-    if engine.phase != TurnPhase::Battle || engine.is_game_over() {
-        return;
-    }
-
-    let defender_idx = engine.inactive_player();
-
-    // In single-player mode, only handle input when Player 1 is defending.
-    if ai.is_some() && defender_idx != 0 {
-        return;
-    }
-
-    let defender_hand_len = engine.players[defender_idx].hand.len();
-
-    // If the defender has no cards, the attacker wins automatically.
-    if defender_hand_len == 0 {
-        let attacker_card = attacker_res.0.clone();
-        let empty_hand_card = Card::new(EMPTY_HAND_CARD, 0);
-        apply_battle_result(engine, &attacker_card, &empty_hand_card);
-        commands.remove_resource::<AttackerCardResource>();
-        return;
-    }
-
-    let key_indices = [
-        (KeyCode::Digit1, 0usize),
-        (KeyCode::Digit2, 1),
-        (KeyCode::Digit3, 2),
-        (KeyCode::Digit4, 3),
-        (KeyCode::Digit5, 4),
-        (KeyCode::Digit6, 5),
-        (KeyCode::Digit7, 6),
-        (KeyCode::Digit8, 7),
-    ];
-
-    for (key, idx) in &key_indices {
-        if keys.just_pressed(*key) && *idx < defender_hand_len {
-            let Some(defender_card) = engine.players[defender_idx].play_card(*idx) else {
-                return;
-            };
-            let attacker_card = attacker_res.0.clone();
-            apply_battle_result(engine, &attacker_card, &defender_card);
-            commands.remove_resource::<AttackerCardResource>();
-            return;
+    for action in actions.read() {
+        match apply_player_action(
+            engine,
+            &mut deck_res.0,
+            attacker.as_ref(),
+            ai_present,
+            *action,
+        ) {
+            ActionOutcome::Attacked(card) => {
+                commands.insert_resource(AttackerCardResource(card.clone()));
+                attacker = Some(card);
+            }
+            ActionOutcome::Defended => {
+                commands.remove_resource::<AttackerCardResource>();
+                attacker = None;
+            }
+            _ => {}
         }
+    }
+
+    if engine.phase == TurnPhase::Battle
+        && awaits_human(engine, ai_present)
+        && let Some(attacker) = attacker
+        && defend_with_empty_hand(engine, &attacker)
+    {
+        commands.remove_resource::<AttackerCardResource>();
     }
 }
 
@@ -368,40 +367,6 @@ fn apply_battle_result(engine: &mut RulesEngine, attacker: &Card, defender: &Car
     match engine.resolve_battle(attacker, defender) {
         Ok(outcome) => info!("Battle outcome: {outcome:?}"),
         Err(e) => warn!("resolve_battle failed: {e}"),
-    }
-}
-
-/// Handles player input during the End phase.
-///
-/// Either player presses **Space** to end the turn.  If the game is over no
-/// input is accepted and the result is displayed on screen.
-///
-/// In single-player mode (when [`AiOpponent`] is present) this handler only
-/// responds when it is Player 1's turn.  When it is the AI's turn,
-/// [`ai_handle_end_phase`] ends the turn automatically.
-fn handle_end_phase(
-    keys: Res<ButtonInput<KeyCode>>,
-    engine_res: Option<ResMut<RulesEngineResource>>,
-    ai: Option<Res<AiOpponent>>,
-) {
-    let Some(mut engine_res) = engine_res else {
-        return;
-    };
-    let engine = &mut engine_res.0;
-
-    if engine.phase != TurnPhase::End || engine.is_game_over() {
-        return;
-    }
-
-    // In single-player mode, only Player 1 ends the turn manually.
-    if ai.is_some() && engine.active_player != 0 {
-        return;
-    }
-
-    if keys.just_pressed(KeyCode::Space)
-        && let Err(e) = engine.end_turn()
-    {
-        warn!("end_turn failed: {e}");
     }
 }
 
@@ -505,10 +470,8 @@ fn ai_handle_battle_phase(
     }
 
     let attacker_card = attacker_res.0.clone();
-    let defender_hand_len = engine.players[1].hand.len();
 
-    if defender_hand_len == 0 {
-        apply_battle_result(engine, &attacker_card, &Card::new(EMPTY_HAND_CARD, 0));
+    if defend_with_empty_hand(engine, &attacker_card) {
         commands.remove_resource::<AttackerCardResource>();
         return;
     }
@@ -547,7 +510,18 @@ fn ai_handle_end_phase(
 }
 
 /// Spawns the game UI when entering the InGame state.
-fn spawn_game_ui(mut commands: Commands) {
+///
+/// The layout is compact so it fits a phone in landscape (about 360 logical
+/// pixels tall): both players' stats sit side by side, the hand is a row of
+/// buttons, and the touch targets are at least 48 pixels tall.
+///
+/// Colours come from the gamey theme in the player's chosen scheme and mode
+/// ([`GameTheme`]): the screen is `surface`, headings and the hand are
+/// `text`, the phase line is `accent` and the reminders are `text-muted`.
+fn spawn_game_ui(mut commands: Commands, theme: Res<GameTheme>) {
+    let tokens = theme.tokens();
+    let text = theme::color(tokens.text);
+    let muted = theme::color(tokens.text_muted);
     commands
         .spawn((
             GameUiRoot,
@@ -558,119 +532,38 @@ fn spawn_game_ui(mut commands: Commands) {
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
-                    row_gap: Val::Px(12.0),
+                    row_gap: Val::Px(8.0),
+                    padding: UiRect::all(Val::Px(8.0)),
                     ..default()
                 },
-                background_color: BackgroundColor(Color::srgb(0.15, 0.15, 0.2)),
+                background_color: BackgroundColor(theme::color(tokens.surface)),
                 ..default()
             },
         ))
         .with_children(|root| {
             // Title
             root.spawn(TextBundle::from_section(
-                "Controlled Chaos — Player vs CPU",
+                "Controlled Chaos - Player vs CPU",
                 TextStyle {
-                    font_size: 28.0,
-                    color: Color::WHITE,
+                    font_size: theme.font(22.0),
+                    color: text,
                     ..default()
                 },
             ));
 
-            // Player 1 Info (life)
-            root.spawn((
-                PlayerStatText {
-                    player: 0,
-                    stat: PlayerStat::Life,
+            // Both players' stats, side by side.
+            root.spawn(NodeBundle {
+                style: Style {
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(48.0),
+                    ..default()
                 },
-                TextBundle::from_section(
-                    "Player 1: 20 Life",
-                    TextStyle {
-                        font_size: 22.0,
-                        color: Color::srgb(0.3, 0.8, 0.3),
-                        ..default()
-                    },
-                ),
-            ));
-
-            // Player 1 civilians
-            root.spawn((
-                PlayerStatText {
-                    player: 0,
-                    stat: PlayerStat::Civilians,
-                },
-                TextBundle::from_section(
-                    "  Civilians: 2",
-                    TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.3, 0.7, 0.7),
-                        ..default()
-                    },
-                ),
-            ));
-
-            // Player 1 happiness
-            root.spawn((
-                PlayerStatText {
-                    player: 0,
-                    stat: PlayerStat::Happiness,
-                },
-                TextBundle::from_section(
-                    "  Happiness: 50",
-                    TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.8, 0.8, 0.3),
-                        ..default()
-                    },
-                ),
-            ));
-
-            // Player 2 Info (life)
-            root.spawn((
-                PlayerStatText {
-                    player: 1,
-                    stat: PlayerStat::Life,
-                },
-                TextBundle::from_section(
-                    "Player 2: 20 Life",
-                    TextStyle {
-                        font_size: 22.0,
-                        color: Color::srgb(0.8, 0.3, 0.3),
-                        ..default()
-                    },
-                ),
-            ));
-
-            // Player 2 civilians
-            root.spawn((
-                PlayerStatText {
-                    player: 1,
-                    stat: PlayerStat::Civilians,
-                },
-                TextBundle::from_section(
-                    "  Civilians: 2",
-                    TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.3, 0.5, 0.7),
-                        ..default()
-                    },
-                ),
-            ));
-
-            // Player 2 happiness
-            root.spawn((
-                PlayerStatText {
-                    player: 1,
-                    stat: PlayerStat::Happiness,
-                },
-                TextBundle::from_section(
-                    "  Happiness: 50",
-                    TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.8, 0.6, 0.3),
-                        ..default()
-                    },
-                ),
-            ));
+                ..default()
+            })
+            .with_children(|row| {
+                spawn_player_stats(row, &theme, 0, "Player 1");
+                spawn_player_stats(row, &theme, 1, "Player 2");
+            });
 
             // Game Phase Info
             root.spawn((
@@ -678,49 +571,246 @@ fn spawn_game_ui(mut commands: Commands) {
                 TextBundle::from_section(
                     "Phase: Draw | Round: 1",
                     TextStyle {
-                        font_size: 18.0,
-                        color: Color::srgb(0.8, 0.8, 0.3),
+                        font_size: theme.font(16.0),
+                        color: theme::color(tokens.accent),
                         ..default()
                     },
                 ),
             ));
 
-            // Current player's hand
+            // Whose hand is shown
             root.spawn((
                 HandDisplayText,
                 TextBundle::from_section(
-                    "Hand: (loading…)",
+                    "Hand: (loading...)",
                     TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.9, 0.9, 0.9),
+                        font_size: theme.font(16.0),
+                        color: text,
                         ..default()
                     },
                 ),
             ));
+
+            // The hand: one button per card, shown by update_action_buttons.
+            root.spawn(NodeBundle {
+                style: Style {
+                    flex_direction: FlexDirection::Row,
+                    flex_wrap: FlexWrap::Wrap,
+                    justify_content: JustifyContent::Center,
+                    column_gap: Val::Px(8.0),
+                    row_gap: Val::Px(8.0),
+                    max_width: Val::Percent(100.0),
+                    ..default()
+                },
+                ..default()
+            })
+            .with_children(|hand| {
+                for idx in 0..HAND_SLOTS {
+                    spawn_action_button(hand, &theme, PlayerAction::PickCard(idx), Val::Px(150.0));
+                }
+            });
 
             // Dynamic instructions
             root.spawn((
                 InstructionsText,
                 TextBundle::from_section(
-                    "Press SPACE to draw a card",
+                    "Tap Draw card or press SPACE",
                     TextStyle {
-                        font_size: 18.0,
-                        color: Color::srgb(0.4, 0.9, 0.4),
+                        font_size: theme.font(16.0),
+                        color: text,
                         ..default()
                     },
                 ),
             ));
 
+            // Draw a card / end the turn.
+            spawn_action_button(root, &theme, PlayerAction::Advance, Val::Px(180.0));
+
             // Win condition reminder
             root.spawn(TextBundle::from_section(
                 "Win: Highest happiness when deck runs out.  Lose: Life or civilians reach 0.",
                 TextStyle {
-                    font_size: 12.0,
-                    color: Color::srgb(0.5, 0.5, 0.5),
+                    font_size: theme.font(12.0),
+                    color: muted,
                     ..default()
                 },
             ));
         });
+}
+
+/// Spawns a column with one player's life, civilians and happiness.
+///
+/// Life is in `text` and the others in `text-muted`. The players are told
+/// apart by name and position, not colour.
+fn spawn_player_stats(parent: &mut ChildBuilder, theme: &GameTheme, player: usize, name: &str) {
+    let tokens = theme.tokens();
+    let (text, muted) = (theme::color(tokens.text), theme::color(tokens.text_muted));
+    parent
+        .spawn(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|column| {
+            let lines = [
+                (PlayerStat::Life, format!("{name}: 20 Life"), 20.0, text),
+                (
+                    PlayerStat::Civilians,
+                    "  Civilians: 2".to_string(),
+                    14.0,
+                    muted,
+                ),
+                (
+                    PlayerStat::Happiness,
+                    "  Happiness: 50".to_string(),
+                    14.0,
+                    muted,
+                ),
+            ];
+            for (stat, text, font_size, color) in lines {
+                column.spawn((
+                    PlayerStatText { player, stat },
+                    TextBundle::from_section(
+                        text,
+                        TextStyle {
+                            font_size: theme.font(font_size),
+                            color,
+                            ..default()
+                        },
+                    ),
+                ));
+            }
+        });
+}
+
+/// Spawns a hidden [`ActionButton`] with an empty label.
+/// [`update_action_buttons`] shows it and sets its label.
+fn spawn_action_button(
+    parent: &mut ChildBuilder,
+    theme: &GameTheme,
+    action: PlayerAction,
+    width: Val,
+) {
+    let colors = theme.button();
+    parent
+        .spawn((
+            ActionButton(action),
+            ButtonBundle {
+                style: Style {
+                    display: Display::None,
+                    width,
+                    min_height: Val::Px(theme.touch_target()),
+                    padding: UiRect::all(Val::Px(6.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    ..default()
+                },
+                background_color: BackgroundColor(theme::color(colors.normal)),
+                ..default()
+            },
+        ))
+        .with_children(|button| {
+            button.spawn(TextBundle::from_section(
+                "",
+                TextStyle {
+                    font_size: theme.font(15.0),
+                    color: theme::color(colors.label),
+                    ..default()
+                },
+            ));
+        });
+}
+
+/// Returns the label of the button for the hand card at `idx`, such as
+/// `"[1] Riot - Attack (5)"`.  The number is the key that picks it.
+pub fn card_button_label(idx: usize, card: &Card) -> String {
+    format!(
+        "[{}] {} - {} ({})",
+        idx + 1,
+        card.name,
+        card.category.label(),
+        card.value
+    )
+}
+
+/// Returns the label of the "next" button, or `None` when it should be
+/// hidden because [`PlayerAction::Advance`] does nothing now.
+pub fn advance_button_label(engine: &RulesEngine, ai_present: bool) -> Option<&'static str> {
+    if !awaits_human(engine, ai_present) {
+        return None;
+    }
+    match engine.phase {
+        TurnPhase::Draw => Some("Draw card"),
+        TurnPhase::End => Some("End turn"),
+        TurnPhase::Play | TurnPhase::Battle => None,
+    }
+}
+
+/// Returns the hand shown on screen: the acting player's, or `None` when it
+/// is the CPU's and so stays hidden.
+fn shown_hand(engine: &RulesEngine, ai_present: bool) -> Option<&[Card]> {
+    let idx = acting_player(engine);
+    (!(ai_present && idx == 1)).then(|| engine.players[idx].hand.as_slice())
+}
+
+/// Shows, labels and colours the on-screen [`ActionButton`]s for the
+/// current state: one button per card in the shown hand (live in the Play
+/// and Battle phases), and the Draw card / End turn button.
+fn update_action_buttons(
+    theme: Res<GameTheme>,
+    engine_res: Option<Res<RulesEngineResource>>,
+    ai: Option<Res<AiOpponent>>,
+    mut buttons: Query<(
+        &ActionButton,
+        &Interaction,
+        &mut Style,
+        &mut BackgroundColor,
+        &Children,
+    )>,
+    mut labels: Query<&mut Text>,
+) {
+    let Some(res) = engine_res else { return };
+    let engine = &res.0;
+    let ai_present = ai.is_some();
+    let picking = awaits_human(engine, ai_present)
+        && matches!(engine.phase, TurnPhase::Play | TurnPhase::Battle);
+    let hand = shown_hand(engine, ai_present);
+    let colors = theme.button();
+
+    for (button, interaction, mut style, mut bg, children) in &mut buttons {
+        let (label, live) = match button.0 {
+            PlayerAction::PickCard(idx) => (
+                hand.and_then(|hand| hand.get(idx))
+                    .map(|card| card_button_label(idx, card)),
+                picking,
+            ),
+            PlayerAction::Advance => (
+                advance_button_label(engine, ai_present).map(str::to_string),
+                true,
+            ),
+        };
+
+        let Some(label) = label else {
+            style.display = Display::None;
+            continue;
+        };
+        style.display = Display::Flex;
+        let (fill, ink) = colors.state(live, *interaction);
+        *bg = BackgroundColor(theme::color(fill));
+        for &child in children {
+            if let Ok(mut text) = labels.get_mut(child) {
+                if text.sections[0].value != label {
+                    text.sections[0].value.clone_from(&label);
+                }
+                let ink = theme::color(ink);
+                if text.sections[0].style.color != ink {
+                    text.sections[0].style.color = ink;
+                }
+            }
+        }
+    }
 }
 
 /// Updates the game UI to reflect the current state of the rules engine.
@@ -790,29 +880,15 @@ fn update_pvp_ui(
         }
     };
 
-    // In single-player mode the AI's hand is hidden.
+    // The cards themselves are buttons (see update_action_buttons). In
+    // single-player mode the AI's hand is hidden.
+    let hand = &engine.players[hand_player_idx].hand;
     let hand_text = if is_ai_present && hand_player_idx == 1 {
-        format!("{hand_label}\n  (hidden)")
+        format!("{hand_label} (hidden)")
+    } else if hand.is_empty() {
+        format!("{hand_label} (empty)")
     } else {
-        let hand = &engine.players[hand_player_idx].hand;
-        if hand.is_empty() {
-            format!("{hand_label}\n  (empty)")
-        } else {
-            let cards: Vec<String> = hand
-                .iter()
-                .enumerate()
-                .map(|(i, c)| {
-                    format!(
-                        "  [{}] {} — {} ({})",
-                        i + 1,
-                        c.name,
-                        c.category.label(),
-                        c.value
-                    )
-                })
-                .collect();
-            format!("{hand_label}\n{}", cards.join("\n"))
-        }
+        hand_label
     };
 
     if let Ok(mut text) = hand_query.get_single_mut() {
@@ -835,7 +911,7 @@ fn update_pvp_ui(
                 if engine.deck_exhausted {
                     // Deck ran out — winner has higher happiness.
                     format!(
-                        "GAME OVER — {} wins! (Happiness: {} vs {})",
+                        "GAME OVER - {} wins! (Happiness: {} vs {})",
                         engine.players[idx].name,
                         engine.players[idx].happiness,
                         engine.players[loser_idx].happiness,
@@ -848,25 +924,25 @@ fn update_pvp_ui(
                         "lost all civilians"
                     };
                     format!(
-                        "GAME OVER — {} wins! ({} {})",
+                        "GAME OVER - {} wins! ({} {})",
                         engine.players[idx].name, engine.players[loser_idx].name, reason,
                     )
                 }
             }
-            None => "GAME OVER — It's a draw!".to_string(),
+            None => "GAME OVER - It's a draw!".to_string(),
         }
     } else if ai_is_acting {
-        "CPU is taking its turn…".to_string()
+        "CPU is taking its turn...".to_string()
     } else {
         match engine.phase {
             TurnPhase::Draw => format!(
-                "{}: Press SPACE to draw  ({} cards in deck)",
+                "{}: Tap Draw card or press SPACE  ({} cards in deck)",
                 engine.players[engine.active_player].name, deck_remaining
             ),
             TurnPhase::Play => {
                 let hand_len = engine.players[engine.active_player].hand.len();
                 format!(
-                    "{}: Press 1–{} to play a card",
+                    "{}: Tap a card or press 1-{} to play it",
                     engine.players[engine.active_player].name, hand_len
                 )
             }
@@ -879,14 +955,14 @@ fn update_pvp_ui(
                     .unwrap_or_default();
                 if def_hand_len == 0 {
                     format!(
-                        "{} attacks with {}. {} has no cards — attacker wins!",
+                        "{} attacks with {}. {} has no cards - attacker wins!",
                         engine.players[engine.active_player].name,
                         attacker_info,
                         engine.players[def_idx].name
                     )
                 } else {
                     format!(
-                        "{} attacks with {}.  {}: Press 1–{} to defend",
+                        "{} attacks with {}.  {}: Tap a card or press 1-{} to defend",
                         engine.players[engine.active_player].name,
                         attacker_info,
                         engine.players[def_idx].name,
@@ -895,7 +971,7 @@ fn update_pvp_ui(
                 }
             }
             TurnPhase::End => format!(
-                "Turn over.  Press SPACE to pass to {}",
+                "Turn over.  Tap End turn or press SPACE to pass to {}",
                 engine.players[engine.inactive_player()].name
             ),
         }
@@ -921,6 +997,7 @@ mod tests {
     fn make_test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins);
+        app.init_resource::<GameTheme>();
         app
     }
 
@@ -1194,5 +1271,340 @@ mod tests {
             .get_resource::<RulesEngineResource>()
             .expect("RulesEngineResource should be present after setup");
         assert_eq!(engine.0.players[1].name, "CPU");
+    }
+
+    // ── apply_player_action ───────────────────────────────────────────────────
+
+    fn deck_of(values: &[u32]) -> Deck {
+        let mut deck = Deck::new();
+        for (i, value) in values.iter().enumerate() {
+            deck.add_card(Card::new(format!("Card {i}"), *value));
+        }
+        deck
+    }
+
+    #[test]
+    fn advance_in_draw_phase_draws_a_card() {
+        let mut engine = make_engine_with_hands();
+        let mut deck = deck_of(&[9]);
+        let outcome =
+            apply_player_action(&mut engine, &mut deck, None, true, PlayerAction::Advance);
+        assert_eq!(outcome, ActionOutcome::Drew);
+        assert_eq!(engine.phase, TurnPhase::Play);
+        assert_eq!(engine.players[0].hand.len(), 3);
+        assert_eq!(deck.remaining(), 0);
+    }
+
+    #[test]
+    fn advance_with_empty_deck_ends_the_game() {
+        let mut engine = make_engine_with_hands();
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::Advance,
+        );
+        assert_eq!(outcome, ActionOutcome::DeckExhausted);
+        assert!(engine.is_game_over());
+    }
+
+    #[test]
+    fn pick_card_in_draw_phase_is_ignored() {
+        let mut engine = make_engine_with_hands();
+        let mut deck = deck_of(&[9]);
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut deck,
+            None,
+            true,
+            PlayerAction::PickCard(0),
+        );
+        assert_eq!(outcome, ActionOutcome::Ignored);
+        assert_eq!(engine.phase, TurnPhase::Draw);
+        assert_eq!(deck.remaining(), 1);
+    }
+
+    #[test]
+    fn pick_card_in_play_phase_attacks_with_it() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Two", 2)).unwrap();
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::PickCard(1),
+        );
+        assert_eq!(outcome, ActionOutcome::Attacked(Card::new("King", 13)));
+        assert_eq!(engine.phase, TurnPhase::Battle);
+        assert_eq!(engine.players[0].hand.len(), 2);
+    }
+
+    #[test]
+    fn pick_card_past_the_hand_is_ignored() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Two", 2)).unwrap();
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::PickCard(3),
+        );
+        assert_eq!(outcome, ActionOutcome::Ignored);
+        assert_eq!(engine.phase, TurnPhase::Play);
+    }
+
+    #[test]
+    fn advance_in_play_phase_is_ignored() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Two", 2)).unwrap();
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::Advance,
+        );
+        assert_eq!(outcome, ActionOutcome::Ignored);
+        assert_eq!(engine.phase, TurnPhase::Play);
+    }
+
+    /// An engine in the Battle phase where Bob (index 1) attacked Alice with
+    /// a card of value 5, so Alice (the human in single-player mode) defends.
+    fn engine_with_alice_defending() -> (RulesEngine, Card) {
+        let mut engine = make_engine_with_hands();
+        engine.active_player = 1;
+        engine.draw_card(Card::new("Five", 5)).unwrap();
+        let hand_len = engine.players[1].hand.len();
+        let attacker = engine.play_card(hand_len - 1).unwrap();
+        (engine, attacker)
+    }
+
+    #[test]
+    fn pick_card_in_battle_phase_defends_with_it() {
+        let (mut engine, attacker) = engine_with_alice_defending();
+        let alice_happiness = engine.players[0].happiness;
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            Some(&attacker),
+            true,
+            PlayerAction::PickCard(0),
+        );
+        assert_eq!(outcome, ActionOutcome::Defended);
+        assert_eq!(engine.phase, TurnPhase::End);
+        // Alice's Ace (14) beats the Five.
+        assert_eq!(engine.players[0].hand.len(), 1);
+        assert_eq!(
+            engine.players[0].happiness,
+            alice_happiness + Player::BATTLE_WIN_HAPPINESS as u32
+        );
+    }
+
+    #[test]
+    fn pick_card_in_battle_phase_without_attacker_is_ignored() {
+        let (mut engine, _) = engine_with_alice_defending();
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::PickCard(0),
+        );
+        assert_eq!(outcome, ActionOutcome::Ignored);
+        assert_eq!(engine.players[0].hand.len(), 2);
+    }
+
+    #[test]
+    fn advance_in_end_phase_ends_the_turn() {
+        let (mut engine, attacker) = engine_with_alice_defending();
+        engine.active_player = 0;
+        apply_battle_result(&mut engine, &attacker, &Card::new("Two", 2));
+        assert_eq!(engine.phase, TurnPhase::End);
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::Advance,
+        );
+        assert_eq!(outcome, ActionOutcome::TurnEnded);
+        assert_eq!(engine.phase, TurnPhase::Draw);
+        assert_eq!(engine.active_player, 1);
+    }
+
+    #[test]
+    fn actions_on_the_cpus_turn_are_ignored() {
+        let mut engine = make_engine_with_hands();
+        engine.active_player = 1;
+        let mut deck = deck_of(&[9]);
+        let outcome =
+            apply_player_action(&mut engine, &mut deck, None, true, PlayerAction::Advance);
+        assert_eq!(outcome, ActionOutcome::Ignored);
+        assert_eq!(deck.remaining(), 1);
+    }
+
+    #[test]
+    fn hot_seat_lets_either_player_act() {
+        let mut engine = make_engine_with_hands();
+        engine.active_player = 1;
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut deck_of(&[9]),
+            None,
+            false,
+            PlayerAction::Advance,
+        );
+        assert_eq!(outcome, ActionOutcome::Drew);
+    }
+
+    #[test]
+    fn actions_after_game_over_are_ignored() {
+        let mut engine = make_engine_with_hands();
+        engine.signal_deck_exhausted();
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut deck_of(&[9]),
+            None,
+            true,
+            PlayerAction::Advance,
+        );
+        assert_eq!(outcome, ActionOutcome::Ignored);
+    }
+
+    // ── defend_with_empty_hand ────────────────────────────────────────────────
+
+    #[test]
+    fn defend_with_empty_hand_resolves_the_battle() {
+        let (mut engine, attacker) = engine_with_alice_defending();
+        engine.players[0].hand.clear();
+        let bob_happiness = engine.players[1].happiness;
+        assert!(defend_with_empty_hand(&mut engine, &attacker));
+        assert_eq!(engine.phase, TurnPhase::End);
+        assert_eq!(
+            engine.players[1].happiness,
+            bob_happiness + Player::BATTLE_WIN_HAPPINESS as u32
+        );
+    }
+
+    #[test]
+    fn defend_with_empty_hand_waits_when_defender_has_cards() {
+        let (mut engine, attacker) = engine_with_alice_defending();
+        assert!(!defend_with_empty_hand(&mut engine, &attacker));
+        assert_eq!(engine.phase, TurnPhase::Battle);
+    }
+
+    // ── on-screen buttons ─────────────────────────────────────────────────────
+
+    #[test]
+    fn card_button_label_shows_key_name_category_and_value() {
+        let card = Card::new("Ace", 14);
+        assert_eq!(
+            card_button_label(0, &card),
+            format!("[1] Ace - {} (14)", card.category.label())
+        );
+    }
+
+    #[test]
+    fn advance_button_label_per_phase() {
+        let mut engine = make_engine_with_hands();
+        assert_eq!(advance_button_label(&engine, true), Some("Draw card"));
+        engine.draw_card(Card::new("Two", 2)).unwrap();
+        assert_eq!(advance_button_label(&engine, true), None, "Play phase");
+        let attacker = engine.play_card(0).unwrap();
+        assert_eq!(advance_button_label(&engine, true), None, "Battle phase");
+        apply_battle_result(&mut engine, &attacker, &Card::new("Two", 2));
+        assert_eq!(advance_button_label(&engine, true), Some("End turn"));
+        engine.active_player = 1;
+        assert_eq!(advance_button_label(&engine, true), None, "CPU's turn");
+    }
+
+    #[test]
+    fn spawn_game_ui_creates_a_button_per_hand_slot_and_one_advance_button() {
+        let mut app = make_test_app();
+        app.world_mut().run_system_once(spawn_game_ui);
+        let mut actions: Vec<PlayerAction> = app
+            .world_mut()
+            .query::<&ActionButton>()
+            .iter(app.world())
+            .map(|b| b.0)
+            .collect();
+        actions.sort_by_key(|a| match a {
+            PlayerAction::PickCard(i) => *i,
+            PlayerAction::Advance => usize::MAX,
+        });
+        let mut expected: Vec<PlayerAction> = (0..HAND_SLOTS).map(PlayerAction::PickCard).collect();
+        expected.push(PlayerAction::Advance);
+        assert_eq!(actions, expected);
+    }
+
+    /// Returns each visible button's action and label after one UI update.
+    fn visible_buttons(engine: RulesEngine) -> Vec<(PlayerAction, String)> {
+        let mut app = make_test_app();
+        app.insert_resource(RulesEngineResource(engine))
+            .insert_resource(AiOpponent);
+        app.world_mut().run_system_once(spawn_game_ui);
+        app.world_mut().run_system_once(update_action_buttons);
+        let world = app.world_mut();
+        let buttons: Vec<(PlayerAction, Display, Entity)> = world
+            .query::<(&ActionButton, &Style, &Children)>()
+            .iter(world)
+            .map(|(b, s, c)| (b.0, s.display, c[0]))
+            .collect();
+        buttons
+            .into_iter()
+            .filter(|(_, display, _)| *display != Display::None)
+            .map(|(action, _, label)| {
+                let text = world
+                    .get::<Text>(label)
+                    .map(|t| t.sections[0].value.clone());
+                (action, text.unwrap_or_default())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn update_action_buttons_shows_the_hand_and_draw_button() {
+        let buttons = visible_buttons(make_engine_with_hands());
+        let actions: Vec<PlayerAction> = buttons.iter().map(|(a, _)| *a).collect();
+        assert_eq!(
+            actions,
+            [
+                PlayerAction::PickCard(0),
+                PlayerAction::PickCard(1),
+                PlayerAction::Advance
+            ]
+        );
+        assert!(buttons[0].1.starts_with("[1] Ace - "));
+        assert_eq!(buttons[2].1, "Draw card");
+    }
+
+    #[test]
+    fn update_action_buttons_hides_the_cpus_hand() {
+        let mut engine = make_engine_with_hands();
+        engine.active_player = 1;
+        assert!(visible_buttons(engine).is_empty());
+    }
+
+    // ── handle_player_actions ─────────────────────────────────────────────────
+
+    #[test]
+    fn handle_player_actions_applies_a_tap() {
+        let mut app = make_test_app();
+        app.add_event::<PlayerAction>()
+            .insert_resource(RulesEngineResource(make_engine_with_hands()))
+            .insert_resource(ActionDeckResource(deck_of(&[9])))
+            .insert_resource(AiOpponent);
+        app.world_mut().send_event(PlayerAction::Advance);
+        app.world_mut().run_system_once(handle_player_actions);
+        app.world_mut().send_event(PlayerAction::PickCard(0));
+        app.world_mut().run_system_once(handle_player_actions);
+
+        let engine = &app.world().resource::<RulesEngineResource>().0;
+        assert_eq!(engine.phase, TurnPhase::Battle);
+        let attacker = app.world().get_resource::<AttackerCardResource>();
+        assert_eq!(attacker.map(|a| a.0.name.as_str()), Some("Ace"));
     }
 }

@@ -95,7 +95,7 @@ fn test_check_passes_on_a_clean_fixture() {
         (".github/workflows/ci.yml", OK_WORKFLOW),
         (
             "site/wrangler.toml",
-            "name = \"site\"\npages_build_output_dir = \"dist\"\n",
+            "name = \"jimhillr-site\"\npages_build_output_dir = \"dist\"\n",
         ),
     ]);
     let out = run_check(&repo);
@@ -187,6 +187,90 @@ fn test_budgets_cannot_be_raised_past_the_free_limit() {
 }
 
 #[test]
+fn test_check_rejects_pages_projects_without_the_prefix() {
+    for name in [
+        "site",
+        "pane",
+        "jimhillr_site",
+        "Jimhillr-site",
+        "jimhillr-",
+    ] {
+        let repo = fixture_repo(&[(
+            "site/wrangler.toml",
+            &format!("name = \"{name}\"\npages_build_output_dir = \"dist\"\n"),
+        )]);
+        let out = run_check(&repo);
+        assert!(!out.status.success(), "{name} should be rejected");
+        assert!(stdout(&out).contains("FT-006"), "{}", stdout(&out));
+    }
+}
+
+#[test]
+fn test_pages_project_refuses_a_name_without_the_prefix() {
+    let dir = temp_dir("prefix");
+    let path = stub_bin(&dir, &[]);
+    let project = dir.join("project");
+    write(
+        &project.join("wrangler.toml"),
+        "name = \"new-site\"\npages_build_output_dir = \"dist\"\n",
+    );
+    let out = Command::new("bash")
+        .arg(script())
+        .arg("pages-project")
+        .current_dir(&project)
+        .env("PATH", &path)
+        .env("CLOUDFLARE_API_TOKEN", "test-token")
+        .env("CLOUDFLARE_ACCOUNT_ID", "test-account")
+        .output()
+        .expect("run free-tiers.sh");
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("jimhillr-"));
+    assert_eq!(wrangler_log(&dir), "", "wrangler should not be called");
+}
+
+#[test]
+fn test_budgets_come_from_limits_toml() {
+    // Two Workers pass the real budget of 25 but fail a limits file whose
+    // budget is 1, so the script reads its budgets from limits.toml.
+    let files: Vec<(String, String)> = (0..2)
+        .map(|i| (format!("w{i}/wrangler.toml"), format!("name = \"w{i}\"\n")))
+        .collect();
+    let refs: Vec<(&str, &str)> = files
+        .iter()
+        .map(|(a, b)| (a.as_str(), b.as_str()))
+        .collect();
+    let repo = fixture_repo(&refs);
+    assert!(run_check(&repo).status.success());
+
+    let real = std::fs::read_to_string(get_repo_root().join("standards/radar/limits.toml"))
+        .expect("read limits.toml");
+    let tight = real.replacen(
+        "budget = 25\nscope = \"account\"\nunit = \"workers\"",
+        "budget = 1\nscope = \"account\"\nunit = \"workers\"",
+        1,
+    );
+    assert_ne!(
+        real, tight,
+        "the workers budget line moved; update this test"
+    );
+    let limits = repo.join("limits.toml");
+    write(&limits, &tight);
+    let out = Command::new("bash")
+        .arg(script())
+        .arg("check")
+        .env("FREE_TIERS_ROOT", &repo)
+        .env("FREE_TIERS_LIMITS_FILE", &limits)
+        .output()
+        .expect("run free-tiers.sh");
+    assert!(!out.status.success());
+    assert!(
+        stdout(&out).contains("the budget is 1 (free limit 100)"),
+        "{}",
+        stdout(&out)
+    );
+}
+
+#[test]
 fn test_check_rejects_paid_wrangler_settings() {
     for setting in [
         "usage_model = \"standard\"",
@@ -226,17 +310,28 @@ case "$url" in
     page=$(sed -E 's/.*page=([0-9]+)$/\1/' <<<"$url")
     jq -c --argjson p "$page" '{{success: true, result: .[(($p - 1) * 10):($p * 10)]}}' "{dir}/all-pages.json" ;;
   *workers/scripts*) cat "{dir}/workers.json" ;;
+  *d1/database*) jq -c '{{success: true, result: .}}' "{dir}/d1.json" ;;
   *) echo "unexpected url $url" >&2; exit 22 ;;
 esac
 "#,
             dir = dir.display()
         ),
     );
+    if !dir.join("d1.json").exists() {
+        write(&dir.join("d1.json"), "[]");
+    }
+    // `wrangler d1 create NAME` adds NAME to d1.json, as Cloudflare would.
     write_exe(
         &dir.join("bin/wrangler"),
         &format!(
-            "#!/usr/bin/env bash\necho \"$@\" >> \"{}/wrangler.log\"\n",
-            dir.display()
+            r#"#!/usr/bin/env bash
+echo "$@" >> "{dir}/wrangler.log"
+if [ "$1 $2" = "d1 create" ]; then
+  jq --arg n "$3" '. + [{{uuid: "new-uuid", name: $n}}]' "{dir}/d1.json" > "{dir}/d1.tmp"
+  mv "{dir}/d1.tmp" "{dir}/d1.json"
+fi
+"#,
+            dir = dir.display()
         ),
     );
     format!(
@@ -250,7 +345,7 @@ fn run_pages_project(dir: &Path, path: &str, budget: Option<&str>) -> Output {
     let project = dir.join("project");
     write(
         &project.join("wrangler.toml"),
-        "name = \"new-site\"\npages_build_output_dir = \"dist\"\n",
+        "name = \"jimhillr-new-site\"\npages_build_output_dir = \"dist\"\n",
     );
     let mut cmd = Command::new("bash");
     cmd.arg(script())
@@ -278,7 +373,7 @@ fn test_pages_project_creates_a_missing_project_within_budget() {
     assert!(out.status.success(), "{}", stdout(&out));
     assert_eq!(
         wrangler_log(&dir).trim(),
-        "pages project create new-site --production-branch main"
+        "pages project create jimhillr-new-site --production-branch main"
     );
 }
 
@@ -287,7 +382,7 @@ fn test_pages_project_leaves_an_existing_project_alone() {
     let dir = temp_dir("exists");
     // Put it on the second page of results to exercise paging.
     let mut existing: Vec<String> = (0..14).map(|i| format!("site-{i}")).collect();
-    existing.push("new-site".into());
+    existing.push("jimhillr-new-site".into());
     let path = stub_bin(&dir, &existing);
     let out = run_pages_project(&dir, &path, Some("1"));
     assert!(out.status.success(), "{}", stdout(&out));
@@ -376,6 +471,137 @@ fn test_usage_workflow_only_reads() {
         "the nightly run can call it"
     );
     assert!(content.contains("free-tiers.sh usage"));
+}
+
+#[test]
+fn test_weekly_run_scans_the_whole_history_for_secrets() {
+    let path = get_workflow_path("all-free-tier-usage.yml");
+    let content = fs::read_to_string(&path).expect("read all-free-tier-usage.yml");
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&content).expect("parse workflow");
+    let steps =
+        serde_yaml::to_string(&yaml["jobs"]["secrets-history"]["steps"]).unwrap_or_default();
+    assert!(
+        steps.contains("fetch-depth: 0"),
+        "a full clone, every commit"
+    );
+    assert!(
+        steps.contains("secrets-check.sh history"),
+        "SEC-001 full-history scan"
+    );
+}
+
+fn run_guard(dir: &Path, path: &str, args: &[&str], envs: &[(&str, &str)]) -> Output {
+    let project = dir.join("project");
+    write(
+        &project.join("wrangler.toml"),
+        "name = \"jimhillr-tofu-state\"\nmain = \"build/worker/shim.mjs\"\n",
+    );
+    let mut cmd = Command::new("bash");
+    cmd.arg(script())
+        .args(args)
+        .current_dir(&project)
+        .env("PATH", path)
+        .env("CLOUDFLARE_API_TOKEN", "test-token")
+        .env("CLOUDFLARE_ACCOUNT_ID", "test-account");
+    for (k, v) in envs {
+        cmd.env(k, v);
+    }
+    cmd.output().expect("run free-tiers.sh")
+}
+
+#[test]
+fn test_worker_passes_within_budget_and_for_an_existing_worker() {
+    let dir = temp_dir("worker-ok");
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["worker"], &[]);
+    assert!(out.status.success(), "{}", stdout(&out));
+    write(
+        &dir.join("workers.json"),
+        "{\"success\":true,\"result\":[{\"id\":\"jimhillr-tofu-state\"}]}",
+    );
+    let out = run_guard(
+        &dir,
+        &path,
+        &["worker"],
+        &[("FREE_TIERS_WORKERS_BUDGET", "1")],
+    );
+    assert!(stdout(&out).contains("exists"), "{}", stdout(&out));
+    assert!(out.status.success());
+}
+
+#[test]
+fn test_worker_stops_at_the_budget() {
+    let dir = temp_dir("worker-budget");
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(
+        &dir,
+        &path,
+        &["worker"],
+        &[("FREE_TIERS_WORKERS_BUDGET", "1")],
+    );
+    assert!(!out.status.success());
+    assert!(stdout(&out).contains("not deploying"), "{}", stdout(&out));
+}
+
+#[test]
+fn test_d1_database_prints_an_existing_id_without_creating() {
+    let dir = temp_dir("d1-exists");
+    write(
+        &dir.join("d1.json"),
+        r#"[{"uuid":"abc-123","name":"jimhillr-tofu-state"}]"#,
+    );
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["d1-database", "jimhillr-tofu-state"], &[]);
+    assert!(out.status.success(), "{}", stdout(&out));
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "abc-123");
+    assert_eq!(wrangler_log(&dir), "");
+}
+
+#[test]
+fn test_d1_database_creates_a_missing_database() {
+    let dir = temp_dir("d1-create");
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["d1-database", "jimhillr-tofu-state"], &[]);
+    assert!(out.status.success(), "{}", stdout(&out));
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "new-uuid");
+    assert_eq!(wrangler_log(&dir).trim(), "d1 create jimhillr-tofu-state");
+}
+
+#[test]
+fn test_d1_database_stops_at_the_free_limit_and_checks_the_name() {
+    let dir = temp_dir("d1-limit");
+    let dbs: Vec<String> = (0..10)
+        .map(|i| format!(r#"{{"uuid":"u{i}","name":"jimhillr-db-{i}"}}"#))
+        .collect();
+    write(&dir.join("d1.json"), &format!("[{}]", dbs.join(",")));
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["d1-database", "jimhillr-tofu-state"], &[]);
+    assert!(!out.status.success());
+    assert!(stdout(&out).contains("not creating"), "{}", stdout(&out));
+    let out = run_guard(&dir, &path, &["d1-database", "state"], &[]);
+    assert!(!out.status.success());
+    assert_eq!(wrangler_log(&dir), "", "nothing should be created");
+}
+
+#[test]
+fn test_tofu_state_deploy_goes_through_the_guards() {
+    let tasks = fs::read_to_string(get_repo_root().join("tofu_state/mise.toml"))
+        .expect("read tofu_state/mise.toml");
+    let worker = tasks
+        .find("free-tiers.sh\\\" worker")
+        .expect("deploy runs the worker guard");
+    let d1 = tasks
+        .find("free-tiers.sh\\\" d1-database")
+        .expect("deploy gets the D1 database through the guard");
+    let deploy = tasks.find("wrangler deploy").expect("deploy runs wrangler");
+    assert!(
+        worker < deploy && d1 < deploy,
+        "the guards must run before wrangler deploys"
+    );
+    assert!(
+        !tasks.contains("d1 create"),
+        "only free-tiers.sh may create D1 databases"
+    );
 }
 
 #[test]

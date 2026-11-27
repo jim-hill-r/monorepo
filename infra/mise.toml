@@ -1,0 +1,53 @@
+# infra: rust project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+#
+# Infrastructure as code (decision 0007): `cargo run -- synth` writes
+# out/<stack>/main.tf.json, and OpenTofu plans and applies those files.
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+opentofu = "1.13.10"
+
+[task_config]
+includes = ["../standards/tasks/rust.toml"]
+
+[tasks."ci:check-tools"]
+description = "Fail, naming what is missing, when ci can't validate here"
+run = '''
+curl -sfL --max-time 20 -o /dev/null https://registry.opentofu.org/.well-known/terraform.json && exit 0
+echo "can't reach registry.opentofu.org, which tofu validate needs for the provider schemas"
+exit 1
+'''
+
+[tasks.ci]
+description = "Everything CI checks, plus that out/ matches a fresh synth and OpenTofu accepts it"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "cargo test",
+  "bash tests/tofu_sh.test.sh",
+  "bash tests/mint_sh.test.sh",
+  "cargo run --quiet -- synth --check",
+  "for d in out/*/; do (cd \"$d\" && tofu init -backend=false -input=false -lockfile=readonly -no-color >/dev/null && tofu validate -no-color) || exit 1; done",
+]
+
+[tasks.synth]
+description = "Regenerate out/<stack>/main.tf.json from the stacks in src/"
+run = "cargo run --quiet -- synth"
+
+[tasks.bindings]
+description = "Regenerate src/tfschema/ from terrars_*.json (needs terrars-generate and tofu on PATH)"
+run = [
+  "for f in terrars_*.json; do terrars-generate \"$f\"; done",
+  "cargo fmt --all",
+]
+
+[tasks.fix]
+description = "Format, apply safe clippy fixes and regenerate out/"
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+  "cargo run --quiet -- synth",
+]

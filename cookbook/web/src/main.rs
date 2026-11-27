@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use chrono::prelude::*;
 use cookbook_core::markdown::{self, Block, Inline};
+use cookbook_core::shopping::{ShoppingList, build_shopping_list};
 use cookbook_core::{PlanReader, RecipeReader};
 use cookbook_data_md::embedded::{EmbeddedPlanStore, EmbeddedRecipeStore};
 use dioxus::prelude::*;
@@ -11,11 +12,13 @@ use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
-const NAVBAR_CSS: Asset = asset!("/assets/styling/navbar.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
 const HOME_CSS: Asset = asset!("/assets/styling/home.css");
 const RECIPE_CSS: Asset = asset!("/assets/styling/recipe.css");
 const PLAN_CSS: Asset = asset!("/assets/styling/plan.css");
+
+/// The design system theme the cookbook uses until the reader picks another.
+const DEFAULT_THEME: &str = "earthy";
 
 const INTRO_MD: &str = include_str!("../../content/intro.md");
 
@@ -105,8 +108,10 @@ fn App() -> Element {
                 content: CONTENT_SECURITY_POLICY,
             }
         }
+        // The design system's tokens, base sheet and theme script, before
+        // the app's own sheets so they can use the tokens.
+        design_system_dioxus::Stylesheets { default_theme: DEFAULT_THEME }
         document::Link { rel: "stylesheet", href: HEADER_CSS }
-        document::Link { rel: "stylesheet", href: NAVBAR_CSS }
         document::Link { rel: "stylesheet", href: SIDEBAR_CSS }
         document::Link { rel: "stylesheet", href: HOME_CSS }
         document::Link { rel: "stylesheet", href: RECIPE_CSS }
@@ -427,34 +432,24 @@ fn get_week_recipes(week: u32) -> Vec<(u32, String)> {
     recipes
 }
 
-/// Aggregate all ingredients from recipes in an ISO 8601 week into a shopping list.
-/// Returns a sorted vector of unique ingredients from all recipes in the week.
-/// Returns an empty vector if the week is invalid or plan not found.
-///
-/// Uses the PlanReader to load the pre-defined plan for the week, which contains
-/// the recipe UUIDs for the recipes in that week's plan.
-fn get_week_shopping_list(week: u32) -> Vec<String> {
+/// Build the shopping list for an ISO 8601 week: every ingredient of the
+/// week's recipes, summed per item and unit, with staples listed apart (see
+/// `cookbook_core::shopping`). Returns an empty list if the week is invalid
+/// or its plan is not found.
+fn get_week_shopping_list(week: u32) -> ShoppingList {
     let recipe_store = EmbeddedRecipeStore::global();
     let plan_store = EmbeddedPlanStore::global();
-    let mut all_ingredients = Vec::new();
 
-    // Get the plan for this week
     let Ok(plan) = plan_store.get_by_week(week) else {
-        return all_ingredients; // Return empty if plan not found
+        return ShoppingList::default();
     };
 
-    // Collect ingredients from all recipes in this week's plan
-    for uuid in plan.recipe_uuids {
-        if let Ok(recipe) = recipe_store.get_by_uuid(&uuid) {
-            all_ingredients.extend(recipe.ingredients);
-        }
-    }
-
-    // Sort and deduplicate ingredients
-    all_ingredients.sort();
-    all_ingredients.dedup();
-
-    all_ingredients
+    let ingredients = plan
+        .recipe_uuids
+        .iter()
+        .filter_map(|uuid| recipe_store.get_by_uuid(uuid).ok())
+        .flat_map(|recipe| recipe.ingredients);
+    build_shopping_list(ingredients)
 }
 
 #[component]
@@ -483,6 +478,11 @@ fn Sidebar() -> Element {
                 for (week, formatted_date) in plan_weeks {
                     Link { to: Route::Plan { week }, "Week {week}: {formatted_date}" }
                 }
+            }
+
+            div {
+                class: "sidebar-appearance",
+                design_system_dioxus::ThemePicker {}
             }
         }
     }
@@ -687,10 +687,26 @@ fn Plan(week: u32) -> Element {
                     } else {
                         ul {
                             class: "shopping-list",
-                            for ingredient in shopping_list {
+                            for line in shopping_list.items.iter() {
                                 li {
                                     class: "shopping-item",
-                                    "{ingredient}"
+                                    "{line}"
+                                }
+                            }
+                        }
+                        if !shopping_list.staples.is_empty() {
+                            h3 { "Staples" }
+                            p {
+                                class: "shopping-staples-note",
+                                "You may already have these."
+                            }
+                            ul {
+                                class: "shopping-list shopping-staples",
+                                for line in shopping_list.staples.iter() {
+                                    li {
+                                        class: "shopping-item",
+                                        "{line}"
+                                    }
                                 }
                             }
                         }
@@ -1653,28 +1669,71 @@ mod tests {
 
     #[test]
     fn test_get_week_shopping_list_is_sorted() {
-        // Test that shopping list is sorted
+        // Items and staples are each sorted by name.
         let shopping_list = get_week_shopping_list(1);
-
-        // Check if the list is sorted
-        let mut sorted_copy = shopping_list.clone();
-        sorted_copy.sort();
-        assert_eq!(shopping_list, sorted_copy, "Shopping list should be sorted");
+        for lines in [&shopping_list.items, &shopping_list.staples] {
+            let names: Vec<&str> = lines.iter().map(|line| line.item.as_str()).collect();
+            let mut sorted = names.clone();
+            sorted.sort_unstable();
+            assert_eq!(names, sorted, "Shopping list should be sorted");
+        }
     }
 
     #[test]
-    fn test_get_week_shopping_list_is_deduplicated() {
-        // Test that shopping list removes duplicates
-        // This test verifies that if multiple recipes in a week use the same ingredient,
-        // it only appears once in the shopping list
-        let shopping_list = get_week_shopping_list(1);
+    fn test_get_week_shopping_list_one_line_per_item() {
+        // An item used by several recipes appears once, in one of the two
+        // lists, in every week.
+        for week in 1..=53 {
+            let shopping_list = get_week_shopping_list(week);
+            let names: Vec<&str> = shopping_list
+                .items
+                .iter()
+                .chain(&shopping_list.staples)
+                .map(|line| line.item.as_str())
+                .collect();
+            let unique: std::collections::HashSet<_> = names.iter().collect();
+            assert_eq!(names.len(), unique.len(), "week {week} repeats an item");
+        }
+    }
 
-        // Use HashSet to check for duplicates
-        let unique_items: std::collections::HashSet<_> = shopping_list.iter().collect();
+    #[test]
+    fn test_get_week_shopping_list_adds_up() {
+        // Week 48 has seven recipes, each with 2 tablespoons olive oil, 2
+        // cloves garlic and salt and pepper. The old list showed each once.
+        let shopping_list = get_week_shopping_list(48);
+        let staples: Vec<String> = shopping_list
+            .staples
+            .iter()
+            .map(ToString::to_string)
+            .collect();
         assert_eq!(
-            shopping_list.len(),
-            unique_items.len(),
-            "Shopping list should have no duplicates"
+            staples,
+            [
+                "14 cloves garlic",
+                "14 tablespoons olive oil",
+                "Salt and pepper"
+            ]
+        );
+        let items: Vec<String> = shopping_list
+            .items
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        for expected in [
+            "3 cups quinoa",
+            "2 cups couscous",
+            "2 lb shrimp",
+            "6 cups mushrooms",
+            "1 lb beef",
+        ] {
+            assert!(
+                items.iter().any(|line| line == expected),
+                "{expected} in {items:?}"
+            );
+        }
+        assert!(
+            !items.iter().any(|line| line.contains("olive oil")),
+            "staples are not in the items to buy"
         );
     }
 
@@ -1723,27 +1782,21 @@ mod tests {
 
     #[test]
     fn test_get_week_shopping_list_uses_plan_reader() {
-        // Test that get_week_shopping_list uses PlanReader to load plans
+        // The list is built from the ingredients of the plan's recipe UUIDs.
         let plan_store = EmbeddedPlanStore::global();
         let recipe_store = EmbeddedRecipeStore::global();
 
-        // Test week 1
         let plan = plan_store.get_by_week(1).expect("Week 1 plan should exist");
-        let shopping_list = get_week_shopping_list(1);
+        let expected = build_shopping_list(
+            plan.recipe_uuids
+                .iter()
+                .filter_map(|uuid| recipe_store.get_by_uuid(uuid).ok())
+                .flat_map(|recipe| recipe.ingredients),
+        );
 
-        // Collect all ingredients from the plan's recipe UUIDs manually
-        let mut expected_ingredients = Vec::new();
-        for uuid in &plan.recipe_uuids {
-            if let Ok(recipe) = recipe_store.get_by_uuid(uuid) {
-                expected_ingredients.extend(recipe.ingredients);
-            }
-        }
-        expected_ingredients.sort();
-        expected_ingredients.dedup();
-
-        // Shopping list should match the manually collected ingredients
         assert_eq!(
-            shopping_list, expected_ingredients,
+            get_week_shopping_list(1),
+            expected,
             "Shopping list should match ingredients from plan's recipe UUIDs"
         );
     }

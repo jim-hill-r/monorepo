@@ -37,7 +37,7 @@ const NAV: [string, string, string][] = [
   ['Add', '/add', 'Add'],
 ];
 
-test('the home page loads the repo snapshot @smoke', async ({ page }) => {
+test('the home page loads the repo snapshot @smoke @req:PANE-002', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today');
@@ -51,7 +51,7 @@ test('the home page loads the repo snapshot @smoke', async ({ page }) => {
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
-test('the main nav opens every page @smoke', async ({ page }) => {
+test('the main nav opens every page @smoke @req:PANE-006', async ({ page }) => {
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'Main' });
 
@@ -62,7 +62,7 @@ test('the main nav opens every page @smoke', async ({ page }) => {
   }
 });
 
-test('a project page opens from the projects list @smoke', async ({ page }) => {
+test('a project page opens from the projects list @smoke @req:PANE-005', async ({ page }) => {
   await page.goto('/projects');
 
   const first = page.getByTestId('projects').locator('a.project-name').first();
@@ -76,14 +76,14 @@ test('a project page opens from the projects list @smoke', async ({ page }) => {
   await expect(page.getByText('No project at this path')).toHaveCount(0);
 });
 
-test('a project page opens directly by its path', async ({ page }) => {
+test('a project page opens directly by its path @req:PANE-005', async ({ page }) => {
   await page.goto('/projects/pane/web');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('pane/web');
   await expect(page.getByText(/open TODOs and \d+ FIXes/)).toBeVisible();
 });
 
-test('the work page lists items and filters them @smoke', async ({ page }) => {
+test('the work page lists items and filters them @smoke @req:PANE-003', async ({ page }) => {
   await page.goto('/work');
 
   const count = page.getByTestId('work-count');
@@ -92,7 +92,7 @@ test('the work page lists items and filters them @smoke', async ({ page }) => {
   expect(Number(total)).toBeGreaterThan(0);
   expect(shown).toBe(total);
   await expect(
-    page.getByTestId('work-items').getByRole('link', { name: /ISSUES\.md:\d+$/ }).first(),
+    page.getByTestId('work-items').getByRole('link', { name: /issues\/[^/]+\.md:\d+$/ }).first(),
   ).toHaveAttribute('href', /^https:\/\/github\.com\/jimhillr\/monorepo\/blob\/[0-9a-f]+\/.+#L\d+$/);
 
   await page.getByLabel('Project').selectOption('pane');
@@ -105,17 +105,17 @@ test('the work page lists items and filters them @smoke', async ({ page }) => {
   }
 });
 
-test('the human issues page lists open issues with GitHub links @smoke', async ({ page }) => {
+test('the human issues page lists open issues with GitHub links @smoke @req:PANE-001', async ({ page }) => {
   await page.goto('/human-issues');
 
   const issues = page.getByTestId('human-issues').locator('li');
   await expect(issues.first()).toBeVisible();
   await expect(
     issues.first().getByRole('link', { name: 'Open on GitHub' }),
-  ).toHaveAttribute('href', /HUMAN_ISSUES\.md#L\d+$/);
+  ).toHaveAttribute('href', /issues\/human\/[^/]+\.md#L\d+$/);
 });
 
-test('deliverables list live sites and render a plan in the page @smoke', async ({ page }) => {
+test('deliverables list live sites and render a plan in the page @smoke @req:PANE-004', async ({ page }) => {
   await page.goto('/deliverables');
 
   await expect(
@@ -131,14 +131,14 @@ test('deliverables list live sites and render a plan in the page @smoke', async 
   );
 });
 
-test('a document opens directly by its path', async ({ page }) => {
+test('a document opens directly by its path @req:PANE-004', async ({ page }) => {
   await page.goto('/docs/pane/docs/plans/2026-11-review-dashboard.md');
 
   await expect(page.getByTestId('doc').locator('h1')).toContainText('pane');
   await expect(page.getByTestId('doc').locator('table').first()).toBeVisible();
 });
 
-test('an unknown path shows the not found page', async ({ page }) => {
+test('an unknown path shows the not found page @req:PANE-006', async ({ page }) => {
   await page.goto('/no-such-page');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Not found');
@@ -146,7 +146,7 @@ test('an unknown path shows the not found page', async ({ page }) => {
   await expect(page).toHaveURL('/');
 });
 
-test('today lists what is waiting and what is new since the last visit @smoke', async ({ page }) => {
+test('today lists what is waiting and what is new since the last visit @smoke @req:PANE-001', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByTestId('today-waiting').getByRole('heading', { level: 2 })).toContainText(
@@ -173,7 +173,7 @@ test('today lists what is waiting and what is new since the last visit @smoke', 
   await expect(page.getByTestId('today-new')).toContainText('snapshot 0000000');
 });
 
-test('today works without localStorage', async ({ page }) => {
+test('today works without localStorage @req:PANE-001', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', {
       get() {
@@ -187,7 +187,7 @@ test('today works without localStorage', async ({ page }) => {
   await expect(page.getByTestId('today-new')).toContainText("isn't keeping pane's visits");
 });
 
-test('a project page shows its sub-projects, documents, deliverables and work @smoke', async ({ page }) => {
+test('a project page shows its sub-projects, documents, deliverables and work @smoke @req:PANE-005', async ({ page }) => {
   await page.goto('/projects/pane');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('pane');
@@ -196,7 +196,7 @@ test('a project page shows its sub-projects, documents, deliverables and work @s
   ).toBeVisible();
   await expect(page.getByTestId('project-latest')).toContainText('Latest plan');
   await expect(
-    page.getByTestId('project-deliverables').getByRole('link', { name: /pane-dbc\.pages\.dev|pane/ }).first(),
+    page.getByTestId('project-deliverables').getByRole('link', { name: /jimhillr-pane\.pages\.dev|pane/ }).first(),
   ).toBeVisible();
   const work = page.getByTestId('project-work');
   await expect(work).toContainText(/\d+ open TODOs and \d+ FIXes, including its sub-projects\./);

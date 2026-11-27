@@ -1,38 +1,23 @@
-body {
-    background-color: #3d2f1f;
-    color: #f5e6d3;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
+/* Page layout. Colours, fonts and the reset come from the design system
+ * (design_system_dioxus::Stylesheets); the default theme is earthy. */
 .page-content {
-    padding: 2rem;
+    padding: var(--ds-space-6);
     max-width: 1200px;
     margin: 0 auto;
 }
 
 .page-content h2 {
-    color: #d4a574;
-    margin-bottom: 1rem;
+    color: var(--ds-color-text);
+    margin-bottom: var(--ds-space-4);
 }
 
 .page-content p {
-    line-height: 1.6;
-    margin-bottom: 1rem;
+    line-height: var(--ds-leading-body);
+    margin-bottom: var(--ds-space-4);
 }
 
 .page-content ul {
     line-height: 1.8;
-}
-/* The family tree is drawn at its natural size; wide trees scroll sideways
-   inside the page instead of widening it. */
-.family-tree-scroll {
-    overflow-x: auto;
-    max-width: 100%;
-    border-radius: 8px;
-}
-
-.family-tree-scroll svg {
-    display: block;
+    padding-left: var(--ds-space-5);
+    margin-bottom: var(--ds-space-4);
 }

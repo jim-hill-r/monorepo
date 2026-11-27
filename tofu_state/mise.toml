@@ -1,0 +1,62 @@
+# tofu_state: Cloudflare Worker project (decision 0009). Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+#
+# The Worker `jimhillr-tofu-state` serves OpenTofu's http state backend with
+# state in the D1 database `jimhillr-tofu-state`. ci runs the native tests,
+# builds the Worker and runs tests/e2e.sh: real `tofu init`, `plan` and
+# `apply` against `wrangler dev` with a local D1.
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
+node = "24"
+"npm:wrangler" = "4"
+"cargo:worker-build" = "0.9.0"
+opentofu = "1.13.10"
+
+[task_config]
+includes = ["../standards/tasks/rust.toml"]
+
+[tasks.ci]
+description = "Native tests, the Worker build and lints, and the end-to-end test with real OpenTofu"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
+  "worker-build --release",
+  "bash tests/e2e.sh",
+]
+
+[tasks.release]
+description = "Build the Worker (build/worker/shim.mjs and its wasm)"
+run = "worker-build --release"
+
+[tasks.dev]
+description = "Serve the Worker locally with a local D1 (put test passwords in .dev.vars, never real ones)"
+depends = ["release"]
+run = [
+  "wrangler d1 migrations apply DB --local",
+  "wrangler dev --local",
+]
+
+# push-main.yml runs `deploy` in every changed project, in the shared
+# `production` environment, which never holds the write password. So the
+# real deploy is `deploy:worker`, run only by tofu-state-deploy.yml in the
+# `infra` environment.
+[tasks.deploy]
+description = "Nothing here: tofu-state-deploy.yml deploys the Worker (mise run deploy:worker)"
+run = "echo 'deploy: tofu_state deploys from tofu-state-deploy.yml in the infra environment'"
+
+[tasks."deploy:worker"]
+description = "Deploy the Worker, its D1 database and its two password secrets, within the free tier budgets"
+run = [
+  "test -n \"${TOFU_STATE_READ_PASSWORD:-}\" && test -n \"${TOFU_STATE_WRITE_PASSWORD:-}\" || { echo 'deploy: TOFU_STATE_READ_PASSWORD and TOFU_STATE_WRITE_PASSWORD must be set (issues/human/tofu-state-passwords.md)'; exit 1; }",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh\" worker",
+  "id=$(bash \"$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh\" d1-database jimhillr-tofu-state) && sed \"s/^database_id = .*/database_id = \\\"$id\\\"/\" wrangler.toml > .wrangler.deploy.toml",
+  "wrangler d1 migrations apply DB --remote -c .wrangler.deploy.toml",
+  "wrangler deploy -c .wrangler.deploy.toml",
+  "printf '%s' \"$TOFU_STATE_READ_PASSWORD\" | wrangler secret put TOFU_STATE_READ_PASSWORD -c .wrangler.deploy.toml",
+  "printf '%s' \"$TOFU_STATE_WRITE_PASSWORD\" | wrangler secret put TOFU_STATE_WRITE_PASSWORD -c .wrangler.deploy.toml",
+  "rm -f .wrangler.deploy.toml",
+]

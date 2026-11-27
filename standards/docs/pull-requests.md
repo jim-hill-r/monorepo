@@ -68,7 +68,7 @@ approval lands, with no agent run in between.
 The ruleset on `main` dismisses an approval when new commits are pushed, so a
 push always needs a fresh approval. Once Jim adds the `CI result` check from
 `pull-request-ci.yml` as a required status check on that ruleset (see
-`HUMAN_ISSUES.md`), GitHub also waits for green CI on the new head before
+`issues/human/`), GitHub also waits for green CI on the new head before
 auto-merging. Until then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
 
@@ -97,6 +97,8 @@ A PR is safe only if all of these hold:
   checked bump by bump, because a group can hide a major bump. A bump in a
   workflow's `uses:` line counts as trivially safe under the rule above.
 - It doesn't bump a pinned dependency listed in `AGENTS.md`.
+- It isn't labelled `credential-change`. Those PRs change what a credential
+  can do and need Jim's own approval, whoever opened them (decision 0010).
 
 ### Dependabot PRs
 
@@ -145,6 +147,13 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
 - If it's ready for review, green, not `needs-human` and auto-merge is off,
   turn auto-merge on.
 - Otherwise add `needs-human` and flag it.
+
+### Main health
+
+After the PRs, each run checks the README's repo health badges (the
+latest run on `main` of every workflow that runs there) and tries to fix
+anything red, at most one fix PR per run. The rules are in
+[repo-health.md](repo-health.md).
 
 ### Reporting
 

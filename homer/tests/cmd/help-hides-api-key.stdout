@@ -1,0 +1,15 @@
+Look up house details on Zillow and evaluate against your preferences
+
+Usage: homer [OPTIONS] --address <ADDRESS> --api-key <API_KEY>
+
+Options:
+  -a, --address <ADDRESS>              The property address to look up (e.g. "123 Main St, Seattle, WA 98101")
+      --api-key <API_KEY>              RapidAPI key for Zillow API access [env: RAPIDAPI_KEY]
+      --quota-file <QUOTA_FILE>        File where homer keeps the RapidAPI quota it last saw, so it can stop before going past the free plan [default: $XDG_STATE_HOME/homer/rapidapi-quota.json or ~/.local/state/homer/rapidapi-quota.json] [env: HOMER_QUOTA_FILE=]
+      --min-bedrooms <MIN_BEDROOMS>    Minimum number of bedrooms
+      --max-bedrooms <MAX_BEDROOMS>    Maximum number of bedrooms
+      --min-bathrooms <MIN_BATHROOMS>  Minimum number of bathrooms
+      --max-price <MAX_PRICE>          Maximum listing price
+      --min-sqft <MIN_SQFT>            Minimum square footage
+      --json                           Print the property details and the evaluation as one JSON object instead of the text report
+  -h, --help                           Print help

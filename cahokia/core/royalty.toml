@@ -1,0 +1,3 @@
+[project]
+name = "core"
+description = "Genealogy data model and family tree layout maths shared by the Cahokia web, desktop and mobile apps."

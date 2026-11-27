@@ -1,0 +1,76 @@
+---
+# Deploy the OpenTofu state Worker (tofu_state, decision 0009) from main.
+# It runs in the `infra` environment, the only place the write password
+# lives, and shares the infra concurrency group so a deploy never overlaps a
+# plan or apply. PR CI (mise-projects.yml) already ran `mise run ci` on the
+# change, including the end-to-end test with OpenTofu.
+name: Deploy tofu_state
+
+'on':
+  push:
+    branches:
+      - main
+    paths:
+      - 'tofu_state/**'
+      - '.github/workflows/tofu-state-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infra
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: infra
+    defaults:
+      run:
+        working-directory: tofu_state
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Stop when the setup isn't done
+        env:
+          READ: ${{ secrets.TOFU_STATE_READ_PASSWORD }}
+          WRITE: ${{ secrets.TOFU_STATE_WRITE_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$READ" ] || missing="$missing TOFU_STATE_READ_PASSWORD"
+          [ -n "$WRITE" ] || missing="$missing TOFU_STATE_WRITE_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::missing secrets:$missing (run the Infra Mint workflow)"
+            exit 1
+          fi
+
+      - uses: jdx/mise-action@v5
+        with:
+          working_directory: tofu_state
+
+      - name: mise run deploy:worker
+        env:
+          TOFU_STATE_READ_PASSWORD: ${{ secrets.TOFU_STATE_READ_PASSWORD }}
+          TOFU_STATE_WRITE_PASSWORD: ${{ secrets.TOFU_STATE_WRITE_PASSWORD }}
+        run: mise run deploy:worker
+
+      - name: Smoke check
+        env:
+          TOFU_STATE_READ_PASSWORD: ${{ secrets.TOFU_STATE_READ_PASSWORD }}
+        run: |
+          origin=$(bash scripts/origin.sh)
+          bash scripts/smoke.sh "$origin"
+          {
+            echo "### Deployed tofu_state"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Worker | $origin |"
+            echo "| Commit | \`$(git rev-parse HEAD)\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

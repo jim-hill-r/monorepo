@@ -1,0 +1,257 @@
+# Settings made by hand in a dashboard ("clickops"), which no file in the
+# repo holds, so no eval can read them. Jim checks each one every `every`
+# days: the weekly human issues digest writes a due check as a human task,
+# issues/human/settings-check-<id>.md, and his answer is recorded in
+# settings-checks.jsonl.
+# Format and process: "Human checks" in standards/docs/evals.md.
+#
+# Never put a secret's value here: only that it exists and what it is for.
+# A human task (issues/human/) that creates a setting adds its entry here in
+# the same PR. `evals check` validates this file.
+
+# Claude: the agents' own platform.
+
+[[setting]]
+id = "claude-github-app"
+vendor = "GitHub"
+where = "github.com/settings/installations > Claude"
+expect = "The Claude GitHub App is installed on jimhillr/monorepo with access to that repository."
+why = "Without it agents can't push branches, open PRs or read checks."
+every = "90d"
+
+[[setting]]
+id = "claude-connectors"
+vendor = "Claude"
+where = "claude.ai > Settings > Connectors"
+expect = "GitHub and Cloudflare are connected and signed in, with no Reconnect prompt, and Cloudflare is read-only."
+why = "An expired connector sign-in silently stops agents reaching GitHub or Cloudflare."
+every = "30d"
+
+[[setting]]
+id = "claude-scheduled-tasks"
+vendor = "Claude"
+where = "claude.ai > the Monorepo project > Scheduled tasks"
+expect = "PR triage (7:50, 12:50 and 17:50 New York), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
+why = "PRs stop merging and human tasks stop reaching Jim when a task is paused or failing."
+every = "30d"
+
+[[setting]]
+id = "claude-code-budget"
+vendor = "Anthropic"
+where = "claude.ai > Settings > Billing"
+expect = "Claude Code spend this month is within the $25 budget, and no extra usage or higher plan is turned on."
+why = "Claude Code is the one paid service; its budget is $25 a month (AGENTS.md)."
+every = "30d"
+
+# GitHub: the repo itself.
+
+[[setting]]
+id = "github-main-ruleset"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Rules > Rulesets > Default"
+expect = "The Default ruleset is active on main: pull requests required, force pushes and deletion blocked."
+why = "Without it anyone, agents included, can push straight to main."
+every = "90d"
+
+[[setting]]
+id = "github-merge-settings"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > General > Pull Requests"
+expect = "Squash merging and Allow auto-merge are on."
+why = "Agents squash-merge and turn on auto-merge when a PR is ready (AGENTS.md)."
+every = "90d"
+
+[[setting]]
+id = "github-actions-budget"
+vendor = "GitHub"
+where = "github.com/settings/billing > Budgets and alerts"
+expect = "The Actions budget is $0 with usage stopped at the limit, and no payment method is added."
+why = "Keeps GitHub on its free plan (standards/docs/free-tiers.md)."
+every = "30d"
+
+[[setting]]
+id = "github-dependabot"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Advanced Security"
+expect = "Dependabot alerts and security updates are on."
+why = "Version updates come from .github/dependabot.yml, but alerts and security updates are switched on only here."
+every = "90d"
+
+[[setting]]
+id = "github-secret-cloudflare-api-token"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "The CLOUDFLARE_API_TOKEN repo secret exists."
+why = "Every Cloudflare Pages deploy in push-main.yml and nightly-cd.yml uses it."
+every = "90d"
+
+[[setting]]
+id = "github-secret-cloudflare-account-id"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "The CLOUDFLARE_ACCOUNT_ID repo secret exists."
+why = "Every Cloudflare Pages deploy uses it."
+every = "90d"
+
+# Cloudflare.
+
+[[setting]]
+id = "cloudflare-api-token-scopes"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Account API Tokens > jimhillr-deploy"
+expect = "The token in CLOUDFLARE_API_TOKEN is the account-owned jimhillr-deploy, minted by the Infra Mint workflow, with Pages Write, Workers Scripts Write, D1 Write and Account Analytics Read for this account only, and no other token with those permissions is left over from before."
+why = "A token missing a scope, or expired, fails every deploy."
+every = "90d"
+
+[[setting]]
+id = "cloudflare-billing"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Billing"
+expect = "The account is on the Free plan with no payment method and no paid add-on (Workers Paid, R2 paid, Images)."
+why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
+every = "30d"
+
+[[setting]]
+id = "cloudflare-infra-token-scopes"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Web Analytics Read; jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Web Analytics Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
+why = "PR plans must not be able to change anything, and OpenTofu must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
+every = "90d"
+
+[[setting]]
+id = "cloudflare-infra-credentials-token"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Environments > infra-credentials"
+expect = "The bootstrap token CLOUDFLARE_INFRA_CREDENTIALS_TOKEN, made by hand, has only Account API Tokens Write for this account and is a secret of infra-credentials only."
+why = "It can make any Cloudflare token, so it must stay behind Jim's approval (decision 0010) and do nothing else."
+every = "90d"
+
+[[setting]]
+id = "github-variable-tofu-state-origin"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions > Variables"
+expect = "TOFU_STATE_ORIGIN is the state Worker's URL, https://jimhillr-tofu-state.<subdomain>.workers.dev, as the Deploy tofu_state workflow's summary shows it. The Infra Mint workflow sets it."
+why = "The infra plan, apply and drift workflows read and lock state there (decision 0009); a wrong URL fails every plan."
+every = "180d"
+
+[[setting]]
+id = "github-secrets-tofu-state"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions, and Environments > infra"
+expect = "TOFU_STATE_READ_PASSWORD and TOFU_STATE_PASSPHRASE are repository secrets and TOFU_STATE_WRITE_PASSWORD is only in the infra environment, which is limited to main. The Infra Mint workflow made them, and no copy exists outside GitHub and the Worker."
+why = "The OpenTofu state Worker accepts only these (decision 0009); a write password outside infra would let any PR change state."
+every = "90d"
+
+# Auth0.
+
+[[setting]]
+id = "auth0-cahokia-app"
+vendor = "Auth0"
+where = "manage.auth0.com > Applications > the Cahokia application"
+expect = "Type is Single Page Application, and https://jimhillr-cahokia.pages.dev/ and http://localhost:8080/ are in Allowed Callback URLs (without the slash in Allowed Web Origins and Allowed Logout URLs)."
+why = "A dropped callback URL breaks sign-in on Cahokia production."
+every = "90d"
+
+[[setting]]
+id = "auth0-billing"
+vendor = "Auth0"
+where = "manage.auth0.com > Settings > Subscription"
+expect = "The tenant is on the Free plan with no payment method."
+why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
+every = "90d"
+
+[[setting]]
+id = "auth0-infra-apps"
+vendor = "Auth0"
+where = "manage.auth0.com > Applications > Machine to Machine, and APIs > Auth0 Management API > Machine to Machine Applications"
+expect = "infra-read has only read:clients and infra-apply only read:clients and update:clients (both minted by the Infra Mint workflow). The bootstrap infra-credentials app, made by hand and stored only in infra-credentials, has only read:clients, update:clients, create:clients, update:client_keys, read:client_grants, create:client_grants and update:client_grants."
+why = "A wider grant would let a PR plan or a non-credential apply change sign-in settings or mint secrets past Jim's approval (decision 0010)."
+every = "90d"
+
+# RapidAPI.
+
+[[setting]]
+id = "rapidapi-free-plan"
+vendor = "RapidAPI"
+where = "rapidapi.com > My Apps > Billing"
+expect = "The Zillow API subscription is on the free plan, with no payment method and no paid plan."
+why = "homer may use RapidAPI only on its free plan; it must never cost money (AGENTS.md)."
+every = "30d"
+
+# Second approval for credential changes (decision 0010).
+
+[[setting]]
+id = "github-infra-credentials-environment"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Environments > infra-credentials"
+expect = "Required reviewers is jimhillr only, admin bypass is off, deployment branches is main only, and every credential-capable infra token is a secret here and not a repository secret."
+why = "This environment is the second approval for credential changes; IaC never manages it, so only this check notices if it is weakened."
+every = "90d"
+
+[[setting]]
+id = "github-app-infra"
+vendor = "GitHub"
+where = "github.com/settings/apps > the infra app (issues/human/github-app-infra-credentials.md)"
+expect = "The infra GitHub App is private to jimhillr and installed only on jimhillr/monorepo. Its only permissions are Secrets, Environments, Variables and Administration (read and write) and Metadata (read). Its private key is only the infra-credentials secret GH_INFRA_CREDENTIALS_APP_KEY."
+why = "It can write every infra secret, so a wider install or extra permission would reach past the second approval (decision 0010)."
+every = "90d"
+
+[[setting]]
+id = "github-agent-role"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Collaborators and teams, and Rules > Rulesets"
+expect = "jimhillr-agt has the Write role (not Maintain or Admin) and isn't on any ruleset's bypass list."
+why = "An agent account with admin could change the infra-credentials environment and approve its own credential changes."
+every = "90d"
+
+[[setting]]
+id = "github-claude-app-permissions"
+vendor = "GitHub"
+where = "github.com/settings/installations > Claude > Permissions"
+expect = "The Claude GitHub App has no Administration, Environments or Secrets write permission."
+why = "Agents act through the app, so any of these would let them get round the second approval."
+every = "90d"
+
+# Secret rotation (standards/docs/secret-rotation.md). Each is a reminder:
+# when it comes due, rotate the secret with its runbook, then answer the check.
+
+[[setting]]
+id = "rotate-infra-mint-quarterly"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Actions > Infra Mint"
+expect = "The last scheduled Infra Mint run (1st of January, April, July or October) was approved and is green, so the minted passwords and tokens were rotated within the last 90 days."
+why = "Minted Cloudflare tokens expire 180 days after each mint; a missed rotation shows here before deploys stop."
+every = "90d"
+
+[[setting]]
+id = "rotate-github-app-infra-key"
+vendor = "GitHub"
+where = "github.com/settings/apps > the infra app > Private keys"
+expect = "The app has exactly one private key, made within the last 180 days and stored as GH_INFRA_CREDENTIALS_APP_KEY in infra-credentials (standards/docs/runbooks/github-app-infra.md, Undo or rotate)."
+why = "It can write every infra secret; a key that never changes stays useful to anyone who ever copied it."
+every = "180d"
+
+[[setting]]
+id = "rotate-auth0-infra-credentials"
+vendor = "Auth0"
+where = "manage.auth0.com > Applications > infra-credentials > Credentials"
+expect = "The client secret was rotated within the last 180 days and the new one is AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET in infra-credentials (standards/docs/runbooks/infra-credentials-environment.md, Undo or rotate)."
+why = "It can create Auth0 apps and grants, so it is rotated on a schedule as well as on a leak."
+every = "180d"
+
+[[setting]]
+id = "rotate-cloudflare-infra-credentials"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Account API Tokens > jimhillr-infra-credentials"
+expect = "The token was rolled within the last 180 days, expires no more than 200 days after that, and the new value is CLOUDFLARE_INFRA_CREDENTIALS_TOKEN in infra-credentials."
+why = "It can make any Cloudflare token, so it is rotated on a schedule and expires if a rotation is missed."
+every = "180d"
+
+[[setting]]
+id = "rotate-rapidapi-key"
+vendor = "RapidAPI"
+where = "rapidapi.com > My Apps > the homer app > Authorization"
+expect = "The application key was regenerated within the last 365 days and RAPIDAPI_KEY where you run homer has the new one (standards/docs/runbooks/rapidapi-zillow.md)."
+why = "It lives outside GitHub, on your machine, so only a reminder rotates it."
+every = "365d"

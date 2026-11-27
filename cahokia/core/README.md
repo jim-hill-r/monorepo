@@ -1,6 +1,9 @@
-# Cahokia Core
+# core
 
-This crate provides core data structures and functionality for managing genealogy and family tree data in the Cahokia application.
+The data model and layout maths behind the Cahokia genealogy app: people,
+relationships, life events and the family tree graph, plus the layout,
+viewport and lineage logic that the `ui` crate draws on web, desktop and
+mobile. It has no dependencies and no UI code.
 
 ## Features
 
@@ -9,6 +12,7 @@ This crate provides core data structures and functionality for managing genealog
 - **Ancestry Events**: Track significant life events (Birth, Death, Marriage, Divorce, Adoption, etc.)
 - **Family Tree**: Build and query a graph-based family tree structure
 - **Layout**: Arrange a family tree into generation rows, then into boxes and lines with coordinates for drawing
+- **Pan, zoom and focus**: `Viewport` maps layout coordinates to the screen (pan, zoom around a point, fit, centre on a person), and `FamilyTree::lineage()` gives a focus person's ancestors and descendants and which lines join them, for highlighting
 - **Sample family**: `sample::sample_family_tree()` returns a made-up three-generation family of ten people, which the apps show until a user enters their own
 
 ## Usage
@@ -195,7 +199,6 @@ The crate uses `FamilyTreeResult<T>` which can return:
 
 ## Future Enhancements
 
-See `ISSUES.md` for planned features including:
+See the issue files in `issues/` for planned features including:
 - Divorce event handling
-- Ancestor/descendant traversal queries
 - Family tree visualization

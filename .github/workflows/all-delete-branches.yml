@@ -6,6 +6,8 @@ name: All Delete Branches
 #
 # Safety rules:
 # - The default branch is never deleted.
+# - evals-results is never deleted: it is the eval engine's long-lived data
+#   branch (every eval result and verdicts.json, standards/docs/evals.md).
 # - A branch that is the head of an open pull request is skipped.
 # - dry_run defaults to true and only reports what would be deleted.
 on:
@@ -49,6 +51,10 @@ jobs:
           for branch in $BRANCHES; do
             if [ "$branch" = "$DEFAULT_BRANCH" ]; then
               echo "::warning::Skipping $branch: it is the default branch"
+              skipped=$((skipped + 1)); continue
+            fi
+            if [ "$branch" = evals-results ]; then
+              echo "::warning::Skipping $branch: it is the eval results data branch and is never deleted"
               skipped=$((skipped + 1)); continue
             fi
             if printf '%s\n' "$open_pr_heads" | grep -qxF -- "$branch"; then

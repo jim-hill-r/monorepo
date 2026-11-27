@@ -1,0 +1,56 @@
+/* The family tree fills the page width; FamilyTreeView handles panning and
+   zooming inside it, so the frame itself never scrolls. Colours come from
+   the design system's --ds- tokens. */
+.family-tree-frame {
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: var(--ds-radius-md);
+}
+
+.family-tree-frame svg {
+    display: block;
+    border-radius: var(--ds-radius-md);
+}
+
+.family-tree-frame svg:focus-visible,
+.family-tree-frame .family-tree-person:focus-visible {
+    outline: var(--ds-focus-width) solid var(--ds-color-focus);
+    outline-offset: var(--ds-focus-offset);
+}
+
+.family-tree-frame svg:active {
+    cursor: grabbing;
+}
+
+.family-tree-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-3);
+}
+
+.family-tree-toolbar button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    background: var(--ds-color-surface-raised);
+    color: var(--ds-color-text);
+    border: var(--ds-border-width) solid var(--ds-color-border-strong);
+    border-radius: var(--ds-radius-sm);
+    cursor: pointer;
+}
+
+.family-tree-toolbar button:hover {
+    border-color: var(--ds-color-accent);
+    color: var(--ds-color-accent-hover);
+}
+
+.family-tree-toolbar select {
+    padding: 0 var(--ds-space-1);
+}
+
+.family-tree-status {
+    margin-top: var(--ds-space-2);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-color-text-muted);
+}

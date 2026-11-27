@@ -94,4 +94,4 @@ workspace = true
 
 ## Enforcement
 
-These rules are not checked automatically yet; porting the LIN-001 and LIN-002 checks to `mise run //:audit` is tracked in `standards/ISSUES.md`.
+These rules are not checked automatically yet; porting the LIN-001 and LIN-002 checks to `mise run //:audit` is tracked in `standards/issues/`.

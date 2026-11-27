@@ -1,0 +1,21 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.13.10",
+  "planned_values": {"root_module": {"resources": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook", "provider_name": "registry.opentofu.org/auth0/auth0",
+     "values": {"name": "cookbook", "app_type": "spa", "callbacks": ["https://jimhillr-cookbook.pages.dev/"]},
+     "sensitive_values": {"callbacks": [false]}}
+  ]}},
+  "resource_changes": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook", "provider_name": "registry.opentofu.org/auth0/auth0",
+     "change": {"actions": ["update"],
+       "before": {"name": "cookbook", "app_type": "spa", "callbacks": []},
+       "after": {"name": "cookbook", "app_type": "spa", "callbacks": ["https://jimhillr-cookbook.pages.dev/"]},
+       "after_unknown": {}, "before_sensitive": {}, "after_sensitive": {"callbacks": [false]},
+       "importing": {"id": "savzmZnyHcvewGkQX8aaInwPFonC9k2x"}}}
+  ],
+  "configuration": {"root_module": {"resources": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook",
+     "expressions": {"name": {"constant_value": "cookbook"}, "app_type": {"constant_value": "spa"}, "callbacks": {"constant_value": ["https://jimhillr-cookbook.pages.dev/"]}}}
+  ]}}
+}

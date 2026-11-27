@@ -9,8 +9,12 @@ workspace = true
 [dependencies]
 dioxus = { workspace = true, features = ["router"] }
 ui = { workspace = true }
+design_system_dioxus = { workspace = true }
 auth_sdk = { workspace = true }
 
 [features]
 default = ["mobile"]
 mobile = ["dioxus/mobile"]
+
+[dev-dependencies]
+dioxus-ssr = "0.7.3"

@@ -12,13 +12,33 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
 - **Standards are the source of truth.** Coding, testing, documentation, naming
   and workflow rules live in `standards/docs/`. If this file disagrees with
   them, the standards win; fix this file.
-- **Work is tracked in `ISSUES.md` files**, not GitHub issues. See
+- **Work is tracked as one file per issue** in `issues/` folders (the root
+  `issues/` for repo-wide work, `<project>/issues/` for a project's), not in
+  GitHub issues and not in `ISSUES.md` files, which are retired so parallel
+  PRs stop conflicting (decision 0006). Add an issue by adding a file, close
+  it by deleting the file, and see the list with `mise run //:issues`; never
+  commit a generated index. The format is in
   `standards/docs/issue-management.md`.
 - **Tasks only a person can do** (dashboards, accounts, secrets, billing,
-  sign-offs) go in the root `HUMAN_ISSUES.md` as `TODO (human): ...` lines,
-  never in an `ISSUES.md` and never only in a chat thread. Agents don't work
+  sign-offs) go in the root `issues/human/`, one file each, never in a
+  project's `issues/` and never only in a chat thread. Agents don't work
   them. A weekly Claude scheduled task, "Weekly human issues digest", reports
   them to Jim with the `human-issues-digest` skill (decision 0002).
+- **Every human task has a runbook (Jim, 2026-11-27).** "Whenever asking
+  for human help, document the requirement, why it can't be automated and
+  create a run book. Link the run book in the task." Each
+  `issues/human/` file has `## Requirement`, `## Why it can't be automated`
+  and `## Runbook` sections and a `runbook:` front matter field, and its
+  runbook (steps, permissions, where secrets go, how to verify, cost) is
+  in `standards/docs/runbooks/`, added in the same PR. Runbooks outlive
+  their tasks, so every human task in the architecture, one-time ones
+  included, stays documented. The audit enforces it (ISS-004); the format
+  is under "Human issues" in `standards/docs/issue-management.md`.
+- **Settings made by hand** (connectors, secrets, Auth0, Cloudflare tokens,
+  billing) are listed in `standards/settings.toml`, never with a secret's
+  value. A change that makes or needs one adds its entry in the same PR; the
+  weekly digest asks Jim to re-check each one on its schedule ("Human
+  checks" in `standards/docs/evals.md`).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
@@ -51,6 +71,9 @@ repo, rather than in any one agent tool's settings.
   - `dioxus` in `cahokia` is deliberately pinned to an older version.
   - `sycamore` in `sparkhill/website` and `profiles/jimhillr` must stay on
     0.8, which `perseus` 0.4.2 requires.
+  - `terrars` in `infra` is pinned with `=`: its generated bindings in
+    `infra/src/tfschema/` must be regenerated with the same version, so bump
+    it only together with them (see `infra/README.md`).
 - **Vendors (Jim, 2026-11-26).** When designing a system, use as few vendors
   as possible, but cost always comes first: if a non-approved vendor is
   clearly cheaper (including free tiers), cost wins over vendor count.
@@ -91,7 +114,37 @@ repo, rather than in any one agent tool's settings.
   or cache limit, and when a limit is near, stop rather than pay. Anything
   automation creates on demand goes through `standards/scripts/free-tiers.sh`.
   Limits, budgets and guards are in
-  [standards/docs/free-tiers.md](standards/docs/free-tiers.md).
+  [standards/docs/free-tiers.md](standards/docs/free-tiers.md), with the
+  numbers in `standards/radar/limits.toml`. Every project keeps its expected
+  usage and money in `docs/cost.toml`, checked by `cost check`
+  ([standards/docs/cost.md](standards/docs/cost.md)); update it in any PR
+  that adds a service, a deploy or a cost.
+- **No secrets in git or state (Jim, 2026-11-26).** "Never commit secrets
+  to git or store them in tf state." No secret value (token, password,
+  client secret, key) is ever committed, and none may be in OpenTofu
+  state, not even encrypted. OpenTofu never generates or copies a
+  secret, and the `infra` plan guard IAC-002 fails any plan that would
+  put a sensitive value in state. Secrets are stored only as GitHub or
+  vendor secrets. A person makes only the bootstrap credentials in
+  `infra-credentials`; the Infra Mint workflow makes every other infra
+  secret, piping each value straight into a GitHub secret so no one sees
+  it (Jim, 2026-11-27,
+  [decision 0011](standards/docs/decisions/0011-mint-secrets-by-workflow.md)).
+  A new credential is added to `infra/scripts/mint.sh`, not to a human
+  task. Every long-lived secret has a rotation cadence and owner in
+  [standards/docs/secret-rotation.md](standards/docs/secret-rotation.md)
+  (Jim, 2026-11-27): Infra Mint rotates what it makes every quarter, and
+  a settings check reminds Jim of the rest. A PR that adds a long-lived
+  secret adds its row there.
+- **Second approval for credentials (Jim, 2026-11-26).** A credential
+  change (new or edited Auth0 apps and grants, token scopes, Access
+  policies, GitHub secrets, environments or rulesets) applies only after
+  Jim approves its run in the `infra-credentials` GitHub environment, on
+  top of the PR approval
+  ([decision 0010](standards/docs/decisions/0010-credential-second-approval.md)).
+  Agents never approve a `credential-change` PR, never put a
+  credential-capable token anywhere but that environment, and never ask
+  for admin rights for `jimhillr-agt` or the Claude GitHub App.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -103,9 +156,16 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
+  named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
+  it never collides with another account's `*.pages.dev` name. The audit
+  enforces it (FT-006); details in
+  [standards/docs/naming.md](standards/docs/naming.md#cloudflare-pages-projects).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
-  `needs-jim`).
+  `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
+  changes what the repo uses or costs, and `needs-human` when it adds a
+  vendor or money or raises a budget (standards/docs/cost.md).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
@@ -123,7 +183,9 @@ repo, rather than in any one agent tool's settings.
   mergeable PR (per the merge rule above), closes superseded or pinned bumps
   (and conflicting ones Dependabot can't rebase, so it recreates them), adopts
   orphaned agent PRs, turns on auto-merge for ready agent PRs, hands bumps that break the build to an agent to fix, and
-  labels only real decisions for a person `needs-human`. Safe to approve means
+  labels only real decisions for a person `needs-human`. Each run also
+  checks the README's repo health badges and tries to fix what is red, at
+  most one fix PR per run ([standards/docs/repo-health.md](standards/docs/repo-health.md)). Safe to approve means
   green checks, no conflict, never the pinned bumps above, no auth or secrets
   changes unless trivially safe, and for a major bump (a 0.x minor bump counts
   as major) release notes with no breaking change that CI wouldn't catch
@@ -164,24 +226,26 @@ and the PR must say which checks didn't run.
 - Run only tests: `mise run test`
 - Fix formatting and lints: `mise run fix`
 - List the project's tasks: `mise tasks`
+- List the open issues: `mise run //:issues` (`-- --human` for human tasks)
 - Check the repo standards: `mise run //:audit`
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
 
 Every project has the same tasks (`ci`, `fix`, `build`, `test`, `dev`,
-`release`, `deploy`), from one shared file in `standards/tasks/`. The rules
-and decisions (no root Rust workspace, no committed build artifacts) are in
-[standards/docs/mise.md](standards/docs/mise.md). CI runs `mise run ci` in
-each changed project; pushes to `main` also run `mise run deploy`.
+`release`, `deploy`, `evals`), from one shared file in `standards/tasks/`.
+The rules and decisions (no root Rust workspace, no committed build
+artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
+`mise run ci` and then `mise run evals` in each changed project; pushes to
+`main` also run `mise run deploy`.
 
 ## Skills
 
 | Skill | Use it to |
 | --- | --- |
-| `start-a-new-task` | Pick one TODO from the `ISSUES.md` files and complete it end to end. |
+| `start-a-new-task` | Pick one issue from the `issues/` folders and complete it end to end. |
 | `code-review` | Review one project against the standards and record five TODOs. |
-| `human-issues-digest` | Report the open `HUMAN_ISSUES.md` tasks and `needs-human` PRs to Jim. |
+| `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 

@@ -1,0 +1,18 @@
+{
+  "format_version": "1.2",
+  "planned_values": {"root_module": {"resources": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook", "provider_name": "registry.opentofu.org/auth0/auth0",
+     "values": {"name": "cookbook"}, "sensitive_values": {}}
+  ]}},
+  "resource_changes": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook", "provider_name": "registry.opentofu.org/auth0/auth0",
+     "change": {"actions": ["create", "delete"], "before": {"name": "cookbook"}, "after": {"name": "cookbook"},
+       "after_unknown": {"client_id": true}, "before_sensitive": {}, "after_sensitive": {},
+       "replace_paths": [["app_type"]]},
+     "action_reason": "replace_because_cannot_update"}
+  ],
+  "configuration": {"root_module": {"resources": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook",
+     "expressions": {"name": {"constant_value": "cookbook"}}}
+  ]}}
+}

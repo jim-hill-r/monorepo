@@ -119,7 +119,7 @@ pub struct Project {
     pub status: ProjectStatus,
 }
 
-/// Where a project stands in the root `ISSUES.md`.
+/// Where a project stands in the root `issues/README.md`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProjectStatus {
@@ -142,16 +142,17 @@ pub struct WorkItem {
     pub project: Option<String>,
     /// Path from the repo root.
     pub file: String,
-    /// 1-based line number.
+    /// 1-based line number (where an issue file's text starts).
     pub line: u32,
     pub source: WorkSource,
-    /// `# Priority Issues`, `# Backlog` or another top-level heading.
+    /// `Priority Issues` or `Backlog`, from an issue file's `priority`.
     #[serde(default)]
     pub section: Option<String>,
-    /// The `##`/`###` epic or phase heading it sits under.
+    /// An issue file's `epic`, such as `Epic / Phase 1: start`.
     #[serde(default)]
     pub epic: Option<String>,
-    /// Tags in parentheses after the marker, such as `agent-generated`.
+    /// An issue file's `tags`, or the tags in parentheses after a code
+    /// comment's marker, such as `agent-generated`.
     #[serde(default)]
     pub tags: Vec<String>,
 }
@@ -171,18 +172,25 @@ pub enum WorkSource {
     CodeComment,
 }
 
-/// One `TODO (human)` line in `HUMAN_ISSUES.md`.
+/// One task for a person: a file in the root `issues/human/`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HumanIssue {
     pub text: String,
     pub file: String,
     pub line: u32,
-    /// `YYYY-MM-DD` from `(Added <date>. ...)`.
+    /// `YYYY-MM-DD`, from the file's `added`.
     #[serde(default)]
     pub added: Option<String>,
-    /// What it unblocks, from `(... Unblocks ...)`.
+    /// What it unblocks, from the file's `unblocks`.
     #[serde(default)]
     pub unblocks: Option<String>,
+    /// Why only a person can do it, from the file's `## Why it can't be
+    /// automated` section.
+    #[serde(default)]
+    pub why: Option<String>,
+    /// Its runbook's path from the repo root, from the file's `runbook`.
+    #[serde(default)]
+    pub runbook: Option<String>,
 }
 
 /// Something pane offers to view or download.
@@ -307,7 +315,7 @@ mod tests {
         s.projects.push(Project {
             path: "pane/web".into(),
             kind: "dioxus-web".into(),
-            deploy_url: Some("https://pane.pages.dev".into()),
+            deploy_url: Some("https://jimhillr-pane.pages.dev".into()),
             summary: Some("The web frontend for pane.".into()),
             status: ProjectStatus::Priority,
         });
@@ -315,7 +323,7 @@ mod tests {
             kind: WorkKind::Todo,
             text: "Add a model crate.".into(),
             project: Some("pane".into()),
-            file: "pane/ISSUES.md".into(),
+            file: "pane/issues/x.md".into(),
             line: 14,
             source: WorkSource::IssuesFile,
             section: Some("Priority Issues".into()),
@@ -324,10 +332,12 @@ mod tests {
         });
         s.human_issues.push(HumanIssue {
             text: "Create the Access application.".into(),
-            file: "HUMAN_ISSUES.md".into(),
+            file: "issues/human/x.md".into(),
             line: 3,
             added: Some("2026-11-20".into()),
             unblocks: Some("pane Phase 3".into()),
+            why: None,
+            runbook: None,
         });
         s.deliverables.push(Deliverable {
             kind: DeliverableKind::Plan,

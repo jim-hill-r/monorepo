@@ -82,5 +82,5 @@ so the Worker is only created within the account's Workers budget
 `mise run ci` checks formatting, lints for the native and wasm targets,
 builds for wasm and runs the event tests natively. `mise run dev` runs it
 with `wrangler dev`; `mise run deploy` builds it with `worker-build` and
-deploys it with `wrangler deploy`, which needs `CLOUDFLARE_API_TOKEN` (with
-Workers Scripts edit) and `CLOUDFLARE_ACCOUNT_ID`.
+deploys it with `wrangler deploy`, which needs `CLOUDFLARE_API_TOKEN` (the
+`jimhillr-deploy` token that Infra Mint makes) and `CLOUDFLARE_ACCOUNT_ID`.

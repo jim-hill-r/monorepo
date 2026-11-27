@@ -1,0 +1,75 @@
+---
+# Weekly drift check for infra (decision 0007, item 10): a refresh-only plan
+# of each stack with the read-only credentials and the state read password,
+# without locking. It goes red when a live setting differs from state, for
+# example after a change made by hand in a dashboard. It only reads.
+name: Infra Drift
+
+'on':
+  schedule:
+    # Mondays at 3:30 PM UTC (7:30 AM Pacific), after All Free Tier Usage.
+    - cron: '30 15 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infra
+  cancel-in-progress: false
+
+jobs:
+  stacks:
+    runs-on: ubuntu-24.04
+    outputs:
+      stacks: ${{ steps.list.outputs.stacks }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: list
+        run: echo "stacks=$(ls infra/out | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+
+  drift:
+    needs: stacks
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ${{ fromJSON(needs.stacks.outputs.stacks) }}
+    name: drift (${{ matrix.stack }})
+    defaults:
+      run:
+        working-directory: infra
+    env:
+      TOFU_STATE_ORIGIN: ${{ vars.TOFU_STATE_ORIGIN }}
+      TF_HTTP_PASSWORD: ${{ secrets.TOFU_STATE_READ_PASSWORD }}
+      TOFU_STATE_PASSPHRASE: ${{ secrets.TOFU_STATE_PASSPHRASE }}
+      AUTH0_INFRA_READ_DOMAIN: ${{ secrets.AUTH0_INFRA_READ_DOMAIN }}
+      AUTH0_INFRA_READ_CLIENT_ID: ${{ secrets.AUTH0_INFRA_READ_CLIENT_ID }}
+      AUTH0_INFRA_READ_CLIENT_SECRET: ${{ secrets.AUTH0_INFRA_READ_CLIENT_SECRET }}
+      CLOUDFLARE_INFRA_READ_TOKEN: ${{ secrets.CLOUDFLARE_INFRA_READ_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - id: ready
+        name: Check the stack is set up
+        run: |
+          if bash scripts/tofu.sh ready "${{ matrix.stack }}" read; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::${{ matrix.stack }} is not set up yet, so drift wasn't checked (see issues/human/)"
+          fi
+      - uses: jdx/mise-action@v5
+        if: steps.ready.outputs.ready == 'true'
+        with:
+          working_directory: infra
+      - uses: Swatinem/rust-cache@v2
+        if: steps.ready.outputs.ready == 'true'
+        with:
+          workspaces: infra
+          save-if: false
+      - name: Refresh-only plan
+        if: steps.ready.outputs.ready == 'true'
+        run: bash scripts/tofu.sh drift "${{ matrix.stack }}"

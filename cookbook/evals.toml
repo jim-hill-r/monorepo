@@ -63,8 +63,20 @@ kind = "http"
 path = "/plan/1"
 
 # COOK-003: The shopping list adds up
-# No eval yet: the existing shopping list tests check sorting and
-# de-duplication only. The ISSUES.md TODO that fixes the sums adds one.
+
+[[eval]]
+id = "shopping-list-sums"
+requirement = "COOK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_get_week_shopping_list_adds_up"
+description = "Week 48's oil, garlic and grains are summed and staples kept apart."
+
+[[eval]]
+id = "shopping-list-page"
+requirement = "COOK-003"
+stages = ["ci"]
+kind = "playwright"
 
 # COOK-004: The cookbook is easy to use on a phone
 

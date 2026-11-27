@@ -14,19 +14,25 @@
 #         FT-004  Cron Triggers across all wrangler.toml files stay within
 #                 the budget.
 #         FT-005  No wrangler.toml turns on a paid-only setting.
+#         FT-006  Every Pages project is named jimhillr-<project>, because
+#                 *.pages.dev names are global (standards/docs/naming.md).
 #
 #   free-tiers.sh pages-project
 #       Run from a Cloudflare project directory (the deploy task does this).
 #       Creates the Pages project named in ./wrangler.toml if it does not
 #       exist, but only while the account stays within the Pages project
-#       budget. Otherwise it stops with an error and creates nothing.
+#       budget and the name has the jimhillr- prefix. Otherwise it stops with
+#       an error and creates nothing.
 #
 #   free-tiers.sh worker
-#       Run from a Cloudflare Worker project directory (the deploy task does
-#       this). Passes when the Worker named in ./wrangler.toml exists, or
-#       when one more Worker stays within the Workers budget, so the
-#       `wrangler deploy` that follows may create it. Otherwise it stops
-#       with an error before anything is created.
+#       Run from a Worker project directory before its first deploy. Passes
+#       if the Worker named in ./wrangler.toml exists, or if one more stays
+#       within the Workers budget; otherwise stops.
+#
+#   free-tiers.sh d1-database NAME
+#       Prints the ID of the D1 database NAME, creating it first if it is
+#       missing and the account has fewer than the free limit of databases.
+#       Otherwise it stops and creates nothing. Messages go to stderr.
 #
 #   free-tiers.sh usage
 #       Live usage check (Cloudflare and GitHub). Writes a table to
@@ -37,18 +43,37 @@
 # free limit: the script clamps them.
 set -euo pipefail
 
-# Free limits (as of 2026-11) and our budgets, well inside them.
-PAGES_PROJECTS_LIMIT=100
-WORKERS_LIMIT=100
-CRON_TRIGGERS_LIMIT=5
-PAGES_PROJECTS_BUDGET=${FREE_TIERS_PAGES_PROJECTS_BUDGET:-25}
-WORKERS_BUDGET=${FREE_TIERS_WORKERS_BUDGET:-25}
-CRON_TRIGGERS_BUDGET=${FREE_TIERS_CRON_TRIGGERS_BUDGET:-3}
+# Free limits and our budgets, well inside them, from standards/radar/limits.toml
+# (the one place they are kept; see standards/docs/free-tiers.md). Found next to
+# this script, so fixture repos in the tests use the real numbers.
+LIMITS_FILE=${FREE_TIERS_LIMITS_FILE:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/../radar" && pwd)/limits.toml"}
+
+# limit KEY FIELD: the whole-number FIELD (free or budget) of the [[limit]]
+# whose key is KEY. Every field is on its own `name = value` line.
+limit() {
+  local value
+  value=$(awk -v key="$1" -v field="$2" '
+    /^\[\[limit\]\]/ { current = "" }
+    $1 == "key" { gsub(/"/, "", $3); current = $3 }
+    current == key && $1 == field { print $3; exit }
+  ' "$LIMITS_FILE")
+  [[ "$value" =~ ^[0-9]+$ ]] || { echo "free-tiers: no whole-number $2 for limit $1 in $LIMITS_FILE" >&2; exit 1; }
+  echo "$value"
+}
+
+[ -f "$LIMITS_FILE" ] || { echo "free-tiers: $LIMITS_FILE not found" >&2; exit 1; }
+PAGES_PROJECTS_LIMIT=$(limit pages_projects free)
+WORKERS_LIMIT=$(limit workers free)
+CRON_TRIGGERS_LIMIT=$(limit cron_triggers free)
+D1_DATABASES_LIMIT=$(limit d1_databases free)
+PAGES_PROJECTS_BUDGET=${FREE_TIERS_PAGES_PROJECTS_BUDGET:-$(limit pages_projects budget)}
+WORKERS_BUDGET=${FREE_TIERS_WORKERS_BUDGET:-$(limit workers budget)}
+CRON_TRIGGERS_BUDGET=${FREE_TIERS_CRON_TRIGGERS_BUDGET:-$(limit cron_triggers budget)}
 # GitHub: 10 GB cache per repo (evicted, never billed, unless the limit is
 # raised) and 500 MB artifact storage on the Free plan if the repo is ever
-# private. Warn well before either.
-GITHUB_CACHE_WARN_BYTES=${FREE_TIERS_GITHUB_CACHE_WARN_BYTES:-$((8 * 1024 * 1024 * 1024))}
-GITHUB_ARTIFACTS_WARN_BYTES=${FREE_TIERS_GITHUB_ARTIFACTS_WARN_BYTES:-$((400 * 1024 * 1024))}
+# private. Warn at our budget, well before either.
+GITHUB_CACHE_WARN_BYTES=${FREE_TIERS_GITHUB_CACHE_WARN_BYTES:-$(limit github_cache_bytes budget)}
+GITHUB_ARTIFACTS_WARN_BYTES=${FREE_TIERS_GITHUB_ARTIFACTS_WARN_BYTES:-$(limit github_artifact_bytes budget)}
 
 clamp() { if [ "$1" -gt "$2" ]; then echo "$2"; else echo "$1"; fi; }
 PAGES_PROJECTS_BUDGET=$(clamp "$PAGES_PROJECTS_BUDGET" "$PAGES_PROJECTS_LIMIT")
@@ -59,6 +84,11 @@ CF_API=${FREE_TIERS_CF_API:-https://api.cloudflare.com/client/v4}
 GH_API=${FREE_TIERS_GH_API:-https://api.github.com}
 
 die() { echo "free-tiers: $*" >&2; exit 1; }
+
+# Pages project names: jimhillr-<project>, lowercase letters, digits and
+# hyphens (standards/docs/naming.md, "Cloudflare Pages projects").
+PAGES_NAME_RE='^jimhillr-[a-z0-9]+(-[a-z0-9]+)*$'
+wrangler_name() { sed -nE 's/^[[:space:]]*"?name"?[[:space:]]*[:=][[:space:]]*"([^"]+)".*/\1/p' "$1" | head -n1; }
 
 # ---------------------------------------------------------------- check ----
 
@@ -91,6 +121,9 @@ check() {
   for f in $wranglers; do
     if grep -qE '^[[:space:]]*"?pages_build_output_dir"?' "$f"; then
       pages=$((pages + 1))
+      n=$(wrangler_name "$f")
+      [[ "$n" =~ $PAGES_NAME_RE ]] ||
+        err FT-006 "$f names Pages project '$n'; Pages projects must be named jimhillr-<project> (standards/docs/naming.md)"
     else
       workers=$((workers + 1))
     fi
@@ -157,8 +190,10 @@ cf_workers_count() {
 pages_project() {
   [ -f wrangler.toml ] || die "no wrangler.toml in $(pwd)"
   local name
-  name=$(sed -nE 's/^name *= *"([^"]+)".*/\1/p' wrangler.toml | head -n1)
+  name=$(wrangler_name wrangler.toml)
   [ -n "$name" ] || die "wrangler.toml has no name"
+  [[ "$name" =~ $PAGES_NAME_RE ]] ||
+    die "not creating Pages project $name: Pages projects must be named jimhillr-<project> (standards/docs/naming.md)"
   need_cf
   local projects count
   projects=$(cf_pages_projects)
@@ -175,30 +210,59 @@ pages_project() {
 }
 
 # Every Worker script name in the account, one per line.
-cf_worker_names() {
+cf_workers() {
   local body
-  body=$(cf_get "workers/scripts") || die "could not list Cloudflare Workers (the token needs Workers Scripts read)"
+  body=$(cf_get "workers/scripts") || die "could not list Cloudflare Workers"
   jq -e '.success == true' >/dev/null <<<"$body" || die "Cloudflare API error: $(jq -c '.errors' <<<"$body")"
   jq -r '.result[].id' <<<"$body"
 }
 
 worker() {
   [ -f wrangler.toml ] || die "no wrangler.toml in $(pwd)"
-  local name
-  name=$(sed -nE 's/^name *= *"([^"]+)".*/\1/p' wrangler.toml | head -n1)
+  local name workers count
+  name=$(wrangler_name wrangler.toml)
   [ -n "$name" ] || die "wrangler.toml has no name"
   need_cf
-  local workers count
-  workers=$(cf_worker_names)
+  workers=$(cf_workers)
   if grep -qxF "$name" <<<"$workers"; then
     echo "free-tiers: Worker $name exists"
     return 0
   fi
   count=$(grep -c . <<<"$workers" || true)
   if [ "$count" -ge "$WORKERS_BUDGET" ]; then
-    die "not creating Worker $name: the account has $count Workers and the budget is $WORKERS_BUDGET (free limit $WORKERS_LIMIT). Delete unused Workers or ask Jim; see standards/docs/free-tiers.md"
+    die "not deploying new Worker $name: the account has $count Workers and the budget is $WORKERS_BUDGET (free limit $WORKERS_LIMIT). Delete unused Workers or ask Jim; see standards/docs/free-tiers.md"
   fi
   echo "free-tiers: Worker $name will be created ($((count + 1)) of $WORKERS_BUDGET budgeted)"
+}
+
+# "<uuid> <name>" for every D1 database in the account, one per line.
+cf_d1_databases() {
+  local body
+  body=$(cf_get "d1/database?per_page=100") || die "could not list D1 databases"
+  jq -e '.success == true' >/dev/null <<<"$body" || die "Cloudflare API error: $(jq -c '.errors' <<<"$body")"
+  jq -r '.result[] | "\(.uuid) \(.name)"' <<<"$body"
+}
+
+d1_database() {
+  local name=${1:-} dbs id count
+  [[ "$name" =~ ^jimhillr-[a-z0-9-]+$ ]] || die "D1 database names are jimhillr-<name>, not '$name'"
+  need_cf
+  dbs=$(cf_d1_databases)
+  id=$(awk -v n="$name" '$2 == n { print $1; exit }' <<<"$dbs")
+  if [ -n "$id" ]; then
+    echo "free-tiers: D1 database $name exists" >&2
+    echo "$id"
+    return 0
+  fi
+  count=$(grep -c . <<<"$dbs" || true)
+  if [ "$count" -ge "$D1_DATABASES_LIMIT" ]; then
+    die "not creating D1 database $name: the account has $count and the free limit is $D1_DATABASES_LIMIT. See standards/docs/free-tiers.md"
+  fi
+  echo "free-tiers: creating D1 database $name ($((count + 1)) of $D1_DATABASES_LIMIT free)" >&2
+  wrangler d1 create "$name" >&2
+  id=$(cf_d1_databases | awk -v n="$name" '$2 == n { print $1; exit }')
+  [ -n "$id" ] || die "created D1 database $name but can't find its ID"
+  echo "$id"
 }
 
 # --------------------------------------------------------------- usage ----
@@ -273,6 +337,7 @@ case "${1:-}" in
   check) check ;;
   pages-project) pages_project ;;
   worker) worker ;;
+  d1-database) d1_database "${2:-}" ;;
   usage) usage_check ;;
-  *) die "usage: free-tiers.sh check | pages-project | worker | usage" ;;
+  *) die "usage: free-tiers.sh check | pages-project | worker | d1-database NAME | usage" ;;
 esac

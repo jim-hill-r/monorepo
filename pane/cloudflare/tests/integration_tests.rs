@@ -3,13 +3,7 @@ use std::path::Path;
 
 #[test]
 fn test_required_files_exist() {
-    let required_files = [
-        "README.md",
-        "wrangler.toml",
-        "mise.toml",
-        ".gitignore",
-        "ISSUES.md",
-    ];
+    let required_files = ["README.md", "wrangler.toml", "mise.toml", ".gitignore"];
 
     for file in &required_files {
         assert!(
@@ -25,7 +19,7 @@ fn test_wrangler_toml_has_required_fields() {
     let content = fs::read_to_string("wrangler.toml").expect("Failed to read wrangler.toml");
 
     assert!(
-        content.contains("name = \"pane\""),
+        content.contains("name = \"jimhillr-pane\""),
         "wrangler.toml missing project name"
     );
 

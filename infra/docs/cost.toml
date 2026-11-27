@@ -1,0 +1,19 @@
+# infra: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Rust synth of Terraform JSON, checked in PR CI with OpenTofu. No vendor API calls yet: the plan and apply workflows (decision 0007) come next. $0 a month."
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "PR CI runs `mise run ci` (build, tests, synth check, `tofu validate`), about a minute a run on a standard runner."
+notes = "infra-plan.yml, infra-apply.yml and infra-drift.yml add a few minutes per PR and merge that touches infra/, and one drift plan per stack a week. Each run gets one Auth0 machine-to-machine token per stack (about 30 to 60 a month, decision 0007), which needs Jim to raise the auth0_m2m_tokens_per_month budget from 0 first (issues/human/auth0-iac-credentials.md); until the secrets exist, the workflows skip."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "The cloudflare stack turns on Web Analytics (free, no usage limit we track) for each production Pages site. It creates no Pages projects; wrangler does, and free-tiers.sh counts them."
+
+[[service]]
+blip = "Auth0"
+plan = "free"
+why = "The auth0 stack manages the existing cookbook and cahokia applications (callback, origin and logout URLs). It adds no users or applications, so no MAU."

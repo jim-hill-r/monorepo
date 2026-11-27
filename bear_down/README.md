@@ -29,7 +29,7 @@ Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downlo
 the nflverse schedule, runs the simulation and writes `rooting.json`
 ([format](docs/rooting-json.md)).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
-the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
+the remaining work to build v1 is listed in [issues/](issues/).
 
 ## Layout
 
@@ -38,3 +38,14 @@ the remaining work to build v1 is listed in [ISSUES.md](ISSUES.md).
 | `core/` | `bear_down_core` | Data parsing, Elo, standings, simulation and rooting analysis. No I/O. |
 | `cli/` | `bear_down_cli` (binary `bear_down`) | Downloads the data, runs the simulation, writes `rooting.json`. |
 | `web/` | `bear_down_web` | The Dioxus page that renders `rooting.json`. |
+| `design/` | (not a crate) | The "Chicago Bears" theme for the [design system](../design_system/README.md): `theme.toml` is the source, `theme.css` is generated from it. |
+
+## Theme
+
+The web page uses the shared design system. Its own "Chicago Bears" theme in
+[design/theme.toml](design/theme.toml) extends the standard colorful theme
+with Bears navy and orange, in light, dark and accessible mode, and the
+page's appearance picker also offers the five standard themes. After
+changing `theme.toml`, run `mise run render` in `design_system` to
+regenerate `theme.css`; `design_system`'s CI fails until you do, and also
+fails if any colour pair misses its WCAG contrast minimum.

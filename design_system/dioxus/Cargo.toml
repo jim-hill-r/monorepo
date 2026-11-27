@@ -12,3 +12,8 @@ workspace = true
 dioxus = { version = "0.7.2", default-features = false, features = ["macro", "html", "signals", "hooks", "document", "asset"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
+
+# In the browser the theme is applied with web-sys rather than an inline
+# script or eval, so it works under a strict Content Security Policy.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = { version = "0.3", features = ["Document", "Element", "Storage", "Window"] }

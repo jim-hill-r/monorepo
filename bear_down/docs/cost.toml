@@ -1,0 +1,11 @@
+# bear_down: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Static site on Cloudflare Pages, built from public nflverse data at build time. $0 a month."
+notes = "The schedule comes from raw.githubusercontent.com (nflverse) when the site is built; nothing runs at request time."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the static site (Pages project `jimhillr-bear-down`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+[service.usage]
+pages_projects = 1

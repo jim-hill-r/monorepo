@@ -8,7 +8,19 @@ public
 lcov.info
 coverage/
 
+# Secrets (SEC-002, standards/docs/security.md; //:audit checks these).
+# Commit a public example as <name>.example instead.
 **/.env
+**/.env.*
+**/.dev.vars
+**/.dev.vars.*
+!**/*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
 
 logs
 # Review deck builds (standards/scripts/review-decks.sh)

@@ -12,9 +12,11 @@ mod card_library;
 mod card_render;
 mod deck;
 mod game;
+mod input;
 mod rules;
 mod splash;
 mod state;
+mod theme;
 
 /// Builds the app and runs the game until the window closes.
 pub fn main() {
@@ -31,6 +33,7 @@ pub fn main() {
             ..default()
         }))
         .add_systems(Startup, setup_camera)
+        .add_plugins(theme::ThemePlugin)
         .init_state::<state::AppState>()
         .add_plugins(splash::SplashPlugin)
         .add_plugins(game::GamePlugin)

@@ -11,11 +11,16 @@ one column under 720 px.
 | `/` | Today: counts, human issues waiting on Jim oldest first, and what is new since the last visit (human issues, deliverables, TODOs and FIXes; see below) |
 | `/projects` | Every project, priority first, with type, status, README summary and open items |
 | `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its deliverables, and its open TODOs and FIXes (sub-projects included) |
-| `/work` | Every `TODO` and `FIX` from `ISSUES.md` files and code comments, FIXes first, filterable by project, kind, where it sits (priority, backlog, other sections, code comments) and tag, each linking to its line on GitHub |
-| `/human-issues` | Each open `TODO (human)` line, oldest first, with its age, what it unblocks and a link to the line on GitHub |
+| `/work` | Every `TODO` and `FIX` from issue files and code comments, FIXes first, filterable by project, kind, where it sits (priority, backlog, other, code comments) and tag, each linking to its line on GitHub |
+| `/human-issues` | Each open human task (a file in `issues/human/`), oldest first, with its age, what it unblocks and a link to the file on GitHub |
 | `/deliverables` | Live sites (`DEPLOY_URL`), game downloads (`RELEASE_TAG`), and plans, decisions and retros |
 | `/docs/<path>` | One plan, decision or retro rendered from its Markdown (`src/markdown.rs`), with a link to the file on GitHub |
 | `/health`, `/reviews`, `/add` | Placeholders naming the phase that fills them in |
+
+It uses the [design system](../../design_system/README.md)'s professional
+theme: `design_system_dioxus::Stylesheets` loads the tokens, and
+`assets/main.css` uses only `--ds-` tokens, so the theme picker in the footer
+can switch it to any theme, light, dark or accessible mode.
 
 The footer shows the snapshot's commit and how long ago it was taken. Pure
 helpers for the pages (dates, ages, sorting, counts, filters, GitHub links)
@@ -58,7 +63,7 @@ first, and run in CI as part of `mise run ci`.
 npm ci
 npm test            # every test, in Chromium
 npm run smoke       # only the @smoke tests, recording video, screenshots and traces
-BASE_URL=https://pane-dbc.pages.dev npm run smoke   # against the live site instead
+BASE_URL=https://jimhillr-pane.pages.dev npm run smoke   # against the live site instead
 ```
 
 ## Prerequisites
@@ -114,8 +119,14 @@ mise run release
 This first runs [`pane_snapshot`](../snapshot) to write
 `public/data/snapshot.json` (a snapshot of the whole repo at the current
 commit, with the time it was taken), then `dx bundle`, which copies it into
-the bundle as `/data/snapshot.json`. `public/` is gitignored, so the snapshot
-is never committed. The output will be in the `dist/` directory and ready for
+the bundle as `/data/snapshot.json`. Next, `mise run reviews` builds every
+review deck in [`docs/reviews/`](../../docs/reviews) to HTML and PDF with
+[`review-decks.sh`](../../standards/scripts/review-decks.sh), into
+`public/reviews/<folder>/` (`deck.html`, `deck.pdf` and the deck's images),
+so the site serves them under `/reviews/<folder>/`. That step needs Node and a
+Chrome or Chromium (set `CHROME_PATH` if Marp can't find one); `dev` skips it.
+`public/` is gitignored, so neither the snapshot nor the decks are ever
+committed. The output will be in the `dist/` directory and ready for
 deployment.
 
 **Note:** The `Dioxus.toml` configuration disables wasm-opt (by setting level to 0) to avoid SIGABRT errors during release builds. This is a known issue where wasm-opt can crash on certain builds.
@@ -157,4 +168,4 @@ This project uses Dioxus 0.7 for building web applications with Rust, and
 Phases 0 and 1 of the plan: the shell, the Today, Projects and Project, Work, Human issues and Deliverables pages, and smoke tests. Pane redeploys on every push to `main` (`# deploy-on-every-push` in `../cloudflare/mise.toml`). Pane is becoming one place to review the whole
 monorepo; see the plan in
 [../docs/plans/2026-11-review-dashboard.md](../docs/plans/2026-11-review-dashboard.md)
-and the phased TODOs in [../ISSUES.md](../ISSUES.md).
+and the phased issues in [../issues/](../issues/).

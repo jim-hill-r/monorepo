@@ -131,11 +131,11 @@ pub fn github_line_url(commit: &str, file: &str, line: u32) -> String {
 /// Which list a work item sits in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Bucket {
-    /// Under `# Priority Issues`.
+    /// An issue file with `priority: priority`.
     Priority,
-    /// Under `# Backlog`.
+    /// An issue file with `priority: backlog`.
     Backlog,
-    /// Another heading of an `ISSUES.md`.
+    /// An issue file with any other `priority`.
     Other,
     /// A `TODO`/`FIX` comment in code.
     Code,
@@ -422,7 +422,7 @@ mod tests {
             kind,
             text: "x".to_owned(),
             project: Some(project.to_owned()),
-            file: format!("{project}/ISSUES.md"),
+            file: format!("{project}/issues/x.md"),
             line: 1,
             source: WorkSource::IssuesFile,
             section: None,
@@ -522,7 +522,7 @@ mod tests {
             kind,
             text: "x".to_owned(),
             project: project.map(str::to_owned),
-            file: format!("{}/ISSUES.md", project.unwrap_or(".")),
+            file: format!("{}/issues/x.md", project.unwrap_or(".")),
             line: 1,
             source: WorkSource::IssuesFile,
             section: section.map(str::to_owned),
@@ -534,8 +534,8 @@ mod tests {
     #[test]
     fn links_lines_on_github_at_the_commit() {
         assert_eq!(
-            github_line_url("abc", "pane/ISSUES.md", 7),
-            "https://github.com/jimhillr/monorepo/blob/abc/pane/ISSUES.md#L7"
+            github_line_url("abc", "pane/issues/x.md", 7),
+            "https://github.com/jimhillr/monorepo/blob/abc/pane/issues/x.md#L7"
         );
     }
 
@@ -694,10 +694,12 @@ mod tests {
     fn sorts_human_issues_oldest_first_undated_last() {
         let issue = |line: u32, added: Option<&str>| HumanIssue {
             text: format!("line {line}"),
-            file: "HUMAN_ISSUES.md".into(),
+            file: "issues/human/x.md".into(),
             line,
             added: added.map(str::to_owned),
             unblocks: None,
+            why: None,
+            runbook: None,
         };
         let mut s = Snapshot::new("a", "t");
         s.human_issues = vec![

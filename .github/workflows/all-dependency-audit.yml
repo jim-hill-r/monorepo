@@ -1,0 +1,36 @@
+---
+# SEC-003, SEC-004 (standards/docs/security.md): cargo-deny and npm audit over
+# every lockfile each night, so a new advisory for a quiet project shows up
+# within a day. PR CI and the hooks run the same check only where a lockfile
+# changed. Warnings only for now: the run stays green, and findings are in
+# its log as warning[SEC-003] / warning[SEC-004].
+name: All Dependency Audit
+
+'on':
+  schedule:
+    # 2:30 AM Pacific Time (10:30 AM UTC), after Nightly CI starts
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deps:
+    name: Dependency audit (all lockfiles)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
+      - name: cargo-deny and npm audit
+        env:
+          GITHUB_TOKEN: ${{ github.token }}  # mise's cargo-deny download
+          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+        run: bash standards/scripts/deps-check.sh --all

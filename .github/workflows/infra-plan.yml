@@ -1,0 +1,118 @@
+---
+# PR plans for infra (decisions 0007, 0009 and 0010). For each stack in
+# infra/out/, plan with the read-only vendor credentials and the state read
+# password, without locking, run the plan guards (IAC-001 to IAC-005), and
+# write the plan, its hash and any credential change to the job summary. A
+# credential change gets the `credential-change` label, so Jim knows its
+# apply will wait for his second approval.
+#
+# Until the Infra Mint workflow has made the secrets (it needs
+# issues/human/infra-credentials-environment.md first) a stack is skipped
+# with a notice, not failed. Fork PRs get no secrets and skip the same way.
+name: Infra Plan
+
+'on':
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra-plan.yml'
+
+permissions:
+  contents: read
+
+# No concurrency group: PR plans never lock state, and a shared group would
+# let GitHub cancel queued plans and applies.
+
+jobs:
+  stacks:
+    runs-on: ubuntu-24.04
+    outputs:
+      stacks: ${{ steps.list.outputs.stacks }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: list
+        run: echo "stacks=$(ls infra/out | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+
+  plan:
+    needs: stacks
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ${{ fromJSON(needs.stacks.outputs.stacks) }}
+    name: plan (${{ matrix.stack }})
+    defaults:
+      run:
+        working-directory: infra
+    env:
+      TOFU_STATE_ORIGIN: ${{ vars.TOFU_STATE_ORIGIN }}
+      TF_HTTP_PASSWORD: ${{ secrets.TOFU_STATE_READ_PASSWORD }}
+      TOFU_STATE_PASSPHRASE: ${{ secrets.TOFU_STATE_PASSPHRASE }}
+      TOFU_LOCK: 'false'
+      AUTH0_INFRA_READ_DOMAIN: ${{ secrets.AUTH0_INFRA_READ_DOMAIN }}
+      AUTH0_INFRA_READ_CLIENT_ID: ${{ secrets.AUTH0_INFRA_READ_CLIENT_ID }}
+      AUTH0_INFRA_READ_CLIENT_SECRET: ${{ secrets.AUTH0_INFRA_READ_CLIENT_SECRET }}
+      CLOUDFLARE_INFRA_READ_TOKEN: ${{ secrets.CLOUDFLARE_INFRA_READ_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - id: ready
+        name: Check the stack is set up
+        run: |
+          if bash scripts/tofu.sh ready "${{ matrix.stack }}" read; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::${{ matrix.stack }} is not set up yet, so no plan ran (see issues/human/)"
+          fi
+
+      - uses: jdx/mise-action@v5
+        if: steps.ready.outputs.ready == 'true'
+        with:
+          working_directory: infra
+
+      - uses: Swatinem/rust-cache@v2
+        if: steps.ready.outputs.ready == 'true'
+        with:
+          workspaces: infra
+          save-if: false
+
+      - name: tofu plan and the plan guards
+        if: steps.ready.outputs.ready == 'true'
+        run: bash scripts/tofu.sh plan "${{ matrix.stack }}" read "$RUNNER_TEMP/plan"
+
+      - name: Keep the result for labelling
+        if: steps.ready.outputs.ready == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: result-${{ matrix.stack }}
+          path: ${{ runner.temp }}/plan/result
+          retention-days: 1
+
+  # A separate job, so the token that can label never runs the PR's code.
+  label:
+    needs: plan
+    if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+      issues: write  # create the label the first time
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: results
+      - name: Label credential changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          if grep -qs 'credential_change=yes' results/*/result; then
+            gh label create credential-change --repo "$REPO" --color B60205 \
+              --description "Applies only after Jim's second approval (decision 0010)" 2>/dev/null || true
+            gh pr edit "$PR" --repo "$REPO" --add-label credential-change
+          fi

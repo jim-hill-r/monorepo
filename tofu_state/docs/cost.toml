@@ -1,0 +1,22 @@
+# tofu_state: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-27"
+summary = "One Cloudflare Worker and one D1 database holding OpenTofu state for infra (decision 0009). $0 a month."
+
+[[service]]
+blip = "Cloudflare Workers"
+plan = "free"
+why = "Serves the http state backend: a few requests per plan or apply, a few hundred a month against 100,000 a day."
+[service.usage]
+workers = 1
+
+[[service]]
+blip = "Cloudflare D1"
+plan = "free"
+why = "Keeps the last 10 state versions of each stack and one lock row per stack, well under 1 MB and a few hundred writes a month."
+[service.usage]
+d1_databases = 1
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "PR CI builds the Worker and runs the end-to-end test with OpenTofu against wrangler dev, a few minutes a run on a standard runner."
