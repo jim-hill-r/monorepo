@@ -39,6 +39,7 @@ run book in the task."
 | [Sign up for PostHog](posthog-sign-up.md) | one-time | `create-posthog-cloud-free-plan-no.md` |
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
+| [Make the billing read credentials](billing-read-credentials.md) | one-time, then yearly | `billing-read-credentials.md` |
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
 | [List the Squarespace domains](squarespace-domains.md) | one-time, then every 90 days | `list-squarespace-domains.md` |
 

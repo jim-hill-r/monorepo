@@ -571,7 +571,14 @@
       "standards/docs/free-tiers.md"
     ],
     "claude": "Official GitHub MCP server, which has a read-only mode; Claude Code's own GitHub integration.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [
+        "github"
+      ],
+      "human": "github-actions-budget",
+      "note": "The billing usage API shows any charge this month. No API shows a personal account's card or Actions budget, so Jim checks those."
+    }
   },
   {
     "name": "Cloudflare Pages",
@@ -591,7 +598,14 @@
       "standards/docs/free-tiers.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [
+        "cloudflare"
+      ],
+      "human": "cloudflare-billing",
+      "note": "One Cloudflare account: Billing Read shows its payment methods and subscriptions. Jim's yearly check is a backstop."
+    }
   },
   {
     "name": "Cloudflare Workers",
@@ -610,7 +624,14 @@
       "telemetry/README.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [
+        "cloudflare"
+      ],
+      "human": "cloudflare-billing",
+      "note": "Same account as Pages. The check fails on Workers Paid."
+    }
   },
   {
     "name": "Cloudflare D1",
@@ -627,7 +648,14 @@
       "standards/docs/decisions/0009-opentofu-state-http-backend.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [
+        "cloudflare"
+      ],
+      "human": "cloudflare-billing",
+      "note": "Same account as Pages. D1 Free has no billing."
+    }
   },
   {
     "name": "Cloudflare R2",
@@ -641,7 +669,14 @@
       "standards/docs/free-tiers.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [
+        "cloudflare"
+      ],
+      "human": "cloudflare-billing",
+      "note": "Same account as Pages. The check fails if R2 paid is turned on."
+    }
   },
   {
     "name": "Squarespace",
@@ -656,7 +691,12 @@
       "standards/docs/free-tiers.md"
     ],
     "claude": "",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "squarespace-billing",
+      "note": "No public API for account billing. Jim pays for several domains there (2026-11-27), which the settings check confirms are the only charges until the cost framework tracks them."
+    }
   },
   {
     "name": "Auth0",
@@ -676,7 +716,12 @@
       "standards/docs/free-tiers.md"
     ],
     "claude": "Official Auth0 MCP server.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "auth0-billing",
+      "note": "The Management API has no plan, subscription or payment endpoint."
+    }
   },
   {
     "name": "PostHog",
@@ -691,7 +736,14 @@
       "AGENTS.md"
     ],
     "claude": "PostHog MCP connector in the Claude directory.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [
+        "posthog"
+      ],
+      "human": "",
+      "note": "GET /api/billing/ with a billing:read key shows any subscription or charge. Adding a card is what starts a subscription."
+    }
   },
   {
     "name": "RapidAPI (Zillow data)",
@@ -707,7 +759,12 @@
       "AGENTS.md"
     ],
     "claude": "",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "rapidapi-free-plan",
+      "note": "No consumer billing API, and polling the quota header on a schedule would break homer's free-plan rule."
+    }
   },
   {
     "name": "Neon",
@@ -721,7 +778,12 @@
       "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "Neon MCP connector in the Claude directory.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
   },
   {
     "name": "SurrealDB",
@@ -766,7 +828,12 @@
       "standards/docs/decisions/0004-database-engine.md"
     ],
     "claude": "Supabase MCP connector in the Claude directory.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
   },
   {
     "name": "Honeycomb, Sentry and Microsoft Clarity",
@@ -780,7 +847,12 @@
       "standards/docs/decisions/0001-deploy-feedback-loop.md"
     ],
     "claude": "Sentry MCP connector in the Claude directory.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
   },
   {
     "name": "RentCast, ATTOM and HouseCanary",
@@ -794,7 +866,12 @@
       "standards/docs/free-tiers.md"
     ],
     "claude": "",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
   },
   {
     "name": "Free tiers only",
@@ -1005,7 +1082,12 @@
       "CLAUDE.md"
     ],
     "claude": "It is Claude. Skills, plugins and MCP servers extend it.",
-    "budget": 25
+    "budget": 25,
+    "billing": {
+      "api": [],
+      "human": "claude-code-budget",
+      "note": "claude.ai subscription billing has no API."
+    }
   },
   {
     "name": "OpenTofu",
@@ -1065,7 +1147,12 @@
       "standards/docs/decisions/0007-infrastructure-as-code.md"
     ],
     "claude": "Pulumi MCP server.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
   },
   {
     "name": "Crossplane",
@@ -1093,7 +1180,12 @@
       "standards/docs/decisions/0007-infrastructure-as-code.md"
     ],
     "claude": "HashiCorp Terraform MCP server.",
-    "budget": 0
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
   },
   {
     "name": "terrars",
