@@ -13,6 +13,25 @@ pub const MAX_NOTE: usize = 200;
 /// The most characters kept from an error message.
 pub const MAX_MESSAGE: usize = 500;
 
+/// The user agent token every eval, smoke and UAT run sends (eval engine
+/// phase 3, `standards/docs/plans/2026-11-eval-engine.md`).
+pub const SYNTHETIC_AGENT: &str = "monorepo-evals";
+
+/// Whether a request is accepted but not stored: Do Not Track, Global
+/// Privacy Control, or synthetic traffic, marked by the
+/// `x-monorepo-synthetic: 1` header or the `monorepo-evals` user agent. A
+/// browser in a test can't add the header to a `navigator.sendBeacon` call,
+/// so the user agent is what marks its events. `header` looks up a request
+/// header by its lowercase name.
+pub fn is_dropped(header: impl Fn(&str) -> Option<String>) -> bool {
+    let set = |name: &str| header(name).is_some_and(|value| value.trim() == "1");
+    set("dnt")
+        || set("sec-gpc")
+        || set("x-monorepo-synthetic")
+        || header("user-agent")
+            .is_some_and(|agent| agent.to_ascii_lowercase().contains(SYNTHETIC_AGENT))
+}
+
 /// One event, as the client posts it.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -424,5 +443,39 @@ mod tests {
         assert_eq!(clean("lost 24-17 in week 12", 200), "lost 24-17 in week 12");
         assert_eq!(clean("a\u{7}b  c", 200), "ab c");
         assert_eq!(clean(&"é".repeat(300), MAX_NOTE).chars().count(), MAX_NOTE);
+    }
+
+    fn dropped_with(headers: &[(&str, &str)]) -> bool {
+        is_dropped(|name| {
+            headers
+                .iter()
+                .find(|(key, _)| *key == name)
+                .map(|(_, value)| (*value).to_string())
+        })
+    }
+
+    #[test]
+    fn privacy_signals_and_synthetic_traffic_are_dropped() {
+        assert!(dropped_with(&[("dnt", "1")]));
+        assert!(dropped_with(&[("sec-gpc", "1")]));
+        assert!(dropped_with(&[("x-monorepo-synthetic", "1")]));
+        // A browser run by an eval or smoke test can't add the header to a
+        // `sendBeacon` call, but it carries the user agent.
+        assert!(dropped_with(&[(
+            "user-agent",
+            "Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/131.0 monorepo-evals"
+        )]));
+        assert!(dropped_with(&[("user-agent", "Monorepo-Evals/1.0")]));
+    }
+
+    #[test]
+    fn real_visitors_are_kept() {
+        assert!(!dropped_with(&[]));
+        assert!(!dropped_with(&[("dnt", "0"), ("sec-gpc", "0")]));
+        assert!(!dropped_with(&[("x-monorepo-synthetic", "0")]));
+        assert!(!dropped_with(&[(
+            "user-agent",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1"
+        )]));
     }
 }

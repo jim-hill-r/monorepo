@@ -333,8 +333,8 @@ Rules:
 - **Our own traffic is excluded.** Every eval and smoke run sends a
   `monorepo-evals` user agent and an `x-monorepo-synthetic: 1` header. The
   PostHog snippet doesn't load for that user agent (so no recording is
-  spent), the `telemetry` Worker tags those events `synthetic` and metric
-  queries filter them out, and Web Analytics ignores headless browsers
+  spent), the `telemetry` Worker drops events with either one (so metric
+  queries never see them), and Web Analytics ignores headless browsers
   already. Without this, chaos runs would show up as real users' errors.
 - **Deploy-relative checks.** `errors_after_deploy` compares the hour after
   each `deploy` event with the week before it, which is how a regression

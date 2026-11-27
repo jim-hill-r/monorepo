@@ -44,8 +44,10 @@ are refused, so nothing unexpected is ever stored.
 ## Privacy
 
 - Requests with `DNT: 1` or `Sec-GPC: 1` get a 202 and are not stored.
-- So do requests with `x-monorepo-synthetic: 1` (UAT, evals and smoke
-  tests; eval engine phase 3), so test traffic never counts as fans.
+- So do requests with `x-monorepo-synthetic: 1` or a user agent containing
+  `monorepo-evals` (UAT, evals and smoke tests; eval engine phase 3), so
+  test traffic never counts as fans. Browsers in tests only need the user
+  agent, since `navigator.sendBeacon` can't add a header.
 - The IP address is used only as the rate-limit key. It is never stored.
 - Notes, error messages and CLI errors have anything that looks like an
   email address or a phone number replaced with `[email]` or `[number]`,

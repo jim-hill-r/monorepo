@@ -40,13 +40,7 @@ mod worker_glue {
             (Method::Post, "/event") => {
                 // Do Not Track, Global Privacy Control and synthetic traffic
                 // (eval engine phase 3) are accepted and dropped.
-                let skip = [
-                    ("dnt", "1"),
-                    ("sec-gpc", "1"),
-                    ("x-monorepo-synthetic", "1"),
-                ]
-                .iter()
-                .any(|(name, value)| header(&req, name).as_deref() == Some(value));
+                let skip = event::is_dropped(|name| header(&req, name));
                 if skip {
                     return cors(Response::empty()?.with_status(202));
                 }
