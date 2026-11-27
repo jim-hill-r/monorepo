@@ -24,6 +24,16 @@
 #       budget and the name has the jimhillr- prefix. Otherwise it stops with
 #       an error and creates nothing.
 #
+#   free-tiers.sh worker
+#       Run from a Worker project directory before its first deploy. Passes
+#       if the Worker named in ./wrangler.toml exists, or if one more stays
+#       within the Workers budget; otherwise stops.
+#
+#   free-tiers.sh d1-database NAME
+#       Prints the ID of the D1 database NAME, creating it first if it is
+#       missing and the account has fewer than the free limit of databases.
+#       Otherwise it stops and creates nothing. Messages go to stderr.
+#
 #   free-tiers.sh usage
 #       Live usage check (Cloudflare and GitHub). Writes a table to
 #       $GITHUB_STEP_SUMMARY when set and exits non-zero when anything is at
@@ -55,6 +65,7 @@ limit() {
 PAGES_PROJECTS_LIMIT=$(limit pages_projects free)
 WORKERS_LIMIT=$(limit workers free)
 CRON_TRIGGERS_LIMIT=$(limit cron_triggers free)
+D1_DATABASES_LIMIT=$(limit d1_databases free)
 PAGES_PROJECTS_BUDGET=${FREE_TIERS_PAGES_PROJECTS_BUDGET:-$(limit pages_projects budget)}
 WORKERS_BUDGET=${FREE_TIERS_WORKERS_BUDGET:-$(limit workers budget)}
 CRON_TRIGGERS_BUDGET=${FREE_TIERS_CRON_TRIGGERS_BUDGET:-$(limit cron_triggers budget)}
@@ -198,6 +209,62 @@ pages_project() {
   wrangler pages project create "$name" --production-branch main
 }
 
+# Every Worker script name in the account, one per line.
+cf_workers() {
+  local body
+  body=$(cf_get "workers/scripts") || die "could not list Cloudflare Workers"
+  jq -e '.success == true' >/dev/null <<<"$body" || die "Cloudflare API error: $(jq -c '.errors' <<<"$body")"
+  jq -r '.result[].id' <<<"$body"
+}
+
+worker() {
+  [ -f wrangler.toml ] || die "no wrangler.toml in $(pwd)"
+  local name workers count
+  name=$(wrangler_name wrangler.toml)
+  [ -n "$name" ] || die "wrangler.toml has no name"
+  need_cf
+  workers=$(cf_workers)
+  if grep -qxF "$name" <<<"$workers"; then
+    echo "free-tiers: Worker $name exists"
+    return 0
+  fi
+  count=$(grep -c . <<<"$workers" || true)
+  if [ "$count" -ge "$WORKERS_BUDGET" ]; then
+    die "not deploying new Worker $name: the account has $count Workers and the budget is $WORKERS_BUDGET (free limit $WORKERS_LIMIT). Delete unused Workers or ask Jim; see standards/docs/free-tiers.md"
+  fi
+  echo "free-tiers: Worker $name will be created ($((count + 1)) of $WORKERS_BUDGET budgeted)"
+}
+
+# "<uuid> <name>" for every D1 database in the account, one per line.
+cf_d1_databases() {
+  local body
+  body=$(cf_get "d1/database?per_page=100") || die "could not list D1 databases"
+  jq -e '.success == true' >/dev/null <<<"$body" || die "Cloudflare API error: $(jq -c '.errors' <<<"$body")"
+  jq -r '.result[] | "\(.uuid) \(.name)"' <<<"$body"
+}
+
+d1_database() {
+  local name=${1:-} dbs id count
+  [[ "$name" =~ ^jimhillr-[a-z0-9-]+$ ]] || die "D1 database names are jimhillr-<name>, not '$name'"
+  need_cf
+  dbs=$(cf_d1_databases)
+  id=$(awk -v n="$name" '$2 == n { print $1; exit }' <<<"$dbs")
+  if [ -n "$id" ]; then
+    echo "free-tiers: D1 database $name exists" >&2
+    echo "$id"
+    return 0
+  fi
+  count=$(grep -c . <<<"$dbs" || true)
+  if [ "$count" -ge "$D1_DATABASES_LIMIT" ]; then
+    die "not creating D1 database $name: the account has $count and the free limit is $D1_DATABASES_LIMIT. See standards/docs/free-tiers.md"
+  fi
+  echo "free-tiers: creating D1 database $name ($((count + 1)) of $D1_DATABASES_LIMIT free)" >&2
+  wrangler d1 create "$name" >&2
+  id=$(cf_d1_databases | awk -v n="$name" '$2 == n { print $1; exit }')
+  [ -n "$id" ] || die "created D1 database $name but can't find its ID"
+  echo "$id"
+}
+
 # --------------------------------------------------------------- usage ----
 
 usage_check() {
@@ -269,6 +336,8 @@ usage_check() {
 case "${1:-}" in
   check) check ;;
   pages-project) pages_project ;;
+  worker) worker ;;
+  d1-database) d1_database "${2:-}" ;;
   usage) usage_check ;;
-  *) die "usage: free-tiers.sh check | pages-project | usage" ;;
+  *) die "usage: free-tiers.sh check | pages-project | worker | d1-database NAME | usage" ;;
 esac

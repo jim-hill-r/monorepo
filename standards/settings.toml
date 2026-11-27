@@ -99,7 +99,7 @@ every = "90d"
 id = "cloudflare-api-token-scopes"
 vendor = "Cloudflare"
 where = "dash.cloudflare.com > My Profile > API Tokens"
-expect = "The token in CLOUDFLARE_API_TOKEN has Cloudflare Pages: Edit, is limited to this account, and doesn't expire within 30 days."
+expect = "The token in CLOUDFLARE_API_TOKEN has Cloudflare Pages: Edit, Workers Scripts: Edit and D1: Edit (for the tofu_state Worker), is limited to this account, and doesn't expire within 30 days."
 why = "A token missing a scope, or expired, fails every deploy."
 every = "90d"
 

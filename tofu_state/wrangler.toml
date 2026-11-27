@@ -1,0 +1,21 @@
+# The OpenTofu state Worker (decision 0009). Deployed with `mise run deploy`,
+# never by infra itself.
+name = "jimhillr-tofu-state"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = true
+preview_urls = false
+
+[build]
+command = "worker-build --release"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jimhillr-tofu-state"
+# Filled in at deploy time from the account (free-tiers.sh d1-database);
+# local dev and tests use this placeholder.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true

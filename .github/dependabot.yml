@@ -146,6 +146,19 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
+    directory: "/tofu_state"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "cargo"
     directory: "/infra"
     schedule:
       interval: "weekly"
