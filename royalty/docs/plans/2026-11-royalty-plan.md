@@ -23,9 +23,10 @@ Started 2026-11-27 from Jim's request:
 > data and send money (no tech enforcement just honesty and lawsuits if it
 > ever got that serious).
 
-Status: **proposed**. Nothing is built. The questions in
-[Decisions for Jim](#decisions-for-jim) come first; the work items are the
-issue files in [`../../issues/`](../../issues/README.md).
+Status: **approved** (Jim, 2026-11-27: "All recommended"). Nothing is
+built yet. Jim took the recommended option of every question in
+[Decisions for Jim](#decisions-for-jim); the work items are the issue files
+in [`../../issues/`](../../issues/README.md).
 
 ## Summary
 
@@ -98,7 +99,7 @@ A project is often both a producer and a consumer. One file name,
 
 ## Design rules
 
-These are proposed as the project's first requirements. Once Jim agrees they
+These are the project's first requirements (Jim agreed, 2026-11-27). They
 move to `docs/requirements.md` as `ROYL-001` onwards (a requirements PR is
 `needs-human`).
 
@@ -898,6 +899,26 @@ Code time, which counts against the $25 a month budget.
 `docs/cost.toml` stays at "$0 a month, no outside service" through Phase 3.
 
 ## Decisions for Jim
+
+**Answered (Jim, 2026-11-27): "All recommended."** Each question below
+takes its recommended option:
+
+1. `binding` defaults to `voluntary`; `agreement` and `license` are opt-in.
+2. Non-production use is always free, as a rule of the format.
+3. Caps: consumer is any payer, person and organization can override it,
+   plus a per-project cap.
+4. Only direct dependencies are billable unless a producer asks for
+   `transitive`.
+5. At the income ceiling, everyone is free for the rest of the window.
+6. The MVP scans Cargo only; npm comes in Phase 2.
+7. The tool ships as binaries on GitHub Releases.
+8. Reports point to GitHub Sponsors, invoices and plain links first.
+9. The in-process counter is decided at the start of Phase 3, not now.
+10. Our own libraries keep "no terms" until Phase 2 works, then one
+    library trials `voluntary` terms.
+11. Phase 1 goes ahead.
+
+The questions as they were asked follow.
 
 Every option costs $0 in money unless it says otherwise. No option here
 gets near a free-tier limit: the only service used before Phase 4 is GitHub
