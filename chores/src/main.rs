@@ -55,24 +55,30 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Write a PR description (attribution lines, the executive summary,
-    /// Testing, Review notes, footer) and check it against PR-001. Exits 1,
-    /// printing the warnings, when the summary is missing, over 75 words or
-    /// unlinked. With --check, checks an existing description instead.
+    /// Write a PR description (attribution lines, Attention, What changed,
+    /// Why, Cost changes, Risk changes, Details, footer) and check it
+    /// against PR-001. Exits 1, printing the warnings, when a section is
+    /// missing or empty, an attention tag is unknown, or a summary is over
+    /// its word limit. With --check, checks an existing description instead.
     PrBody {
         /// Check this description file (`-` for stdin) instead of writing one.
-        #[arg(long, conflicts_with_all = ["summary", "testing"])]
+        #[arg(long, conflicts_with_all = ["what", "why", "cost", "risk", "details"])]
         check: Option<PathBuf>,
-        /// The executive summary: what, why, tradeoffs, at most 75 words,
-        /// linking to the committed docs.
+        /// What changed, at most 50 words.
         #[arg(long, required_unless_present = "check")]
-        summary: Option<String>,
-        /// How it was tested.
+        what: Option<String>,
+        /// Why it changed, and any tradeoffs, at most 50 words.
         #[arg(long, required_unless_present = "check")]
-        testing: Option<String>,
-        /// Anything a reviewer should look at closely.
-        #[arg(long)]
-        review_notes: Option<String>,
+        why: Option<String>,
+        /// Cost changes, under 25 words ("None." when nothing changes).
+        #[arg(long, default_value = "None.")]
+        cost: String,
+        /// Risk changes, under 25 words ("None." when nothing changes).
+        #[arg(long, default_value = "None.")]
+        risk: String,
+        /// Anything else: the issue it closes, testing, review notes, links.
+        #[arg(long, required_unless_present = "check")]
+        details: Option<String>,
         /// GitHub login for the claude-projects-attribution comment.
         #[arg(long)]
         login: Option<String>,
@@ -85,10 +91,10 @@ enum Command {
         /// Closing lines, such as the session link the platform asks for.
         #[arg(long)]
         footer: Option<String>,
-        /// The branch the PR merges into, for the attention badges.
+        /// The branch the PR merges into, for the attention tags.
         #[arg(long, default_value = "origin/main")]
         base: String,
-        /// Leave out the attention badges (only when git can't compare
+        /// Leave out the Attention section (only when git can't compare
         /// with the base; say so in the PR).
         #[arg(long)]
         no_badges: bool,
@@ -96,7 +102,7 @@ enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
-    /// Print the attention line for the top of a PR description: whether
+    /// Print the Attention section for the top of a PR description: whether
     /// a requirement changed (red for a must) and whether a threat or risk
     /// file changed, against the merge base with --base.
     Badges {
@@ -226,9 +232,11 @@ fn run() -> Result<ExitCode> {
         }
         Command::PrBody {
             check,
-            summary,
-            testing,
-            review_notes,
+            what,
+            why,
+            cost,
+            risk,
+            details,
             login,
             requested_by,
             thread_url,
@@ -248,19 +256,21 @@ fn run() -> Result<ExitCode> {
                     } else {
                         Some(badges::render(&badges::for_repo(&root, &base)?))
                     },
-                    summary: summary.unwrap_or_default(),
-                    testing: testing.unwrap_or_default(),
-                    review_notes,
+                    what: what.unwrap_or_default(),
+                    why: why.unwrap_or_default(),
+                    cost,
+                    risk,
+                    details: details.unwrap_or_default(),
                     footer,
                 }),
             };
-            let (words, warnings) = pr_body::check(&body);
+            let (counts, warnings) = pr_body::check(&body);
             if let Some(out) = out {
                 std::fs::write(&out, &body)?;
             }
             if warnings.is_empty() {
                 print!("{body}");
-                eprintln!("PR-001 ok: executive summary is {words} words.");
+                eprintln!("{}", pr_body::ok_line(&counts));
             } else {
                 for w in &warnings {
                     eprintln!("warning[PR-001] {w}");

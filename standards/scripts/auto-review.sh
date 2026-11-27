@@ -44,7 +44,7 @@ BLOCK_PATHS='^\.github/
 ^tofu_state/
 ^threat/
 ^auth_sdk/
-^monorepo/
+^jimhillr/
 ^standards/
 (^|/)docs/threat\.toml$
 (^|/)docs/requirements\.md$

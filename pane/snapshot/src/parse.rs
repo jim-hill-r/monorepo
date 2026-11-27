@@ -529,6 +529,9 @@ pub fn issue_file(file: &str, project: Option<&str>, contents: &str) -> Option<W
         section,
         epic: field(&fields, "epic").map(str::to_owned),
         tags,
+        added: field(&fields, "added")
+            .and_then(leading_date)
+            .map(str::to_owned),
     })
 }
 
@@ -629,6 +632,8 @@ pub fn code_comments(file: &str, project: Option<&str>, contents: &str) -> Vec<W
                 section: None,
                 epic: None,
                 tags,
+                // repo::build fills a FIX's date in from git blame.
+                added: None,
             });
         }
     }
@@ -1253,6 +1258,17 @@ mod tests {
         assert_eq!(parse_marker("FIXME later"), None);
         assert_eq!(parse_marker("Not a marker"), None);
         assert_eq!(parse_marker("TODO (unclosed: text"), None);
+    }
+
+    #[test]
+    fn issue_file_keeps_its_added_date() -> Result<(), String> {
+        let with = "---\nkind: fix\npriority: priority\nadded: 2026-11-20\n---\n\nBroken.\n";
+        let item = issue_file("app/issues/x.md", Some("app"), with).ok_or("no item")?;
+        assert_eq!(item.added.as_deref(), Some("2026-11-20"));
+        let odd = with.replace("2026-11-20", "last week");
+        let item = issue_file("app/issues/x.md", Some("app"), &odd).ok_or("no item")?;
+        assert_eq!(item.added, None);
+        Ok(())
     }
 
     #[test]

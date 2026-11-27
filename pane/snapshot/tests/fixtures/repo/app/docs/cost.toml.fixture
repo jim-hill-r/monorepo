@@ -1,0 +1,23 @@
+reviewed = "2026-11-25"
+summary = "App on Cloudflare Pages with its own domain. $1 a month."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the app."
+[service.usage]
+pages_projects = 2
+
+[[cost]]
+name = "app.example.com domain"
+vendor = "Squarespace"
+cents = 1200
+every = "year"
+since = "2026-01"
+renews = "2027-01-01"
+decision = "standards/docs/decisions/0000-example.md"
+
+[[revenue]]
+month = "2026-11"
+cents = 500
+source = "Sponsor"

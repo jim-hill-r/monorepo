@@ -380,6 +380,12 @@ the same, so two tools (or two people) always agree to the cent.
 
 - A report covers one calendar month, in UTC. Seats and other counts are
   taken over the producer's own period that ends in that month.
+- Seats are the distinct author emails (compared ignoring case) of the
+  non-merge commits that touch the consumer's project directory, by author
+  date in the period. Authors whose name or email marks them as a bot
+  (`[bot]`, `dependabot`, `github-actions`, `renovate`) are left out. Emails
+  are read only to tell people apart and are never written out. Outside a
+  git repository, seats are "not measured" unless `[consumer] seats` says.
 - A family with `period = "month"` is due every month. With `quarter` it is
   due in March, June, September and December, and with `year` in December,
   for the whole of its period. A family that is not due in the report's
@@ -494,7 +500,7 @@ names its code and the requirement it protects.
 
 | Code | Level | Finding |
 | --- | --- | --- |
-| RTOML-001 | error | The file isn't valid TOML, or a field has the wrong type. |
+| RTOML-001 | error | The file isn't valid TOML, a field has the wrong type, or a word field outside `[[tier]]` and `[consumer]` has a value that isn't one of its choices (such as `binding = "optional"`). |
 | RTOML-002 | error | `schema` is a number this reader doesn't know. |
 | RTOML-003 | warning | A field or table this reader doesn't know (often a typo). The rest of the file is still read. |
 | RTOML-004 | error | `[project]`, or its `name` or `description`, is missing or empty. |
@@ -505,13 +511,17 @@ names its code and the requirement it protects.
 | RTOML-009 | error | A money or count field is negative, or `[terms] currency` isn't `USD`. |
 | RTOML-010 | warning | `[terms]` or `[[tier]]` without `[[payee]]`: nobody could be paid. |
 | RTOML-011 | warning | A tier after one with an empty `when`, which can never be reached. |
-| RTOML-012 | error | A `[consumer]` field is invalid: an unknown `stage`, `entity` or `class`, a `[[consumer.deployment]]` with no `manifest`, or a `[[consumer.package]]` whose `action` misses its values. |
+| RTOML-012 | error | A `[consumer]` field is invalid: an unknown word (such as a `stage`, `entity`, `class` or `on_exceed`), a `[[consumer.deployment]]` with no `manifest`, or a `[[consumer.package]]` whose `action` misses its values. |
 | RTOML-013 | warning | `binding = "license"`: the code is source-available, not open source. |
+| RTOML-014 | error | In a consumer's Cargo project, the scan breaks the consumer's budget or policy: an `agreement` or `license` amount over `per_producer_period_cents`, a total over the budget that can't be scaled (`on_exceed = "fail"`, or amounts that are never scaled), or a dependency whose `binding` isn't in `[consumer.policy] bindings`. The message names the dependency and the limit. |
 
 A file with only `[project]` (every file in this monorepo today) has no
-findings. With a consumer's `[consumer.budget]`, `royalty check` also runs
-the scan and fails when the result is "over budget" or a dependency's
-`binding` isn't in `[consumer.policy] bindings`.
+findings. When the file has a `[consumer]` table and sits beside a
+`Cargo.toml`, `royalty check` also runs the scan for the month (`--period`,
+the current month by default) and reports RTOML-014 when the result is
+"over budget" or a dependency's `binding` isn't in `[consumer.policy]
+bindings`. Run in the consumer's CI, that stops a pull request that would
+break the budget before it merges.
 
 ## Transitive dependencies
 

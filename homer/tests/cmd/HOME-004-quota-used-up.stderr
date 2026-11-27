@@ -1,0 +1,4 @@
+Error: Failed to look up property
+
+Caused by:
+    The RapidAPI free quota (100 requests) is used up and RapidAPI did not say when it resets. homer stops here so it never goes past the free plan. Check your usage on RapidAPI, then delete the quota file to try again.

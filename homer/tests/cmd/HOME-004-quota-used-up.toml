@@ -1,0 +1,8 @@
+# Free plan guard: with the saved quota used up and no reset time, homer
+# stops before contacting RapidAPI (the mock would answer if it did).
+bin.name = "homer"
+args = ["--address", "123 Main St, Seattle, WA 98101", "--api-key", "test-key", "--quota-file", "quota.json"]
+env.remove = ["RAPIDAPI_KEY", "HOMER_QUOTA_FILE", "RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+fs.base = "HOME-004-quota-used-up.in"
+fs.sandbox = true
+status.code = 1

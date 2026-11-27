@@ -17,6 +17,8 @@
 #       task's), makes the requests of the `http` evals against
 #       $DEPLOY_URL, and exits 1 when an eval of a `must` requirement
 #       failed.
+#       At stage ci, a top-level project whose evals.toml has a `cost` eval
+#       also runs `cost check --evals-results`, which appends those results.
 #   evals.sh publish
 #       Writes the job summary for $EVALS_RESULTS ($GITHUB_STEP_SUMMARY, or
 #       standard output). Does nothing when the file doesn't exist.
@@ -85,6 +87,16 @@ case "${1:-}" in
     fi
     mkdir -p "$(dirname "$results")"
     evals_cli "${args[@]}"
+    status=$?
+    # `cost` evals: `cost check` writes their ci results itself, once, from
+    # the top-level project's own job. It never fails the job.
+    if [ "$stage" = ci ] && [ "$rel" = "$top" ] \
+      && grep -Eq '^[[:space:]]*kind[[:space:]]*=[[:space:]]*"cost"' "$root/$top/evals.toml"; then
+      cargo run --quiet --manifest-path "$root/cost/Cargo.toml" -p cost_cli -- \
+        check --root "$root" --projects "$top" --evals-results "$results" >/dev/null \
+        || echo "warning: cost check couldn't write $top's cost eval results"
+    fi
+    exit "$status"
     ;;
   publish)
     if [ ! -f "$results" ]; then

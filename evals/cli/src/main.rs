@@ -2,6 +2,7 @@
 
 mod check;
 mod coverage;
+mod drill;
 mod http;
 mod human_checks;
 mod publish;
@@ -165,6 +166,33 @@ enum Command {
         /// The time to judge against (RFC 3339). Defaults to now.
         #[arg(long)]
         now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// The eval fire drill: break one `http` eval on purpose against the
+    /// live site and check its requirement turns red, triage would file it,
+    /// and the next good run turns it back. Reads a checkout of the
+    /// `evals-results` branch and writes nothing; exit 1 when the loop
+    /// didn't hold. See "Fire drill" in standards/docs/evals.md.
+    Drill {
+        /// The checkout of the `evals-results` branch (read only).
+        #[arg(long)]
+        dir: PathBuf,
+        /// The top-level project directory.
+        #[arg(long, default_value = "cookbook")]
+        project: String,
+        /// An `http` eval in the project's evals.toml.
+        #[arg(long, default_value = "recipe-page-live")]
+        eval: String,
+        /// The live site. Defaults to DEPLOY_URL in a mise.toml of the
+        /// project.
+        #[arg(long)]
+        deploy_url: Option<String>,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// Where to append the Markdown report. Defaults to
+        /// $GITHUB_STEP_SUMMARY, or standard output.
+        #[arg(long)]
+        summary: Option<PathBuf>,
     },
 }
 
@@ -487,6 +515,55 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 print!("{}", store::render(&verdicts));
             }
             Ok(ExitCode::SUCCESS)
+        }
+        Command::Drill {
+            dir,
+            project,
+            eval,
+            deploy_url,
+            root,
+            summary,
+        } => {
+            let root = resolve_root(root)?;
+            let deploy_url = match deploy_url {
+                Some(url) => url,
+                None => drill::deploy_url(&root, &project)?
+                    .ok_or_else(|| anyhow!("no DEPLOY_URL for {project}; pass --deploy-url"))?,
+            };
+            let plan = drill::Drill {
+                root: &root,
+                dir: &dir,
+                project: &project,
+                eval: &eval,
+                deploy_url: &deploy_url,
+                now: chrono::Utc::now(),
+            };
+            let client = http::Client::new();
+            let runner = run::HttpRunner {
+                fetch: &client,
+                retry: http::Retry::default(),
+            };
+            let report = drill::run(&plan, &runner)?;
+            let markdown = report.markdown(&plan);
+            let target = summary.or_else(|| {
+                std::env::var_os("GITHUB_STEP_SUMMARY")
+                    .filter(|v| !v.is_empty())
+                    .map(PathBuf::from)
+            });
+            match target {
+                Some(path) => append(&path, &markdown)?,
+                None => print!("{markdown}"),
+            }
+            match &report.failure {
+                None => {
+                    println!("evals drill: passed ({})", report.requirement);
+                    Ok(ExitCode::SUCCESS)
+                }
+                Some(why) => {
+                    eprintln!("evals drill: FAILED: {why}");
+                    Ok(ExitCode::FAILURE)
+                }
+            }
         }
         Command::Triage {
             dir,

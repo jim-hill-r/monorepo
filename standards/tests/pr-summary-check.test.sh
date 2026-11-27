@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Tests standards/scripts/pr-summary-check.sh (PR-001): the summary after the
-# attribution lines is counted up to the first heading, links count as their
-# text, and long, missing or link-less summaries warn without failing.
+# Tests standards/scripts/pr-summary-check.sh (PR-001): the sections
+# (Attention, What changed, Why, Cost changes, Risk changes, Details) are
+# found by heading, attention tags come from the closed set with one per
+# group, each summary is held to its word limit, links count as their
+# text, and missing, empty, long or placeholder sections warn without
+# failing.
 #   bash standards/tests/pr-summary-check.test.sh
 set -uo pipefail
 
@@ -23,55 +26,92 @@ check() { # name, body, expected substring
 }
 
 attribution='<!-- claude-projects-attribution: {"github_login":"jimhillr-agt"} -->
-_Requested by **Jim** · [project thread](https://claude.ai/code/project/x)_'
+_Requested by **Jim** · [project thread](https://claude.ai/code/project/x)_
 
-long=$(printf 'word %.0s' $(seq 1 80))
+## Attention
 
-check "short summary with link" "$attribution
+- 🔴 must-requirement-changed: `COOK-001`
+- 🟢 cost-unchanged
+- 🟠 threat-risk-changed: `cookbook/docs/threat.toml` (the Security summary check says whether it weakens anything)'
 
-Adds a PR summary rule so reviewers read PRs fast. See [the plan](standards/docs/pull-requests.md).
+att=$'## attention\n- 🟢 requirements-unchanged\n- `cost-unchanged`\n- threat-risk-unchanged: none\n'
 
-## Details
+words() { printf 'word %.0s' $(seq 1 "$1"); }
 
-$long" "PR-001 ok: executive summary is 13 words."
+body() { # what, why, cost, risk, details
+  printf '%s\n\n## What changed\n\n%s\n\n## Why\n\n%s\n\n## Cost changes\n\n%s\n\n## Risk changes\n\n%s\n\n## Details\n\n%s\n' \
+    "$attribution" "$1" "$2" "$3" "$4" "$5"
+}
 
-check "attention badges are not summary" "$attribution
-> **Attention:** 🟢 requirements unchanged · 🟠 threat/risk files changed: \`cookbook/docs/threat.toml\`
+good_what='Replaces the 75-word summary with five sections. See [the rules](standards/docs/pull-requests.md).'
+good_why='Jim wants each PR quick to skim: what, why, cost and risk.'
 
-Adds a PR summary rule so reviewers read PRs fast. See [the plan](standards/docs/pull-requests.md).
+check "all five sections" "$(body "$good_what" "$good_why" "None." "None." "$(words 200)")" \
+  "PR-001 ok: What changed 10, Why 12, Cost changes 1, Risk changes 1 words."
 
-## Testing" "PR-001 ok: executive summary is 13 words."
+check "at the limits" "$(body "$(words 50)" "$(words 50)" "$(words 24)" "$(words 24)" "")" \
+  "PR-001 ok: What changed 50, Why 50, Cost changes 24, Risk changes 24 words."
 
-check "Summary heading is skipped" "$attribution
+check "What changed too long" "$(body "$(words 51)" "$good_why" "None." "None." "x")" \
+  "\"## What changed\" section is 51 words; keep it to at most 50 words"
 
-## Summary
+check "Why too long" "$(body "$good_what" "$(words 60) [doc](https://example.invalid/a/b)" "None." "None." "x")" \
+  "\"## Why\" section is 61 words"
 
-Adds a rule. Details in [pull-requests.md](https://example.invalid/a/b/c).
+check "Cost at 25 is too long" "$(body "$good_what" "$good_why" "$(words 25)" "None." "x")" \
+  "\"## Cost changes\" section is 25 words; keep it to under 25 words"
+
+check "Risk too long" "$(body "$good_what" "$good_why" "None." "$(words 30)" "x")" \
+  "\"## Risk changes\" section is 30 words"
+
+check "empty cost" "$(body "$good_what" "$good_why" "" "None." "x")" \
+  "\"## Cost changes\" section is empty; write \"None.\""
+
+check "missing sections" "$attribution
+
+Old-style 75-word summary, see [doc](a.md).
 
 ## Testing
-$long" "ok: executive summary is 6 words."
 
-check "too long" "$attribution
+Hooks passed." "no \"## What changed\" section"
 
-$long [doc](x.md)" "is 81 words; keep it to 75"
-
-check "missing summary" "$attribution
+check "missing Details" "$attribution
 
 ## What changed
-$long" "has no executive summary"
+$good_what
+## Why
+$good_why
+## Cost changes
+None.
+## Risk changes
+None." "no \"## Details\" section"
 
-check "no link" "$attribution
+check "unknown attention tag" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/cost-unchanged/looks-fine/')" \
+  "\"looks-fine\" is not an attention tag; use one of must-requirement-changed,"
 
-Adds a rule without pointing anywhere." "has no link"
+check "missing cost tag" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/cost-unchanged/looks-fine/')" \
+  "\"## Attention\" section has 0 cost tags; it needs exactly one."
 
-check "CRLF body" "$(printf 'Short summary, see [doc](a.md).\r\n\r\n## More\r\n')" "is 4 words."
+check "two requirements tags" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/^- 🟢 cost-unchanged$/- 🟢 cost-unchanged\n- 🟢 requirements-unchanged/')" \
+  "\"## Attention\" section has 2 requirements tags"
 
-check "template placeholder" "$(cat "$root/.github/pull_request_template.md")" "still the template's placeholder"
+check "missing Attention" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/^## Attention$/## Badges/')" \
+  "no \"## Attention\" section"
 
-check "multi-line comment ignored" "<!--
-lots of guidance words here that must not count
--->
-Short, see [doc](a.md)." "is 3 words."
+check "headings any level and case" "$att$(printf '### what changed\nA b.\n# WHY\nC d.\n## cost changes\nNone.\n## Risk Changes\nNone.\n## details\n')" \
+  "PR-001 ok: What changed 2, Why 2, Cost changes 1, Risk changes 1 words."
+
+check "rule ends a section" "$att$(printf '## What changed\nA b.\n\n---\n\n%s\n## Why\nC.\n## Cost changes\nNone.\n## Risk changes\nNone.\n## Details\n' "$(words 80)")" \
+  "PR-001 ok: What changed 2,"
+
+check "CRLF body" "$att$(printf '## What changed\r\nA [doc](a.md).\r\n## Why\r\nB.\r\n## Cost changes\r\nNone.\r\n## Risk changes\r\nNone.\r\n## Details\r\n')" \
+  "PR-001 ok: What changed 2,"
+
+check "comments ignored" "$att$(printf '## What changed\n<!--\nlots of guidance words that must not count\n-->\nShort.\n## Why\nB.\n## Cost changes\nNone.\n## Risk changes\nNone.\n## Details\n')" \
+  "PR-001 ok: What changed 1,"
+
+check "template placeholder" "$(cat "$root/.github/pull_request_template.md")" \
+  "\"## What changed\" section is still the template's placeholder."
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures pr-summary-check test(s) failed"

@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
+ * A device with `jimhillr-evals` added to its user agent. Every test run
+ * says it is synthetic, so the PostHog snippet doesn't load and the
+ * telemetry Worker drops its events (standards/docs/evals.md, EVL-005).
+ */
+const synthetic = (device: (typeof devices)[string]) => ({
+  ...device,
+  userAgent: `${device.userAgent} jimhillr-evals`,
+});
+
+/**
  * Playwright configuration for Cookbook web application tests.
  * 
  * Tests expect the Dioxus web app to be running on http://localhost:8080
@@ -50,27 +60,27 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...synthetic(devices['Desktop Chrome']) },
     },
 
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: { ...synthetic(devices['Desktop Firefox']) },
     },
 
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: { ...synthetic(devices['Desktop Safari']) },
     },
 
     /* Test against mobile viewports. */
     {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      use: { ...synthetic(devices['Pixel 5']) },
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: { ...synthetic(devices['iPhone 12']) },
     },
   ],
 

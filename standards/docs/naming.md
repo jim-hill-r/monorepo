@@ -53,8 +53,8 @@ row here before a project's first `docs/requirements.md`.
 | design_system | `DSGN` |
 | evals | `EVAL` |
 | homer | `HOME` |
+| jimhillr | `JIMH` |
 | luggage | `LUGG` |
-| monorepo | `MONO` |
 | my_lang | `LANG` |
 | pane | `PANE` |
 | profiles | `PROF` |
@@ -67,5 +67,7 @@ row here before a project's first `docs/requirements.md`.
 | tofu_state | `TOFU` |
 
 `EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-006), so
-it is not a project prefix. `MONO` covers repo-wide process requirements
-such as change failure rate and lead time.
+it is not a project prefix. `JIMH`, the `jimhillr` project's prefix, covers
+repo-wide process requirements such as change failure rate and lead time.
+It replaced `MONO` when the `monorepo` folder was renamed, before any
+`MONO` requirement existed.

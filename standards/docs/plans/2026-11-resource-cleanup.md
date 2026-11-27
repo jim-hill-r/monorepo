@@ -336,7 +336,7 @@ input when a kind is onboarded to IaC.
   checklist; link it from `standards/docs/README.md` and `free-tiers.md`.
 - `standards/resources.toml` (empty `[[keep]]` and `[[retired]]`), and
   `resources.sh check` with RES-001 to RES-003 in the hooks, `//:audit`
-  and PR CI, tested in `monorepo/workflow_tests`.
+  and PR CI, tested in `jimhillr/workflow_tests`.
 - PR CI step that labels PRs adding `[[retired]]` or `[[keep]]`
   `needs-human`.
 - `resources.sh sweep` as a read-only job in `all-free-tier-usage.yml`.
