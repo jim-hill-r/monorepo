@@ -18,6 +18,10 @@ History:
 - 2026-11-27: step 3, "Main health", checks the README's repo health badges
   and tries to fix what is red (Jim: "have our thrice daily Claude task check
   them and try to fix them").
+- 2026-11-27: JIM REVIEW: a PR with a red attention tag or a cost change
+  needs Jim's own approval, never gets auto-merge, and is never approved by
+  triage (Jim: "no prs with red attention flags get auto merged. Cost
+  changes must be reviewed by jim").
 
 ## Prompt
 
@@ -42,7 +46,9 @@ MERGEABLE means ALL of: not a draft; no merge conflict (mergeStateStatus not "DI
 
 BACK TO DRAFT (Jim, 2026-11-26): before you do any work on a PR that changes its branch (updating it from main, or any other push), first convert it to draft (`gh pr ready <n> --repo jimhillr/monorepo --undo`) and, if auto-merge is on, turn it off (REST route above), and note it in the report. On a later run, once its checks are GREEN on the new head, mark it ready again (`gh pr ready <n>`) if it was ready before, and for an agent PR turn auto-merge back on (AUTO-MERGE). Approving, labelling, merging and closing are not work on the branch and don't need this.
 
-AUTO-MERGE (Jim, 2026-11-26): GitHub auto-merge (squash) lets an agent PR merge the moment a reviewer approves it. Turn it on only for an agent PR (author ending in `-agt`) that is not a draft, has no merge conflict, is not labelled `needs-human`, and whose checks have ALL finished and passed (no red check at all, not even one also failing on main, because auto-merge can't apply that exception). Never turn it on for dependabot or human PRs (you merge those yourself when safe), and turn it off on any PR you label `needs-human`. Auto-merge never replaces the approval: never approve an agent PR to make it merge.
+JIM REVIEW (Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto merged. Cost changes must be reviewed by jim"): a PR NEEDS JIM when its `## Attention` section has a red tag (`must-requirement-changed`) or `cost-changed`, it is labelled `cost`, or its `Jim review` check is failing (that check works the same out from the diff, labels the PR `needs-human` and turns auto-merge off; standards/docs/pull-requests.md, "Jim review"). Never approve a PR that NEEDS JIM, never turn auto-merge on for it, and if auto-merge is on, turn it off and list it under "Needs a human". Merge it only once `jimhillr` himself has approved its head SHA and `Jim review` (latest run) and every other check are GREEN.
+
+AUTO-MERGE (Jim, 2026-11-26): GitHub auto-merge (squash) lets an agent PR merge the moment a reviewer approves it. Turn it on only for an agent PR (author ending in `-agt`) that is not a draft, has no merge conflict, is not labelled `needs-human`, doesn't NEED JIM, and whose checks have ALL finished and passed (no red check at all, not even one also failing on main, because auto-merge can't apply that exception). Never turn it on for dependabot or human PRs (you merge those yourself when safe), and turn it off on any PR you label `needs-human`. Auto-merge never replaces the approval: never approve an agent PR to make it merge.
 
 SAFE (to approve) means ALL of these hold:
    - Checks are GREEN.
@@ -52,6 +58,7 @@ SAFE (to approve) means ALL of these hold:
    - Dependency bumps: patch and minor bumps only need GREEN checks. A major bump (a 0.x minor bump such as 0.8 to 0.9 counts as major, and so does a GitHub Actions major) is safe only when every project it touches passes CI AND the release notes in the PR body list no breaking change that CI wouldn't catch (a data format, a deploy setting, runtime behavior, or a trigger or feature this repo uses). Jim decided this on 2026-11-26. Read the "Updates X from A to B" lines AND the Cargo.toml / package.json / lockfile changes, because a group PR can hide a major bump. Say in the approval which breaking changes you checked.
    - It doesn't bump a pinned dependency: `dioxus` in /cahokia, `sycamore` in /sparkhill/website, plus any pins listed in AGENTS.md.
    - It isn't labelled `credential-change` (decision 0010: those need Jim's own approval).
+   - It doesn't NEED JIM (JIM REVIEW above).
 
 PATH A, dependabot PRs (author `dependabot[bot]` or `app/dependabot`):
    - NEVER comment `@dependabot ...` commands: Claude's GitHub safety filter rewrites bot commands in agent comments so they never run.

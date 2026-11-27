@@ -5,6 +5,7 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
 mod badges;
+mod gate;
 mod issues;
 mod new_issue;
 mod next_task;
@@ -111,6 +112,33 @@ enum Command {
         /// Print JSON instead of the Markdown line.
         #[arg(long)]
         json: bool,
+    },
+    /// The `Jim review` check (PR-004): a PR with a red attention tag or a
+    /// cost change, from its diff, its description or the `cost` label,
+    /// passes only once Jim (`jimhillr`) has approved its head commit.
+    /// Prints "pass: ..." or "block: ..."; exits 1 when it blocks.
+    Gate {
+        /// The branch the PR merges into, for the diff's tags.
+        #[arg(long, default_value = "origin/main")]
+        base: String,
+        /// The PR description, as a file.
+        #[arg(long)]
+        body: Option<PathBuf>,
+        /// The PR's labels, comma separated.
+        #[arg(long, default_value = "", value_delimiter = ',')]
+        labels: Vec<String>,
+        /// The PR author's login.
+        #[arg(long)]
+        author: String,
+        /// The PR's head commit.
+        #[arg(long)]
+        head: String,
+        /// The PR's reviews as JSON, from `GET /repos/{repo}/pulls/{n}/reviews`.
+        #[arg(long)]
+        reviews: Option<PathBuf>,
+        /// Also write the verdict as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
     /// agent-generated and dated today.
@@ -274,6 +302,28 @@ fn run() -> Result<ExitCode> {
                 println!("{}", serde_json::to_string_pretty(&attention)?);
             } else {
                 println!("{}", badges::render(&attention));
+            }
+        }
+        Command::Gate {
+            base,
+            body,
+            labels,
+            author,
+            head,
+            reviews,
+            json,
+        } => {
+            let args = gate::Args {
+                base,
+                body,
+                labels,
+                author,
+                head,
+                reviews,
+                json,
+            };
+            if !gate::run(&root, &args)? {
+                return Ok(ExitCode::FAILURE);
             }
         }
         Command::NewIssue {

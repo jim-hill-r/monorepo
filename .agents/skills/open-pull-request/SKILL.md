@@ -100,7 +100,11 @@ Right after marking it ready, turn on GitHub auto-merge with squash
 (`gh api -X PUT repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge -f merge_method=SQUASH`;
 `gh pr merge --auto` needs GraphQL, which Claude sessions can't use), so the PR lands as soon
 as a reviewer approves it. Skip this when the PR is labelled `needs-human` or
-a check is red, even one also failing on `main`; the rules are under
+`cost`, its Attention section has a red tag (`must-requirement-changed`)
+or `cost-changed`, or a check is red, even one also failing on `main`.
+Such a PR needs Jim's own approval (the `Jim review` check, "Jim review" in
+`standards/docs/pull-requests.md`), and you merge it by hand once he has
+approved and checks are green. The auto-merge rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
 your own PR, so it waits for a human's approval either way.
 

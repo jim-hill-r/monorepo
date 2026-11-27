@@ -130,7 +130,9 @@ thread opened, once all of these hold:
   reviewer has an outstanding "changes requested". The approval can come from
   any reviewer except the PR's author, so an agent PR needs a reviewer other
   than `jimhillr-agt`.
-- Its checks are green (see below).
+- Its checks are green (see below). That includes the **Jim review**
+  check: a PR with a red attention tag or a cost change needs Jim's own
+  approval (see "Jim review").
 
 An approval says the reviewer has judged the change safe, so merging needs
 nothing more. The safe-to-approve rules below are what a reviewer, including
@@ -148,6 +150,41 @@ projects it covers. This covers checks that are red on `main` for unrelated
 reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
+## Jim review
+
+Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto
+merged. Cost changes must be reviewed by jim". So a PR **needs Jim** when
+any of these says it has a red [attention tag](#attention-tags)
+(`must-requirement-changed` today, and any red tag added later) or
+`cost-changed`:
+
+- the tags `chores badges` works out from its diff (the PR can't argue
+  with these),
+- the tags its own `## Attention` section declares, or
+- the `cost` label from PR CI's Cost summary job.
+
+A PR that needs Jim:
+
+1. **Fails the `Jim review` check** (PR-004,
+   `.github/workflows/pull-request-jim-review.yml`, the logic in `chores
+   gate`) until `jimhillr` himself approves its current head commit, with
+   no later "changes requested". The check runs again on every review, so
+   his approval turns it green. A PR Jim opened himself passes. The check
+   builds `chores` from the base branch, so a PR can't change the rules it
+   is judged by.
+2. **Is labelled `needs-human`** by that check, which never removes it.
+3. **Never has auto-merge on.** The check turns it off, and no agent turns
+   it on. Once Jim has approved and every check is green, Jim, PR triage or
+   any agent merges it by hand under the merge rule.
+4. **Is never approved by anyone but Jim.** `jimhillr-reviewer` refuses
+   it (rules v2), and so do triage and agents.
+
+Every other PR passes `Jim review` at once. Once the `CI` ruleset in the
+`github` stack of `infra` is applied, `main` requires both `CI result` and
+`Jim review`, so GitHub itself won't merge a held PR. Until then, the
+merge rule's "checks are green" is what holds it. A check that ran more
+than once on the head commit counts by its latest run.
+
 ## Auto-merge
 
 GitHub auto-merge is on for this repo (squash only). An agent turns it on for
@@ -158,7 +195,8 @@ these hold:
 
 - The PR meets the `open-pull-request` ready checklist: complete, every check
   finished and green on the head commit, and nothing left for a human to
-  decide. A PR labelled `needs-human` never gets auto-merge.
+  decide. A PR labelled `needs-human` never gets auto-merge, and nor
+  does one with a red or `cost-changed` attention tag (see "Jim review").
 - No check is red, not even one also failing on `main`. Auto-merge can't
   apply the "also failing on `main`" exception, so that PR is merged by hand
   under the merge rule instead.
@@ -230,26 +268,30 @@ judged by.
 1. Opened by `jimhillr-agt`, out of draft, based on `main` (a stack is
    approved as its retargeted top PR).
 2. Every check run on the head commit finished and passed (skipped and
-   neutral count), every commit status is success, and `CI result` and
-   `PR summary` both passed. Nothing pending.
+   neutral count), every commit status is success, and `CI result`, `PR
+   summary` and `Jim review` all passed. Nothing pending.
 3. No red or orange attention label: `needs-human`, `credential-change`,
    `security` or `cost`.
-4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
+4. A `## Attention` section in the description with no red or orange
+   tag: no `must-requirement-changed`, `cost-changed` or
+   `threat-risk-changed` (rules v2, Jim, 2026-11-27).
+5. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
    `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
    `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
    `jimhillr/`, `standards/` (its own rules included), and in any project
    `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
-   `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
-5. At most 100 files and 1,500 changed lines.
-6. No outstanding "changes requested", and no approval of its own on this
+   `evals.toml`, `royalty.toml`, `wrangler.toml`, `wrangler.json`,
+   `wrangler.jsonc`, `_headers` and `.env*`.
+6. At most 100 files and 1,500 changed lines.
+7. No outstanding "changes requested", and no approval of its own on this
    head commit yet.
 
 Anything else waits for Jim, who approves it from pane's Approve page.
 
 **What it records.** Each approval is a review on the head commit (so a
 push dismisses it) whose text names the rules version and what passed:
-"jimhillr-reviewer rules v1 (decision 0014): checks green on `<sha>`, no
-red or orange label, no protected path, N files, +a/-d." Each run's summary
+"jimhillr-reviewer rules v2 (decision 0014): checks green on `<sha>`, no
+red or orange label or attention tag, no protected path, N files, +a/-d." Each run's summary
 lists every open agent PR with "approve" or "skip" and the reason.
 
 **Changing the rules.** Edit `standards/scripts/auto-review.sh` (bump
@@ -291,6 +333,11 @@ A PR is safe only if all of these hold:
 - It doesn't bump a pinned dependency listed in `AGENTS.md`.
 - It isn't labelled `credential-change`. Those PRs change what a credential
   can do and need Jim's own approval, whoever opened them (decision 0010).
+- It has no red or `cost-changed` attention tag (in its diff or its
+  description) and no `cost` label. Those need Jim's own approval (see
+  "Jim review"), so triage never approves them or turns on their
+  auto-merge, and merges them only once Jim has approved and `Jim review`
+  is green.
 
 ### Dependabot PRs
 
@@ -336,8 +383,8 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
   for review, turn on auto-merge (see "Auto-merge") and flag it.
-- If it's ready for review, green, not `needs-human` and auto-merge is off,
-  turn auto-merge on.
+- If it's ready for review, green, not `needs-human`, has no red or
+  `cost-changed` attention tag and auto-merge is off, turn auto-merge on.
 - If it's an orphaned stack whose steps are all green, collapse it as
   "Stacked pull requests" says, so it needs one approval.
 - Otherwise add `needs-human` and flag it.

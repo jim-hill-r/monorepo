@@ -2,8 +2,8 @@
 
 - **Kind:** one-time
 - **Status:** replaced by IaC on 2026-11-27: the `github` stack in
-  `infra` adds a `CI` ruleset on `main` that requires `CI result` from
-  GitHub Actions, beside the Default ruleset. Its apply waits for
+  `infra` adds a `CI` ruleset on `main` that requires `CI result` and
+  `Jim review` (2026-11-27) from GitHub Actions, beside the Default ruleset. Its apply waits for
   [the read-only infra GitHub App](github-app-infra-read.md) and Jim's
   approval. Keep this page for a rebuild by hand.
 - **Time:** about 3 minutes
@@ -23,14 +23,14 @@ that hold them back (decision 0010).
 ## Before you start
 
 - Signed in to GitHub as `jimhillr`.
-- The `CI result` check has run at least once on a PR, so GitHub can
-  offer it (it runs on every PR).
+- The `CI result` and `Jim review` checks have run at least once on a
+  PR, so GitHub can offer them (it runs on every PR).
 
 ## Steps
 
 1. jimhillr/monorepo > Settings > Rules > Rulesets > Default.
 2. Tick "Require status checks to pass". Add checks > type `CI result` >
-   pick the one from GitHub Actions.
+   pick the one from GitHub Actions. Do the same for `Jim review`.
 3. Leave the bypass list as it is (empty of agents), and Save changes.
 
 ## Where secrets go

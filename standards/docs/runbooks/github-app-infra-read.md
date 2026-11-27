@@ -8,7 +8,7 @@
 ## What it's for
 
 The `github` stack in `infra` manages this repository's settings: code
-security and the `CI` ruleset that requires the `CI result` check on
+security and the `CI` ruleset that requires the `CI result` and `Jim review` checks on
 `main`. OpenTofu has to read those settings before it can plan, and
 reading them needs Administration: read, which the workflow's own
 `GITHUB_TOKEN` can never have. The infra GitHub App

@@ -72,6 +72,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   whenever it moves the PR back to draft. Agents still never approve their
   own PRs, so the PR merges when a reviewer (normally Jim) approves it.
   Details are under "Auto-merge" in `standards/docs/pull-requests.md`.
+- **Jim reviews red flags and cost (Jim, 2026-11-27).** "Lets make sure
+  no prs with red attention flags get auto merged. Cost changes must be
+  reviewed by jim." A PR with a red attention tag
+  (`must-requirement-changed`) or `cost-changed`, in its diff or its
+  description, or the `cost` label, fails the `Jim review` check (PR-004,
+  `chores gate`) until `jimhillr` himself approves its head commit. That
+  check labels it `needs-human` and turns its auto-merge off. Agents and
+  `jimhillr-reviewer` never approve it or turn its auto-merge on; once Jim
+  approves and checks are green, any agent may merge it. Details are under
+  "Jim review" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the

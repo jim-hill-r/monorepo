@@ -20,13 +20,18 @@
 # Rules version, written into every approval.
 set -euo pipefail
 
-RULES=v1
+RULES=v2
 REVIEWER=jimhillr-reviewer
 AUTHOR=jimhillr-agt
 MAX_LINES=1500
 MAX_FILES=100
 # Labels with a red or orange attention badge (pane_model::queue).
 BLOCK_LABELS='needs-human credential-change security cost'
+# Red and orange attention tags (`chores badges`, "Attention tags" in
+# standards/docs/pull-requests.md). A description that declares one, or has
+# no Attention section, waits for Jim (Jim, 2026-11-27: "no prs with red
+# attention flags get auto merged. Cost changes must be reviewed by jim").
+BLOCK_TAGS='must-requirement-changed cost-changed threat-risk-changed'
 # Paths the reviewer never approves: secrets, credentials and workflows,
 # threat models, requirements and evals, the rules agents follow, decisions,
 # vendors and budgets, security headers and deploy settings, auth.
@@ -52,11 +57,13 @@ BLOCK_PATHS='^\.github/
 (^|/)evals\.toml$
 (^|/)royalty\.toml$
 (^|/)wrangler\.toml$
+(^|/)wrangler\.jsonc?$
 (^|/)_headers$
 (^|/)\.env'
 # The checks that must have run and passed, on top of "every check passed".
 REQUIRED_CHECKS='CI result
-PR summary'
+PR summary
+Jim review'
 # This workflow's own job, ignored when reading the head's checks.
 SELF_CHECK='Auto review'
 
@@ -80,6 +87,23 @@ decide() {
   for label in $BLOCK_LABELS; do
     if jq -e --arg l "$label" 'any(.labels[]?; .name == $l)' "$pr" >/dev/null; then
       echo "skip: labelled $label"
+      return
+    fi
+  done
+
+  # The tags on the description's Attention section bullets, one per line.
+  local tags tag
+  tags=$(jq -r '.body // ""' "$pr" | tr -d '\r' | awk '
+    /^#+[ \t]/ { h = $0; sub(/^#+[ \t]+/, "", h); on = (tolower(h) ~ /^attention[ \t]*$/); if (on) seen = 1; next }
+    on && /^[ \t]*- / { for (i = 2; i <= NF; i++) if ($i ~ /[A-Za-z0-9]/) { t = $i; sub(/:$/, "", t); gsub(/`/, "", t); print t; break } }
+    END { if (!seen) print "<none>" }')
+  if [ "$tags" = "<none>" ]; then
+    echo "skip: no Attention section in the description"
+    return
+  fi
+  for tag in $BLOCK_TAGS; do
+    if grep -qx -- "$tag" <<<"$tags"; then
+      echo "skip: attention tag $tag needs Jim"
       return
     fi
   done
@@ -120,7 +144,7 @@ decide() {
     return
   fi
 
-  echo "approve: $REVIEWER rules $RULES (decision 0014): checks green on ${sha:0:7}, no red or orange label, no protected path, $nfiles files, +$adds/-$dels. Jim reviews it after merge on pane's Acknowledge page."
+  echo "approve: $REVIEWER rules $RULES (decision 0014): checks green on ${sha:0:7}, no red or orange label or attention tag, no protected path, $nfiles files, +$adds/-$dels. Jim reviews it after merge on pane's Acknowledge page."
 }
 
 run() {
