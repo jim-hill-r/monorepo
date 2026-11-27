@@ -1,6 +1,8 @@
 //! `standards/radar/detectors.toml`: which patterns in a project's files
 //! mean it uses an outside service, and the rules that compare that with
-//! its `docs/cost.toml` (COST-007, and COST-009 for unknown hosts).
+//! its `docs/cost.toml` (COST-007, and COST-009 for unknown hosts). The
+//! threat check reuses the same matches through each detector's `threat`
+//! field (THR-004), so a project's files are read by one engine.
 //!
 //! The detectors run over the project's whole tree, not a diff, so a hook,
 //! PR CI and `main` all get the same answer.
@@ -45,8 +47,13 @@ pub struct Scan {
 pub struct Detector {
     /// Short name, used in findings and in `[[exempt]]`.
     pub id: String,
-    /// The vendor blip in `radar.json` a match implies.
-    pub blip: String,
+    /// The vendor blip in `radar.json` a match implies. A detector with
+    /// only a `threat` has none, and the cost check ignores it.
+    #[serde(default)]
+    pub blip: Option<String>,
+    /// What a match implies for the project's `docs/threat.toml` (THR-004).
+    #[serde(default)]
+    pub threat: Option<ThreatHint>,
     pub why: String,
     /// URL hosts (and their subdomains) in source or config.
     #[serde(default)]
@@ -69,6 +76,50 @@ pub struct Detector {
     /// A `limits.toml` key that each match adds its count to.
     #[serde(default)]
     pub usage: Option<String>,
+}
+
+/// What a detector match tells the threat check (THR-004 in
+/// `standards/docs/security.md`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ThreatHint {
+    /// A Pages site: the file needs a `kind = "pages"` surface.
+    Pages,
+    /// A Worker: the file needs a `worker` or `api` surface.
+    Worker,
+    /// A deployed URL, the pattern's first capture group: some surface's
+    /// `url` must be on the same host.
+    Url,
+    /// Stored data (D1, KV, R2): some surface's `data` isn't `public`, or a
+    /// `[[threat]]` covers the detector.
+    Storage,
+    /// A secret, named by the pattern's first capture group: the file needs
+    /// a `[[secret]]` with that name.
+    Secret,
+    /// A sign-in library or tenant: the file needs an `[auth]` table.
+    Auth,
+    /// A risky construct (CORS open to any origin, raw HTML, `eval`): a
+    /// `[[threat]]` must cover the detector by id.
+    Risk,
+}
+
+impl ThreatHint {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ThreatHint::Pages => "pages",
+            ThreatHint::Worker => "worker",
+            ThreatHint::Url => "url",
+            ThreatHint::Storage => "storage",
+            ThreatHint::Secret => "secret",
+            ThreatHint::Auth => "auth",
+            ThreatHint::Risk => "risk",
+        }
+    }
+
+    /// Whether the hint needs the name a pattern captures.
+    pub fn captures(self) -> bool {
+        matches!(self, ThreatHint::Url | ThreatHint::Secret)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -120,11 +171,31 @@ pub fn parse_detectors(text: &str) -> Result<Detectors, String> {
                 d.id
             ));
         }
+        if d.blip.is_none() && d.threat.is_none() {
+            return Err(format!(
+                "detector `{}` needs a blip, a threat or both",
+                d.id
+            ));
+        }
+        if d.blip.is_none() && d.usage.is_some() {
+            return Err(format!("detector `{}` counts usage but has no blip", d.id));
+        }
         let compiled = d
             .patterns
             .iter()
             .map(|p| Regex::new(p).map_err(|e| format!("detector `{}`: {e}", d.id)))
             .collect::<Result<Vec<_>, _>>()?;
+        if d.threat.is_some_and(ThreatHint::captures)
+            && (compiled.is_empty()
+                || !d.hosts.is_empty()
+                || compiled.iter().any(|r| r.captures_len() < 2))
+        {
+            return Err(format!(
+                "detector `{}`: a `{}` threat needs patterns only, each with a capture group for the name",
+                d.id,
+                d.threat.map_or("", ThreatHint::as_str)
+            ));
+        }
         patterns.push(compiled);
     }
     Ok(Detectors { file, patterns })
@@ -141,7 +212,14 @@ pub struct SourceFile {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hit {
     pub detector: String,
-    pub blip: String,
+    /// The vendor blip, for the cost check. `None` for a threat-only
+    /// detector.
+    pub blip: Option<String>,
+    /// What the match implies for the threat model.
+    pub threat: Option<ThreatHint>,
+    /// The first capture group of the pattern that matched (a secret's
+    /// name, a URL), when it has one.
+    pub name: Option<String>,
     /// `path:line`, or just the path for wrangler and workflow matches.
     pub at: String,
     /// The limit key and how much this match adds to it.
@@ -165,7 +243,7 @@ pub struct Detection {
 impl Detection {
     /// The blips the project's files show it uses.
     pub fn blips(&self) -> BTreeSet<String> {
-        self.hits.iter().map(|h| h.blip.clone()).collect()
+        self.hits.iter().filter_map(|h| h.blip.clone()).collect()
     }
 }
 
@@ -264,7 +342,8 @@ impl Detectors {
             .iter()
             .zip(&self.patterns)
             .any(|(d, regexes)| {
-                !self.exempt(path, &d.id)
+                d.blip.is_some()
+                    && !self.exempt(path, &d.id)
                     && (hosts
                         .iter()
                         .any(|h| d.hosts.iter().any(|e| host_matches(h, e)))
@@ -309,12 +388,21 @@ impl Detectors {
                     let by_host = hosts
                         .iter()
                         .any(|h| d.hosts.iter().any(|e| host_matches(h, e)));
-                    let by_pattern = (d.files.is_empty() || d.files.iter().any(|f| f == name))
-                        && regexes.iter().any(|r| r.is_match(line));
-                    if by_host || by_pattern {
+                    let in_file = d.files.is_empty() || d.files.iter().any(|f| f == name);
+                    let captured: Option<Option<String>> = if in_file {
+                        regexes.iter().find_map(|r| {
+                            r.captures(line)
+                                .map(|c| c.get(1).map(|m| m.as_str().to_string()))
+                        })
+                    } else {
+                        None
+                    };
+                    if by_host || captured.is_some() {
                         out.hits.push(Hit {
                             detector: d.id.clone(),
                             blip: d.blip.clone(),
+                            threat: d.threat,
+                            name: captured.flatten(),
                             at: at.clone(),
                             usage: d.usage.clone().map(|k| (k, 1)),
                         });
@@ -354,6 +442,8 @@ impl Detectors {
                     out.hits.push(Hit {
                         detector: d.id.clone(),
                         blip: d.blip.clone(),
+                        threat: d.threat,
+                        name: None,
                         at: wf.path.clone(),
                         usage: d.usage.clone().map(|k| (k, 1)),
                     });
@@ -391,6 +481,8 @@ impl Detectors {
                 out.hits.push(Hit {
                     detector: d.id.clone(),
                     blip: d.blip.clone(),
+                    threat: d.threat,
+                    name: None,
                     at: file.path.clone(),
                     usage: d.usage.clone().map(|k| (k, count)),
                 });
@@ -408,7 +500,9 @@ pub fn check_drift(project: &str, file: &CostFile, detection: &Detection) -> Vec
 
     let mut by_blip: BTreeMap<&str, Vec<&Hit>> = BTreeMap::new();
     for hit in &detection.hits {
-        by_blip.entry(hit.blip.as_str()).or_default().push(hit);
+        if let Some(blip) = &hit.blip {
+            by_blip.entry(blip.as_str()).or_default().push(hit);
+        }
     }
     for (blip, hits) in &by_blip {
         if listed.contains(blip) {
@@ -433,7 +527,9 @@ pub fn check_drift(project: &str, file: &CostFile, detection: &Detection) -> Vec
         }
     }
     for (key, (found, hits)) in counted {
-        let blip = hits[0].blip.as_str();
+        let Some(blip) = hits[0].blip.as_deref() else {
+            continue; // parse_detectors rejects usage without a blip
+        };
         if !listed.contains(blip) {
             continue; // already reported above
         }
@@ -555,7 +651,12 @@ why = "searches for the key"
     fn test_the_repo_detectors_parse() {
         let d = parse_detectors(include_str!("../../../standards/radar/detectors.toml"))
             .expect("detectors.toml parses");
-        assert!(d.file.detector.iter().any(|d| d.blip == "Auth0"));
+        assert!(
+            d.file
+                .detector
+                .iter()
+                .any(|d| d.blip.as_deref() == Some("Auth0"))
+        );
     }
 
     #[test]
@@ -578,6 +679,52 @@ why = "searches for the key"
             let err = parse_detectors(&format!("{base}{extra}")).expect_err(extra);
             assert!(err.contains(want), "{err}");
         }
+    }
+
+    #[test]
+    fn test_threat_fields_are_checked() {
+        let base = "[scan]\nextensions = []\nskip_dirs = []\nskip_files = []\n";
+        for (extra, want) in [
+            (
+                "[[detector]]\nid = \"x\"\nwhy = \"z\"\npatterns = [\"a\"]\n",
+                "a blip, a threat or both",
+            ),
+            (
+                "[[detector]]\nid = \"x\"\nwhy = \"z\"\nthreat = \"secret\"\npatterns = [\"put [A-Z]+\"]\n",
+                "capture group",
+            ),
+            (
+                "[[detector]]\nid = \"x\"\nwhy = \"z\"\nthreat = \"url\"\nhosts = [\"a.dev\"]\n",
+                "capture group",
+            ),
+            (
+                "[[detector]]\nid = \"x\"\nwhy = \"z\"\nthreat = \"risk\"\nwrangler = \"main\"\nusage = \"workers\"\n",
+                "no blip",
+            ),
+            (
+                "[[detector]]\nid = \"x\"\nwhy = \"z\"\nthreat = \"magic\"\npatterns = [\"a\"]\n",
+                "unknown variant",
+            ),
+        ] {
+            let err = parse_detectors(&format!("{base}{extra}")).expect_err(extra);
+            assert!(err.contains(want), "{extra}: {err}");
+        }
+    }
+
+    #[test]
+    fn test_threat_only_detectors_capture_names_and_cost_nothing() {
+        let d = parse_detectors(&format!(
+            "{DETECTORS}\n[[detector]]\nid = \"secret\"\nwhy = \"x\"\nthreat = \"secret\"\npatterns = ['secret put ([A-Z_]+)']\n"
+        ))
+        .expect("parses");
+        let files = [src("app/x.rs", "wrangler secret put API_KEY\n")];
+        let found = d.detect("app", &files, &[]);
+        assert_eq!(found.hits.len(), 1);
+        assert_eq!(found.hits[0].name.as_deref(), Some("API_KEY"));
+        assert_eq!(found.hits[0].threat, Some(ThreatHint::Secret));
+        assert!(found.blips().is_empty());
+        assert!(!d.line_matches("app/x.rs", "wrangler secret put API_KEY"));
+        assert!(check_drift("app", &cost(""), &found).is_empty());
     }
 
     #[test]

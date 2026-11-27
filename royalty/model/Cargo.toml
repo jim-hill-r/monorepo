@@ -1,0 +1,13 @@
+[package]
+name = "royalty_model"
+description = "Types, parser, validation and calculation for royalty.toml (schema 1). No I/O."
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_ignored = { workspace = true }
+toml = { workspace = true }

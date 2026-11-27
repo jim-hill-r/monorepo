@@ -2,11 +2,10 @@
 
 ## Getting Started
 
-Royalty is a docs project today: a plan and issue files, with no code. The
-commands below are the standard ones from the root
-[AGENTS.md](../AGENTS.md) "Dev commands". They do nothing yet, and will
-build and test the Rust crates once Phase 1 of the
-[plan](docs/plans/2026-11-royalty-plan.md) adds them.
+Royalty is a Rust workspace. `model/` is the `royalty_model` crate: the
+schema 1 types, the parser and validation, with no I/O. The commands below
+are the standard ones from the root [AGENTS.md](../AGENTS.md) "Dev
+commands".
 
 ### Install Toolchain
 
@@ -31,6 +30,12 @@ mise run build
 mise run test   # the project's tests
 mise run ci     # everything CI runs for this project
 ```
+
+The model's tests parse every `royalty.toml` in the monorepo and every
+`toml` block in [docs/royalty-toml.md](docs/royalty-toml.md), so a change to
+the reference's examples is tested too. Tests that check a requirement
+start with its ID in snake case (`royl_007_...`) and are listed in
+[evals.toml](evals.toml).
 
 Check the repo standards, which include the issue files in `issues/`:
 

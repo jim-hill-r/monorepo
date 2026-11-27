@@ -1,0 +1,32 @@
+[project]
+name = "acme_shop"
+description = "Acme's web shop."
+
+[consumer]
+id = "github:acme-example"
+entity = "organization"
+name = "Acme Example Ltd"
+class = "commercial"
+annual_revenue_below_usd = 5000000
+stage = "production"
+
+[[consumer.deployment]]
+name = "shop-api"
+manifest = "services/api/Cargo.toml"
+
+[[consumer.deployment]]
+name = "shop-worker"
+manifest = "services/worker/Cargo.toml"
+
+[consumer.budget]
+period_cents = 4500
+year_cents = 50000
+per_producer_period_cents = 4000
+on_exceed = "scale"
+
+[consumer.policy]
+bindings = ["voluntary", "agreement"]
+transitive = "report"
+
+[consumer.measure]
+run = "ci"

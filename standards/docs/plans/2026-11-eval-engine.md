@@ -247,7 +247,7 @@ engine and in pane:
 | **Not met** (red) | The latest result of any eval in `cd`, `chaos` or `observe` failed, or Jim's latest rating since the last deploy is "not met". For a `should` or `could` requirement this shows as amber. |
 | **At risk** (amber) | An eval failed 2 or more of its last 7 runs (flaky), a `metric` is within 10% of its threshold, the judge says not met, a `ci` eval is failing on main, or the newest production result is older than 3 days. |
 | **Met** (green) | Every eval's latest result passes, and at least one production-stage result is under 2 days old. |
-| **Unknown** (grey) | No evals, or no production-stage results yet. |
+| **Unknown** (grey) | No evals, or no production-stage results yet, unless a `ci` eval is failing (then at risk: a known failure never shows grey). |
 
 `error` results count as at risk, not as failures of the product: the fix is
 in the eval. A project's requirement coverage ("9 of 12 musts evaluated in
@@ -691,8 +691,11 @@ phase 3.
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
   released binaries. Done (2026-11-27): the `trycmd` kind, collected from
   the saved `cargo test` output.
-- The `eval-triage` skill and its daily scheduled task, replacing the
-  planned nightly FIX task.
+- Done (2026-11-27): eval triage, replacing the planned nightly FIX task.
+  The free `evals-triage.yml` workflow files the issues daily (see
+  "Triage" in [evals.md](../evals.md)); the `eval-triage` skill is for
+  the judgment calls it can't make (rollback advice, a disputed eval),
+  run on demand, not as a daily Claude task (Jim, 2026-11-27).
 - `evals check` makes "every `must` has a production eval" an error.
 
 ### Phase 3: observability
@@ -701,7 +704,9 @@ Needs the `telemetry` Worker, Web Analytics and PostHog from deploy feedback,
 phases 4 and 5.
 
 - Synthetic traffic tagging in every runner, the PostHog snippet and the
-  `telemetry` Worker.
+  `telemetry` Worker. Done for the runners (Playwright configs, EVL-005,
+  and the `evals` HTTP client) and the Worker; the PostHog snippet skips
+  the `jimhillr-evals` user agent when session replay adds it.
 - The `metric` kind with the Web Analytics, Analytics Engine, PostHog and
   GitHub sources; `daily-observe-evals.yml` and the post-deploy run.
 

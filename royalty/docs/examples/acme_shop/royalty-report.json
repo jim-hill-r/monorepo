@@ -1,0 +1,201 @@
+{
+  "format": 1,
+  "period": "2026-11",
+  "consumer": {
+    "id": "github:acme-example",
+    "entity": "organization",
+    "class": "commercial",
+    "stage": "production"
+  },
+  "budget_cents": 4500,
+  "total_cents": 4500,
+  "over_budget": false,
+  "families": [
+    {
+      "family": "chartlib",
+      "version": "0.4.2",
+      "packages": [
+        "chartlib@0.4.2"
+      ],
+      "dependency": "direct",
+      "binding": "voluntary",
+      "mode": "report",
+      "tier": "team",
+      "status": "owed",
+      "lines": [
+        {
+          "unit": "seat",
+          "units": 14,
+          "declared": false,
+          "charged": 14,
+          "millionths_of_a_cent": "7000000000"
+        }
+      ],
+      "before_caps_cents": 7000,
+      "after_producer_caps_cents": 4000,
+      "cents": 2500,
+      "set_by": "the consumer's total budget",
+      "steps": [
+        {
+          "limit": "the producer's project cap",
+          "cents": 4000
+        },
+        {
+          "limit": "the consumer's total budget",
+          "cents": 2500
+        }
+      ],
+      "over_budget": false,
+      "binding_refused": false,
+      "notes": [],
+      "income_ceiling_cents": null,
+      "payees": [
+        {
+          "name": "Chartlib maintainers",
+          "share": 1,
+          "cents": 2500,
+          "github": "chartlib-example",
+          "methods": [
+            {
+              "kind": "github-sponsors",
+              "to": "https://github.com/sponsors/chartlib-example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "family": "testkit",
+      "version": "0.9.0",
+      "packages": [
+        "testkit@0.9.0"
+      ],
+      "dependency": "transitive",
+      "binding": "voluntary",
+      "mode": "honor",
+      "tier": "non-production",
+      "status": "free",
+      "lines": [],
+      "before_caps_cents": 0,
+      "after_producer_caps_cents": 0,
+      "cents": 0,
+      "set_by": null,
+      "steps": [],
+      "over_budget": false,
+      "binding_refused": false,
+      "notes": [],
+      "income_ceiling_cents": null,
+      "payees": [
+        {
+          "name": "Testkit",
+          "share": 1,
+          "cents": 0,
+          "github": null,
+          "methods": [
+            {
+              "kind": "link",
+              "to": "https://testkit.example/pay"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "family": "tinycolor",
+      "version": "1.0.3",
+      "packages": [
+        "tinycolor@1.0.3"
+      ],
+      "dependency": "transitive",
+      "binding": "voluntary",
+      "mode": "honor",
+      "tier": "none",
+      "status": "not-billable",
+      "lines": [],
+      "before_caps_cents": 0,
+      "after_producer_caps_cents": 0,
+      "cents": 0,
+      "set_by": null,
+      "steps": [],
+      "over_budget": false,
+      "binding_refused": false,
+      "notes": [],
+      "income_ceiling_cents": 60000,
+      "payees": [
+        {
+          "name": "Sam Example",
+          "share": 1,
+          "cents": 0,
+          "github": "sam-example",
+          "methods": [
+            {
+              "kind": "github-sponsors",
+              "to": "https://github.com/sponsors/sam-example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "family": "webframe",
+      "version": "2.1.0",
+      "packages": [
+        "webframe@2.1.0",
+        "webframe_router@2.1.0"
+      ],
+      "dependency": "direct",
+      "binding": "agreement",
+      "mode": "report",
+      "tier": "production",
+      "status": "owed",
+      "lines": [
+        {
+          "unit": "deployment",
+          "units": 2,
+          "declared": false,
+          "charged": 1,
+          "millionths_of_a_cent": "2000000000"
+        }
+      ],
+      "before_caps_cents": 2000,
+      "after_producer_caps_cents": 2000,
+      "cents": 2000,
+      "set_by": null,
+      "steps": [],
+      "over_budget": false,
+      "binding_refused": false,
+      "notes": [
+        "the producer offers a 90-day trial from the first production use, which this report doesn't apply yet (it needs the payments ledger); owe nothing if the trial hasn't ended"
+      ],
+      "income_ceiling_cents": 25000000,
+      "payees": [
+        {
+          "name": "Webframe maintainers",
+          "share": 1,
+          "cents": 2000,
+          "github": "webframe-example",
+          "methods": [
+            {
+              "kind": "github-sponsors",
+              "to": "https://github.com/sponsors/webframe-example"
+            },
+            {
+              "kind": "invoice",
+              "to": "billing@webframe.example"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "no_terms": [
+    "copycat@0.1.0",
+    "plainlib@1.2.0"
+  ],
+  "notices": [
+    {
+      "package": "copycat@0.1.0",
+      "message": "its royalty.toml is for [\"chartlib\"], not this package; ignored"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+/* FamilyTreeView: the drawing's frame, boxes, lines and text, and its
+   toolbar. Every colour is a design system --ds- token, so the tree follows
+   the page's theme, light or dark, and accessible mode. These rules are
+   classes, not `style` attributes, so the page's Content Security Policy
+   needs no `style-src 'unsafe-inline'`. SVG presentation attributes can't
+   read CSS variables, so the colours have to be set here. */
+
+svg.family-tree {
+    display: block;
+    max-height: 75vh;
+    background-color: var(--ds-color-surface);
+    border: var(--ds-border-width) solid var(--ds-color-border);
+    font-family: var(--ds-font-body);
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Lines: parent to child, and dashed between spouses. */
+.family-tree-edge {
+    fill: none;
+    stroke: var(--ds-color-border-strong);
+    stroke-width: 2;
+}
+
+.family-tree-edge.on-lineage {
+    stroke: var(--ds-color-accent);
+    stroke-width: 3.5;
+}
+
+/* People: a box tinted by sex, light enough that the text keeps its
+   contrast, outlined in the accent colour when on the focus lineage. */
+.family-tree-person {
+    cursor: pointer;
+}
+
+.family-tree-box {
+    fill: color-mix(in srgb, var(--ds-color-data-3) 16%, var(--ds-color-surface-raised));
+    stroke: var(--ds-color-border-strong);
+    stroke-width: 1.5;
+}
+
+.family-tree-person.male .family-tree-box {
+    fill: color-mix(in srgb, var(--ds-color-data-4) 16%, var(--ds-color-surface-raised));
+}
+
+.family-tree-person.female .family-tree-box {
+    fill: color-mix(in srgb, var(--ds-color-data-5) 16%, var(--ds-color-surface-raised));
+}
+
+.family-tree-person.ancestor .family-tree-box,
+.family-tree-person.descendant .family-tree-box {
+    stroke: var(--ds-color-accent);
+    stroke-width: 2.5;
+}
+
+.family-tree-person.focus .family-tree-box {
+    stroke: var(--ds-color-accent);
+    stroke-width: 4;
+}
+
+.family-tree-name {
+    fill: var(--ds-color-text);
+}
+
+.family-tree-years {
+    fill: var(--ds-color-text-muted);
+}
+
+.family-tree-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-3);
+}
+
+.family-tree-toolbar button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    background: var(--ds-color-surface-raised);
+    color: var(--ds-color-text);
+    border: var(--ds-border-width) solid var(--ds-color-border-strong);
+    border-radius: var(--ds-radius-sm);
+    cursor: pointer;
+}
+
+.family-tree-toolbar button:hover {
+    border-color: var(--ds-color-accent);
+    color: var(--ds-color-accent-hover);
+}
+
+.family-tree-toolbar select {
+    padding: 0 var(--ds-space-1);
+}
+
+.family-tree-status {
+    margin-top: var(--ds-space-2);
+    font-size: var(--ds-text-sm);
+    color: var(--ds-color-text-muted);
+}

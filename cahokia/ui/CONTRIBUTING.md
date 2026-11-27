@@ -48,6 +48,9 @@ mise run ci
   platform code (routes, entry points, platform APIs) in `web`, `desktop`
   or `mobile`.
 - Keep layout and tree maths in `core`; components here only draw it.
-- Style with the design system's `--ds-` tokens only, never raw colours.
+- Style with the design system's `--ds-` tokens only, never raw colours,
+  in the component's stylesheet in `assets/styling/`, never in a `style`
+  attribute: the web app's Content Security Policy is moving to no
+  `style-src 'unsafe-inline'`.
 - Add a render test next to each component in a `#[cfg(test)] mod tests`,
   and update the README's table and examples when a component changes.
