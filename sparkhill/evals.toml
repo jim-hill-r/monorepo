@@ -4,8 +4,11 @@
 # The cargo and playwright evals read the reports of the webapp and
 # webapp_cloudflare jobs (each reports its share, --partial). The cd evals run
 # against https://jimhillr-sparkhill-webapp.pages.dev after webapp_cloudflare
-# deploys. Pages answers every path of a single-page app with index.html, so
-# each http eval also checks what the response says.
+# deploys: the http evals, and the playwright evals with stage cd, which read
+# the report of the @smoke tests that standards/scripts/smoke.sh runs against
+# the live site (SMOKE_DIR in webapp_cloudflare/mise.toml). Pages answers
+# every path of a single-page app with index.html, so each http eval also
+# checks what the response says.
 
 prefix = "SPRK"
 
@@ -14,7 +17,7 @@ prefix = "SPRK"
 [[eval]]
 id = "begin-opens-the-letter-level"
 requirement = "SPRK-001"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "Home shows Blue Eel and Writing made simple!; Begin opens the letter level at b."
 
@@ -137,7 +140,7 @@ filter = "a_miss_keeps_the_letter_until_the_retry_limit"
 [[eval]]
 id = "tracing-in-the-browser"
 requirement = "SPRK-003"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "Tracing along the demonstration says Great job!; a scribble says Try again! 3 times, then moves on."
 
@@ -148,7 +151,7 @@ stages = ["cd"]
 kind = "http"
 path = "/letter?practice=b"
 body_contains = "<div id=\"main\">"
-description = "Shallow until @smoke tests trace a letter on the live site (issues/pages-deploys-smoke-playwright-tests-blueeel.md)."
+description = "The tracing page is served; the tracing-in-the-browser smoke tests trace letters on it."
 
 [[eval]]
 id = "tracing-judged"
@@ -194,7 +197,7 @@ filter = "go_leads_from_letters_to_words_to_capitals_to_congratulations"
 [[eval]]
 id = "go-through-every-level"
 requirement = "SPRK-004"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "Go leads letters, words, capitals, congratulations, and Start Over goes home."
 
@@ -232,7 +235,7 @@ filter = "a_blank_name_is_the_default_learner"
 [[eval]]
 id = "reload-carries-on"
 requirement = "SPRK-005"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "A reload carries on where the learner was; another name starts afresh."
 
@@ -243,7 +246,7 @@ stages = ["cd"]
 kind = "http"
 path = "/"
 body_contains = "<div id=\"main\">"
-description = "Shallow until @smoke tests reload a session on the live site (issues/pages-deploys-smoke-playwright-tests-blueeel.md)."
+description = "The app is served; the reload-carries-on smoke tests reload a session on it."
 
 [[eval]]
 id = "progress-judged"
@@ -261,7 +264,7 @@ in the wrong place or the name box forgets Ada."""
 [[eval]]
 id = "no-request-leaves-the-site"
 requirement = "SPRK-006"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "A session makes requests only to its own site, none naming the learner, and sets no cookies."
 
@@ -292,7 +295,7 @@ header = "content-security-policy: connect-src 'self';"
 [[eval]]
 id = "manifest-and-icons"
 requirement = "SPRK-007"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "Title, theme colour, no-zoom viewport, a full-screen manifest and icons that load."
 

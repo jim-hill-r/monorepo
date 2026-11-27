@@ -48,3 +48,10 @@ id = "PANE-T3"
 stride = "information-disclosure"
 what = "Phase 3 serves private data or a write path while the site is still public."
 mitigation = "The plan puts the whole site, previews included, behind Cloudflare Access before the token is added, and the Worker checks Cf-Access-Jwt-Assertion on every /api/* call; THR-003 fails if this file says private data on a public surface."
+
+[[threat]]
+id = "PANE-T4"
+stride = "spoofing"
+what = "The Approve and Acknowledge pages show text from GitHub that anyone can write: a fork's PR title and body, made to look like a safe agent PR."
+mitigation = "It reads GitHub's public API with no token, so they can't approve anything, and a flag only opens GitHub's editor for Jim to commit; titles and summaries are shown as escaped text, links go only to the PR's html_url; a PR from an author outside jimhillr, jimhillr-agt and Dependabot gets an orange 'outside author' badge (decision 0014)."
+surface = "site"

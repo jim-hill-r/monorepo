@@ -20,6 +20,21 @@ two projects counts half to each, a repo-wide PR counts for none, and the
 shares always add up to the whole cost. `month_money` puts them together for
 the Money page.
 
+## Review queue
+
+The `queue` module holds the Approve page's rules from [decision
+0014](../../standards/docs/decisions/0014-faster-pr-approvals.md). It parses
+GitHub's open pull requests and a search for green PRs that need a review,
+and builds a `Queue`: PRs to approve (clear, then orange), PRs labelled red
+that need a decision, and stacks. `summary` cuts a PR body to its executive
+summary and `attention` turns labels into a red, orange or clear badge.
+
+The `acks` module is the Acknowledge page's post-merge review: it parses
+GitHub's search for merged PRs, keeps the acknowledged numbers in an
+`AckStore`, lists the rest newest first, and builds the "Flag for
+follow-up" link, a GitHub new-file URL prefilled with a `fix` issue file in
+the PR's project.
+
 ## What's in it
 
 | Type | Holds |

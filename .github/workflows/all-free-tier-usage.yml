@@ -128,4 +128,4 @@ jobs:
             ${{ runner.temp }}/threat-live/report.md
             ${{ runner.temp }}/threat-live/issues/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 7

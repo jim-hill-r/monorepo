@@ -61,7 +61,7 @@ async function finishLevel(page: Page, traces: number): Promise<void> {
   await expect(page.getByText('You are ready for the next level!')).toBeVisible();
 }
 
-test('Begin on the home page opens the letter level @req:SPRK-001', async ({ page }) => {
+test('Begin on the home page opens the letter level @smoke @req:SPRK-001', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Blue Eel', exact: true })).toBeVisible();
   await expect(page.getByText('Writing made simple!')).toBeVisible();
@@ -76,7 +76,7 @@ test('the letter level starts with b @req:SPRK-001 @req:SPRK-004', async ({ page
   await expectTry(page, 'b');
 });
 
-test('tracing a letter right says "Great job!" and shows the next one @req:SPRK-003', async ({ page }) => {
+test('tracing a letter right says "Great job!" and shows the next one @smoke @req:SPRK-003', async ({ page }) => {
   await page.goto('/letter?practice=b,c');
   await start(page);
   await expectTry(page, 'b');
@@ -85,7 +85,7 @@ test('tracing a letter right says "Great job!" and shows the next one @req:SPRK-
   await expectTry(page, 'c');
 });
 
-test('a scribble says "Try again!" until the retry limit, then moves on @req:SPRK-003', async ({ page }) => {
+test('a scribble says "Try again!" until the retry limit, then moves on @smoke @req:SPRK-003', async ({ page }) => {
   await page.goto('/letter?practice=b,c');
   await start(page);
   await page.getByRole('button', { name: "I'm Ready to Try" }).click();
@@ -104,7 +104,7 @@ test('a scribble says "Try again!" until the retry limit, then moves on @req:SPR
   await expectTry(page, 'c');
 });
 
-test('"Go" after the letter level opens the word level @req:SPRK-004', async ({ page }) => {
+test('"Go" after the letter level opens the word level @smoke @req:SPRK-004', async ({ page }) => {
   await page.goto('/letter?practice=b');
   await start(page);
   await finishLevel(page, STABILIZE_COUNT);
@@ -113,7 +113,7 @@ test('"Go" after the letter level opens the word level @req:SPRK-004', async ({ 
   await expect(page.getByText('Welcome!')).toBeVisible();
 });
 
-test('"Go" after the word level opens the capital letter level @req:SPRK-004', async ({ page }) => {
+test('"Go" after the word level opens the capital letter level @smoke @req:SPRK-004', async ({ page }) => {
   await page.goto('/word?practice=hi');
   await start(page);
   await expectTry(page, 'hi');
@@ -129,7 +129,7 @@ test('the capital level starts with L @req:SPRK-004', async ({ page }) => {
   await expectTry(page, 'L');
 });
 
-test('"Go" after the capital level opens the congratulations page @req:SPRK-004', async ({ page }) => {
+test('"Go" after the capital level opens the congratulations page @smoke @req:SPRK-004', async ({ page }) => {
   await page.goto('/capital?practice=T');
   await start(page);
   await expectTry(page, 'T');

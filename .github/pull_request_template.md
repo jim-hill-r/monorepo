@@ -7,6 +7,8 @@ issue file or doc that holds the details instead of writing them here.
 See "Pull request descriptions" in standards/docs/pull-requests.md.
 -->
 
+> **Attention:** <run `chores badges`: requirements and threat/risk badges. See "Attention badges" in standards/docs/pull-requests.md.>
+
 <Summary: what, why, tradeoffs. Details in [the plan](standards/docs/plans/...).>
 
 ## Testing
