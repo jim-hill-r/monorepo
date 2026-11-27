@@ -187,6 +187,7 @@ and are tested in `monorepo/workflow_tests/tests/free_tier_tests.rs`.
 | --- | --- | --- |
 | `free-tiers.sh check` | Every CI run, as part of `mise run //:audit` | FT-001 only standard runners; FT-002 no workflow uses the RapidAPI key; FT-003 Pages projects and Workers in the repo within budget; FT-004 Cron Triggers within budget; FT-005 no paid-only wrangler settings; FT-006 Pages projects named `jimhillr-<project>` |
 | `free-tiers.sh pages-project` | Before every Cloudflare Pages deploy (`mise run deploy` in a `cloudflare` project) | Creates the Pages project named in `wrangler.toml` only if it is missing, the account is under the Pages budget and the name has the `jimhillr-` prefix; otherwise stops the deploy |
+| `free-tiers.sh worker` | Before every Cloudflare Worker deploy (`mise run deploy` in a project using `standards/tasks/cloudflare-worker.toml`, such as `telemetry`) | Passes if the Worker named in `wrangler.toml` exists or one more stays within the Workers budget; otherwise stops the deploy before `wrangler deploy` can create it |
 | `free-tiers.sh usage` | Weekly, from [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), and (planned) first in the nightly run before it deploys | Reads live counts (Pages projects, Workers, Actions cache and artifacts), writes a table to the run summary, and fails when any reaches its warning level |
 
 `free-tiers.sh` reads its free limits and budgets (`pages_projects`,
@@ -214,5 +215,6 @@ files in the root [issues/human/](../../issues/human/):
 - The Cloudflare account is on Workers Free, not Workers Paid.
 - The `CLOUDFLARE_API_TOKEN` secret has no Billing permission. For the
   usage check it needs Pages read (it already has Pages edit) and Workers
-  Scripts read.
+  Scripts read. Infra Mint makes it as `jimhillr-deploy` with Workers
+  Scripts write, which the `telemetry` and `tofu_state` deploys need.
 - The RapidAPI Zillow plan is the free one, and its monthly quota.

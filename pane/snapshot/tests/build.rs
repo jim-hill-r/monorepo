@@ -209,6 +209,21 @@ fn collects_human_issues_docs_and_retros() -> TestResult {
                 Some("app/docs/retros/2026-11-20-launch.md"),
                 Some("app")
             ),
+            (
+                DeliverableKind::ReviewDeck,
+                Some("docs/reviews/2026-11-25-app/deck.md"),
+                Some("app")
+            ),
+            (
+                DeliverableKind::ReviewDeck,
+                Some("docs/reviews/2026-11-18-tool/deck.md"),
+                Some("tool")
+            ),
+            (
+                DeliverableKind::ReviewDeck,
+                Some("docs/reviews/2026-11-11-web/deck.md"),
+                Some("app/web")
+            ),
         ]
     );
     assert_eq!(
@@ -229,6 +244,89 @@ fn collects_human_issues_docs_and_retros() -> TestResult {
     );
     assert_eq!(s.retros.len(), 1);
     assert_eq!(s.retros[0].actions.len(), 2);
+    Ok(())
+}
+
+#[test]
+fn reads_the_review_rotation() -> TestResult {
+    let repo_dir = FixtureRepo::new("reviews")?;
+    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    let reviews: Vec<_> = s
+        .reviews
+        .iter()
+        .map(|r| (r.date.as_str(), r.project.as_str(), r.folder()))
+        .collect();
+    assert_eq!(
+        reviews,
+        [
+            ("2026-11-25", "app", "2026-11-25-app"),
+            ("2026-11-18", "tool", "2026-11-18-tool"),
+            ("2026-11-11", "app/web", "2026-11-11-web"),
+        ]
+    );
+    let areas: Vec<_> = s.reviews[0]
+        .scorecard
+        .iter()
+        .map(|r| (r.area.as_str(), r.rating.as_str()))
+        .collect();
+    assert_eq!(areas[0], ("Goals", "Poor"));
+    assert_eq!(areas.len(), 6, "{areas:?}");
+    assert!(
+        s.reviews[1].scorecard.is_empty(),
+        "a deck that isn't in the repo has no scorecard"
+    );
+
+    fs::remove_file(repo_dir.0.join("docs/reviews/README.md"))?;
+    let s = repo::build(&repo_dir.0, "abc", "t")?;
+    assert!(s.reviews.is_empty(), "no rotation table, no reviews");
+    Ok(())
+}
+
+#[test]
+fn the_real_rotation_table_parses() -> TestResult {
+    // pane reads docs/reviews/README.md's rotation table, which the
+    // deep-project-review skill writes: keep its shape.
+    let readme = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/reviews/README.md"),
+    )?;
+    let reviews = pane_snapshot::parse::reviews(&readme);
+    assert!(
+        !reviews.is_empty(),
+        "the rotation table has no rows pane can read"
+    );
+    for r in &reviews {
+        assert!(
+            r.path.starts_with("docs/reviews/") && r.path.ends_with("/deck.md"),
+            "{r:?}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn every_real_deck_has_a_scorecard() -> TestResult {
+    // pane reads each deck's Scorecard slide (`| Area | Rating | Why |`),
+    // which the deep-project-review skill writes: keep its shape.
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let readme = fs::read_to_string(repo.join("docs/reviews/README.md"))?;
+    for r in pane_snapshot::parse::reviews(&readme) {
+        let Ok(deck) = fs::read_to_string(repo.join(&r.path)) else {
+            continue; // Listed before its PR merged.
+        };
+        let rows = pane_snapshot::parse::scorecard(&deck);
+        assert!(
+            !rows.is_empty(),
+            "{} has no scorecard pane can read",
+            r.path
+        );
+        for row in &rows {
+            assert!(
+                ["Good", "Fair", "Poor"].contains(&row.rating.as_str()),
+                "{}: {row:?} is not rated Good, Fair or Poor",
+                r.path
+            );
+        }
+    }
     Ok(())
 }
 

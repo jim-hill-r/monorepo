@@ -18,6 +18,9 @@ Agents hold no token that can make or change credentials. The minting
 workflow, once built, rotates the ones it made in a run you approve
 ([Approve a credential change run](approve-credential-run.md)).
 
+The schedule for each secret, and which ones Infra Mint rotates for you
+every quarter, is in [the rotation plan](../secret-rotation.md).
+
 ## Before you start
 
 - Find the secret's runbook in [README.md](README.md): it says which

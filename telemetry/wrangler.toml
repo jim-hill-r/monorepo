@@ -1,0 +1,29 @@
+# The telemetry Worker (README.md). Free plan only: no usage_model, no
+# [limits], no logpush (standards/docs/free-tiers.md, FT-005).
+
+name = "jimhillr-telemetry"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-11-01"
+
+[build]
+command = "cargo install -q worker-build --version 0.9.0 --locked && worker-build --release"
+
+# Workers Logs, inside the free plan's daily log allowance.
+[observability]
+enabled = true
+
+# Analytics Engine: 100,000 data points a day free. The dataset is created
+# on the first write.
+[[analytics_engine_datasets]]
+binding = "EVENTS"
+dataset = "telemetry"
+
+# About one event a second per IP address. Periods must be 10 or 60
+# seconds, and counts are per Cloudflare location.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 10

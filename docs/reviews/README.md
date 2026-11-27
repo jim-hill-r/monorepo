@@ -63,6 +63,9 @@ style: |
 ```
 
 - One idea per slide; split long tables across slides.
+- Pane reads the scorecard: keep it a `| Area | Rating | Why |` table under
+  a `# Scorecard` heading (a continuation slide's heading must also say
+  Scorecard), rated exactly Good, Fair or Poor.
 - Use `<!-- _class: lead -->` for section divider slides.
 - Images: `![w:900](screenshot-name.png)`, stored next to `deck.md`.
 - Diagrams: text in a fenced code block or a table (Marp doesn't render

@@ -13,7 +13,9 @@
 #                              or android
 #
 # Each secret is made only when it is missing from GitHub, or named in
-# MINT_ROTATE (space-separated), so a run is safe to repeat.
+# MINT_ROTATE (space-separated), so a run is safe to repeat. MINT_ROTATE=auto
+# means every secret in ROTATE_AUTO: the scheduled quarterly rotation
+# (standards/docs/secret-rotation.md).
 # TOFU_STATE_PASSPHRASE is never rotated here: the state is encrypted with
 # it, so changing it means re-encrypting state first.
 #
@@ -60,9 +62,22 @@ declare -A WHERE=(
 # Cloudflare account-owned tokens: name and permission groups (the names the
 # permission-groups API uses). A missing name fails the run and lists the
 # close matches, since Cloudflare renames groups now and then.
+# Web Analytics (the RUM API) has no permission group of its own: it takes
+# Account Settings, so the infra tokens use that (checked against the live
+# API, 2026-11-27).
 CF_DEPLOY_PERMS=("Pages Write" "Workers Scripts Write" "D1 Write" "Account Analytics Read")
-CF_READ_PERMS=("Account Web Analytics Read")
-CF_APPLY_PERMS=("Account Web Analytics Write")
+CF_READ_PERMS=("Account Settings Read")
+CF_APPLY_PERMS=("Account Settings Write")
+
+# What MINT_ROTATE=auto remakes. Never the state passphrase (it encrypts
+# state), the Android keystore (a new one can't update the installed app)
+# or TOFU_STATE_ORIGIN (not a secret).
+ROTATE_AUTO="TOFU_STATE_READ_PASSWORD TOFU_STATE_WRITE_PASSWORD CLOUDFLARE_API_TOKEN \
+CLOUDFLARE_INFRA_READ_TOKEN CLOUDFLARE_INFRA_APPLY_TOKEN AUTH0_INFRA_READ_CLIENT_SECRET AUTH0_INFRA_APPLY_CLIENT_SECRET"
+
+# Minted Cloudflare tokens expire this many days after each mint, so a missed
+# rotation fails closed; the quarterly rotation renews them well before.
+CF_TOKEN_DAYS=${CF_TOKEN_DAYS:-180}
 
 # Auth0 Machine to Machine apps for the Management API, and their scopes.
 AUTH0_READ_SCOPES='["read:clients"]'
@@ -189,12 +204,15 @@ cf_token() {
   wanted "$secret" || return 0
   local policies existing value base="/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens"
   policies=$(cf_policies "$@")
+  local expires body
+  expires=$(date -u -d "+$CF_TOKEN_DAYS days" +%Y-%m-%dT%H:%M:%SZ)
+  body=$(jq -cn --arg n "$name" --argjson p "$policies" --arg e "$expires" '{name: $n, policies: $p, expires_on: $e}')
   existing=$(cf GET "$base?per_page=100" | jq -r --arg n "$name" '[.result[] | select(.name == $n)][0].id // empty')
   if [ -n "$existing" ]; then
-    cf PUT "$base/$existing" "$(jq -cn --arg n "$name" --argjson p "$policies" '{name: $n, policies: $p}')" >/dev/null
+    cf PUT "$base/$existing" "$body" >/dev/null
     value=$(cf PUT "$base/$existing/value" '{}' | jq -r '.result')
   else
-    value=$(cf POST "$base" "$(jq -cn --arg n "$name" --argjson p "$policies" '{name: $n, policies: $p}')" | jq -r '.result.value')
+    value=$(cf POST "$base" "$body" | jq -r '.result.value')
   fi
   put "$secret" "$value"
   if [ "$secret" = CLOUDFLARE_API_TOKEN ]; then minted_deploy_token=$value; changed=yes; fi
@@ -286,6 +304,7 @@ mint_auth0() {
 run() {
   local what=$1
   case "$what" in all | cloudflare | state | origin | auth0 | android) ;; *) die "unknown WHAT '$what'" ;; esac
+  [ "${MINT_ROTATE:-}" = auto ] && MINT_ROTATE=$ROTATE_AUTO
   for name in ${MINT_ROTATE:-}; do
     [[ -n "${WHERE[$name]:-}" || "$name" == TOFU_STATE_ORIGIN ]] || die "MINT_ROTATE: '$name' isn't a secret this script makes"
   done

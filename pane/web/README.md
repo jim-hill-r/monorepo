@@ -10,12 +10,14 @@ one column under 720 px.
 | --- | --- |
 | `/` | Today: counts, human issues waiting on Jim oldest first, and what is new since the last visit (human issues, deliverables, TODOs and FIXes; see below) |
 | `/projects` | Every project, priority first, with type, status, README summary and open items |
-| `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its deliverables, and its open TODOs and FIXes (sub-projects included) |
+| `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its latest review and its scorecard counts, its deliverables, and its open TODOs and FIXes (sub-projects included) |
 | `/work` | Every `TODO` and `FIX` from issue files and code comments, FIXes first, filterable by project, kind, where it sits (priority, backlog, other, code comments) and tag, each linking to its line on GitHub |
 | `/human-issues` | Each open human task (a file in `issues/human/`), oldest first, with its age, what it unblocks and a link to the file on GitHub |
-| `/deliverables` | Live sites (`DEPLOY_URL`), game downloads (`RELEASE_TAG`), and plans, decisions and retros |
+| `/deliverables` | Live sites (`DEPLOY_URL`), game downloads (`RELEASE_TAG`), review decks, and plans, decisions and retros |
 | `/docs/<path>` | One plan, decision or retro rendered from its Markdown (`src/markdown.rs`), with a link to the file on GitHub |
-| `/health`, `/reviews`, `/add` | Placeholders naming the phase that fills them in |
+| `/reviews` | The review rotation from `docs/reviews/README.md`, newest first: date, project, the deck's slides and PDF, its scorecard's ratings counted (such as 2 Good · 4 Fair · 1 Poor), and its pull request |
+| `/review/<folder>` | One review deck, such as `/review/2026-11-25-cookbook`: its slides in the page (arrow keys, `f` or the Full screen button), its PDF, its pull request for comments, `deck.md` on GitHub, and its scorecard as a table (area, rating, why) |
+| `/health`, `/add` | Placeholders naming the phase that fills them in |
 
 It uses the [design system](../../design_system/README.md)'s professional
 theme: `design_system_dioxus::Stylesheets` loads the tokens, and
@@ -56,7 +58,9 @@ dx serve --platform web --package pane_web
 `tests/` check the app in Chromium: the home page loads the snapshot, the
 main nav opens every page, a project page opens and shows its sections,
 Today shows what is new against a stored older visit (and works without
-`localStorage`), and no page logs a console error. They start the app with `mise run dev`, which builds the snapshot
+`localStorage`), the Reviews page opens a deck as slides with its PDF, pull
+request and full screen (locally the slides are stubbed, since `dev` doesn't
+build the decks), and no page logs a console error. They start the app with `mise run dev`, which builds the snapshot
 first, and run in CI as part of `mise run ci`.
 
 ```bash
@@ -126,7 +130,9 @@ review deck in [`docs/reviews/`](../../docs/reviews) to HTML and PDF with
 so the site serves them under `/reviews/<folder>/`. That step needs Node and a
 Chrome or Chromium (set `CHROME_PATH` if Marp can't find one); `dev` skips it.
 `public/` is gitignored, so neither the snapshot nor the decks are ever
-committed. The output will be in the `dist/` directory and ready for
+committed. The deck page embeds `/reviews/<folder>/deck.html` (Marp's own
+slideshow) in an iframe; its route is `/review/<folder>`, not
+`/reviews/<folder>`, so it never shadows the built files. The output will be in the `dist/` directory and ready for
 deployment.
 
 **Note:** The `Dioxus.toml` configuration disables wasm-opt (by setting level to 0) to avoid SIGABRT errors during release builds. This is a known issue where wasm-opt can crash on certain builds.

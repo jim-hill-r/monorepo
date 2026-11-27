@@ -205,3 +205,103 @@ test('a project page shows its sub-projects, documents, deliverables and work @s
   await page.getByTestId('project-latest').getByRole('link').first().click();
   await expect(page).toHaveURL(/\/docs\/pane\/.+\.md$/);
 });
+
+/**
+ * `mise run dev` doesn't build the review decks (the release does), so
+ * locally the deck's slides are stubbed with one Marp-like slide. Against
+ * the live site (BASE_URL set) the real deck loads.
+ */
+async function stubDecks(page: import('@playwright/test').Page) {
+  if (process.env.BASE_URL) return;
+  await page.route('**/reviews/*/deck.html', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><title>deck</title><div class="marpit"><section>Stub slide</section></div>',
+    }),
+  );
+}
+
+test('the reviews page lists the rotation and opens a deck as slides @smoke @req:PANE-008', async ({ page }) => {
+  await stubDecks(page);
+  await page.goto('/reviews');
+
+  const rotation = page.getByTestId('reviews-rotation');
+  await expect(rotation.getByRole('columnheader')).toHaveText(['Date', 'Project', 'Deck', 'Scorecard', 'Comments']);
+  const row = rotation.locator('tbody tr').first();
+  await expect(row.locator('td').first()).toHaveText(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(row.getByRole('link', { name: 'PDF' })).toHaveAttribute(
+    'href',
+    /^\/reviews\/[^/]+\/deck\.pdf$/,
+  );
+
+  // Each deck's scorecard ratings, counted (every deck has one: the
+  // snapshot's every_real_deck_has_a_scorecard test checks it).
+  await expect(row.getByTestId('scorecard-summary')).toHaveText(/^\d+ (Good|Fair|Poor)( · \d+ (Good|Fair|Poor))*$/);
+
+  await row.getByRole('link', { name: 'Slides' }).click();
+  await expect(page).toHaveURL(/\/review\/[^/]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/ deep review$/);
+  const scorecard = page.getByTestId('review-scorecard');
+  await expect(scorecard.getByRole('columnheader')).toHaveText(['Area', 'Rating', 'Why']);
+  await expect(scorecard.locator('tbody tr').first().locator('td').first()).toHaveText(/^(Good|Fair|Poor)$/);
+  const deck = page.getByTestId('deck');
+  await expect(deck).toHaveAttribute('src', /^\/reviews\/[^/]+\/deck\.html$/);
+  await expect(page.frameLocator('[data-testid="deck"]').locator('section').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download PDF' })).toHaveAttribute(
+    'href',
+    /^\/reviews\/[^/]+\/deck\.pdf$/,
+  );
+  await expect(page.getByRole('link', { name: /^Comment on #\d+$/ })).toHaveAttribute(
+    'href',
+    /^https:\/\/github\.com\/jimhillr\/monorepo\/pull\/\d+$/,
+  );
+  await expect(page.getByRole('link', { name: 'deck.md on GitHub' })).toHaveAttribute(
+    'href',
+    /\/blob\/[0-9a-f]+\/docs\/reviews\/[^/]+\/deck\.md$/,
+  );
+
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.fullscreenElement?.getAttribute('data-testid') ?? null))
+    .toBe('deck');
+});
+
+test('a reviewed project shows its latest review @req:PANE-008', async ({ page }) => {
+  await stubDecks(page);
+  await page.goto('/reviews');
+
+  const row = page.getByTestId('reviews-rotation').locator('tbody tr').first();
+  const project = row.locator('td').nth(1).getByRole('link');
+  const name = (await project.textContent())?.trim() ?? '';
+  await project.click();
+  await expect(page).toHaveURL(`/projects/${name}`);
+
+  const review = page.getByTestId('project-review');
+  await expect(review.getByRole('link', { name: /^Deep review, \d{4}-\d{2}-\d{2}$/ })).toBeVisible();
+  await expect(review.getByTestId('scorecard-summary')).toBeVisible();
+  await review.getByRole('link', { name: /^Deep review/ }).click();
+  await expect(page).toHaveURL(/\/review\/[^/]+$/);
+});
+
+test('deliverables list the review decks @req:PANE-008', async ({ page }) => {
+  await stubDecks(page);
+  await page.goto('/deliverables');
+
+  const decks = page.getByTestId('deliverables-reviews');
+  await expect(decks.getByRole('heading', { level: 2 })).toContainText('Review decks');
+  await expect(decks.getByRole('link', { name: 'Download PDF' }).first()).toHaveAttribute(
+    'href',
+    /^\/reviews\/[^/]+\/deck\.pdf$/,
+  );
+  await decks.locator('a.row-title').first().click();
+  await expect(page).toHaveURL(/\/review\/[^/]+$/);
+  await expect(page.getByTestId('deck')).toBeVisible();
+});
+
+test('an unknown review shows a message @req:PANE-008', async ({ page }) => {
+  await page.goto('/review/1999-01-01-nothing');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review not found');
+  await page.getByRole('link', { name: 'All reviews' }).click();
+  await expect(page).toHaveURL('/reviews');
+});

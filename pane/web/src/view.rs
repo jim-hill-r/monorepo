@@ -2,8 +2,8 @@
 //! unit tested natively.
 
 use pane_model::{
-    Deliverable, DeliverableKind, HumanIssue, Project, ProjectStatus, REPO_URL, Snapshot, WorkItem,
-    WorkKind, WorkSource,
+    Deliverable, DeliverableKind, HumanIssue, Project, ProjectStatus, REPO_URL, Review,
+    ScorecardRow, Snapshot, WorkItem, WorkKind, WorkSource,
 };
 
 /// Seconds since the Unix epoch for an RFC 3339 UTC time
@@ -283,9 +283,10 @@ pub fn sorted_human_issues(snapshot: &Snapshot) -> Vec<&HumanIssue> {
 }
 
 /// The Deliverables page's groups, in order, with their headings.
-pub const DELIVERABLE_GROUPS: [(DeliverableKind, &str); 5] = [
+pub const DELIVERABLE_GROUPS: [(DeliverableKind, &str); 6] = [
     (DeliverableKind::LiveSite, "Live sites"),
     (DeliverableKind::Release, "Downloads"),
+    (DeliverableKind::ReviewDeck, "Review decks"),
     (DeliverableKind::Plan, "Plans"),
     (DeliverableKind::Decision, "Decisions"),
     (DeliverableKind::Retro, "Retros"),
@@ -321,12 +322,86 @@ pub fn deliverable_key(kind: DeliverableKind) -> &'static str {
     }
 }
 
-/// A document deliverable by its repo path.
+/// A plan, decision or retro by its repo path.
 pub fn find_doc<'a>(snapshot: &'a Snapshot, path: &str) -> Option<&'a Deliverable> {
-    snapshot
-        .deliverables
-        .iter()
-        .find(|d| d.path.as_deref() == Some(path))
+    snapshot.deliverables.iter().find(|d| {
+        matches!(
+            d.kind,
+            DeliverableKind::Plan | DeliverableKind::Decision | DeliverableKind::Retro
+        ) && d.path.as_deref() == Some(path)
+    })
+}
+
+/// Every review in the rotation, newest first, then by project.
+pub fn sorted_reviews(snapshot: &Snapshot) -> Vec<&Review> {
+    let mut found: Vec<&Review> = snapshot.reviews.iter().collect();
+    found.sort_by(|a, b| b.date.cmp(&a.date).then_with(|| a.project.cmp(&b.project)));
+    found
+}
+
+/// A review by its deck folder, such as `2026-11-25-cookbook`.
+pub fn find_review<'a>(snapshot: &'a Snapshot, folder: &str) -> Option<&'a Review> {
+    snapshot.reviews.iter().find(|r| r.folder() == folder)
+}
+
+/// The newest review of a project or one of its sub-projects.
+pub fn latest_review<'a>(snapshot: &'a Snapshot, path: &str) -> Option<&'a Review> {
+    sorted_reviews(snapshot)
+        .into_iter()
+        .find(|r| in_project(Some(&r.project), path))
+}
+
+/// The CSS class for a scorecard rating: `good`, `fair` or `poor` (the
+/// deep-project-review skill's ratings, in any case), else `other`.
+pub fn rating_class(rating: &str) -> &'static str {
+    match rating.trim().to_lowercase().as_str() {
+        "good" => "good",
+        "fair" => "fair",
+        "poor" => "poor",
+        _ => "other",
+    }
+}
+
+/// A one-line count of a scorecard's ratings, such as `2 Good · 4 Fair ·
+/// 1 Poor`, leaving out ratings with no areas. Empty for no scorecard.
+pub fn scorecard_summary(rows: &[ScorecardRow]) -> String {
+    let count = |class: &str| {
+        rows.iter()
+            .filter(|r| rating_class(&r.rating) == class)
+            .count()
+    };
+    [
+        ("good", "Good"),
+        ("fair", "Fair"),
+        ("poor", "Poor"),
+        ("other", "other"),
+    ]
+    .into_iter()
+    .filter_map(|(class, label)| match count(class) {
+        0 => None,
+        n => Some(format!("{n} {label}")),
+    })
+    .collect::<Vec<_>>()
+    .join(" · ")
+}
+
+/// Where pane's release serves a deck's slides (see `pane/web/mise.toml`'s
+/// `reviews` task).
+pub fn deck_html_url(folder: &str) -> String {
+    format!("/reviews/{folder}/deck.html")
+}
+
+/// Where pane's release serves a deck's PDF.
+pub fn deck_pdf_url(folder: &str) -> String {
+    format!("/reviews/{folder}/deck.pdf")
+}
+
+/// A short label for a pull request URL: `#585` for `.../pull/585`.
+pub fn pr_label(url: &str) -> String {
+    match url.trim_end_matches('/').rsplit_once("/pull/") {
+        Some((_, n)) if !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()) => format!("#{n}"),
+        _ => "pull request".to_owned(),
+    }
 }
 
 /// Whether `item_project` is `path` or one of its sub-projects
@@ -741,6 +816,129 @@ mod tests {
         assert_eq!(deliverables_of(&s, DeliverableKind::Retro).len(), 0);
         assert!(find_doc(&s, "docs/d.md").is_some());
         assert!(find_doc(&s, "docs/nope.md").is_none());
+    }
+
+    fn review(project: &str, date: &str, pr: Option<&str>) -> Review {
+        Review {
+            project: project.into(),
+            date: date.into(),
+            path: format!("docs/reviews/{date}-{project}/deck.md"),
+            pr: pr.map(str::to_owned),
+            scorecard: vec![],
+        }
+    }
+
+    fn row(area: &str, rating: &str) -> ScorecardRow {
+        ScorecardRow {
+            area: area.into(),
+            rating: rating.into(),
+            why: String::new(),
+        }
+    }
+
+    #[test]
+    fn classes_ratings_in_any_case() {
+        assert_eq!(rating_class("Good"), "good");
+        assert_eq!(rating_class(" FAIR "), "fair");
+        assert_eq!(rating_class("poor"), "poor");
+        assert_eq!(rating_class("Excellent"), "other");
+        assert_eq!(rating_class(""), "other");
+    }
+
+    #[test]
+    fn summarises_a_scorecard() {
+        let rows = [
+            row("Goals", "Poor"),
+            row("UX", "Fair"),
+            row("Security", "Good"),
+            row("Quality", "fair"),
+        ];
+        assert_eq!(scorecard_summary(&rows), "1 Good · 2 Fair · 1 Poor");
+        assert_eq!(scorecard_summary(&rows[1..2]), "1 Fair");
+        assert_eq!(
+            scorecard_summary(&[row("A", "Good"), row("B", "Great")]),
+            "1 Good · 1 other"
+        );
+        assert_eq!(scorecard_summary(&[]), "");
+    }
+
+    #[test]
+    fn lists_reviews_newest_first_and_finds_them() {
+        let mut s = Snapshot::new("a", "t");
+        s.reviews = vec![
+            review("cookbook", "2026-11-11", None),
+            review(
+                "pane",
+                "2026-11-25",
+                Some("https://github.com/jimhillr/monorepo/pull/9"),
+            ),
+            review("homer", "2026-11-25", None),
+        ];
+        let order: Vec<_> = sorted_reviews(&s)
+            .iter()
+            .map(|r| r.project.as_str())
+            .collect();
+        assert_eq!(order, ["homer", "pane", "cookbook"]);
+        assert_eq!(
+            find_review(&s, "2026-11-11-cookbook").map(|r| r.project.as_str()),
+            Some("cookbook")
+        );
+        assert!(find_review(&s, "2026-11-11-nope").is_none());
+    }
+
+    #[test]
+    fn a_project_shows_its_newest_review() {
+        let mut s = Snapshot::new("a", "t");
+        s.reviews = vec![
+            review("pane", "2026-11-01", None),
+            review("pane/web", "2026-11-20", None),
+            review("panel", "2026-11-30", None),
+        ];
+        assert_eq!(
+            latest_review(&s, "pane").map(|r| r.date.as_str()),
+            Some("2026-11-20")
+        );
+        assert_eq!(
+            latest_review(&s, "pane/web").map(|r| r.date.as_str()),
+            Some("2026-11-20")
+        );
+        assert!(latest_review(&s, "cookbook").is_none());
+    }
+
+    #[test]
+    fn links_deck_slides_pdf_and_pr() {
+        assert_eq!(
+            deck_html_url("2026-11-25-cookbook"),
+            "/reviews/2026-11-25-cookbook/deck.html"
+        );
+        assert_eq!(
+            deck_pdf_url("2026-11-25-cookbook"),
+            "/reviews/2026-11-25-cookbook/deck.pdf"
+        );
+        assert_eq!(
+            pr_label("https://github.com/jimhillr/monorepo/pull/585"),
+            "#585"
+        );
+        assert_eq!(
+            pr_label("https://github.com/jimhillr/monorepo/pull/585/"),
+            "#585"
+        );
+        assert_eq!(
+            pr_label("https://github.com/jimhillr/monorepo/pulls"),
+            "pull request"
+        );
+    }
+
+    #[test]
+    fn a_review_deck_is_not_a_document() {
+        let mut s = Snapshot::new("a", "t");
+        s.deliverables = vec![doc_of(
+            DeliverableKind::ReviewDeck,
+            Some("pane"),
+            "docs/reviews/2026-11-25-pane/deck.md",
+            Some("2026-11-25"),
+        )];
+        assert!(find_doc(&s, "docs/reviews/2026-11-25-pane/deck.md").is_none());
     }
 
     fn doc_of(

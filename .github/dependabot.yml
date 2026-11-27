@@ -157,6 +157,21 @@ updates:
           - "*"
     labels:
       - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
+    directory: "/telemetry"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
 
   - package-ecosystem: "cargo"
     directory: "/infra"

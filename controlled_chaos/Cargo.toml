@@ -19,6 +19,8 @@ unsafe_code = "deny"
 [dependencies]
 bevy = "0.14.2"
 rand = { version = "0.8", features = ["small_rng"] }
+# The design system's colours as constants (gamey theme).
+design_system_palette = { path = "../design_system/palette" }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

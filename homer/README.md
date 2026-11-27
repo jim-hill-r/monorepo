@@ -26,6 +26,38 @@ set the property meets, such as `Match:      2 of 3 criteria met`) and each
 criterion it misses. A value Zillow doesn't report counts as not met. With no
 criteria set, it leaves the score out.
 
+### Print the result as JSON
+
+Add `--json` to print the property details and the evaluation as one JSON
+object on stdout instead of the text report, for scripts and evals:
+
+```bash
+homer --address "123 Main St, Seattle, WA 98101" --min-bedrooms 3 --json
+```
+
+```json
+{
+  "details": {
+    "address": "123 Main St, Seattle, WA 98101",
+    "price": 750000,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "living_area": 1850,
+    "year_built": 1998,
+    "home_type": "SINGLE_FAMILY",
+    "description": null,
+    "zillow_url": "https://www.zillow.com/homedetails/123-Main-St-Seattle-WA-98101/1_zpid/"
+  },
+  "meets_preferences": true,
+  "unmet_criteria": [],
+  "criteria_checked": 1,
+  "criteria_met": 1
+}
+```
+
+A value Zillow doesn't report is `null`. Warnings, such as a low RapidAPI
+quota, go to stderr, so stdout is always just the JSON.
+
 ## Options
 
 | Option | Description |
@@ -35,9 +67,10 @@ criteria set, it leaves the score out.
 | `--quota-file` | Where homer keeps the RapidAPI quota it last saw (or set `HOMER_QUOTA_FILE`); see [Free quota](#free-quota) |
 | `--min-bedrooms` | Minimum number of bedrooms |
 | `--max-bedrooms` | Maximum number of bedrooms |
-| `--min-bathrooms` | Minimum number of bathrooms |
+| `--min-bathrooms` | Minimum number of bathrooms (a non-negative number, such as 1.5) |
 | `--max-price` | Maximum listing price |
 | `--min-sqft` | Minimum square footage |
+| `--json` | Print the details and evaluation as one JSON object instead of the text report |
 
 ## API Key
 

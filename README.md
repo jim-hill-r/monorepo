@@ -23,6 +23,7 @@ GitHub for free and add no workflow runs, so they cost $0. See
 | Secrets and free tiers | [![Free tier usage](https://github.com/jimhillr/monorepo/actions/workflows/all-free-tier-usage.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/all-free-tier-usage.yml) | Weekly | gitleaks over the full git history (SEC-001) and usage against every free-tier limit |
 | Infra apply | [![Infra apply](https://github.com/jimhillr/monorepo/actions/workflows/infra-apply.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-apply.yml) | Push to `main` | OpenTofu plan with the plan guards (IAC-001 to IAC-005), then apply (decision 0007) |
 | Infra drift | [![Infra drift](https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml) | Weekly | Refresh-only plan of every stack: red when a live setting differs from state |
+| Infra mint | [![Infra mint](https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml) | Quarterly, after Jim approves | Rotates the minted infra passwords and tokens ([rotation plan](standards/docs/secret-rotation.md)) |
 | tofu_state | [![tofu_state deploy](https://github.com/jimhillr/monorepo/actions/workflows/tofu-state-deploy.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/tofu-state-deploy.yml) | Push to `main` | Deploy of the OpenTofu state Worker (decision 0009) |
 
 # Getting Started

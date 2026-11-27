@@ -8,8 +8,9 @@ check each requirement are in [evals.toml](../evals.toml).
 Drafted by an agent on 2026-11-26 from the Goal, The site and Phases
 sections of the [review dashboard plan](plans/2026-11-review-dashboard.md)
 and the existing tests. Pane has no deep review yet. PANE-001 to PANE-006
-cover what is built (phases 0 and 1); PANE-007 to PANE-010 are the plan's
-later phases and have no evals until they are built.
+cover what is built (phases 0 and 1) and PANE-008 the Reviews page (phase 2);
+PANE-007, PANE-009 and PANE-010 are the plan's later phases and have no
+evals until they are built.
 
 ## PANE-001: Today shows what needs Jim
 
@@ -76,7 +77,7 @@ later phases and have no evals until they are built.
 - Priority: should
 - Why: Review decks are how Jim hears about each project in depth.
 - Accept: the Reviews page shows the rotation, each deck as slides in the
-  page, its PDF download and a link to its pull request.
+  page, its PDF download, its scorecard and a link to its pull request.
 
 ## PANE-009: Jim can add a TODO and close a human issue from pane
 

@@ -115,7 +115,7 @@ every = "30d"
 id = "cloudflare-infra-token-scopes"
 vendor = "Cloudflare"
 where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
-expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Web Analytics Read; jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Web Analytics Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
+expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Settings Read (which Web Analytics uses); jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Settings Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
 why = "PR plans must not be able to change anything, and OpenTofu must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
 every = "90d"
 
@@ -212,3 +212,46 @@ where = "github.com/settings/installations > Claude > Permissions"
 expect = "The Claude GitHub App has no Administration, Environments or Secrets write permission."
 why = "Agents act through the app, so any of these would let them get round the second approval."
 every = "90d"
+
+# Secret rotation (standards/docs/secret-rotation.md). Each is a reminder:
+# when it comes due, rotate the secret with its runbook, then answer the check.
+
+[[setting]]
+id = "rotate-infra-mint-quarterly"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Actions > Infra Mint"
+expect = "The last scheduled Infra Mint run (1st of January, April, July or October) was approved and is green, so the minted passwords and tokens were rotated within the last 90 days."
+why = "Minted Cloudflare tokens expire 180 days after each mint; a missed rotation shows here before deploys stop."
+every = "90d"
+
+[[setting]]
+id = "rotate-github-app-infra-key"
+vendor = "GitHub"
+where = "github.com/settings/apps > the infra app > Private keys"
+expect = "The app has exactly one private key, made within the last 180 days and stored as GH_INFRA_CREDENTIALS_APP_KEY in infra-credentials (standards/docs/runbooks/github-app-infra.md, Undo or rotate)."
+why = "It can write every infra secret; a key that never changes stays useful to anyone who ever copied it."
+every = "180d"
+
+[[setting]]
+id = "rotate-auth0-infra-credentials"
+vendor = "Auth0"
+where = "manage.auth0.com > Applications > infra-credentials > Credentials"
+expect = "The client secret was rotated within the last 180 days and the new one is AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET in infra-credentials (standards/docs/runbooks/infra-credentials-environment.md, Undo or rotate)."
+why = "It can create Auth0 apps and grants, so it is rotated on a schedule as well as on a leak."
+every = "180d"
+
+[[setting]]
+id = "rotate-cloudflare-infra-credentials"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Account API Tokens > jimhillr-infra-credentials"
+expect = "The token was rolled within the last 180 days, expires no more than 200 days after that, and the new value is CLOUDFLARE_INFRA_CREDENTIALS_TOKEN in infra-credentials."
+why = "It can make any Cloudflare token, so it is rotated on a schedule and expires if a rotation is missed."
+every = "180d"
+
+[[setting]]
+id = "rotate-rapidapi-key"
+vendor = "RapidAPI"
+where = "rapidapi.com > My Apps > the homer app > Authorization"
+expect = "The application key was regenerated within the last 365 days and RAPIDAPI_KEY where you run homer has the new one (standards/docs/runbooks/rapidapi-zillow.md)."
+why = "It lives outside GitHub, on your machine, so only a reminder rotates it."
+every = "365d"

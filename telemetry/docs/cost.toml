@@ -1,0 +1,15 @@
+# telemetry: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-27"
+summary = "One Cloudflare Worker writing events to Analytics Engine, rate-limited per IP address. $0 a month."
+
+[[service]]
+blip = "Cloudflare Workers"
+plan = "free"
+why = "Takes each POST /event: a few hundred fan votes and exposures a week against 100,000 requests a day, and the rate limit caps one client at 10 per 10 seconds."
+[service.usage]
+workers = 1
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "PR CI lints, builds the wasm bundle and runs the event tests, a few minutes a run on a standard runner."

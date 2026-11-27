@@ -599,13 +599,15 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. tofu_state is the first Worker (OpenTofu's http state backend, decision 0009), written in Rust with workers-rs. Also planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API.",
+    "description": "Approved vendor, Free plan only. Written in Rust with workers-rs: tofu_state is OpenTofu's http state backend (decision 0009), and telemetry takes events into Analytics Engine with a rate-limit binding (decision 0001). Web Analytics and pane's API are planned. Workers are created only through free-tiers.sh worker.",
     "exemplars": [
+      "telemetry",
       "tofu_state"
     ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",
-      "pane/issues"
+      "standards/docs/decisions/0009-opentofu-state-http-backend.md",
+      "telemetry/README.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
     "budget": 0

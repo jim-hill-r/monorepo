@@ -41,8 +41,8 @@ struct Args {
     #[arg(long)]
     max_bedrooms: Option<u32>,
 
-    /// Minimum number of bathrooms
-    #[arg(long)]
+    /// Minimum number of bathrooms (a non-negative number, such as 1.5)
+    #[arg(long, value_parser = parse_bathroom_count)]
     min_bathrooms: Option<f32>,
 
     /// Maximum listing price
@@ -52,6 +52,11 @@ struct Args {
     /// Minimum square footage
     #[arg(long)]
     min_sqft: Option<u32>,
+
+    /// Print the property details and the evaluation as one JSON object
+    /// instead of the text report
+    #[arg(long)]
+    json: bool,
 }
 
 /// Preferences for evaluating a home
@@ -78,8 +83,10 @@ pub struct PropertyDetails {
     pub zillow_url: Option<String>,
 }
 
-/// Result of evaluating a property against preferences
-#[derive(Debug)]
+/// Result of evaluating a property against preferences.
+///
+/// `--json` prints it as is, so renaming a field changes homer's JSON output.
+#[derive(Debug, Serialize)]
 pub struct PropertyEvaluation {
     pub details: PropertyDetails,
     pub meets_preferences: bool,
@@ -219,6 +226,27 @@ fn json_u32(value: &serde_json::Value) -> Option<u32> {
     json_whole_number(value).and_then(|n| u32::try_from(n).ok())
 }
 
+/// A bathroom count as an `f32`, or `None` if it is negative or not finite
+/// (including a value too big for an `f32`).
+fn bathroom_count(value: f64) -> Option<f32> {
+    // Narrowing is intended: bathroom counts are small, and the finiteness
+    // check below catches values that overflow to infinity.
+    #[allow(clippy::cast_possible_truncation)]
+    let count = value as f32;
+    (count.is_finite() && count >= 0.0).then_some(count)
+}
+
+/// Clap value parser for `--min-bathrooms`: a non-negative, finite number.
+fn parse_bathroom_count(arg: &str) -> std::result::Result<f32, String> {
+    let value: f64 = arg
+        .trim()
+        .parse()
+        .map_err(|_| format!("`{arg}` is not a number"))?;
+    bathroom_count(value).ok_or_else(|| {
+        format!("`{arg}` is not a valid bathroom count: use a non-negative number, such as 1.5")
+    })
+}
+
 /// Parse property details from the raw Zillow API JSON response
 pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<PropertyDetails> {
     let price = raw
@@ -231,7 +259,7 @@ pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<
     let bathrooms = raw
         .get("bathrooms")
         .and_then(|v| v.as_f64())
-        .map(|v| v as f32);
+        .and_then(bathroom_count);
 
     let living_area = raw.get("livingArea").and_then(json_u32);
 
@@ -400,6 +428,12 @@ pub fn format_property(evaluation: &PropertyEvaluation) -> String {
     lines.join("\n")
 }
 
+/// Format the property details and the evaluation as one pretty-printed
+/// JSON object, for `--json`.
+pub fn format_json(evaluation: &PropertyEvaluation) -> Result<String> {
+    serde_json::to_string_pretty(evaluation).context("Failed to write the result as JSON")
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -421,7 +455,11 @@ fn main() -> Result<()> {
         .context("Failed to look up property")?;
 
     let evaluation = evaluate_property(&details, &prefs);
-    println!("{}", format_property(&evaluation));
+    if args.json {
+        println!("{}", format_json(&evaluation)?);
+    } else {
+        println!("{}", format_property(&evaluation));
+    }
 
     Ok(())
 }
@@ -544,6 +582,60 @@ mod tests {
     }
 
     #[test]
+    fn test_format_json_has_details_and_evaluation() {
+        let details = make_property(Some(900_000), Some(3), Some(2.5), Some(1500));
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_price: Some(800_000),
+            ..Default::default()
+        };
+        let output = format_json(&evaluate_property(&details, &prefs)).expect("serializes");
+        let value: serde_json::Value = serde_json::from_str(&output).expect("valid JSON");
+        assert_eq!(
+            value,
+            json!({
+                "details": {
+                    "address": "123 Main St",
+                    "price": 900_000,
+                    "bedrooms": 3,
+                    "bathrooms": 2.5,
+                    "living_area": 1500,
+                    "year_built": null,
+                    "home_type": null,
+                    "description": null,
+                    "zillow_url": null,
+                },
+                "criteria_checked": 2,
+                "criteria_met": 1,
+                "meets_preferences": false,
+                "unmet_criteria": ["Price: $900000 (max is $800000)"],
+            })
+        );
+    }
+
+    #[test]
+    fn test_format_json_no_preferences_meets_with_zero_criteria() {
+        let details = make_property(None, None, None, None);
+        let output = format_json(&evaluate_property(&details, &HomePreferences::default()))
+            .expect("serializes");
+        let value: serde_json::Value = serde_json::from_str(&output).expect("valid JSON");
+        assert_eq!(value["criteria_checked"], 0);
+        assert_eq!(value["criteria_met"], 0);
+        assert_eq!(value["meets_preferences"], true);
+        assert_eq!(value["unmet_criteria"], json!([]));
+        assert_eq!(value["details"]["price"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn test_format_json_bathrooms_keep_their_decimal() {
+        // f32 values must not pick up float noise such as 1.100000023841858.
+        let details = make_property(None, None, Some(1.1), None);
+        let output = format_json(&evaluate_property(&details, &HomePreferences::default()))
+            .expect("serializes");
+        assert!(output.contains("\"bathrooms\": 1.1,"), "{output}");
+    }
+
+    #[test]
     fn test_format_property_no_preferences_omits_match_score() {
         let details = make_property(Some(750_000), Some(3), Some(2.0), Some(1500));
         let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
@@ -652,6 +744,46 @@ mod tests {
         };
         let eval = evaluate_property(&details, &prefs);
         assert!(eval.meets_preferences);
+    }
+
+    #[test]
+    fn test_parse_property_details_negative_bathrooms_is_unknown() {
+        let raw = json!({ "bathrooms": -1.5 });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert_eq!(details.bathrooms, None);
+    }
+
+    #[test]
+    fn test_parse_property_details_bathrooms_too_big_for_f32_is_unknown() {
+        // 1e300 is a valid JSON number but becomes infinity as an f32.
+        let raw = json!({ "bathrooms": 1e300 });
+        let details = parse_property_details(&raw, "123 Main St").unwrap();
+        assert_eq!(details.bathrooms, None);
+    }
+
+    #[test]
+    fn test_parse_property_details_zero_and_half_bathrooms_are_kept() {
+        let zero = parse_property_details(&json!({ "bathrooms": 0 }), "a").unwrap();
+        assert_eq!(zero.bathrooms, Some(0.0));
+        let half = parse_property_details(&json!({ "bathrooms": 1.5 }), "a").unwrap();
+        assert_eq!(half.bathrooms, Some(1.5));
+    }
+
+    #[test]
+    fn test_parse_bathroom_count_accepts_valid_values() {
+        assert_eq!(parse_bathroom_count("0"), Ok(0.0));
+        assert_eq!(parse_bathroom_count("2"), Ok(2.0));
+        assert_eq!(parse_bathroom_count("1.5"), Ok(1.5));
+    }
+
+    #[test]
+    fn test_parse_bathroom_count_rejects_bad_values() {
+        for bad in ["NaN", "inf", "-inf", "infinity", "-1", "-0.5", "two", ""] {
+            assert!(
+                parse_bathroom_count(bad).is_err(),
+                "{bad} should be rejected"
+            );
+        }
     }
 
     #[test]

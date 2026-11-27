@@ -8,7 +8,8 @@ Options:
       --quota-file <QUOTA_FILE>        File where homer keeps the RapidAPI quota it last saw, so it can stop before going past the free plan [default: $XDG_STATE_HOME/homer/rapidapi-quota.json or ~/.local/state/homer/rapidapi-quota.json] [env: HOMER_QUOTA_FILE=]
       --min-bedrooms <MIN_BEDROOMS>    Minimum number of bedrooms
       --max-bedrooms <MAX_BEDROOMS>    Maximum number of bedrooms
-      --min-bathrooms <MIN_BATHROOMS>  Minimum number of bathrooms
+      --min-bathrooms <MIN_BATHROOMS>  Minimum number of bathrooms (a non-negative number, such as 1.5)
       --max-price <MAX_PRICE>          Maximum listing price
       --min-sqft <MIN_SQFT>            Minimum square footage
+      --json                           Print the property details and the evaluation as one JSON object instead of the text report
   -h, --help                           Print help

@@ -1,0 +1,19 @@
+{
+  "details": {
+    "address": "123 Main St, Seattle, WA 98101",
+    "price": 750000,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "living_area": 1850,
+    "year_built": 1998,
+    "home_type": "SINGLE_FAMILY",
+    "description": null,
+    "zillow_url": "https://www.zillow.com/homedetails/123-Main-St-Seattle-WA-98101/1_zpid/"
+  },
+  "meets_preferences": false,
+  "unmet_criteria": [
+    "Square footage: 1850 sqft (need at least 2000 sqft)"
+  ],
+  "criteria_checked": 3,
+  "criteria_met": 2
+}

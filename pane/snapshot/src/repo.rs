@@ -74,6 +74,16 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
             }
         }
     }
+
+    let rotation = read_optional(&root.join(parse::REVIEWS_DIR).join("README.md"));
+    snapshot.reviews = parse::reviews(&rotation);
+    for review in &mut snapshot.reviews {
+        // A deck that isn't there yet (its PR not merged) has no scorecard.
+        review.scorecard = parse::scorecard(&read_optional(&root.join(&review.path)));
+    }
+    snapshot
+        .deliverables
+        .extend(snapshot.reviews.iter().map(parse::review_deliverable));
     Ok(snapshot)
 }
 
