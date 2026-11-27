@@ -124,8 +124,8 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
         .unwrap_or_else(|| panic!("no jobs"));
     assert_eq!(
         jobs.len(),
-        5,
-        "expected the ci job, the secret scan, the dependency audit, the cost summary and the CI result gate"
+        8,
+        "expected the ci job, the secret scan, the dependency audit, the workflow audit, the cost and security summaries, the resource entries label and the CI result gate"
     );
     let gate = &parsed["jobs"]["ci-result"];
     assert_eq!(
@@ -487,7 +487,7 @@ fn test_evals_run_after_ci_and_publish_their_results() {
     );
 
     let upload = &steps[upload];
-    assert_eq!(upload["with"]["retention-days"].as_u64(), Some(14));
+    assert_eq!(upload["with"]["retention-days"].as_u64(), Some(7));
     assert!(
         upload["uses"]
             .as_str()
@@ -628,6 +628,11 @@ fn test_cd_evals_run_right_after_a_deploy() {
     assert!(
         deploy < cd && cd < upload,
         "deploy, then cd evals, then upload"
+    );
+    assert_eq!(
+        steps[upload]["with"]["retention-days"].as_u64(),
+        Some(7),
+        "cd eval results are read in the same run, so they keep 7 days (RES-003)"
     );
     assert_eq!(steps[deploy]["id"].as_str(), Some("deploy"));
     assert!(

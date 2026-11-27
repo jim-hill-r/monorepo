@@ -157,7 +157,7 @@ fn build(dir: &Path, out: &Path) -> Result<usize, String> {
     let panels = themes.iter().map(|t| t.2.len()).sum();
     let html = page(&ds, &themes, &app_css);
 
-    let fonts = dir.join("dioxus/fonts");
+    let fonts = dir.join("dioxus/assets/design-system-fonts");
     let write = |name: &str, text: &str| {
         fs::write(out.join(name), text).map_err(|e| format!("{name}: {e}"))
     };

@@ -19,7 +19,7 @@ run = [
   "cargo fmt --all --check",
   "cargo clippy -- -D warnings",
   "cargo build",
-  "cargo test",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
   "cargo run --quiet -p design_system_cli -- check",
 ]
 

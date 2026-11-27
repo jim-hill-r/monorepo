@@ -1,5 +1,7 @@
 # evals
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/evals.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The eval engine: it checks that each project's product requirements hold
 as built, at every stage from CI to production. The name is plain: an eval
 is one check of one requirement.
@@ -25,12 +27,13 @@ failures make an eval flaky, how fresh a production result must be) are in
 ## Commands
 
 ```bash
-# Check every project's requirements.md and evals.toml (EVL-001 to EVL-004).
+# Check every project's requirements.md and evals.toml (EVL-001 to EVL-006).
 cargo run -p evals_cli -- check            # warnings, exit 0
 cargo run -p evals_cli -- check --strict   # exit 1 on any finding
 
-# Turn saved test reports into one result per eval (cargo and playwright
-# kinds), appended to evals-results.jsonl. Runs no tests itself.
+# Turn saved test reports into one result per eval (cargo, trycmd and
+# playwright kinds; trycmd's case lines are in the cargo output), appended
+# to evals-results.jsonl. Runs no tests itself.
 cargo test 2>&1 | tee cargo-test.log
 cargo run -p evals_cli -- run --stage ci --project cookbook \
   --cargo-output cargo-test.log --playwright-report web/results.json

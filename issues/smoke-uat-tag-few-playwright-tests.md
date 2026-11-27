@@ -1,6 +1,6 @@
 ---
 kind: todo
-priority: backlog
+priority: priority
 tags: [agent-generated]
 epic: Feedback on every change
 order: 20

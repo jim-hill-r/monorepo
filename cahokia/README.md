@@ -1,5 +1,7 @@
 # cahokia
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/cahokia.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Cahokia is a genealogy app: people, their relationships and life events,
 drawn as a family tree you can pan, zoom and focus on one person's lineage.
 It runs on the web, desktop and mobile from one Dioxus codebase. The data

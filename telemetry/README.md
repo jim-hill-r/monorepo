@@ -1,5 +1,7 @@
 # telemetry
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/telemetry.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A small Rust Cloudflare Worker with one route, `POST /event`. It checks each
 event, rate-limits it per IP address, and writes it to the `telemetry`
 Analytics Engine dataset. It is phase 5 of the

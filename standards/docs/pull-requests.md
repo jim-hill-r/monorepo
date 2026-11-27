@@ -5,6 +5,69 @@ either merged or closed. Nothing is left open without someone owning the next
 step. This page is the policy that the "PR triage" scheduled agent task
 and every agent thread follow.
 
+## Pull request descriptions
+
+PR descriptions must be quick to read (Jim, 2026-11-27: "Every PR should
+include a short executive description of what we are doing, why, and any
+engineering tradeoffs. Keep this to 75 words. It should link to details in
+committed docs/plans/issues"). Every PR description, from any agent:
+
+1. Starts with the attribution lines the agent platform requires (the
+   `claude-projects-attribution` comment and the "Requested by" line), when
+   there are any.
+2. Then the **attention badges** line (see [below](#attention-badges)),
+   which tells the reviewer how closely to look.
+3. Then opens with an **executive summary** of at most **75 words**: what the
+   PR does, why, and any engineering tradeoffs. A `## Summary` heading above
+   it is optional.
+4. Links from the summary to the committed details: the plan, decision
+   record, issue file, runbook or doc in the repo that explains the change.
+   Write long explanations there, in the same PR, not in the description.
+5. Keeps anything after the summary short: how it was tested, anything a
+   reviewer should check closely, and screenshots of UI changes
+   ([documentation.md](documentation.md)).
+
+Link targets don't count toward the 75 words. The
+[pull request template](../../.github/pull_request_template.md) has this
+shape. The **PR summary** check (PR-001,
+`standards/scripts/pr-summary-check.sh`, run by
+`.github/workflows/pull-request-summary.yml`) warns when the summary is
+missing, longer than 75 words or has no link. It is a warning only, so it
+never blocks a merge; fix the description and the check reruns on the edit.
+
+Dependabot PRs are exempt: their bodies are generated.
+
+### Attention badges
+
+Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
+know how much attention I should give. First is if a fundamental
+requirement is changing. Second if anything affecting a threat/risk is
+changing." Every agent PR description has one line right under the
+attribution lines, written by `chores badges` (or `chores pr-body`, which
+calls it) from the PR's diff against `origin/main`:
+
+```markdown
+> **Attention:** 🔴 must requirement changed: `COOK-001` · 🟠 threat/risk files changed: `cookbook/docs/threat.toml`
+```
+
+| Badge | 🟢 | 🟡 / 🟠 | 🔴 |
+| --- | --- | --- | --- |
+| Requirements | No `docs/requirements.md` changed | 🟡 a `should` or `could` requirement, or text outside any requirement, changed | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
+| Threat/risk | No risk file changed | 🟠 a risk file changed | (none: whether a change weakens security is the Security summary's call) |
+
+Risk files are the security files of the [PR security
+summary](security.md) (each project's `docs/threat.toml`, `_headers` and
+`wrangler` configs, workflows, gitleaks, cargo-deny and zizmor configs)
+plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
+`infra/src/`, `infra/scripts/`, `standards/settings.toml`,
+`standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
+secret and security check scripts, `SECURITY.md` and `CODEOWNERS`. The
+line is a pointer, not a gate: a requirement change still gets
+`needs-human` ([evals.md](evals.md)), and the Security summary job still
+labels `security` and, when a change weakens anything, `needs-human`. The
+PR-001 check skips the line. When later pushes change what the PR
+touches, rerun `chores badges` and update the line.
+
 ## Who owns a PR
 
 | Author | Owner | Who merges |
@@ -68,7 +131,8 @@ these hold:
   under the merge rule instead.
 
 Auto-merge doesn't replace the approval: `jimhillr-agt` can't approve its
-own PRs, so an agent PR still waits for a reviewer (normally Jim). Auto-merge
+own PRs, so an agent PR still waits for a reviewer: `jimhillr-reviewer`
+when its rules allow (see "The reviewer account"), otherwise Jim. Auto-merge
 means Jim's approval is the last step: GitHub squash-merges as soon as the
 approval lands, with no agent run in between.
 
@@ -80,6 +144,92 @@ stack in `infra` is applied (it requires the `CI result` check from
 GitHub also waits for green CI on the new head before auto-merging. Until
 then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
+
+## Stacked pull requests
+
+A stack is a chain of PRs where each one's base is the branch of the one
+below it, so they reach `main` only together. Each step stays its own
+reviewable PR, but Jim approves the stack once (decision
+[0014](decisions/0014-faster-pr-approvals.md)):
+
+1. When every PR in the stack is complete and green, the thread retargets
+   the **top** PR to `main`. Its diff is now the whole stack.
+2. It edits the top PR's description: the executive summary covers the
+   whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
+   first, the top one last. Pane's Approve page reads that line.
+3. It moves every other PR in the stack back to draft, with a one-line
+   comment naming the top PR, and turns off their auto-merge.
+4. It marks the top PR ready and turns on auto-merge as usual. One
+   approval squash-merges the whole stack as one commit.
+5. Once it merges, the thread (or PR triage) closes the step PRs with a
+   comment saying they merged in the top PR.
+
+A change to a step after this is made on that step's branch and merged up
+through the stack to the top branch, which needs a fresh approval like any
+push. PR triage treats the draft step PRs of a stack whose top PR is open
+as part of it, not as orphans.
+
+Jim reviews from pane's **Approve** page (`/approve` on
+<https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
+ones first, with its summary, attention badges and a link to its review
+form.
+
+## The reviewer account
+
+`jimhillr-reviewer` is a GitHub account whose only job is approving the
+agent PRs its rules allow, so Jim doesn't have to (Jim, 2026-11-27: "a
+third GitHub account to do approvals so we can be explicit about what is
+being auto-approved and establish a process for that approver"; decision
+[0014](decisions/0014-faster-pr-approvals.md)). It isn't an agent: no
+Claude session holds its token, and it never writes code, comments or
+merges. Its approval counts toward the Default ruleset's one approval like
+anyone's.
+
+**How it runs.** The `All Auto Review` workflow
+(`.github/workflows/all-auto-review.yml`) runs every 15 minutes on `main`
+with `REVIEWER_TOKEN` from the `reviewer` environment, and calls
+`standards/scripts/auto-review.sh run`. It reads every open PR through the
+API and never checks out PR code, so a PR can't change the rules it is
+judged by.
+
+**What it may approve.** A PR only when every one of these holds (PR-003):
+
+1. Opened by `jimhillr-agt`, out of draft, based on `main` (a stack is
+   approved as its retargeted top PR).
+2. Every check run on the head commit finished and passed (skipped and
+   neutral count), every commit status is success, and `CI result` and
+   `PR summary` both passed. Nothing pending.
+3. No red or orange attention label: `needs-human`, `credential-change`,
+   `security` or `cost`.
+4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
+   `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
+   `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
+   `monorepo/`, `standards/` (its own rules included), and in any project
+   `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
+   `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
+5. At most 100 files and 1,500 changed lines.
+6. No outstanding "changes requested", and no approval of its own on this
+   head commit yet.
+
+Anything else waits for Jim, who approves it from pane's Approve page.
+
+**What it records.** Each approval is a review on the head commit (so a
+push dismisses it) whose text names the rules version and what passed:
+"jimhillr-reviewer rules v1 (decision 0014): checks green on `<sha>`, no
+red or orange label, no protected path, N files, +a/-d." Each run's summary
+lists every open agent PR with "approve" or "skip" and the reason.
+
+**Changing the rules.** Edit `standards/scripts/auto-review.sh` (bump
+`RULES`), its tests in `standards/tests/auto-review.test.sh` and this
+section in one PR. It touches `standards/`, so only Jim can approve it.
+
+## Post-merge review
+
+Jim reads every merged PR afterwards, whoever approved it, on pane's
+**Acknowledge** page (`/acknowledge`): newest first, each with its summary
+and attention badges, until he acknowledges it. "Flag for follow-up" opens
+GitHub's editor with a `fix` issue file for that PR in its project's
+`issues/`, which the normal agent loop then works.
 
 ## PR triage
 
@@ -155,6 +305,8 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   for review, turn on auto-merge (see "Auto-merge") and flag it.
 - If it's ready for review, green, not `needs-human` and auto-merge is off,
   turn auto-merge on.
+- If it's an orphaned stack whose steps are all green, collapse it as
+  "Stacked pull requests" says, so it needs one approval.
 - Otherwise add `needs-human` and flag it.
 
 ### Main health
