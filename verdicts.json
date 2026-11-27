@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T16:23:45.634306316Z",
+  "generated_at": "2026-11-27T16:26:40.132591469Z",
   "projects": [
     {
       "project": "bear_down",
@@ -73,9 +73,9 @@
           "requirement": "BEAR-010",
           "title": "Fans can say when a verdict looks wrong",
           "priority": "should",
-          "verdict": "unknown",
+          "verdict": "at-risk",
           "reasons": [
-            "no production-stage results yet"
+            "fans-are-voting has no observe results yet"
           ]
         }
       ]
