@@ -20,6 +20,8 @@ mod splash;
 mod state;
 mod telemetry;
 mod theme;
+#[cfg(test)]
+mod web_headers;
 
 /// Builds the app and runs the game until the window closes, or until the
 /// script ends when the desktop build is started with `--script <file>`

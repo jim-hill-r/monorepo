@@ -88,6 +88,18 @@ drops events from browsers that send Do Not Track or Global Privacy
 Control, and never stores IP addresses. The desktop and Android builds
 send nothing. `src/telemetry.rs` has the events and their tests.
 
+## Security headers
+
+Cloudflare Pages sends the headers in `web/_headers` with every response
+of the web build (`mise run release:web` copies the file into `dist/web`):
+a Content-Security-Policy, `X-Frame-Options`, `X-Content-Type-Options`,
+`Referrer-Policy` and `Strict-Transport-Security`. The CSP allows only the
+game's own files, `'wasm-unsafe-eval'` for Bevy's wasm, the Web Analytics
+beacon Pages injects, and the telemetry Worker above in `connect-src`. If
+the game starts loading or sending anything new, add its origin there;
+the tests in `src/web_headers.rs` fail when the telemetry endpoint isn't
+allowed.
+
 ## Development
 
 ```bash
