@@ -30,7 +30,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Validate every project's docs/requirements.md and evals.toml
-    /// (EVL-001 to EVL-005, and malformed files).
+    /// (EVL-001 to EVL-006, and malformed files).
     Check {
         /// Repo root. Defaults to the nearest directory above the current
         /// one that holds standards/docs/naming.md.

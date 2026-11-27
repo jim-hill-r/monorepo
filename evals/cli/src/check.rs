@@ -22,7 +22,7 @@ pub const SETTING_CHECKS: &str = "standards/settings-checks.jsonl";
 /// One problem, printed as `warning[EVL-001] cookbook/evals.toml: ...`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Finding {
-    /// `EVL-001` to `EVL-005`, or `None` for a malformed file.
+    /// `EVL-001` to `EVL-006`, or `None` for a malformed file.
     pub code: Option<&'static str>,
     pub path: String,
     pub line: Option<usize>,
@@ -240,12 +240,12 @@ pub fn check_project(
         }
     }
 
-    // EVL-005: a page request must check what came back, not only that
+    // EVL-006: a page request must check what came back, not only that
     // something answered.
     for eval in &evals {
         if shallow_http(&eval.kind) {
             finding(
-                Some("EVL-005"),
+                Some("EVL-006"),
                 &evals_path,
                 None,
                 format!(
@@ -281,7 +281,7 @@ pub fn check_project(
     findings
 }
 
-/// EVL-005: a `GET` of a `path` that expects a 2xx and checks no content.
+/// EVL-006: a `GET` of a `path` that expects a 2xx and checks no content.
 fn shallow_http(kind: &Kind) -> bool {
     let Kind::Http {
         path: Some(_),
@@ -674,10 +674,10 @@ kind = "trycmd"
     }
 
     #[test]
-    fn evl_005_http_eval_without_a_content_check() {
+    fn evl_006_http_eval_without_a_content_check() {
         let base = "prefix = \"COOK\"\n[[eval]]\nid = \"live\"\nrequirement = \"COOK-001\"\nstages = [\"cd\"]\nkind = \"http\"\n";
         let findings = check(Some(REQS), Some(&format!("{base}path = \"/recipe/1\"\n")));
-        assert_eq!(codes(&findings), vec![Some("EVL-005")]);
+        assert_eq!(codes(&findings), vec![Some("EVL-006")]);
         assert!(findings[0].message.contains("`live`"));
 
         for fields in [

@@ -169,7 +169,7 @@ error, and the rest follow once every shipping project has its files.
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
-| EVL-005 | An `http` eval `GET`s a `path`, expects a 2xx and checks no content (no `body_contains` or `asset_contains`). |
+| EVL-006 | An `http` eval `GET`s a `path`, expects a 2xx and checks no content (no `body_contains` or `asset_contains`). |
 
 For EVL-003 a test matches when a Rust `fn` name in the project starts with
 the eval's `filter`, a `.ts` or `.js` file contains its `grep`, or a file
@@ -247,7 +247,7 @@ cookbook, cahokia and pane are client-rendered Dioxus apps on Cloudflare
 Pages. Their release has no `404.html`, so Pages serves the same
 `index.html` shell, with status 200, for every path, `/recipe/1` and
 `/no-such-page` alike. An `http` eval that only checks the status of a page
-path proves nothing about that page, which is why EVL-005 warns about one.
+path proves nothing about that page, which is why EVL-006 warns about one.
 Check content instead, in one of three ways:
 
 - **A data file the page reads**, with `body_contains`: pane's
