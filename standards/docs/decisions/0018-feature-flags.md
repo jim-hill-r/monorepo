@@ -1,4 +1,4 @@
-# 0018. Feature flags: our own flags service on Cloudflare, with a console where app managers set modes per user
+# 0018. Feature flags: our own flags service on Cloudflare, with a management app where app managers set modes per user
 
 - Status: Proposed
 - Decided by: Jim (pending)
@@ -47,7 +47,7 @@ uses these words throughout:
 | **App manager** | A non-engineer, signed in with Auth0, who manages one or more apps' modes for their users. Holds the `manager` role for each app they manage. |
 | **Mode** | A named way an app can behave (a flag, in engineering terms), with a plain-language name and description, and a fixed set of choices. |
 | **Setting a mode** | Choosing one of a mode's choices for one user, or for everyone in the app. |
-| **Console** | The web page where app managers set modes and see the history of changes. |
+| **Management app** | The web app where app managers set modes and see the history of changes. (Jim, 2026-11-27: "Lets not call them console. I hate that. Lets call it the management app or something like that.") |
 | **Developer** | Jim and the agents: they add modes to an app's code and deploy it, and appoint app managers. |
 
 Other names considered: *operator* (sounds like infrastructure),
@@ -86,18 +86,18 @@ option's effort.
 
 | | Option | Money | Free-tier headroom | Claude effort | Open source | Rust and Workers fit | Where an app manager works, and the audit trail |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A | **Cloudflare Flagship** (public beta since 2026-05-26) | $0 in beta. Pricing after GA is not announced ("we'll share more details on pricing as we approach general availability"). | Generous limits (5,000 flags an app), not yet tied to a plan | About 6 PRs | SDKs only; the service is closed | The Rust SDK needs Tokio, so it can't run in a `workers-rs` Worker, and `workers-rs` 0.9 has no Flagship binding: a Rust Worker would call the evaluation API over HTTP with a token, or use JS interop | Flagship's UI is the Cloudflare dashboard, and an app manager can't be given a dashboard login. So we'd still build our own console, calling Flagship's API with a write token. Per-user values become lists of `sub` values inside each flag's rules, edited by a `PUT` that replaces the whole flag, so two managers' changes can overwrite each other. Its changelog records the API token, not which manager acted. |
+| A | **Cloudflare Flagship** (public beta since 2026-05-26) | $0 in beta. Pricing after GA is not announced ("we'll share more details on pricing as we approach general availability"). | Generous limits (5,000 flags an app), not yet tied to a plan | About 6 PRs | SDKs only; the service is closed | The Rust SDK needs Tokio, so it can't run in a `workers-rs` Worker, and `workers-rs` 0.9 has no Flagship binding: a Rust Worker would call the evaluation API over HTTP with a token, or use JS interop | Flagship's UI is the Cloudflare dashboard, and an app manager can't be given a dashboard login. So we'd still build our own management app, calling Flagship's API with a write token. Per-user values become lists of `sub` values inside each flag's rules, edited by a `PUT` that replaces the whole flag, so two managers' changes can overwrite each other. Its changelog records the API token, not which manager acted. |
 | B | **OpenFeature with flagd** (CNCF, Apache 2.0) | $0 for the software | flagd is a long-running Go server; no approved vendor runs one free (Workers can't, Cloudflare Containers are paid) | About 7 PRs | Yes | The Rust flagd provider's in-process mode wants gRPC sync or a file system, neither of which fits a WebAssembly Worker | flagd reads flag files and has no UI or write API, so per-user changes mean editing files: ruled out by "no git". |
 | C | **Unleash or GrowthBook** | Self-hosted: $0 software, but each needs a server and Postgres or MongoDB, with no free host among approved vendors. GrowthBook Cloud has a free plan with a capped number of seats; Unleash's hosted plans are paid. | Seat caps on hosted free plans | About 5 PRs, plus Jim's sign-off for a new vendor | Yes (open core) | No Rust SDK for Workers; we'd call their HTTP APIs | Both have a full UI for non-engineers, with an audit log. But it is a separate sign-in (not our Auth0), each manager takes a seat, and the UI is built for engineers running experiments, not for "change this user's mode". |
 | D | **PostHog feature flags** | $0 within PostHog's free flag quota (1 million requests a month) | One more use of PostHog's free plan | About 5 PRs | Yes (MIT core) | HTTP API from Rust | An app manager would need a PostHog login, which also shows session replays and analytics: far more than they should see. **Can't be used for Blue Eel** (analytics-free), and widens PostHog's approval beyond session replay. |
-| E | **Auth0 user metadata** plus an Auth0 Action that copies modes into the token | $0 | Inside Auth0's free 25,000 MAU | About 4 PRs | No | Works everywhere, since modes ride in the token `auth_sdk` already verifies | Managers can't use the Auth0 dashboard, so we'd build the console anyway, and its backend would need a Management API token with `update:users`, which can change **any** user's profile in every app. Changes only reach the user at their next sign-in or token refresh. |
-| **F** | **Our own small service**: a `jimhillr-flags` Worker in Rust, modes and settings in D1, and a console web app for app managers | $0 | 2 Workers or Pages projects (budgets 25 and 25), 1 D1 database (of 10), a few hundred D1 rows a day (of 100,000 written, 5,000,000 read) | About 6 PRs | Yes, ours | Pure Rust, `workers-rs` with the `d1` feature, the same shape as `tofu_state`; the console is Dioxus, like every other app | The console signs managers in with the same Auth0 accounts, shows only their apps, and writes a history entry with every change, naming the manager. No vendor dashboard and no git. |
+| E | **Auth0 user metadata** plus an Auth0 Action that copies modes into the token | $0 | Inside Auth0's free 25,000 MAU | About 4 PRs | No | Works everywhere, since modes ride in the token `auth_sdk` already verifies | Managers can't use the Auth0 dashboard, so we'd build the management app anyway, and its backend would need a Management API token with `update:users`, which can change **any** user's profile in every app. Changes only reach the user at their next sign-in or token refresh. |
+| **F** | **Our own small service**: a `jimhillr-flags` Worker in Rust, modes and settings in D1, and a management app for app managers | $0 | 2 Workers or Pages projects (budgets 25 and 25), 1 D1 database (of 10), a few hundred D1 rows a day (of 100,000 written, 5,000,000 read) | About 6 PRs | Yes, ours | Pure Rust, `workers-rs` with the `d1` feature, the same shape as `tofu_state`; the management app is Dioxus, like every other app | The management app signs managers in with the same Auth0 accounts, shows only their apps, and writes a history entry with every change, naming the manager. No vendor dashboard and no git. |
 
 ### Why not A to E
 
 The "no git" and "no vendor dashboard" rules mean **every** option needs
-our own console for app managers; no vendor's UI can be handed to a
-non-engineer safely. Once we build the console, the vendor only stores
+our own management app for app managers; no vendor's UI can be handed to a
+non-engineer safely. Once we build the management app, the vendor only stores
 and evaluates values, which D1 and a small Worker do for free.
 
 - **A, Flagship**, stays the best vendor fit (it is Cloudflare), but its
@@ -160,7 +160,7 @@ Option F. Each item is a default, so Jim can answer "yes to all".
      never updates or deletes `history`, and SQLite triggers reject it.
    - A choice must be one of the mode's declared choices; anything else is
      a 400.
-4. **The console is its own Dioxus app, `jimhillr-console`** on Cloudflare
+4. **The management app is its own Dioxus app, `jimhillr-manage`** on Cloudflare
    Pages, signing in through `auth_sdk` like every other app. A manager
    sees the apps they manage; for each one, its modes in plain language;
    a search for a user by name or email; each mode's choice for that user
@@ -186,7 +186,7 @@ Option F. Each item is a default, so Jim can answer "yes to all".
    so it can't be in the public repo: Jim assigns it in the Auth0 dashboard,
    following a runbook added with phase 2, and a settings check in the
    weekly digest lists every manager so Jim can confirm the list. A
-   console page for Jim to appoint managers can follow later.
+   management app page for Jim to appoint managers can follow later.
 7. **Modes never grant permissions.** A mode changes how an app looks or
    behaves for a person; it is never what lets someone read or change data
    they otherwise couldn't, and never makes someone a manager. Who may do
@@ -200,22 +200,22 @@ Option F. Each item is a default, so Jim can answer "yes to all".
 ## Threat model
 
 Setting someone's modes is a privileged action, and the people doing it
-are not engineers, so the flags Worker and the console each get a
+are not engineers, so the flags Worker and the management app each get a
 `docs/threat.toml` when they are built. The main threats:
 
 | STRIDE | Threat | Mitigation |
 | --- | --- | --- |
 | Spoofing | A user asks for another user's modes, or pretends to be a manager | `sub` and permissions come only from a verified Auth0 access token; `/v1/manage/*` checks `manage:{app}` for the app in the path |
-| Spoofing | A manager's account is taken over (phished password, shared laptop) | Managers must use multi-factor sign-in, enforced by an Auth0 Action for anyone holding a manager role (the factors the free plan offers are confirmed in phase 2); short-lived access tokens; the console signs out after inactivity |
+| Spoofing | A manager's account is taken over (phished password, shared laptop) | Managers must use multi-factor sign-in, enforced by an Auth0 Action for anyone holding a manager role (the factors the free plan offers are confirmed in phase 2); short-lived access tokens; the management app signs out after inactivity |
 | Tampering | A manager changes an app they don't manage, or sets a value the app doesn't expect | Permission per app; choices must be one of the declared ones |
-| Tampering | Two managers change the same setting at once | Each write names the value it replaces; a stale write gets a 409 and the console reloads |
-| Tampering | An agent ships Worker or console code that weakens the checks | Agents can merge code, as with pane in decision 0010. Contained by item 7 (a mode can't grant access), the append-only history, pane and the digest showing every change (item 8), and code review on every PR touching the flags Worker or console (a protected path for the reviewer account) |
+| Tampering | Two managers change the same setting at once | Each write names the value it replaces; a stale write gets a 409 and the management app reloads |
+| Tampering | An agent ships Worker or management app code that weakens the checks | Agents can merge code, as with pane in decision 0010. Contained by item 7 (a mode can't grant access), the append-only history, pane and the digest showing every change (item 8), and code review on every PR touching the flags Worker or management app (a protected path for the reviewer account) |
 | Tampering | The deploy token is used to change settings | It can only publish the list of modes (item 3), never a setting |
-| Repudiation | A manager denies a change | Every change has a history row written in the same batch, naming the manager from the verified token, with before and after, the reason and a request id; the table rejects updates and deletes; managers see the same history in the console |
-| Information disclosure | A manager sees more about users than they need | The console shows only users of apps they manage, and only name, email, last seen and modes; nothing else about them is stored |
+| Repudiation | A manager denies a change | Every change has a history row written in the same batch, naming the manager from the verified token, with before and after, the reason and a request id; the table rejects updates and deletes; managers see the same history in the management app |
+| Information disclosure | A manager sees more about users than they need | The management app shows only users of apps they manage, and only name, email, last seen and modes; nothing else about them is stored |
 | Information disclosure | User ids or emails leak | They live only in D1, never in the repo, logs, pane's snapshot or error messages; `users` rows are deleted after a year without a visit |
 | Denial of service | Flooding uses up the free 100,000 Worker requests a day | Apps fetch once per session; the Worker rate-limits per user and per IP; on any failure apps use code defaults, so the worst case is everyone gets defaults |
-| Elevation of privilege | A mode is used as a back door to admin features, or a manager makes themselves or others managers | Item 7; manager roles are assigned only by Jim in Auth0 (item 6), and no Worker or console token can assign roles |
+| Elevation of privilege | A mode is used as a back door to admin features, or a manager makes themselves or others managers | Item 7; manager roles are assigned only by Jim in Auth0 (item 6), and no Worker or management app token can assign roles |
 
 What it doesn't protect against: Jim's own Auth0 account being taken over
 (use a passkey), and someone with D1 write access through the Cloudflare
@@ -234,7 +234,7 @@ Write (`jimhillr-deploy`); the weekly digest compares `settings` with
    multi-factor Action in the auth0 stack (credential change, Jim's second
    approval); the catalog token in Infra Mint; the runbook for appointing
    a manager; `standards/settings.toml` entries. About 1 PR.
-3. **The console**, `jimhillr-console`, with its user guide written for
+3. **The management app**, `jimhillr-manage`, with its user guide written for
    app managers, threat model and evals. About 2 PRs.
 4. **First app: cahokia**, with one real mode, the deploy step, pane's
    history view, and an eval that checks the default and a manager's
@@ -242,7 +242,7 @@ Write (`jimhillr-deploy`); the weekly digest compares `settings` with
 
 ## Cost
 
-$0 a month. One Worker (budget 25), one Pages project for the console
+$0 a month. One Worker (budget 25), one Pages project for the management app
 (budget 25), one D1 database (of 10) with a few hundred rows written a day
 at most, and an Auth0 API and roles on the free plan. Each manager counts
 as one of Auth0's free 25,000 monthly active users. No new vendor. One new
@@ -253,14 +253,14 @@ effort is about 6 PRs.
 
 Look at Cloudflare Flagship again when it reaches general availability, if
 its free plan covers our usage and `workers-rs` gains a binding: the
-Worker could then store values in Flagship behind the same console. The
+Worker could then store values in Flagship behind the same management app. The
 `flags` crate's OpenFeature shape keeps that change out of the apps.
 Percentage rollouts and A/B splits, if we need them, are added to the
 Worker first and are the other trigger to revisit.
 
 ## Consequences
 
-- App managers change modes for one user, or everyone, in the console,
+- App managers change modes for one user, or everyone, in the management app,
   with no git, PR or vendor dashboard; every change is in the history.
 - Developers add a mode with a code change and a deploy; they never set a
   user's mode through git.
