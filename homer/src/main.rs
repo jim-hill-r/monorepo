@@ -138,9 +138,21 @@ impl ZillowClient {
     }
 
     /// Save the quota a response reports and warn when it is nearly used up.
+    ///
+    /// A response that reports no quota still used a request, so the saved
+    /// quota goes down by one instead of staying stale.
     fn record_quota(&self, headers: &reqwest::header::HeaderMap) -> Result<()> {
-        let Some(state) = QuotaState::from_headers(headers, quota::now_secs()) else {
-            return Ok(());
+        let now = quota::now_secs();
+        let reported = QuotaState::from_headers(headers, now);
+        let state = match (reported, &self.quota_file) {
+            (Some(state), _) => state,
+            (None, Some(path)) => {
+                match quota::load(path)?.and_then(|saved| saved.after_unreported_request(now)) {
+                    Some(state) => state,
+                    None => return Ok(()),
+                }
+            }
+            (None, None) => return Ok(()),
         };
         if let Some(warning) = state.warning() {
             eprintln!("{warning}");
@@ -994,6 +1006,67 @@ mod tests {
             .expect("a quota that has reset allows requests");
         mock.assert();
         std::fs::remove_dir_all(path.parent().expect("temp dir")).ok();
+    }
+
+    #[test]
+    fn test_request_without_quota_headers_counts_against_saved_quota() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("{}")
+            .expect(1)
+            .create();
+
+        let path = temp_quota_file("quota-no-headers");
+        let last_one = QuotaState {
+            limit: Some(100),
+            remaining: 1,
+            resets_at: Some(quota::now_secs() + 86_400),
+        };
+        quota::save(&path, &last_one).expect("save quota");
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url())
+            .with_quota_file(path.clone());
+        client
+            .property_details("123 Main St")
+            .expect("the last free request still goes through");
+
+        let saved = quota::load(&path)
+            .expect("quota file is readable")
+            .expect("quota file is kept");
+        assert_eq!(saved.remaining, 0, "an unreported request still counts");
+        assert_eq!(saved.limit, last_one.limit);
+        assert_eq!(saved.resets_at, last_one.resets_at);
+
+        // The next run must stop without contacting the server.
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url())
+            .with_quota_file(path.clone());
+        let err = client
+            .property_details("456 Oak Ave")
+            .expect_err("the count went to zero, so the guard stops");
+        assert!(err.to_string().contains("used up"), "{err}");
+        mock.assert();
+        std::fs::remove_dir_all(path.parent().expect("temp dir")).ok();
+    }
+
+    #[test]
+    fn test_request_without_quota_headers_and_no_saved_quota_writes_nothing() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("{}")
+            .create();
+
+        let path = temp_quota_file("quota-none-yet");
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url())
+            .with_quota_file(path.clone());
+        client
+            .property_details("123 Main St")
+            .expect("request succeeds");
+        assert_eq!(quota::load(&path).expect("readable"), None);
     }
 
     #[test]

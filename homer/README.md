@@ -59,7 +59,12 @@ plan's monthly quota. Every RapidAPI response reports the quota in the
 - prints a warning when 10% of the quota or less is left (5 requests if
   RapidAPI doesn't send the limit),
 - stops with an error, without contacting RapidAPI, once the quota is used up,
-  until the reset time RapidAPI gave has passed.
+  until the reset time RapidAPI gave has passed,
+- counts a request whose response reports no quota as one request used, so
+  the saved count never goes stale.
+
+homer replaces the quota file in one step (it writes a temporary file and
+renames it), so an interrupted run can't leave a half-written file behind.
 
 If the quota file is ever corrupt, homer stops rather than guessing; delete the
 file to start over.
