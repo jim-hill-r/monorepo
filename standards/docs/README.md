@@ -14,7 +14,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Runbooks](./runbooks/README.md) - Step-by-step runbooks for every task only a person can do
 - [Naming](./naming.md) - Naming conventions
-- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md), the [eval engine](./plans/2026-11-eval-engine.md), the [cost check](./plans/2026-11-cost-check.md), [cost tracking](./plans/2026-11-cost-tracking.md), the [threat check](./plans/2026-11-threat-check.md), the [design system](./plans/2026-11-design-system.md) and [resource cleanup](./plans/2026-11-resource-cleanup.md)
+- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md), the [eval engine](./plans/2026-11-eval-engine.md), the [cost check](./plans/2026-11-cost-check.md), [cost tracking](./plans/2026-11-cost-tracking.md), the [threat check](./plans/2026-11-threat-check.md), the [design system](./plans/2026-11-design-system.md), [resource cleanup](./plans/2026-11-resource-cleanup.md) and [baked skills](./plans/2026-11-baked-skills.md)
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Repo health](./repo-health.md) - The README's health badges, and how PR triage checks them and fixes what is red
 - [Scheduled tasks](./scheduled-tasks/) - The exact prompts of the Claude scheduled tasks, such as [PR triage](./scheduled-tasks/pr-triage.md)

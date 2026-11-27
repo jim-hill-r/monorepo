@@ -24,6 +24,7 @@ config_roots = [
   "cahokia",
   "cahokia/cloudflare",
   "cahokia/web",
+  "chores",
   "controlled_chaos",
   "cookbook",
   "cookbook/cloudflare",
