@@ -15,6 +15,9 @@ DEPLOY_URL = "https://jimhillr-sparkhill-webapp.pages.dev"
 includes = ["../../standards/tasks/cloudflare-pages.toml"]
 
 [tasks.release]
-description = "Build the web app this project deploys"
+description = "Build the web app this project deploys, with its security headers"
 dir = "{{config_root}}/../webapp"
-run = "mise run release"
+run = [
+  "mise run release",
+  "cp \"{{config_root}}/_headers\" dist/public/_headers",
+]

@@ -1,0 +1,17 @@
+{
+  "name": "sparkhill-website",
+  "version": "0.1.0",
+  "description": "Playwright smoke tests for the sparkhill website's static export",
+  "private": true,
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^20.17.10",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

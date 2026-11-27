@@ -2,7 +2,10 @@
 //! writes `rooting.json` for the web app (decision 0001). The file's format
 //! is described in `docs/rooting-json.md`.
 //!
-//! Usage: `bear_down [--games <path or URL>] [--out <path>] [--simulations <n>]`
+//! Usage: `bear_down [--games <path or URL>] [--out <path>] [--simulations <n>]
+//! [--week <n> [--season <year>]]`. `--week` rebuilds a past week's guide
+//! from the results before it, for the archive
+//! (`docs/plans/2026-11-archive.md`).
 
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -24,6 +27,11 @@ struct Args {
     out: String,
     /// How many seasons to simulate; `None` uses the weekly default.
     simulations: Option<u32>,
+    /// Rebuild this week's guide from the results before it; `None` is the
+    /// current week.
+    week: Option<u8>,
+    /// The season of `week`; `None` is the latest one.
+    season: Option<u16>,
 }
 
 fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
@@ -31,6 +39,8 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
         games: GAMES_URL.to_string(),
         out: "rooting.json".to_string(),
         simulations: None,
+        week: None,
+        season: None,
     };
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
@@ -48,15 +58,35 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
                 }
                 parsed.simulations = Some(count);
             }
+            "--week" => {
+                let text = value()?;
+                parsed.week = Some(
+                    text.parse()
+                        .ok()
+                        .filter(|week| *week >= 1)
+                        .ok_or_else(|| format!("--week {text:?} is not a week number"))?,
+                );
+            }
+            "--season" => {
+                let text = value()?;
+                parsed.season = Some(
+                    text.parse()
+                        .map_err(|_| format!("--season {text:?} is not a year"))?,
+                );
+            }
             "--help" | "-h" => return Err(usage()),
             other => return Err(format!("unknown argument {other:?}\n{}", usage())),
         }
+    }
+    if parsed.season.is_some() && parsed.week.is_none() {
+        return Err("--season needs --week".to_string());
     }
     Ok(parsed)
 }
 
 fn usage() -> String {
-    "usage: bear_down [--games <path or URL>] [--out <path>] [--simulations <n>]".to_string()
+    "usage: bear_down [--games <path or URL>] [--out <path>] [--simulations <n>] [--week <n> [--season <year>]]"
+        .to_string()
 }
 
 fn main() -> ExitCode {
@@ -73,6 +103,10 @@ fn run(args: &Args) -> Result<(), String> {
     eprintln!("bear_down: reading {}", args.games);
     let csv = read_games(&args.games)?;
     let schedule = Schedule::parse(&csv).map_err(|error| format!("games.csv: {error}"))?;
+    let schedule = match args.week {
+        Some(week) => as_of(&schedule, args.season, week)?,
+        None => schedule,
+    };
     let generated_at = rfc3339(SystemTime::now());
     let guide = build(&schedule, args.simulations, generated_at)?;
     let json = serde_json::to_string_pretty(&guide).map_err(|error| error.to_string())?;
@@ -102,6 +136,20 @@ fn read_games(source: &str) -> Result<String, String> {
     } else {
         std::fs::read_to_string(source).map_err(|error| format!("couldn't read {source}: {error}"))
     }
+}
+
+/// The schedule just before `week` of `season` (the latest one if `None`).
+fn as_of(schedule: &Schedule, season: Option<u16>, week: u8) -> Result<Schedule, String> {
+    let year = match season {
+        Some(year) => year,
+        None => {
+            schedule
+                .latest_season()
+                .ok_or("games.csv has no games")?
+                .year
+        }
+    };
+    schedule.as_of(year, week)
 }
 
 /// Simulates the schedule's latest season and builds the guide.
@@ -173,6 +221,8 @@ mod tests {
                 games: GAMES_URL.to_string(),
                 out: "rooting.json".to_string(),
                 simulations: None,
+                week: None,
+                season: None,
             })
         );
     }
@@ -192,7 +242,13 @@ mod tests {
                 games: "g.csv".to_string(),
                 out: "web/public/rooting.json".to_string(),
                 simulations: Some(500),
+                week: None,
+                season: None,
             })
+        );
+        assert_eq!(
+            args(&["--week", "12", "--season", "2024"]).map(|a| (a.week, a.season)),
+            Ok((Some(12), Some(2024)))
         );
     }
 
@@ -202,6 +258,10 @@ mod tests {
         assert!(args(&["--simulations", "lots"]).is_err());
         assert!(args(&["--simulations", "0"]).is_err());
         assert!(args(&["--verbose"]).is_err());
+        assert!(args(&["--week", "0"]).is_err());
+        assert!(args(&["--week", "twelve"]).is_err());
+        assert!(args(&["--season", "2024"]).is_err());
+        assert!(args(&["--week", "3", "--season", "last"]).is_err());
     }
 
     #[test]
@@ -310,6 +370,34 @@ mod tests {
         // game and a half.
         assert_eq!(json["bears"]["division_lead"].as_f64(), Some(1.5));
         assert_eq!(json["bears"]["division_rival"], "GB");
+    }
+
+    #[test]
+    fn a_past_week_is_rebuilt_from_the_results_before_it() {
+        let full = match Schedule::parse(include_str!("../../core/fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("fixture should parse: {error}"),
+        };
+        let past = match as_of(&full, Some(2024), 12) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("2024 week 12: {error}"),
+        };
+        let guide = match build(&past, Some(500), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!((guide.season, guide.week), (2024, Some(12)));
+        let week_12 = full
+            .season(2024)
+            .and_then(|season| season.week(12))
+            .map_or(0, |week| week.games().len());
+        assert_eq!(guide.games.len(), week_12);
+        // The latest season is the default.
+        let Ok(latest) = as_of(&full, None, 3) else {
+            panic!("2025 week 3");
+        };
+        assert_eq!(latest.latest_season().map(|season| season.year), Some(2025));
+        assert!(as_of(&full, Some(2024), 40).is_err());
     }
 
     #[test]

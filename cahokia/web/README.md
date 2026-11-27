@@ -1,6 +1,12 @@
 # web
 
-The Cahokia web app, built with Dioxus.
+The Cahokia genealogy app in the browser, built with Dioxus and served from
+Cloudflare Pages by the [cloudflare](../cloudflare/README.md) crate. It is
+named for the platform it targets: each Cahokia platform crate (`web`,
+`desktop`, `mobile`) is named after where it runs. Pages every platform
+shows come from the shared `ui` crate; this crate adds the web routes, the
+sidebar and Auth0 sign-in through `auth_sdk`. See
+[CONTRIBUTING.md](CONTRIBUTING.md) to build and test it.
 
 ## Pages
 

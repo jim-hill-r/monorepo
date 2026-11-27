@@ -268,3 +268,44 @@ fn every_infra_credentials_job_first_checks_its_approval_gate() {
     }
     assert!(found >= 2, "expected the mint and apply-credentials jobs");
 }
+
+#[test]
+fn the_github_stack_plans_with_the_read_app_and_applies_with_the_infra_app() {
+    // Plans and drift mint a token from the read-only infra GitHub App; only
+    // the infra-credentials apply may mint one from the infra GitHub App.
+    for (name, job) in [
+        ("infra-plan.yml", "plan"),
+        ("infra-apply.yml", "plan"),
+        ("infra-drift.yml", "drift"),
+    ] {
+        let (_, wf) = load(name);
+        let text = job_yaml(&wf, job);
+        assert!(text.contains("actions/create-github-app-token"), "{name}");
+        assert!(text.contains("secrets.GH_INFRA_READ_APP_KEY"), "{name}");
+        assert!(text.contains("GH_INFRA_READ_TOKEN"), "{name}");
+        assert!(!text.contains("GH_INFRA_CREDENTIALS_"), "{name} {job}");
+    }
+    let (_, wf) = load("infra-apply.yml");
+    let apply = job_yaml(&wf, "apply");
+    assert!(
+        !apply.contains("GH_INFRA_"),
+        "the github stack has no everyday apply (decision 0010)"
+    );
+    let creds = job_yaml(&wf, "apply-credentials");
+    assert!(creds.contains("secrets.GH_INFRA_CREDENTIALS_APP_KEY"));
+    assert!(creds.contains("GH_INFRA_CREDENTIALS_TOKEN"));
+    // PR plans from forks get no secrets, so they skip minting.
+    let (_, pr) = load("infra-plan.yml");
+    let step = pr["jobs"]["plan"]["steps"]
+        .as_sequence()
+        .expect("steps")
+        .iter()
+        .find(|s| s["id"].as_str() == Some("gh-read"))
+        .expect("gh-read step");
+    assert!(
+        step["if"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("head.repo.full_name == github.repository")
+    );
+}

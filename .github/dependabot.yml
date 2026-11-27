@@ -382,6 +382,20 @@ updates:
       - "javascript"
 
   - package-ecosystem: "npm"
+    directory: "/sparkhill/website"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      javascript-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  - package-ecosystem: "npm"
     directory: "/pane/web"
     schedule:
       interval: "weekly"

@@ -7,12 +7,17 @@
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
 #   NAM-001  Project directory names are snake_case.
+#   NAM-002, NAM-004, DOC-*, LIN-*  Package names, README.md and
+#            CONTRIBUTING.md, Cargo lints (project-check.sh); DOC-* and
+#            LIN-* are warnings only for now.
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
 #   SEC-*    Secret files ignored and Dependabot covering every lockfile
 #            (security-check.sh, standards/docs/security.md).
+#   DS-*     Projects that adopted the design system use its tokens, not raw
+#            colours (design-check.sh).
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -60,6 +65,9 @@ for t in standards/tasks/*.toml; do
   done
 done
 
+# NAM-002, NAM-004 (errors), DOC-*, LIN-* (warnings): per-project checks.
+bash standards/scripts/project-check.sh || errors=$((errors + 1))
+
 # EVL-*: requirements and evals. Warnings only; never fails the audit.
 bash standards/scripts/evals-check.sh
 
@@ -68,6 +76,9 @@ bash standards/scripts/cost-check.sh
 
 # SEC-002, SEC-006: repo-wide security guards (see standards/docs/security.md).
 bash standards/scripts/security-check.sh || errors=$((errors + 1))
+
+# DS-*: no raw colours in projects that adopted the design system.
+bash standards/scripts/design-check.sh || errors=$((errors + 1))
 
 # FT-*: free tier guards (see standards/docs/free-tiers.md).
 bash standards/scripts/free-tiers.sh check || errors=$((errors + 1))

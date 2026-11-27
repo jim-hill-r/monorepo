@@ -5,6 +5,7 @@
 
 pub mod auth0;
 pub mod cloudflare;
+pub mod github;
 
 use crate::constructs::{Auth0App, WebApp};
 use crate::synth::Synth;
@@ -40,7 +41,11 @@ pub fn web_apps() -> Vec<WebApp> {
 /// Every stack, synthesized.
 pub fn all() -> anyhow::Result<Vec<Synth>> {
     let apps = web_apps();
-    Ok(vec![auth0::synth(&apps)?, cloudflare::synth(&apps)?])
+    Ok(vec![
+        auth0::synth(&apps)?,
+        cloudflare::synth(&apps)?,
+        github::synth()?,
+    ])
 }
 
 #[cfg(test)]
