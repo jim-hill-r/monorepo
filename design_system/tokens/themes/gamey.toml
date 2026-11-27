@@ -11,7 +11,8 @@ description = "Retro console, chunky: a small fixed palette of flat colours, a p
 ratio = 1.25
 
 [fonts]
-# Press Start 2P (SIL Open Font License), self-hosted from design_system/fonts/.
+# Press Start 2P (SIL Open Font License), self-hosted from
+# design_system/dioxus/assets/design-system-fonts/.
 heading = "'Press Start 2P', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 body = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
 

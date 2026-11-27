@@ -1,0 +1,13 @@
+# zizmor (SEC-005, standards/docs/security.md, "Workflows"). Each ignore
+# says why it is safe. A PR that adds one gets `needs-human` from the
+# security summary.
+rules:
+  artipacked:
+    ignore:
+      # These four push one commit to their own data branch (never main,
+      # SEC-007) with the checkout's persisted GITHUB_TOKEN, and upload no
+      # artifact that contains .git.
+      - evals-store.yml
+      - evals-triage.yml
+      - nightly-coverage.yml
+      - telemetry-feedback-export.yml

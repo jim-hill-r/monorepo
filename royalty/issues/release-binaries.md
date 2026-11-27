@@ -8,5 +8,3 @@ added: 2026-11-27
 ---
 
 Publish the `royalty` binary so people outside the repo can run it: built by a workflow and attached to a GitHub Release, within the release-asset budget in `standards/docs/free-tiers.md`. If Jim chose crates.io as well, add the decision record, the radar entry, the secret's row in `secret-rotation.md` and the human task with its runbook.
-
-Blocked on: decision 7 in the plan.

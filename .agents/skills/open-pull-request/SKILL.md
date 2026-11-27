@@ -67,6 +67,17 @@ a check is red, even one also failing on `main`; the rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
 your own PR, so it waits for a human's approval either way.
 
+## Stacked PRs: one approval for the stack
+
+If your PR is one of a stack (its base is another PR's branch), don't hand
+Jim each step. Once every PR in the stack is complete and green, retarget
+the top PR to `main`, add a `Stack: #a, #b, #c` line to its description
+(lowest first, top last) with a summary of the whole stack, move the other
+step PRs back to draft with a comment naming the top PR, and mark only the
+top PR ready. Close the step PRs once it merges. The steps are under
+"Stacked pull requests" in `standards/docs/pull-requests.md` (decision
+0014).
+
 ## Working on a PR that already exists
 
 Before you start any work on an existing PR (a reviewer's changes, a CI fix,

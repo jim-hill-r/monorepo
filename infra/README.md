@@ -125,11 +125,27 @@ It makes only what is missing, so it is safe to re-run; the `rotate` input
 names secrets to remake, and `auto` remakes the quarterly set. A scheduled
 run does that on the 1st of January, April, July and October, after Jim
 approves it, and minted Cloudflare tokens expire 180 days after each mint
-([rotation plan](../standards/docs/secret-rotation.md)). The state passphrase is never rotated this way,
-since it encrypts state. When the passwords or the deploy token change, it
+([rotation plan](../standards/docs/secret-rotation.md)). The state passphrase is not rotated this way
+yet; see [Rotating the state passphrase](#rotating-the-state-passphrase). When the passwords or the deploy token change, it
 queues **Deploy tofu_state**. A person makes only the bootstrap credentials:
 `standards/docs/runbooks/infra-credentials-environment.md`. Tested by
 `tests/mint_sh.test.sh`.
+
+## Rotating the state passphrase
+
+OpenTofu keeps each key's PBKDF2 salt in the state under the key
+provider's name, so a new passphrase needs a new name. The passphrase
+therefore has generations: `TOFU_STATE_KEY_GEN` (default 1) names the
+current one. Generation 1 is the `state` key in the committed stacks; from
+generation 2 on, `scripts/tofu.sh` passes `infra encryption <gen>` in
+`TF_ENCRYPTION`, which encrypts under `gen_<n>` and falls back to the
+previous generation's key with `TOFU_STATE_PASSPHRASE_OLD`. A no-op apply
+doesn't rewrite state, so `tofu.sh rekey <stack>` re-encrypts it (`state
+pull | state push`, never touching disk) and skips a stack already on the
+current key. `opentofu_rotates_the_passphrase` in `src/synth.rs` runs two
+rotations with real OpenTofu. Wiring this into Infra Mint and the
+workflows is `issues/iac-rotate-state-passphrase.md`; until then the
+passphrase is rotated only after a leak, by hand.
 
 ## Changing a setting
 

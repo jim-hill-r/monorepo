@@ -8,5 +8,3 @@ added: 2026-11-27
 ---
 
 For each amount in the report, print how to pay each payee's share by their first supported method: the GitHub Sponsors page, the invoice contact with a ready-to-send request, or the producer's link.
-
-Blocked on: decision 8 in the plan.
