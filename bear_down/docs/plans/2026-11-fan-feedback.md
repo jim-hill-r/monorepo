@@ -115,7 +115,8 @@ Each is one PR:
    the page (no visible change). Done: `bear_down_core::tier_against`,
    used by the CLI and by the page's `Goal::verdict`.
 2. The `telemetry` Worker with `exposure` and `feedback` events (the root
-   backlog's Worker TODO), deployed with `free-tiers.sh` guards.
+   backlog's Worker TODO), deployed with `free-tiers.sh` guards. Built in
+   the root `telemetry/` project, with the other four kinds too.
 3. The vote buttons and note box on the page, with the privacy note and
    `@smoke` tests.
 4. The A/B arms (`localStorage` id, `?arm=`), with screenshots of both arms

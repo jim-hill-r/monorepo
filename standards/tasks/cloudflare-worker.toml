@@ -1,0 +1,66 @@
+# Shared mise tasks for Rust Cloudflare Workers (workers-rs).
+#
+# The project holds wrangler.toml, whose [build] command runs worker-build.
+# Keep the Worker's logic in modules that build natively, so `cargo test`
+# checks it, and gate the workers-rs glue behind cfg(target_arch = "wasm32").
+# Set the production URL as DEPLOY_URL in the project's [env]. deploy needs
+# CLOUDFLARE_API_TOKEN (Infra Mint's jimhillr-deploy token) and
+# CLOUDFLARE_ACCOUNT_ID, and creates the Worker only while the account stays inside its Workers
+# budget (standards/docs/free-tiers.md).
+# Needs in [tools]: rust with the wasm32-unknown-unknown target, node,
+# "npm:wrangler".
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = [
+  "cargo clippy --all-targets -- -D warnings",
+  "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
+]
+
+[build]
+run = "cargo build --target wasm32-unknown-unknown"
+
+[test]
+run = "cargo test"
+
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
+[ci]
+description = "Everything CI checks; makes no artifacts (test reports go in target/evals-reports)"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy --all-targets -- -D warnings",
+  "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
+  "cargo build --target wasm32-unknown-unknown",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+[dev]
+description = "Run the Worker locally with wrangler dev"
+run = "wrangler dev"
+
+[release]
+description = "Build the Worker bundle wrangler deploys"
+run = "cargo install -q worker-build --version 0.9.0 --locked && worker-build --release"
+
+[deploy]
+description = "Deploy the Worker, creating it only within the free tier Workers budget"
+run = [
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh\" worker",
+  "wrangler deploy",
+]
+
+[evals]
+description = "Turn the reports ci saved into eval results (standards/docs/evals.md)"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" run"
