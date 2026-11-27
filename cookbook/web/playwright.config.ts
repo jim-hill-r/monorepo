@@ -18,6 +18,15 @@ const synthetic = (device: (typeof devices)[string]) => ({
  * 
  * @see https://playwright.dev/docs/test-configuration
  */
+/**
+ * The sandbox Chromium fallback (standards/tasks/dioxus-web.toml) has no
+ * Firefox or WebKit, so with PLAYWRIGHT_CHROMIUM_PATH set only the Chromium
+ * projects run; CI runs them all.
+ */
+const onlyChromiumInSandbox = (project: { use?: { defaultBrowserType?: string } }) =>
+  !process.env.PLAYWRIGHT_CHROMIUM_PATH ||
+  (project.use?.defaultBrowserType ?? 'chromium') === 'chromium';
+
 export default defineConfig({
   testDir: './tests',
 
@@ -54,6 +63,9 @@ export default defineConfig({
     screenshot: 'off',
 
     video: 'off',
+    // A sandbox whose Chromium doesn't match this Playwright can point at it
+    // (the e2e task in standards/tasks/dioxus-web.toml sets it).
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined },
   },
 
   /* Configure projects for major browsers */
@@ -82,7 +94,7 @@ export default defineConfig({
       name: 'Mobile Safari',
       use: { ...synthetic(devices['iPhone 12']) },
     },
-  ],
+  ].filter(onlyChromiumInSandbox),
 
   /* Run your local dev server before starting the tests */
   webServer: {
