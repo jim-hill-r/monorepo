@@ -67,7 +67,7 @@ Cloudflare only, which is already approved and free:
   and commits `bear_down/feedback/<season>-week-<nn>.jsonl` (one line per
   vote) and a short Markdown summary per arm. The repo stays the record;
   Analytics Engine is only the inbox.
-- Synthetic traffic (UAT and eval runs) sends `x-monorepo-synthetic: 1`, and
+- Synthetic traffic (UAT and eval runs) sends `x-jimhillr-synthetic: 1`, and
   the Worker drops it, per eval engine phase 3.
 
 Why not PostHog: its free plan has surveys (1,500 responses a month) and

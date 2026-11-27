@@ -165,6 +165,15 @@ repo, rather than in any one agent tool's settings.
   it never collides with another account's `*.pages.dev` name. The audit
   enforces it (FT-006); details in
   [standards/docs/naming.md](standards/docs/naming.md#cloudflare-pages-projects).
+- **Name things `jimhillr`, not `monorepo` (Jim, 2026-11-27).** "Lets
+  not use the nomenclature monorepo anywhere in our implementations. Use
+  jimhillr instead." New identifiers (headers, user agents, meta tags,
+  token and key labels, resource names, crates, folders) use `jimhillr`,
+  such as `x-jimhillr-synthetic` and the `jimhillr-evals` user agent. The
+  only exceptions are names we don't own: the GitHub repository
+  `jimhillr/monorepo` itself and mise's `monorepo_root` setting. Existing
+  `monorepo` names are being renamed
+  (`issues/rename-monorepo-identifiers-jimhillr.md`).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
