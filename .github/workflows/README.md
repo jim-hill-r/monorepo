@@ -56,6 +56,15 @@ would run no CI). Its only pushes are to `evals-triage` (SEC-007). Nothing
 is pushed on a quiet day. See
 [standards/docs/evals.md](../../standards/docs/evals.md#triage).
 
+### evals-fire-drill.yml
+
+Run by hand (and on pull requests that change the drill): breaks one
+production `http` eval on purpose against the live site and checks the
+requirement turns red, that triage would file it, and that it turns green
+again (`evals drill`), with results kept in memory. Read-only; it never
+pushes. See "Fire drill" in
+[standards/docs/evals.md](../../standards/docs/evals.md#fire-drill).
+
 ### pull-request-ci.yml
 
 Runs on every pull request against the projects it changes. Never deploys.

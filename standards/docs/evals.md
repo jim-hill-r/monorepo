@@ -528,6 +528,20 @@ The `eval-triage` skill, where it exists, is for the judgment calls the
 workflow can't make (a disputed eval, rollback advice); it is not a daily
 task.
 
+## Fire drill
+
+The **evals fire drill** workflow (`evals-fire-drill.yml`, run by hand with a
+project and an `http` eval, default cookbook `recipe-page-live`) proves the
+loop still catches a failure. `evals drill --dir <evals-results checkout>`
+points the eval at text the live page doesn't have, runs it against the
+site, adds the failure (in memory only) to the stored results, and checks
+the requirement turns red (amber for a `should`), that triage would file it
+(a dry run of `evals triage`), and that after the real eval passes the
+verdict is back where it started. It only reads: production gets the GET
+requests a `cd` run makes, and nothing is written or pushed. Run it after
+changing the verdict rules, `evals store` or triage. The first drill's retro
+is [evals/docs/fire-drill-2026-11-27.md](../../evals/docs/fire-drill-2026-11-27.md).
+
 ## Project prefixes
 
 Every project's requirement prefix is listed in

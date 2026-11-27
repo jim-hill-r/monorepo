@@ -64,6 +64,11 @@ cargo run -p evals_cli -- store --results evals-results.jsonl --dir ../evals-res
 # at most --limit). standards/scripts/evals.sh triage runs it daily.
 cargo run -p evals_cli -- triage --dir ../evals-results --write
 
+# The fire drill: break one http eval against the live site, check its
+# requirement turns red and triage would file it, then back to green.
+# Reads the checkout, writes nothing (evals-fire-drill.yml runs it).
+cargo run -p evals_cli -- drill --dir ../evals-results --project cookbook --eval recipe-page-live
+
 # Every requirement's current verdict, from a checkout of that branch
 # (standards/scripts/evals.sh verdicts fetches it for you).
 cargo run -p evals_cli -- verdicts --dir ../evals-results --project cookbook
