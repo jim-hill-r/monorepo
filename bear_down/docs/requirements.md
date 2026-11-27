@@ -97,3 +97,13 @@ net is, including when the net is close to zero.
 - Why: decision 0007, an opt-in goal of all four NFC North teams reaching
   the divisional round.
 - Accept: a toggle reranks and re-explains the games for that goal.
+
+## BEAR-010: Fans can say when a verdict looks wrong
+
+- Priority: should
+- Why: the "doesn't matter" line and the explanations were set by
+  judgment, and fans are the ones who can tell (Jim, 2026-11-26;
+  [plans/2026-11-fan-feedback.md](plans/2026-11-fan-feedback.md)).
+- Accept: every game in every tab has a Yes / No / Confusing vote with an
+  optional note, votes reach the repo weekly as files, and the summary
+  shows each A/B arm's results.

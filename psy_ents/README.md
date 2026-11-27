@@ -1,3 +1,5 @@
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/psy_ents.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Pout pout fish is approximately 26 stanzas with each stanza of 4 lines.
 
 The cadence is approximately 5, 5, 7, 7 syllables. Sometimes 5,6,5,5 or 5,6,7,5, but always at least 5.

@@ -323,6 +323,8 @@ pub struct Link {
     pub url: String,
 }
 
+pub mod money;
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,7 @@
 # Bogan
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/bogan.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 An amazon marketplace clone which is focused on transparency and supply chain information. Restrictions on white-labeling and copy-cats.
 
 Bogan is Algonquin for a quiet tributary or backwater. (ie we provide tranparency to all the tributaries feeding into something like an amazon. We value the little guys and want consumer choice.)

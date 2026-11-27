@@ -1,5 +1,7 @@
 # royalty
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/royalty.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Royalty is an open source way for the people who build libraries and
 frameworks to be paid when their code is used. A producer puts a
 `royalty.toml` in their project that says how they want to be paid: what is

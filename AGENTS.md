@@ -43,6 +43,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
+  long to consume quickly. Every PR should include a short executive
+  description of what we are doing, why, and any engineering tradeoffs.
+  Keep this to 75 words. It should link to details in committed
+  docs/plans/issues." Every PR description opens, right after any required
+  attribution lines, with that summary of at most 75 words, and the details
+  live in committed files it links to, not in the description. The format
+  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
+  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
+  warns when it is missing, too long or unlinked.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
@@ -149,6 +159,19 @@ repo, rather than in any one agent tool's settings.
   Agents never approve a `credential-change` PR, never put a
   credential-capable token anywhere but that environment, and never ask
   for admin rights for `jimhillr-agt` or the Claude GitHub App.
+- **Evals are continuous improvement (Jim, 2026-11-27).** "The eval
+  process is a continuous improvement process and should not be considered
+  a one off project. The evals should always be green and a system of
+  feedback to our todo process should be the way in which individual
+  projects improve their eval coverage." So every requirement's verdict
+  should be green; any requirement that is not met, at risk or unknown
+  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  normal agent loop works it. Each project grows its own eval coverage
+  through those issues: requirements for anything it ships, evals that
+  check real content in production, and an eval coverage figure and badge
+  per project. Agents working on a project add or fix evals as part of the
+  work, not as a separate phase. Details are under "Continuous
+  improvement" in [standards/docs/evals.md](standards/docs/evals.md).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
