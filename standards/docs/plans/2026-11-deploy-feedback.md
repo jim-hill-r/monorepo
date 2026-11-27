@@ -98,6 +98,15 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
 
 ## Phase 3a: website smoke UAT
 
+Progress (2026-11-27): cookbook runs its `@smoke` tests against production
+after each deploy, and the cd evals read them, so COOK-005 (accessibility)
+has a production check. The `smoke` task lives in the deploy task file
+(`cloudflare-pages.toml`, through `standards/scripts/smoke.sh` and the
+project's `SMOKE_DIR`), not the web task files, since the deploy job runs in
+the deploying project. Still to do: the other web apps, previews, and the
+`uat-reports` site ([evals.md](../evals.md#after-deploy), the open issues in
+`issues/`).
+
 - Tag a handful of existing Playwright tests `@smoke` in each web app: the
   home page loads, main navigation works, one core flow per app, no console
   errors. Each app's smoke run should take about a minute in one browser.

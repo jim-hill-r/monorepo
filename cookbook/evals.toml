@@ -1,5 +1,8 @@
 # How each requirement in docs/requirements.md is checked.
 # Format: standards/docs/evals.md.
+#
+# A `playwright` eval in stage cd reads the `@smoke` tests that the `smoke`
+# task of cookbook/cloudflare runs against the live site after each deploy.
 
 prefix = "COOK"
 
@@ -23,7 +26,7 @@ description = "Every date maps to a recipe day, including leap years."
 [[eval]]
 id = "recipe-pages"
 requirement = "COOK-001"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 
 [[eval]]
@@ -52,7 +55,7 @@ filter = "test_get_week_shopping_list"
 [[eval]]
 id = "plan-pages"
 requirement = "COOK-002"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 
 [[eval]]
@@ -99,7 +102,7 @@ kind = "playwright"
 [[eval]]
 id = "header-and-home-links"
 requirement = "COOK-006"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 
 [[eval]]
