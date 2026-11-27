@@ -9,7 +9,7 @@
 #   bash standards/scripts/pr-summary-check.sh <body.md
 #
 # The summary is the text after the attribution lines (HTML comments and the
-# "_Requested by" line) up to the first heading or rule. A leading
+# "_Requested by" line) and the attention badges ("> **Attention:**") up to the first heading or rule. A leading
 # "## Summary" heading is allowed and skipped. Link targets don't count as
 # words. Warnings only: it always exits 0, and in GitHub Actions it prints
 # ::warning annotations and writes the job summary.
@@ -23,6 +23,7 @@ body=$(perl -0pe 's/<!--.*?-->//gs' <<<"$body")
 
 summary=$(awk '
   !started && /^_Requested by / { next }                  # attribution line
+  !started && /^> \*\*Attention:\*\*/ { next }           # attention badges
   !started && /^[[:space:]]*$/ { next }                   # leading blanks
   !started && /^#+[[:space:]]+[Ss]ummary[[:space:]]*$/ { started = 1; next }
   /^#/ || /^(---|\*\*\*|___)[[:space:]]*$/ { exit }
