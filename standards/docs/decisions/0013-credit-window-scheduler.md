@@ -76,8 +76,10 @@ Each run the credit window thread:
    message with the number and the numbers behind it. The coordinator,
    the only session that can start threads, starts them with the
    `start-a-new-task` skill under the usual limits (one project per
-   thread, at most 30 open, skip on-hold projects and mise migration
-   files). Otherwise it sends nothing, so hourly runs don't flood anyone.
+   thread where possible, skip on-hold projects and mise migration
+   files; no cap on open threads, Jim 2026-11-27: "Lets remove the 30
+   caps in an effort to keep credit window maximized. I will catch up
+   eventually"). Otherwise it sends nothing, so hourly runs don't flood anyone.
 
 The credit window thread stays open while the task runs; it is the
 process, not finished work.
@@ -87,8 +89,8 @@ process, not finished work.
 Let `u5` and `u7` be the five-hour and seven-day utilization, `h` the
 hours until the five-hour reset, `d` the days until the seven-day reset,
 `W` the threads working now (not waiting on Jim), and `O` the open
-threads: every thread not yet resolved, blocked ones included, which is
-what the 30-thread cap counts.
+threads (every thread not yet resolved), which is reported but caps
+nothing.
 
 1. **Stop.** If `isUsingOverage` is true or any status is `rejected`
    (`allowed_warning`, the 90% notice, is not a stop),
@@ -103,8 +105,9 @@ what the 30-thread cap counts.
    don't burst: keep only the 5-thread floor, so the seven-day window
    doesn't run out days early.
 5. **Burst.** Otherwise, if `p < 0.85`, start
-   `n = ceil((0.95 − p) / (t × max(h, 0.5)))` threads, at most 8 a run and
-   never more than 30 open.
+   `n = ceil((0.95 − p) / (t × max(h, 0.5)))` threads, at most 8 a run. There is
+   no cap on open threads: threads waiting on Jim don't use credits, so
+   they don't hold back new work.
 6. **Ease off.** If `p > 1.0` and `h > 1`, start nothing beyond the
    5-thread floor; running threads finish their work.
 7. **Floor.** In every other case keep the existing floor of 5 working
