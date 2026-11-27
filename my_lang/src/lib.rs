@@ -9,6 +9,8 @@
 //! - **Lexer**: Tokenizes source code into a stream of tokens
 //! - **Parser**: Builds an Abstract Syntax Tree (AST) from tokens
 //! - **Code Generator**: Compiles the AST to LLVM IR (using inkwell)
+//! - **JIT Runner**: Runs compiled functions in-process
+//! - **AOT Compiler**: Emits native object files and executables
 //!
 //! ## LLVM Support
 //!
@@ -29,7 +31,9 @@
 //! - ✅ Lexer: Fully implemented with language keywords
 //! - ✅ Parser: Fully implemented with recursive descent parsing
 //! - ✅ Code Generator: Implemented — compiles AST to LLVM IR (integer arithmetic, comparisons, functions, assignments)
+//! - ✅ JIT Runner and AOT Compiler: Implemented
 
+pub mod aot;
 pub mod codegen;
 pub mod jit;
 pub mod lexer;

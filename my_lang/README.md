@@ -36,6 +36,7 @@ The language implementation consists of four main phases:
 2. **Parser** (`src/parser.rs`): ✅ **Implemented** - Builds an Abstract Syntax Tree (AST) from tokens using recursive descent parsing
 3. **Code Generator** (`src/codegen.rs`): ✅ **Implemented** - Compiles the AST to LLVM IR using [inkwell](https://github.com/TheDan64/inkwell)
 4. **JIT Runner** (`src/jit.rs`): ✅ **Implemented** - Executes compiled functions directly in-process via LLVM's JIT engine
+5. **AOT Compiler** (`src/aot.rs`): ✅ **Implemented** - Emits native object files and links standalone executables
 
 ## Code Generator
 
@@ -106,6 +107,41 @@ assert_eq!(result, 7);
 - All values are `i64` (64-bit signed integer).
 - Up to 8 function arguments are supported.
 
+## AOT Compiler
+
+The AOT compiler (`src/aot.rs`) compiles my_lang ahead of time to native code
+for the host machine.
+
+### Usage Example
+
+```rust
+use std::path::Path;
+use my_lang::aot;
+
+// A standalone executable that prints 42.
+aot::build_executable("function main() { return 6 * 7 }", Path::new("answer"))
+    .expect("build should succeed");
+
+// An object file exporting `add` for a C program to link.
+aot::compile_to_object("function add(a, b) { return a + b }", Path::new("add.o"))
+    .expect("compile should succeed");
+```
+
+### API
+
+- **`aot::build_executable(source, output)`** — Builds an executable whose
+  entry point is the my_lang function `main`. The executable calls `main`,
+  prints its result and a newline on standard output, and exits with status 0.
+- **`aot::compile_to_object(source, path)`** — Writes a host object file. Each
+  my_lang function is an exported C symbol taking and returning `long long`
+  (`i64`).
+
+### Limitations
+
+- `main` must take no parameters.
+- Linking needs a system C compiler: `$CC` if set, otherwise `cc`.
+- Only the host target is supported (no cross-compilation yet).
+
 ## Lexer Features
 
 The lexer supports the following token types:
@@ -154,6 +190,7 @@ while let token = lexer.next_token() {
 - ✅ Parser: Fully implemented with recursive descent parsing for function declarations, expressions, statements, and `return`
 - ✅ Code Generator: Implemented — compiles AST to LLVM IR via inkwell (integer arithmetic, comparisons, function calls, variable assignments)
 - ✅ JIT Runner: Implemented — executes compiled functions directly in-process via LLVM JIT
+- ✅ AOT Compiler: Implemented — emits native object files and executables
 
 ## Getting Started
 

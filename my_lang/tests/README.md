@@ -19,8 +19,10 @@ mise run test
 ## Test Organization
 
 Tests are currently organized as:
-- Unit tests in each module (lexer.rs, parser.rs)
-- Integration tests will be added here as the project develops
+- Unit tests in each module (`src/*.rs`)
+- `integration_tests.rs`: the lexer → parser → codegen pipeline and the JIT runner
+- `aot_tests.rs`: AOT compilation; builds real executables and object files and
+  runs them, so it needs a system C compiler (`cc`)
 
 ## Writing Tests
 
