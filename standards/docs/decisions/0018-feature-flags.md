@@ -1,4 +1,4 @@
-# 0018. Feature flags: our own flags service on Cloudflare, with a management app where app managers set modes per user
+# 0018. Feature flags: our own flags service on Cloudflare, with a management app in each project where its app managers set modes per user
 
 - Status: Proposed
 - Decided by: Jim (pending)
@@ -47,7 +47,7 @@ uses these words throughout:
 | **App manager** | A non-engineer, signed in with Auth0, who manages one or more apps' modes for their users. Holds the `manager` role for each app they manage. |
 | **Mode** | A named way an app can behave (a flag, in engineering terms), with a plain-language name and description, and a fixed set of choices. |
 | **Setting a mode** | Choosing one of a mode's choices for one user, or for everyone in the app. |
-| **Management app** | The web app where app managers set modes and see the history of changes. (Jim, 2026-11-27: "Lets not call them console. I hate that. Lets call it the management app or something like that.") |
+| **Management app** | Each project's own web app where that project's app managers set modes and see the history of changes, for example a Blue Eel management app for `sparkhill/webapp`. For internal platform processes, pane is the management app. (Jim, 2026-11-27: "Lets not call them console. I hate that. Lets call it the management app or something like that." and "It should not be one management app. It should be one management app per project. For internal platform processes we can have the management app be pane, but for things like sparkhill webapp we need a sparkhill webapp management app.") |
 | **Developer** | Jim and the agents: they add modes to an app's code and deploy it, and appoint app managers. |
 
 Other names considered: *operator* (sounds like infrastructure),
@@ -91,13 +91,14 @@ option's effort.
 | C | **Unleash or GrowthBook** | Self-hosted: $0 software, but each needs a server and Postgres or MongoDB, with no free host among approved vendors. GrowthBook Cloud has a free plan with a capped number of seats; Unleash's hosted plans are paid. | Seat caps on hosted free plans | About 5 PRs, plus Jim's sign-off for a new vendor | Yes (open core) | No Rust SDK for Workers; we'd call their HTTP APIs | Both have a full UI for non-engineers, with an audit log. But it is a separate sign-in (not our Auth0), each manager takes a seat, and the UI is built for engineers running experiments, not for "change this user's mode". |
 | D | **PostHog feature flags** | $0 within PostHog's free flag quota (1 million requests a month) | One more use of PostHog's free plan | About 5 PRs | Yes (MIT core) | HTTP API from Rust | An app manager would need a PostHog login, which also shows session replays and analytics: far more than they should see. **Can't be used for Blue Eel** (analytics-free), and widens PostHog's approval beyond session replay. |
 | E | **Auth0 user metadata** plus an Auth0 Action that copies modes into the token | $0 | Inside Auth0's free 25,000 MAU | About 4 PRs | No | Works everywhere, since modes ride in the token `auth_sdk` already verifies | Managers can't use the Auth0 dashboard, so we'd build the management app anyway, and its backend would need a Management API token with `update:users`, which can change **any** user's profile in every app. Changes only reach the user at their next sign-in or token refresh. |
-| **F** | **Our own small service**: a `jimhillr-flags` Worker in Rust, modes and settings in D1, and a management app for app managers | $0 | 2 Workers or Pages projects (budgets 25 and 25), 1 D1 database (of 10), a few hundred D1 rows a day (of 100,000 written, 5,000,000 read) | About 6 PRs | Yes, ours | Pure Rust, `workers-rs` with the `d1` feature, the same shape as `tofu_state`; the management app is Dioxus, like every other app | The management app signs managers in with the same Auth0 accounts, shows only their apps, and writes a history entry with every change, naming the manager. No vendor dashboard and no git. |
+| **F** | **Our own small service**: a `jimhillr-flags` Worker in Rust, modes and settings in D1, and a management app per project for its app managers, built from one shared component crate | $0 | 1 Worker (budget 25), 1 Pages project per project that has managers (budget 25, 8 used), 1 D1 database (of 10), a few hundred D1 rows a day (of 100,000 written, 5,000,000 read) | About 6 PRs | Yes, ours | Pure Rust, `workers-rs` with the `d1` feature, the same shape as `tofu_state`; the management app is Dioxus, like every other app | The management app signs managers in with the same Auth0 accounts, shows only their apps, and writes a history entry with every change, naming the manager. No vendor dashboard and no git. |
 
 ### Why not A to E
 
 The "no git" and "no vendor dashboard" rules mean **every** option needs
-our own management app for app managers; no vendor's UI can be handed to a
-non-engineer safely. Once we build the management app, the vendor only stores
+our own management apps for app managers: no vendor's UI can be handed to a
+non-engineer safely, and none gives each project its own management app
+with its own name and users. Once we build them, the vendor only stores
 and evaluates values, which D1 and a small Worker do for free.
 
 - **A, Flagship**, stays the best vendor fit (it is Cloudflare), but its
@@ -144,8 +145,14 @@ Option F. Each item is a default, so Jim can answer "yes to all".
    - `GET /v1/apps/{app}/modes` returns the caller's choice for every mode.
      It needs an Auth0 **access token**, verified against Auth0's public
      keys (signature, issuer, audience, expiry), and takes `sub` **only**
-     from that token. Without a valid token it returns the defaults. CORS
-     allows only that app's own origins.
+     from that token. Without a valid token it returns the defaults.
+   - The Worker has no public route of its own for apps. Each app, and each
+     management app, calls `/api/modes` and `/api/manage/*` on **its own
+     origin**, and its own Worker or Pages Function forwards the call to
+     `jimhillr-flags` over a Cloudflare service binding. So no app needs
+     CORS or a new `connect-src`, which keeps Blue Eel's "connects only to
+     itself" rule (SPRK-006) intact, and the flags Worker can't be reached
+     from the internet at all.
    - `/v1/manage/*` (list modes, find users, set or clear a choice, read
      history) needs an access token whose `permissions` claim holds
      `manage:{app}` for the app in the path. Auth0 adds that claim from the
@@ -160,16 +167,28 @@ Option F. Each item is a default, so Jim can answer "yes to all".
      never updates or deletes `history`, and SQLite triggers reject it.
    - A choice must be one of the mode's declared choices; anything else is
      a 400.
-4. **The management app is its own Dioxus app, `jimhillr-manage`** on Cloudflare
-   Pages, signing in through `auth_sdk` like every other app. A manager
-   sees the apps they manage; for each one, its modes in plain language;
-   a search for a user by name or email; each mode's choice for that user
-   with a dropdown to change it, a required "why" and an optional "until"
-   date; the setting for everyone; and the full history of changes. It is
-   written for someone who has never seen the code. Putting it in each
-   app instead would mean building the same pages in every app; putting it
-   in pane would mix it with Jim's developer dashboard, which managers
-   must never see.
+4. **Each project has its own management app; pane is the one for
+   internal platform processes.** A project with app managers gets a
+   Dioxus app at `<project>/manage`, deployed as its own Pages project
+   `jimhillr-<project>-manage` (for Blue Eel, `jimhillr-sparkhill-manage`),
+   signing in through `auth_sdk`. It carries the project's own name, look
+   (its `design_system` theme) and user guide, and shows only that
+   project's modes and users, so a Blue Eel manager never sees cahokia.
+   It is a separate app, not a hidden page in the product, so managers'
+   pages never ship to every user and can have a stricter CSP. Modes for
+   internal platform processes (the agent loop, triage, the repo's own
+   tooling) are managed in pane by developers, once pane has its
+   Cloudflare Access sign-in (pane Phase 3); until then pane only shows
+   history.
+
+   The pages are the same everywhere, so they are built once, in a shared
+   crate `manage_ui` (Dioxus components): the project's modes in plain
+   language; a search for a user by name or email; each mode's choice for
+   that user with a dropdown to change it, a required "why" and an optional
+   "until" date; the setting for everyone; and the full history of
+   changes, all written for someone who has never seen the code. A
+   project's management app is then a thin shell, its branding and its
+   user guide, so each new one is a small PR.
 5. **A shared Rust crate, `flags`**, gives apps one small,
    OpenFeature-shaped API (`mode("editor")` returning the user's choice,
    with the default from code) for Dioxus apps and Workers alike, plus the
@@ -185,8 +204,8 @@ Option F. Each item is a default, so Jim can answer "yes to all".
    only after Jim's second approval. **Who holds a role** names a person,
    so it can't be in the public repo: Jim assigns it in the Auth0 dashboard,
    following a runbook added with phase 2, and a settings check in the
-   weekly digest lists every manager so Jim can confirm the list. A
-   management app page for Jim to appoint managers can follow later.
+   weekly digest lists every manager so Jim can confirm the list. A pane
+   page for Jim to appoint managers can follow later.
 7. **Modes never grant permissions.** A mode changes how an app looks or
    behaves for a person; it is never what lets someone read or change data
    they otherwise couldn't, and never makes someone a manager. Who may do
@@ -234,34 +253,46 @@ Write (`jimhillr-deploy`); the weekly digest compares `settings` with
    multi-factor Action in the auth0 stack (credential change, Jim's second
    approval); the catalog token in Infra Mint; the runbook for appointing
    a manager; `standards/settings.toml` entries. About 1 PR.
-3. **The management app**, `jimhillr-manage`, with its user guide written for
-   app managers, threat model and evals. About 2 PRs.
-4. **First app: cahokia**, with one real mode, the deploy step, pane's
-   history view, and an eval that checks the default and a manager's
-   setting end to end. About 1 PR.
+3. **The `manage_ui` crate** of shared management pages, with tests and
+   its threat model. About 1 PR.
+4. **First project: cahokia**, with one real mode, the deploy step,
+   `cahokia/manage` (`jimhillr-cahokia-manage`) with its user guide
+   written for app managers and its evals, pane's history view, and an
+   eval that checks the default and a manager's setting end to end. About
+   2 PRs.
+5. **Each later project** (Blue Eel next, when it needs modes): its modes,
+   the `/api/*` forwarding route and its management app. About 1 PR each.
+   Blue Eel has no sign-in today, and per-user modes need one, so that
+   project first needs a decision on adding Auth0 sign-in alongside
+   SPRK-006; its management app never adds a third-party script to the
+   learner app.
 
 ## Cost
 
-$0 a month. One Worker (budget 25), one Pages project for the management app
-(budget 25), one D1 database (of 10) with a few hundred rows written a day
+$0 a month. One Worker (budget 25), one Pages project per project with
+app managers (budget 25; 8 are used, so about 10 projects fit before the
+budget needs another look), one D1 database (of 10) with a few hundred rows written a day
 at most, and an Auth0 API and roles on the free plan. Each manager counts
 as one of Auth0's free 25,000 monthly active users. No new vendor. One new
 secret, the catalog token, minted and rotated by Infra Mint. Claude build
-effort is about 6 PRs.
+effort is about 6 PRs to the first project's management app, then about 1
+PR per project.
 
 ## Revisit
 
 Look at Cloudflare Flagship again when it reaches general availability, if
 its free plan covers our usage and `workers-rs` gains a binding: the
-Worker could then store values in Flagship behind the same management app. The
+Worker could then store values in Flagship behind the same management apps. The
 `flags` crate's OpenFeature shape keeps that change out of the apps.
 Percentage rollouts and A/B splits, if we need them, are added to the
 Worker first and are the other trigger to revisit.
 
 ## Consequences
 
-- App managers change modes for one user, or everyone, in the management app,
-  with no git, PR or vendor dashboard; every change is in the history.
+- Each project's app managers change its modes for one user, or everyone,
+  in that project's management app, with no git, PR or vendor dashboard;
+  every change is in the history. Internal platform modes are managed in
+  pane.
 - Developers add a mode with a code change and a deploy; they never set a
   user's mode through git.
 - The tech radar lists Flagship and OpenFeature in Assess, and flagd,

@@ -790,7 +790,7 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Cloudflare's feature flag service, in public beta with pricing after GA not announced, and no workers-rs binding. Decision 0018 (proposed) builds a small flags Worker on D1 and a management app for app managers instead, and revisits Flagship at GA.",
+    "description": "Cloudflare's feature flag service, in public beta with pricing after GA not announced, and no workers-rs binding. Decision 0018 (proposed) builds a small flags Worker on D1 and a management app per project instead, and revisits Flagship at GA.",
     "exemplars": [],
     "sources": [
       "standards/docs/decisions/0018-feature-flags.md"
