@@ -40,7 +40,14 @@ async function watchViolations(page: Page): Promise<string[]> {
     const response = await route.fetch();
     await route.fulfill({
       response,
-      headers: { ...response.headers(), 'content-security-policy': csp },
+      headers: {
+        ...response.headers(),
+        // dx serve sends no content type for its index.html fallback
+        // (/recipe/1 and the like), and WebKit downloads a fulfilled
+        // response without one instead of rendering it.
+        'content-type': 'text/html; charset=utf-8',
+        'content-security-policy': csp,
+      },
     });
   });
   return violations;
