@@ -1,0 +1,8 @@
+# Cloudflare Pages configuration for the sparkhill website. Free plan only
+# (standards/docs/free-tiers.md): static files, no Functions.
+
+name = "jimhillr-sparkhill"
+compatibility_date = "2026-11-01"
+# `mise run release` in ../website runs `perseus export --release`, which
+# writes the static site to dist/exported.
+pages_build_output_dir = "../website/dist/exported"
