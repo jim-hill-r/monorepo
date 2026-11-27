@@ -2,8 +2,9 @@
 # Tests standards/scripts/hooks.sh (with affected.sh) in a throwaway repo:
 # which projects a commit or a merge checks (and that the audit's cost check
 # gets the same list in COST_PROJECTS), the skip when ci:check-tools
-# fails, that git's hook variables don't reach a project's ci, and that a
-# staged secret fails the commit (when gitleaks can be installed). Each
+# fails, that git's hook variables don't reach a project's ci, that zizmor
+# (SEC-005) runs only on changed workflows, and that a staged secret fails
+# the commit (when gitleaks can be installed). Each
 # project's ci only logs its name, so this needs only git, jq and mise.
 #   bash standards/tests/hooks.test.sh
 set -uo pipefail
@@ -20,10 +21,20 @@ git_() {
     -c init.defaultBranch=main "$@" >/dev/null 2>&1
 }
 
-mkdir -p "$repo/standards/scripts"
+mkdir -p "$repo/standards/scripts" "$repo/.github/workflows" "$work/bin"
+echo 'on: push' >"$repo/.github/workflows/x.yml"
+# A stand-in zizmor that logs the files it is given.
+cat >"$work/bin/zizmor" <<SH
+#!/usr/bin/env bash
+[ "\$1" = --version ] && { echo zizmor 0; exit 0; }
+printf '%s\n' "\$@" | grep '^\.github/' >>"$work/zizmor.log"
+exit 0
+SH
+chmod +x "$work/bin/zizmor"
+export PATH="$work/bin:$PATH"
 cp "$root/standards/scripts/hooks.sh" "$root/standards/scripts/affected.sh" \
   "$root/standards/scripts/secrets-check.sh" "$root/standards/scripts/deps-check.sh" \
-  "$repo/standards/scripts/"
+  "$root/standards/scripts/workflows-check.sh" "$repo/standards/scripts/"
 cp "$root/.gitleaks.toml" "$root/.gitleaksignore" "$repo/"
 cat >"$repo/mise.toml" <<'TOML'
 monorepo_root = true
@@ -97,6 +108,21 @@ echo 1 >"$repo/a/file"
 check "one project" 0 "a"
 audited "one project" "a"
 git_ commit -am a
+
+# zizmor runs only when a workflow changed, and only on that workflow.
+: >"$work/zizmor.log"
+check "no workflow" 0 ""
+if [ -s "$work/zizmor.log" ]; then
+  echo "FAIL no workflow: zizmor ran on: $(cat "$work/zizmor.log")"
+  failures=$((failures + 1))
+fi
+echo 'on: pull_request' >"$repo/.github/workflows/x.yml"
+check "changed workflow" 0 ""
+if [ "$(cat "$work/zizmor.log")" != .github/workflows/x.yml ]; then
+  echo "FAIL changed workflow: zizmor got '$(cat "$work/zizmor.log")', want .github/workflows/x.yml"
+  failures=$((failures + 1))
+fi
+git_ checkout -- .
 
 # The root mise.toml and the hook scripts no longer mean every project.
 echo "# x" >>"$repo/mise.toml"
