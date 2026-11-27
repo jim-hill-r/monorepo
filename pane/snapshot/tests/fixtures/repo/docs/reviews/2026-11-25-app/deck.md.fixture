@@ -1,0 +1,44 @@
+---
+marp: true
+paginate: true
+---
+
+# App deep review
+
+| Area | Rating | Why |
+| --- | --- | --- |
+| Title slide | Good | Not a scorecard: this slide has another heading |
+
+---
+
+# Scorecard
+
+| Area | Rating | Why |
+| --- | --- | --- |
+| Goals | Poor | The **core** feature is not started |
+| User experience | Fair | Fast, but `main.rs` is huge |
+| Security | Good | Static site |
+
+---
+
+## Scorecard (continued)
+
+| Why | Area | Rating | Trend |
+| :-- | :-- | :-: | --- |
+| CI green | Quality | Good | up |
+| | Operations | Fair | |
+| No area | | Good | |
+
+Notes after the table.
+
+| Area | Rating |
+| --- | --- |
+| Tech selection | Fair |
+
+---
+
+# Recommendations
+
+| Area | Rating | Why |
+| --- | --- | --- |
+| Not | Read | After the scorecard slides |

@@ -2,8 +2,8 @@
 //! unit tested natively.
 
 use pane_model::{
-    Deliverable, DeliverableKind, HumanIssue, Project, ProjectStatus, REPO_URL, Review, Snapshot,
-    WorkItem, WorkKind, WorkSource,
+    Deliverable, DeliverableKind, HumanIssue, Project, ProjectStatus, REPO_URL, Review,
+    ScorecardRow, Snapshot, WorkItem, WorkKind, WorkSource,
 };
 
 /// Seconds since the Unix epoch for an RFC 3339 UTC time
@@ -349,6 +349,40 @@ pub fn latest_review<'a>(snapshot: &'a Snapshot, path: &str) -> Option<&'a Revie
     sorted_reviews(snapshot)
         .into_iter()
         .find(|r| in_project(Some(&r.project), path))
+}
+
+/// The CSS class for a scorecard rating: `good`, `fair` or `poor` (the
+/// deep-project-review skill's ratings, in any case), else `other`.
+pub fn rating_class(rating: &str) -> &'static str {
+    match rating.trim().to_lowercase().as_str() {
+        "good" => "good",
+        "fair" => "fair",
+        "poor" => "poor",
+        _ => "other",
+    }
+}
+
+/// A one-line count of a scorecard's ratings, such as `2 Good · 4 Fair ·
+/// 1 Poor`, leaving out ratings with no areas. Empty for no scorecard.
+pub fn scorecard_summary(rows: &[ScorecardRow]) -> String {
+    let count = |class: &str| {
+        rows.iter()
+            .filter(|r| rating_class(&r.rating) == class)
+            .count()
+    };
+    [
+        ("good", "Good"),
+        ("fair", "Fair"),
+        ("poor", "Poor"),
+        ("other", "other"),
+    ]
+    .into_iter()
+    .filter_map(|(class, label)| match count(class) {
+        0 => None,
+        n => Some(format!("{n} {label}")),
+    })
+    .collect::<Vec<_>>()
+    .join(" · ")
 }
 
 /// Where pane's release serves a deck's slides (see `pane/web/mise.toml`'s
@@ -792,6 +826,40 @@ mod tests {
             pr: pr.map(str::to_owned),
             scorecard: vec![],
         }
+    }
+
+    fn row(area: &str, rating: &str) -> ScorecardRow {
+        ScorecardRow {
+            area: area.into(),
+            rating: rating.into(),
+            why: String::new(),
+        }
+    }
+
+    #[test]
+    fn classes_ratings_in_any_case() {
+        assert_eq!(rating_class("Good"), "good");
+        assert_eq!(rating_class(" FAIR "), "fair");
+        assert_eq!(rating_class("poor"), "poor");
+        assert_eq!(rating_class("Excellent"), "other");
+        assert_eq!(rating_class(""), "other");
+    }
+
+    #[test]
+    fn summarises_a_scorecard() {
+        let rows = [
+            row("Goals", "Poor"),
+            row("UX", "Fair"),
+            row("Security", "Good"),
+            row("Quality", "fair"),
+        ];
+        assert_eq!(scorecard_summary(&rows), "1 Good · 2 Fair · 1 Poor");
+        assert_eq!(scorecard_summary(&rows[1..2]), "1 Fair");
+        assert_eq!(
+            scorecard_summary(&[row("A", "Good"), row("B", "Great")]),
+            "1 Good · 1 other"
+        );
+        assert_eq!(scorecard_summary(&[]), "");
     }
 
     #[test]

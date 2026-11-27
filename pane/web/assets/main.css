@@ -363,3 +363,32 @@ h1 {
   border-radius: var(--ds-radius-md);
   background: var(--ds-color-surface);
 }
+
+/* Review scorecards: ratings coloured Good, Fair or Poor. */
+.rating-good {
+  color: var(--ds-color-success);
+  border-color: var(--ds-color-success);
+}
+
+.rating-fair {
+  color: var(--ds-color-warning);
+  border-color: var(--ds-color-warning);
+}
+
+.rating-poor {
+  color: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
+}
+
+.scorecard th[scope="row"] {
+  font-weight: 600;
+}
+
+.scorecard td:last-child {
+  overflow-wrap: anywhere;
+}
+
+.scorecard-line {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+}

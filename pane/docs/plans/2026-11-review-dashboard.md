@@ -355,7 +355,9 @@ PR #585 is merged.
   review decks on Deliverables and the latest review on each Project page.
 - The snapshot parses each deck's Scorecard slide (`| Area | Rating | Why |`)
   so Phase 4 can use it. The `deep-project-review` skill should keep that
-  table's shape; Phase 2 adds a line saying so to the skill.
+  table's shape; Phase 2 adds a line saying so to the skill. Built: each
+  review's `scorecard` in the snapshot, shown as a table on the review's
+  page and as counts on the Reviews and Project pages.
 
 ### Phase 3: live GitHub data
 

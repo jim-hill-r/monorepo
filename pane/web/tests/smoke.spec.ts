@@ -226,7 +226,7 @@ test('the reviews page lists the rotation and opens a deck as slides @smoke @req
   await page.goto('/reviews');
 
   const rotation = page.getByTestId('reviews-rotation');
-  await expect(rotation.getByRole('columnheader')).toHaveText(['Date', 'Project', 'Deck', 'Comments']);
+  await expect(rotation.getByRole('columnheader')).toHaveText(['Date', 'Project', 'Deck', 'Scorecard', 'Comments']);
   const row = rotation.locator('tbody tr').first();
   await expect(row.locator('td').first()).toHaveText(/^\d{4}-\d{2}-\d{2}$/);
   await expect(row.getByRole('link', { name: 'PDF' })).toHaveAttribute(
@@ -234,9 +234,16 @@ test('the reviews page lists the rotation and opens a deck as slides @smoke @req
     /^\/reviews\/[^/]+\/deck\.pdf$/,
   );
 
+  // Each deck's scorecard ratings, counted (every deck has one: the
+  // snapshot's every_real_deck_has_a_scorecard test checks it).
+  await expect(row.getByTestId('scorecard-summary')).toHaveText(/^\d+ (Good|Fair|Poor)( · \d+ (Good|Fair|Poor))*$/);
+
   await row.getByRole('link', { name: 'Slides' }).click();
   await expect(page).toHaveURL(/\/review\/[^/]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/ deep review$/);
+  const scorecard = page.getByTestId('review-scorecard');
+  await expect(scorecard.getByRole('columnheader')).toHaveText(['Area', 'Rating', 'Why']);
+  await expect(scorecard.locator('tbody tr').first().locator('td').first()).toHaveText(/^(Good|Fair|Poor)$/);
   const deck = page.getByTestId('deck');
   await expect(deck).toHaveAttribute('src', /^\/reviews\/[^/]+\/deck\.html$/);
   await expect(page.frameLocator('[data-testid="deck"]').locator('section').first()).toBeVisible();
@@ -271,6 +278,7 @@ test('a reviewed project shows its latest review @req:PANE-008', async ({ page }
 
   const review = page.getByTestId('project-review');
   await expect(review.getByRole('link', { name: /^Deep review, \d{4}-\d{2}-\d{2}$/ })).toBeVisible();
+  await expect(review.getByTestId('scorecard-summary')).toBeVisible();
   await review.getByRole('link', { name: /^Deep review/ }).click();
   await expect(page).toHaveURL(/\/review\/[^/]+$/);
 });
