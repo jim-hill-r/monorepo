@@ -35,6 +35,12 @@ cargo test 2>&1 | tee cargo-test.log
 cargo run -p evals_cli -- run --stage ci --project cookbook \
   --cargo-output cargo-test.log --playwright-report web/results.json
 
+# Stage cd, after a deploy: make the requests of the http evals against the
+# live site (path joined to --deploy-url, default $DEPLOY_URL), and exit 1
+# if an eval of a must requirement failed.
+cargo run -p evals_cli -- run --stage cd --project cookbook \
+  --deploy-url https://jimhillr-cookbook.pages.dev --fail-on-must
+
 # Write the job summary table ($GITHUB_STEP_SUMMARY, or stdout).
 cargo run -p evals_cli -- publish
 
@@ -54,7 +60,8 @@ cargo run -p evals_cli -- store --results evals-results.jsonl --dir ../evals-res
 cargo run -p evals_cli -- verdicts --dir ../evals-results --project cookbook
 ```
 
-Each result says `pass`, `fail`, `error` (an eval matched no test) or
+Each result says `pass`, `fail`, `error` (an eval matched no test, or an
+`http` eval has a `path` and no deploy URL) or
 `skip` (no report of its kind, or every matching test was skipped), with a
 short note. In GitHub Actions the commit, run id and run link come from the
 `GITHUB_*` variables.

@@ -128,7 +128,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `playwright` | Playwright JSON reporter results | `grep` (optional, defaults to `@req:<ID>`) | `@req:COOK-001` in the test title, alongside tags such as `@smoke` |
 | `trycmd` | CLI transcript tests | `glob` (optional, defaults to `tests/cmd/<ID>-*.toml`) | Case file named `tests/cmd/COOK-001-<what>.toml` |
 | `script` | A Bevy scripted run | `script`, `check` | A named check in the script file |
-| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`) and `body_contains` | Declared inline |
+| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains` and `max_ms` (the slowest acceptable response, body included) | Declared inline |
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
@@ -209,6 +209,36 @@ never fails the job itself: failing tests already fail `ci`, and a bug in
 the engine must not block a pull request. Run the same steps locally with
 `mise run ci && mise run evals && bash ../standards/scripts/evals.sh publish`
 from a project directory.
+
+## After deploy
+
+Stage `cd` runs in the same job, right after `mise run deploy` publishes a
+project that has a `DEPLOY_URL` (pushes to `main`, Nightly CD and manual
+redeploys; never pull requests, and not when `deploy-check.sh` skipped the
+deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
+
+1. Each `http` eval of the top-level project makes its request against the
+   live site, `path` joined to `DEPLOY_URL`. Redirects are followed unless
+   the eval expects a 3xx `status`. A miss is tried again, up to 3 times 5
+   seconds apart, since a fresh deploy can take a moment to reach every
+   edge. A site that never answers fails; an eval with a `path` and no
+   `DEPLOY_URL` is an `error`. Requests send the user agent
+   `jimhillr-evals/0.1 (synthetic check)`.
+2. Report kinds (`playwright`, `trycmd`) read only
+   `target/evals-reports/cd/`, where a `smoke` task run against production
+   writes its report, never the `ci` task's reports.
+3. A failed eval of a `must` requirement fails the job (`evals run
+   --fail-on-must`), so a broken deploy shows red on main. The site is
+   already live by then: roll back by running **Push Main CI/CD** by hand
+   with the project and a good ref ([mise.md](mise.md)). An `error`, or a
+   bug in the engine (exit status 2), only warns.
+4. The results go in the job summary and a 14-day
+   `evals-results-cd-<project>` artifact, and `store-evals` commits them to
+   the `evals-results` branch with the `ci` ones (Nightly CD stores only its
+   `cd` results, since Nightly CI stores that night's `ci` ones).
+
+Run the same checks by hand from a deploying project's directory:
+`EVALS_STAGE=cd DEPLOY_URL=https://jimhillr-cookbook.pages.dev bash ../../standards/scripts/evals.sh run`.
 
 ## Human checks
 

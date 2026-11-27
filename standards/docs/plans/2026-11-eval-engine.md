@@ -676,7 +676,10 @@ pane page or a `FIX` that an agent then works.
 Needs the `smoke` tasks and production smoke runs from deploy feedback,
 phase 3.
 
-- `cd` evals after `deploy` and `smoke`; `http` eval kind.
+- Done (2026-11-27): `cd` evals after `deploy`, and the `http` eval kind
+  (with `max_ms`); a failed `must` fails the deploy job. They will read
+  the `smoke` reports from `target/evals-reports/cd/` once projects have
+  `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
   released binaries.
 - The `eval-triage` skill and its daily scheduled task, replacing the

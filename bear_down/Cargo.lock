@@ -565,6 +565,7 @@ dependencies = [
  "dioxus",
  "serde",
  "serde_json",
+ "web-sys",
 ]
 
 [[package]]
