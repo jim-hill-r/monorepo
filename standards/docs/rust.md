@@ -28,6 +28,18 @@ unsafe_code = "forbid"
 - **`expect_used = "warn"`**: Warns about panic-inducing `.expect()` calls. Use proper error handling patterns instead. Set to "warn" rather than "forbid" to allow compatibility with derive macros.
 - **`unsafe_code = "forbid"`**: Forbids unsafe code blocks. All code must be memory-safe by default. If unsafe is truly necessary, it requires explicit discussion and approval. Note: This is a rustc lint, not a clippy lint.
 
+#### Approved `unsafe` exceptions
+
+A project that truly needs `unsafe` sets `unsafe_code = "deny"` instead of
+`"forbid"` (an `allow` can't override `forbid`), puts
+`#[allow(unsafe_code)]` on each block that needs it, and gives each block a
+`// SAFETY:` comment saying why it is sound. Each exception is listed here
+once Jim approves it.
+
+| Project | Where | Why |
+| --- | --- | --- |
+| `my_lang` | `JitRunner::call` in `src/jit.rs` | Calling LLVM JIT-compiled machine code through a function pointer has no safe API. |
+
 ### Proper Error Handling
 
 Instead of using `.unwrap()` or `.expect()`:
