@@ -23,6 +23,9 @@ pub enum Code {
     Cost008,
     /// An outside host no detector or allow entry knows. Always a warning.
     Cost009,
+    /// A `[[cost]]` whose `renews` date has passed: the file wasn't updated
+    /// after the renewal. Always a warning.
+    Cost010,
 }
 
 impl Code {
@@ -37,12 +40,13 @@ impl Code {
             Code::Cost007 => "COST-007",
             Code::Cost008 => "COST-008",
             Code::Cost009 => "COST-009",
+            Code::Cost010 => "COST-010",
         }
     }
 
     /// Whether `--strict` (phase 3) turns this into a failure.
     pub fn can_fail(self) -> bool {
-        !matches!(self, Code::Cost008 | Code::Cost009)
+        !matches!(self, Code::Cost008 | Code::Cost009 | Code::Cost010)
     }
 }
 
