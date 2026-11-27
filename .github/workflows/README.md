@@ -84,7 +84,7 @@ ruleset.
 
 ### pull-request-summary.yml
 
-Runs when a pull request is opened, edited, reopened or marked ready, and
+Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
 warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
 when its description doesn't open with a linked executive summary of at most
 75 words, after the attribution lines ("Pull request descriptions" in
