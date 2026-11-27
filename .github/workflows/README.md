@@ -109,8 +109,8 @@ The **Human review** check (PR-004, Jim, 2026-11-27). Runs when a pull
 request is opened, edited, pushed to, labelled or reviewed. A PR with a red
 attention tag (`must-requirement-changed`) or a cost change, from its diff
 (`chores badges`), its description's Attention section or the `cost` label,
-fails it until a human (never an `-agt` account, `jimhillr-reviewer` or a
-bot) approves its head commit; the check also labels
+fails it until a human collaborator (never an `-agt` account,
+`jimhillr-reviewer`, a bot or a non-collaborator) approves its head commit; the check also labels
 it `needs-human` and turns its auto-merge off. Every other PR passes. It
 builds `chores gate` from the base branch, so a PR can't change its own
 rules. The `CI` ruleset in `infra`'s `github` stack requires it on `main`

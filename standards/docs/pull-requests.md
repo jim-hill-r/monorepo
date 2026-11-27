@@ -164,17 +164,20 @@ any of these says it has a red [attention tag](#attention-tags)
 - the tags its own `## Attention` section declares, or
 - the `cost` label from PR CI's Cost summary job.
 
-A **human** is any GitHub account except an agent account (login ending
-in `-agt`, such as `jimhillr-agt`), `jimhillr-reviewer` and bots or apps
-(`[bot]`, Copilot). Today that means Jim (`jimhillr`).
+A **human** is any collaborator on the repository (its owner, an org
+member or an invited collaborator; Jim, 2026-11-27: "Any human
+collaborator is fine") except an agent account (login ending in `-agt`,
+such as `jimhillr-agt`), `jimhillr-reviewer` and bots or apps (`[bot]`,
+Copilot). Today that means Jim (`jimhillr`). Reviews from anyone who isn't
+a collaborator never count.
 
 A PR that needs a human:
 
 1. **Fails the `Human review` check** (PR-004,
    `.github/workflows/pull-request-human-review.yml`, the logic in `chores
-   gate`) until a human approves its current head commit, with no later
-   "changes requested" from a human. The check runs again on every
-   review, so that approval turns it green. A PR a human opened passes. The check
+   gate`) until a human collaborator approves its current head commit,
+   with no later "changes requested" from one. The check runs again on every
+   review, so that approval turns it green. A PR a human collaborator opened passes. The check
    builds `chores` from the base branch, so a PR can't change the rules it
    is judged by.
 2. **Is labelled `needs-human`** by that check, which never removes it.

@@ -4,8 +4,10 @@
 # jim", then "Lets make it needs human review"). A PR with a red attention
 # tag (`must-requirement-changed`) or a cost change, from its diff, its
 # description or the `cost` label, fails this check until a human approves
-# its head commit. Agent `-agt` accounts, jimhillr-reviewer and bots never
-# count; a PR a human opened passes. Such a PR is also labelled
+# its head commit. Only human collaborators count (owner, member or
+# collaborator; Jim: "Any human collaborator is fine"): agent `-agt`
+# accounts, jimhillr-reviewer and bots never do. A PR a human collaborator
+# opened passes. Such a PR is also labelled
 # `needs-human` and has its auto-merge turned off, so neither
 # jimhillr-reviewer nor an agent can approve or merge it. Every other PR
 # passes. Runs again on every review, so a human's approval turns it green.
@@ -50,6 +52,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
           AUTHOR: ${{ github.event.pull_request.user.login }}
+          AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           # The rules come from the base branch. Only until chores gate
@@ -68,7 +71,7 @@ jobs:
           set +e
           cargo run --quiet --manifest-path "$chores/Cargo.toml" -- --root "$GITHUB_WORKSPACE" \
             gate --base "origin/$BASE_REF" --body "$RUNNER_TEMP/body.md" --labels "$labels" \
-            --author "$AUTHOR" --head "$HEAD_SHA" --reviews "$RUNNER_TEMP/reviews.json" \
+            --author "$AUTHOR" --author-association "$AUTHOR_ASSOCIATION" --head "$HEAD_SHA" --reviews "$RUNNER_TEMP/reviews.json" \
             --json "$RUNNER_TEMP/gate.json" | tee -a "$GITHUB_STEP_SUMMARY"
           code=${PIPESTATUS[0]}
           set -e

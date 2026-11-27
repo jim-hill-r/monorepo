@@ -131,6 +131,10 @@ enum Command {
         /// The PR author's login.
         #[arg(long)]
         author: String,
+        /// The PR author's repo role (`author_association`, such as OWNER
+        /// or COLLABORATOR); only a collaborator's own PR passes.
+        #[arg(long, default_value = "NONE")]
+        author_association: String,
         /// The PR's head commit.
         #[arg(long)]
         head: String,
@@ -310,6 +314,7 @@ fn run() -> Result<ExitCode> {
             body,
             labels,
             author,
+            author_association,
             head,
             reviews,
             json,
@@ -319,6 +324,7 @@ fn run() -> Result<ExitCode> {
                 body,
                 labels,
                 author,
+                author_association,
                 head,
                 reviews,
                 json,

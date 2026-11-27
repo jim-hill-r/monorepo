@@ -61,6 +61,17 @@ pub struct Review {
     pub state: String,
     #[serde(default)]
     pub commit_id: Option<String>,
+    /// The reviewer's role on the repo: `OWNER`, `MEMBER`, `COLLABORATOR`,
+    /// `CONTRIBUTOR`, `NONE` and so on.
+    #[serde(default)]
+    pub author_association: Option<String>,
+}
+
+/// Whether a repo role makes someone a collaborator (Jim, 2026-11-27: "Any
+/// human collaborator is fine"): the owner, an org member or an invited
+/// collaborator. Anyone else's review never counts.
+pub fn is_collaborator(association: Option<&str>) -> bool {
+    matches!(association, Some("OWNER" | "MEMBER" | "COLLABORATOR"))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -102,6 +113,7 @@ pub fn human_approved(reviews: &[Review], head: &str) -> bool {
             continue;
         };
         if !is_human(login)
+            || !is_collaborator(r.author_association.as_deref())
             || !matches!(
                 r.state.as_str(),
                 "APPROVED" | "CHANGES_REQUESTED" | "DISMISSED"
@@ -125,6 +137,8 @@ pub struct Input<'a> {
     pub body: &'a str,
     pub labels: &'a [String],
     pub author: &'a str,
+    /// The PR author's repo role (`author_association`).
+    pub author_association: &'a str,
     pub head: &'a str,
     pub reviews: &'a [Review],
 }
@@ -160,7 +174,7 @@ pub fn decide(input: &Input<'_>) -> Verdict {
             true,
             "pass: no red attention tag and no cost change".to_string(),
         )
-    } else if is_human(input.author) {
+    } else if is_human(input.author) && is_collaborator(Some(input.author_association)) {
         (
             true,
             format!("pass: {} opened it ({})", input.author, reasons.join("; ")),
@@ -198,6 +212,7 @@ pub struct Args {
     pub body: Option<PathBuf>,
     pub labels: Vec<String>,
     pub author: String,
+    pub author_association: String,
     pub head: String,
     pub reviews: Option<PathBuf>,
     pub json: Option<PathBuf>,
@@ -233,6 +248,7 @@ pub fn run(root: &Path, args: &Args) -> Result<bool> {
         body: &body,
         labels: &labels,
         author: &args.author,
+        author_association: &args.author_association,
         head: &args.head,
         reviews: &reviews,
     });
@@ -251,12 +267,17 @@ mod tests {
     const HEAD: &str = "abcdef1234";
 
     fn review(login: &str, state: &str, commit: &str) -> Review {
+        review_as(login, state, commit, "COLLABORATOR")
+    }
+
+    fn review_as(login: &str, state: &str, commit: &str, association: &str) -> Review {
         Review {
             user: Some(User {
                 login: login.to_string(),
             }),
             state: state.to_string(),
             commit_id: Some(commit.to_string()),
+            author_association: Some(association.to_string()),
         }
     }
 
@@ -273,6 +294,7 @@ mod tests {
             body,
             labels: &labels,
             author,
+            author_association: "OWNER",
             head: HEAD,
             reviews,
         })
@@ -385,6 +407,36 @@ mod tests {
             review("jimhillr", "APPROVED", HEAD),
             review("jimhillr-reviewer", "CHANGES_REQUESTED", HEAD)
         ]));
+    }
+
+    #[test]
+    fn only_collaborators_count() {
+        let diff = cost_diff();
+        let ok = |reviews: &[Review]| verdict(&diff, "", &[], "jimhillr-agt", reviews).pass;
+        assert!(ok(&[review_as("jimhillr", "APPROVED", HEAD, "OWNER")]));
+        assert!(ok(&[review_as("friend", "APPROVED", HEAD, "MEMBER")]));
+        assert!(!ok(&[review_as("stranger", "APPROVED", HEAD, "NONE")]));
+        assert!(!ok(&[review_as(
+            "stranger",
+            "APPROVED",
+            HEAD,
+            "CONTRIBUTOR"
+        )]));
+        // A stranger asking for changes doesn't hold it.
+        assert!(ok(&[
+            review("jimhillr", "APPROVED", HEAD),
+            review_as("stranger", "CHANGES_REQUESTED", HEAD, "NONE")
+        ]));
+        let outsider = decide(&Input {
+            diff: &diff,
+            body: "",
+            labels: &[],
+            author: "stranger",
+            author_association: "CONTRIBUTOR",
+            head: HEAD,
+            reviews: &[],
+        });
+        assert!(!outsider.pass, "{outsider:?}");
     }
 
     #[test]

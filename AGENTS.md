@@ -77,8 +77,9 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   reviewed by jim", then "Lets make it needs human review". A PR with a red attention tag
   (`must-requirement-changed`) or `cost-changed`, in its diff or its
   description, or the `cost` label, fails the `Human review` check (PR-004,
-  `chores gate`) until a human approves its head commit; agent accounts
-  (`-agt`), `jimhillr-reviewer` and bots never count. That check labels
+  `chores gate`) until a human collaborator approves its head commit
+  (Jim: "Any human collaborator is fine"); agent accounts (`-agt`),
+  `jimhillr-reviewer`, bots and non-collaborators never count. That check labels
   it `needs-human` and turns its auto-merge off. Agents and
   `jimhillr-reviewer` never approve it or turn its auto-merge on; once a
   human approves and checks are green, any agent may merge it. Details are under
