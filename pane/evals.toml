@@ -176,8 +176,35 @@ description = "Not yet checked at phone width: no test sets a 375 px viewport."
 # PANE-007, PANE-009 and PANE-010 have no evals yet: they come with the
 # review dashboard plan's phases 3 to 7.
 
-# PANE-008: Executive reviews are read in pane (phase 2). The Reviews page
-# evals come with it; these check the decks pane's release builds.
+# PANE-008: Executive reviews are read in pane (phase 2).
+
+[[eval]]
+id = "review-rotation"
+requirement = "PANE-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "reads_the_review_rotation_newest_first"
+
+[[eval]]
+id = "review-rotation-shape"
+requirement = "PANE-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_real_rotation_table_parses"
+
+[[eval]]
+id = "reviews-page"
+requirement = "PANE-008"
+stages = ["ci"]
+kind = "playwright"
+description = "The Reviews page lists the rotation and opens each deck as slides with its PDF, PR and full screen."
+
+[[eval]]
+id = "reviews-page-live"
+requirement = "PANE-008"
+stages = ["cd"]
+kind = "http"
+path = "/reviews"
 
 [[eval]]
 id = "review-deck-html-live"

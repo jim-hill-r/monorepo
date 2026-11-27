@@ -35,6 +35,8 @@ It exits non-zero, writing nothing, if the root `mise.toml` has no
 | `deliverables` (live sites) | Each project with a `DEPLOY_URL` in its `[env]`. |
 | `deliverables` (downloads) | Each project with a `RELEASE_TAG` in its `[env]` (see "Game builds" in `standards/docs/mise.md`): its GitHub Release, and the macOS and Android assets `<package>-macos.zip` and `<package>-android.apk`, where `<package>` is `[package].name` in its `Cargo.toml`. |
 | `deliverables` (documents) | Every Markdown file (except `README.md`) in a `docs/plans/`, `docs/decisions/` or `docs/retros/` folder: title from its first `#` heading, status from `- Status:`, date from `- Date:`, `Started <date>`, or the file name, and the whole file as `body` for pane to render. |
+| `reviews` | Each row of the `## Rotation` table in `docs/reviews/README.md` (`\| Date \| Project \| Deck \| PR \|`, columns found by header), newest first: project, date, the deck's `deck.md` path, and the PR link if it points at the repo. The `deep-project-review` skill writes that table, so keep its shape. |
+| `deliverables` (review decks) | Each review again, linking its slides `/reviews/<folder>/deck.html` and PDF `/reviews/<folder>/deck.pdf`, which pane's release builds. |
 | `retros` | Each retro again, with its `- [ ]` / `- [x]` items under `## Actions`. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are

@@ -74,6 +74,12 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
             }
         }
     }
+
+    let rotation = read_optional(&root.join(parse::REVIEWS_DIR).join("README.md"));
+    snapshot.reviews = parse::reviews(&rotation);
+    snapshot
+        .deliverables
+        .extend(snapshot.reviews.iter().map(parse::review_deliverable));
     Ok(snapshot)
 }
 

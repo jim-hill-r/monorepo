@@ -232,16 +232,33 @@ pub enum DeliverableKind {
     UatReport,
 }
 
-/// An executive review deck.
+/// An executive review deck: one row of the rotation table in
+/// `docs/reviews/README.md`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Review {
     pub project: String,
     /// `YYYY-MM-DD`.
     pub date: String,
-    /// Path to its `deck.md`.
+    /// Path to its `deck.md`, such as `docs/reviews/2026-11-25-cookbook/deck.md`.
     pub path: String,
+    /// The review's pull request, where Jim leaves comments.
+    #[serde(default)]
+    pub pr: Option<String>,
     #[serde(default)]
     pub scorecard: Vec<ScorecardRow>,
+}
+
+impl Review {
+    /// The deck's folder name, such as `2026-11-25-cookbook`: pane's release
+    /// serves the built deck under `/reviews/<folder>/`.
+    pub fn folder(&self) -> &str {
+        review_folder(&self.path)
+    }
+}
+
+/// The folder of a `docs/reviews/<folder>/deck.md` path.
+pub fn review_folder(deck_path: &str) -> &str {
+    deck_path.rsplit('/').nth(1).unwrap_or(deck_path)
 }
 
 /// One row of a deck's `| Area | Rating | Why |` table.
@@ -368,6 +385,7 @@ mod tests {
             project: "pane".into(),
             date: "2026-11-24".into(),
             path: "docs/reviews/2026-11-24-pane/deck.md".into(),
+            pr: Some("https://github.com/jimhillr/monorepo/pull/1".into()),
             scorecard: vec![ScorecardRow {
                 area: "Tests".into(),
                 rating: "Good".into(),
@@ -465,6 +483,22 @@ mod tests {
             Snapshot::from_json(&json),
             Err(SnapshotError::Parse(_))
         ));
+    }
+
+    #[test]
+    fn a_review_knows_its_folder() {
+        let s = sample();
+        assert_eq!(s.reviews[0].folder(), "2026-11-24-pane");
+        assert_eq!(review_folder("deck.md"), "deck.md");
+    }
+
+    #[test]
+    fn a_review_without_a_pr_still_parses() -> Result<(), SnapshotError> {
+        let json = r#"{"version":1,"commit":"a","taken_at":"t","reviews":[
+            {"project":"pane","date":"2026-11-24","path":"docs/reviews/x/deck.md"}]}"#;
+        let s = Snapshot::from_json(json)?;
+        assert_eq!(s.reviews[0].pr, None);
+        Ok(())
     }
 
     #[test]

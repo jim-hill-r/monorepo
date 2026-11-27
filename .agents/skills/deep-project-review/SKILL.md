@@ -162,7 +162,9 @@ npx --yes @marp-team/marp-cli@4.5.1 --no-stdin --html --allow-local-files \
 
 Add a row for this review to the rotation table in `docs/reviews/README.md`
 (date, project, deck link, PR link once the PR exists). Keep one row per
-review, newest first.
+review, newest first. Pane's Reviews page reads this table
+(`pane_snapshot`'s `reviews` parser), so keep its `| Date | Project | Deck |
+PR |` columns, ISO dates, and a `[deck](<folder>/deck.md)` link.
 
 ## 6. File the follow-ups
 

@@ -2,7 +2,7 @@
 //! (built by `pane_snapshot` in the release) and shows it.
 
 use dioxus::prelude::*;
-use pane_model::{Deliverable, DeliverableKind, HumanIssue, Snapshot, WorkItem, WorkKind};
+use pane_model::{Deliverable, DeliverableKind, HumanIssue, Review, Snapshot, WorkItem, WorkKind};
 
 mod markdown;
 mod view;
@@ -95,6 +95,9 @@ mod route {
         DocPage { path: Vec<String> },
         #[route("/reviews")]
         Reviews {},
+        // Not /reviews/<folder>: the release serves the built decks there.
+        #[route("/review/:folder")]
+        ReviewPage { folder: String },
         #[route("/human-issues")]
         HumanIssues {},
         #[route("/work")]
@@ -400,7 +403,15 @@ fn DeliverableRow(d: Deliverable, commit: String) -> Element {
     let kind = d.kind;
     rsx! {
         li {
-            if let Some(path) = d.path.clone() {
+            if kind == DeliverableKind::ReviewDeck {
+                if let Some(path) = d.path.as_deref() {
+                    Link {
+                        class: "row-title",
+                        to: Route::ReviewPage { folder: pane_model::review_folder(path).to_owned() },
+                        "{d.title}"
+                    }
+                }
+            } else if let Some(path) = d.path.clone() {
                 Link { class: "row-title", to: doc_route(&path), "{d.title}" }
             } else if let Some(url) = &d.url {
                 a { class: "row-title", href: "{url}", "{d.title}" }
@@ -425,7 +436,11 @@ fn DeliverableRow(d: Deliverable, commit: String) -> Element {
                     span { class: "badge", "{status}" }
                 }
                 for link in d.downloads.clone() {
-                    a { class: "download", href: "{link.url}", "Download for {link.label}" }
+                    if kind == DeliverableKind::ReviewDeck {
+                        a { class: "download", href: "{link.url}", "Download {link.label}" }
+                    } else {
+                        a { class: "download", href: "{link.url}", "Download for {link.label}" }
+                    }
                 }
                 if let Some(path) = &d.path {
                     a { href: "{view::github_file_url(&commit, path)}", "On GitHub" }
@@ -495,6 +510,7 @@ fn ProjectPage(path: Vec<String>) -> Element {
                     .into_iter()
                     .map(|(_, heading, items)| (heading, items.into_iter().cloned().collect()))
                     .collect();
+                let review = view::latest_review(&s, &p.path).cloned();
                 let commit = s.commit.clone();
                 let work_scope = if subs.is_empty() { "" } else { ", including its sub-projects" };
                 rsx! {
@@ -545,6 +561,21 @@ fn ProjectPage(path: Vec<String>) -> Element {
                             }
                         }
                     }
+                    section { class: "group", "data-testid": "project-review",
+                        h2 { "Latest review" }
+                        match review {
+                            Some(r) => rsx! {
+                                ReviewLinks { review: r, show_project: false }
+                            },
+                            None => rsx! {
+                                p { class: "muted",
+                                    "Not reviewed yet. The weekly deep review picks the project that has waited longest; see "
+                                    Link { to: Route::Reviews {}, "Reviews" }
+                                    "."
+                                }
+                            },
+                        }
+                    }
                     section { class: "group", "data-testid": "project-deliverables",
                         h2 { "Deliverables" }
                         if groups.is_empty() {
@@ -568,7 +599,7 @@ fn ProjectPage(path: Vec<String>) -> Element {
                             }
                         }
                     }
-                    p { class: "muted", "Health, open PRs and the latest review for each project come in Phases 2 to 4." }
+                    p { class: "muted", "Health and open PRs for each project come in Phases 3 and 4." }
                 }
             },
         }
@@ -621,7 +652,7 @@ fn Deliverables() -> Element {
                         }
                     }
                     p { class: "muted",
-                        "Review decks come in Phase 2, and PR previews and UAT reports in Phases 3 and 6."
+                        "PR previews and UAT reports come in Phases 3 and 6."
                     }
                 }
             },
@@ -661,10 +692,158 @@ fn DocPage(path: Vec<String>) -> Element {
 #[component]
 fn Reviews() -> Element {
     rsx! {
-        Planned {
-            title: "Reviews",
-            phase: 2,
-            what: "Executive review decks, shown as slides with a PDF download.",
+        h1 { "Reviews" }
+        p {
+            "Each week the deep project review studies one project and writes a slide deck. "
+            "The project that has gone longest without a review goes next. "
+            "Open a deck to read it as slides, download its PDF, or comment on its pull request."
+        }
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let reviews: Vec<Review> = view::sorted_reviews(&s).into_iter().cloned().collect();
+                rsx! {
+                    if reviews.is_empty() {
+                        p { "No reviews yet." }
+                    } else {
+                        table { class: "rotation", "data-testid": "reviews-rotation",
+                            thead {
+                                tr {
+                                    th { scope: "col", "Date" }
+                                    th { scope: "col", "Project" }
+                                    th { scope: "col", "Deck" }
+                                    th { scope: "col", "Comments" }
+                                }
+                            }
+                            tbody {
+                                for r in reviews {
+                                    ReviewRow { key: "{r.path}", review: r }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    }
+}
+
+/// One row of the rotation table.
+#[component]
+fn ReviewRow(review: Review) -> Element {
+    let folder = review.folder().to_owned();
+    let project: Vec<String> = review.project.split('/').map(str::to_owned).collect();
+    rsx! {
+        tr {
+            td { "{review.date}" }
+            td {
+                Link { to: Route::ProjectPage { path: project }, "{review.project}" }
+            }
+            td {
+                Link { to: Route::ReviewPage { folder: folder.clone() }, "Slides" }
+                " · "
+                a { href: "{view::deck_pdf_url(&folder)}", "PDF" }
+            }
+            td {
+                if let Some(pr) = &review.pr {
+                    a { href: "{pr}", "{view::pr_label(pr)}" }
+                } else {
+                    span { class: "muted", "No PR yet" }
+                }
+            }
+        }
+    }
+}
+
+/// A review's slides, PDF and pull request links, for the Project page.
+#[component]
+fn ReviewLinks(review: Review, show_project: bool) -> Element {
+    let folder = review.folder().to_owned();
+    let title = if show_project {
+        format!("{} deep review, {}", review.project, review.date)
+    } else {
+        format!("Deep review, {}", review.date)
+    };
+    rsx! {
+        p {
+            Link { to: Route::ReviewPage { folder: folder.clone() }, "{title}" }
+        }
+        div { class: "meta",
+            a { class: "download", href: "{view::deck_pdf_url(&folder)}", "Download PDF" }
+            if let Some(pr) = &review.pr {
+                a { href: "{pr}", "Comment on {view::pr_label(pr)}" }
+            }
+        }
+    }
+}
+
+/// The deck's slides in the page.
+const DECK_FRAME: &str = "deck-frame";
+
+/// One review deck: its slides in the page, with full screen, the PDF and
+/// its pull request.
+#[component]
+fn ReviewPage(folder: String) -> Element {
+    rsx! {
+        WithSnapshot {
+            body: move |s: Snapshot| {
+                let Some(review) = view::find_review(&s, &folder).cloned() else {
+                    return rsx! {
+                        h1 { "Review not found" }
+                        p { "No review deck {folder} in the snapshot." }
+                        Link { to: Route::Reviews {}, "All reviews" }
+                    };
+                };
+                let github = view::github_file_url(&s.commit, &review.path);
+                let slides = view::deck_html_url(&folder);
+                let pdf = view::deck_pdf_url(&folder);
+                let project: Vec<String> = review.project.split('/').map(str::to_owned).collect();
+                rsx! {
+                    p { class: "doc-path",
+                        Link { to: Route::Reviews {}, "Reviews" }
+                        " / {folder}"
+                    }
+                    h1 { "{review.project} deep review" }
+                    p { class: "muted",
+                        "{review.date} · "
+                        Link { to: Route::ProjectPage { path: project }, "Project page" }
+                    }
+                    div { class: "deck-actions",
+                        button {
+                            r#type: "button",
+                            onclick: move |_| {
+                                document::eval(&format!(
+                                    "document.querySelector('.{DECK_FRAME}')?.requestFullscreen?.()"
+                                ));
+                            },
+                            "Full screen"
+                        }
+                        a { class: "download", href: "{pdf}", download: "{folder}.pdf", "Download PDF" }
+                        if let Some(pr) = &review.pr {
+                            a { href: "{pr}", "Comment on {view::pr_label(pr)}" }
+                        }
+                        a { href: "{github}", "deck.md on GitHub" }
+                    }
+                    iframe {
+                        class: DECK_FRAME,
+                        "data-testid": "deck",
+                        title: "{review.project} deep review slides",
+                        src: "{slides}",
+                        allow: "fullscreen",
+                        allowfullscreen: true,
+                        // Give the slides the keyboard, so the arrow keys move
+                        // between slides straight away.
+                        onload: move |_| {
+                            document::eval(&format!(
+                                "document.querySelector('.{DECK_FRAME}')?.contentWindow?.focus()"
+                            ));
+                        },
+                    }
+                    p { class: "muted",
+                        "Use the arrow keys to move between slides, and f or Full screen for full screen. "
+                        "Leave comments on the pull request, on the lines of the slide."
+                    }
+                }
+            },
         }
     }
 }
