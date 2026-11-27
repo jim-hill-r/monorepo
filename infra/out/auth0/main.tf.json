@@ -106,8 +106,36 @@
   },
   "terraform": {
     "backend": {
-      "local": {
-        "path": "../../state/auth0.tfstate"
+      "http": {
+        "lock_method": "LOCK",
+        "retry_max": 5,
+        "unlock_method": "UNLOCK",
+        "update_method": "POST",
+        "username": "tofu"
+      }
+    },
+    "encryption": {
+      "key_provider": {
+        "pbkdf2": {
+          "state": {
+            "passphrase": "${var.tofu_state_passphrase}"
+          }
+        }
+      },
+      "method": {
+        "aes_gcm": {
+          "state": {
+            "keys": "key_provider.pbkdf2.state"
+          }
+        }
+      },
+      "plan": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
+      },
+      "state": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
       }
     },
     "required_providers": {
@@ -115,6 +143,13 @@
         "source": "auth0/auth0",
         "version": "1.63.0"
       }
+    }
+  },
+  "variable": {
+    "tofu_state_passphrase": {
+      "nullable": false,
+      "sensitive": true,
+      "type": "string"
     }
   }
 }
