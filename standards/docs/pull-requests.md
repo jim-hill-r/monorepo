@@ -13,9 +13,16 @@ and every agent thread follow.
 | A human (including `jimhillr`) | The author | Any agent, once it is mergeable. Drafts are left alone. |
 | An agent account (login ends in `-agt`) | The agent thread that opened it | Any agent, including the thread that opened it, once it is mergeable. Agents never approve their own PRs. |
 | An agent account whose thread is gone | PR triage (adopted) | Any agent, once it is mergeable |
+| `jimhillr-agt`, opened by PR triage from the `evals-triage` branch | PR triage | Any agent, once it is mergeable (Jim approves) |
 
 An agent PR is **orphaned** when the thread that opened it is resolved or no
 longer exists and the PR has had no activity for 24 hours. Triage adopts it.
+
+The daily eval triage workflow pushes the issue files it writes to the
+`evals-triage` branch but can't open a PR (a PR made with a workflow's
+token runs no CI), so PR triage opens it as a draft, as long as the branch
+only adds `*/issues/eval-*.md` files, and marks it ready once its checks are
+green ([evals.md](evals.md#triage)).
 
 ## When a PR is mergeable
 

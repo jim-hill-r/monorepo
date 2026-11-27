@@ -6,4 +6,7 @@ Its http evals (stage cd) make a few GET requests to each project's own \
 Cloudflare Pages site right after a deploy: about 30 a night across every \
 project, and at most 3 tries each. Static asset requests are free and \
 unlimited; a route served by Pages Functions counts against that project's \
-own Workers requests, which its cost.toml already covers."""
+own Workers requests, which its cost.toml already covers. The daily \
+evals-triage.yml run takes about a minute of Actions, free on this public \
+repo, and starts no Claude session: PR triage, which runs anyway, opens \
+its pull request only on a day it filed issues."""

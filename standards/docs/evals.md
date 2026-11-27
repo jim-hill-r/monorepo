@@ -380,6 +380,48 @@ cookbook: 4 met, 1 at risk, 0 not met, 4 unknown (3 of 3 musts evaluated in prod
 The `evals-results` branch is never merged into `main` and must never be
 deleted, by `all-delete-branches.yml` or by hand.
 
+## Triage
+
+Green is the normal state, so a requirement that isn't green becomes an
+issue file, and the normal agent loop works it. A free GitHub workflow
+files them, not a Claude session, so a quiet day costs nothing (Jim,
+2026-11-27, decision 1 of the
+[executive review](../../docs/reviews/2026-11-27-evals/review.md)).
+
+`evals-triage.yml` runs daily at 4:30 AM Pacific, after Nightly CI and
+Nightly CD have stored their results, and runs
+`bash standards/scripts/evals.sh triage`. That computes every verdict
+again from the `evals-results` branch and `main` (`evals triage`) and, in a
+worktree of `main`, writes one issue file in `<project>/issues/` for each
+requirement that needs work and that no open issue file names (any
+`issues/` folder in the project, or the root `issues/`, by its ID):
+
+| Verdict | Issue | File |
+| --- | --- | --- |
+| Not met, or at risk because it failed in a production stage (or Jim said so) | `fix`, priority | `eval-<id>-failing.md`: the failing evals, their evidence links and the last commit they passed at, for a rollback |
+| At risk for any other reason: an eval errors, is flaky, fails in `ci`, or has gone stale | `todo` (priority for a `must`, else backlog) | `eval-<id>-eval-at-risk.md`: fix the eval, not the product |
+| Unknown, for a `must` (no production evidence) | `todo`, priority | `eval-<id>-unproven.md`: add or run a production-stage eval |
+
+A `should` or `could` that is only unknown gets nothing, and neither does a
+requirement whose only problem is a human check Jim hasn't done: that is
+his, through the human-checks digest. It writes at most 10 files a run
+(`--limit`); the next run files the rest.
+
+When it wrote any, it commits them as `github-actions[bot]` and
+force-pushes that one commit to the `evals-triage` branch (its only push,
+SEC-007), and the next PR triage run opens a draft pull request from it, so
+PR CI runs as usual and Jim reviews it like any agent PR. While that pull
+request is open, triage files nothing new; once it merges, the issues are
+open and the next run skips them. On a day with nothing to file it pushes
+nothing, and deletes a leftover `evals-triage` branch. Run it by hand with
+the workflow's **dry run** input, or locally with
+`bash standards/scripts/evals.sh triage --dry-run`, to see what it would
+file.
+
+The `eval-triage` skill, where it exists, is for the judgment calls the
+workflow can't make (a disputed eval, rollback advice); it is not a daily
+task.
+
 ## Project prefixes
 
 Every project's requirement prefix is listed in
