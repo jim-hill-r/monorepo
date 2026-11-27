@@ -26,7 +26,10 @@ number, and update this page in the same PR when one moves.
    mistakes and for Jim's own use of the same accounts.
 4. **Create resources only through a guard.** Anything automation creates on
    demand (today: Cloudflare Pages projects) goes through
-   `standards/scripts/free-tiers.sh`, which counts what exists first.
+   `standards/scripts/free-tiers.sh`, which counts what exists first. A
+   resource that is renamed or removed is retired in
+   `standards/resources.toml` in the same PR, so the old one doesn't keep
+   using budget; see [Resources](resources.md).
 5. **Prefer services that hard-stop.** On a free plan with no payment method,
    every service below stops or throttles rather than billing. Keep it that
    way: a new service whose free plan bills overage automatically (for
@@ -181,7 +184,7 @@ its plan or adds usage-based billing.
 ## Guards
 
 All guards live in [`standards/scripts/free-tiers.sh`](../scripts/free-tiers.sh)
-and are tested in `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+and are tested in `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
 
 | Guard | When it runs | What it does |
 | --- | --- | --- |
@@ -202,7 +205,8 @@ raised past the free limit; the script clamps them.
 
 1. Don't raise the budget to make it pass. Find what used the room: an
    unused Pages project, an old Worker, a cache that grew.
-2. Remove what is unused through a workflow or a PR, never by hand.
+2. Remove what is unused through a workflow or a PR, never by hand: retire
+   it in `standards/resources.toml` ([Resources](resources.md)).
 3. If the budget really is too small, propose a new one in a PR that
    updates `standards/radar/limits.toml`, and label it `needs-human`.
 

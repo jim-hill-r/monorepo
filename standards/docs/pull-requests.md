@@ -237,7 +237,7 @@ judged by.
 4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
    `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
    `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
-   `monorepo/`, `standards/` (its own rules included), and in any project
+   `jimhillr/`, `standards/` (its own rules included), and in any project
    `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
    `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
 5. At most 100 files and 1,500 changed lines.

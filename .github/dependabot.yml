@@ -234,7 +234,7 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
-    directory: "/monorepo"
+    directory: "/jimhillr"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -248,7 +248,7 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
-    directory: "/monorepo/workflow_tests"
+    directory: "/jimhillr/workflow_tests"
     schedule:
       interval: "weekly"
       day: "monday"

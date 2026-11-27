@@ -29,7 +29,7 @@ task check them and try to fix them"). This page is the policy it follows.
 | Infra drift | `infra-drift.yml` | weekly | a live setting differs from OpenTofu state, usually a change made by hand |
 | tofu_state | `tofu-state-deploy.yml` | push to `main` | the state Worker didn't deploy |
 
-`monorepo/workflow_tests/tests/readme_badges_tests.rs` fails when a workflow
+`jimhillr/workflow_tests/tests/readme_badges_tests.rs` fails when a workflow
 that runs on `main` has no badge in the table, so a new check gets its badge
 in the PR that adds it. Workflows that run only on PRs or by hand (PR CI,
 Infra Plan, Agent Skills, branch cleanup) have no badge: their result shows

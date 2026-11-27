@@ -35,3 +35,8 @@ To run all CI checks (formatting, linting, build, and tests):
 ```bash
 mise run ci
 ```
+
+The `web` module compiles only for `wasm32-unknown-unknown`, so `ci` also
+runs clippy and builds the tests for that target (mise installs it). Those
+tests are built, not run; put logic you want tested in a module that builds
+natively, such as `redirect.rs`.
