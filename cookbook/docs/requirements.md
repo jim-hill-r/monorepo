@@ -57,9 +57,10 @@ they are.
 
 - Priority: should
 - Why: Most visits are "what's for dinner today" or "what's this week".
-- Accept: every page has a header with Home, Recipes and Plans links, the
-  home page links to today's recipe and this week's plan, and the sidebar
-  lists this week's recipes and nearby plans.
+- Accept: every page has Home, Recipes and Plans links (in the header, or
+  in the sidebar below 768 px wide), the home page links to today's recipe
+  and this week's plan, the sidebar lists this week's recipes and nearby
+  plans, and each recipe links to the previous and next day.
 
 ## COOK-007: The recipes are real and varied
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { mainNavLink } from './nav';
 
 /**
  * Tests that the "today's recipe" links never point past day 365.
@@ -26,11 +27,12 @@ test.describe("Today's recipe link on 31 December of a leap year", { tag: '@req:
     await expect(browseLink).toHaveAttribute('href', '/recipe/365');
   });
 
-  test('header Recipes link opens a recipe, not the invalid day page', async ({ page }) => {
+  test('main Recipes link opens a recipe, not the invalid day page', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const headerLink = page.locator('header').getByRole('link', { name: 'Recipes', exact: true });
+    // In the header, or in the sidebar on phones.
+    const headerLink = await mainNavLink(page, 'Recipes');
     await expect(headerLink).toHaveAttribute('href', '/recipe/365');
 
     await headerLink.click();

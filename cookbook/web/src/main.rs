@@ -171,8 +171,11 @@ fn Header() -> Element {
                 }
                 h1 { class: "header-title", "Cookbook" }
             }
+            // Below 768 px these links move into the sidebar (see Sidebar),
+            // so the header stays on one row.
             nav {
                 class: "header-nav",
+                "aria-label": "Main",
                 Link { to: Route::Home {}, "Home" }
                 Link { to: Route::Recipe { day: today }, "Recipes" }
                 Link { to: Route::Plan { week: current_week }, "Plans" }
@@ -260,6 +263,14 @@ fn recipe_day_for_date(date: NaiveDate) -> u32 {
 }
 
 /// Get today's recipe day (1-365) in local time
+/// The recipe days before and after `day`, wrapping round the year: day 1
+/// follows day 365, as the recipes repeat every year.
+fn adjacent_recipe_days(day: u32) -> (u32, u32) {
+    let previous = if day <= 1 { 365 } else { day - 1 };
+    let next = if day >= 365 { 1 } else { day + 1 };
+    (previous, next)
+}
+
 fn get_current_day_of_year() -> u32 {
     recipe_day_for_date(Local::now().date_naive())
 }
@@ -458,11 +469,22 @@ fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
     let recipe_days = get_sidebar_recipe_days();
     let plan_weeks = get_sidebar_plan_weeks();
+    let today = get_current_day_of_year();
+    let current_week = get_current_week_of_year();
 
     rsx! {
         aside {
             id: "sidebar",
             class: if !sidebar_visible() { "hidden" } else { "" },
+            // The header's links, shown here only below 768 px, where the
+            // header hides them to stay on one row.
+            nav {
+                class: "sidebar-nav",
+                "aria-label": "Main",
+                Link { to: Route::Home {}, "Home" }
+                Link { to: Route::Recipe { day: today }, "Recipes" }
+                Link { to: Route::Plan { week: current_week }, "Plans" }
+            }
             h2 { "Quick Navigation" }
 
             div {
@@ -573,6 +595,7 @@ fn Recipe(day: u32) -> Element {
         }
     } else {
         let store = EmbeddedRecipeStore::global();
+        let (previous_day, next_day) = adjacent_recipe_days(day);
 
         // Use get_by_id with legacy day-based ID format
         match store.get_by_id(&format!("day-{}", day)) {
@@ -632,6 +655,13 @@ fn Recipe(day: u32) -> Element {
                                     span { class: "tag", "{tag}" }
                                 }
                             }
+                        }
+
+                        nav {
+                            class: "recipe-day-nav",
+                            "aria-label": "Other days",
+                            Link { to: Route::Recipe { day: previous_day }, rel: "prev", "← Previous day" }
+                            Link { to: Route::Recipe { day: next_day }, rel: "next", "Next day →" }
                         }
 
                         Link { to: Route::Home {}, class: "back-link", "← Back to Home" }
@@ -1118,6 +1148,29 @@ mod tests {
             day,
             MAX_DAY_OF_YEAR
         );
+    }
+
+    #[test]
+    fn test_adjacent_recipe_days_in_the_middle_of_the_year() {
+        assert_eq!(adjacent_recipe_days(10), (9, 11));
+    }
+
+    #[test]
+    fn test_adjacent_recipe_days_wrap_round_the_year() {
+        assert_eq!(adjacent_recipe_days(1), (365, 2));
+        assert_eq!(adjacent_recipe_days(365), (364, 1));
+    }
+
+    #[test]
+    fn test_adjacent_recipe_days_are_always_valid_recipe_days() {
+        for day in 1..=365 {
+            let (previous, next) = adjacent_recipe_days(day);
+            assert!(
+                (1..=365).contains(&previous),
+                "previous of {day} is {previous}"
+            );
+            assert!((1..=365).contains(&next), "next of {day} is {next}");
+        }
     }
 
     #[test]
