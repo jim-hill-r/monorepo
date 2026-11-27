@@ -4,13 +4,13 @@
   top: var(--header-height);
   width: 250px;
   height: calc(100vh - var(--header-height));
-  background: #f5e6d3;
-  border-right: 2px solid #8b4513;
-  padding: 1.5rem 1rem;
+  background: var(--ds-color-surface);
+  border-right: 2px solid var(--ds-color-border-strong);
+  padding: var(--ds-space-5) var(--ds-space-4);
   overflow-y: auto;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--ds-shadow-1);
   z-index: 900;
-  transition: transform 0.3s ease-in-out;
+  transition: transform var(--ds-motion-slow) ease-in-out;
   transform: translateX(0);
 }
 
@@ -20,59 +20,78 @@
 }
 
 #sidebar h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
-  color: #5a3a1a;
-  font-weight: bold;
+  overflow-wrap: anywhere;
+  margin: 0 0 var(--ds-space-5) 0;
+  font-size: var(--ds-text-xl);
+  color: var(--ds-color-text);
   text-align: center;
-  border-bottom: 2px solid #8b4513;
-  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--ds-color-accent);
+  padding-bottom: var(--ds-space-2);
 }
 
 .sidebar-section {
-  margin-bottom: 2rem;
+  margin-bottom: var(--ds-space-6);
 }
 
 .sidebar-section h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1.2rem;
-  color: #5a3a1a;
-  font-weight: 600;
+  margin: 0 0 var(--ds-space-4) 0;
+  font-size: var(--ds-text-lg);
+  color: var(--ds-color-text);
 }
 
 .sidebar-section a {
   display: block;
-  padding: 0.6rem 0.8rem;
-  margin-bottom: 0.5rem;
-  background-color: #fff;
-  color: #5a3a1a;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  margin-bottom: var(--ds-space-2);
+  background-color: var(--ds-color-surface-raised);
+  color: var(--ds-color-text);
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--ds-radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
-  border: 1px solid #d4a574;
+  transition: all var(--ds-motion-slow) var(--ds-ease);
+  border: var(--ds-border-width) solid var(--ds-color-border);
 }
 
 .sidebar-section a:hover {
-  background-color: #d4a574;
-  color: #fff;
-  border-color: #8b4513;
+  background-color: var(--ds-color-accent);
+  color: var(--ds-color-on-accent);
+  border-color: var(--ds-color-accent);
   transform: translateX(5px);
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--ds-shadow-1);
   cursor: pointer;
 }
 
 .sidebar-section a:active {
   transform: translateX(3px);
-  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar-section a:focus-visible {
-  background-color: #d4a574;
-  color: #fff;
-  border-color: #8b4513;
-  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.3);
-  outline: none;
+  background-color: var(--ds-color-accent);
+  color: var(--ds-color-on-accent);
+  border-color: var(--ds-color-accent);
+  outline: var(--ds-focus-width) solid var(--ds-color-focus);
+  outline-offset: var(--ds-focus-offset);
+}
+
+/* The design system's appearance picker, one control per line. */
+.sidebar-appearance {
+  margin-bottom: var(--ds-space-6);
+}
+
+.sidebar-appearance .ds-theme-picker {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sidebar-appearance .ds-theme-picker legend {
+  float: none;
+  font-family: var(--ds-font-heading);
+  font-size: var(--ds-text-lg);
+  margin-bottom: var(--ds-space-2);
+}
+
+.sidebar-appearance .ds-theme-picker label {
+  justify-content: space-between;
 }
 
 /* Add padding to main content to account for sidebar */
@@ -84,9 +103,9 @@ body {
 
 #content {
   margin-left: 250px;
-  padding: 2rem 3rem 2rem 2rem;
+  padding: var(--ds-space-6) var(--ds-space-7) var(--ds-space-6) var(--ds-space-6);
   min-height: calc(100vh - var(--header-height));
-  transition: margin-left 0.3s ease-in-out;
+  transition: margin-left var(--ds-motion-slow) ease-in-out;
   position: relative;
   z-index: 1;
 }
@@ -100,12 +119,12 @@ body {
   #sidebar {
     width: 200px;
   }
-  
+
   #content {
     margin-left: 200px;
-    padding: 1rem;
+    padding: var(--ds-space-4);
   }
-  
+
   #content.sidebar-hidden {
     margin-left: 0;
   }
@@ -117,18 +136,18 @@ body {
     width: 100%;
     height: auto;
     border-right: none;
-    border-bottom: 3px solid #e74c3c;
+    border-bottom: 3px solid var(--ds-color-accent);
   }
-  
+
   #sidebar.hidden {
     display: none;
   }
-  
+
   #content {
     margin-left: 0;
-    padding: 1rem;
+    padding: var(--ds-space-4);
   }
-  
+
   #content.sidebar-hidden {
     margin-left: 0;
   }

@@ -2,98 +2,85 @@
 .recipe-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 2rem;
-    line-height: 1.6;
-    color: #333;
+    padding: var(--ds-space-6);
+    line-height: var(--ds-leading-body);
+    color: var(--ds-color-text);
 }
 
 .recipe-container.error {
     text-align: center;
-    color: #c0392b;
+    color: var(--ds-color-danger);
 }
 
 .recipe-container h1 {
     font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: #5a3a1a;
+    margin-bottom: var(--ds-space-4);
+    color: var(--ds-color-text);
+}
+
+.recipe-container p {
+    margin-bottom: var(--ds-space-4);
 }
 
 .recipe-description {
-    font-size: 1.2rem;
-    color: #555;
-    margin-bottom: 1.5rem;
+    font-size: var(--ds-text-lg);
+    color: var(--ds-color-text-muted);
+    margin-bottom: var(--ds-space-5);
     font-style: italic;
 }
 
 .recipe-metadata {
     display: flex;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background-color: #f5e6d3;
-    border-radius: 4px;
+    gap: var(--ds-space-5);
+    margin-bottom: var(--ds-space-6);
+    padding: var(--ds-space-4);
+    background-color: var(--ds-color-surface);
+    border-radius: var(--ds-radius-sm);
     flex-wrap: wrap;
-    border: 1px solid #d4a574;
+    border: var(--ds-border-width) solid var(--ds-color-border);
 }
 
 .metadata-item {
-    font-size: 1rem;
-    color: #5a3a1a;
+    font-size: var(--ds-text-base);
+    color: var(--ds-color-text);
     font-weight: 500;
 }
 
 .recipe-section {
-    margin-bottom: 2rem;
+    margin-bottom: var(--ds-space-6);
 }
 
 .recipe-section h2 {
     font-size: 1.8rem;
-    margin-bottom: 1rem;
-    color: #5a3a1a;
-    border-bottom: 2px solid #8b4513;
-    padding-bottom: 0.5rem;
+    margin-bottom: var(--ds-space-4);
+    color: var(--ds-color-text);
+    border-bottom: 2px solid var(--ds-color-accent);
+    padding-bottom: var(--ds-space-2);
 }
 
 .recipe-list {
-    padding-left: 1.5rem;
+    padding-left: var(--ds-space-5);
 }
 
 .recipe-list li {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--ds-space-2);
     font-size: 1.1rem;
 }
 
 .recipe-tags {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 2rem;
+    gap: var(--ds-space-2);
+    margin-top: var(--ds-space-6);
     flex-wrap: wrap;
 }
 
 .tag {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background-color: #8b4513;
-    color: #f5e6d3;
-    border-radius: 4px;
-    font-size: 0.9rem;
+    padding: var(--ds-space-1) var(--ds-space-3);
+    background-color: var(--ds-color-accent);
+    color: var(--ds-color-on-accent);
+    border-radius: var(--ds-radius-sm);
+    font-size: var(--ds-text-sm);
 }
 
-.back-link {
-    display: inline-block;
-    margin-top: 2rem;
-    padding: 0.5rem 1rem;
-    background-color: #8b4513;
-    color: #f5e6d3;
-    text-decoration: none;
-    border-radius: 4px;
-    transition: background-color 0.3s;
-    position: relative;
-    z-index: 100;
-    clear: both;
-    isolation: isolate;
-}
-
-.back-link:hover {
-    background-color: #d4a574;
-}
+/* .back-link is styled in plan.css, which every page loads. */

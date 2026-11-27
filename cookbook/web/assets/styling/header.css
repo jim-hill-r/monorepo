@@ -1,3 +1,5 @@
+/* Colours, type, spacing and motion come from the design system's tokens
+ * (design_system/dist/tokens.css); the default theme is earthy. */
 :root {
   --header-height: 60px;
 }
@@ -23,10 +25,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 2rem;
-  background: #8b4513;
-  border-bottom: 2px solid #5a3a1a;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: var(--ds-space-2) var(--ds-space-6);
+  background: var(--ds-color-accent);
+  color: var(--ds-color-on-accent);
+  border-bottom: 2px solid var(--ds-color-accent-hover);
+  box-shadow: var(--ds-shadow-1);
   height: var(--header-height);
   min-height: var(--header-height);
   max-height: var(--header-height);
@@ -42,7 +45,7 @@ body {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--ds-space-4);
 }
 
 /* Hamburger menu button */
@@ -64,69 +67,67 @@ body {
   opacity: 0.8;
 }
 
-.hamburger-btn:focus {
-  outline: 2px solid #ffffff;
-  outline-offset: 2px;
+.hamburger-btn:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-color-on-accent);
+  outline-offset: var(--ds-focus-offset);
 }
 
 .hamburger-icon {
   width: 2rem;
   height: 0.25rem;
-  background: #ffffff;
+  background: var(--ds-color-on-accent);
   border-radius: 2px;
-  transition: all 0.3s linear;
+  transition: all var(--ds-motion-slow) linear;
   position: relative;
   transform-origin: 1px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .header-title {
   margin: 0;
-  font-size: 1.75rem;
-  color: #f5e6d3;
-  font-weight: bold;
+  font-size: var(--ds-text-xl);
+  color: var(--ds-color-on-accent);
+  font-weight: var(--ds-weight-strong);
   letter-spacing: 1px;
 }
 
 .header-nav {
   display: flex;
-  gap: 2rem;
+  gap: var(--ds-space-6);
   align-items: center;
 }
 
 .header-nav a {
-  color: #fff;
+  color: var(--ds-color-on-accent);
   text-decoration: none;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  font-size: var(--ds-text-base);
+  font-weight: var(--ds-weight-strong);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius-sm);
+  transition: all var(--ds-motion-slow) var(--ds-ease);
   background-color: transparent;
-  border: 1px solid transparent;
+  border: var(--ds-border-width) solid transparent;
 }
 
 .header-nav a:hover {
-  background-color: #5a3a1a;
-  color: #fff;
-  border-color: #5a3a1a;
+  background-color: var(--ds-color-accent-hover);
+  color: var(--ds-color-on-accent);
+  border-color: var(--ds-color-accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--ds-shadow-1);
   cursor: pointer;
 }
 
 .header-nav a:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
 }
 
 .header-nav a:focus-visible {
-  background-color: #5a3a1a;
-  color: #fff;
-  border-color: #5a3a1a;
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(90, 58, 26, 0.4), 0 2px 4px rgba(0, 0, 0, 0.15);
-  outline: none;
+  background-color: var(--ds-color-accent-hover);
+  color: var(--ds-color-on-accent);
+  border-color: var(--ds-color-accent-hover);
+  outline: var(--ds-focus-width) solid var(--ds-color-on-accent);
+  outline-offset: var(--ds-focus-offset);
   cursor: pointer;
 }
 
@@ -136,80 +137,84 @@ body {
 }
 
 .header-auth button {
-  background-color: #5a3a1a;
-  color: #fff;
-  border: 1px solid #5a3a1a;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  background-color: var(--ds-color-accent-hover);
+  color: var(--ds-color-on-accent);
+  border: var(--ds-border-width) solid var(--ds-color-on-accent);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius-sm);
+  font-size: var(--ds-text-sm);
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  font-weight: var(--ds-weight-strong);
+  transition: all var(--ds-motion-slow) var(--ds-ease);
+  box-shadow: var(--ds-shadow-1);
 }
 
 .header-auth button:hover {
-  background-color: #3d2612;
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .header-auth button:active {
   transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--ds-shadow-1);
+}
+
+.header-auth button:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-color-on-accent);
+  outline-offset: var(--ds-focus-offset);
 }
 
 .header-auth .error {
-  color: #f5e6d3;
-  background-color: rgba(192, 57, 43, 0.7);
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  border: 1px solid #f5e6d3;
-  font-size: 0.9rem;
+  color: var(--ds-color-on-danger);
+  background-color: var(--ds-color-danger);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius-sm);
+  border: var(--ds-border-width) solid var(--ds-color-on-accent);
+  font-size: var(--ds-text-sm);
 }
 
 .header-auth div {
-  color: #f5e6d3;
-  font-size: 0.9rem;
+  color: var(--ds-color-on-accent);
+  font-size: var(--ds-text-sm);
 }
 
 /* Mobile responsive design */
 @media (max-width: 768px) {
   #header {
-    padding: 0.5rem 1rem;
+    padding: var(--ds-space-2) var(--ds-space-4);
     height: auto;
     min-height: var(--header-height);
     max-height: none;
     flex-wrap: wrap;
   }
-  
+
   .header-left {
     flex-shrink: 0;
   }
-  
+
   .header-title {
-    font-size: 1.3rem;
+    font-size: var(--ds-text-lg);
   }
-  
+
   .header-nav {
     order: 3;
     width: 100%;
     justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: var(--ds-space-2);
+    margin-top: var(--ds-space-2);
   }
-  
+
   .header-nav a {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
+    padding: var(--ds-space-1) var(--ds-space-3);
+    font-size: var(--ds-text-sm);
   }
-  
+
   .header-auth {
     flex-shrink: 0;
   }
-  
+
   .header-auth button {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    padding: var(--ds-space-1) var(--ds-space-3);
+    font-size: var(--ds-text-sm);
   }
 }

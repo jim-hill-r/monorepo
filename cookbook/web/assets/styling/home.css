@@ -2,37 +2,37 @@
 .home-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--ds-space-6);
 }
 
 .home-container h1 {
-  color: #5a3a1a;
+  color: var(--ds-color-text);
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--ds-space-4);
   text-align: center;
 }
 
 .home-container > p {
-  color: #5a3a1a;
-  font-size: 1.3rem;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-lg);
   text-align: center;
-  margin-bottom: 3rem;
+  margin: 0 auto var(--ds-space-7);
 }
 
 .navigation-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2rem;
+  gap: var(--ds-space-6);
+  margin-top: var(--ds-space-6);
 }
 
 .navigation-card {
-  background: #f5e6d3;
-  border: 2px solid #8b4513;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  background: var(--ds-color-surface);
+  border: 2px solid var(--ds-color-border-strong);
+  border-radius: var(--ds-radius-md);
+  padding: var(--ds-space-6);
+  box-shadow: var(--ds-shadow-2);
+  transition: all var(--ds-motion-slow) var(--ds-ease);
   text-align: center;
   position: relative;
   z-index: 1;
@@ -40,61 +40,62 @@
 
 .navigation-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: #d4a574;
+  box-shadow: var(--ds-shadow-3);
+  border-color: var(--ds-color-accent);
 }
 
 .navigation-card h2 {
-  color: #5a3a1a;
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-2xl);
+  margin-bottom: var(--ds-space-4);
 }
 
 .navigation-card p {
-  color: #5a3a1a;
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
+  color: var(--ds-color-text);
+  font-size: var(--ds-text-lg);
+  margin: 0 auto var(--ds-space-5);
+  line-height: var(--ds-leading-body);
 }
 
 .navigation-card a {
   display: inline-block;
-  background-color: #8b4513;
-  color: #f5e6d3;
-  padding: 1rem 2rem;
-  border-radius: 4px;
+  background-color: var(--ds-color-accent);
+  color: var(--ds-color-on-accent);
+  padding: var(--ds-space-4) var(--ds-space-6);
+  border-radius: var(--ds-radius-sm);
   text-decoration: none;
-  font-size: 1.2rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  border: 1px solid #8b4513;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-strong);
+  transition: all var(--ds-motion-slow) var(--ds-ease);
+  border: var(--ds-border-width) solid var(--ds-color-accent);
+  box-shadow: var(--ds-shadow-1);
   position: relative;
   z-index: 2;
 }
 
 .navigation-card a:hover {
-  background-color: #d4a574;
-  border-color: #8b4513;
+  background-color: var(--ds-color-accent-hover);
+  border-color: var(--ds-color-accent-hover);
+  color: var(--ds-color-on-accent);
   transform: scale(1.03);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--ds-shadow-2);
   cursor: pointer;
 }
 
 .navigation-card a:active {
   transform: scale(1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--ds-shadow-1);
 }
 
 .navigation-card a:focus-visible {
-  outline: 3px solid #d4a574;
+  outline: 3px solid var(--ds-color-focus);
   outline-offset: 3px;
 }
 
 /* Icon/emoji styling for visual appeal */
 .card-icon {
   font-size: 4rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--ds-space-4);
   display: block;
 }
 
@@ -103,13 +104,24 @@
   .home-container h1 {
     font-size: 2.5rem;
   }
-  
+
   .navigation-cards {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: var(--ds-space-5);
   }
-  
+
   .navigation-card {
-    padding: 1.5rem;
+    padding: var(--ds-space-5);
   }
+}
+
+/* The introduction from content/intro.md, centred under the title. */
+.intro-description {
+  max-width: 65ch;
+  margin: 0 auto var(--ds-space-6);
+  font-size: var(--ds-text-lg);
+}
+
+.intro-description p {
+  margin-bottom: var(--ds-space-4);
 }
