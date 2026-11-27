@@ -24,6 +24,15 @@ fn section_link<G: Html>(cx: Scope, home: &str, id: &str, label: &'static str) -
     }
 }
 
+/// The footer's copyright line, from 2023 to the year the site was built
+/// (set by `build.rs`).
+fn copyright() -> String {
+    format!(
+        "© 2023–{} Spark Hill. All Rights Reserved.",
+        env!("JIMHILLR_BUILD_YEAR")
+    )
+}
+
 /// The whole home page: nav, the four sections and the footer. It takes the
 /// translated tagline and the locale's home URL so tests can render it
 /// without a translator.
@@ -142,7 +151,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
                     a(href="https://blue.eel.education", target="_blank", rel="noopener noreferrer", class="text-sky-50 hover:text-teal-500 pr-4 pl-4") { "Blue Eel" }
                 }
                 div(class="text-sky-100 text-right pb-2 mr-2") {
-                    "© 2023 Spark Hill. All Rights Reserved."
+                    (copyright())
                 }
             }
         }
@@ -269,6 +278,15 @@ mod tests {
             .strip_prefix(&format!("{SITE_URL}/.perseus/static/"))
             .unwrap_or_else(|| panic!("{image} isn't an absolute static URL"));
         assert!(Path::new("static").join(file).exists(), "{image} missing");
+    }
+
+    #[test]
+    fn copyright_runs_to_the_build_year() {
+        let year: i32 = env!("JIMHILLR_BUILD_YEAR")
+            .parse()
+            .unwrap_or_else(|e| panic!("build year: {e}"));
+        assert!((2026..3000).contains(&year), "{year}");
+        assert!(render().contains(&format!("© 2023–{year} Spark Hill")));
     }
 
     #[test]
