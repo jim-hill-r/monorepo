@@ -167,6 +167,27 @@ repo, rather than in any one agent tool's settings.
   Agents never approve a `credential-change` PR, never put a
   credential-capable token anywhere but that environment, and never ask
   for admin rights for `jimhillr-agt` or the Claude GitHub App.
+- **Evals are continuous improvement (Jim, 2026-11-27).** "The eval
+  process is a continuous improvement process and should not be considered
+  a one off project. The evals should always be green and a system of
+  feedback to our todo process should be the way in which individual
+  projects improve their eval coverage." So every requirement's verdict
+  should be green; any requirement that is not met, at risk or unknown
+  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  normal agent loop works it. Each project grows its own eval coverage
+  through those issues: requirements for anything it ships, evals that
+  check real content in production, and an eval coverage figure and badge
+  per project. Agents working on a project add or fix evals as part of the
+  work, not as a separate phase. Details are under "Continuous
+  improvement" in [standards/docs/evals.md](standards/docs/evals.md).
+- **Code quality ratchet (Jim, 2026-11-27).** "We also need a process for
+  ensuring maintainable code base." Each project's quality findings (clippy
+  pedantic and the complexity limits) may only go down, never up, and gaps
+  become issue files through weekly quality triage, the same loop as evals
+  ([decision 0015](standards/docs/decisions/0015-code-quality-process.md),
+  [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
+  findings in files you touch. Scripts stay Rust-only: add no new `.sh`
+  files, and port existing ones into `chores` commands over time.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -178,6 +199,20 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **Third-party content in athenaeum (Jim, 2026-11-27).** "Including
+  copywrited content is fine as long as we reference the original owner
+  properly and never sell or expose it as a part of our product." Copies of
+  others' work may live in `athenaeum`, which is for agents and people to
+  understand our coding stance, with the owner named and the original
+  linked beside them; never ship them in a product. Details are in
+  [athenaeum/CONTRIBUTING.md](athenaeum/CONTRIBUTING.md).
+- **Code quality references in athenaeum (Jim, 2026-11-27).** "We can use
+  athenaeum project as a store for important documents/blog posts/patterns
+  we discover so we can reference them as we write software." Before
+  leaning on a design or code quality idea, read its note in
+  [athenaeum/resources/code_quality/](athenaeum/resources/code_quality/README.md),
+  and when a source changes how we write code here, add a note for it
+  there. The standards still hold the rules; the notes explain them.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit
@@ -207,6 +242,16 @@ repo, rather than in any one agent tool's settings.
   for reasons the PR didn't cause. A pending check is never green. Agents
   still never approve their own PRs. Details are in
   `standards/docs/pull-requests.md`.
+- **The reviewer account (Jim, 2026-11-27).** "A third GitHub account to
+  do approvals so we can be explicit about what is being auto-approved and
+  establish a process for that approver." `jimhillr-reviewer` approves
+  only the green, unlabelled, low-risk agent PRs its written rules allow
+  (the `All Auto Review` workflow, "The reviewer account" in
+  `standards/docs/pull-requests.md`, decision 0014); Jim approves the
+  rest, and reads every merged PR afterwards on pane's Acknowledge page.
+  Agents never hold or ask for its token, never remove a red or orange
+  label to get a PR approved, and never split a change to dodge its
+  protected paths or size limit.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
   or closed). The policy is in `standards/docs/pull-requests.md`. A scheduled
   agent task, "PR triage", runs three times a day as `jimhillr-agt` on

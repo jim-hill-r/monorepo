@@ -28,7 +28,7 @@ async function beginAs(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Start' }).click();
 }
 
-test('a reload carries on where the learner was', async ({ page }) => {
+test('a reload carries on where the learner was @smoke @req:SPRK-005', async ({ page }) => {
   await beginAs(page, 'Ada');
   await expect(page.locator('main b')).toHaveText('b');
   await traceRight(page);
@@ -42,7 +42,7 @@ test('a reload carries on where the learner was', async ({ page }) => {
   await expect(page.getByPlaceholder('Your name')).toHaveValue('Ada');
 });
 
-test('another learner starts afresh', async ({ page }) => {
+test('another learner starts afresh @smoke @req:SPRK-005', async ({ page }) => {
   await beginAs(page, 'Ada');
   await traceRight(page);
   await expect(page.locator('main b')).toHaveText('c');

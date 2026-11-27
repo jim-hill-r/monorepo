@@ -45,11 +45,10 @@ fn test_e2e_simple_function() {
 fn test_e2e_integer_literal() {
     let ir = compile("function answer() { 42 }");
     assert!(ir.contains("define i64 @answer"));
-    // Expression statement evaluates 42 but does not emit a return;
-    // the implicit default return emits `ret i64 0`.
+    // A trailing expression is the function's value.
     assert!(
-        ir.contains("ret i64 0"),
-        "implicit 0 return after expression statement"
+        ir.contains("ret i64 42"),
+        "trailing expression is returned: {ir}"
     );
 }
 

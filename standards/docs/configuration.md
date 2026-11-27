@@ -1,1 +1,1 @@
-- All projects MUST include a royalty.toml for use with the royalty project.
+- All projects MUST include a royalty.toml for use with the royalty project. The format (schema 1) is in the [royalty.toml reference](../../royalty/docs/royalty-toml.md); a file with only a `[project]` table with `name` and `description` is valid and means "no payment terms".
