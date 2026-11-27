@@ -34,23 +34,19 @@ run book in the task."
 
 | Runbook | Kind | Issue |
 | --- | --- | --- |
-| [Set up the infra-credentials environment](infra-credentials-environment.md) | one-time | `infra-credentials-environment.md` |
-| [Create the Auth0 IaC applications](auth0-iac-credentials.md) | one-time | `auth0-iac-credentials.md` |
-| [Create the Cloudflare IaC tokens](cloudflare-iac-credentials.md) | one-time | `cloudflare-iac-credentials.md` |
-| [Make the OpenTofu state passwords](tofu-state-passwords.md) | one-time | `tofu-state-passwords.md` |
-| [Change the Cloudflare deploy token's permissions](cloudflare-deploy-token.md) | on demand | `cloudflare-api-token-workers-d1-edit.md`, `cloudflare-dashboard-turn-web-analytics-production.md` |
+| [Set up the infra environments and bootstrap credentials](infra-credentials-environment.md) | one-time | `infra-credentials-environment.md` |
+| [Create the infra GitHub App](github-app-infra.md) | one-time | `github-app-infra-credentials.md` |
 | [Turn on GitHub code security](github-code-security.md) | one-time | `github-settings-code-security-turn-secret.md` |
 | [Require CI on the main ruleset](github-ruleset-required-check.md) | one-time | `github-settings-rules-rulesets-default-ruleset.md` |
 | [Sign up for PostHog](posthog-sign-up.md) | one-time | `create-posthog-cloud-free-plan-no.md` |
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
-| [Make the Android release key](android-release-key.md) | one-time, optional | `optional-create-android-release-key-controlled.md` |
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
 
-Coming in open PRs, written by the infrastructure thread in the same
-format: the infra GitHub App (`github-app-infra.md`, PR #728), the
-`TOFU_STATE_ORIGIN` variable (PR #726), and the one setup task that the
-token-minting workflow will leave in place of several rows above.
+The Infra Mint workflow (`.github/workflows/infra-mint.yml`, decision 0011)
+makes every other infra secret from those two tasks' credentials: the state
+passwords and passphrase, `TOFU_STATE_ORIGIN`, the Cloudflare deploy, read
+and apply tokens, the Auth0 read and apply apps and the Android release key.
 
 ### Recurring and on demand
 
@@ -72,6 +68,16 @@ token-minting workflow will leave in place of several rows above.
 | [Set up Cloudflare](cloudflare-account.md) | The account, the deploy token and the `CLOUDFLARE_*` secrets |
 | [Set up Auth0](auth0-tenant.md) | The tenant and the Cahokia and Cookbook applications |
 | [Get the RapidAPI Zillow key](rapidapi-zillow.md) | The free RapidAPI plan homer uses |
+
+### Replaced by the Infra Mint workflow (keep for reference)
+
+| Runbook | Now made by |
+| --- | --- |
+| [Create the Auth0 IaC applications](auth0-iac-credentials.md) | Infra Mint, `auth0` |
+| [Create the Cloudflare IaC tokens](cloudflare-iac-credentials.md) | Infra Mint, `cloudflare` |
+| [Make the OpenTofu state passwords](tofu-state-passwords.md) | Infra Mint, `state` |
+| [Change the Cloudflare deploy token's permissions](cloudflare-deploy-token.md) | Infra Mint, `cloudflare` (`jimhillr-deploy`) |
+| [Make the Android release key](android-release-key.md) | Infra Mint, `android` |
 
 Squarespace is an approved vendor but Jim's own account: nothing in the
 repo uses it, so it has no runbook until something does.

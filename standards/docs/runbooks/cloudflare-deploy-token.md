@@ -1,10 +1,7 @@
 # Change the Cloudflare deploy token's permissions
 
 - **Kind:** on demand (when a deploy or check needs a new permission)
-- **Status:** open for Workers Scripts: Edit and D1: Edit
-  (`issues/human/cloudflare-api-token-workers-d1-edit.md`) and Account
-  Analytics: Read (`issues/human/cloudflare-dashboard-turn-web-analytics-production.md`).
-  Do both in one edit.
+- **Status:** Replaced by the Infra Mint workflow on 2026-11-27 ([decision 0011](../decisions/0011-mint-secrets-by-workflow.md)), which makes this for you. Kept only to show what a hand-made version looked like; for a rebuild, follow [infra-credentials-environment.md](infra-credentials-environment.md).
 - **Time:** about 2 minutes
 - **Cost:** $0. Deploys stay within the Workers and D1 free tiers
   (`standards/scripts/free-tiers.sh` checks before each one).

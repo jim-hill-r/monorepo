@@ -1,8 +1,7 @@
 # Create the Cloudflare IaC tokens
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/cloudflare-iac-credentials.md`). The
-  token-minting workflow (Jim, 2026-11-27) is expected to replace this.
+- **Status:** Replaced by the Infra Mint workflow on 2026-11-27 ([decision 0011](../decisions/0011-mint-secrets-by-workflow.md)), which makes this for you. Kept only to show what a hand-made version looked like; for a rebuild, follow [infra-credentials-environment.md](infra-credentials-environment.md).
 - **Time:** about 10 minutes
 - **Cost:** $0. Web Analytics is free.
 
