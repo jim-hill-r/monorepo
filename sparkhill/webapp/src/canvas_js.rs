@@ -21,6 +21,7 @@ window.eelCanvas = (function() {
   let timePerPoint = 0;
   let then = 0;
   let onAnimationComplete = null;
+  let demonstration = [];
 
   function computeBoundary() {
     return {
@@ -229,12 +230,17 @@ window.eelCanvas = (function() {
       return JSON.stringify({boundary, path: recordedPoints});
     },
 
+    // The last demonstration's path in canvas pixels, with each stroke's
+    // `start` and `end`. The Playwright tests trace it to pass a letter.
+    demonstrationPath() { return demonstration; },
+
     drawLetter(patternsJson, technique) {
       if (!canvas) return;
       const patterns = JSON.parse(patternsJson);
       const combined = combinePatterns(patterns);
       clearCanvas();
       const fitted = fitToCanvas(combined);
+      demonstration = fitted.map(p => ({x: p.x, y: p.y, type: p.type}));
       if (!fitted || fitted.length === 0 || technique === 'Freeform') {
         setTimeout(() => { if (onAnimationComplete) onAnimationComplete(); }, 1200);
         return;

@@ -1,7 +1,7 @@
 use crate::Route;
 use crate::canvas_js::CANVAS_JS;
 use crate::patterns::demonstration_js;
-use crate::state::{AppState, PracticePhase, next_level};
+use crate::state::{AppState, PracticePhase, next_level, practice_from_query};
 use crate::tracing_check;
 use dioxus::document::eval;
 use dioxus::prelude::*;
@@ -26,7 +26,15 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
 
     let is_complete = state.read().is_complete() && *phase.read() != PracticePhase::Start;
 
-    let on_start = move |_| {
+    let on_start = move |_| async move {
+        // `?practice=b,c` practises only those letters or words.
+        let query = eval("return window.location.search;")
+            .join::<String>()
+            .await
+            .unwrap_or_default();
+        if let Some(expressions) = practice_from_query(&query) {
+            state.write().practise_only(expressions);
+        }
         state.write().start_practice();
         let expr = state.read().expression.clone();
         if let Some(ref letter) = expr {
