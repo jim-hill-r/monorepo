@@ -43,6 +43,7 @@ Never a repository secret, and no copy anywhere else.
 - github.com/settings/installations lists the app with access to `jimhillr/monorepo` only.
 - The app's permissions page shows exactly the five permissions above.
 - `infra-credentials` has the secret and the variable, and the `.pem` file is gone from your computer.
+- If Infra Mint fails at "GitHub App token" with "The permissions requested are not granted to this installation", the installation is missing a permission. Open github.com/settings/installations > the app > Configure. If it shows a request to accept new permissions, accept it. Otherwise, check that the app's Permissions page has all of Secrets, Environments and Variables set to Read and write.
 
 Reply in the Claude project when you're done. An agent deletes the issue, and the
 `github-app-infra` settings check in `standards/settings.toml` then comes round every 90 days.
