@@ -1,6 +1,9 @@
-# Cahokia Core
+# core
 
-This crate provides core data structures and functionality for managing genealogy and family tree data in the Cahokia application.
+The data model and layout maths behind the Cahokia genealogy app: people,
+relationships, life events and the family tree graph, plus the layout,
+viewport and lineage logic that the `ui` crate draws on web, desktop and
+mobile. It has no dependencies and no UI code.
 
 ## Features
 
@@ -198,5 +201,4 @@ The crate uses `FamilyTreeResult<T>` which can return:
 
 See the issue files in `issues/` for planned features including:
 - Divorce event handling
-- Ancestor/descendant traversal queries
 - Family tree visualization
