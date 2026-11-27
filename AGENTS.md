@@ -183,6 +183,13 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **Third-party content in athenaeum (Jim, 2026-11-27).** "Including
+  copywrited content is fine as long as we reference the original owner
+  properly and never sell or expose it as a part of our product." Copies of
+  others' work may live in `athenaeum`, which is for agents and people to
+  understand our coding stance, with the owner named and the original
+  linked beside them; never ship them in a product. Details are in
+  [athenaeum/CONTRIBUTING.md](athenaeum/CONTRIBUTING.md).
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit
