@@ -20,6 +20,7 @@ task check them and try to fix them"). This page is the policy it follows.
 | Nightly CD | `nightly-cd.yml` | daily | a site's CI or deploy failed, often an expired secret |
 | Nightly downloads | `nightly-downloads.yml` | daily | a game's macOS or Android build or publish failed |
 | Code coverage | `nightly-coverage.yml`, plus the `coverage-results` badge | daily | a project's tests failed under cargo-llvm-cov, or results weren't stored. A project under 80% (COV-001) is a warning: add tests, in a fix PR like any other |
+| Eval coverage | the `evals-results` badge, written by `evals-store.yml` (called by `push-main.yml` and `nightly-ci.yml`) | each push to `main`, daily | not a pass or fail: yellow or red means a project, or the repo on average, has under 80% of its `must` requirements met on production evidence ([evals.md](evals.md#eval-coverage)). Each gap is a `TODO` or `FIX` issue in the project, worked like any other |
 | Threats: CodeQL | `all-codeql.yml` | push to `main`, weekly (Rust) | the scan itself failed; alerts show in the Security tab, not on the badge |
 | Threats: advisories | `all-dependency-audit.yml` | daily | the audit itself failed. Advisories are warnings for now, so read the log even when it is green |
 | Threats: Dependabot | Dependabot Updates (dynamic) | Dependabot's schedule | Dependabot couldn't update a manifest |

@@ -62,8 +62,9 @@ row here before a project's first `docs/requirements.md`.
 | sparkhill | `SPRK` |
 | standards | `STND` |
 | starcraft | `STAR` |
+| telemetry | `TELE` |
 
-`EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-004), so
+`EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-006), so
 it is not a project prefix. `JIMH`, the `jimhillr` project's prefix, covers
 repo-wide process requirements such as change failure rate and lead time.
 It replaced `MONO` when the `monorepo` folder was renamed, before any

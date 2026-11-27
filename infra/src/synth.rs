@@ -53,6 +53,24 @@ pub fn backend_config_args(stack: &str, origin: &str) -> anyhow::Result<Vec<Stri
         .collect())
 }
 
+/// The OpenTofu variable that carries the previous passphrase while the
+/// state is re-encrypted after a rotation, from `TOFU_STATE_PASSPHRASE_OLD`
+/// as `TF_VAR_tofu_state_passphrase_old`. Empty, and unused, at generation 1.
+pub const OLD_PASSPHRASE_VARIABLE: &str = "tofu_state_passphrase_old";
+
+/// The key provider and method name for a passphrase generation. Generation
+/// 1 is `state`, the name every state was first written with; later ones are
+/// `gen_<n>`. OpenTofu stores each key's PBKDF2 salt in the state under the
+/// key provider's name, so a new passphrase needs a new name: the old key
+/// can then be the fallback under the name it encrypted with.
+pub fn key_name(generation: u32) -> String {
+    if generation <= 1 {
+        "state".to_string()
+    } else {
+        format!("gen_{generation}")
+    }
+}
+
 /// OpenTofu state and plan encryption (decision 0007, item 7): AES-GCM with
 /// a key from a PBKDF2 passphrase, enforced so an unencrypted state is never
 /// written. Defence in depth: IAC-002 already keeps secrets out of state.
@@ -61,12 +79,33 @@ pub fn backend_config_args(stack: &str, origin: &str) -> anyhow::Result<Vec<Stri
 /// `${...}` templates, which OpenTofu rejects here (`tofu validate` doesn't
 /// notice; the test below runs a real apply).
 pub fn encryption() -> Value {
-    let method = json!({ "method": "method.aes_gcm.state", "enforced": true });
+    encryption_for(1)
+}
+
+/// The encryption block for a passphrase generation. From generation 2 on,
+/// the current passphrase encrypts under [`key_name`] of that generation, and
+/// the previous one (`tofu_state_passphrase_old`) is the fallback, so state
+/// written before the rotation still reads until it is re-encrypted
+/// (`tofu.sh rekey`). The committed stacks hold generation 1; `tofu.sh`
+/// passes a later one in `TF_ENCRYPTION`, which OpenTofu merges over it.
+pub fn encryption_for(generation: u32) -> Value {
+    let current = key_name(generation);
+    let passphrase = |variable: &str| json!({ "passphrase": format!("${{var.{variable}}}") });
+    let keys = |name: &str| json!({ "keys": format!("key_provider.pbkdf2.{name}") });
+    let mut method = json!({ "method": format!("method.aes_gcm.{current}"), "enforced": true });
+    let mut providers = serde_json::Map::new();
+    let mut methods = serde_json::Map::new();
+    providers.insert(current.clone(), passphrase(PASSPHRASE_VARIABLE));
+    methods.insert(current.clone(), keys(&current));
+    if generation > 1 {
+        let previous = key_name(generation - 1);
+        providers.insert(previous.clone(), passphrase(OLD_PASSPHRASE_VARIABLE));
+        methods.insert(previous.clone(), keys(&previous));
+        method["fallback"] = json!({ "method": format!("method.aes_gcm.{previous}") });
+    }
     json!({
-        "key_provider": { "pbkdf2": { "state": {
-            "passphrase": format!("${{var.{PASSPHRASE_VARIABLE}}}"),
-        } } },
-        "method": { "aes_gcm": { "state": { "keys": "key_provider.pbkdf2.state" } } },
+        "key_provider": { "pbkdf2": providers },
+        "method": { "aes_gcm": methods },
         "state": method,
         "plan": method,
     })
@@ -139,6 +178,10 @@ impl Synth {
         variables.insert(
             PASSPHRASE_VARIABLE.into(),
             json!({ "type": "string", "sensitive": true, "nullable": false }),
+        );
+        variables.insert(
+            OLD_PASSPHRASE_VARIABLE.into(),
+            json!({ "type": "string", "sensitive": true, "nullable": false, "default": "" }),
         );
         if !self.imports.is_empty() {
             object.insert(
@@ -295,6 +338,150 @@ mod tests {
             "another-wrong-passphrase-entirely",
             &["plan", "-input=false"]
         )?);
+        Ok(())
+    }
+
+    #[test]
+    fn a_later_generation_falls_back_to_the_previous_key() {
+        let first = encryption_for(1);
+        assert_eq!(first, encryption());
+        assert!(first["state"].get("fallback").is_none());
+        let third = encryption_for(3);
+        let pbkdf2 = &third["key_provider"]["pbkdf2"];
+        assert_eq!(
+            pbkdf2["gen_3"]["passphrase"],
+            "${var.tofu_state_passphrase}"
+        );
+        assert_eq!(
+            pbkdf2["gen_2"]["passphrase"],
+            "${var.tofu_state_passphrase_old}"
+        );
+        for block in ["state", "plan"] {
+            assert_eq!(third[block]["method"], "method.aes_gcm.gen_3");
+            assert_eq!(third[block]["enforced"], true);
+            assert_eq!(third[block]["fallback"]["method"], "method.aes_gcm.gen_2");
+        }
+        assert_eq!(
+            encryption_for(2)["state"]["fallback"]["method"],
+            "method.aes_gcm.state",
+            "generation 2 reads the state generation 1 wrote"
+        );
+    }
+
+    /// A rotation end to end with real OpenTofu (the proof
+    /// issues/iac-rotate-state-passphrase.md asked for): state written at
+    /// generation 1 still plans at generation 2 through the fallback, `state
+    /// pull | state push` (what `tofu.sh rekey` runs) re-encrypts it under the
+    /// new key, and after that the old passphrase isn't needed. Skipped when
+    /// `tofu` isn't on PATH.
+    #[test]
+    fn opentofu_rotates_the_passphrase() -> anyhow::Result<()> {
+        use std::io::Write;
+        use std::process::{Command, Stdio};
+        if Command::new("tofu").arg("version").output().is_err() {
+            eprintln!("skipped: tofu is not on PATH");
+            return Ok(());
+        }
+        let dir = tempfile::tempdir()?;
+        let mut synth = Synth::new("probe");
+        synth.json = json!({
+            "terraform": {
+                "backend": { "local": { "path": "test.tfstate" } },
+                "encryption": encryption(),
+            },
+            "variable": {
+                PASSPHRASE_VARIABLE: { "type": "string", "sensitive": true, "nullable": false },
+                OLD_PASSPHRASE_VARIABLE: { "type": "string", "sensitive": true, "nullable": false, "default": "" },
+            },
+            "resource": { "terraform_data": { "probe": { "input": "probe" } } },
+        });
+        std::fs::write(dir.path().join("main.tf.json"), synth.contents()?)?;
+        let (a, b, c) = (
+            "the-first-long-test-passphrase",
+            "the-second-long-test-passphrase",
+            "the-third-long-test-passphrase",
+        );
+        let tofu = |generation: u32, new: &str, old: &str, args: &[&str]| {
+            let mut command = Command::new("tofu");
+            command
+                .args(args)
+                .current_dir(dir.path())
+                .env(format!("TF_VAR_{PASSPHRASE_VARIABLE}"), new)
+                .env(format!("TF_VAR_{OLD_PASSPHRASE_VARIABLE}"), old)
+                .env_remove("TF_ENCRYPTION");
+            if generation > 1 {
+                command.env("TF_ENCRYPTION", encryption_for(generation).to_string());
+            }
+            command
+        };
+        let ok = |mut command: Command| -> anyhow::Result<bool> {
+            Ok(command.arg("-no-color").output()?.status.success())
+        };
+        // No changes, and the state read: exit 0 with -detailed-exitcode.
+        let plans = |generation: u32, new: &str, old: &str| {
+            ok(tofu(
+                generation,
+                new,
+                old,
+                &["plan", "-input=false", "-detailed-exitcode"],
+            ))
+        };
+        let rekey = |generation: u32, new: &str, old: &str| -> anyhow::Result<bool> {
+            let pulled = tofu(generation, new, old, &["state", "pull"]).output()?;
+            anyhow::ensure!(pulled.status.success(), "state pull failed");
+            let mut push = tofu(generation, new, old, &["state", "push", "-no-color", "-"])
+                .stdin(Stdio::piped())
+                .stdout(Stdio::null())
+                .spawn()?;
+            push.stdin
+                .take()
+                .context("stdin")?
+                .write_all(&pulled.stdout)?;
+            Ok(push.wait()?.success())
+        };
+        let meta = || -> anyhow::Result<Vec<String>> {
+            let state: Value =
+                serde_json::from_str(&std::fs::read_to_string(dir.path().join("test.tfstate"))?)?;
+            Ok(state["meta"]
+                .as_object()
+                .context("meta")?
+                .keys()
+                .cloned()
+                .collect())
+        };
+
+        assert!(
+            ok(tofu(1, a, "", &["init", "-input=false"]))?,
+            "init failed"
+        );
+        assert!(
+            ok(tofu(1, a, "", &["apply", "-auto-approve", "-input=false"]))?,
+            "apply failed"
+        );
+        assert_eq!(meta()?, ["key_provider.pbkdf2.state"]);
+
+        // Rotated to generation 2: the old key reads, a wrong one doesn't.
+        assert!(
+            plans(2, b, a)?,
+            "generation 2 can't read generation 1 state"
+        );
+        assert!(!plans(2, b, c)?, "a wrong old passphrase read the state");
+        assert!(rekey(2, b, a)?, "rekey to generation 2 failed");
+        assert_eq!(meta()?, ["key_provider.pbkdf2.gen_2"]);
+        assert!(
+            plans(2, b, "")?,
+            "re-encrypted state still needs the old key"
+        );
+        assert!(!plans(1, a, "")?, "the old key still reads the new state");
+
+        // And again: generation 3 falls back to gen_2.
+        assert!(
+            plans(3, c, b)?,
+            "generation 3 can't read generation 2 state"
+        );
+        assert!(rekey(3, c, b)?, "rekey to generation 3 failed");
+        assert_eq!(meta()?, ["key_provider.pbkdf2.gen_3"]);
+        assert!(plans(3, c, "")?);
         Ok(())
     }
 

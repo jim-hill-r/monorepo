@@ -15,6 +15,7 @@ experimental = true
 [monorepo]
 config_roots = [
   "athenaeum",
+  "athenaeum/learning/computer_science/algorithms/neet_code_150",
   "auth_sdk",
   "bear_down",
   "bear_down/cloudflare",
@@ -93,3 +94,8 @@ run = "bash standards/scripts/setup-hooks.sh"
 description = "List the projects that publish nightly downloads to a GitHub Release (JSON array)"
 dir = "{{config_root}}"
 run = "bash standards/scripts/downloads.sh list"
+
+[tasks."pr-summary"]
+description = "Warn when a PR description (PR_BODY or stdin) lacks a linked executive summary of at most 75 words (PR-001)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/pr-summary-check.sh"

@@ -196,7 +196,8 @@ Deliver with the `open-pull-request` skill, with these differences:
   the deck to HTML and PDF and attaches them to the run.
 - Title: `<project>: deep review <YYYY-MM-DD>`.
 - The description opens with the executive summary (state against goals,
-  top blockers, top recommendations), links to the deck file on the branch,
+  top blockers, top recommendations) in at most 75 words, as "Pull request
+  descriptions" in `standards/docs/pull-requests.md` requires, links to the deck file on the branch,
   says where to download the HTML and PDF (the `Review decks` run's
   artifacts), and asks Jim for feedback as PR review comments on the deck.
 - Request a review from `jimhillr`, and mark the PR ready for review once the

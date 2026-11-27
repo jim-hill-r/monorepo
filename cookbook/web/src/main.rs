@@ -39,14 +39,15 @@ const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 /// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
 /// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
 /// - img-src 'self': Allow images from same origin
-/// - style-src 'self' 'unsafe-inline': Allow styles from same origin and inline styles (required by Dioxus)
+/// - style-src 'self': Allow stylesheets from same origin only. No inline styles: the
+///   design system links its CSS as files and the app sets no `style` attributes
 /// - font-src 'self': Allow fonts from same origin (required for self-hosted web fonts)
 /// - base-uri 'self': Restrict base tag to same origin
 /// - form-action 'self': Restrict form submissions to same origin
 ///
 /// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
 /// Tests verify that the CSP contains the correct Auth0 domain.
-const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
     dioxus::launch(App);
@@ -101,7 +102,7 @@ fn App() -> Element {
         // unsafe-eval or unsafe-inline for scripts. WASM modules and proper event binding
         // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
         // directive is needed for WebAssembly instantiation in some browsers.
-        // Style unsafe-inline is kept for any inline styling that may be needed.
+        // Styles are same-origin files only, with no 'unsafe-inline'.
         // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
         if cfg!(target_arch = "wasm32") {
             document::Meta {
@@ -807,6 +808,15 @@ mod tests {
             pages_header("Content-Security-Policy"),
             Some(format!("{CONTENT_SECURITY_POLICY}; frame-ancestors 'none'").as_str())
         );
+    }
+
+    #[test]
+    fn csp_allows_no_inline_styles() {
+        let style_src = CONTENT_SECURITY_POLICY
+            .split(';')
+            .map(str::trim)
+            .find(|directive| directive.starts_with("style-src"));
+        assert_eq!(style_src, Some("style-src 'self'"));
     }
 
     #[test]

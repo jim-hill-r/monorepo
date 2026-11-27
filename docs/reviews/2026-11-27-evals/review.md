@@ -211,3 +211,24 @@ workflows that run evals, the eval engine issue files, and the open PRs.
 Counted results and verdicts from the `evals-results` branch at commit
 `d72e8e7` (`verdicts.json` generated 2026-11-27 13:26 UTC). No product code
 was changed.
+
+## Jim's answers (2026-11-27)
+
+1. **Triage cadence:** yes to the free workflow that files issues only when
+   something needs work
+   ([issue](../../../issues/eval-triage-free-workflow.md)).
+2. **What comes next:** "The eval process is a continuous improvement
+   process and should not be considered a one off project. The evals
+   should always be green and a system of feedback to our todo process
+   should be the way in which individual projects improve their eval
+   coverage. Maybe we introduce an eval coverage metric / badge." Now a
+   rule in `AGENTS.md` and "Continuous improvement" in
+   [evals.md](../../../standards/docs/evals.md#continuous-improvement),
+   with issues for the coverage metric and badge, content checks in
+   production, a fire drill, Playwright smoke tests, and requirements for
+   Blue Eel, controlled_chaos, homer and my_lang.
+3. **In-app feedback toolbar:** "Why would I pause this? I want this." It
+   stays in the plan as phase 6. The pause was suggested only to save
+   Claude effort, since it is the largest phase and pane ratings overlap
+   with part of it; Jim wants it, so it is not paused.
+4. **Requirement PRs:** approve as they come (BEAR-010, #812, merged).
