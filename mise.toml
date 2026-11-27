@@ -28,10 +28,12 @@ config_roots = [
   "cookbook",
   "cookbook/cloudflare",
   "cookbook/web",
+  "cost",
   "design_system",
   "design_system/preview",
   "evals",
   "homer",
+  "infra",
   "luggage",
   "monorepo",
   "my_lang",
@@ -46,10 +48,12 @@ config_roots = [
   "psy_ents",
   "royalty",
   "sparkhill",
+  "sparkhill/cloudflare",
   "sparkhill/webapp",
   "sparkhill/website",
   "standards",
   "starcraft",
+  "tofu_state",
 ]
 
 [tasks."affected"]

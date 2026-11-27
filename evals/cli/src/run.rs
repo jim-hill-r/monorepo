@@ -23,6 +23,12 @@ pub struct RunContext {
     pub run: Option<String>,
     pub evidence: Option<String>,
     pub at: DateTime<Utc>,
+    /// The reports cover only part of the project (one of its sub-projects,
+    /// in its own CI job). An eval with no report of its kind, or no matching
+    /// test, then gets no result rather than `skip` or `error`: another
+    /// part's job reports it, and `evals check` (EVL-003) catches an eval
+    /// that matches no test anywhere.
+    pub partial: bool,
 }
 
 /// Results for the evals in `file` that run in `ctx.stage`, plus a note for
@@ -47,6 +53,9 @@ pub fn collect(
                 continue;
             }
         };
+        if ctx.partial && !has_match(eval, cases.as_deref()) {
+            continue;
+        }
         let (status, note) = judge(eval, cases.as_deref(), kind);
         results.push(EvalResult {
             project: ctx.project.clone(),
@@ -69,18 +78,29 @@ pub fn collect(
     (results, notes)
 }
 
-fn judge(eval: &Eval, cases: Option<&[TestCase]>, kind: &str) -> (ResultStatus, String) {
+/// The tests in `cases` that belong to `eval`.
+fn matching<'a>(eval: &Eval, cases: &'a [TestCase]) -> Vec<&'a TestCase> {
     let selector = eval.test_selector().unwrap_or_default();
-    let Some(cases) = cases else {
-        return (ResultStatus::Skip, format!("no {kind} report"));
-    };
-    let matching: Vec<&TestCase> = cases
+    cases
         .iter()
         .filter(|case| match eval.kind {
             Kind::Cargo { .. } => cargo_test_matches(&case.name, &selector),
             _ => case.name.contains(&selector),
         })
-        .collect();
+        .collect()
+}
+
+/// True if a report was given and at least one of its tests is the eval's.
+fn has_match(eval: &Eval, cases: Option<&[TestCase]>) -> bool {
+    cases.is_some_and(|cases| !matching(eval, cases).is_empty())
+}
+
+fn judge(eval: &Eval, cases: Option<&[TestCase]>, kind: &str) -> (ResultStatus, String) {
+    let selector = eval.test_selector().unwrap_or_default();
+    let Some(cases) = cases else {
+        return (ResultStatus::Skip, format!("no {kind} report"));
+    };
+    let matching = matching(eval, cases);
     if matching.is_empty() {
         return (
             ResultStatus::Error,
@@ -180,6 +200,7 @@ path = "/"
             run: Some("42".into()),
             evidence: Some("https://github.com/o/r/actions/runs/42".into()),
             at: DateTime::<Utc>::default(),
+            partial: false,
         }
     }
 
@@ -294,5 +315,31 @@ path = "/"
         let (results, _) = collect(&file(), &reports, &ctx());
         assert_eq!(results[1].status, ResultStatus::Pass);
         assert_eq!(results[1].note.as_deref(), Some("1 test passed, 1 skipped"));
+    }
+
+    #[test]
+    fn a_partial_run_reports_only_evals_it_has_tests_for() {
+        let mut ctx = ctx();
+        ctx.partial = true;
+        let reports = Reports {
+            cargo: Some(parse_cargo_output("test web::other_test ... ok\n")),
+            playwright: Some(Vec::new()),
+        };
+        let (results, _) = collect(&file(), &reports, &ctx);
+        assert!(results.is_empty(), "{results:?}");
+
+        let reports = Reports {
+            cargo: Some(parse_cargo_output("test cook_002_a ... FAILED\n")),
+            playwright: None,
+        };
+        let (results, _) = collect(&file(), &reports, &ctx);
+        assert_eq!(
+            statuses(&results),
+            vec![(
+                "units",
+                ResultStatus::Fail,
+                "1 of 1 tests failed: cook_002_a"
+            )]
+        );
     }
 }

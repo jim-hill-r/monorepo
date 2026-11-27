@@ -1,5 +1,8 @@
+use crate::Route;
 use crate::canvas_js::CANVAS_JS;
-use crate::state::{AppState, PracticePhase};
+use crate::patterns::demonstration_js;
+use crate::state::{AppState, PracticePhase, next_level};
+use crate::tracing_check;
 use dioxus::document::eval;
 use dioxus::prelude::*;
 
@@ -27,34 +30,12 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         state.write().start_practice();
         let expr = state.read().expression.clone();
         if let Some(ref letter) = expr {
-            // Fetch pattern and animate the letter demonstration
+            // Animate the letter demonstration from the bundled patterns
             let letter = letter.clone();
             phase.set(PracticePhase::Watching);
             eval(&format!(
-                r#"window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{
-                    window._eelAnimDone = true;
-                }});
-                // Try to fetch and animate - falls back to guidelines-only if unavailable
-                (async function() {{
-                    try {{
-                        const url = 'https://eel3-data.s3.us-east-2.amazonaws.com/patterns/{letter}/master.json';
-                        const r = await fetch(url);
-                        const data = await r.json();
-                        const bnd = data.boundary || {{
-                            top: 0, ascenderLine: data.dimensions.upperGuidePixels,
-                            capLine: data.dimensions.upperGuidePixels,
-                            meanLine: data.dimensions.middleGuidePixels,
-                            baseLine: data.dimensions.lowerGuidePixels,
-                            beardLine: data.dimensions.lowestGuidePixels,
-                            bottom: data.dimensions.heightPixels
-                        }};
-                        window.eelCanvas.drawLetter(JSON.stringify([{{letter: data.letter, path: data.path, boundary: bnd}}]), 'Tracing');
-                    }} catch(e) {{
-                        // No pattern data available - animation complete immediately
-                        window._eelAnimDone = true;
-                    }}
-                }})();
-                "#
+                "window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{ window._eelAnimDone = true; }}); {}",
+                demonstration_js(&letter)
             ));
         }
     };
@@ -66,61 +47,57 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         eval("window.eelCanvas.clear(); window.eelCanvas.startRecording();");
     };
 
-    let on_done = {
-        let level = level.clone();
-        move |_| {
-            // Collect recording and validate
-            let Some(letter) = state.read().expression.clone() else {
-                return;
-            };
-            let mut state_write = state.write();
-            // Accept any drawing as success for MVP;
-            // full JS path validation via eelCanvas.validateSuccess in future iterations
-            let success = true;
-            state_write.record_attempt(success);
-            let next_expr = state_write.expression.clone();
-            let is_done = state_write.is_complete();
-            drop(state_write);
+    let on_done = move |_| async move {
+        let Some(expr) = state.read().expression.clone() else {
+            return;
+        };
+        // Check the learner's strokes against the letter's pattern.
+        let recording = eval("return window.eelCanvas.stopRecording();")
+            .join::<String>()
+            .await
+            .ok();
+        let success = recording.is_some_and(|json| tracing_check::recording_matches(&expr, &json));
 
-            if is_done {
-                phase.set(PracticePhase::BatchComplete);
-                feedback.set("Amazing!".to_string());
-            } else if let Some(next) = next_expr {
-                feedback.set("Great job!".to_string());
-                phase.set(PracticePhase::Watching);
-                eval(&format!(
-                    r#"window.eelCanvas.clear();
-                    (async function() {{
-                        try {{
-                            const url = 'https://eel3-data.s3.us-east-2.amazonaws.com/patterns/{next}/master.json';
-                            const r = await fetch(url);
-                            const data = await r.json();
-                            const bnd = data.boundary || {{
-                                top: 0, ascenderLine: data.dimensions.upperGuidePixels,
-                                capLine: data.dimensions.upperGuidePixels,
-                                meanLine: data.dimensions.middleGuidePixels,
-                                baseLine: data.dimensions.lowerGuidePixels,
-                                beardLine: data.dimensions.lowestGuidePixels,
-                                bottom: data.dimensions.heightPixels
-                            }};
-                            window.eelCanvas.drawLetter(JSON.stringify([{{letter: data.letter, path: data.path, boundary: bnd}}]), 'Tracing');
-                        }} catch(e) {{
-                            window._eelAnimDone = true;
-                        }}
-                    }})();
-                    "#
-                ));
-            }
-            let _ = letter;
-            let _ = level.as_str();
+        let mut state_write = state.write();
+        state_write.record_attempt(success);
+        // A miss under the retry limit keeps the same letter; at the limit
+        // its attempts reset and the next letter comes up.
+        let try_again = !success
+            && state_write
+                .history
+                .get(&expr)
+                .is_some_and(|h| h.attempts > 0);
+        let next_expr = state_write.expression.clone();
+        let is_done = state_write.is_complete();
+        drop(state_write);
+
+        if is_done {
+            phase.set(PracticePhase::BatchComplete);
+            feedback.set("Amazing!".to_string());
+        } else if try_again {
+            feedback.set("Try again!".to_string());
+            eval("window.eelCanvas.clear(); window.eelCanvas.startRecording();");
+        } else if let Some(next) = next_expr {
+            feedback.set(
+                if success {
+                    "Great job!"
+                } else {
+                    "Let's try another one."
+                }
+                .to_string(),
+            );
+            phase.set(PracticePhase::Watching);
+            eval(&format!(
+                "window.eelCanvas.clear(); {}",
+                demonstration_js(&next)
+            ));
         }
     };
 
     let on_go = move |_| {
-        // Move to word level or restart
-        phase.set(PracticePhase::Start);
-        state.set(AppState::new(&level));
+        // After letters come words; after words, the congratulations page.
         eval("window.eelCanvas.clear();");
+        navigator().push(next_route(&level));
     };
 
     rsx! {
@@ -192,5 +169,25 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 }
             }
         }
+    }
+}
+
+/// Where "Go" leads once `level` is done.
+fn next_route(level: &str) -> Route {
+    match next_level(level) {
+        Some("word") => Route::Word {},
+        Some("letter") => Route::Letter {},
+        _ => Route::Congratulations {},
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn go_after_letters_opens_words_and_after_words_congratulates() {
+        assert_eq!(next_route("letter"), Route::Word {});
+        assert_eq!(next_route("word"), Route::Congratulations {});
     }
 }

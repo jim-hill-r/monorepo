@@ -59,6 +59,13 @@ See [standards/docs/plans/2026-11-threat-check.md](../standards/docs/plans/2026-
 See [standards/docs/plans/2026-11-design-system.md](../standards/docs/plans/2026-11-design-system.md)
 (approved by Jim, 2026-11-26). One group per phase.
 
+## Infrastructure as code
+
+See [standards/docs/decisions/0007-infrastructure-as-code.md](../standards/docs/decisions/0007-infrastructure-as-code.md)
+(accepted by Jim, 2026-11-26). One group per phase; phase 1 needs the
+Auth0 credentials human issue first. We fix bugs found in `terrars`
+upstream (Jim, 2026-11-26).
+
 ## Resource cleanup
 
 See [standards/docs/plans/2026-11-resource-cleanup.md](../standards/docs/plans/2026-11-resource-cleanup.md)

@@ -1,0 +1,30 @@
+# gitleaks config for SEC-001 (standards/docs/security.md). Run through
+# standards/scripts/secrets-check.sh, never directly, so the hooks, PR CI and
+# the weekly full-history scan all use the same version and rules.
+#
+# The default rules cover Cloudflare, GitHub, Auth0, AWS, private keys, JWTs
+# (so Auth0 management API tokens), RapidAPI keys (rapidapi-access-token) and
+# generic high-entropy tokens. The rules below add what the defaults miss.
+#
+# A finding that is not a secret goes in .gitleaksignore by fingerprint, with
+# a comment saying why. A real secret that was committed is rotated, not
+# hidden: see "Secrets" in standards/docs/security.md.
+
+title = "monorepo"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "posthog-personal-api-key"
+description = "PostHog personal API key (phx_), which can read and change the PostHog project. Project keys (phc_) are public and not flagged."
+regex = '''\b(phx_[A-Za-z0-9]{40,60})\b'''
+secretGroup = 1
+keywords = ["phx_"]
+
+[[rules]]
+id = "auth0-client-secret"
+description = "Auth0 application client secret, which a management API token is minted from"
+regex = '''(?i)auth0[_-]?(?:client[_-]?secret|mgmt[_-]?token|management[_-]?token)["']?\s*[:=]\s*["']?([A-Za-z0-9_.-]{32,})["']?'''
+secretGroup = 1
+keywords = ["auth0"]

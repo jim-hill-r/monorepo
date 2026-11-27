@@ -11,7 +11,7 @@ node = "24"
 
 [env]
 # Production URL. CI shows it on the GitHub deployment and in the job summary.
-DEPLOY_URL = "https://pane-dbc.pages.dev"
+DEPLOY_URL = "https://jimhillr-pane.pages.dev"
 
 [task_config]
 includes = ["../../standards/tasks/cloudflare-pages.toml"]

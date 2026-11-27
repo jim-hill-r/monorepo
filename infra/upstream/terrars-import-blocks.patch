@@ -1,0 +1,76 @@
+From 537f075e1bc0b33ddaeb183f9fc05dc522a53b15 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 26 Nov 2026 20:48:15 +0000
+Subject: [PATCH] Add import blocks: Stack::add_import
+
+Terraform 1.5 and OpenTofu 1.5 added `import` blocks, which bring an
+existing resource under a stack during plan and apply. `add_import(&resource,
+id)` writes one, next to `add_removed`.
+---
+ src/lib.rs | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/src/lib.rs b/src/lib.rs
+index 14b632e..155352a 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -92,6 +92,7 @@ impl BuildStack {
+             resources: Default::default(),
+             outputs: Default::default(),
+             removed: Default::default(),
++            imports: Default::default(),
+             state: None,
+             command: "terraform".into(),
+             #[cfg(feature = "opentofu")]
+@@ -168,6 +169,7 @@ pub struct Stack {
+     resources: Vec<Rc<dyn Resource_>>,
+     outputs: Vec<Rc<dyn Output>>,
+     removed: Vec<Removed>,
++    imports: Vec<Import>,
+     state: Option<StateConfig>,
+     command: String,
+     #[cfg(feature = "opentofu")]
+@@ -276,6 +278,9 @@ impl Stack {
+         if !self.removed.is_empty() {
+             out.insert("removed", serde_json::to_value(&self.removed).unwrap());
+         }
++        if !self.imports.is_empty() {
++            out.insert("import", serde_json::to_value(&self.imports).unwrap());
++        }
+         if !providers.is_empty() {
+             out.insert("provider", json!(providers));
+         }
+@@ -325,6 +330,17 @@ impl Stack {
+         self
+     }
+ 
++    /// Add an `import` block, which brings an existing resource under this stack:
++    /// `to` is the resource (such as the value `build` returned) and `id` the
++    /// provider's import ID for it.
++    pub fn add_import(&mut self, to: &impl Resource, id: impl Into<String>) -> &mut Self {
++        self.imports.push(Import {
++            to: to.extract_ref(),
++            id: id.into(),
++        });
++        self
++    }
++
+     pub fn add_provider(&mut self, v: Rc<dyn Provider>) {
+         self.providers.push(v);
+     }
+@@ -475,6 +491,12 @@ pub struct Removed {
+     lifecycle: RemovedLifecycle,
+ }
+ 
++#[derive(Serialize)]
++pub struct Import {
++    to: String,
++    id: String,
++}
++
+ #[derive(Serialize)]
+ struct RemovedLifecycle {
+     destroy: bool,
+-- 
+2.43.0
+

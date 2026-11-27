@@ -39,8 +39,8 @@ change pane makes is a pull request.
 
 - `pane/web` is a placeholder Dioxus 0.7 app ("This is a placeholder Dioxus
   application"). `pane/cloudflare` deploys it to the Cloudflare Pages project
-  `pane` at <https://pane.pages.dev> on every push to `main` that touches
-  `pane/`, and nightly.
+  `jimhillr-pane` at <https://jimhillr-pane.pages.dev> on every push to
+  `main` that touches `pane/`, and nightly.
 - What pane has to surface, and where it lives today:
 
 | Source | Where | Status 2026-11-26 |
@@ -49,7 +49,7 @@ change pane makes is a pull request.
 | Production URLs | `DEPLOY_URL` in each `*/cloudflare/mise.toml` `[env]` | On main (cookbook, pane, cahokia) |
 | Work items | issue files in every `issues/` folder; `TODO`/`FIX` comments in code | On main |
 | Human issues | files in the root `issues/human/`; PRs labelled `needs-human` | On main (decision 0002) |
-| Executive reviews | Marp decks in `docs/reviews/<date>-<project>/deck.md`, rotation table in `docs/reviews/README.md`, built to HTML and PDF by `standards/scripts/review-decks.sh` | [PR #585](https://github.com/jimhillr/monorepo/pull/585), open |
+| Executive reviews | Marp decks in `docs/reviews/<date>-<project>/deck.md`, rotation table in `docs/reviews/README.md`, built to HTML and PDF by `standards/scripts/review-decks.sh` | On main; pane's release serves the decks under `/reviews/<folder>/` |
 | Plans and decisions | `standards/docs/plans/`, `standards/docs/decisions/`, `<project>/docs/decisions/` | On main |
 | Retros | Nowhere yet | No convention; this plan adds one |
 | Standards | `mise run //:audit` (`standards/scripts/audit.sh`), `code-review` skill findings as issue files | On main |
@@ -346,7 +346,7 @@ decision record.
 
 ### Phase 2: executive reviews
 
-Needs PR #585.
+PR #585 is merged.
 
 - pane's release runs `standards/scripts/review-decks.sh` and copies the
   HTML and PDF decks into the static assets under `/reviews/`.

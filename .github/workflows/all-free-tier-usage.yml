@@ -5,6 +5,10 @@ name: All Free Tier Usage
 # budgets in standards/docs/free-tiers.md, and goes red when anything reaches
 # its warning level. It only reads; it never creates, deletes or upgrades
 # anything. The nightly run is to call it first and stop if it fails.
+#
+# The same weekly run scans the whole git history for secrets (SEC-001, the
+# threat check's full-history scan, standards/docs/security.md), so a new
+# gitleaks rule catches an old commit within a week.
 on:
   schedule:
     # Mondays at 3 PM UTC (7 AM Pacific)
@@ -30,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check usage against free tier budgets
         env:
@@ -38,3 +42,23 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash standards/scripts/free-tiers.sh usage
+
+  secrets-history:
+    name: Secret scan (full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
+      - name: gitleaks over every commit
+        env:
+          GITHUB_TOKEN: ${{ github.token }}  # mise's gitleaks download
+          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+        run: bash standards/scripts/secrets-check.sh history

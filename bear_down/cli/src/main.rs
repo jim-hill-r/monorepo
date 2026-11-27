@@ -306,6 +306,10 @@ mod tests {
                 + record["ties"].as_u64().unwrap_or(0),
             16
         );
+        // 2025 before week 18: the 11-5 Bears led the 9-6-1 Packers by a
+        // game and a half.
+        assert_eq!(json["bears"]["division_lead"].as_f64(), Some(1.5));
+        assert_eq!(json["bears"]["division_rival"], "GB");
     }
 
     #[test]

@@ -12,6 +12,7 @@ mod card_library;
 mod card_render;
 mod deck;
 mod game;
+mod input;
 mod rules;
 mod splash;
 mod state;

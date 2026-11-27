@@ -46,9 +46,10 @@ only with Jim's approval.
 - **Every live resource is onboarded to infrastructure as code (IaC)**,
   including GitHub repo settings and Claude settings. A resource or setting
   that is live but not defined in IaC is a finding of its own,
-  **unmanaged**, until it is onboarded or exempted with a reason. Which IaC
-  tool we use is decided separately (the "Choose an IaC approach in Rust"
-  work); this plan only finds the gaps, so it works with whatever is chosen.
+  **unmanaged**, until it is onboarded or exempted with a reason. The IaC
+  tool is OpenTofu driven from Rust
+  ([decision 0007](../decisions/0007-infrastructure-as-code.md)); this
+  plan only finds the gaps, and the IaC work fills them.
 - **No local clone, $0.** Everything runs as GitHub workflows and agent
   skills on free tiers, per [AGENTS.md](../../../AGENTS.md).
 
@@ -250,7 +251,9 @@ them without asking, and each run lists what it deleted in its summary:
 | Dependabot entries for missing folders | Already planned as SEC-006 in the threat check. | - |
 
 GitHub's own **"Automatically delete head branches"** setting removes most
-merged branches at merge time for free; turning it on is a human issue.
+merged branches at merge time for free. IaC phase 2's `github` stack turns
+it on ([decision 0007](../decisions/0007-infrastructure-as-code.md)), so
+it needs no human issue of its own.
 
 ## Part 6: every live resource is in IaC
 
@@ -264,7 +267,10 @@ knows how it is set up).
 - **Unmanaged:** live and wanted, but not defined in IaC. Every resource
   kind starts here, apart from what `wrangler.toml` already declares.
 - **Drift:** defined in IaC, but the live settings differ from the
-  definition (someone changed the dashboard, or an apply failed).
+  definition (someone changed the dashboard, or an apply failed). For
+  kinds IaC manages, decision 0007's weekly `tofu plan -refresh-only`
+  already finds drift in the same workflow run; the sweep reads its
+  result into the report instead of checking again.
 
 **What counts.** Every kind of resource and setting we have, not only what
 costs money or serves traffic:
@@ -303,7 +309,9 @@ IaC definitions as well: removing one needs a retirement entry.
   Settings it can't read (rulesets details, secret names, webhooks and
   some code security settings need admin read) are read by the agent step
   with its own GitHub access, so no new token is needed.
-- **Auth0:** the `read:clients` token from phase 4.
+- **Auth0:** the read-only `infra-read` application (`AUTH0_INFRA_READ_*`
+  secrets), which the Infra Mint workflow creates
+  ([decision 0011](../decisions/0011-mint-secrets-by-workflow.md)).
 - **Claude:** no workflow can reach Claude's settings, so the weekly
   `human-issues-digest` agent step reads scheduled tasks and cloud
   environments with its Claude tools, compares them with the IaC
@@ -313,7 +321,7 @@ IaC definitions as well: removing one needs a retirement entry.
   `standards/settings.toml` (the eval engine's manifest), so Jim confirms
   them on a schedule.
 
-**Snapshots as the first step.** Until the IaC tool is chosen, the sweep
+**Snapshots as the first step.** Until a kind is onboarded to IaC, the sweep
 writes what it read to `standards/live/<area>.json` (sorted, secrets never
 included), and the agent step commits changes to it in a PR. That gives a
 reviewable diff of every hand change, and the snapshot is the starting
@@ -348,22 +356,27 @@ input when a kind is onboarded to IaC.
 
 - `all-retire-resources.yml` deletes `[[retired]]` entries in the safe
   order, with the guards and a dry run by default.
-- First use: the rename PR for `cahokia-web`, `pane` and
-  `controlled-chaos` adds their retirement entries (with the Auth0
-  human issue for cahokia's callback URLs). If the rename merges before
-  this phase, an agent adds those entries in a separate `needs-human` PR
-  and the old projects wait, still claimed by nothing and flagged by the
-  sweep, until the workflow exists.
+- First use: the `jimhillr-{project}` rename has merged, so
+  `cahokia-web`, `pane` and `controlled-chaos` get retirement entries in
+  a `needs-human` PR as soon as `standards/resources.toml` exists. Their
+  deletion is already a human issue with a runbook
+  (`delete-old-pages-projects.md`); if Jim follows it before this phase
+  ships, the entries are added with `deleted` already set.
+- Decision 0007 keeps deletes out of IaC. This workflow is the one
+  approved delete path outside it: it deletes only entries Jim approved in
+  a PR, with the deploy token's Pages edit permission, inside a workflow.
+  Until it exists, deletions follow the human runbook.
 
 ### Phase 4: Auth0 and DNS
 
 - A weekly read of Auth0 applications' callback, origin and logout URLs
-  with a Management API token limited to `read:clients` (about 4 of the
-  free plan's 1,000 machine tokens a month). Any URL not claimed by a
+  with the IaC work's read-only `infra-read` application (`read:clients`
+  only; about 4 of the free plan's 1,000 machine tokens a month). Any URL not claimed by a
   `threat.toml` is an orphan; step 2 of the safe order checks it
-  automatically instead of waiting on a human issue. Jim creates the
-  token, so this is a human issue; removing a URL stays a dashboard step
-  for Jim, because a write token for Auth0 is more access than this needs.
+  automatically instead of waiting on a human issue. The Infra Mint
+  workflow (decision 0011) creates that application, so this plan adds no
+  human issue for it. Once the `auth0` IaC stack manages the
+  callback URLs, removing one is an IaC change instead of a dashboard step.
 - Dangling DNS: once a zone exists, any record pointing at a `*.pages.dev`
   or `*.workers.dev` name we don't own is an error (the classic subdomain
   takeover).
@@ -417,14 +430,17 @@ recommended answers.
 7. **The weekly digest does the agent work**, rather than a new scheduled
    task.
 8. **Jim turns on "Automatically delete head branches"** in the repo
-   settings, and later creates the read-only Auth0 token (phase 4). Both go
-   in `issues/human/`.
+   settings, and later creates the read-only Auth0 token (phase 4).
+   (Update, 2026-11-27: both are now covered by the IaC work, decision
+   0007. The `github` stack manages the branch setting, and the Infra Mint
+   workflow (decision 0011) creates the read-only Auth0 application, so
+   neither needs its own human issue.)
 
 Proposed with Part 6, for Jim's approval:
 
 9. **Unmanaged is a finding from day one**, as a warning for every kind,
    and becomes an error kind by kind as each one is onboarded.
-   *Alternative:* wait for the IaC tool before reporting anything.
+   *Alternative:* wait for each IaC stack before reporting anything.
 10. **Snapshots of live settings in `standards/live/`** until IaC exists,
     so every hand change shows up as a diff. *Alternative:* report only,
     with no committed record.
@@ -445,9 +461,9 @@ unseen until then.
 - Cleaning Claude project files from a workflow: no API reaches them. The
   coordinator keeps them tidy. (Claude scheduled tasks and environments are
   covered by Part 6's agent step.)
-- Choosing or building the IaC tool, or applying changes with it: that is
-  the separate "Choose an IaC approach in Rust" work. This plan only
-  detects what isn't in IaC yet, and drift.
+- Building the IaC stacks, or applying changes with them: that is the
+  IaC work in decision 0007. This plan only detects what isn't in IaC
+  yet, and reports drift.
 - PostHog: one project on the free plan, nothing to orphan. Its allowed
   hosts are listed as an inbound reference in the safe order.
 - Squarespace: Jim's account, not touched by automation.

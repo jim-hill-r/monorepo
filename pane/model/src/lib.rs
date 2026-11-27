@@ -184,6 +184,13 @@ pub struct HumanIssue {
     /// What it unblocks, from the file's `unblocks`.
     #[serde(default)]
     pub unblocks: Option<String>,
+    /// Why only a person can do it, from the file's `## Why it can't be
+    /// automated` section.
+    #[serde(default)]
+    pub why: Option<String>,
+    /// Its runbook's path from the repo root, from the file's `runbook`.
+    #[serde(default)]
+    pub runbook: Option<String>,
 }
 
 /// Something pane offers to view or download.
@@ -308,7 +315,7 @@ mod tests {
         s.projects.push(Project {
             path: "pane/web".into(),
             kind: "dioxus-web".into(),
-            deploy_url: Some("https://pane.pages.dev".into()),
+            deploy_url: Some("https://jimhillr-pane.pages.dev".into()),
             summary: Some("The web frontend for pane.".into()),
             status: ProjectStatus::Priority,
         });
@@ -329,6 +336,8 @@ mod tests {
             line: 3,
             added: Some("2026-11-20".into()),
             unblocks: Some("pane Phase 3".into()),
+            why: None,
+            runbook: None,
         });
         s.deliverables.push(Deliverable {
             kind: DeliverableKind::Plan,

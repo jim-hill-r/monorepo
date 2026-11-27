@@ -698,6 +698,8 @@ mod tests {
             line,
             added: added.map(str::to_owned),
             unblocks: None,
+            why: None,
+            runbook: None,
         };
         let mut s = Snapshot::new("a", "t");
         s.human_issues = vec![

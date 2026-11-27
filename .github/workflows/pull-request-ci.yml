@@ -1,7 +1,9 @@
 ---
 # Runs `mise run ci` in every project a pull request changes (affected.sh
 # --changed-only: shared scripts and root config don't fan out to every
-# project). See mise-projects.yml and standards/docs/mise.md.
+# project), scans the PR's commits for secrets (SEC-001), and writes the
+# PR's cost summary and labels (standards/docs/cost.md). See
+# mise-projects.yml, standards/docs/mise.md and standards/docs/security.md.
 name: Pull Request CI
 
 'on':
@@ -23,18 +25,134 @@ jobs:
       base: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
       changed_only: true
 
+  # SEC-001: gitleaks over the PR's commits (the whole history when run by
+  # hand). Fails on any secret; see standards/docs/security.md.
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
+      - name: gitleaks
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ github.token }}  # mise's gitleaks download
+          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            bash standards/scripts/secrets-check.sh range "origin/$BASE_REF"
+          else
+            bash standards/scripts/secrets-check.sh history
+          fi
+
+  # SEC-003, SEC-004: cargo-deny and npm audit for the lockfiles the PR
+  # changes. Warnings only for now, so CI result doesn't wait for it.
+  deps:
+    name: Dependency audit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@v5
+        with:
+          install: false
+
+      - name: cargo-deny and npm audit
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ github.token }}  # mise's cargo-deny download
+          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+        run: |
+          git diff --name-only "origin/$BASE_REF...HEAD" \
+            | bash standards/scripts/deps-check.sh --files
+
+  # The PR's cost summary (`cost summary`, standards/docs/cost.md): cost
+  # files changed, and services, usage, money and budgets that moved, in the
+  # job summary. Labels the PR `cost` when anything moved, and `needs-human`
+  # when it adds a vendor or money or raises a budget, which only Jim does.
+  # Informational, so CI result doesn't wait for it.
+  cost:
+    name: Cost summary
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write         # create the labels the first time
+      pull-requests: write  # set them on the PR
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cost
+          key: cost-summary
+          save-if: false
+
+      - name: Summarize
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          cargo run --quiet --manifest-path cost/Cargo.toml -p cost_cli -- \
+            summary --base "origin/$BASE_REF" --json "$RUNNER_TEMP/cost.json" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Adds `cost` and `needs-human` as the summary says, and takes `cost`
+      # off when nothing moves any more. Never removes `needs-human`: a
+      # person or PR triage may have set it for another reason.
+      - name: Label
+        # A fork's token can't label; the summary is still there.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HAS_COST: ${{ contains(github.event.pull_request.labels.*.name, 'cost') }}
+        run: |
+          want=$(jq -r '.labels[]' "$RUNNER_TEMP/cost.json")
+          # Make the labels the first time; an existing label is left as is.
+          gh api "repos/$GH_REPO/labels" -f name=cost -f color=FBCA04 \
+            -f description="Changes what the repo costs or uses (cost summary)" >/dev/null 2>&1 || true
+          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
+            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
+          for label in $want; do
+            gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=$label" >/dev/null
+            echo "Labelled $label"
+          done
+          if [ "$HAS_COST" = true ] && ! grep -qx cost <<<"$want"; then
+            gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/cost" >/dev/null
+            echo "Removed cost"
+          fi
+
   # One check that always runs and passes only when every project passed, so
   # the ruleset on main can require it and GitHub auto-merge waits for green
   # CI. Project jobs have per-PR names, so they can't be required directly.
   ci-result:
     name: CI result
-    needs: ci
+    needs: [ci, secrets]
     if: always()
     runs-on: ubuntu-24.04
     steps:
-      - name: Fail unless every project passed
+      - name: Fail unless every project passed and no secret was found
         env:
           RESULT: ${{ needs.ci.result }}
+          SECRETS: ${{ needs.secrets.result }}
         run: |
-          echo "Pull Request CI: $RESULT"
-          test "$RESULT" = success
+          echo "Pull Request CI: $RESULT, secret scan: $SECRETS"
+          test "$RESULT" = success && test "$SECRETS" = success

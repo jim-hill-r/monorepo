@@ -354,6 +354,40 @@
     "budget": 0
   },
   {
+    "name": "gitleaks",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Secret scanning (SEC-001): the staged diff in pre-commit, the pushed commits in pre-push, the PR's commits in PR CI and the whole history weekly. Pinned in standards/scripts/secrets-check.sh; our rules in .gitleaks.toml.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/security.md",
+      "standards/docs/plans/2026-11-threat-check.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "cargo-deny",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "RustSec advisories and crate sources for every Cargo.lock (SEC-003), as warnings: in the hooks and PR CI where a lockfile changed, and nightly over all of them. Pinned in standards/scripts/deps-check.sh; config in standards/deny.toml. Licence checks come later.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/security.md",
+      "standards/deny.toml"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Playwright",
     "ring": "Adopt",
     "quadrant": "Tools",
@@ -549,8 +583,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. Planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API; not deployed yet.",
-    "exemplars": [],
+    "description": "Approved vendor, Free plan only. tofu_state is the first Worker (OpenTofu's http state backend, decision 0009), written in Rust with workers-rs. Also planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API.",
+    "exemplars": [
+      "tofu_state"
+    ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",
       "pane/issues"
@@ -564,10 +600,13 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "The hosted database (decision 0004, Jim 2026-11-26), used only when a deployed service must write data at runtime, until a need comes up that it can't meet. Part of an approved vendor, Free plan only. No project uses it yet.",
-    "exemplars": [],
+    "description": "The hosted database (decision 0004, Jim 2026-11-26), used only when a deployed service must write data at runtime, until a need comes up that it can't meet. Part of an approved vendor, Free plan only. First used by tofu_state for OpenTofu state (decision 0009).",
+    "exemplars": [
+      "tofu_state"
+    ],
     "sources": [
-      "standards/docs/decisions/0004-database-engine.md"
+      "standards/docs/decisions/0004-database-engine.md",
+      "standards/docs/decisions/0009-opentofu-state-http-backend.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
     "budget": 0
@@ -901,15 +940,18 @@
   },
   {
     "name": "Shared design tokens (design_system)",
-    "ring": "Trial",
+    "ring": "Adopt",
     "quadrant": "Techniques",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Chosen (Jim, 2026-11-26), not yet rolled out: one TOML source of colour, type and spacing tokens for five themes (earthy, airy, professional, colorful, gamey) in light, dark and accessible modes, plus custom app themes such as bear_down's Bears theme, generated as CSS custom properties for web apps and Rust constants for Bevy games, with WCAG contrast checked in CI. Moves to Adopt when pane/web uses it.",
-    "exemplars": [],
+    "description": "One TOML source of colour, type and spacing tokens for five themes (earthy, airy, professional, colorful, gamey) in light, dark and accessible modes, plus custom app themes such as bear_down's Bears theme, generated as CSS custom properties for web apps and Rust constants for Bevy games, with WCAG contrast checked in CI. In use by pane/web (professional theme) since 2026-11-26; the other apps follow the plan's adoption order.",
+    "exemplars": [
+      "pane/web"
+    ],
     "sources": [
       "standards/docs/plans/2026-11-design-system.md",
-      "https://github.com/jimhillr/monorepo/pull/657"
+      "https://github.com/jimhillr/monorepo/pull/657",
+      "design_system/README.md"
     ],
     "claude": "",
     "budget": 0
@@ -946,5 +988,110 @@
     ],
     "claude": "It is Claude. Skills, plugins and MCP servers extend it.",
     "budget": 25
+  },
+  {
+    "name": "OpenTofu",
+    "ring": "Assess",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Accepted in decision 0007 (Jim, 2026-11-26) as the IaC engine: plans and applies the Terraform JSON the infra crate synthesizes, with built-in state encryption and no account. Moves to Trial when its phase 1 merges.",
+    "exemplars": [
+      "infra"
+    ],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "OpenTofu MCP server (registry and resource docs) and HashiCorp's Terraform MCP server, read-only.",
+    "budget": 0
+  },
+  {
+    "name": "Infrastructure as code synthesized from Rust",
+    "ring": "Assess",
+    "quadrant": "Techniques",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Accepted in decision 0007 (Jim, 2026-11-26): Rust constructs write committed Terraform JSON (*.tf.json), PR CI plans it, and main applies the saved plan, so generation and apply are decoupled. Dashboard settings move into code; drift is checked weekly.",
+    "exemplars": [
+      "infra"
+    ],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "CDKTF and CDK Terrain",
+    "ring": "Hold",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "CDKTF was archived by HashiCorp on 2025-12-10; its community fork CDK Terrain supports TypeScript, Python and Go only. No Rust, and it needs Node (decision 0007).",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "Pulumi",
+    "ring": "Hold",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "No Rust SDK, and its state service is a new vendor. Compared in decision 0007 and not chosen.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "Pulumi MCP server.",
+    "budget": 0
+  },
+  {
+    "name": "Crossplane",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Needs an always-on Kubernetes cluster, which no approved vendor offers free. Compared in decision 0007 and not chosen.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "Terraform CLI and HCP Terraform",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Business Source License, no state encryption, and HCP Terraform is a new vendor with a 500-resource free tier. OpenTofu reads the same providers and JSON (decision 0007).",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md"
+    ],
+    "claude": "HashiCorp Terraform MCP server.",
+    "budget": 0
+  },
+  {
+    "name": "terrars",
+    "ring": "Assess",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26).",
+    "exemplars": [
+      "infra"
+    ],
+    "sources": [
+      "standards/docs/decisions/0007-infrastructure-as-code.md",
+      "standards/docs/decisions/0007-terrars-spike.md"
+    ],
+    "claude": "",
+    "budget": 0
   }
 ]

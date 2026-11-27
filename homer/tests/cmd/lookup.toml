@@ -1,0 +1,4 @@
+# Happy path: look up a property with no preferences, so no match score.
+bin.name = "homer"
+args = ["--address", "123 Main St, Seattle, WA 98101", "--api-key", "test-key", "--quota-file", "quota.json"]
+fs.sandbox = true

@@ -22,13 +22,24 @@ run = [
   "dx serve --platform web --port 8080 --package $DX_PACKAGE",
 ]
 
+[tasks.reviews]
+description = "Build the review decks in docs/reviews/ to HTML and PDF into public/reviews/"
+# standards/scripts/review-decks.sh writes public/reviews/<folder>/deck.html,
+# deck.pdf and the deck's images, which dx copies into the bundle, so the
+# site serves them under /reviews/<folder>/. Needs Node (npx, for the Marp
+# CLI) and a Chrome or Chromium for the PDF (set CHROME_PATH if Marp can't
+# find one). dev skips it, so the Playwright tests need neither.
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/review-decks.sh\" \"{{config_root}}/public/reviews\""
+
 [tasks.release]
-description = "Build the repo snapshot into public/data/, then the release bundle into dist/"
+description = "Build the repo snapshot and review decks into public/, then the release bundle into dist/"
 # pane_snapshot reads the whole checkout (see pane/snapshot/README.md) and
 # writes public/data/snapshot.json, which dx copies into the bundle as
-# /data/snapshot.json. public/ is gitignored, so the snapshot is never
-# committed (standards/docs/mise.md: no committed build artifacts).
+# /data/snapshot.json; the reviews task adds the decks under public/reviews/.
+# public/ is gitignored, so neither is ever committed (standards/docs/mise.md:
+# no committed build artifacts).
 run = [
   "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json",
+  "mise run reviews",
   "dx bundle --platform web --release --out-dir dist --package $DX_PACKAGE",
 ]

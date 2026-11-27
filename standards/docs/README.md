@@ -7,14 +7,17 @@ This directory contains development standards and guidelines for the monorepo.
 - [Configuration](./configuration.md) - Configuration file standards
 - [Decisions](./decisions/README.md) - Repo-wide decision records
 - [Documentation](./documentation.md) - Documentation standards
+- [Cost](./cost.md) - Each project's cost analysis (`docs/cost.toml`), the cost check and how an expense is approved
 - [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
+- [Runbooks](./runbooks/README.md) - Step-by-step runbooks for every task only a person can do
 - [Naming](./naming.md) - Naming conventions
 - [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md), the [eval engine](./plans/2026-11-eval-engine.md), the [cost check](./plans/2026-11-cost-check.md), the [threat check](./plans/2026-11-threat-check.md), the [design system](./plans/2026-11-design-system.md) and [resource cleanup](./plans/2026-11-resource-cleanup.md)
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Rust](./rust.md) - Rust coding standards
+- [Security](./security.md) - Security rules and the checks that enforce them (secret scanning, ignored secret files, Dependabot coverage)
 - [Testing](./testing.md) - Testing standards and requirements
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
 - [Tech radar](./tech-radar.md) - Every approved, evaluated and held technology and vendor, with exemplar projects

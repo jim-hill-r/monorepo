@@ -1,0 +1,7 @@
+{
+  "provider": "auth0/auth0",
+  "version": "1.63.0",
+  "include": ["client"],
+  "dest": "src/tfschema/auth0",
+  "binary": "tofu"
+}

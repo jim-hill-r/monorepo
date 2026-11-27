@@ -11,7 +11,7 @@ Work the phases in order; within a phase, by `order`.
 
 ### Phase 2: executive reviews
 
-Needs PR #585 (docs/reviews and `review-decks.sh`) merged.
+PR #585 (docs/reviews and `review-decks.sh`) is merged, so this phase can start.
 
 ### Phase 6: observability
 

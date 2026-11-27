@@ -205,10 +205,11 @@ keep dev work as files in the monorepo). Records go three places:
    verdicts.json                       current verdict per requirement
    ```
 
-   Each run ends with `evals publish`, which checks out that branch,
-   appends its records, recomputes `verdicts.json`, and pushes one commit
-   (`evals: <stage> <project> <run>`), retrying on a race with another run.
-   The workflow gets `contents: write` for that step only, and the push is
+   Each run ends with a `store-evals` job (`evals.sh store`, which runs
+   `evals store`), which checks out that branch, appends its records,
+   recomputes `verdicts.json`, and pushes one commit
+   (`evals: <stage> <projects> run <id>`), retrying on a race with another run.
+   The workflow gets `contents: write` for that job only, and the push is
    to `evals-results` only; `main` is never written. At our scale (about 20
    projects, a few hundred evals, a handful of runs a day) that is well under
    1 MB a day before git's compression. Once a year a step moves months
@@ -268,8 +269,10 @@ Commands:
   wrote (Cargo's JSON test output, Playwright's JSON reporter, trycmd's
   output), so tests run once. For `http`, `metric` and `fault` it does the
   work.
-- `evals publish` — write the job summary and the JSONL artifact, and
-  commit the results and `verdicts.json` to the `evals-results` branch.
+- `evals publish` — write the job summary from the JSONL results.
+- `evals store` — add results to a checkout of the `evals-results` branch
+  and rewrite its `verdicts.json`; `standards/scripts/evals.sh store` does
+  the checkout, commit and push (built in phase 1).
 - `evals verdicts [--project <p>]` — print the current verdicts from the
   `evals-results` files
   (used by the triage skill and by people).
@@ -590,10 +593,18 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   COOK-003), in one PR with the rest of its changes, and brings it
   to Jim with the rest of the digest.
 - **Jim's answer is the result.** When Jim answers in the project ("ok", or
-  what is wrong), the agent that reads it records a result with
-  `by = "jim"`, `stage = "human"`, `status` `pass` or `fail` and his words
-  as `evidence` through `evals publish`, and removes the line. A `fail`
-  also files a `FIX` (or a `TODO (human)` if only Jim can fix it).
+  what is wrong), the agent that reads it records an answer with
+  `by = "jim"`, `status` `pass` or `fail` and his words, and deletes the
+  task file. A `fail` also files a `FIX` (or a `TODO (human)` if only Jim can fix
+  it). As built (2026-11-26), answers are Jim's judgment like pane ratings,
+  so they live on `main` in `standards/settings-checks.jsonl`, keyed by
+  setting and appended by `evals human-checks answer` (which also deletes
+  `issues/human/settings-check-<id>.md`), rather than on the `evals-results` branch, which agents
+  can't push to from a thread. Due checks come from
+  `evals human-checks due --write`; `evals verdicts` will read the same
+  file. A
+  manifest entry that no eval names is not a warning: most settings are
+  repo-wide and have no requirement until the `MONO-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
   production eval. A check past twice its `every` with no answer makes it
   at risk, never met: an unchecked setting is unknown, not fine.

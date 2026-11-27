@@ -12,13 +12,18 @@ It replaced Cast in November 2026. Shared task files live in
   but the repo root never is.
 - **Same commands everywhere.** Every project's `mise.toml` includes exactly
   one `standards/tasks/<type>.toml`, so `mise run ci`, `fix`, `build`, `test`,
-  `dev`, `release` and `deploy` work in any project. `mise run //:audit`
+  `dev`, `release`, `deploy` and `evals` work in any project. `mise run //:audit`
   enforces this on every pull request.
 - **Tools come from mise.** A project lists its own tools in `[tools]`. System
   packages that CI needs go in a `ci:deps` task override in the project's
   `mise.toml`.
 - **No build artifacts in git.** Web apps deploy straight from CI. A binary
   that needs publishing goes to a GitHub Release.
+  One exception: `infra/out/`, the Terraform JSON the `infra` crate
+  synthesizes, is committed, because it is the reviewed file OpenTofu applies
+  (decision 0007, item 3). `infra`'s CI fails when it differs from a fresh
+  synth. Its generated bindings in `infra/src/tfschema/` are source, not
+  build output.
 - **Shared code between projects** uses relative path dependencies for now
   (`auth_sdk` in cahokia and cookbook).
 - **Standards are checked on pull requests**, not by a nightly job that opens
@@ -32,7 +37,9 @@ It replaced Cast in November 2026. Shared task files live in
 
 All three workflows call `.github/workflows/mise-projects.yml`, which runs
 `mise run //:audit`, lists projects, and runs `mise run ci` in each one as its
-own job.
+own job, then `mise run evals`, which turns the test reports `ci` saved into
+eval results in the job summary and a 14-day `evals-results-<project>`
+artifact ([evals.md](evals.md#in-ci)).
 
 | Workflow | Projects | Runs |
 | --- | --- | --- |
@@ -67,11 +74,11 @@ deploy shows on its commit and in the repo's Deployments list, and the job
 summary lists the production URL, the URL of that exact deployment and the
 commit. Smoke tests and PR comments read the same `DEPLOY_URL`.
 
-A `*.pages.dev` name is global, so when another account already has
-`<name>.pages.dev`, Cloudflare gives the new project a suffixed subdomain
-(pane is `pane-dbc`, controlled_chaos is `controlled-chaos-5v4`). After a
-project's first deploy, take `DEPLOY_URL` from the "Deployment complete"
-line in the deploy job's log, not from the name in `wrangler.toml`.
+A Cloudflare Pages project is named `jimhillr-<project>`, so its
+`DEPLOY_URL` is `https://jimhillr-<project>.pages.dev` (see "Cloudflare
+Pages projects" in [naming.md](naming.md)). If Cloudflare still gives
+a project a suffixed subdomain, because another account has the name, take
+`DEPLOY_URL` from the "Deployment complete" line in the deploy job's log.
 
 A deploy runs only after `mise run ci` passed in the same job, and only for
 the latest version of main: `standards/scripts/deploy-check.sh` skips it

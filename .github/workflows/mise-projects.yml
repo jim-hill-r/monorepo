@@ -70,8 +70,15 @@ jobs:
         with:
           install: false
 
-      - name: Audit standards
-        run: mise run //:audit
+      # The audit builds the evals CLI (`evals check`) and the cost CLI
+      # (`cost check`). Cache those builds, saved from main only.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            evals
+            cost
+          key: audit
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: List projects
         id: affected
@@ -96,6 +103,20 @@ jobs:
           fi
           echo "projects=$projects" >> "$GITHUB_OUTPUT"
           echo "Projects: $projects"
+
+      # After the project list, so a PR's cost check (COST-001 to COST-004,
+      # COST-007 to COST-009) runs only for its affected projects, as the
+      # git hooks do. Runs with every project otherwise.
+      - name: Audit standards
+        env:
+          AFFECTED_BASE: ${{ inputs.base }}
+          PROJECTS: ${{ steps.affected.outputs.projects }}
+        run: |
+          if [ -n "$AFFECTED_BASE" ]; then
+            COST_PROJECTS=$(jq -r 'join(",")' <<<"$PROJECTS")
+            export COST_PROJECTS
+          fi
+          mise run //:audit
 
       # A project that deploys sets DEPLOY_URL in its mise.toml [env]. Its job
       # then runs in the `production` environment, so each deploy shows on the
@@ -149,14 +170,44 @@ jobs:
         with:
           working_directory: ${{ matrix.project }}
 
+      # evals/ is cached too: `mise run evals` builds the evals CLI there.
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: ${{ matrix.project }}
+          workspaces: |
+            ${{ matrix.project }}
+            evals
           key: ${{ matrix.project }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: mise run ci
         run: mise run ci
+
+      # Turn the test reports `ci` saved into one result per eval (stage ci)
+      # and add the table to the job summary (standards/docs/evals.md). Runs
+      # after a failed ci too, so failing evals show. Failing tests already
+      # fail `ci`, so this step never fails the job: until the engine has
+      # settled, a bug in it must not block a PR.
+      - name: mise run evals
+        id: evals
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          EVALS_STAGE: ci
+          EVALS_RESULTS: ${{ runner.temp }}/evals-results.jsonl
+          PROJECT: ${{ matrix.project }}
+        run: |
+          echo "artifact=evals-results-${PROJECT//\//-}" >> "$GITHUB_OUTPUT"
+          mise run evals
+          bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" publish
+
+      - name: Upload eval results
+        if: ${{ !cancelled() && steps.evals.outputs.artifact }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.evals.outputs.artifact }}
+          path: ${{ runner.temp }}/evals-results.jsonl
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: mise run deploy
         if: inputs.deploy

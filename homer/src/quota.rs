@@ -77,6 +77,21 @@ impl QuotaState {
         }
     }
 
+    /// The quota after a request whose response didn't report one: one
+    /// request fewer left, so the guard never runs on a stale count.
+    ///
+    /// Returns `None` once the saved period has reset, because the saved
+    /// count no longer describes the current period.
+    pub fn after_unreported_request(&self, now: u64) -> Option<Self> {
+        if self.resets_at.is_some_and(|reset| now >= reset) {
+            return None;
+        }
+        Some(Self {
+            remaining: self.remaining.saturating_sub(1),
+            ..self.clone()
+        })
+    }
+
     /// A warning to print when the quota is nearly used up.
     pub fn warning(&self) -> Option<String> {
         let warn_at = self
@@ -166,13 +181,27 @@ pub fn load(path: &Path) -> Result<Option<QuotaState>> {
 }
 
 /// Save the quota, creating the file's folder if needed.
+///
+/// The new state goes to a temporary file next to `path`, which is then
+/// renamed over it, so an interrupted save leaves the old file whole instead
+/// of a partial one that would block every lookup.
 pub fn save(path: &Path, state: &QuotaState) -> Result<()> {
     if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
         fs::create_dir_all(dir).with_context(|| format!("Failed to create {}", dir.display()))?;
     }
     let json = serde_json::to_string_pretty(state)?;
-    fs::write(path, json + "\n")
+    let temp = temp_path(path);
+    fs::write(&temp, json + "\n")
+        .with_context(|| format!("Failed to write the RapidAPI quota file {}", temp.display()))?;
+    fs::rename(&temp, path)
         .with_context(|| format!("Failed to write the RapidAPI quota file {}", path.display()))
+}
+
+/// The temporary file `save` writes before renaming it over `path`.
+fn temp_path(path: &Path) -> PathBuf {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(".tmp");
+    path.with_file_name(name)
 }
 
 #[cfg(test)]
@@ -277,6 +306,51 @@ mod tests {
         assert_eq!(describe_wait(61), "about 2 minutes");
         assert_eq!(describe_wait(3600), "about 1 hour");
         assert_eq!(describe_wait(3 * 86_400 + 1), "about 4 days");
+    }
+
+    #[test]
+    fn unreported_request_lowers_remaining_by_one() {
+        let s = state(Some(100), 3, Some(500));
+        assert_eq!(
+            s.after_unreported_request(100),
+            Some(state(Some(100), 2, Some(500)))
+        );
+        assert_eq!(
+            state(None, 0, None).after_unreported_request(100),
+            Some(state(None, 0, None)),
+            "never below zero"
+        );
+    }
+
+    #[test]
+    fn unreported_request_after_reset_changes_nothing() {
+        // The period has restarted, so the saved count is no longer the
+        // current one; leave it for the next response to correct.
+        assert_eq!(
+            state(Some(100), 0, Some(500)).after_unreported_request(500),
+            None
+        );
+    }
+
+    #[test]
+    fn save_replaces_an_existing_file_and_ignores_leftover_temp_files() {
+        let dir = std::env::temp_dir().join(format!("homer-quota-atomic-{}", std::process::id()));
+        fs::remove_dir_all(&dir).ok();
+        let path = dir.join("quota.json");
+        save(&path, &state(Some(100), 9, None)).expect("first save");
+        save(&path, &state(Some(100), 8, None)).expect("second save");
+        assert_eq!(load(&path).expect("load"), Some(state(Some(100), 8, None)));
+        // A temp file left by an interrupted save doesn't affect the quota.
+        fs::write(temp_path(&path), "{ partial").expect("write leftover");
+        assert_eq!(load(&path).expect("load"), Some(state(Some(100), 8, None)));
+        save(&path, &state(Some(100), 7, None)).expect("save over leftover");
+        assert_eq!(load(&path).expect("load"), Some(state(Some(100), 7, None)));
+        let names: Vec<_> = fs::read_dir(&dir)
+            .expect("read dir")
+            .filter_map(|e| e.ok().map(|e| e.file_name()))
+            .collect();
+        assert_eq!(names, vec![std::ffi::OsString::from("quota.json")]);
+        fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

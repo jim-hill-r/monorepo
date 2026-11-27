@@ -9,7 +9,7 @@ workspace = true
 [dependencies]
 dioxus = { workspace = true, features = ["router"] }
 ui = { workspace = true }
-cahokia_core = { package = "core", path = "../core" }
+design_system_dioxus = { workspace = true }
 auth_sdk = { workspace = true }
 
 [dev-dependencies]

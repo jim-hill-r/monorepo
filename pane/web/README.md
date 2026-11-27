@@ -17,6 +17,11 @@ one column under 720 px.
 | `/docs/<path>` | One plan, decision or retro rendered from its Markdown (`src/markdown.rs`), with a link to the file on GitHub |
 | `/health`, `/reviews`, `/add` | Placeholders naming the phase that fills them in |
 
+It uses the [design system](../../design_system/README.md)'s professional
+theme: `design_system_dioxus::Stylesheets` loads the tokens, and
+`assets/main.css` uses only `--ds-` tokens, so the theme picker in the footer
+can switch it to any theme, light, dark or accessible mode.
+
 The footer shows the snapshot's commit and how long ago it was taken. Pure
 helpers for the pages (dates, ages, sorting, counts, filters, GitHub links)
 are in `src/view.rs` with unit tests.
@@ -58,7 +63,7 @@ first, and run in CI as part of `mise run ci`.
 npm ci
 npm test            # every test, in Chromium
 npm run smoke       # only the @smoke tests, recording video, screenshots and traces
-BASE_URL=https://pane-dbc.pages.dev npm run smoke   # against the live site instead
+BASE_URL=https://jimhillr-pane.pages.dev npm run smoke   # against the live site instead
 ```
 
 ## Prerequisites
@@ -114,8 +119,14 @@ mise run release
 This first runs [`pane_snapshot`](../snapshot) to write
 `public/data/snapshot.json` (a snapshot of the whole repo at the current
 commit, with the time it was taken), then `dx bundle`, which copies it into
-the bundle as `/data/snapshot.json`. `public/` is gitignored, so the snapshot
-is never committed. The output will be in the `dist/` directory and ready for
+the bundle as `/data/snapshot.json`. Next, `mise run reviews` builds every
+review deck in [`docs/reviews/`](../../docs/reviews) to HTML and PDF with
+[`review-decks.sh`](../../standards/scripts/review-decks.sh), into
+`public/reviews/<folder>/` (`deck.html`, `deck.pdf` and the deck's images),
+so the site serves them under `/reviews/<folder>/`. That step needs Node and a
+Chrome or Chromium (set `CHROME_PATH` if Marp can't find one); `dev` skips it.
+`public/` is gitignored, so neither the snapshot nor the decks are ever
+committed. The output will be in the `dist/` directory and ready for
 deployment.
 
 **Note:** The `Dioxus.toml` configuration disables wasm-opt (by setting level to 0) to avoid SIGABRT errors during release builds. This is a known issue where wasm-opt can crash on certain builds.

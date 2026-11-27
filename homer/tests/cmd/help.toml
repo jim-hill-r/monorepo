@@ -1,0 +1,3 @@
+bin.name = "homer"
+args = ["--help"]
+env.remove = ["HOMER_QUOTA_FILE"]

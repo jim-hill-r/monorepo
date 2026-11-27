@@ -22,3 +22,7 @@ run = "echo 'release: nothing to release'"
 
 [deploy]
 run = "echo 'deploy: nothing to deploy'"
+
+[evals]
+description = "Nothing to collect: docs-only projects have no tests"
+run = "echo 'evals: docs-only project, nothing to collect'"

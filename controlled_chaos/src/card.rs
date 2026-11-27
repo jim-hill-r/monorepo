@@ -65,7 +65,7 @@ impl CardCategory {
 }
 
 /// A card in the game with a name, numeric value, and category.
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
 pub struct Card {
     pub name: String,
     pub value: u32,

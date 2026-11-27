@@ -18,7 +18,7 @@ struct Args {
     address: String,
 
     /// RapidAPI key for Zillow API access
-    #[arg(long, env = "RAPIDAPI_KEY")]
+    #[arg(long, env = "RAPIDAPI_KEY", hide_env_values = true)]
     api_key: String,
 
     /// File where homer keeps the RapidAPI quota it last saw, so it can stop
@@ -27,6 +27,11 @@ struct Args {
     /// ~/.local/state/homer/rapidapi-quota.json]
     #[arg(long, env = "HOMER_QUOTA_FILE")]
     quota_file: Option<PathBuf>,
+
+    /// Base URL of the Zillow API. Only the CLI transcript tests set it, to
+    /// point homer at a local mock server instead of RapidAPI.
+    #[arg(long, env = "HOMER_BASE_URL", default_value = DEFAULT_BASE_URL, hide = true)]
+    base_url: String,
 
     /// Minimum number of bedrooms
     #[arg(long)]
@@ -103,11 +108,6 @@ pub struct ZillowClient {
 }
 
 impl ZillowClient {
-    /// Create a client that talks to the real Zillow API on RapidAPI.
-    pub fn new(api_key: String) -> Self {
-        Self::with_base_url(api_key, DEFAULT_BASE_URL.to_string())
-    }
-
     /// Create a client that sends requests to `base_url` instead of RapidAPI,
     /// for example a local mock server in tests.
     pub fn with_base_url(api_key: String, base_url: String) -> Self {
@@ -138,9 +138,21 @@ impl ZillowClient {
     }
 
     /// Save the quota a response reports and warn when it is nearly used up.
+    ///
+    /// A response that reports no quota still used a request, so the saved
+    /// quota goes down by one instead of staying stale.
     fn record_quota(&self, headers: &reqwest::header::HeaderMap) -> Result<()> {
-        let Some(state) = QuotaState::from_headers(headers, quota::now_secs()) else {
-            return Ok(());
+        let now = quota::now_secs();
+        let reported = QuotaState::from_headers(headers, now);
+        let state = match (reported, &self.quota_file) {
+            (Some(state), _) => state,
+            (None, Some(path)) => {
+                match quota::load(path)?.and_then(|saved| saved.after_unreported_request(now)) {
+                    Some(state) => state,
+                    None => return Ok(()),
+                }
+            }
+            (None, None) => return Ok(()),
         };
         if let Some(warning) = state.warning() {
             eprintln!("{warning}");
@@ -402,7 +414,8 @@ fn main() -> Result<()> {
     let quota_file = args.quota_file.or_else(quota::default_quota_file).context(
         "No place to keep the RapidAPI quota: set --quota-file, HOMER_QUOTA_FILE or HOME",
     )?;
-    let client = ZillowClient::new(args.api_key).with_quota_file(quota_file);
+    let client =
+        ZillowClient::with_base_url(args.api_key, args.base_url).with_quota_file(quota_file);
     let details = client
         .property_details(&args.address)
         .context("Failed to look up property")?;
@@ -993,6 +1006,67 @@ mod tests {
             .expect("a quota that has reset allows requests");
         mock.assert();
         std::fs::remove_dir_all(path.parent().expect("temp dir")).ok();
+    }
+
+    #[test]
+    fn test_request_without_quota_headers_counts_against_saved_quota() {
+        let mut server = mockito::Server::new();
+        let mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("{}")
+            .expect(1)
+            .create();
+
+        let path = temp_quota_file("quota-no-headers");
+        let last_one = QuotaState {
+            limit: Some(100),
+            remaining: 1,
+            resets_at: Some(quota::now_secs() + 86_400),
+        };
+        quota::save(&path, &last_one).expect("save quota");
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url())
+            .with_quota_file(path.clone());
+        client
+            .property_details("123 Main St")
+            .expect("the last free request still goes through");
+
+        let saved = quota::load(&path)
+            .expect("quota file is readable")
+            .expect("quota file is kept");
+        assert_eq!(saved.remaining, 0, "an unreported request still counts");
+        assert_eq!(saved.limit, last_one.limit);
+        assert_eq!(saved.resets_at, last_one.resets_at);
+
+        // The next run must stop without contacting the server.
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url())
+            .with_quota_file(path.clone());
+        let err = client
+            .property_details("456 Oak Ave")
+            .expect_err("the count went to zero, so the guard stops");
+        assert!(err.to_string().contains("used up"), "{err}");
+        mock.assert();
+        std::fs::remove_dir_all(path.parent().expect("temp dir")).ok();
+    }
+
+    #[test]
+    fn test_request_without_quota_headers_and_no_saved_quota_writes_nothing() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(200)
+            .with_body("{}")
+            .create();
+
+        let path = temp_quota_file("quota-none-yet");
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url())
+            .with_quota_file(path.clone());
+        client
+            .property_details("123 Main St")
+            .expect("request succeeds");
+        assert_eq!(quota::load(&path).expect("readable"), None);
     }
 
     #[test]

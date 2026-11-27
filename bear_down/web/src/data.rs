@@ -31,6 +31,19 @@ pub struct LatestGame {
 pub struct Bears {
     pub record: Record,
     pub odds: Odds,
+    /// Games ahead of the best NFC North rival; missing in older files.
+    #[serde(default)]
+    pub division_lead: Option<f64>,
+    /// That rival.
+    #[serde(default)]
+    pub division_rival: Option<String>,
+}
+
+/// The celebration banner: a headline and a line under it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Banner {
+    pub headline: String,
+    pub line: String,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -182,6 +195,50 @@ impl Rooting {
     }
 
     /// True when the Bears can no longer make the playoffs.
+    /// The banner to celebrate the Bears' place atop the NFC North, with
+    /// their latest win if they just won. None when they aren't in first.
+    pub fn banner(&self) -> Option<Banner> {
+        let lead = self.bears.division_lead?;
+        if lead < 0.0 {
+            return None;
+        }
+        let line = if lead == 0.0 {
+            "Tied for first place in the NFC North.".to_string()
+        } else {
+            let rival = self
+                .bears
+                .division_rival
+                .as_deref()
+                .map(crate::teams::nickname)
+                .unwrap_or("pack");
+            let games = if lead == 1.0 {
+                "a game".to_string()
+            } else {
+                format!("{lead} games")
+            };
+            format!("Alone in first place in the NFC North, {games} ahead of the {rival}.")
+        };
+        let won = self.latest_game.as_ref().and_then(|game| {
+            let (us, them, opponent) = if game.home == "CHI" {
+                (game.home_score, game.away_score, &game.away)
+            } else if game.away == "CHI" {
+                (game.away_score, game.home_score, &game.home)
+            } else {
+                return None;
+            };
+            (us > them).then(|| {
+                format!(
+                    "Bears win! Chicago {us}, {} {them}.",
+                    crate::teams::nickname(opponent)
+                )
+            })
+        });
+        Some(Banner {
+            headline: won.unwrap_or_else(|| "Bear Down!".to_string()),
+            line,
+        })
+    }
+
     pub fn bears_eliminated(&self) -> bool {
         self.bears.odds.playoffs <= 0.0
     }
@@ -255,12 +312,13 @@ mod tests {
     fn parses_the_sample() {
         let r = Rooting::parse(SAMPLE).expect("sample parses");
         assert!(!r.games.is_empty());
-        assert_eq!(
+        // At most one Bears game is left in a week (none once it's played).
+        assert!(
             r.games
                 .iter()
                 .filter(|g| g.home == "CHI" || g.away == "CHI")
-                .count(),
-            1
+                .count()
+                <= 1
         );
     }
 
@@ -293,12 +351,14 @@ mod tests {
                 .collect();
             assert!(swings.windows(2).all(|w| w[0] >= w[1]), "{goal:?}");
         }
-        // The Bears' own game leads the Super Bowl ranking.
-        let top = r.ranked(Goal::SuperBowl)[0];
-        assert!(top.home == "CHI" || top.away == "CHI");
-        // And the playoff ranking.
-        let top = r.ranked(Goal::Playoffs)[0];
-        assert!(top.home == "CHI" || top.away == "CHI");
+        // The Bears' own game, while it's still to play, leads the Super
+        // Bowl and playoff rankings.
+        if r.games.iter().any(|g| g.home == "CHI" || g.away == "CHI") {
+            for goal in [Goal::SuperBowl, Goal::Playoffs] {
+                let top = r.ranked(goal)[0];
+                assert!(top.home == "CHI" || top.away == "CHI", "{goal:?}");
+            }
+        }
     }
 
     #[test]
@@ -405,6 +465,58 @@ mod tests {
             "2026-11-24 08:05 -05:00"
         );
         assert_eq!(timestamp("soon"), "soon");
+    }
+
+    #[test]
+    fn the_banner_celebrates_first_place_and_the_latest_win() {
+        let mut rooting = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting,
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        rooting.bears.division_lead = Some(1.0);
+        rooting.bears.division_rival = Some("DET".to_string());
+        rooting.latest_game = Some(LatestGame {
+            id: "2026_12_CHI_DET".to_string(),
+            gameday: "2026-11-26".to_string(),
+            away: "CHI".to_string(),
+            home: "DET".to_string(),
+            away_score: 39,
+            home_score: 35,
+        });
+        assert_eq!(
+            rooting.banner(),
+            Some(Banner {
+                headline: "Bears win! Chicago 39, Lions 35.".to_string(),
+                line: "Alone in first place in the NFC North, a game ahead of the Lions."
+                    .to_string(),
+            })
+        );
+        // Someone else's game: still first, no win to cheer.
+        if let Some(game) = rooting.latest_game.as_mut() {
+            game.away = "GB".to_string();
+        }
+        rooting.bears.division_lead = Some(1.5);
+        let banner = rooting.banner();
+        assert_eq!(
+            banner.as_ref().map(|b| b.headline.as_str()),
+            Some("Bear Down!")
+        );
+        assert_eq!(
+            banner.map(|b| b.line),
+            Some(
+                "Alone in first place in the NFC North, 1.5 games ahead of the Lions.".to_string()
+            )
+        );
+        rooting.bears.division_lead = Some(0.0);
+        assert_eq!(
+            rooting.banner().map(|b| b.line),
+            Some("Tied for first place in the NFC North.".to_string())
+        );
+        // Behind, or an older file: no banner.
+        rooting.bears.division_lead = Some(-1.0);
+        assert_eq!(rooting.banner(), None);
+        rooting.bears.division_lead = None;
+        assert_eq!(rooting.banner(), None);
     }
 
     #[test]

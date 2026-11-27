@@ -1,5 +1,5 @@
 //! `evals publish`: writes the job summary table from a results file.
-//! Committing results to the `evals-results` branch comes in phase 1.
+//! `evals store` (store.rs) adds them to the `evals-results` branch.
 
 use std::collections::BTreeMap;
 

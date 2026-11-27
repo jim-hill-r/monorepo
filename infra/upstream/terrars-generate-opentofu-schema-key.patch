@@ -1,0 +1,36 @@
+From 59fe1f6a429fbc3958c7fc5e9672fec6bdefb48d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 26 Nov 2026 20:47:32 +0000
+Subject: [PATCH] generate: find the provider schema under
+ registry.opentofu.org too
+
+With `"binary": "tofu"`, `tofu providers schema -json` keys the schema by
+`registry.opentofu.org/<vendor>/<name>`, so generation failed with
+"Missing provider schema for listed provider".
+---
+ src/bin/terrars-generate.rs | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/src/bin/terrars-generate.rs b/src/bin/terrars-generate.rs
+index 339d353..11183e2 100644
+--- a/src/bin/terrars-generate.rs
++++ b/src/bin/terrars-generate.rs
+@@ -219,10 +219,11 @@ fn main() {
+ 
+             // Provider type + provider
+             let provider_schema = {
+-                let key = format!("registry.terraform.io/{}/{}", vendor, shortname);
+-                schema
+-                    .provider_schemas
+-                    .get(&key)
++                // Terraform keys the schema by `registry.terraform.io`, OpenTofu by
++                // `registry.opentofu.org`.
++                ["registry.terraform.io", "registry.opentofu.org"]
++                    .iter()
++                    .find_map(|registry| schema.provider_schemas.get(&format!("{}/{}/{}", registry, vendor, shortname)))
+                     .context_with("Missing provider schema for listed provider", ea!(provider = config.provider))?
+             };
+             let provider_name_parts = &shortname.split("-").map(ToString::to_string).collect::<Vec<String>>();
+-- 
+2.43.0
+
