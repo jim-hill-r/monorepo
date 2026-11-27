@@ -203,8 +203,9 @@ list comes from Jim once and is then kept true by a settings check.
 - `[[cost]]` gains a `renews` date. The digest lists renewals due in the
   next 60 days, so Jim can drop a domain before it is charged again, and
   domains that serve no project are flagged as ones to consider dropping.
-- A `squarespace-domains` settings check every 90 days confirms the list,
-  prices and auto-renew still match.
+- The `squarespace-billing` settings check (every 90 days, from the
+  billing check work) also confirms the list, prices and auto-renew still
+  match the `[[cost]]` entries.
 
 ### Then
 

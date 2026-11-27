@@ -1,7 +1,7 @@
 # List the Squarespace domains
 
 - **Kind:** one-time, then re-checked every 90 days by the
-  `squarespace-domains` settings check (phase 4 of the cost tracking plan)
+  `squarespace-billing` settings check (phase 4 of the cost tracking plan)
 - **Status:** open (`issues/human/list-squarespace-domains.md`)
 - **Time:** about 10 minutes
 - **Cost:** $0 to do. It records money already being paid: each domain's
