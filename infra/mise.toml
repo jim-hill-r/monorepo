@@ -29,6 +29,7 @@ run = [
   "cargo test",
   "bash tests/tofu_sh.test.sh",
   "bash tests/mint_sh.test.sh",
+  "bash tests/env_gate_sh.test.sh",
   "cargo run --quiet -- synth --check",
   "for d in out/*/; do (cd \"$d\" && tofu init -backend=false -input=false -lockfile=readonly -no-color >/dev/null && tofu validate -no-color) || exit 1; done",
 ]

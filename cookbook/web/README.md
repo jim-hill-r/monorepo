@@ -11,6 +11,7 @@ The `web` project is the browser-based frontend for the Cookbook application. It
 - **Input Validation**: Automatically validates day and week numbers to ensure they're within valid ranges
 - **Responsive Routing**: Uses Dioxus Router for seamless navigation between pages
 - **Markdown Data Provider**: Uses the `cookbook-data-md` library to read recipes from markdown files
+- **Security headers**: `public/_headers` makes Cloudflare Pages send a Content-Security-Policy (the `<meta>` CSP in `src/main.rs` plus `frame-ancestors 'none'`, which a `<meta>` CSP can't set), `Referrer-Policy: no-referrer`, `X-Content-Type-Options`, `X-Frame-Options` and HSTS on every page. `dx bundle` copies `public/` into the build. Change the CSP in both places: the tests in `src/main.rs` fail if they drift apart.
 - **Themes**: Uses the shared [design system](../../design_system/README.md), earthy by default. The sidebar's Appearance picker switches between the five themes, light or dark, and accessible mode, and remembers the choice in the browser. The CSS in `assets/styling/` uses only `--ds-` tokens, never its own colours. `tests/design-system.spec.ts` runs axe on the main pages in all 20 combinations.
 
 ## Prerequisites

@@ -34,8 +34,6 @@ run book in the task."
 
 | Runbook | Kind | Issue |
 | --- | --- | --- |
-| [Set up the infra environments and bootstrap credentials](infra-credentials-environment.md) | one-time | `infra-credentials-environment.md` |
-| [Create the infra GitHub App](github-app-infra.md) | one-time | `github-app-infra-credentials.md` |
 | [Turn on GitHub code security](github-code-security.md) | one-time | `github-settings-code-security-turn-secret.md` |
 | [Require CI on the main ruleset](github-ruleset-required-check.md) | one-time | `github-settings-rules-rulesets-default-ruleset.md` |
 | [Sign up for PostHog](posthog-sign-up.md) | one-time | `create-posthog-cloud-free-plan-no.md` |
@@ -44,7 +42,7 @@ run book in the task."
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
 
 The Infra Mint workflow (`.github/workflows/infra-mint.yml`, decision 0011)
-makes every other infra secret from those two tasks' credentials: the state
+makes every other infra secret from the bootstrap credentials and the GitHub App below: the state
 passwords and passphrase, `TOFU_STATE_ORIGIN`, the Cloudflare deploy, read
 and apply tokens, the Auth0 read and apply apps and the Android release key.
 
@@ -68,6 +66,8 @@ and apply tokens, the Auth0 read and apply apps and the Android release key.
 | [Set up Cloudflare](cloudflare-account.md) | The account, the deploy token and the `CLOUDFLARE_*` secrets |
 | [Set up Auth0](auth0-tenant.md) | The tenant and the Cahokia and Cookbook applications |
 | [Get the RapidAPI Zillow key](rapidapi-zillow.md) | The free RapidAPI plan homer uses |
+| [Set up the infra environments and bootstrap credentials](infra-credentials-environment.md) | `infra` and `infra-credentials`, the Auth0 and Cloudflare bootstrap credentials, and the first Infra Mint run (done 2026-11-27) |
+| [Create the infra GitHub App](github-app-infra.md) | The private app Infra Mint writes secrets with (done 2026-11-27) |
 
 ### Replaced by the Infra Mint workflow (keep for reference)
 

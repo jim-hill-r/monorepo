@@ -112,7 +112,7 @@ itself.
 | Monthly active users (`auth0_mau`) | 25,000 users | - | per account | Free tenants are not upgraded automatically | [auth0.com](https://auth0.com/pricing) |
 | Tenants (`auth0_tenants`) | 1 tenants | - | per account | Creation fails | [auth0.com](https://auth0.com/pricing) |
 | Custom domains (`auth0_custom_domains`) | 1 domains | 0 domains (adding one asks for a card, so don't) | per account | Needs a card | [auth0.com](https://auth0.com/pricing) |
-| Machine-to-machine tokens (`auth0_m2m_tokens_per_month`) | 1,000 tokens a month | 0 tokens a month (CI uses mocks, never real tokens) | per account | Token requests fail | [auth0.com](https://auth0.com/pricing) |
+| Machine-to-machine tokens (`auth0_m2m_tokens_per_month`) | 1,000 tokens a month | 60 tokens a month (Jim, 2026-11-27: $0 in money. Infra plans, applies, drift and Infra Mint runs; CI uses mocks) | per account | Token requests fail | [auth0.com](https://auth0.com/pricing) |
 
 #### RapidAPI (Zillow data)
 

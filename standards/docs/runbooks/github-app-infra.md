@@ -2,7 +2,7 @@
 
 ## When
 
-Once, before the first run of the infra minting workflow, and again only to rotate or revoke the key. The issue is [issues/human/github-app-infra-credentials.md](../../../issues/human/github-app-infra-credentials.md).
+Once, before the first run of the infra minting workflow, and again only to rotate or revoke the key. Done 2026-11-27: the app minted every infra secret on the first Infra Mint run.
 
 ## Why a person
 
@@ -11,7 +11,7 @@ GitHub has no API for creating an app or its private key without an existing cre
 ## Before you start
 
 - Accounts: GitHub, signed in as `jimhillr` with a passkey or security key.
-- Permissions: admin of `jimhillr/monorepo`. The `infra-credentials` environment must exist (`issues/human/infra-credentials-environment.md`).
+- Permissions: admin of `jimhillr/monorepo`. The `infra-credentials` environment must exist ([infra-credentials-environment.md](infra-credentials-environment.md)).
 - About 10 minutes.
 - Cost: $0, because GitHub Apps are free.
 
