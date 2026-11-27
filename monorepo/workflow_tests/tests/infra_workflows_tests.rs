@@ -150,6 +150,7 @@ fn credential_tokens_are_never_used_outside_infra_credentials() {
             let job_text = serde_yaml::to_string(job).expect("job yaml");
             if job_text.contains("secrets.AUTH0_INFRA_CREDENTIALS_")
                 || job_text.contains("secrets.CLOUDFLARE_INFRA_CREDENTIALS_")
+                || job_text.contains("secrets.GH_INFRA_CREDENTIALS_")
             {
                 assert_eq!(
                     job["environment"].as_str(),
@@ -194,4 +195,27 @@ fn drift_is_weekly_read_only_and_unlocked() {
     assert!(!drift.contains("WRITE_PASSWORD") && !drift.contains("_APPLY_"));
     assert!(drift.contains("scripts/tofu.sh drift"));
     assert!(wf["jobs"]["drift"].get("environment").is_none());
+}
+
+#[test]
+fn mint_runs_by_hand_from_main_in_infra_credentials() {
+    let (_, wf) = load("infra-mint.yml");
+    let on = wf["on"].as_mapping().expect("on");
+    assert_eq!(on.len(), 1, "only workflow_dispatch may start a mint");
+    assert!(wf["on"].get("workflow_dispatch").is_some());
+    let job = &wf["jobs"]["mint"];
+    assert_eq!(job["environment"].as_str(), Some("infra-credentials"));
+    assert_eq!(job["if"].as_str(), Some("github.ref == 'refs/heads/main'"));
+    assert_eq!(wf["concurrency"]["group"].as_str(), Some("infra"));
+    let text = job_yaml(&wf, "mint");
+    assert!(text.contains("actions/create-github-app-token"));
+    assert!(text.contains("secrets.GH_INFRA_CREDENTIALS_APP_KEY"));
+    assert!(text.contains("infra/scripts/mint.sh run"));
+    // Inputs reach the script through the environment, never pasted into
+    // the shell command.
+    for step in job["steps"].as_sequence().expect("steps") {
+        if let Some(run) = step["run"].as_str() {
+            assert!(!run.contains("${{"), "expression in a run script: {run}");
+        }
+    }
 }

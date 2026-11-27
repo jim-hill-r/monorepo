@@ -46,7 +46,7 @@ jobs:
           [ -n "$READ" ] || missing="$missing TOFU_STATE_READ_PASSWORD"
           [ -n "$WRITE" ] || missing="$missing TOFU_STATE_WRITE_PASSWORD"
           if [ -n "$missing" ]; then
-            echo "::error::missing secrets:$missing (issues/human/tofu-state-passwords.md)"
+            echo "::error::missing secrets:$missing (run the Infra Mint workflow)"
             exit 1
           fi
 

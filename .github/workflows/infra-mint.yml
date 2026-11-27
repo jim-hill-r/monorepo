@@ -1,0 +1,93 @@
+# Mint the infra tokens and passwords into GitHub secrets (Jim, 2026-11-27).
+# A person makes only the bootstrap credentials in `infra-credentials`
+# (issues/human/infra-credentials-environment.md); this workflow makes
+# everything else, so no one makes or sees those values, and none is ever in
+# git or OpenTofu state. Run it by hand; it runs in `infra-credentials`, so
+# it waits for Jim's approval every time (decision 0010).
+#
+# The steps are in infra/scripts/mint.sh, tested by infra/tests/mint_sh.test.sh.
+name: Infra Mint
+
+'on':
+  workflow_dispatch:
+    inputs:
+      what:
+        description: What to mint
+        type: choice
+        default: all
+        options:
+          - all
+          - cloudflare
+          - state
+          - origin
+          - auth0
+          - android
+      rotate:
+        description: Secrets to remake even though they exist, space-separated (e.g. CLOUDFLARE_API_TOKEN)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infra
+  cancel-in-progress: false
+
+jobs:
+  mint:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: infra-credentials
+    permissions:
+      contents: read
+      actions: write
+    outputs:
+      deploy: ${{ steps.mint.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Stop when the setup isn't done
+        env:
+          APP_ID: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
+          APP_KEY: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error::the infra GitHub App isn't set up (issues/human/github-app-infra-credentials.md)"
+            exit 1
+          fi
+
+      - name: GitHub App token
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
+          private-key: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-secrets: write
+          permission-environments: write
+          permission-variables: write
+
+      - name: Mint
+        id: mint
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          WHAT: ${{ inputs.what }}
+          MINT_ROTATE: ${{ inputs.rotate }}
+          AUTH0_INFRA_CREDENTIALS_DOMAIN: ${{ secrets.AUTH0_INFRA_CREDENTIALS_DOMAIN }}
+          AUTH0_INFRA_CREDENTIALS_CLIENT_ID: ${{ secrets.AUTH0_INFRA_CREDENTIALS_CLIENT_ID }}
+          AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET: ${{ secrets.AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET }}
+          CLOUDFLARE_INFRA_CREDENTIALS_TOKEN: ${{ secrets.CLOUDFLARE_INFRA_CREDENTIALS_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bash infra/scripts/mint.sh run "$WHAT"
+
+      # A workflow_dispatch made with GITHUB_TOKEN does start the workflow. It
+      # queues behind this run in the infra concurrency group.
+      - name: Redeploy the state Worker with the new passwords
+        if: steps.mint.outputs.deploy == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run tofu-state-deploy.yml --ref main --repo "$GITHUB_REPOSITORY"
+          echo "Queued **Deploy tofu_state** to copy the new passwords into the Worker." >> "$GITHUB_STEP_SUMMARY"

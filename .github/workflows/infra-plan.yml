@@ -6,8 +6,8 @@
 # credential change gets the `credential-change` label, so Jim knows its
 # apply will wait for his second approval.
 #
-# Until the secrets exist (issues/human/auth0-iac-credentials.md,
-# tofu-state-passwords.md, cloudflare-iac-credentials.md) a stack is skipped
+# Until the Infra Mint workflow has made the secrets (it needs
+# issues/human/infra-credentials-environment.md first) a stack is skipped
 # with a notice, not failed. Fork PRs get no secrets and skip the same way.
 name: Infra Plan
 

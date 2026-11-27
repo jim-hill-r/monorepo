@@ -51,9 +51,9 @@ place the write password lives. It runs `mise run deploy:worker` (plain `deploy`
 Then `scripts/smoke.sh` checks the live Worker: no password gets `401`, the
 read password reads every stack in `infra/out/` and can't `LOCK`. The
 Worker's origin comes from the account's workers.dev subdomain
-(`scripts/origin.sh`), so nothing hard-codes it. The first run needs
-`issues/human/tofu-state-passwords.md` and
-`issues/human/cloudflare-api-token-workers-d1-edit.md`.
+(`scripts/origin.sh`), so nothing hard-codes it. The passwords and the
+deploy token are made by the Infra Mint workflow (`infra/scripts/mint.sh`),
+which also queues this deploy when the passwords change.
 
 ## Rolling back a bad apply
 

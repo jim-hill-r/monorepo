@@ -107,8 +107,9 @@ this record) and one more for the Worker, with tests, plus its upkeep.
 
 ## Consequences
 
-- Jim's one-time setup adds two random passwords as GitHub secrets
-  (`issues/human/tofu-state-passwords.md`).
+- The two passwords and the passphrase are random values that the Infra
+  Mint workflow writes straight into GitHub secrets (2026-11-27; at first
+  Jim was to make them by hand).
 - State never touches git, so the cleanup sweep has no `infra-state` branch
   to keep, and the Worker and its D1 database are claimed by `infra`.
 - The Worker becomes something we run. If it is ever dropped, the state moves

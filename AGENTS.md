@@ -112,10 +112,16 @@ repo, rather than in any one agent tool's settings.
 - **No secrets in git or state (Jim, 2026-11-26).** "Never commit secrets
   to git or store them in tf state." No secret value (token, password,
   client secret, key) is ever committed, and none may be in OpenTofu
-  state, not even encrypted. IaC never generates or copies a secret;
-  secrets are made by a person and stored only as GitHub or vendor
-  secrets. The `infra` plan guard IAC-002 fails any plan that would put a
-  sensitive value in state.
+  state, not even encrypted. OpenTofu never generates or copies a
+  secret, and the `infra` plan guard IAC-002 fails any plan that would
+  put a sensitive value in state. Secrets are stored only as GitHub or
+  vendor secrets. A person makes only the bootstrap credentials in
+  `infra-credentials`; the Infra Mint workflow makes every other infra
+  secret, piping each value straight into a GitHub secret so no one sees
+  it (Jim, 2026-11-27,
+  [decision 0011](standards/docs/decisions/0011-mint-secrets-by-workflow.md)).
+  A new credential is added to `infra/scripts/mint.sh`, not to a human
+  task.
 - **Second approval for credentials (Jim, 2026-11-26).** A credential
   change (new or edited Auth0 apps and grants, token scopes, Access
   policies, GitHub secrets, environments or rulesets) applies only after

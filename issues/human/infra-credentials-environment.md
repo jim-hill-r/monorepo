@@ -1,13 +1,22 @@
 ---
 added: 2026-11-26
-unblocks: "the second approval for credential changes (decision 0010): until this is done, IaC can't apply any credential change"
+unblocks: "every infra workflow: the Infra Mint workflow makes all other infra tokens and passwords from these, then the state Worker deploys and the plan, apply and drift workflows run (decisions 0007, 0009, 0010)"
+runbook: standards/docs/runbooks/infra-credentials.md
 ---
 
-Set up the `infra-credentials` GitHub environment (about 20 minutes, decision 0010):
+## Requirement
 
-1. In jimhillr/monorepo > Settings > Environments, create `infra-credentials`. Required reviewers: `jimhillr` only. Turn "Allow administrators to bypass configured protection rules" off. Deployment branches: `main` only. No wait timer.
-2. In Auth0, create a third Machine to Machine app for the Management API, "infra-credentials", with `read:clients`, `update:clients`, `create:clients`, `update:client_keys`, and `read:client_grants`, `create:client_grants`, `update:client_grants`. Add its domain, client ID and secret as `AUTH0_INFRA_CREDENTIALS_*` secrets of `infra-credentials` only. The "infra-apply" app from `auth0-iac-credentials.md` keeps only `read:clients` and `update:clients`.
-3. When the Cloudflare and GitHub stacks arrive, make their credential-capable tokens (Cloudflare API Tokens: Edit and Access: Apps and Policies: Edit; a fine-grained GitHub token on `jimhillr` for this repo with Administration, Environments, Secrets and Variables) and store them only in `infra-credentials`, never as repository secrets.
-4. Make sure `jimhillr` signs in with a passkey or security key.
+Create the `infra` and `infra-credentials` GitHub environments and the three bootstrap credentials, all stored only in `infra-credentials`:
+- the infra GitHub App (`github-app-infra-credentials.md`)
+- an Auth0 Machine to Machine app that can create apps and grants
+- a Cloudflare account token that can create tokens
 
-Reply when done and an agent closes this; the settings checks `github-infra-credentials-environment`, `github-agent-role` and `github-claude-app-permissions` in `standards/settings.toml` then come round every 90 days.
+Then approve one run of the Infra Mint workflow, and set the Auth0 token budget. After that, the workflow makes every other infra secret (state passwords, the deploy, read and apply tokens, the Auth0 apps, the Android key) and nobody makes or sees them (Jim, 2026-11-27). This replaces the old separate tasks for the state passwords, the origin variable, the Auth0 and Cloudflare infra tokens, the deploy token's scopes, Analytics read and the Android key.
+
+## Why it can't be automated
+
+These are the first credentials everything else is minted from, so no automation can exist before them. Making a vendor token without one needs a signed-in person. They also have to be yours, behind your approval on `infra-credentials`, so that an agent can never widen its own access (decision 0010). Only you set budgets.
+
+## Runbook
+
+[standards/docs/runbooks/infra-credentials.md](../../standards/docs/runbooks/infra-credentials.md): about 30 minutes, $0.
