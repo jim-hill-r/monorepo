@@ -1,8 +1,8 @@
-//! `chores gate`: the `Jim review` check (PR-004, Jim, 2026-11-27: "Lets
+//! `chores gate`: the `Human review` check (PR-004, Jim, 2026-11-27: "Lets
 //! make sure no prs with red attention flags get auto merged. Cost changes
-//! must be reviewed by jim").
+//! must be reviewed by jim", then "Lets make it needs human review").
 //!
-//! A PR needs Jim's own approval when any of these says it has a red
+//! A PR needs a human's approval when any of these says it has a red
 //! attention tag (`must-requirement-changed`) or changes cost:
 //!
 //! - the tags `chores badges` works out from the PR's diff, which the PR
@@ -11,10 +11,11 @@
 //! - the `cost` label, which PR CI's Cost summary job sets when anything
 //!   the repo uses or costs moves.
 //!
-//! Such a PR passes only once `jimhillr` has approved its head commit (and
-//! hasn't asked for changes since), or when Jim opened it himself. The
-//! workflow (`pull-request-jim-review.yml`) also labels it `needs-human`
-//! and turns its auto-merge off. The rules are under "Jim review" in
+//! Such a PR passes only once a human has approved its head commit (and no
+//! human has asked for changes since), or when a human opened it. Agent
+//! accounts (`-agt`), `jimhillr-reviewer` and bots never count. The
+//! workflow (`pull-request-human-review.yml`) also labels it `needs-human`
+//! and turns its auto-merge off. The rules are under "Human review" in
 //! `standards/docs/pull-requests.md`.
 
 use std::path::{Path, PathBuf};
@@ -25,17 +26,30 @@ use serde::{Deserialize, Serialize};
 use crate::badges::{self, Attention, Tag};
 use crate::pr_body;
 
-/// Jim's own GitHub account, the only one whose approval passes the check.
-pub const JIM: &str = "jimhillr";
+/// The reviewer account (decision 0014): it approves by written rules, so
+/// it is never a human review.
+pub const REVIEWER: &str = "jimhillr-reviewer";
+
+/// Whether a GitHub login is a person: not an agent account (`-agt`), not
+/// the reviewer account and not a bot or app (`[bot]`, `app/`, Copilot).
+pub fn is_human(login: &str) -> bool {
+    let lower = login.to_ascii_lowercase();
+    !lower.is_empty()
+        && !lower.ends_with("-agt")
+        && lower != REVIEWER
+        && !lower.ends_with("[bot]")
+        && !lower.starts_with("app/")
+        && lower != "copilot"
+}
 
 /// The label the Cost summary job sets when anything the repo uses or
 /// costs moves.
 pub const COST_LABEL: &str = "cost";
 
 impl Tag {
-    /// Whether a PR with this tag needs Jim's own approval: every red tag,
+    /// Whether a PR with this tag needs a human's approval: every red tag,
     /// and `cost-changed`.
-    pub fn needs_jim(self) -> bool {
+    pub fn needs_human(self) -> bool {
         matches!(self, Tag::MustRequirementChanged | Tag::CostChanged)
     }
 }
@@ -57,11 +71,11 @@ pub struct User {
 /// What the check decided.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct Verdict {
-    /// The PR has a red tag or a cost change, so it is Jim's to approve.
-    pub needs_jim: bool,
+    /// The PR has a red tag or a cost change, so a human must approve it.
+    pub needs_human: bool,
     /// The check passes.
     pub pass: bool,
-    /// Why it needs Jim, one line each.
+    /// Why it needs a human, one line each.
     pub reasons: Vec<String>,
     /// One line for the job summary.
     pub line: String,
@@ -70,29 +84,39 @@ pub struct Verdict {
 /// The tags a description's `## Attention` section declares; unknown ones
 /// are left to the PR summary check.
 pub fn body_tags(body: &str) -> Vec<Tag> {
-    pr_body::section(body, "Attention")
-        .map(|text| {
-            text.lines()
-                .filter_map(badges::bullet_tag)
-                .filter_map(Tag::parse)
-                .collect()
-        })
-        .unwrap_or_default()
+    pr_body::section(body, "Attention").map_or_else(Vec::new, |text| {
+        text.lines()
+            .filter_map(badges::bullet_tag)
+            .filter_map(Tag::parse)
+            .collect()
+    })
 }
 
-/// Whether Jim's latest approval or change request is an approval of
-/// `head`. A dismissed review or a comment doesn't change his last word.
-pub fn jim_approved(reviews: &[Review], head: &str) -> bool {
-    reviews
-        .iter()
-        .rfind(|r| {
-            r.user.as_ref().is_some_and(|u| u.login == JIM)
-                && matches!(
-                    r.state.as_str(),
-                    "APPROVED" | "CHANGES_REQUESTED" | "DISMISSED"
-                )
-        })
-        .is_some_and(|r| r.state == "APPROVED" && r.commit_id.as_deref() == Some(head))
+/// Whether a human approved `head` with no human approval or change
+/// request after it: each human's last word counts, a dismissed review
+/// withdraws theirs, and a comment changes nothing. Only humans count.
+pub fn human_approved(reviews: &[Review], head: &str) -> bool {
+    let mut last: Vec<(&str, &Review)> = Vec::new();
+    for r in reviews {
+        let Some(login) = r.user.as_ref().map(|u| u.login.as_str()) else {
+            continue;
+        };
+        if !is_human(login)
+            || !matches!(
+                r.state.as_str(),
+                "APPROVED" | "CHANGES_REQUESTED" | "DISMISSED"
+            )
+        {
+            continue;
+        }
+        last.retain(|(l, _)| *l != login);
+        last.push((login, r));
+    }
+    let changes = last.iter().any(|(_, r)| r.state == "CHANGES_REQUESTED");
+    !changes
+        && last
+            .iter()
+            .any(|(_, r)| r.state == "APPROVED" && r.commit_id.as_deref() == Some(head))
 }
 
 /// Everything the check reads about one PR.
@@ -109,7 +133,7 @@ pub struct Input<'a> {
 pub fn decide(input: &Input<'_>) -> Verdict {
     let mut reasons = Vec::new();
     for tag in input.diff.tags() {
-        if tag.needs_jim() {
+        if tag.needs_human() {
             let what = match tag {
                 Tag::MustRequirementChanged => badges::list(&input.diff.must, 5),
                 _ => badges::list(&input.diff.cost, 5),
@@ -118,7 +142,7 @@ pub fn decide(input: &Input<'_>) -> Verdict {
         }
     }
     let declared: Vec<Tag> = body_tags(input.body);
-    for tag in declared.into_iter().filter(|t| t.needs_jim()) {
+    for tag in declared.into_iter().filter(|t| t.needs_human()) {
         let line = format!("the description says {}", tag.as_str());
         if !reasons.contains(&line) {
             reasons.push(line);
@@ -129,23 +153,23 @@ pub fn decide(input: &Input<'_>) -> Verdict {
             "labelled `{COST_LABEL}` by the Cost summary (something the repo uses or costs moved)"
         ));
     }
-    let needs_jim = !reasons.is_empty();
+    let needs_human = !reasons.is_empty();
     let short = |s: &str| s.chars().take(7).collect::<String>();
-    let (pass, line) = if !needs_jim {
+    let (pass, line) = if !needs_human {
         (
             true,
             "pass: no red attention tag and no cost change".to_string(),
         )
-    } else if input.author == JIM {
+    } else if is_human(input.author) {
         (
             true,
-            format!("pass: Jim opened it ({})", reasons.join("; ")),
+            format!("pass: {} opened it ({})", input.author, reasons.join("; ")),
         )
-    } else if jim_approved(input.reviews, input.head) {
+    } else if human_approved(input.reviews, input.head) {
         (
             true,
             format!(
-                "pass: Jim approved {} ({})",
+                "pass: a human approved {} ({})",
                 short(input.head),
                 reasons.join("; ")
             ),
@@ -154,14 +178,14 @@ pub fn decide(input: &Input<'_>) -> Verdict {
         (
             false,
             format!(
-                "block: needs Jim's own approval of {}, and no auto-merge ({})",
+                "block: needs a human's approval of {}, and no auto-merge ({})",
                 short(input.head),
                 reasons.join("; ")
             ),
         )
     };
     Verdict {
-        needs_jim,
+        needs_human,
         pass,
         reasons,
         line,
@@ -272,14 +296,14 @@ mod tests {
     fn every_red_tag_and_cost_changed_need_jim() {
         for tag in Tag::ALL {
             let want = tag.emoji() == "🔴" || tag == Tag::CostChanged;
-            assert_eq!(tag.needs_jim(), want, "{}", tag.as_str());
+            assert_eq!(tag.needs_human(), want, "{}", tag.as_str());
         }
     }
 
     #[test]
     fn a_quiet_pr_passes() {
         let v = verdict(&Attention::default(), "", &[], "jimhillr-agt", &[]);
-        assert!(v.pass && !v.needs_jim, "{v:?}");
+        assert!(v.pass && !v.needs_human, "{v:?}");
     }
 
     #[test]
@@ -290,16 +314,16 @@ mod tests {
             ..Attention::default()
         };
         let v = verdict(&diff, "", &[], "jimhillr-agt", &[]);
-        assert!(v.pass && !v.needs_jim, "{v:?}");
+        assert!(v.pass && !v.needs_human, "{v:?}");
     }
 
     #[test]
     fn a_cost_change_waits_for_jim() {
         let v = verdict(&cost_diff(), "", &[], "jimhillr-agt", &[]);
-        assert!(!v.pass && v.needs_jim, "{v:?}");
+        assert!(!v.pass && v.needs_human, "{v:?}");
         assert!(
             v.line
-                .starts_with("block: needs Jim's own approval of abcdef1"),
+                .starts_with("block: needs a human's approval of abcdef1"),
             "{}",
             v.line
         );
@@ -328,11 +352,16 @@ mod tests {
     }
 
     #[test]
-    fn only_jims_approval_of_the_head_passes() {
+    fn only_a_humans_approval_of_the_head_passes() {
         let diff = cost_diff();
         let ok = |reviews: &[Review]| verdict(&diff, "", &[], "jimhillr-agt", reviews).pass;
         assert!(ok(&[review("jimhillr", "APPROVED", HEAD)]));
+        assert!(ok(&[review("someone", "APPROVED", HEAD)]));
         assert!(!ok(&[review("jimhillr-reviewer", "APPROVED", HEAD)]));
+        assert!(!ok(&[review("jimhillr-agt", "APPROVED", HEAD)]));
+        assert!(!ok(&[review("other-agt", "APPROVED", HEAD)]));
+        assert!(!ok(&[review("dependabot[bot]", "APPROVED", HEAD)]));
+        assert!(!ok(&[review("Copilot", "APPROVED", HEAD)]));
         assert!(!ok(&[review("jimhillr", "APPROVED", "0000000")]));
         assert!(!ok(&[
             review("jimhillr", "APPROVED", HEAD),
@@ -340,24 +369,38 @@ mod tests {
         ]));
         assert!(!ok(&[
             review("jimhillr", "APPROVED", HEAD),
+            review("someone", "CHANGES_REQUESTED", HEAD)
+        ]));
+        assert!(!ok(&[
+            review("jimhillr", "APPROVED", HEAD),
             review("jimhillr", "DISMISSED", HEAD)
         ]));
         assert!(ok(&[
+            review("jimhillr", "CHANGES_REQUESTED", "0000000"),
             review("jimhillr", "APPROVED", HEAD),
             review("jimhillr", "COMMENTED", HEAD)
+        ]));
+        // An agent asking for changes doesn't hold it either way.
+        assert!(ok(&[
+            review("jimhillr", "APPROVED", HEAD),
+            review("jimhillr-reviewer", "CHANGES_REQUESTED", HEAD)
         ]));
     }
 
     #[test]
-    fn jims_own_pr_passes() {
+    fn a_human_authors_pr_passes_and_an_agents_does_not() {
         let v = verdict(&cost_diff(), "", &[], "jimhillr", &[]);
-        assert!(v.pass && v.needs_jim, "{v:?}");
+        assert!(v.pass && v.needs_human, "{v:?}");
+        for author in ["jimhillr-agt", "jimhillr-reviewer", "dependabot[bot]"] {
+            let v = verdict(&cost_diff(), "", &[], author, &[]);
+            assert!(!v.pass, "{author}: {v:?}");
+        }
     }
 
     #[test]
     fn body_tags_skip_unknown_and_other_sections() {
         let body = "## Attention\n\n- 🟠 cost-changed: x\n- 🟣 made-up\n\n## Details\n\n- 🔴 must-requirement-changed\n";
         assert_eq!(body_tags(body), [Tag::CostChanged]);
-        assert!(body_tags("no sections").is_empty());
+        assert_eq!(body_tags("no sections"), []);
     }
 }

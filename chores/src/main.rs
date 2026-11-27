@@ -113,9 +113,10 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// The `Jim review` check (PR-004): a PR with a red attention tag or a
+    /// The `Human review` check (PR-004): a PR with a red attention tag or a
     /// cost change, from its diff, its description or the `cost` label,
-    /// passes only once Jim (`jimhillr`) has approved its head commit.
+    /// passes only once a human (not an `-agt` account, the reviewer account
+    /// or a bot) has approved its head commit.
     /// Prints "pass: ..." or "block: ..."; exits 1 when it blocks.
     Gate {
         /// The branch the PR merges into, for the diff's tags.

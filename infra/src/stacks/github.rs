@@ -5,7 +5,7 @@
 //! and every setting the provider would otherwise default is written out with
 //! today's value. Code security (secret scanning with push protection,
 //! Dependabot alerts and security updates) and a `CI` ruleset that requires
-//! the `CI result` and `Jim review` checks on `main` are what it adds.
+//! the `CI result` and `Human review` checks on `main` are what it adds.
 //!
 //! Every change here is a credential change (decision 0010), so it applies
 //! only in `infra-credentials`, after Jim approves the run. Plans read with a
@@ -52,10 +52,10 @@ pub const TF_ID: &str = "jimhillr";
 const OLD_TF_ID: &str = "monorepo";
 
 /// The checks every PR into `main` must pass: `CI result` from PR CI
-/// (`pull-request-ci.yml`), and `Jim review` (`pull-request-jim-review.yml`,
+/// (`pull-request-ci.yml`), and `Human review` (`pull-request-human-review.yml`,
 /// PR-004), which holds a PR with a red attention tag or a cost change
-/// until Jim approves it (Jim, 2026-11-27).
-pub const REQUIRED_CHECKS: [&str; 2] = ["CI result", "Jim review"];
+/// until a human approves it (Jim, 2026-11-27).
+pub const REQUIRED_CHECKS: [&str; 2] = ["CI result", "Human review"];
 
 /// The GitHub Actions app's ID, so only a check from Actions counts.
 pub const GITHUB_ACTIONS_APP_ID: f64 = 15368.0;
@@ -280,7 +280,7 @@ mod tests {
             checks["required_check"],
             json!([
                 { "context": "CI result", "integration_id": 15368.0 },
-                { "context": "Jim review", "integration_id": 15368.0 }
+                { "context": "Human review", "integration_id": 15368.0 }
             ])
         );
         assert_eq!(checks["strict_required_status_checks_policy"], false);

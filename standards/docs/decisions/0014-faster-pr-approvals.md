@@ -169,8 +169,9 @@ public repo; the workflow runs 96 times a day for under a minute each.
   approving anything, and every PR still waits for Jim.
 - The rules can only get looser through a PR Jim approves himself.
 - 2026-11-27, rules v2: Jim asked that "no prs with red attention flags
-  get auto merged" and "cost changes must be reviewed by jim". The
+  get auto merged", "cost changes must be reviewed by jim" and "lets make
+  it needs human review". The
   reviewer now also refuses a description whose Attention section has a
-  red or orange tag (or no Attention section), and needs the new `Jim
-  review` check (PR-004), which holds a red or cost PR until Jim approves
-  it ("Jim review" in [pull-requests.md](../pull-requests.md)).
+  red or orange tag (or no Attention section), and needs the new `Human
+  review` check (PR-004), which holds a red or cost PR until a human (never
+  an agent account or `jimhillr-reviewer`) approves it ("Human review" in [pull-requests.md](../pull-requests.md)).

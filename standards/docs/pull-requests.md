@@ -130,9 +130,9 @@ thread opened, once all of these hold:
   reviewer has an outstanding "changes requested". The approval can come from
   any reviewer except the PR's author, so an agent PR needs a reviewer other
   than `jimhillr-agt`.
-- Its checks are green (see below). That includes the **Jim review**
-  check: a PR with a red attention tag or a cost change needs Jim's own
-  approval (see "Jim review").
+- Its checks are green (see below). That includes the **Human review**
+  check: a PR with a red attention tag or a cost change needs a human's
+  approval (see "Human review").
 
 An approval says the reviewer has judged the change safe, so merging needs
 nothing more. The safe-to-approve rules below are what a reviewer, including
@@ -150,10 +150,11 @@ projects it covers. This covers checks that are red on `main` for unrelated
 reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
-## Jim review
+## Human review
 
 Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto
-merged. Cost changes must be reviewed by jim". So a PR **needs Jim** when
+merged. Cost changes must be reviewed by jim", then "Lets make it needs
+human review". So a PR **needs a human** when
 any of these says it has a red [attention tag](#attention-tags)
 (`must-requirement-changed` today, and any red tag added later) or
 `cost-changed`:
@@ -163,29 +164,33 @@ any of these says it has a red [attention tag](#attention-tags)
 - the tags its own `## Attention` section declares, or
 - the `cost` label from PR CI's Cost summary job.
 
-A PR that needs Jim:
+A **human** is any GitHub account except an agent account (login ending
+in `-agt`, such as `jimhillr-agt`), `jimhillr-reviewer` and bots or apps
+(`[bot]`, Copilot). Today that means Jim (`jimhillr`).
 
-1. **Fails the `Jim review` check** (PR-004,
-   `.github/workflows/pull-request-jim-review.yml`, the logic in `chores
-   gate`) until `jimhillr` himself approves its current head commit, with
-   no later "changes requested". The check runs again on every review, so
-   his approval turns it green. A PR Jim opened himself passes. The check
+A PR that needs a human:
+
+1. **Fails the `Human review` check** (PR-004,
+   `.github/workflows/pull-request-human-review.yml`, the logic in `chores
+   gate`) until a human approves its current head commit, with no later
+   "changes requested" from a human. The check runs again on every
+   review, so that approval turns it green. A PR a human opened passes. The check
    builds `chores` from the base branch, so a PR can't change the rules it
    is judged by.
 2. **Is labelled `needs-human`** by that check, which never removes it.
 3. **Never has auto-merge on.** The check turns it off, and no agent turns
-   it on. Once Jim has approved and every check is green, Jim, PR triage or
-   any agent merges it by hand under the merge rule.
-4. **Is never approved by anyone but Jim.** `jimhillr-reviewer` refuses
-   it (rules v2), and so do triage and agents.
+   it on. Once a human has approved and every check is green, that human,
+   PR triage or any agent merges it by hand under the merge rule.
+4. **Is never approved by anyone but a human.** `jimhillr-reviewer`
+   refuses it (rules v2), and so do triage and agents.
 
-`Jim review` is the one check that waits for a person, so a held PR is
-marked ready for review once every *other* check is green; its red `Jim
-review` is the approval it is waiting for, not a failure to fix.
+`Human review` is the one check that waits for a person, so a held PR is
+marked ready for review once every *other* check is green; its red
+`Human review` is the approval it is waiting for, not a failure to fix.
 
-Every other PR passes `Jim review` at once. Once the `CI` ruleset in the
+Every other PR passes `Human review` at once. Once the `CI` ruleset in the
 `github` stack of `infra` is applied, `main` requires both `CI result` and
-`Jim review`, so GitHub itself won't merge a held PR. Until then, the
+`Human review`, so GitHub itself won't merge a held PR. Until then, the
 merge rule's "checks are green" is what holds it. A check that ran more
 than once on the head commit counts by its latest run.
 
@@ -200,7 +205,7 @@ these hold:
 - The PR meets the `open-pull-request` ready checklist: complete, every check
   finished and green on the head commit, and nothing left for a human to
   decide. A PR labelled `needs-human` never gets auto-merge, and nor
-  does one with a red or `cost-changed` attention tag (see "Jim review").
+  does one with a red or `cost-changed` attention tag (see "Human review").
 - No check is red, not even one also failing on `main`. Auto-merge can't
   apply the "also failing on `main`" exception, so that PR is merged by hand
   under the merge rule instead.
@@ -244,7 +249,7 @@ through the stack to the top branch, which needs a fresh approval like any
 push. PR triage treats the draft step PRs of a stack whose top PR is open
 as part of it, not as orphans.
 
-Jim reviews from pane's **Approve** page (`/approve` on
+Human reviews from pane's **Approve** page (`/approve` on
 <https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
 ones first, with its What changed summary, attention tags and a link to its review
 form.
@@ -273,7 +278,7 @@ judged by.
    approved as its retargeted top PR).
 2. Every check run on the head commit finished and passed (skipped and
    neutral count), every commit status is success, and `CI result`, `PR
-   summary` and `Jim review` all passed. Nothing pending.
+   summary` and `Human review` all passed. Nothing pending.
 3. No red or orange attention label: `needs-human`, `credential-change`,
    `security` or `cost`.
 4. A `## Attention` section in the description with no red or orange
@@ -338,10 +343,10 @@ A PR is safe only if all of these hold:
 - It isn't labelled `credential-change`. Those PRs change what a credential
   can do and need Jim's own approval, whoever opened them (decision 0010).
 - It has no red or `cost-changed` attention tag (in its diff or its
-  description) and no `cost` label. Those need Jim's own approval (see
-  "Jim review"), so triage never approves them or turns on their
-  auto-merge, and merges them only once Jim has approved and `Jim review`
-  is green.
+  description) and no `cost` label. Those need a human's approval (see
+  "Human review"), so triage never approves them or turns on their
+  auto-merge, and merges them only once a human has approved and `Human
+  review` is green.
 
 ### Dependabot PRs
 

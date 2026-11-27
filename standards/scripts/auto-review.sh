@@ -63,7 +63,7 @@ BLOCK_PATHS='^\.github/
 # The checks that must have run and passed, on top of "every check passed".
 REQUIRED_CHECKS='CI result
 PR summary
-Jim review'
+Human review'
 # This workflow's own job, ignored when reading the head's checks.
 SELF_CHECK='Auto review'
 
@@ -103,7 +103,7 @@ decide() {
   fi
   for tag in $BLOCK_TAGS; do
     if grep -qx -- "$tag" <<<"$tags"; then
-      echo "skip: attention tag $tag needs Jim"
+      echo "skip: attention tag $tag needs a human"
       return
     fi
   done
@@ -118,7 +118,7 @@ decide() {
 
   # Every check run on the head finished and passed (skipped and neutral
   # count as passed), and every commit status is success. A check that ran
-  # more than once (a re-run, or Jim review on a later event) counts by its
+  # more than once (a re-run, or Human review on a later event) counts by its
   # latest run.
   local bad
   bad=$(jq -r --arg self "$SELF_CHECK" '
@@ -147,7 +147,7 @@ decide() {
     return
   fi
 
-  echo "approve: $REVIEWER rules $RULES (decision 0014): checks green on ${sha:0:7}, no red or orange label or attention tag, no protected path, $nfiles files, +$adds/-$dels. Jim reviews it after merge on pane's Acknowledge page."
+  echo "approve: $REVIEWER rules $RULES (decision 0014): checks green on ${sha:0:7}, no red or orange label or attention tag, no protected path, $nfiles files, +$adds/-$dels. Human reviews it after merge on pane's Acknowledge page."
 }
 
 run() {

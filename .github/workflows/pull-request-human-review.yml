@@ -1,16 +1,18 @@
 ---
-# PR-004, the `Jim review` check (Jim, 2026-11-27: "Lets make sure no prs
+# PR-004, the `Human review` check (Jim, 2026-11-27: "Lets make sure no prs
 # with red attention flags get auto merged. Cost changes must be reviewed by
-# jim"). A PR with a red attention tag (`must-requirement-changed`) or a
-# cost change, from its diff, its description or the `cost` label, fails
-# this check until `jimhillr` himself approves its head commit. Such a PR is
-# also labelled `needs-human` and has its auto-merge turned off, so neither
+# jim", then "Lets make it needs human review"). A PR with a red attention
+# tag (`must-requirement-changed`) or a cost change, from its diff, its
+# description or the `cost` label, fails this check until a human approves
+# its head commit. Agent `-agt` accounts, jimhillr-reviewer and bots never
+# count; a PR a human opened passes. Such a PR is also labelled
+# `needs-human` and has its auto-merge turned off, so neither
 # jimhillr-reviewer nor an agent can approve or merge it. Every other PR
-# passes. Runs again on every review, so Jim's approval turns it green.
-# The rules are under "Jim review" in standards/docs/pull-requests.md and
+# passes. Runs again on every review, so a human's approval turns it green.
+# The rules are under "Human review" in standards/docs/pull-requests.md and
 # the logic is `chores gate` (chores/src/gate.rs), built from the base
 # branch so a PR can't change the rules it is judged by.
-name: Jim review
+name: Human review
 
 'on':
   pull_request:
@@ -22,12 +24,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: pull-request-jim-review-${{ github.event.pull_request.number }}
+  group: pull-request-human-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   gate:
-    name: Jim review
+    name: Human review
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -71,13 +73,13 @@ jobs:
           code=${PIPESTATUS[0]}
           set -e
           [ -f "$RUNNER_TEMP/gate.json" ] || exit "$code"
-          echo "needs-jim=$(jq -r .needs_jim "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
+          echo "needs-human=$(jq -r .needs_human "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
           echo "pass=$(jq -r .pass "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
 
       # Labels the PR needs-human and turns its auto-merge off. Never
       # removes the label: a person or another check may have set it.
-      - name: Hold for Jim
-        if: steps.decide.outputs.needs-jim == 'true' && steps.decide.outputs.pass != 'true'
+      - name: Hold for a human
+        if: steps.decide.outputs.needs-human == 'true' && steps.decide.outputs.pass != 'true'
         # A fork's or Dependabot's token can't label; the check still fails.
         continue-on-error: true
         env:

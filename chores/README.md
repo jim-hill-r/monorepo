@@ -39,9 +39,9 @@ c pr-body --check body.md                 # check an existing description
 # threat/risk file changes, against the base.
 c badges --base origin/main
 
-# The Jim review check (PR-004): exit 1 while a PR with a red attention tag
-# or a cost change (diff, description or `cost` label) lacks Jim's approval
-# of its head commit. The Jim review workflow runs it; agents rarely need to.
+# The Human review check (PR-004): exit 1 while a PR with a red attention tag
+# or a cost change (diff, description or `cost` label) lacks a human's approval
+# of its head commit. The Human review workflow runs it; agents rarely need to.
 c gate --author jimhillr-agt --head <sha> --body body.md --labels cost,docs \
   --reviews reviews.json --json gate.json
 
@@ -61,7 +61,7 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 | --- | --- | --- |
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
-| `gate` | none (the `Jim review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but Jim approve or auto-merge it |
+| `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command

@@ -20,7 +20,7 @@ pr() { # draft, author, labels JSON, additions, base, body
 }
 green='{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},
   {"name":"PR summary","status":"completed","conclusion":"success"},
-  {"name":"Jim review","status":"completed","conclusion":"success"},
+  {"name":"Human review","status":"completed","conclusion":"success"},
   {"name":"Analyze (rust)","status":"completed","conclusion":"skipped"},
   {"name":"Auto review","status":"in_progress","conclusion":null}],"statuses":[]}'
 
@@ -54,30 +54,30 @@ check "security headers" "pane/web/public/_headers" "$green" '[]' "skip: touches
 check "a failing check" "pane/web/src/main.rs" \
   '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"failure"}],"statuses":[]}' '[]' "skip: check CI result is failure"
 check "a pending check" "pane/web/src/main.rs" \
-  '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},{"name":"PR summary","status":"completed","conclusion":"success"},{"name":"Jim review","status":"completed","conclusion":"success"},{"name":"CodeQL","status":"queued"}],"statuses":[]}' '[]' "skip: check CodeQL is queued"
+  '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},{"name":"PR summary","status":"completed","conclusion":"success"},{"name":"Human review","status":"completed","conclusion":"success"},{"name":"CodeQL","status":"queued"}],"statuses":[]}' '[]' "skip: check CodeQL is queued"
 check "CI result missing" "pane/web/src/main.rs" \
   '{"check_runs":[{"name":"PR summary","status":"completed","conclusion":"success"}],"statuses":[]}' '[]' "skip: check CI result has not passed"
 check "a failing commit status" "pane/web/src/main.rs" \
   "$(jq -c '.statuses = [{"context":"deploy","state":"pending"}]' <<<"$green")" '[]' "skip: check deploy is pending"
 
-check "Jim review missing" "pane/web/src/main.rs" \
-  "$(jq -c 'del(.check_runs[] | select(.name == "Jim review"))' <<<"$green")" '[]' "skip: check Jim review has not passed"
+check "Human review missing" "pane/web/src/main.rs" \
+  "$(jq -c 'del(.check_runs[] | select(.name == "Human review"))' <<<"$green")" '[]' "skip: check Human review has not passed"
 check "an older cancelled run of a check doesn't count" "pane/web/src/main.rs" \
-  "$(jq -c '.check_runs += [{"name":"Jim review","status":"completed","conclusion":"cancelled","started_at":"2026-01-01T00:00:00Z"}]
-    | (.check_runs[] | select(.name == "Jim review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
+  "$(jq -c '.check_runs += [{"name":"Human review","status":"completed","conclusion":"cancelled","started_at":"2026-01-01T00:00:00Z"}]
+    | (.check_runs[] | select(.name == "Human review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
   '[]' "approve:"
 check "a newer failing run does count" "pane/web/src/main.rs" \
-  "$(jq -c '.check_runs += [{"name":"Jim review","status":"completed","conclusion":"failure","started_at":"2026-01-01T00:02:00Z"}]
-    | (.check_runs[] | select(.name == "Jim review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
-  '[]' "skip: check Jim review is failure"
+  "$(jq -c '.check_runs += [{"name":"Human review","status":"completed","conclusion":"failure","started_at":"2026-01-01T00:02:00Z"}]
+    | (.check_runs[] | select(.name == "Human review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
+  '[]' "skip: check Human review is failure"
 check "wrangler.jsonc" "pane/cloudflare/wrangler.jsonc" "$green" '[]' "skip: touches pane/cloudflare/wrangler.jsonc"
 
 pr false jimhillr-agt '[]' 40 main $'## Attention\n\n- 🔴 must-requirement-changed: `COOK-001`\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n'
-check "red attention tag" "pane/web/src/main.rs" "$green" '[]' "skip: attention tag must-requirement-changed needs Jim"
+check "red attention tag" "pane/web/src/main.rs" "$green" '[]' "skip: attention tag must-requirement-changed needs a human"
 pr false jimhillr-agt '[]' 40 main $'## Attention\r\n\r\n- 🟢 requirements-unchanged\r\n- 🟠 cost-changed: `pane/docs/cost.toml`\r\n'
-check "cost attention tag" "pane/web/src/main.rs" "$green" '[]' "skip: attention tag cost-changed needs Jim"
+check "cost attention tag" "pane/web/src/main.rs" "$green" '[]' "skip: attention tag cost-changed needs a human"
 pr false jimhillr-agt '[]' 40 main $'## Attention\n\n- 🟢 requirements-unchanged\n- 🟢 cost-unchanged\n- 🟠 threat-risk-changed: x\n'
-check "risk attention tag" "pane/web/src/main.rs" "$green" '[]' "skip: attention tag threat-risk-changed needs Jim"
+check "risk attention tag" "pane/web/src/main.rs" "$green" '[]' "skip: attention tag threat-risk-changed needs a human"
 pr false jimhillr-agt '[]' 40 main $'## What changed\n\nNo tags.\n\n## Details\n\n- cost-changed\n'
 check "no Attention section" "pane/web/src/main.rs" "$green" '[]' "skip: no Attention section"
 pr false jimhillr-agt '[]' 40 main $'## Attention\n\n- 🟡 requirement-changed: x\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n\n## Details\n\n- 🔴 must-requirement-changed is only mentioned here\n'
