@@ -179,6 +179,10 @@ A PR that needs Jim:
 4. **Is never approved by anyone but Jim.** `jimhillr-reviewer` refuses
    it (rules v2), and so do triage and agents.
 
+`Jim review` is the one check that waits for a person, so a held PR is
+marked ready for review once every *other* check is green; its red `Jim
+review` is the approval it is waiting for, not a failure to fix.
+
 Every other PR passes `Jim review` at once. Once the `CI` ruleset in the
 `github` stack of `infra` is applied, `main` requires both `CI result` and
 `Jim review`, so GitHub itself won't merge a held PR. Until then, the
