@@ -1,0 +1,4 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md. Evals are added as Phase 1 code arrives.
+
+prefix = "ROYL"
