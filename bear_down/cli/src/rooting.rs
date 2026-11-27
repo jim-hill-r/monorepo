@@ -45,6 +45,29 @@ pub struct LatestGame {
 pub struct Bears {
     pub record: RecordEntry,
     pub odds: Odds,
+    /// Games ahead of the best division rival, by record alone (no
+    /// tiebreakers): positive is alone in first place, 0 is tied for it,
+    /// negative is behind.
+    pub division_lead: f64,
+    /// That best division rival.
+    pub division_rival: String,
+}
+
+/// How many games `focus` leads its best division rival by (half a game
+/// per tie), and that rival.
+fn division_lead(standings: &Standings, focus: Team) -> (f64, Team) {
+    let margin = |team: Team| {
+        let record = standings.record(team);
+        f64::from(record.wins) - f64::from(record.losses)
+    };
+    let rival = focus
+        .division()
+        .teams()
+        .into_iter()
+        .filter(|&team| team != focus)
+        .max_by(|&a, &b| margin(a).total_cmp(&margin(b)))
+        .unwrap_or(focus);
+    ((margin(focus) - margin(rival)) / 2.0, rival)
 }
 
 /// A win-loss-tie record.
@@ -142,6 +165,8 @@ impl Guide {
             bears: Bears {
                 record: record(standings.record(focus)),
                 odds: odds(simulation.odds(focus)),
+                division_lead: division_lead(standings, focus).0,
+                division_rival: team(division_lead(standings, focus).1),
             },
             nfc_north_divisional: simulation.nfc_north,
             games: simulation

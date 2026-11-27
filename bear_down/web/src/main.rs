@@ -87,6 +87,16 @@ fn Guide(rooting: Rooting) -> Element {
     let games = rooting.ranked(goal_now);
 
     rsx! {
+        if let Some(banner) = rooting.banner() {
+            div { class: "banner", role: "status",
+                span { class: "banner-bear", aria_hidden: "true", "🐻" }
+                div {
+                    p { class: "banner-headline", "{banner.headline}" }
+                    p { class: "banner-line", "{banner.line}" }
+                }
+                span { class: "banner-bear", aria_hidden: "true", "🏈" }
+            }
+        }
         section { class: "bears",
             h2 { "Chicago Bears " span { class: "record", "{record}" } }
             p { class: "week", "{week}" }
