@@ -212,6 +212,8 @@ fn format_auth_error(err: &AuthError) -> String {
         AuthError::IdTokenValidationFailed(_) => "Login verification failed".to_string(),
         AuthError::HttpClientError(_) => "Network error. Please check your connection".to_string(),
         AuthError::ConfigError(_) => "Authentication not configured".to_string(),
+        AuthError::AuthorizationDenied(_) => "Sign-in was cancelled".to_string(),
+        AuthError::CallbackMismatch(_) => "Authentication incomplete".to_string(),
         AuthError::Unknown => "An unexpected error occurred".to_string(),
     }
 }
