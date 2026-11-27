@@ -11,12 +11,13 @@ holds: pane's data model.
 | --- | --- |
 | `Snapshot` | Everything read from one checkout of the repo: the format version, commit, time taken, and the lists below. |
 | `Project` | One entry from `[monorepo].config_roots`: path, type, `DEPLOY_URL`, README summary, priority or on-hold status. |
-| `WorkItem` | One `TODO` or `FIX`, from an issue file or a code comment, with its file, line, section, epic and tags. |
+| `WorkItem` | One `TODO` or `FIX`, from an issue file or a code comment, with its file, line, section, epic, tags and the date it was added. |
 | `HumanIssue` | One task file in `issues/human/`, with its added date and what it unblocks. |
 | `Deliverable` | A live site, plan, decision, retro, review deck, release or UAT report, with its download links and, for documents, its Markdown `body`. New fields default, so the format version stays 1. |
 | `Review` | An executive review deck and its scorecard rows. |
 | `Retro` | A retro and its actions. |
 | `Signal`, `Health` | One traffic light (green, amber, red or grey) with its reason and evidence links. |
+| `signals::project_signals` | A project's Review, Retros, Open issues and Standards lights, worked out from the snapshot alone. |
 | `health::Thresholds`, `health::Rollup` | The thresholds from `pane/health.toml`, and a row's worst-of light with its coverage. |
 
 ## Format version
@@ -44,3 +45,22 @@ Their thresholds are the `Thresholds` type, read from
 (`parse::health_thresholds`). Every age rule means "more than N days". A
 missing key takes the plan's starting value and an unknown key is an error,
 so tune a threshold with a one-line PR to that file.
+
+## Snapshot signals
+
+The `signals` module applies those rules to a `Snapshot`, using the
+thresholds the snapshot carries (`Snapshot::thresholds`, from
+`pane/health.toml`). `project_signals(&snapshot, "pane")` gives the four
+signals the snapshot can light on its own:
+
+| Signal | Worked out from |
+| --- | --- |
+| Review | The newest deck in the rotation for the project's top-level folder (`cookbook` for `cookbook/web`), its scorecard rows rated Poor, and a rotation of one week per top-level project that isn't on hold. |
+| Retros | The project's newest retro; each open action has been open since the retro's date. |
+| Open issues | The project's `FIX` items, aged from `WorkItem::added`, and the human issues whose `unblocks` names the project as a whole word. |
+| Standards | Open code-review findings (agent-generated `TODO`s outside any epic). Grey until the audit's findings are in the snapshot. |
+
+Ages are whole days from a date to `taken_at` (`signals::days_between`), so
+the lights depend only on the snapshot. Each signal links its evidence (the
+deck, the retro, each `FIX` line) on GitHub. Build, Deploy and UAT, and Pull
+requests need live GitHub data and are added in a later phase.
