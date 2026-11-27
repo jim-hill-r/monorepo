@@ -1,6 +1,7 @@
 # 0016. Holding and handling money: a separate free account, accounting books in the repo, a merchant of record for card sales
 
-- Status: Proposed (waiting on Jim's answers to the five questions below)
+- Status: Proposed (waiting on Jim's answers to the five questions below;
+  the accounting rules are Jim's and already apply)
 - Date: 2026-11-27
 - Asked by: Jim (project thread, 2026-11-27: "Have we done a tech selection
   on how we are going to handle our finances? How do we store money and
@@ -90,6 +91,29 @@ account it moves from and to (`bank:checking`, `income:sponsors`,
 balances to zero and its closing bank line can be checked against the real
 balance. A `cost money journal` export writes the hledger journal for a
 tax professional at year end.
+
+### Accounting rules: GAAP, double entry and full attribution (Jim, 2026-11-27)
+
+Jim: "All of our cost software should follow GAP accounting so that
+everything is double counted on the ledger and also we should have
+attribution in such a way that if you sum up all service costs/revenue it
+equals total revenue/costs." This is a rule, not a question; it is written
+out under "Accounting rules" in [cost.md](../cost.md) and applies to the
+`cost` project, pane's money code and the ledger:
+
+- **Double entry**: every entry's postings sum to zero.
+- **Accrual and matching** (GAAP): costs are booked in the months they
+  serve and revenue when earned; the bank reconciliation is the cash view.
+  A sole proprietor usually files taxes on a cash basis, so the year-end
+  export gives both.
+- **Full attribution**: every cent belongs to exactly one project and the
+  projects sum to the totals. Shared costs (today only Claude Code) are
+  split by share of merged PRs; repo-wide PRs, and a month with no PRs,
+  are charged to `standards`, so nothing is left over.
+- **Checked deterministically**: pane's `attribution_gaps` (requirement
+  PANE-013) checks the per-project money against the month's totals now;
+  the ledger's balance check lands with 0012 phase 1
+  ([issue](../../../cost/issues/ledger-double-entry-balance-check.md)).
 
 ## 3. The processor for card payments (402 and royalties)
 

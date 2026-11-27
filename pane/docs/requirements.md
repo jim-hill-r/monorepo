@@ -119,3 +119,18 @@ evals until they are built.
   acknowledges it (one at a time or all shown), and remembers that across
   reloads; "Flag for follow-up" opens GitHub's editor with a `fix` issue
   file for that PR in its project's `issues/`.
+
+## PANE-013: Project money adds up to the totals
+
+- Priority: must
+- Why: Jim, 2026-11-27: "All of our cost software should follow GAP
+  accounting so that everything is double counted on the ledger and also
+  we should have attribution in such a way that if you sum up all service
+  costs/revenue it equals total revenue/costs"
+  ([decision 0016](../../standards/docs/decisions/0016-holding-and-handling-money.md)).
+- Accept: for every month, the projects' revenue, direct cost and shared
+  cost add up exactly, to the cent, to the month's totals worked out
+  straight from the cost files; shared costs are split by the stated rule
+  (share of merged PRs, with repo-wide PRs and months with no PRs charged
+  to `standards`), so nothing is left unattributed; each project's net is
+  its revenue less its costs.

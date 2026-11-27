@@ -85,6 +85,36 @@ Shared free resources are counted where they are used: two projects that
 each deploy a Pages site each list `pages_projects = 1`. A resource two
 projects share (the one Auth0 tenant) is not listed as usage by either.
 
+## Accounting rules
+
+Jim, 2026-11-27: "All of our cost software should follow GAP accounting so
+that everything is double counted on the ledger and also we should have
+attribution in such a way that if you sum up all service costs/revenue it
+equals total revenue/costs." So every piece of cost, money or ledger code
+here follows these rules ([decision 0016](decisions/0016-holding-and-handling-money.md)):
+
+1. **Double entry.** Every money movement is an entry whose postings sum
+   to zero: each amount leaves one account and enters another (`income:`,
+   `expense:`, `asset:`, `liability:`, `equity:`). An entry that doesn't
+   balance is an error, never rounded away.
+2. **Accrual and matching**, as GAAP asks: a cost is booked in the months
+   it serves (a yearly cost spread over twelve months, a once cost in its
+   month), revenue in the month it is earned, whatever day the cash moved.
+   The bank reconciliation shows the cash side.
+3. **Full attribution.** Every cent of revenue and cost belongs to exactly
+   one project, and the projects sum, to the cent, to the totals. A shared
+   cost is split by a stated rule (today: share of merged PRs, with
+   repo-wide PRs and months with none charged to `standards`); leftover
+   cents go by largest remainder, so there is no unattributed remainder.
+4. **Whole cents** (integers), so nothing is lost to floating point.
+5. **Consistency and disclosure.** A changed rule is a decision record,
+   and every number links to its source.
+
+The checks: pane's `attribution_gaps` (PANE-013) proves the per-project
+money adds up to the month's totals; the double-entry balance check comes
+with the financial ledger
+([issue](../../cost/issues/ledger-double-entry-balance-check.md)).
+
 ## The check
 
 `cost check` (the [`cost`](../../cost/README.md) project) runs from
