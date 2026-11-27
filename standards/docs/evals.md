@@ -199,6 +199,7 @@ error, and the rest follow once every shipping project has its files.
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
+| EVL-005 | A `playwright.config.ts` (or `.js`) anywhere in the repo doesn't add `jimhillr-evals` to its browsers' user agent. |
 | EVL-006 | An `http` eval `GET`s a `path`, expects a 2xx and checks no content (no `body_contains` or `asset_contains`). |
 
 For EVL-003 a test matches when a Rust `fn` name in the project starts with
@@ -255,7 +256,12 @@ deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
    seconds apart, since a fresh deploy can take a moment to reach every
    edge. A site that never answers fails; an eval with a `path` and no
    `DEPLOY_URL` is an `error`. Requests send the user agent
-   `jimhillr-evals/0.1 (synthetic check)`.
+   `jimhillr-evals/0.1 (synthetic check)` and the header
+   `x-jimhillr-synthetic: 1`, so analytics and the `telemetry` Worker skip
+   them. Playwright runs (CI, smoke and UAT) add `jimhillr-evals` to every
+   browser's user agent through the `synthetic()` helper in each
+   `playwright.config.ts` (EVL-005); a browser can't add the header to a
+   beacon, so the user agent is what marks it.
 2. Report kinds (`cargo`, `trycmd`, `playwright`) read only
    `target/evals-reports/cd/`, where a `smoke` task run against production
    writes its report, never the `ci` task's reports.
@@ -521,6 +527,20 @@ file.
 The `eval-triage` skill, where it exists, is for the judgment calls the
 workflow can't make (a disputed eval, rollback advice); it is not a daily
 task.
+
+## Fire drill
+
+The **evals fire drill** workflow (`evals-fire-drill.yml`, run by hand with a
+project and an `http` eval, default cookbook `recipe-page-live`) proves the
+loop still catches a failure. `evals drill --dir <evals-results checkout>`
+points the eval at text the live page doesn't have, runs it against the
+site, adds the failure (in memory only) to the stored results, and checks
+the requirement turns red (amber for a `should`), that triage would file it
+(a dry run of `evals triage`), and that after the real eval passes the
+verdict is back where it started. It only reads: production gets the GET
+requests a `cd` run makes, and nothing is written or pushed. Run it after
+changing the verdict rules, `evals store` or triage. The first drill's retro
+is [evals/docs/fire-drill-2026-11-27.md](../../evals/docs/fire-drill-2026-11-27.md).
 
 ## Project prefixes
 

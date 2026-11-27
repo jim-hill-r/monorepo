@@ -60,7 +60,7 @@ redeploys it.
 A change to the root `mise.toml`, `standards/scripts/` or the mise CI
 workflows makes `push-main.yml` check every project. Pull requests (and the
 git hooks) pass `--changed-only` instead, so such a change checks only
-`standards`, `monorepo` (whose workflow tests read those files) and, for a
+`standards`, `jimhillr` (whose workflow tests read those files) and, for a
 script, the projects whose `mise.toml` or included task file names it
 (Jim, 2026-11-26: CI runs only for the projects a change touches). The
 nightly CI run still checks every project.

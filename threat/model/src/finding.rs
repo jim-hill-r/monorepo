@@ -2,8 +2,6 @@
 
 use std::fmt;
 
-/// THR-004 (drift through the shared detectors) comes in phase 3 of the
-/// threat check plan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Code {
     /// No `docs/threat.toml`.
@@ -14,6 +12,9 @@ pub enum Code {
     /// A surface serves non-public data publicly, or its previews don't
     /// match its access.
     Thr003,
+    /// Drift: the project's files show a surface, secret, sign-in or risky
+    /// construct the file doesn't account for.
+    Thr004,
     /// A secret with no scope or setting, or a workflow passing a secret
     /// the project doesn't list.
     Thr005,
@@ -33,6 +34,7 @@ impl Code {
             Code::Thr001 => "THR-001",
             Code::Thr002 => "THR-002",
             Code::Thr003 => "THR-003",
+            Code::Thr004 => "THR-004",
             Code::Thr005 => "THR-005",
             Code::Thr006 => "THR-006",
             Code::Thr007 => "THR-007",

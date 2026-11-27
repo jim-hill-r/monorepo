@@ -17,15 +17,16 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const liveURL = process.env.BASE_URL;
 
-/* Runs against a live site say who they are in the user agent. Blue Eel
-   has no analytics (SPRK-006), so nothing drops them today; it keeps the
-   live runs recognisable in Cloudflare's logs, like every other project's. */
+/* Every run says who it is in the user agent (standards/docs/evals.md,
+   EVL-005). Blue Eel has no analytics (SPRK-006), so nothing drops them
+   today; it keeps the runs recognisable in Cloudflare's logs, like every
+   other project's, and the telemetry Worker drops their events. */
 const SYNTHETIC_UA = 'jimhillr-evals/0.1 (synthetic check)';
 
-/** A device preset, with the synthetic user agent added on live runs. */
+/** A device preset, with the synthetic user agent added. */
 function device(name: keyof typeof devices) {
   const preset = devices[name];
-  return liveURL ? { ...preset, userAgent: `${preset.userAgent} ${SYNTHETIC_UA}` } : preset;
+  return { ...preset, userAgent: `${preset.userAgent} ${SYNTHETIC_UA}` };
 }
 
 export default defineConfig({

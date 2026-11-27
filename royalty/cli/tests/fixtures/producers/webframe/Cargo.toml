@@ -1,0 +1,16 @@
+[package]
+name = "webframe"
+version = "2.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+webframe_router = { path = "../webframe_router" }
+tinycolor = { path = "../tinycolor" }
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[lints.rust]
+unsafe_code = "forbid"

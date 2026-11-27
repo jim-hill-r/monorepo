@@ -184,7 +184,7 @@ its plan or adds usage-based billing.
 ## Guards
 
 All guards live in [`standards/scripts/free-tiers.sh`](../scripts/free-tiers.sh)
-and are tested in `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+and are tested in `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
 
 | Guard | When it runs | What it does |
 | --- | --- | --- |

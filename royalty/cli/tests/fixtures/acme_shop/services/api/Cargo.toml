@@ -1,0 +1,21 @@
+[package]
+name = "shop_api"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+webframe = { path = "../../../producers/webframe" }
+chartlib = { path = "../../../producers/chartlib" }
+plainlib = { path = "../../../producers/plainlib" }
+copycat = { path = "../../../producers/copycat" }
+
+[dev-dependencies]
+testkit = { path = "../../../producers/testkit" }
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[lints.rust]
+unsafe_code = "forbid"

@@ -27,7 +27,8 @@ failures make an eval flaky, how fresh a production result must be) are in
 ## Commands
 
 ```bash
-# Check every project's requirements.md and evals.toml (EVL-001 to EVL-006).
+# Check every project's requirements.md and evals.toml (EVL-001 to EVL-006;
+# EVL-005 checks that every Playwright config tags its user agent).
 cargo run -p evals_cli -- check            # warnings, exit 0
 cargo run -p evals_cli -- check --strict   # exit 1 on any finding
 
@@ -62,6 +63,11 @@ cargo run -p evals_cli -- store --results evals-results.jsonl --dir ../evals-res
 # requirement that is not green and has no open issue (--write writes them,
 # at most --limit). standards/scripts/evals.sh triage runs it daily.
 cargo run -p evals_cli -- triage --dir ../evals-results --write
+
+# The fire drill: break one http eval against the live site, check its
+# requirement turns red and triage would file it, then back to green.
+# Reads the checkout, writes nothing (evals-fire-drill.yml runs it).
+cargo run -p evals_cli -- drill --dir ../evals-results --project cookbook --eval recipe-page-live
 
 # Every requirement's current verdict, from a checkout of that branch
 # (standards/scripts/evals.sh verdicts fetches it for you).

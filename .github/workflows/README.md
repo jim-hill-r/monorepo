@@ -7,7 +7,7 @@ schedule) has a status badge in the "Repo health" table of the root
 README, and PR triage checks them three times a day
 ([standards/docs/repo-health.md](../../standards/docs/repo-health.md)).
 A new workflow like that adds its badge in the same PR;
-`monorepo/workflow_tests/tests/readme_badges_tests.rs` fails otherwise.
+`jimhillr/workflow_tests/tests/readme_badges_tests.rs` fails otherwise.
 
 ## CI/CD with mise
 
@@ -55,6 +55,15 @@ opens the pull request from it (a PR opened with the workflow's own token
 would run no CI). Its only pushes are to `evals-triage` (SEC-007). Nothing
 is pushed on a quiet day. See
 [standards/docs/evals.md](../../standards/docs/evals.md#triage).
+
+### evals-fire-drill.yml
+
+Run by hand (and on pull requests that change the drill): breaks one
+production `http` eval on purpose against the live site and checks the
+requirement turns red, that triage would file it, and that it turns green
+again (`evals drill`), with results kept in memory. Read-only; it never
+pushes. See "Fire drill" in
+[standards/docs/evals.md](../../standards/docs/evals.md#fire-drill).
 
 ### pull-request-ci.yml
 
@@ -124,7 +133,7 @@ the same job, and `standards/scripts/deploy-check.sh` skips it when a newer
 commit on main changes the project, so an older run never overwrites a
 newer deploy.
 
-Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
+Tests: `jimhillr/workflow_tests/tests/mise_workflow_tests.rs` and
 `deploy_check_tests.rs`.
 
 ### nightly-downloads.yml
@@ -141,7 +150,7 @@ job gets `contents: write`. The optional `ANDROID_KEYSTORE_BASE64` and
 `ANDROID_KEYSTORE_PASSWORD` secrets sign the APK. See "Game builds" in
 `standards/docs/mise.md`.
 
-Tests: `monorepo/workflow_tests/tests/downloads_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/downloads_workflow_tests.rs`.
 
 
 ## Infrastructure as code
@@ -156,7 +165,7 @@ decision 0009) in `infra`. `infra-mint.yml`, run by hand in
 `infra-credentials`, mints every other infra secret straight into GitHub
 secrets from the bootstrap credentials (decision 0011). Every job that touches state on `main` shares the
 `infra` concurrency group. Details are in `infra/README.md` and
-`tofu_state/README.md`. Tests: `monorepo/workflow_tests/tests/infra_workflows_tests.rs`
+`tofu_state/README.md`. Tests: `jimhillr/workflow_tests/tests/infra_workflows_tests.rs`
 and `tofu_state_deploy_tests.rs`.
 
 ## pull-request-review-decks.yml (Review decks)
@@ -179,7 +188,7 @@ README's coverage badge (COV-001 in
 [standards/docs/testing.md](../../standards/docs/testing.md#code-coverage)).
 No Rust cache, so the Actions cache budget is untouched.
 
-Tests: `monorepo/workflow_tests/tests/coverage_workflow_tests.rs` and
+Tests: `jimhillr/workflow_tests/tests/coverage_workflow_tests.rs` and
 `standards/tests/coverage.test.sh`.
 
 ## telemetry-feedback-export.yml
@@ -194,7 +203,7 @@ commits them to the `feedback-data` data branch with `feedback.sh store`:
 (step 5 of [the fan feedback plan](../../bear_down/docs/plans/2026-11-fan-feedback.md)).
 Its only push is to `feedback-data` (SEC-007).
 
-Tests: `monorepo/workflow_tests/tests/feedback_export_workflow_tests.rs` and
+Tests: `jimhillr/workflow_tests/tests/feedback_export_workflow_tests.rs` and
 `standards/tests/feedback.test.sh`.
 
 ## all-dependency-audit.yml
@@ -225,7 +234,7 @@ A further job, **Secret scan (full history)**, runs gitleaks over every commit
 (`standards/scripts/secrets-check.sh history`), so a new rule catches an old
 commit within a week.
 
-Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
 
 ## all-codeql.yml
 
@@ -248,7 +257,7 @@ Default setup must stay **off** in Settings > Code security while this file
 exists: GitHub runs only one of the two. The workflow needs `contents: read`,
 `security-events: write` (to upload results) and `actions: read`.
 
-Tests: `monorepo/workflow_tests/tests/codeql_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/codeql_workflow_tests.rs`.
 
 ## all-delete-branches.yml
 
@@ -278,7 +287,7 @@ summary says how many it deleted. Phase 2 of the
 
 - `actions: write` - To list and delete caches
 
-Tests: `monorepo/workflow_tests/tests/pull_request_closed_cleanup_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/pull_request_closed_cleanup_workflow_tests.rs`.
 
 ## pull-request-agent-skills.yml
 
@@ -289,4 +298,4 @@ the pinned `skills-ref` reference validator and also checks that
 `.claude/skills` is still a symlink to `../.agents/skills`. Can also be run
 manually via `workflow_dispatch`.
 
-Tests: `monorepo/workflow_tests/tests/agent_skills_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/agent_skills_workflow_tests.rs`.

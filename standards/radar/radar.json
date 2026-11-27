@@ -581,7 +581,7 @@
     "description": "Approved vendor. Hosts the repo and runs all CI, CD, nightly runs and maintenance workflows on standard runners, which are free on this public repo.",
     "exemplars": [
       ".github/workflows",
-      "monorepo/workflow_tests",
+      "jimhillr/workflow_tests",
       "infra/src/stacks/github.rs"
     ],
     "sources": [

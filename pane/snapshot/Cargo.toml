@@ -8,6 +8,7 @@ workspace = true
 
 [dependencies]
 pane_model = { path = "../model" }
+cost_model = { path = "../../cost/model" }
 toml = "1.0"
 
 [dev-dependencies]
