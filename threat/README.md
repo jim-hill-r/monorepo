@@ -12,8 +12,8 @@ in the [threat check plan](../standards/docs/plans/2026-11-threat-check.md).
 
 | Crate | Job |
 | --- | --- |
-| `model` (`threat_model`) | Serde types for `docs/threat.toml` and the rules (THR-001 to THR-009) as pure functions. THR-004 (drift) reads the matches of the cost check's shared detectors through `cost_model`, so one engine reads each project's files for both checks. No I/O, so pane, the eval engine and the deep review can use the same rules. |
-| `cli` (`threat_cli`) | The `threat` binary. It reads each project's file, the setting ids in `standards/settings.toml`, the workflows in `.github/workflows/` and each surface's `headers` file, and runs the detectors in `standards/radar/detectors.toml` over each project's tracked files for THR-004. |
+| `model` (`threat_model`) | Serde types for `docs/threat.toml`, the PR security summary (`summarize`), the live check (`check_live`) and the rules (THR-001 to THR-009) as pure functions. THR-004 (drift) reads the matches of the cost check's shared detectors through `cost_model`, so one engine reads each project's files for both checks. No I/O, so pane, the eval engine and the deep review can use the same rules. |
+| `cli` (`threat_cli`) | The `threat` binary (`check`, `summary` for PR CI's security summary, and `live` for the weekly live check). It reads each project's file, the setting ids in `standards/settings.toml`, the workflows in `.github/workflows/` and each surface's `headers` file, and runs the detectors in `standards/radar/detectors.toml` over each project's tracked files for THR-004. |
 
 ## Commands
 
@@ -24,6 +24,8 @@ cargo run -p threat_cli -- check
 cargo run -p threat_cli -- check --projects cookbook,pane
 # Exit 1 on any finding except THR-009 (phase 4).
 cargo run -p threat_cli -- check --strict
+# The PR security summary against a base branch, and the labels to set.
+cargo run -p threat_cli -- summary --base origin/main --labels labels.txt
 ```
 
 The audit runs it through `standards/scripts/threat-check.sh`. It reads

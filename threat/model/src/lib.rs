@@ -12,6 +12,7 @@ mod drift;
 mod finding;
 mod live;
 mod rules;
+mod summary;
 mod threat_file;
 
 pub use date::Date;
@@ -24,6 +25,9 @@ pub use live::{
 pub use rules::{
     Context, REQUIRED_HEADERS, REVIEW_MAX_DAYS, THREAT_FILE, Workflow, check_project,
     parse_setting_ids, workflow_secrets,
+};
+pub use summary::{
+    Change, FilePair, NEEDS_HUMAN_LABEL, SECURITY_LABEL, Summary, is_security_file, summarize,
 };
 pub use threat_file::{
     Access, Auth, Data, Flow, Kind, Secret, Stride, Surface, Threat, ThreatFile, Where,

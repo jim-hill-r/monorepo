@@ -124,8 +124,8 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
         .unwrap_or_else(|| panic!("no jobs"));
     assert_eq!(
         jobs.len(),
-        5,
-        "expected the ci job, the secret scan, the dependency audit, the cost summary and the CI result gate"
+        7,
+        "expected the ci job, the secret scan, the dependency audit, the workflow audit, the cost and security summaries and the CI result gate"
     );
     let gate = &parsed["jobs"]["ci-result"];
     assert_eq!(
