@@ -5,6 +5,36 @@ either merged or closed. Nothing is left open without someone owning the next
 step. This page is the policy that the "PR triage" scheduled agent task
 and every agent thread follow.
 
+## Pull request descriptions
+
+PR descriptions must be quick to read (Jim, 2026-11-27: "Every PR should
+include a short executive description of what we are doing, why, and any
+engineering tradeoffs. Keep this to 75 words. It should link to details in
+committed docs/plans/issues"). Every PR description, from any agent:
+
+1. Starts with the attribution lines the agent platform requires (the
+   `claude-projects-attribution` comment and the "Requested by" line), when
+   there are any.
+2. Then opens with an **executive summary** of at most **75 words**: what the
+   PR does, why, and any engineering tradeoffs. A `## Summary` heading above
+   it is optional.
+3. Links from the summary to the committed details: the plan, decision
+   record, issue file, runbook or doc in the repo that explains the change.
+   Write long explanations there, in the same PR, not in the description.
+4. Keeps anything after the summary short: how it was tested, anything a
+   reviewer should check closely, and screenshots of UI changes
+   ([documentation.md](documentation.md)).
+
+Link targets don't count toward the 75 words. The
+[pull request template](../../.github/pull_request_template.md) has this
+shape. The **PR summary** check (PR-001,
+`standards/scripts/pr-summary-check.sh`, run by
+`.github/workflows/pull-request-summary.yml`) warns when the summary is
+missing, longer than 75 words or has no link. It is a warning only, so it
+never blocks a merge; fix the description and the check reruns on the edit.
+
+Dependabot PRs are exempt: their bodies are generated.
+
 ## Who owns a PR
 
 | Author | Owner | Who merges |

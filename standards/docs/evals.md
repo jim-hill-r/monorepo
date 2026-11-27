@@ -18,6 +18,36 @@ Both live in the project's top-level directory (the one with its
 `mise.toml`), so `cookbook/docs/requirements.md` covers `cookbook/web` and
 `cookbook/cloudflare` too.
 
+## Continuous improvement
+
+Evals are an ongoing process, not a project with an end (Jim,
+2026-11-27): "The evals should always be green and a system of feedback to
+our todo process should be the way in which individual projects improve
+their eval coverage."
+
+- **Green is the normal state.** A requirement that is not met or at risk
+  is a bug in the product or in its evals, and gets a `FIX` (product) or
+  `TODO` (eval) issue file in its project's `issues/`. A `must` that stays
+  unknown (no production result) gets a `TODO` to add a production eval.
+- **The loop files the work.** Eval triage reads `verdicts.json` and files
+  those issues; agents work them like any other issue. Nothing is left for
+  someone to notice.
+- **Coverage grows through issues.** Every project that ships something has
+  requirements and evals. Each project's eval coverage (how many of its
+  requirements are green on production evidence) is measured and shown as
+  a badge ([eval coverage](#eval-coverage)), and a gap becomes an issue,
+  the same way code coverage works
+  ([testing.md](testing.md#code-coverage)).
+- **Work includes its evals.** A change that adds or alters what a project
+  promises adds or updates the eval that checks it in the same PR.
+- **Production evals check content.** An `http` eval of a page or data file
+  checks what the response says (`body_contains`), not only that it
+  answered: a single-page app answers every path.
+
+The phases in the [plan](./plans/2026-11-eval-engine.md) are the order the
+engine's *capabilities* arrive (metrics, chaos, ratings, in-app feedback,
+judge); the improvement loop above runs all the time, from today.
+
 ## Requirements
 
 ### Format
@@ -347,13 +377,15 @@ on the long-lived `evals-results` branch, which shares no history with
 results/<project>/<yyyy-mm>.jsonl       one line per result, appended
 results/<project>/archive/<yyyy>.jsonl.gz  months older than 12
 verdicts.json                           every active requirement's verdict
+badge.svg                               the repo's eval coverage badge
+badges/<project>.svg                    each project's eval coverage badge
 ```
 
 `standards/scripts/evals.sh store <results.jsonl...>` (the
 `evals-store.yml` job) checks the branch out in a worktree, appends the results
 (`evals store`), moves months older than 12 into their year's archive,
-rewrites `verdicts.json` from the requirements, evals and human-check
-answers on `main`, and pushes one commit, `evals: <stage> <projects> run
+rewrites `verdicts.json` and the eval coverage badges from the
+requirements, evals and human-check answers on `main`, and pushes one commit, `evals: <stage> <projects> run
 <id>`, retrying up to five times when another run pushed first. Its first
 run creates the branch.
 
@@ -363,8 +395,9 @@ rules are in the plan's
 [Results](./plans/2026-11-eval-engine.md#results) and
 [Verdicts](./plans/2026-11-eval-engine.md#verdicts) sections, plus the
 human-check rules above. `verdicts.json` lists each project's requirements
-with their verdict and reasons, and its coverage: how many active `must`
-requirements it has and how many have an eval in a production stage.
+with their verdict and reasons, how many active `must` requirements it
+has and how many have an eval in a production stage, and its [eval
+coverage](#eval-coverage); the file's top-level `coverage` is the repo's.
 
 To see the current verdicts, run
 `bash standards/scripts/evals.sh verdicts` from the repo (it fetches the
@@ -372,10 +405,52 @@ branch), with `--project <p>` for one project or `--json` for the same
 shape as `verdicts.json`:
 
 ```text
-cookbook: 4 met, 1 at risk, 0 not met, 4 unknown (3 of 3 musts evaluated in production)
+cookbook: 4 met, 1 at risk, 0 not met, 4 unknown (3 of 3 musts evaluated in production; eval coverage 44%, musts 100%)
   COOK-001 met      There is a recipe for every day of the year (must)
   COOK-004 at-risk  The cookbook is easy to use on a phone (should): mobile-layout is failing in ci
+homer: no requirements yet (eval coverage 0%, warning)
+eval coverage: 22%, musts 100% over 2 projects (1 with requirements); 50% of musts met per project on average, warning below 80% (warning)
 ```
+
+### Eval coverage
+
+Eval coverage says how much of what a project promises is green on
+production evidence (Jim, 2026-11-27: "Maybe we introduce an eval coverage
+metric / badge"). It is the measure the [continuous
+improvement](#continuous-improvement) loop grows, the way code coverage is
+for tests.
+
+- **A project's coverage** is the share of its active requirements whose
+  verdict is met, with its `must` requirements shown separately: `44%,
+  musts 100%`. A met verdict already needs a fresh production-stage
+  result, so a requirement checked only in `ci`, or with no eval, doesn't
+  count. Every top-level project (a folder with a `mise.toml`) is listed,
+  and one with no `docs/requirements.md` shows `0%, no requirements`.
+- **The repo's coverage** is the mean of the projects' coverage, so a
+  project with no requirements pulls it down instead of being left out,
+  with the musts met over all musts beside it.
+- **The warning** goes by the musts: a project with under `coverage_warn`
+  percent (80, in `evals/verdicts.toml`) of its musts met, or of every
+  requirement when it has no musts, is a warning, and so is the repo when
+  the mean of those figures over every project is under it. It is a
+  warning, never a failure, like code coverage under 80% (COV-001).
+- **Badges.** `evals store` writes `badge.svg` (the repo) and
+  `badges/<project>.svg` on the `evals-results` branch on every store run
+  (each push to `main` and nightly). They are green from `coverage_warn`,
+  yellow from three quarters of it and red below. The repo badge is in the
+  "Repo health" table of the root README
+  ([repo-health.md](./repo-health.md)), and each project's README has its
+  own under its title:
+
+  ```markdown
+  [![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/<project>.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+  ```
+
+  A new project adds that line to its README when it is created.
+- **A gap is an issue.** A project under the warning level gets `TODO`
+  issues to write requirements or add production evals, and a requirement
+  that isn't met gets a `FIX`, as in [continuous
+  improvement](#continuous-improvement).
 
 The `evals-results` branch is never merged into `main` and must never be
 deleted, by `all-delete-branches.yml` or by hand.

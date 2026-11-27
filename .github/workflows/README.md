@@ -82,6 +82,17 @@ require, so GitHub auto-merge waits for green CI (see the Auto-merge section
 of `standards/docs/pull-requests.md`). Rename it only together with that
 ruleset.
 
+### pull-request-summary.yml
+
+Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
+warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
+when its description doesn't open with a linked executive summary of at most
+75 words, after the attribution lines ("Pull request descriptions" in
+[standards/docs/pull-requests.md](../../standards/docs/pull-requests.md)).
+Warnings only, so it never fails and CI result doesn't wait for it. It runs
+on edits, so fixing the description clears the warning without re-running
+project CI.
+
 ### push-main.yml
 
 Runs on every push to `main`: `mise run ci` then `mise run deploy` in each

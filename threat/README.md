@@ -1,5 +1,7 @@
 # threat
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/threat.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The threat check: it holds each project's threat model
 (`<project>/docs/threat.toml`) to the security rules in
 [standards/docs/security.md](../standards/docs/security.md), so a PR that
