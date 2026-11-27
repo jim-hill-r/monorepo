@@ -13,6 +13,16 @@ pub const DEFAULT_LETTER_SEQUENCES: &[&[&str]] = &[
 
 pub const DEFAULT_WORD_SEQUENCES: &[&[&str]] = &[&["hi", "have", "fun"]];
 
+/// Capital letters, after the words. The live app has a recorded pattern for
+/// every capital; these groups go from straight strokes to curves.
+pub const DEFAULT_CAPITAL_SEQUENCES: &[&[&str]] = &[
+    &["L", "T", "I", "H", "E", "F"],
+    &["A", "V", "W", "M", "N"],
+    &["K", "X", "Y", "Z"],
+    &["C", "O", "Q", "G", "S"],
+    &["D", "P", "B", "R", "J", "U"],
+];
+
 pub const RETRY_LIMIT: usize = 3;
 pub const STABILIZE_COUNT: usize = 3;
 pub const REINTRODUCE_COUNT: usize = 8;
@@ -21,6 +31,7 @@ pub const REINTRODUCE_COUNT: usize = 8;
 pub fn next_level(level: &str) -> Option<&'static str> {
     match level {
         "letter" => Some("word"),
+        "word" => Some("capital"),
         _ => None,
     }
 }
@@ -28,7 +39,7 @@ pub fn next_level(level: &str) -> Option<&'static str> {
 /// The expressions a `?practice=b,c` query asks to practise, in order and
 /// without repeats, or `None` when it names none the app has patterns for.
 /// It lets a link (or a test) practise a few chosen letters or words instead
-/// of the whole level. Anything that isn't lowercase letters a to z is
+/// of the whole level. Anything that isn't letters a to z or A to Z is
 /// ignored, as are letters without a pattern.
 pub fn practice_from_query(query: &str) -> Option<Vec<String>> {
     let value = query
@@ -37,9 +48,9 @@ pub fn practice_from_query(query: &str) -> Option<Vec<String>> {
         .find_map(|pair| pair.strip_prefix("practice="))?;
     let mut expressions: Vec<String> = Vec::new();
     for expr in value.replace("%2C", ",").replace("%2c", ",").split(',') {
-        let expr = expr.trim().to_lowercase();
+        let expr = expr.trim().to_string();
         let known = !expr.is_empty()
-            && expr.chars().all(|c| c.is_ascii_lowercase())
+            && expr.chars().all(|c| c.is_ascii_alphabetic())
             && crate::patterns::patterns_json(&expr).is_some();
         if known && !expressions.contains(&expr) {
             expressions.push(expr);
@@ -89,17 +100,15 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(level: &str) -> Self {
-        let sequences = if level == "word" {
-            DEFAULT_WORD_SEQUENCES
-                .iter()
-                .map(|group| group.iter().map(|s| s.to_string()).collect())
-                .collect()
-        } else {
-            DEFAULT_LETTER_SEQUENCES
-                .iter()
-                .map(|group| group.iter().map(|s| s.to_string()).collect())
-                .collect()
+        let groups = match level {
+            "word" => DEFAULT_WORD_SEQUENCES,
+            "capital" => DEFAULT_CAPITAL_SEQUENCES,
+            _ => DEFAULT_LETTER_SEQUENCES,
         };
+        let sequences = groups
+            .iter()
+            .map(|group| group.iter().map(|s| s.to_string()).collect())
+            .collect();
 
         Self {
             expression: None,
@@ -295,6 +304,36 @@ mod tests {
     }
 
     #[test]
+    fn the_capital_level_ends_once_every_capital_is_stable() {
+        let mut state = AppState::new("capital");
+        assert_eq!(state.pending_queue[0][0], "L");
+        finish_level(&mut state);
+        for group in DEFAULT_CAPITAL_SEQUENCES {
+            for letter in *group {
+                assert!(
+                    state.stable_queue.iter().any(|e| e == letter),
+                    "{letter} is not stable"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_capital_is_practised_once() {
+        let mut capitals: Vec<&str> = DEFAULT_CAPITAL_SEQUENCES.concat();
+        capitals.sort_unstable();
+        let all: Vec<String> = ('A'..='Z').map(|c| c.to_string()).collect();
+        assert_eq!(capitals, all);
+    }
+
+    #[test]
+    fn levels_go_letters_words_capitals() {
+        assert_eq!(next_level("letter"), Some("word"));
+        assert_eq!(next_level("word"), Some("capital"));
+        assert_eq!(next_level("capital"), None);
+    }
+
+    #[test]
     fn misses_alone_never_end_a_level() {
         let mut state = AppState::new("letter");
         state.start_practice();
@@ -323,8 +362,8 @@ mod tests {
     #[test]
     fn a_practice_query_drops_unknown_and_repeated_expressions() {
         assert_eq!(
-            practice_from_query("?practice=B, b,3,,é,<x>,c"),
-            Some(strings(&["b", "c"]))
+            practice_from_query("?practice=B, b,3,,é,<x>,c,b,B"),
+            Some(strings(&["B", "b", "c"]))
         );
     }
 
@@ -348,11 +387,5 @@ mod tests {
     #[test]
     fn a_level_is_not_complete_before_it_starts() {
         assert!(!AppState::new("letter").is_complete());
-    }
-
-    #[test]
-    fn letters_lead_to_words_and_words_to_the_end() {
-        assert_eq!(next_level("letter"), Some("word"));
-        assert_eq!(next_level("word"), None);
     }
 }

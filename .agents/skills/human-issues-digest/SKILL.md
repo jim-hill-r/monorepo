@@ -33,6 +33,12 @@ itself.
    `agent-ignore` in any other `issues/` folder that say "Needs Jim" or name a
    dashboard, secret or account. List them under "Misfiled" so they can be
    moved.
+6. In `cost/`, run `cargo run -q -p cost_cli -- renewals --within 60`. It
+   lists every `[[cost]]` (a domain, a yearly plan) whose next charge is
+   in the next 60 days, with its price, and any whose `renews` date has
+   already passed. For each domain on the list, check that its project
+   still deploys to it (its `wrangler.toml`, DNS records or README); one
+   that nothing serves any more is one to consider dropping.
 
 ## 2. Add the settings checks that are due
 
@@ -71,6 +77,9 @@ Post one message. If nothing is open, say so in one line. Otherwise:
 - **Checks due**, only when there are any: every open
   `issues/human/settings-check-*.md` task, new or not. These go here and not under
   the lists above.
+- **Renewals**, only when there are any: one line per renewal from step 1.6,
+  with its price and date, and "consider dropping" on a domain nothing
+  serves any more.
 - **Looks done** and **Misfiled**, only when there are any.
 - End with one line: tell any thread when a task is done and it will remove
   it.

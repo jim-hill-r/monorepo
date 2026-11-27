@@ -132,6 +132,20 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
+    directory: "/threat"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
     directory: "/homer"
     schedule:
       interval: "weekly"
@@ -369,6 +383,20 @@ updates:
 
   - package-ecosystem: "npm"
     directory: "/sparkhill/webapp"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      javascript-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  - package-ecosystem: "npm"
+    directory: "/sparkhill/website"
     schedule:
       interval: "weekly"
       day: "monday"

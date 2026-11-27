@@ -150,7 +150,10 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
   writes screenshots and the video next to the UAT report.
 - Check whether controlled_chaos builds for `wasm32-unknown-unknown`. If it
   does, deploy the web build as a Pages preview per PR and to production on
-  main, so the PR comment has a playable link.
+  main, so the PR comment has a playable link. Done for production
+  (2026-11-27): it builds, and `bevy-game.toml`'s `deploy` task publishes it
+  to `jimhillr-controlled-chaos.pages.dev` from main. The per-PR preview is
+  part of the phase 2 preview issue, which covers `bevy-game.toml` too.
 - Native builds go to a GitHub Release, as for CLIs.
 
 ## Phase 3d: native apps and the API

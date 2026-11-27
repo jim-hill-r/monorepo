@@ -1,6 +1,8 @@
 # bear_down/cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
-# affected-by: ../web ../cli ../core
+# affected-by: ../web
+# affected-by: ../cli
+# affected-by: ../core
 
 [tools]
 rust = { version = "stable", components = "rustfmt,clippy" }

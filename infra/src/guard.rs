@@ -26,11 +26,21 @@ use std::path::Path;
 pub const ALLOWED_PROVIDERS: &[&str] = &[
     "registry.opentofu.org/auth0/auth0",
     "registry.opentofu.org/cloudflare/cloudflare",
+    "registry.opentofu.org/integrations/github",
 ];
 
 /// Resource types the stacks may manage. Add a type here in the same PR that
 /// first uses it, after checking it can't bill.
-pub const ALLOWED_RESOURCE_TYPES: &[&str] = &["auth0_client", "cloudflare_web_analytics_site"];
+/// The GitHub types are repository settings on a public repo, which are
+/// free (code security included).
+pub const ALLOWED_RESOURCE_TYPES: &[&str] = &[
+    "auth0_client",
+    "cloudflare_web_analytics_site",
+    "github_repository",
+    "github_repository_dependabot_security_updates",
+    "github_repository_ruleset",
+    "github_repository_vulnerability_alerts",
+];
 
 /// Resource types that are free only up to a budget, and the
 /// `standards/radar/limits.toml` key that holds it. A Cron Trigger resource
@@ -457,6 +467,21 @@ pub fn credential_changes(plan: &Value) -> Vec<CredentialChange> {
     out
 }
 
+/// Whether a ruleset change touches its bypass list. A missing, `null` or
+/// empty list all mean "nobody may bypass", so creating a ruleset with no
+/// bypass actors leaves who can bypass rules as it was; creating one with
+/// any, or changing an existing list, does not.
+fn bypass_list_changes(change: &Value) -> bool {
+    let list = |pointer: &str| {
+        change
+            .pointer(pointer)
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()
+    };
+    list("/change/before/bypass_actors") != list("/change/after/bypass_actors")
+}
+
 /// IAC-005: IaC never manages its own gate (decision 0010, item 7): no
 /// change to the `infra-credentials` environment, its secrets, variables
 /// or deployment policies, and no change to a ruleset's bypass list. Those
@@ -485,10 +510,7 @@ fn gate_untouched(plan: &Value) -> Vec<Finding> {
                 ),
             ));
         }
-        if kind == "github_repository_ruleset"
-            && change.pointer("/change/before/bypass_actors")
-                != change.pointer("/change/after/bypass_actors")
-        {
+        if kind == "github_repository_ruleset" && bypass_list_changes(change) {
             findings.push(finding(
                 "IAC-005",
                 format!(
@@ -743,6 +765,48 @@ mod tests {
         assert_eq!(changes.len(), 3);
         assert!(changes.iter().all(|c| c.kind.starts_with("github_")));
         Ok(())
+    }
+
+    #[test]
+    fn the_github_stack_passes_and_always_needs_the_second_approval() -> anyhow::Result<()> {
+        let plan = plan("github.json")?;
+        let findings = check(&plan, &budgets()?);
+        assert!(findings.is_empty(), "{findings:?}");
+        let addresses: Vec<String> = credential_changes(&plan)
+            .into_iter()
+            .map(|c| c.address)
+            .collect();
+        assert_eq!(
+            addresses,
+            [
+                "github_repository.monorepo",
+                "github_repository_vulnerability_alerts.monorepo",
+                "github_repository_dependabot_security_updates.monorepo",
+                "github_repository_ruleset.ci",
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_new_ruleset_with_bypass_actors_fails() -> anyhow::Result<()> {
+        let findings = gate_untouched(&plan("ruleset-bypass.json")?);
+        assert_eq!(ids(&findings), ["IAC-005"]);
+        assert!(findings[0].message.contains("bypass list"));
+        Ok(())
+    }
+
+    #[test]
+    fn a_missing_null_or_empty_bypass_list_is_the_same() {
+        let change = |before: Value, after: Value| serde_json::json!({ "change": { "before": before, "after": after } });
+        let empty = serde_json::json!({ "bypass_actors": [] });
+        let null = serde_json::json!({ "bypass_actors": null });
+        let some = serde_json::json!({ "bypass_actors": [{ "actor_type": "User" }] });
+        assert!(!bypass_list_changes(&change(Value::Null, empty.clone())));
+        assert!(!bypass_list_changes(&change(null.clone(), empty.clone())));
+        assert!(bypass_list_changes(&change(Value::Null, some.clone())));
+        assert!(bypass_list_changes(&change(empty, some.clone())));
+        assert!(bypass_list_changes(&change(some, null)));
     }
 
     #[test]

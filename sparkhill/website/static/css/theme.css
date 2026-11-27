@@ -1097,7 +1097,7 @@ img,video {
 
 @font-face {
     font-family: Niramit;
-    src: url(/fonts/Niramit-Regular.ttf) format("truetype")
+    src: url(/.perseus/static/fonts/Niramit-Regular.ttf) format("truetype")
 }
 
 html {

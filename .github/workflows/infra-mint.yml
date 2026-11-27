@@ -52,7 +52,9 @@ jobs:
     outputs:
       deploy: ${{ steps.mint.outputs.deploy }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # Decision 0010: never mint unless this environment really waited for
       # Jim. GitHub runs the job anyway when no reviewer is saved.
@@ -73,7 +75,7 @@ jobs:
 
       - name: GitHub App token
         id: app
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           app-id: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
           private-key: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}

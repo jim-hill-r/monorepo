@@ -45,9 +45,12 @@ apps and grants, a Cloudflare token with Account API Tokens: Edit, and the
 infra GitHub App from `github-app-infra-credentials`, which Jim asked for in
 place of a PAT), all only in `infra-credentials`.
 
-`github-settings-code-security-turn-secret` and
-`github-settings-rules-rulesets-default-ruleset` stay until the `github`
-stack (`issues/iac-github-stack.md`) applies them through the same app.
+The `github` stack (2026-11-27) replaced
+`github-settings-rules-rulesets-default-ruleset` with a `CI` ruleset and
+took over all of `github-settings-code-security-turn-secret` but private
+vulnerability reporting, which the provider can't set. Its plans need a
+read-only GitHub App, `github-app-infra-read`: GitHub has no API to make
+one.
 
 ## Staying with a person
 

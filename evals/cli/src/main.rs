@@ -1,12 +1,14 @@
 //! The `evals` command. See `evals/README.md`.
 
 mod check;
+mod coverage;
 mod http;
 mod human_checks;
 mod publish;
 mod reports;
 mod run;
 mod store;
+mod triage;
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -30,7 +32,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Validate every project's docs/requirements.md and evals.toml
-    /// (EVL-001 to EVL-004, and malformed files).
+    /// (EVL-001 to EVL-006, and malformed files).
     Check {
         /// Repo root. Defaults to the nearest directory above the current
         /// one that holds standards/docs/naming.md.
@@ -42,8 +44,8 @@ enum Command {
         strict: bool,
     },
     /// Turn the test reports a project's tasks already wrote into one result
-    /// per eval, appended to a JSONL file. Collects `cargo` and `playwright`
-    /// evals (it runs no tests itself) and makes the requests of `http`
+    /// per eval, appended to a JSONL file. Collects `cargo`, `trycmd` and
+    /// `playwright` evals (it runs no tests itself) and makes the requests of `http`
     /// evals.
     Run {
         /// The stage to collect, such as `ci`.
@@ -55,7 +57,8 @@ enum Command {
         /// Repo root. Defaults as for `check`.
         #[arg(long)]
         root: Option<PathBuf>,
-        /// Saved `cargo test` output. Repeat for several crates.
+        /// Saved `cargo test` output, which holds trycmd's case lines too.
+        /// Repeat for several crates.
         #[arg(long = "cargo-output")]
         cargo_output: Vec<PathBuf>,
         /// A Playwright JSON reporter file. Repeat for several apps.
@@ -101,7 +104,8 @@ enum Command {
         summary: Option<PathBuf>,
     },
     /// Add results to a checkout of the `evals-results` branch: append each
-    /// to results/<project>/<yyyy-mm>.jsonl and rewrite verdicts.json.
+    /// to results/<project>/<yyyy-mm>.jsonl, rewrite verdicts.json and the
+    /// eval coverage badges (badge.svg and badges/<project>.svg).
     /// `standards/scripts/evals.sh store` commits and pushes it.
     Store {
         /// JSONL results files. Repeat for several.
@@ -132,6 +136,29 @@ enum Command {
         /// Print verdicts.json instead of text.
         #[arg(long)]
         json: bool,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// File the work the verdicts call for: a `fix` issue for a requirement
+    /// that fails in production, a `todo` for an eval that is broken, flaky
+    /// or stale and for a `must` with no production evidence, unless an open
+    /// issue file names the requirement. Without --write it only lists them.
+    /// The daily evals-triage.yml workflow runs it.
+    Triage {
+        /// The checkout of the `evals-results` branch.
+        #[arg(long)]
+        dir: PathBuf,
+        /// Write the issue files into the repo at --root.
+        #[arg(long)]
+        write: bool,
+        /// With --write, write at most this many new issue files; the next
+        /// run files the rest.
+        #[arg(long, default_value_t = 10)]
+        limit: usize,
         /// Repo root. Defaults as for `check`.
         #[arg(long)]
         root: Option<PathBuf>,
@@ -249,11 +276,18 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 anyhow!("{} is invalid: {}", evals_path.display(), list.join("; "))
             })?;
 
+            let cargo_texts = read_all(&cargo_output)?;
             let reports = run::Reports {
-                cargo: read_all(&cargo_output)?.map(|texts| {
+                cargo: cargo_texts.as_ref().map(|texts| {
                     texts
                         .iter()
                         .flat_map(|t| reports::parse_cargo_output(t))
+                        .collect()
+                }),
+                trycmd: cargo_texts.as_ref().map(|texts| {
+                    texts
+                        .iter()
+                        .flat_map(|t| reports::parse_trycmd_output(t))
                         .collect()
                 }),
                 playwright: match read_all(&playwright_report)? {
@@ -419,6 +453,12 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             let all = store::read_results(&dir)?;
             let verdicts = store::compute(&root, &all, None, now.unwrap_or_else(chrono::Utc::now))?;
             store::write_verdicts(&dir, &verdicts)?;
+            let badges = coverage::write_badges(&dir, &verdicts)?;
+            println!(
+                "evals store: wrote {} eval coverage badge(s), repo {}",
+                badges.len(),
+                coverage::summary(verdicts.coverage.percent, verdicts.coverage.musts_percent)
+            );
             println!(
                 "evals store: {} result(s) added, {} written",
                 new.len(),
@@ -446,6 +486,32 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             } else {
                 print!("{}", store::render(&verdicts));
             }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Triage {
+            dir,
+            write,
+            limit,
+            root,
+            now,
+        } => {
+            let root = resolve_root(root)?;
+            let now = now.unwrap_or_else(chrono::Utc::now);
+            let all = store::read_results(&dir)?;
+            let verdicts = store::compute(&root, &all, None, now)?;
+            let findings = triage::triage(&root, &verdicts, &all, now, write.then_some(limit))?;
+            for finding in &findings {
+                println!("{}", finding.line());
+            }
+            let wrote = findings
+                .iter()
+                .filter(|f| matches!(f.outcome, triage::Outcome::Wrote(_)))
+                .count();
+            println!(
+                "evals triage: {} requirement(s) need work, {wrote} new issue file(s){}",
+                findings.len(),
+                if write { "" } else { " (dry run)" }
+            );
             Ok(ExitCode::SUCCESS)
         }
     }

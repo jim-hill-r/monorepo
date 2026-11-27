@@ -1,0 +1,60 @@
+# tofu_state: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "A Worker and D1 database serving OpenTofu's http backend for infra (decision 0009). State holds no secret values (IAC-002) and is encrypted with TOFU_STATE_PASSPHRASE before it is sent."
+
+[[surface]]
+name = "state API"
+kind = "api"
+url = "https://jimhillr-tofu-state.jim-hill-r.workers.dev"
+access = "token"
+data = "private"
+notes = "Basic auth with a read password (PR plans) or a write password (infra apply, main only). preview_urls = false."
+
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["tofu-state-deploy.yml"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["tofu-state-deploy.yml"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[[secret]]
+name = "TOFU_STATE_READ_PASSWORD"
+where = "github"
+used_by = ["tofu-state-deploy.yml (to set the Worker secret)", "infra-plan.yml", "infra-drift.yml"]
+scope = "Reads state; can't write or lock"
+setting = "github-secrets-tofu-state"
+
+[[secret]]
+name = "TOFU_STATE_WRITE_PASSWORD"
+where = "github"
+used_by = ["tofu-state-deploy.yml (to set the Worker secret)", "infra-apply.yml"]
+scope = "Reads, writes and locks state; only in the infra environment, limited to main"
+setting = "github-secrets-tofu-state"
+
+[[threat]]
+id = "TOFU-T1"
+stride = "spoofing"
+what = "Someone without a password reads or writes state."
+mitigation = "Every request needs basic auth; both passwords are compared in constant time and a read password can't write (src/backend.rs)."
+surface = "state API"
+
+[[threat]]
+id = "TOFU-T2"
+stride = "tampering"
+what = "A pull request changes state."
+mitigation = "PR plans get only the read password and run with -lock=false; the write password is only in the infra environment, which runs on main."
+surface = "state API"
+
+[[threat]]
+id = "TOFU-T3"
+stride = "information-disclosure"
+what = "A leaked read password exposes infrastructure details."
+mitigation = "State is encrypted with TOFU_STATE_PASSPHRASE before it reaches the Worker, and IAC-002 keeps secret values out of it entirely."
+surface = "state API"

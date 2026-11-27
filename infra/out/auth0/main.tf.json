@@ -150,6 +150,12 @@
       "nullable": false,
       "sensitive": true,
       "type": "string"
+    },
+    "tofu_state_passphrase_old": {
+      "default": "",
+      "nullable": false,
+      "sensitive": true,
+      "type": "string"
     }
   }
 }

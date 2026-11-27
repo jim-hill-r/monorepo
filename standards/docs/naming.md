@@ -3,6 +3,11 @@
 - All deployments MUST be kebab-case.
 - All Proof of Concept projects must begin with poc (ie: poc_project_name)
 
+`mise run //:audit` fails with NAM-001 on a project directory that isn't
+snake_case, NAM-002 on a Cargo or npm package name that matches neither
+rule above, and NAM-004 on a project whose package name or path says `poc`
+or `proof` without the `poc_` prefix (`standards/scripts/project-check.sh`).
+
 ## Cloudflare Pages projects
 
 Every Cloudflare Pages project MUST be named `jimhillr-<project>` (Jim,
@@ -57,7 +62,8 @@ row here before a project's first `docs/requirements.md`.
 | sparkhill | `SPRK` |
 | standards | `STND` |
 | starcraft | `STAR` |
+| telemetry | `TELE` |
 
-`EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-004), so
+`EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-006), so
 it is not a project prefix. `MONO` covers repo-wide process requirements
 such as change failure rate and lead time.

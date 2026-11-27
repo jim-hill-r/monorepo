@@ -1,0 +1,10 @@
+# my_lang: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Compiler that runs locally; no network, no secrets."
+
+[[surface]]
+name = "compiler"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Reads source files it is given and writes output files. `my_lang run` JIT-runs the program it is given, and `build` runs the system C compiler (`$CC` or `cc`) to link. my_lang programs only do integer arithmetic and call each other, with no file, network or system access."

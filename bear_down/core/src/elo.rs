@@ -7,11 +7,12 @@
 //! `docs/decisions/0004-elo-win-probabilities.md`.
 
 use std::collections::HashMap;
+use std::ops::RangeInclusive;
 
 use crate::games::{Game, Outcome, Schedule};
 
-/// The tunable numbers behind the ratings. [`Default`] gives the starting
-/// values from decision 0004.
+/// The tunable numbers behind the ratings. [`Default`] gives decision 0004's
+/// values, as tuned in `docs/elo-tuning.md`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EloParams {
     /// How far one game can move a rating, before the margin multiplier.
@@ -23,15 +24,20 @@ pub struct EloParams {
     /// The share of the gap to [`EloParams::mean`] each rating loses between
     /// seasons, from 0 (keep it all) to 1 (everyone starts even).
     pub season_regression: f64,
+    /// Whether a result's margin scales the rating change through
+    /// [`margin_multiplier`]. Off, every result moves ratings by `k` times
+    /// the surprise alone.
+    pub margin: bool,
 }
 
 impl Default for EloParams {
     fn default() -> Self {
         EloParams {
             k: 20.0,
-            home_field: 48.0,
+            home_field: 30.0,
             mean: 1505.0,
             season_regression: 1.0 / 3.0,
+            margin: true,
         }
     }
 }
@@ -190,7 +196,12 @@ impl Ratings {
             Outcome::Tie => (0.5, 0.0),
         };
         let margin = score.home.abs_diff(score.away);
-        let shift = self.params.k * margin_multiplier(margin, winner_diff) * (actual - expected);
+        let multiplier = if self.params.margin {
+            margin_multiplier(margin, winner_diff)
+        } else {
+            1.0
+        };
+        let shift = self.params.k * multiplier * (actual - expected);
         let home = self.rating(&game.home_team) + shift;
         let away = self.rating(&game.away_team) - shift;
         self.ratings
@@ -200,12 +211,56 @@ impl Ratings {
     }
 }
 
+/// How well ratings built with `params` would have predicted the played
+/// games of `seasons`, as a Brier score: the mean of `(p - result)^2`,
+/// where `p` is the home team's win probability just before the game and
+/// `result` is 1 for a home win, 0 for a loss and 0.5 for a tie. Lower is
+/// better; always guessing 0.5 scores 0.25.
+///
+/// Every played game in `schedule` is replayed oldest first, so seasons
+/// before `seasons` only warm the ratings up. Returns the score and the
+/// number of games scored, or `None` if no game was scored.
+pub fn brier_score(
+    schedule: &Schedule,
+    params: EloParams,
+    seasons: RangeInclusive<u16>,
+) -> Option<(f64, usize)> {
+    let mut ratings = Ratings::new(params);
+    let mut total = 0.0;
+    let mut count = 0;
+    for season in schedule.seasons() {
+        ratings.start_season(season.year);
+        for game in season.played() {
+            if let Some(result) = home_result(game)
+                && seasons.contains(&game.season)
+            {
+                total += (ratings.home_win_probability(game) - result).powi(2);
+                count += 1;
+            }
+            ratings.record(game);
+        }
+    }
+    (count > 0).then(|| (total / count as f64, count))
+}
+
+/// 1 for a home win, 0 for an away win, 0.5 for a tie, `None` if unplayed.
+fn home_result(game: &Game) -> Option<f64> {
+    Some(match game.outcome()? {
+        Outcome::HomeWin => 1.0,
+        Outcome::AwayWin => 0.0,
+        Outcome::Tie => 0.5,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::games::{Date, GameType, Score};
 
     const FIXTURE: &str = include_str!("../fixtures/games.csv");
+
+    /// The default home-field advantage, in Elo points.
+    const HOME: f64 = 30.0;
 
     fn close(actual: f64, expected: f64) {
         assert!(
@@ -243,9 +298,10 @@ mod tests {
     fn default_params_match_the_decision() {
         let params = EloParams::default();
         close(params.k, 20.0);
-        close(params.home_field, 48.0);
+        close(params.home_field, 30.0);
         close(params.mean, 1505.0);
         close(params.season_regression, 1.0 / 3.0);
+        assert!(params.margin);
     }
 
     #[test]
@@ -278,10 +334,10 @@ mod tests {
     fn even_teams_favor_the_home_side_by_home_field() {
         let ratings = Ratings::new(EloParams::default());
         let at_home = game(2026, "GB", "CHI", None);
-        close(ratings.home_edge(&at_home), 48.0);
+        close(ratings.home_edge(&at_home), HOME);
         close(
             ratings.home_win_probability(&at_home),
-            win_probability(48.0),
+            win_probability(HOME),
         );
         close(ratings.home_edge(&neutral(at_home)), 0.0);
     }
@@ -296,7 +352,7 @@ mod tests {
         ) else {
             panic!("both teams play");
         };
-        close(bears, win_probability(48.0));
+        close(bears, win_probability(HOME));
         close(bears + packers, 1.0);
         assert_eq!(ratings.win_probability(&matchup, "DET"), None);
     }
@@ -317,10 +373,10 @@ mod tests {
     fn an_away_win_counts_home_field_against_the_winner() {
         let mut ratings = Ratings::new(EloParams::default());
         ratings.record(&game(2026, "CHI", "GB", Some((24, 21))));
-        // The Bears were 48-point underdogs on the road, so the win counts
+        // The Bears were home-field underdogs on the road, so the win counts
         // for more than an even game.
-        let expected = win_probability(48.0);
-        let shift = 20.0 * margin_multiplier(3, -48.0) * expected;
+        let expected = win_probability(HOME);
+        let shift = 20.0 * margin_multiplier(3, -HOME) * expected;
         close(ratings.rating("CHI"), 1505.0 + shift);
         close(ratings.rating("GB"), 1505.0 - shift);
         assert!(shift > 20.0 * margin_multiplier(3, 0.0) * 0.5);
@@ -330,7 +386,7 @@ mod tests {
     fn a_tie_moves_the_favorite_down() {
         let mut ratings = Ratings::new(EloParams::default());
         ratings.record(&game(2026, "NYG", "WAS", Some((20, 20))));
-        let shift = 20.0 * (0.5 - win_probability(48.0));
+        let shift = 20.0 * (0.5 - win_probability(HOME));
         close(ratings.rating("WAS"), 1505.0 + shift);
         close(ratings.rating("NYG"), 1505.0 - shift);
         assert!(ratings.rating("WAS") < 1505.0);
@@ -448,6 +504,115 @@ mod tests {
         assert_eq!(ratings, expected);
     }
 
+    fn seasons() -> Schedule {
+        match Schedule::parse(include_str!("../fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("seasons.csv: {error}"),
+        }
+    }
+
+    fn score(schedule: &Schedule, params: EloParams, seasons: RangeInclusive<u16>) -> f64 {
+        match brier_score(schedule, params, seasons.clone()) {
+            Some((score, _)) => score,
+            None => panic!("no games scored in {seasons:?}"),
+        }
+    }
+
+    #[test]
+    fn brier_score_uses_each_games_pregame_probability() {
+        let games = vec![
+            game(2025, "GB", "CHI", Some((10, 17))),
+            game(2025, "CHI", "GB", Some((20, 13))),
+            game(2025, "DET", "MIN", Some((3, 3))),
+        ];
+        let schedule = Schedule::from_games(games.clone());
+        let params = EloParams::default();
+
+        let mut ratings = Ratings::new(params);
+        let mut expected = 0.0;
+        for game in schedule.games() {
+            let result = match game.outcome() {
+                Some(Outcome::HomeWin) => 1.0,
+                Some(Outcome::AwayWin) => 0.0,
+                _ => 0.5,
+            };
+            expected += (ratings.home_win_probability(game) - result).powi(2);
+            ratings.record(game);
+        }
+        let Some((brier, count)) = brier_score(&schedule, params, 2025..=2025) else {
+            panic!("three games scored");
+        };
+        assert_eq!(count, 3);
+        close(brier, expected / 3.0);
+        // Even teams and no home field: the first game is a coin flip.
+        let flat = EloParams {
+            home_field: 0.0,
+            ..params
+        };
+        let first = Schedule::from_games(games[..1].to_vec());
+        assert_eq!(brier_score(&first, flat, 2025..=2025), Some((0.25, 1)));
+    }
+
+    #[test]
+    fn brier_score_warms_up_on_earlier_seasons_and_skips_unplayed_games() {
+        let games = vec![
+            game(2024, "GB", "CHI", Some((0, 35))),
+            game(2025, "GB", "CHI", Some((10, 17))),
+            game(2025, "CHI", "DET", None),
+        ];
+        let schedule = Schedule::from_games(games.clone());
+        let params = EloParams::default();
+        let mut warm = Ratings::new(params);
+        warm.record(&games[0]);
+        warm.start_season(2025);
+        let p = warm.home_win_probability(&games[1]);
+        assert_eq!(
+            brier_score(&schedule, params, 2025..=2026),
+            Some(((p - 1.0).powi(2), 1))
+        );
+        assert_eq!(brier_score(&schedule, params, 2026..=2030), None);
+    }
+
+    #[test]
+    fn without_the_margin_multiplier_every_win_moves_ratings_alike() {
+        let params = EloParams {
+            margin: false,
+            home_field: 0.0,
+            ..EloParams::default()
+        };
+        let mut close_win = Ratings::new(params);
+        close_win.record(&game(2025, "GB", "CHI", Some((16, 17))));
+        let mut blowout = Ratings::new(params);
+        blowout.record(&game(2025, "GB", "CHI", Some((0, 42))));
+        close(close_win.rating("CHI"), 1505.0 + 10.0);
+        close(blowout.rating("CHI"), close_win.rating("CHI"));
+    }
+
+    /// The tuning in `docs/elo-tuning.md`: since 2019 the home edge is about
+    /// 30 Elo points, not 48, and the margin multiplier earns its place.
+    #[test]
+    fn tuned_defaults_beat_the_starting_values_on_recent_seasons() {
+        let schedule = seasons();
+        let tuned = EloParams::default();
+        let starting = EloParams {
+            home_field: 48.0,
+            ..tuned
+        };
+        let recent = score(&schedule, tuned, 2019..=2025);
+        assert!(
+            recent < score(&schedule, starting, 2019..=2025),
+            "home field 30 scores {recent}"
+        );
+        assert!(recent < 0.2212, "recent Brier score {recent}");
+        let no_margin = EloParams {
+            margin: false,
+            ..tuned
+        };
+        assert!(score(&schedule, no_margin, 2019..=2025) > recent + 0.004);
+        // Every season still beats a coin flip.
+        assert!(score(&schedule, tuned, 2005..=2025) < 0.25);
+    }
+
     #[test]
     fn custom_params_are_used() {
         let params = EloParams {
@@ -455,6 +620,7 @@ mod tests {
             home_field: 0.0,
             mean: 1500.0,
             season_regression: 1.0,
+            margin: true,
         };
         let mut ratings = Ratings::new(params);
         assert_eq!(ratings.params(), params);

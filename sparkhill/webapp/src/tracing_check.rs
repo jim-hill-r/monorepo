@@ -328,7 +328,10 @@ mod tests {
 
     #[test]
     fn no_letter_passes_as_another() {
-        let letters: Vec<String> = ('a'..='z').map(|c| c.to_string()).collect();
+        let letters: Vec<String> = ('a'..='z')
+            .chain('A'..='Z')
+            .map(|c| c.to_string())
+            .collect();
         for want in &letters {
             for got in &letters {
                 let passed = traced_well(&patterns(want), &drawn(got, 20.0, 220.0, 0.0));
