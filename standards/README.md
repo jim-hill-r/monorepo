@@ -1,5 +1,7 @@
 # Standards
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/standards.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The monorepo's standards, the shared mise tasks every project uses, and the
 scripts that check the repo.
 

@@ -381,3 +381,14 @@ Reply on this PR with your picks, or in the project chat.
   user agent (`evals/cli/src/http.rs:17`). Playwright runs are not tagged
   yet (phase 3 issue).
 - No product code changed in this review.
+
+---
+
+# Jim's answers, 2026-11-27
+
+| Decision | Answer |
+| --- | --- |
+| 1. Triage cadence | Yes: a free workflow files issues only when there is work |
+| 2. What comes next | Evals are continuous improvement, not a project: always green, red feeds the issue process, coverage grows per project, with a coverage metric and badge |
+| 3. Pause the in-app toolbar? | No, Jim wants it. It stays as phase 6 |
+| 4. Requirement PRs | Approve as they come (#812 merged) |

@@ -1,5 +1,7 @@
 # Blue Eel
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/blueeel.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 ## blueeel
 
 A reading education application built with Dioxus that provides comprehensive reading instruction and support for learners of all ages.

@@ -1,6 +1,7 @@
 //! The `evals` command. See `evals/README.md`.
 
 mod check;
+mod coverage;
 mod http;
 mod human_checks;
 mod publish;
@@ -102,7 +103,8 @@ enum Command {
         summary: Option<PathBuf>,
     },
     /// Add results to a checkout of the `evals-results` branch: append each
-    /// to results/<project>/<yyyy-mm>.jsonl and rewrite verdicts.json.
+    /// to results/<project>/<yyyy-mm>.jsonl, rewrite verdicts.json and the
+    /// eval coverage badges (badge.svg and badges/<project>.svg).
     /// `standards/scripts/evals.sh store` commits and pushes it.
     Store {
         /// JSONL results files. Repeat for several.
@@ -443,6 +445,12 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             let all = store::read_results(&dir)?;
             let verdicts = store::compute(&root, &all, None, now.unwrap_or_else(chrono::Utc::now))?;
             store::write_verdicts(&dir, &verdicts)?;
+            let badges = coverage::write_badges(&dir, &verdicts)?;
+            println!(
+                "evals store: wrote {} eval coverage badge(s), repo {}",
+                badges.len(),
+                coverage::summary(verdicts.coverage.percent, verdicts.coverage.musts_percent)
+            );
             println!(
                 "evals store: {} result(s) added, {} written",
                 new.len(),
