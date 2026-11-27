@@ -1,0 +1,18 @@
+[package]
+name = "sparkhill_cloudflare"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Its own workspace: this crate only holds the deploy config, and an empty
+# table keeps cargo from looking for a parent workspace.
+[workspace]
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]

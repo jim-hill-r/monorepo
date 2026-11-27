@@ -48,6 +48,7 @@ config_roots = [
   "psy_ents",
   "royalty",
   "sparkhill",
+  "sparkhill/cloudflare",
   "sparkhill/webapp",
   "sparkhill/website",
   "standards",
