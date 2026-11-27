@@ -1,6 +1,25 @@
-# Cloudflare Pages configuration for pane deployment
+# pane's Cloudflare Worker (README.md). Free plan only: no usage_model, no
+# [limits], no logpush (standards/docs/free-tiers.md, FT-005).
 
 name = "jimhillr-pane"
-compatibility_date = "2024-12-20"
-# `mise run release` in ../web runs dx bundle --out-dir dist, which puts the site in dist/public.
-pages_build_output_dir = "../web/dist/public"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = true
+preview_urls = false
+
+[build]
+command = "worker-build --release"
+
+# The Dioxus build, made by `mise run release` in ../web. Static asset
+# requests are free and unlimited; only /api/* runs the Worker and counts
+# against the free plan's 100,000 requests a day.
+[assets]
+directory = "../web/dist/public"
+binding = "ASSETS"
+# Dioxus routes such as /projects/pane are client side: serve index.html.
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+# Workers Logs, inside the free plan's daily log allowance.
+[observability]
+enabled = true

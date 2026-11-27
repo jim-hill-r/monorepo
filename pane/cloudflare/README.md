@@ -1,123 +1,76 @@
-# cloudflare
+# pane/cloudflare
 
-This project handles the deployment of the `pane` Dioxus web application build artifacts to Cloudflare Pages.
+Pane's Cloudflare Worker, `jimhillr-pane`, live at
+<https://jimhillr-pane.jim-hill-r.workers.dev>. It serves the Dioxus build of
+[`../web`](../web) as [Workers static
+assets](https://developers.cloudflare.com/workers/static-assets/) and runs
+Rust code (workers-rs) only for `/api/*`. Until Phase 3 of the [review
+dashboard plan](../docs/plans/2026-11-review-dashboard.md) pane was a
+Cloudflare Pages project; the Worker replaces it so pane can have server
+routes in Rust.
+
+## How requests are served
+
+| Path | Served by | Counts against the free plan |
+| --- | --- | --- |
+| `/api/*` | The Worker (`run_worker_first = ["/api/*"]` in `wrangler.toml`) | Yes, 100,000 requests a day |
+| Files in the build (`/`, `/data/snapshot.json`, `/reviews/...`) | Static assets | No, free and unlimited |
+| Any other path (`/projects/pane`) | `index.html` (`not_found_handling = "single-page-application"`), so the Dioxus router handles it | No |
+
+The routes live in [`src/api.rs`](src/api.rs), free of the Workers runtime so
+`cargo test` checks them natively; [`src/lib.rs`](src/lib.rs) only connects
+them to the runtime. Today there is one:
+
+| Route | Answer |
+| --- | --- |
+| `GET /api/health` | `{"status":"ok"}` |
+| Any other `/api/*` | `404` `{"error":"no such API route"}` |
+
+Phase 3 adds the cached `/api/github/*` routes and puts the whole site behind
+Cloudflare Access, with every `/api/*` route checking the
+`Cf-Access-Jwt-Assertion` JWT.
 
 ## Prerequisites
 
-Before deploying, you need:
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) installed
-- Cloudflare account with Pages access
-- Built artifacts from the `pane` project
+Install the tools with mise (see "Dev commands" in the root `AGENTS.md`):
+Rust with the `wasm32-unknown-unknown` target, Node, Wrangler and
+`worker-build`.
 
-### Installing Wrangler
+## Building
 
-Install Wrangler globally using npm:
-
-```bash
-npm install -g wrangler
-```
-
-> **Note:** Wrangler must be installed via npm. The cargo-based installation method is no longer supported.
-
-### Authenticating with Cloudflare
-
-Log in to your Cloudflare account:
-
-```bash
-wrangler login
-```
-
-## Building Pane
-
-Before deploying, you need to build the `pane` project:
-
-```bash
-cd ../web
-dx bundle --release
-```
-
-This will create build artifacts in `../web/dist/` directory.
-
-## Deploying to Cloudflare Pages
-
-### Deploy with mise
-
-```bash
-mise run deploy
-```
-
-This runs `mise run release` in `../web` (a `dx bundle` into `../web/dist`)
-and then `wrangler pages deploy`, which reads `wrangler.toml` for the project
-name and output directory. Pushes to `main` that touch this project or its
-web app deploy automatically; see `.github/workflows/push-main.yml`.
-
-### Deploy with Wrangler Directly
-
-Alternatively, you can deploy directly with wrangler:
-
-```bash
-wrangler pages deploy ../web/dist --project-name=pane
-```
-
-### Automated Deployment
-
-CI deploys with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
-repository secrets. To deploy from your machine without `wrangler login`, set
-the same variables:
-
-```bash
-export CLOUDFLARE_API_TOKEN=<your-token>
-export CLOUDFLARE_ACCOUNT_ID=<your-account-id>
-mise run deploy
-```
-
-## Project Structure
-
-```
-pane-cloudflare/
-├── wrangler.toml     # Cloudflare Pages configuration
-├── mise.toml         # Tools and standard tasks (deploy builds ../web first)
-├── tests/
-│   └── validate.sh   # Validation test suite
-└── README.md         # This file
-```
+`mise run release` builds the web app (`mise run release` in `../web`, which
+writes `../web/dist/public`) and then the Worker (`worker-build --release`,
+which writes `build/worker/`). Both outputs are gitignored.
 
 ## Testing
 
-To validate the project configuration:
+`mise run ci` runs the format check, clippy natively and for wasm, the wasm
+build, `cargo test` (the routes, and `tests/integration_tests.rs`, which
+checks `wrangler.toml` stays a free-plan Worker with static assets) and
+[`tests/e2e.sh`](tests/e2e.sh). The end-to-end test builds the Worker, serves
+it with `wrangler dev` over a stand-in assets folder, and checks that pages,
+data and client-side routes come from the assets and only `/api/*` reaches
+the Worker.
 
-```bash
-cargo test
-```
+## Deploying
 
-This will verify:
-- All required files exist
-- Configuration files are valid
-- Scripts have correct syntax
-- The pane project is properly linked
+Pushes to `main` deploy pane on every push (`# deploy-on-every-push` in
+`mise.toml`, since its snapshot reads the whole repo). `mise run deploy`
+builds as above, checks the Workers budget with
+`standards/scripts/free-tiers.sh worker` and runs `wrangler deploy`, which
+uploads the Worker and the assets together. CI deploys with the
+`CLOUDFLARE_API_TOKEN` (Infra Mint's deploy token, which has Workers Scripts
+Write) and `CLOUDFLARE_ACCOUNT_ID` secrets.
 
-## Troubleshooting
+To run it locally after `mise run release`, use `mise run dev`
+(`wrangler dev`).
 
-### Build artifacts not found
+## Cost
 
-Make sure you've built the pane project first:
-```bash
-cd ../web && dx bundle --release
-```
-
-### Authentication issues
-
-Ensure you're logged in to Cloudflare:
-```bash
-wrangler login
-```
-
-### Project doesn't exist
-
-Create the project on Cloudflare Pages first, or let Wrangler create it automatically on first deploy.
+$0 a month on the Workers Free plan; see [`../docs/cost.toml`](../docs/cost.toml).
 
 ## Links
 
-- [Cloudflare Pages Documentation](https://developers.cloudflare.com/pages/)
-- [Wrangler CLI Documentation](https://developers.cloudflare.com/workers/wrangler/)
-- [Dioxus Documentation](https://dioxuslabs.com/)
+- [Workers static assets](https://developers.cloudflare.com/workers/static-assets/)
+- [workers-rs](https://github.com/cloudflare/workers-rs)
+- [Wrangler](https://developers.cloudflare.com/workers/wrangler/)

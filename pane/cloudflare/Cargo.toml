@@ -1,7 +1,16 @@
 [package]
-name = "cloudflare"
+name = "pane_worker"
+description = "pane's Cloudflare Worker: serves the Dioxus build as static assets and runs only for /api/*"
 version = "0.1.0"
 edition = "2024"
+publish = false
+
+# Its own workspace, outside pane's: worker-build builds this crate alone for
+# wasm, and its lockfile stays separate from the web app's.
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [lints.clippy]
 unwrap_used = "warn"
@@ -13,6 +22,14 @@ unsafe_code = "forbid"
 [dependencies]
 
 [dev-dependencies]
+toml = "0.8"
 
-[features]
-default = []
+# The Worker glue only builds for wasm, so `cargo test` checks the routes
+# natively without it.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+worker = "0.9"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1

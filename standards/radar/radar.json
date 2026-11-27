@@ -583,7 +583,6 @@
     "exemplars": [
       "cookbook/cloudflare",
       "cahokia/cloudflare",
-      "pane/cloudflare",
       "controlled_chaos"
     ],
     "sources": [
@@ -599,9 +598,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. tofu_state is the first Worker (OpenTofu's http state backend, decision 0009), written in Rust with workers-rs. Also planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API.",
+    "description": "Approved vendor, Free plan only. tofu_state is the first Worker (OpenTofu's http state backend, decision 0009), written in Rust with workers-rs. pane/cloudflare serves pane's Dioxus build as Workers static assets and runs Rust only for /api/* (standards/tasks/cloudflare-worker-assets.toml). Also planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001).",
     "exemplars": [
-      "tofu_state"
+      "tofu_state",
+      "pane/cloudflare"
     ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",

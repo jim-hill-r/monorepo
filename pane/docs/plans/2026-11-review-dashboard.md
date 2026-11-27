@@ -105,7 +105,7 @@ merged 12 minutes ago"; "PRs as of 3 minutes ago").
 | `pane/model` | library | Serde types shared by everything: `Snapshot`, `Project`, `WorkItem`, `HumanIssue`, `Review`, `Signal`, `Health`. Health rules live here as plain functions so they are unit tested once and run the same in the browser. |
 | `pane/snapshot` | binary | Parses the repo into a `Snapshot`. Pure parsers over file contents, tested with fixture repos. |
 | `pane/web` | Dioxus web app | The UI. Reads `/data/snapshot.json` and `/api/*`. |
-| `pane/worker` | Worker (workers-rs) | `/api/*` routes and the static assets. Replaces `pane/cloudflare` in Phase 3. |
+| `pane/cloudflare` | Worker (workers-rs) | `/api/*` routes and the static assets. Was the Pages deploy project until Phase 3; it kept its directory name (planned as `pane/worker`) so the root project list and CI didn't have to change. |
 
 All Rust, per the language rule in `standards/docs/README.md`. Markdown is
 rendered in the browser with `pulldown-cmark`.
@@ -119,6 +119,12 @@ only for `/api/*` (`run_worker_first = ["/api/*"]`). Static asset requests are
 free and unlimited; only API calls count against the Workers free plan's
 100,000 requests a day. bear_down is set to serve from Workers static assets
 too, so the shared task file for that kind of project should serve both.
+
+Done (2026-11-27): `pane/cloudflare` is the Worker `jimhillr-pane` at
+<https://jimhillr-pane.jim-hill-r.workers.dev>, built from
+`standards/tasks/cloudflare-worker-assets.toml`, with one route
+(`/api/health`) so far. Deleting the retired Pages project `jimhillr-pane`
+is a human task (`issues/human/delete-jimhillr-pane-pages-project-after-worker.md`).
 
 ### Access and the write path
 

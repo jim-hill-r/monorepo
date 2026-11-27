@@ -2,7 +2,9 @@
 
 - **Kind:** on demand (after a Pages project is renamed or retired)
 - **Status:** open (`issues/human/delete-old-pages-projects-after-jimhillr-rename.md`)
-  for `cahokia-web`, `pane` and `controlled-chaos`
+  for `cahokia-web`, `pane` and `controlled-chaos`, and
+  (`issues/human/delete-jimhillr-pane-pages-project-after-worker.md`) for
+  `jimhillr-pane`, which pane left for a Worker
 - **Time:** about 5 minutes
 - **Cost:** $0. Frees three of the 25 budgeted Pages projects.
 
@@ -39,6 +41,22 @@ Agents also have no Cloudflare write token for it.
    `pane` (pane-dbc.pages.dev) and `controlled-chaos`
    (controlled-chaos-5v4.pages.dev): open it > Settings > Delete project,
    and type its name to confirm.
+
+## Pane's Pages project, after the move to a Worker
+
+Pane now runs as the Worker `jimhillr-pane`, which serves its build as
+Workers static assets, so its Pages project `jimhillr-pane` is retired.
+A Worker and a Pages project can share a name, so take care to delete the
+right one.
+
+1. Open `https://jimhillr-pane.jim-hill-r.workers.dev` and
+   `https://jimhillr-pane.jim-hill-r.workers.dev/api/health`. Stop unless
+   the first shows pane and the second shows `{"status":"ok"}`.
+2. dash.cloudflare.com > Workers & Pages. Open the `jimhillr-pane` entry
+   marked **Pages** (its URL is `jimhillr-pane.pages.dev`), not the Worker.
+   Settings > Delete project, and type its name to confirm.
+3. Verify: the Worker `jimhillr-pane` is still listed and its URL still
+   loads; `jimhillr-pane.pages.dev` no longer does.
 
 ## Where secrets go
 
