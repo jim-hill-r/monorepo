@@ -14,6 +14,19 @@
 #   workflow_schedule  A workflow named <project>.yml or <project>-*.yml with
 #                      a `schedule:`.
 #   usage              The limits.toml key each match adds its count to.
+#   blip               The vendor blip a match implies, for the cost check.
+#                      Optional when the detector has a `threat`.
+#   threat             What a match implies for the project's
+#                      docs/threat.toml (THR-004 in standards/docs/security.md):
+#                        pages    a `kind = "pages"` surface
+#                        worker   a `worker` or `api` surface
+#                        url      a surface on the host the pattern's first
+#                                 capture group names
+#                        storage  a surface whose data isn't public, or a
+#                                 [[threat]] that covers the detector
+#                        secret   a [[secret]] named by the capture group
+#                        auth     an [auth] table
+#                        risk     a [[threat]] that covers the detector
 # [[allow]]    Outside hosts that cost nothing. Subdomains are allowed too.
 # [[exempt]]   A file (or a directory ending in /) a detector must not count,
 #              such as a guard that searches for the pattern itself. Use
@@ -35,6 +48,7 @@ blip = "Cloudflare Pages"
 why = "a wrangler.toml with pages_build_output_dir is a Pages project"
 wrangler = "pages_build_output_dir"
 usage = "pages_projects"
+threat = "pages"
 
 [[detector]]
 id = "cloudflare-worker"
@@ -42,6 +56,7 @@ blip = "Cloudflare Workers"
 why = "a wrangler.toml with main is a Worker"
 wrangler = "main"
 usage = "workers"
+threat = "worker"
 
 [[detector]]
 id = "cloudflare-crons"
@@ -56,18 +71,21 @@ blip = "Cloudflare D1"
 why = "a d1_databases binding"
 wrangler = "d1_databases"
 usage = "d1_databases"
+threat = "storage"
 
 [[detector]]
 id = "cloudflare-kv"
 blip = "Cloudflare Workers"
 why = "a kv_namespaces binding (KV is part of the Workers free plan)"
 wrangler = "kv_namespaces"
+threat = "storage"
 
 [[detector]]
 id = "cloudflare-r2"
 blip = "Cloudflare R2"
 why = "an r2_buckets binding"
 wrangler = "r2_buckets"
+threat = "storage"
 
 [[detector]]
 id = "cloudflare-analytics-engine"
@@ -103,6 +121,7 @@ blip = "Auth0"
 why = "an Auth0 SDK"
 files = ["package.json", "Cargo.toml"]
 patterns = ['"@auth0/[a-z0-9-]+"\s*:', '^\s*auth0[a-z0-9_-]*\s*=']
+threat = "auth"
 
 [[detector]]
 id = "rapidapi"
@@ -110,6 +129,34 @@ blip = "RapidAPI (Zillow data)"
 why = "calls RapidAPI"
 hosts = ["rapidapi.com"]
 patterns = ['\bRAPIDAPI_[A-Z0-9_]+', '(?i)x-rapidapi-(key|host)']
+
+# Threat model only (no vendor): what the threat check's THR-004 compares
+# with each project's docs/threat.toml.
+
+[[detector]]
+id = "deploy-url"
+threat = "url"
+why = "the URL a project's deploy task publishes to"
+files = ["mise.toml"]
+patterns = ['^\s*DEPLOY_URL\s*=\s*"(https?://[^"/]+)']
+
+[[detector]]
+id = "wrangler-secret"
+threat = "secret"
+why = "a Worker or Pages secret set with wrangler"
+patterns = ['wrangler\s+(?:pages\s+)?secret\s+put\s+([A-Z][A-Z0-9_]*)']
+
+[[detector]]
+id = "cors-any-origin"
+threat = "risk"
+why = "CORS open to every origin lets any site call the API from a browser"
+patterns = ['''(?i)access-control-allow-origin["']?\s*[:,=]\s*["']\*["']''', 'allow_origin\(\s*"\*"', 'AllowOrigin::any\(\)']
+
+[[detector]]
+id = "raw-html"
+threat = "risk"
+why = "HTML set from a string at runtime can carry an injection (XSS) unless it is escaped or sanitised"
+patterns = ['dangerouslySetInnerHTML', 'dangerous_inner_html', '\.innerHTML\s*=', '\.set_inner_html\(', '\bnew Function\(']
 
 # GitHub Actions minutes for a project's own scheduled workflow.
 
@@ -270,6 +317,16 @@ why = "The billing check reads each radar vendor's billing by design (free, read
 path = "cost/"
 detector = "*"
 why = "The cost check's own tests use detector fixtures."
+
+[[exempt]]
+path = "bear_down/web/tests/"
+detector = "cors-any-origin"
+why = "Playwright tests stub the telemetry Worker's CORS reply; telemetry's threat model covers the real one."
+
+[[exempt]]
+path = "threat/"
+detector = "*"
+why = "The threat check's own tests use detector fixtures."
 
 [[exempt]]
 path = "pane/web/src/markdown.rs"
