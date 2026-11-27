@@ -14,6 +14,7 @@ mod deck;
 mod game;
 mod input;
 mod rules;
+mod settings;
 mod splash;
 mod state;
 mod theme;
@@ -33,6 +34,8 @@ pub fn main() {
             ..default()
         }))
         .add_systems(Startup, setup_camera)
+        // Loads the saved GameTheme and saves each change to it.
+        .add_plugins(settings::SettingsPlugin::default())
         .add_plugins(theme::ThemePlugin)
         .init_state::<state::AppState>()
         .add_plugins(splash::SplashPlugin)
