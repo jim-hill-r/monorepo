@@ -268,8 +268,49 @@ fn parse_bathroom_count(arg: &str) -> std::result::Result<f32, String> {
     })
 }
 
-/// Parse property details from the raw Zillow API JSON response
+/// The response fields that show the Zillow API found a property: `zpid`
+/// and every field homer reads.
+const PROPERTY_FIELDS: [&str; 10] = [
+    "zpid",
+    "price",
+    "zestimate",
+    "bedrooms",
+    "bathrooms",
+    "livingArea",
+    "yearBuilt",
+    "homeType",
+    "description",
+    "hdpUrl",
+];
+
+/// Fail when a successful response holds no property.
+///
+/// RapidAPI can answer 200 with `{}` or `{"message": "..."}` when Zillow has
+/// no match for the address. Without this check homer would print just the
+/// typed address and call every criterion "unknown", as if it had found a
+/// house. A field that is present but has a value homer can't use still
+/// counts as a property, so the report shows it as unknown.
+fn ensure_property_found(raw: &serde_json::Value, address: &str) -> Result<()> {
+    let found = raw
+        .as_object()
+        .is_some_and(|fields| PROPERTY_FIELDS.iter().any(|key| fields.contains_key(*key)));
+    if found {
+        return Ok(());
+    }
+    let reason = ["message", "error"]
+        .iter()
+        .find_map(|key| raw.get(*key).and_then(|v| v.as_str()))
+        .map(|text| format!(" Zillow API said: {}", summarize_error_body(text)))
+        .unwrap_or_default();
+    anyhow::bail!("Zillow found no property for \"{address}\".{reason}")
+}
+
+/// Parse property details from the raw Zillow API JSON response.
+///
+/// Fails when the response holds no property (see [`ensure_property_found`]).
 pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<PropertyDetails> {
+    ensure_property_found(raw, address)?;
+
     let price = raw
         .get("price")
         .and_then(json_whole_number)
@@ -897,9 +938,44 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_property_details_empty() {
-        let raw = json!({});
-        let details = parse_property_details(&raw, "789 Oak Ave").unwrap();
+    fn test_parse_property_details_empty_is_not_found() {
+        let err = parse_property_details(&json!({}), "789 Oak Ave")
+            .expect_err("an empty response holds no property");
+        assert_eq!(
+            err.to_string(),
+            "Zillow found no property for \"789 Oak Ave\"."
+        );
+    }
+
+    #[test]
+    fn test_parse_property_details_message_only_is_not_found() {
+        let raw = json!({ "message": "  No   property found " });
+        let err = parse_property_details(&raw, "789 Oak Ave")
+            .expect_err("a message-only response holds no property");
+        assert_eq!(
+            err.to_string(),
+            "Zillow found no property for \"789 Oak Ave\". Zillow API said: No property found"
+        );
+        let raw = json!({ "error": "Invalid address" });
+        let err = parse_property_details(&raw, "a").expect_err("error-only response");
+        assert!(
+            err.to_string()
+                .ends_with("Zillow API said: Invalid address"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn test_parse_property_details_non_object_is_not_found() {
+        for raw in [json!([]), json!(null), json!("text"), json!(42)] {
+            assert!(parse_property_details(&raw, "a").is_err(), "{raw}");
+        }
+    }
+
+    #[test]
+    fn test_parse_property_details_zpid_only_is_found() {
+        let details = parse_property_details(&json!({ "zpid": 12345 }), "789 Oak Ave")
+            .expect("a zpid means Zillow found the property");
         assert_eq!(details.address, "789 Oak Ave");
         assert!(details.price.is_none());
         assert!(details.bedrooms.is_none());
@@ -1186,7 +1262,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let client =
@@ -1214,7 +1290,7 @@ mod tests {
             .with_header("x-ratelimit-requests-limit", "100")
             .with_header("x-ratelimit-requests-remaining", "3")
             .with_header("x-ratelimit-requests-reset", "86400")
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let path = temp_quota_file("quota-saved");
@@ -1244,7 +1320,7 @@ mod tests {
             .with_header("x-ratelimit-requests-limit", "100")
             .with_header("x-ratelimit-requests-remaining", "0")
             .with_header("x-ratelimit-requests-reset", "86400")
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .expect(1)
             .create();
 
@@ -1276,7 +1352,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let path = temp_quota_file("quota-reset");
@@ -1302,7 +1378,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .expect(1)
             .create();
 
@@ -1344,7 +1420,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let path = temp_quota_file("quota-none-yet");
