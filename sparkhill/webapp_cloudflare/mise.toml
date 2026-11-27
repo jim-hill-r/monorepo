@@ -10,6 +10,9 @@ node = "24"
 [env]
 # Production URL. CI shows it on the GitHub deployment and in the job summary.
 DEPLOY_URL = "https://jimhillr-sparkhill-webapp.pages.dev"
+# The deploy job runs this Playwright project's @smoke tests against
+# DEPLOY_URL (standards/scripts/smoke.sh).
+SMOKE_DIR = "../webapp"
 
 [task_config]
 includes = ["../../standards/tasks/cloudflare-pages.toml"]
