@@ -20,7 +20,8 @@
 #            `[lints] workspace = true` and [workspace.lints.clippy].
 #   LIN-002  Every Rust package forbids unsafe_code, in [lints.rust] or
 #            through its workspace. "deny" passes when a comment on the line
-#            above says why the package needs its one allowed unsafe item.
+#            above it (or above its section header) says why the package
+#            needs its one allowed unsafe item.
 #            standards/docs/rust.md.
 #
 # A project is a directory with a mise.toml (not the repo root). NAM-* are
@@ -157,8 +158,10 @@ for f in $(git ls-files -- 'Cargo.toml' '*/Cargo.toml'); do
   # deny, not forbid, is allowed when a comment just above it says why (the
   # one #[unsafe(...)] a platform entry point or a JIT call needs).
   unsafe_level=$(level "$sec_rust" unsafe_code)
+  # The comment may sit just above the key or just above its section header.
   if [ "$unsafe_level" = deny ] &&
-    grep -B1 -E '^[[:space:]]*unsafe_code[[:space:]]*=' "$src" | head -n1 | grep -qE '^[[:space:]]*#'; then
+    grep -B2 -E '^[[:space:]]*unsafe_code[[:space:]]*=' "$src" | head -n2 |
+    awk '{ l[NR] = $0 } END { r = l[NR]; if (r ~ /^[[:space:]]*\[/) r = l[NR - 1]; exit !(r ~ /^[[:space:]]*#/) }'; then
     unsafe_level=forbid
   fi
   level_ok "$unsafe_level" forbid ||

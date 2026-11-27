@@ -42,7 +42,8 @@ handling (success, error statuses, bad JSON) is tested offline.
 
 `tests/cli.rs` runs the real `homer` binary against the
 [trycmd](https://docs.rs/trycmd) transcripts in `tests/cmd/`: `--help`, a
-lookup, a scored lookup and a missing API key. Each case is a `.toml` file
+lookup, a scored lookup, an address Zillow has no property for and a missing
+API key. Each case is a `.toml` file
 with the arguments, plus `.stdout` and `.stderr` files with the expected
 output. The binary reaches a local mockito server through the hidden
 `--base-url` flag (`HOMER_BASE_URL`), so these are offline too. After an

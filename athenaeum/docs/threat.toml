@@ -1,0 +1,10 @@
+# athenaeum: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Markdown knowledge base; no code, nothing deployed, no secrets."
+
+[[surface]]
+name = "notes"
+kind = "library"
+access = "none"
+data = "public"
+notes = "Files in the repo only."

@@ -46,8 +46,10 @@ To run its tests (route parsing and server-side renders of each view):
 cargo test -p mobile
 ```
 
-`mise run ci` in `cahokia/` covers only `core` and `ui`, so run the command
-above yourself when you change this crate.
+`mise run ci` in `cahokia/` checks this crate too (clippy, build and
+tests), and PR CI installs the GTK and WebKit packages for it. Where
+`webkit2gtk-4.1` isn't installed, `mise run ci` checks only `core` and `ui`
+and says so.
 
 ### Where code goes
 

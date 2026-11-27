@@ -32,6 +32,18 @@ fn cli_transcripts() {
             }"#,
         )
         .create();
+    // RapidAPI answers 200 with no property when Zillow has no match.
+    let _not_found = server
+        .mock("GET", "/property")
+        .match_query(mockito::Matcher::UrlEncoded(
+            "address".into(),
+            "1 Nowhere Rd, Nowhere, WA 00000".into(),
+        ))
+        .match_header("x-rapidapi-key", "test-key")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"message": "No property found for this address"}"#)
+        .create();
 
     trycmd::TestCases::new()
         .env("HOMER_BASE_URL", server.url())

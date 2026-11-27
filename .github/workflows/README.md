@@ -7,7 +7,7 @@ schedule) has a status badge in the "Repo health" table of the root
 README, and PR triage checks them three times a day
 ([standards/docs/repo-health.md](../../standards/docs/repo-health.md)).
 A new workflow like that adds its badge in the same PR;
-`monorepo/workflow_tests/tests/readme_badges_tests.rs` fails otherwise.
+`jimhillr/workflow_tests/tests/readme_badges_tests.rs` fails otherwise.
 
 ## CI/CD with mise
 
@@ -45,6 +45,17 @@ only, and its only push is to `evals-results` (SEC-007). It never fails the
 run. It is a separate workflow because a reusable workflow whose job asks
 for write fails to start when a caller (pull requests) grants only read.
 
+### evals-triage.yml
+
+Daily at 4:30 AM Pacific, after Nightly CI and Nightly CD. Runs
+`standards/scripts/evals.sh triage`, which writes a `FIX` or `TODO` issue
+file for each requirement that is not green and has no open issue, and
+force-pushes them as one commit to the `evals-triage` branch; PR triage
+opens the pull request from it (a PR opened with the workflow's own token
+would run no CI). Its only pushes are to `evals-triage` (SEC-007). Nothing
+is pushed on a quiet day. See
+[standards/docs/evals.md](../../standards/docs/evals.md#triage).
+
 ### pull-request-ci.yml
 
 Runs on every pull request against the projects it changes. Never deploys.
@@ -70,6 +81,17 @@ and passes only when every project passed and no secret was found. It is the one
 require, so GitHub auto-merge waits for green CI (see the Auto-merge section
 of `standards/docs/pull-requests.md`). Rename it only together with that
 ruleset.
+
+### pull-request-summary.yml
+
+Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
+warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
+when its description doesn't open with a linked executive summary of at most
+75 words, after the attribution lines ("Pull request descriptions" in
+[standards/docs/pull-requests.md](../../standards/docs/pull-requests.md)).
+Warnings only, so it never fails and CI result doesn't wait for it. It runs
+on edits, so fixing the description clears the warning without re-running
+project CI.
 
 ### push-main.yml
 
@@ -102,7 +124,7 @@ the same job, and `standards/scripts/deploy-check.sh` skips it when a newer
 commit on main changes the project, so an older run never overwrites a
 newer deploy.
 
-Tests: `monorepo/workflow_tests/tests/mise_workflow_tests.rs` and
+Tests: `jimhillr/workflow_tests/tests/mise_workflow_tests.rs` and
 `deploy_check_tests.rs`.
 
 ### nightly-downloads.yml
@@ -119,7 +141,7 @@ job gets `contents: write`. The optional `ANDROID_KEYSTORE_BASE64` and
 `ANDROID_KEYSTORE_PASSWORD` secrets sign the APK. See "Game builds" in
 `standards/docs/mise.md`.
 
-Tests: `monorepo/workflow_tests/tests/downloads_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/downloads_workflow_tests.rs`.
 
 
 ## Infrastructure as code
@@ -134,7 +156,7 @@ decision 0009) in `infra`. `infra-mint.yml`, run by hand in
 `infra-credentials`, mints every other infra secret straight into GitHub
 secrets from the bootstrap credentials (decision 0011). Every job that touches state on `main` shares the
 `infra` concurrency group. Details are in `infra/README.md` and
-`tofu_state/README.md`. Tests: `monorepo/workflow_tests/tests/infra_workflows_tests.rs`
+`tofu_state/README.md`. Tests: `jimhillr/workflow_tests/tests/infra_workflows_tests.rs`
 and `tofu_state_deploy_tests.rs`.
 
 ## pull-request-review-decks.yml (Review decks)
@@ -157,8 +179,23 @@ README's coverage badge (COV-001 in
 [standards/docs/testing.md](../../standards/docs/testing.md#code-coverage)).
 No Rust cache, so the Actions cache budget is untouched.
 
-Tests: `monorepo/workflow_tests/tests/coverage_workflow_tests.rs` and
+Tests: `jimhillr/workflow_tests/tests/coverage_workflow_tests.rs` and
 `standards/tests/coverage.test.sh`.
+
+## telemetry-feedback-export.yml
+
+**Telemetry Feedback Export** runs Tuesdays at 6 AM Pacific (after Monday
+Night Football) and by hand. One job, the only one with `contents: write`,
+reads the last 8 days of bear_down's `feedback` and `exposure` events from
+the telemetry Worker's Analytics Engine dataset (`standards/scripts/feedback.sh
+query`, with `CLOUDFLARE_API_TOKEN`, which has Account Analytics read) and
+commits them to the `feedback-data` data branch with `feedback.sh store`:
+`bear_down/<season>-week-<nn>.jsonl` plus a Markdown summary per A/B arm
+(step 5 of [the fan feedback plan](../../bear_down/docs/plans/2026-11-fan-feedback.md)).
+Its only push is to `feedback-data` (SEC-007).
+
+Tests: `jimhillr/workflow_tests/tests/feedback_export_workflow_tests.rs` and
+`standards/tests/feedback.test.sh`.
 
 ## all-dependency-audit.yml
 
@@ -188,7 +225,7 @@ A further job, **Secret scan (full history)**, runs gitleaks over every commit
 (`standards/scripts/secrets-check.sh history`), so a new rule catches an old
 commit within a week.
 
-Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
 
 ## all-codeql.yml
 
@@ -211,7 +248,7 @@ Default setup must stay **off** in Settings > Code security while this file
 exists: GitHub runs only one of the two. The workflow needs `contents: read`,
 `security-events: write` (to upload results) and `actions: read`.
 
-Tests: `monorepo/workflow_tests/tests/codeql_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/codeql_workflow_tests.rs`.
 
 ## all-delete-branches.yml
 
@@ -227,6 +264,22 @@ The workflow never deletes the default branch and skips any branch that is the h
 - `contents: write` - To delete branch refs
 - `pull-requests: read` - To find branches with open pull requests
 
+## pull-request-closed-cleanup.yml
+
+Runs when a pull request closes, merged or not, and deletes the Actions
+caches scoped to its `refs/pull/N/merge` ref (GitHub's documented cache
+clean-up pattern). Those caches can only ever be restored by that PR, but they
+count toward the repo's 10 GB cache limit until GitHub evicts them after 7
+unused days. It never touches `main`'s caches or another PR's, and the run
+summary says how many it deleted. Phase 2 of the
+[resource cleanup plan](../../standards/docs/plans/2026-11-resource-cleanup.md).
+
+### Permissions
+
+- `actions: write` - To list and delete caches
+
+Tests: `jimhillr/workflow_tests/tests/pull_request_closed_cleanup_workflow_tests.rs`.
+
 ## pull-request-agent-skills.yml
 
 Validates the agent skills in `.agents/skills/` against the
@@ -236,4 +289,4 @@ the pinned `skills-ref` reference validator and also checks that
 `.claude/skills` is still a symlink to `../.agents/skills`. Can also be run
 manually via `workflow_dispatch`.
 
-Tests: `monorepo/workflow_tests/tests/agent_skills_workflow_tests.rs`.
+Tests: `jimhillr/workflow_tests/tests/agent_skills_workflow_tests.rs`.

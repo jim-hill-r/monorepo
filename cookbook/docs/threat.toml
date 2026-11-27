@@ -1,0 +1,54 @@
+# cookbook: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Public recipe site on Pages; Auth0 sign-in in the browser, no server code, no stored user data."
+
+[[surface]]
+name = "site"
+kind = "pages"
+url = "https://jimhillr-cookbook.pages.dev"
+access = "public"
+data = "public"
+previews = "public"
+headers = "cookbook/web/public/_headers"
+notes = "Static Dioxus build. Sign-in happens in the browser only; nothing is sent to our own server."
+
+# Every Pages deploy (push-main.yml, nightly-cd.yml through mise-projects.yml).
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[auth]
+provider = "Auth0"
+flow = "authorization-code-pkce"
+callbacks = ["https://jimhillr-cookbook.pages.dev/", "https://*.jimhillr-cookbook.pages.dev/", "http://localhost:8080/"]
+# Managed by infra (infra/out/auth0/main.tf.json), not by hand.
+
+[[threat]]
+id = "COOK-T1"
+stride = "tampering"
+what = "Someone changes what the site serves."
+mitigation = "Only the deploy step on main, with CLOUDFLARE_API_TOKEN, can publish; main needs a reviewed PR (github-main-ruleset)."
+surface = "site"
+
+[[threat]]
+id = "COOK-T2"
+stride = "elevation-of-privilege"
+what = "Script injected into the page (XSS) steals the Auth0 session."
+mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts and stylesheets only from self, no inline styles), frame-ancestors 'none', and Dioxus escaping rendered text."
+surface = "site"
+
+[[threat]]
+id = "COOK-T3"
+stride = "spoofing"
+what = "An attacker's site receives a sign-in code by posing as cookbook."
+mitigation = "PKCE, state and nonce checks in auth_sdk, and Auth0 callbacks limited to our own Pages hosts and localhost."

@@ -6,3 +6,34 @@ rust = { version = "stable", components = "rustfmt,clippy" }
 
 [task_config]
 includes = ["../standards/tasks/rust.toml"]
+
+# The desktop and mobile apps render through a webview, so building them on
+# Linux needs GTK and WebKit. They aren't default-members, so ci names them.
+[tasks."ci:deps"]
+description = "Install GTK and WebKit on Linux CI for the desktop and mobile apps"
+run = '''
+if [ -n "${CI:-}" ] && command -v apt-get >/dev/null; then
+  sudo apt-get update
+  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libxdo-dev
+fi
+'''
+
+# Outside CI, a sandbox without WebKit still checks core and ui and says the
+# apps weren't checked; in CI the apps are always checked.
+[tasks.ci]
+description = "Format, clippy, build and tests for core and ui, plus the desktop and mobile apps"
+depends = ["ci:deps"]
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+packages=(-p core -p ui)
+if [ -n "${CI:-}" ] || pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+  packages+=(-p desktop -p mobile)
+else
+  echo "ci: desktop and mobile not checked here (no webkit2gtk-4.1); PR CI checks them" >&2
+fi
+cargo fmt --all --check
+cargo clippy "${packages[@]}" -- -D warnings
+cargo build "${packages[@]}"
+bash "$(git rev-parse --show-toplevel)/standards/scripts/evals.sh" report cargo-test cargo test "${packages[@]}"
+'''

@@ -13,6 +13,14 @@ items are issue files in the root [issues/](../../../issues/) with
 `epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
 pane pages, one group per phase below.
 
+> **Update, 2026-11-27.** Jim: "The eval process is a continuous
+> improvement process and should not be considered a one off project." The
+> phases below are the order the engine's capabilities arrive; keeping
+> every requirement green and growing coverage through issue files runs
+> continuously. See "Continuous improvement" in
+> [evals.md](../evals.md#continuous-improvement) and the
+> [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
+
 ## Goal
 
 For every project, at any time, answer one question with evidence: **does
@@ -331,10 +339,10 @@ Rules:
   falls back to the other stages. Most of our apps have little traffic, so
   production chaos and `cd` evals carry most of the weight for now.
 - **Our own traffic is excluded.** Every eval and smoke run sends a
-  `monorepo-evals` user agent and an `x-monorepo-synthetic: 1` header. The
+  `jimhillr-evals` user agent and an `x-jimhillr-synthetic: 1` header. The
   PostHog snippet doesn't load for that user agent (so no recording is
-  spent), the `telemetry` Worker tags those events `synthetic` and metric
-  queries filter them out, and Web Analytics ignores headless browsers
+  spent), the `telemetry` Worker drops events with either one (so metric
+  queries never see them), and Web Analytics ignores headless browsers
   already. Without this, chaos runs would show up as real users' errors.
 - **Deploy-relative checks.** `errors_after_deploy` compares the hour after
   each `deploy` event with the week before it, which is how a regression
@@ -394,7 +402,7 @@ asking:
 | Field | Web apps and sites | Desktop and mobile (webview) | Bevy games |
 | --- | --- | --- | --- |
 | Where | URL and route, a CSS selector path plus the element's text and role, the click's offset inside the element, viewport size, scroll position | Same, plus the app's route | Scene or state name, screen position, world position and the entity under the cursor (name or marker component) |
-| Which build | `commit` and `deploy` from a `<meta name="monorepo-build">` tag every build writes | App version and commit baked in at build time | Version and commit baked in, seed, frame number |
+| Which build | `commit` and `deploy` from a `<meta name="jimhillr-build">` tag every build writes | App version and commit baked in at build time | Version and commit baked in, seed, frame number |
 | Context | Screenshot of the viewport with the pin drawn on it, last 20 console errors, browser and OS | Screenshot, last 20 errors from the log, OS | Screenshot (Bevy's screenshot API), last 20 log errors, the RNG seed and recent inputs when the scripted mode from deploy feedback phase 3c exists |
 | Who and when | `by: jim`, UTC time | Same | Same |
 
@@ -498,7 +506,7 @@ third party's systems, and without spending free-tier room we need.
    network conditions and browser context options. This needs nothing
    deployed and touches no shared infrastructure.
 2. **In our own Workers** (pane's Worker, `telemetry`, bear_down when they
-   exist). A request carrying `x-monorepo-chaos: <fault>` and a valid HMAC
+   exist). A request carrying `x-jimhillr-chaos: <fault>` and a valid HMAC
    signature (secret `EVALS_CHAOS_KEY`, short expiry) makes that one request
    fail in the named way. Without a valid signature the header is ignored.
    Other users' requests are never affected.
@@ -580,7 +588,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   here is the thing to avoid; human issues that create a
   setting add its manifest entry in the same PR.
 - **Evals of kind `human-check`** in a project's `evals.toml` (or the
-  `monorepo` project's, for repo-wide settings such as Claude connectors)
+  `jimhillr` project's, for repo-wide settings such as Claude connectors)
   point a requirement at a setting: `kind = "human-check"`,
   `setting = "<id>"`, `stages = ["human"]`. `evals check` reports a
   `setting` that isn't in the manifest (EVL-001 widened) and a manifest
@@ -604,7 +612,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   `evals human-checks due --write`; `evals verdicts` will read the same
   file. A
   manifest entry that no eval names is not a warning: most settings are
-  repo-wide and have no requirement until the `MONO-xxx` ones exist.
+  repo-wide and have no requirement until the `JIMH-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
   production eval. A check past twice its `every` with no answer makes it
   at risk, never met: an unchecked setting is unknown, not fine.
@@ -633,7 +641,7 @@ it worked: the requirement turns green or it doesn't.
 ### Process evals (later)
 
 The same engine can grade our own process, from GitHub data alone, as
-requirements of a `monorepo` project (`MONO-xxx`):
+requirements of the `jimhillr` project (`JIMH-xxx`):
 
 - Change failure rate: production deploys followed by a `FIX` or rollback
   within 48 hours.
@@ -681,7 +689,8 @@ phase 3.
   the `smoke` reports from `target/evals-reports/cd/` once projects have
   `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
-  released binaries.
+  released binaries. Done (2026-11-27): the `trycmd` kind, collected from
+  the saved `cargo test` output.
 - The `eval-triage` skill and its daily scheduled task, replacing the
   planned nightly FIX task.
 - `evals check` makes "every `must` has a production eval" an error.
@@ -727,7 +736,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 - `feedback/model`, and pane's `/feedback/sign-in` token page and
   `/api/feedback` routes writing `feedback.jsonl` lines and screenshots
   through `pane-edit` PRs.
-- `feedback/toolbar` (wasm), and the `monorepo-build` meta tag, in cookbook
+- `feedback/toolbar` (wasm), and the `jimhillr-build` meta tag, in cookbook
   first, then every web app and Perseus site.
 - The toolbar injected into the cahokia desktop and mobile webviews, with
   sign-in through the deep link.
@@ -741,7 +750,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 ### Phase 8: process evals
 
-- `MONO-xxx` requirements and the GitHub-derived metrics above.
+- `JIMH-xxx` requirements and the GitHub-derived metrics above.
 - Feed them into pane's system signals and the deep project review deck.
 
 ## Things Jim does

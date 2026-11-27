@@ -1,5 +1,7 @@
 # controlled_chaos
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/controlled_chaos.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A digital tabletop card game built with [Bevy](https://bevyengine.org/), featuring turn-based card game mechanics and deck-building gameplay.
 
 ## Overview
@@ -71,6 +73,22 @@ stops the game from starting.
 `src/theme.rs` holds the choice (`GameTheme`) and has the tests that check
 every button and text colour against its background in all four
 combinations. `src/settings.rs` loads and saves it.
+
+## Gameplay events
+
+The web build reports a few gameplay events to the repo's
+[`telemetry` Worker](../telemetry/README.md), so we can see whether people
+play and where the game breaks: `session_start` when the game loads,
+`game_start` when Start Game is pressed, `round` every fifth round,
+`game_over` with the last round, `quit` with the round reached when the
+page is closed, and an `error` event with the message when the game
+panics. They go out with `navigator.sendBeacon`, tagged with the commit
+the build came from.
+
+Nothing identifies the player: no ids, cookies or storage. The Worker
+drops events from browsers that send Do Not Track or Global Privacy
+Control, and never stores IP addresses. The desktop and Android builds
+send nothing. `src/telemetry.rs` has the events and their tests.
 
 ## Development
 

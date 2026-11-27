@@ -10,7 +10,7 @@
 # a comment saying why. A real secret that was committed is rotated, not
 # hidden: see "Secrets" in standards/docs/security.md.
 
-title = "monorepo"
+title = "jimhillr"
 
 [extend]
 useDefault = true

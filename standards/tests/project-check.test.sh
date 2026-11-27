@@ -154,6 +154,9 @@ expect "unsafe_code deny without a reason" "$r" 0 "warning[LIN-002] app/Cargo.to
 r=$(new_repo lin2why); sed -i 's/unsafe_code = "forbid"/# deny, not forbid: one #[unsafe(no_mangle)] entry point.\nunsafe_code = "deny"/' "$r/app/Cargo.toml"; add_all "$r"
 expect "unsafe_code deny with a reason" "$r" 0 "" "LIN-002"
 
+r=$(new_repo lin2whysec); sed -i 's/^\[lints.rust\]/# deny, not forbid: one JIT call.\n[lints.rust]/; s/unsafe_code = "forbid"/unsafe_code = "deny"/' "$r/app/Cargo.toml"; add_all "$r"
+expect "unsafe_code deny with a reason above its section" "$r" 0 "" "LIN-002"
+
 r=$(new_repo untracked); mkdir -p "$r/scratch"; echo '[tools]' >"$r/scratch/mise.toml"
 git -C "$r" add -A ':!scratch'
 expect "untracked projects are not checked" "$r" 0 "" "scratch"
