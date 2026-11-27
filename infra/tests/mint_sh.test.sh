@@ -49,7 +49,7 @@ echo "curl \$method \$url \$body" >>"$work/curl.log"
 auth0() { printf '%s\n200' "\$1"; }
 case "\$method \$url" in
   "GET https://cf/accounts/acct/tokens/permission_groups"*)
-    echo '{"success":true,"result":[{"id":"p1","name":"Pages Write"},{"id":"w1","name":"Workers Scripts Write"},{"id":"d1","name":"D1 Write"},{"id":"a1","name":"Account Analytics Read"},{"id":"r1","name":"Account Web Analytics Read"},{"id":"e1","name":"Account Web Analytics Write"}]}' ;;
+    echo '{"success":true,"result":[{"id":"p1","name":"Pages Write"},{"id":"w1","name":"Workers Scripts Write"},{"id":"d1","name":"D1 Write"},{"id":"a1","name":"Account Analytics Read"},{"id":"r1","name":"Account Settings Read"},{"id":"e1","name":"Account Settings Write"}]}' ;;
   "GET https://cf/accounts/acct/tokens?"*)
     echo '{"success":true,"result":[{"id":"tok-deploy","name":"jimhillr-deploy"}]}' ;;
   "POST https://cf/accounts/acct/tokens")
@@ -157,7 +157,7 @@ grep -qE '"expires_on":"[0-9]{4}-[0-9]{2}-[0-9]{2}T' "$work/curl.log" && ok "min
 
 # A missing Cloudflare permission group fails with the close matches.
 reset
-sed -i 's/{"id":"r1","name":"Account Web Analytics Read"},//' "$work/bin/curl"
+sed -i 's/{"id":"r1","name":"Account Settings Read"},//' "$work/bin/curl"
 code=0
 out=$(mint bash "$script" run cloudflare 2>&1) || code=$?
 [ "$code" != 0 ] && grep -q "groups like it: .*Account Analytics Read" <<<"$out" && ok "a renamed permission group fails clearly" || fail "missing group: $out"

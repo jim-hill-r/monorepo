@@ -62,9 +62,12 @@ declare -A WHERE=(
 # Cloudflare account-owned tokens: name and permission groups (the names the
 # permission-groups API uses). A missing name fails the run and lists the
 # close matches, since Cloudflare renames groups now and then.
+# Web Analytics (the RUM API) has no permission group of its own: it takes
+# Account Settings, so the infra tokens use that (checked against the live
+# API, 2026-11-27).
 CF_DEPLOY_PERMS=("Pages Write" "Workers Scripts Write" "D1 Write" "Account Analytics Read")
-CF_READ_PERMS=("Account Web Analytics Read")
-CF_APPLY_PERMS=("Account Web Analytics Write")
+CF_READ_PERMS=("Account Settings Read")
+CF_APPLY_PERMS=("Account Settings Write")
 
 # What MINT_ROTATE=auto remakes. Never the state passphrase (it encrypts
 # state), the Android keystore (a new one can't update the installed app)

@@ -115,7 +115,7 @@ every = "30d"
 id = "cloudflare-infra-token-scopes"
 vendor = "Cloudflare"
 where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
-expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Web Analytics Read; jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Web Analytics Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
+expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Settings Read (which Web Analytics uses); jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Settings Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
 why = "PR plans must not be able to change anything, and OpenTofu must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
 every = "90d"
 
