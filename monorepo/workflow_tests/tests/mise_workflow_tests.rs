@@ -629,6 +629,11 @@ fn test_cd_evals_run_right_after_a_deploy() {
         deploy < cd && cd < upload,
         "deploy, then cd evals, then upload"
     );
+    assert_eq!(
+        steps[upload]["with"]["retention-days"].as_u64(),
+        Some(7),
+        "cd eval results are read in the same run, so they keep 7 days (RES-003)"
+    );
     assert_eq!(steps[deploy]["id"].as_str(), Some("deploy"));
     assert!(
         steps[deploy]["run"]
