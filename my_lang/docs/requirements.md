@@ -17,7 +17,8 @@ runs in `ci`. Its production evals arrive with the CLI
 - Why: A compiler is only useful if what it builds computes what the
   program says.
 - Accept: a program of `function` and `output` declarations compiles and
-  runs in-process; `return` gives the function's value; `+`, `-`, `*` and
+  runs in-process; `return` gives the function's value, and a body that
+  ends in an expression without `return` gives that expression's value; `+`, `-`, `*` and
   `/` work on 64-bit integers; `==`, `!=`, `<`, `>`, `<=` and `>=` give 1
   or 0; variables hold what was assigned; one function can call another;
   functions take up to 8 integer arguments.

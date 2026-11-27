@@ -14,16 +14,19 @@ This project provides the foundation for building a new programming language wit
 
 - **`function`**: Defines a pure function
   - Single segment only
-  - Must return a single value
-  - Cannot be void
+  - Gives a single value: the `return` it reaches, or else the expression
+    its body ends with (`function add(a, b) { a + b }` gives `a + b`)
+  - A body with neither (empty, or ending in an assignment) gives 0 for now
   - No side effects allowed
   
 - **`input`**: Allows side effects (input operations)
-  - Does NOT allow return statements
+  - Does NOT allow return statements, and a trailing expression is only
+    evaluated, so it always gives 0
   - Used for reading external state
   
 - **`output`**: Allows side effects (output operations)
-  - DOES allow return statements
+  - DOES allow return statements, and gives its trailing expression's value
+    like a `function`
   - Used for writing external state
 
 - **`return`**: Returns a value from the current function
@@ -50,8 +53,9 @@ The code generator (`src/codegen.rs`) translates the AST into LLVM IR.
 - **Arithmetic operations** — `+`, `-`, `*`, `/` using LLVM integer instructions
 - **Comparison operations** — `==`, `!=`, `<`, `>`, `<=`, `>=` (result is `i64`: 1 or 0)
 - **Function declarations** (`function`) — compiled to LLVM functions with `i64` parameters and return type
+- **Trailing expressions** — in a `function` or `output`, an expression that ends the body is returned, as if written `return <expression>`
 - **Output declarations** (`output`) — same as function, return statements are allowed
-- **Input declarations** (`input`) — compiled to LLVM functions without return statements
+- **Input declarations** (`input`) — compiled to LLVM functions without return statements; they return 0
 - **Variable assignments** — stack-allocated via `alloca`/`store`/`load`
 - **Function calls** — intra-module calls resolved by name
 
