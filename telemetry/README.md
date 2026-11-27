@@ -67,8 +67,9 @@ Each event is one Analytics Engine data point, indexed by `project`:
 | `double2` | | week | week | | | | |
 
 Analytics Engine is only the inbox. Per the repo's "files before databases"
-rule, a weekly workflow (fan feedback plan, step 5) exports the votes into
-the repo as JSON Lines files.
+rule, `telemetry-feedback-export.yml` exports bear_down's votes and
+exposures each week into the repo's `feedback-data` branch as JSON Lines
+files, with a summary per A/B arm (`standards/scripts/feedback.sh`).
 
 ## Free tier
 

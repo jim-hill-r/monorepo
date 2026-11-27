@@ -160,6 +160,21 @@ No Rust cache, so the Actions cache budget is untouched.
 Tests: `monorepo/workflow_tests/tests/coverage_workflow_tests.rs` and
 `standards/tests/coverage.test.sh`.
 
+## telemetry-feedback-export.yml
+
+**Telemetry Feedback Export** runs Tuesdays at 6 AM Pacific (after Monday
+Night Football) and by hand. One job, the only one with `contents: write`,
+reads the last 8 days of bear_down's `feedback` and `exposure` events from
+the telemetry Worker's Analytics Engine dataset (`standards/scripts/feedback.sh
+query`, with `CLOUDFLARE_API_TOKEN`, which has Account Analytics read) and
+commits them to the `feedback-data` data branch with `feedback.sh store`:
+`bear_down/<season>-week-<nn>.jsonl` plus a Markdown summary per A/B arm
+(step 5 of [the fan feedback plan](../../bear_down/docs/plans/2026-11-fan-feedback.md)).
+Its only push is to `feedback-data` (SEC-007).
+
+Tests: `monorepo/workflow_tests/tests/feedback_export_workflow_tests.rs` and
+`standards/tests/feedback.test.sh`.
+
 ## all-dependency-audit.yml
 
 Nightly (2:30 AM Pacific) or by hand: runs `standards/scripts/deps-check.sh
