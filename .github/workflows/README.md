@@ -264,6 +264,22 @@ The workflow never deletes the default branch and skips any branch that is the h
 - `contents: write` - To delete branch refs
 - `pull-requests: read` - To find branches with open pull requests
 
+## pull-request-closed-cleanup.yml
+
+Runs when a pull request closes, merged or not, and deletes the Actions
+caches scoped to its `refs/pull/N/merge` ref (GitHub's documented cache
+clean-up pattern). Those caches can only ever be restored by that PR, but they
+count toward the repo's 10 GB cache limit until GitHub evicts them after 7
+unused days. It never touches `main`'s caches or another PR's, and the run
+summary says how many it deleted. Phase 2 of the
+[resource cleanup plan](../../standards/docs/plans/2026-11-resource-cleanup.md).
+
+### Permissions
+
+- `actions: write` - To list and delete caches
+
+Tests: `monorepo/workflow_tests/tests/pull_request_closed_cleanup_workflow_tests.rs`.
+
 ## pull-request-agent-skills.yml
 
 Validates the agent skills in `.agents/skills/` against the
