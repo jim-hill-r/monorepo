@@ -34,6 +34,26 @@ one, and the **Draw card** and **End turn** buttons to move the turn on. The
 keyboard works too: **Space** draws a card and ends your turn, and **1** to
 **8** pick a card from your hand. The game shows what to do next on screen.
 
+## Look and display settings
+
+The game uses the design system's **gamey** theme
+([design_system](../design_system/README.md)) through the
+`design_system_palette` crate: every colour on screen is a token, so the
+design system's contrast checks cover the game too. The eight card
+categories are drawn in the theme's categorical colours, `data-1`
+(Technology) to `data-8` (Society), as the card frame and artwork block;
+card text sits on `surface`, never on the category colour.
+
+The start screen has two settings:
+
+- **Colours: Dark / Light** switches the colour scheme. Dark is the default.
+- **Accessible: Off / On** turns on accessible mode: WCAG AAA contrast,
+  text one step larger, and the design system's accessible palette.
+
+The choice lasts until the game closes. `src/theme.rs` holds it
+(`GameTheme`) and has the tests that check every button and text colour
+against its background in all four combinations.
+
 ## Development
 
 ```bash

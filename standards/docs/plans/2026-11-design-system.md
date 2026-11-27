@@ -446,6 +446,8 @@ phase 1 is done.
 5. **controlled_chaos** (gamey): replace its `Color::srgb(...)` literals with
    `design_system_palette`, card categories from `data-1` to `data-8`, and add
    accessible mode to its settings.
+   Done 2026-11-27: the light or dark choice and accessible mode are on its
+   start screen, which is its only settings screen.
 6. **starcraft** when it comes off hold.
 
 ### Phase 5: the rest

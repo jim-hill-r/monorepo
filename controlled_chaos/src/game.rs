@@ -8,8 +8,8 @@ use crate::input::{
     ActionButton, HAND_SLOTS, PlayerAction, send_button_actions, send_keyboard_actions,
 };
 use crate::rules::{Player, RulesEngine, TurnPhase};
-use crate::splash::{BUTTON_HOVERED, BUTTON_NORMAL, BUTTON_PRESSED};
 use crate::state::AppState;
+use crate::theme::{self, GameTheme};
 
 /// Plugin that sets up the core game systems.
 pub struct GamePlugin;
@@ -514,7 +514,14 @@ fn ai_handle_end_phase(
 /// The layout is compact so it fits a phone in landscape (about 360 logical
 /// pixels tall): both players' stats sit side by side, the hand is a row of
 /// buttons, and the touch targets are at least 48 pixels tall.
-fn spawn_game_ui(mut commands: Commands) {
+///
+/// Colours come from the gamey theme in the player's chosen scheme and mode
+/// ([`GameTheme`]): the screen is `surface`, headings and the hand are
+/// `text`, the phase line is `accent` and the reminders are `text-muted`.
+fn spawn_game_ui(mut commands: Commands, theme: Res<GameTheme>) {
+    let tokens = theme.tokens();
+    let text = theme::color(tokens.text);
+    let muted = theme::color(tokens.text_muted);
     commands
         .spawn((
             GameUiRoot,
@@ -529,7 +536,7 @@ fn spawn_game_ui(mut commands: Commands) {
                     padding: UiRect::all(Val::Px(8.0)),
                     ..default()
                 },
-                background_color: BackgroundColor(Color::srgb(0.15, 0.15, 0.2)),
+                background_color: BackgroundColor(theme::color(tokens.surface)),
                 ..default()
             },
         ))
@@ -538,8 +545,8 @@ fn spawn_game_ui(mut commands: Commands) {
             root.spawn(TextBundle::from_section(
                 "Controlled Chaos - Player vs CPU",
                 TextStyle {
-                    font_size: 22.0,
-                    color: Color::WHITE,
+                    font_size: theme.font(22.0),
+                    color: text,
                     ..default()
                 },
             ));
@@ -554,8 +561,8 @@ fn spawn_game_ui(mut commands: Commands) {
                 ..default()
             })
             .with_children(|row| {
-                spawn_player_stats(row, 0, "Player 1", PLAYER_STAT_COLORS[0]);
-                spawn_player_stats(row, 1, "Player 2", PLAYER_STAT_COLORS[1]);
+                spawn_player_stats(row, &theme, 0, "Player 1");
+                spawn_player_stats(row, &theme, 1, "Player 2");
             });
 
             // Game Phase Info
@@ -564,8 +571,8 @@ fn spawn_game_ui(mut commands: Commands) {
                 TextBundle::from_section(
                     "Phase: Draw | Round: 1",
                     TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.8, 0.8, 0.3),
+                        font_size: theme.font(16.0),
+                        color: theme::color(tokens.accent),
                         ..default()
                     },
                 ),
@@ -577,8 +584,8 @@ fn spawn_game_ui(mut commands: Commands) {
                 TextBundle::from_section(
                     "Hand: (loading...)",
                     TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.9, 0.9, 0.9),
+                        font_size: theme.font(16.0),
+                        color: text,
                         ..default()
                     },
                 ),
@@ -599,7 +606,7 @@ fn spawn_game_ui(mut commands: Commands) {
             })
             .with_children(|hand| {
                 for idx in 0..HAND_SLOTS {
-                    spawn_action_button(hand, PlayerAction::PickCard(idx), Val::Px(150.0));
+                    spawn_action_button(hand, &theme, PlayerAction::PickCard(idx), Val::Px(150.0));
                 }
             });
 
@@ -609,44 +616,35 @@ fn spawn_game_ui(mut commands: Commands) {
                 TextBundle::from_section(
                     "Tap Draw card or press SPACE",
                     TextStyle {
-                        font_size: 16.0,
-                        color: Color::srgb(0.4, 0.9, 0.4),
+                        font_size: theme.font(16.0),
+                        color: text,
                         ..default()
                     },
                 ),
             ));
 
             // Draw a card / end the turn.
-            spawn_action_button(root, PlayerAction::Advance, Val::Px(180.0));
+            spawn_action_button(root, &theme, PlayerAction::Advance, Val::Px(180.0));
 
             // Win condition reminder
             root.spawn(TextBundle::from_section(
                 "Win: Highest happiness when deck runs out.  Lose: Life or civilians reach 0.",
                 TextStyle {
-                    font_size: 12.0,
-                    color: Color::srgb(0.5, 0.5, 0.5),
+                    font_size: theme.font(12.0),
+                    color: muted,
                     ..default()
                 },
             ));
         });
 }
 
-/// Text colors of each player's (life, civilians, happiness) lines.
-const PLAYER_STAT_COLORS: [[Color; 3]; 2] = [
-    [
-        Color::srgb(0.3, 0.8, 0.3),
-        Color::srgb(0.3, 0.7, 0.7),
-        Color::srgb(0.8, 0.8, 0.3),
-    ],
-    [
-        Color::srgb(0.8, 0.3, 0.3),
-        Color::srgb(0.3, 0.5, 0.7),
-        Color::srgb(0.8, 0.6, 0.3),
-    ],
-];
-
 /// Spawns a column with one player's life, civilians and happiness.
-fn spawn_player_stats(parent: &mut ChildBuilder, player: usize, name: &str, colors: [Color; 3]) {
+///
+/// Life is in `text` and the others in `text-muted`. The players are told
+/// apart by name and position, not colour.
+fn spawn_player_stats(parent: &mut ChildBuilder, theme: &GameTheme, player: usize, name: &str) {
+    let tokens = theme.tokens();
+    let (text, muted) = (theme::color(tokens.text), theme::color(tokens.text_muted));
     parent
         .spawn(NodeBundle {
             style: Style {
@@ -657,17 +655,27 @@ fn spawn_player_stats(parent: &mut ChildBuilder, player: usize, name: &str, colo
         })
         .with_children(|column| {
             let lines = [
-                (PlayerStat::Life, format!("{name}: 20 Life"), 20.0),
-                (PlayerStat::Civilians, "  Civilians: 2".to_string(), 14.0),
-                (PlayerStat::Happiness, "  Happiness: 50".to_string(), 14.0),
+                (PlayerStat::Life, format!("{name}: 20 Life"), 20.0, text),
+                (
+                    PlayerStat::Civilians,
+                    "  Civilians: 2".to_string(),
+                    14.0,
+                    muted,
+                ),
+                (
+                    PlayerStat::Happiness,
+                    "  Happiness: 50".to_string(),
+                    14.0,
+                    muted,
+                ),
             ];
-            for ((stat, text, font_size), color) in lines.into_iter().zip(colors) {
+            for (stat, text, font_size, color) in lines {
                 column.spawn((
                     PlayerStatText { player, stat },
                     TextBundle::from_section(
                         text,
                         TextStyle {
-                            font_size,
+                            font_size: theme.font(font_size),
                             color,
                             ..default()
                         },
@@ -677,16 +685,15 @@ fn spawn_player_stats(parent: &mut ChildBuilder, player: usize, name: &str, colo
         });
 }
 
-/// Minimum height of a touch target, in logical pixels.
-const TOUCH_TARGET_HEIGHT: f32 = 48.0;
-
-/// Background of a button that does nothing right now (a card shown during
-/// the Draw or End phase).
-const BUTTON_DISABLED: Color = Color::srgb(0.22, 0.22, 0.3);
-
 /// Spawns a hidden [`ActionButton`] with an empty label.
 /// [`update_action_buttons`] shows it and sets its label.
-fn spawn_action_button(parent: &mut ChildBuilder, action: PlayerAction, width: Val) {
+fn spawn_action_button(
+    parent: &mut ChildBuilder,
+    theme: &GameTheme,
+    action: PlayerAction,
+    width: Val,
+) {
+    let colors = theme.button();
     parent
         .spawn((
             ActionButton(action),
@@ -694,13 +701,13 @@ fn spawn_action_button(parent: &mut ChildBuilder, action: PlayerAction, width: V
                 style: Style {
                     display: Display::None,
                     width,
-                    min_height: Val::Px(TOUCH_TARGET_HEIGHT),
+                    min_height: Val::Px(theme.touch_target()),
                     padding: UiRect::all(Val::Px(6.0)),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     ..default()
                 },
-                background_color: BackgroundColor(BUTTON_NORMAL),
+                background_color: BackgroundColor(theme::color(colors.normal)),
                 ..default()
             },
         ))
@@ -708,8 +715,8 @@ fn spawn_action_button(parent: &mut ChildBuilder, action: PlayerAction, width: V
             button.spawn(TextBundle::from_section(
                 "",
                 TextStyle {
-                    font_size: 15.0,
-                    color: Color::WHITE,
+                    font_size: theme.font(15.0),
+                    color: theme::color(colors.label),
                     ..default()
                 },
             ));
@@ -752,6 +759,7 @@ fn shown_hand(engine: &RulesEngine, ai_present: bool) -> Option<&[Card]> {
 /// current state: one button per card in the shown hand (live in the Play
 /// and Battle phases), and the Draw card / End turn button.
 fn update_action_buttons(
+    theme: Res<GameTheme>,
     engine_res: Option<Res<RulesEngineResource>>,
     ai: Option<Res<AiOpponent>>,
     mut buttons: Query<(
@@ -769,6 +777,7 @@ fn update_action_buttons(
     let picking = awaits_human(engine, ai_present)
         && matches!(engine.phase, TurnPhase::Play | TurnPhase::Battle);
     let hand = shown_hand(engine, ai_present);
+    let colors = theme.button();
 
     for (button, interaction, mut style, mut bg, children) in &mut buttons {
         let (label, live) = match button.0 {
@@ -788,17 +797,17 @@ fn update_action_buttons(
             continue;
         };
         style.display = Display::Flex;
-        *bg = BackgroundColor(match (live, interaction) {
-            (false, _) => BUTTON_DISABLED,
-            (true, Interaction::Pressed) => BUTTON_PRESSED,
-            (true, Interaction::Hovered) => BUTTON_HOVERED,
-            (true, Interaction::None) => BUTTON_NORMAL,
-        });
+        let (fill, ink) = colors.state(live, *interaction);
+        *bg = BackgroundColor(theme::color(fill));
         for &child in children {
-            if let Ok(mut text) = labels.get_mut(child)
-                && text.sections[0].value != label
-            {
-                text.sections[0].value.clone_from(&label);
+            if let Ok(mut text) = labels.get_mut(child) {
+                if text.sections[0].value != label {
+                    text.sections[0].value.clone_from(&label);
+                }
+                let ink = theme::color(ink);
+                if text.sections[0].style.color != ink {
+                    text.sections[0].style.color = ink;
+                }
             }
         }
     }
@@ -988,6 +997,7 @@ mod tests {
     fn make_test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins);
+        app.init_resource::<GameTheme>();
         app
     }
 
