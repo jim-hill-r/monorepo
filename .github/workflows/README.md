@@ -130,7 +130,9 @@ read-only credentials and no lock. `infra-apply.yml` plans on `main` in the
 `infra-credentials` after Jim's approval when it changes a credential
 (decision 0010). `infra-drift.yml` runs a refresh-only plan every Monday.
 `tofu-state-deploy.yml` deploys the OpenTofu state Worker (`tofu_state`,
-decision 0009) in `infra`. Every job that touches state on `main` shares the
+decision 0009) in `infra`. `infra-mint.yml`, run by hand in
+`infra-credentials`, mints every other infra secret straight into GitHub
+secrets from the bootstrap credentials (decision 0011). Every job that touches state on `main` shares the
 `infra` concurrency group. Details are in `infra/README.md` and
 `tofu_state/README.md`. Tests: `monorepo/workflow_tests/tests/infra_workflows_tests.rs`
 and `tofu_state_deploy_tests.rs`.

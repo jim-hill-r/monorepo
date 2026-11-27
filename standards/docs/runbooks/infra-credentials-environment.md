@@ -1,85 +1,88 @@
-# Set up the infra-credentials environment
+# Set up the infra environments and bootstrap credentials
 
-- **Kind:** one-time
+- **Kind:** one-time (again only to rotate a bootstrap credential)
 - **Status:** open (`issues/human/infra-credentials-environment.md`)
-- **Time:** about 20 minutes
-- **Cost:** $0. Environments with required reviewers are free on public
-  repos (they'd need GitHub Pro, $4 a month, if the repo went private).
-  Each credential change adds one Actions job of a minute or less.
+- **Time:** about 30 minutes
+- **Cost:** $0. Every item is on a free plan, and each Infra Mint run uses one Auth0 Machine to Machine token out of the free 1,000 a month.
 
 ## What it's for
 
-The second approval for credential changes
-([decision 0010](../decisions/0010-credential-second-approval.md)). Tokens
-that can create or change credentials live only in this environment, so a
-job that uses them waits until Jim approves the run. Until it exists, IaC
-can't apply any credential change.
+The `infra` and `infra-credentials` environments, and the three bootstrap credentials that the Infra Mint workflow makes every other infra secret from (decision 0011). Until this is done, every infra workflow skips its stacks, and the state Worker can't deploy.
 
 ## Why a person
 
-It is the gate on agents, so agents must not be able to make or change it:
-`jimhillr-agt` has Write, not Admin, and creating environments and their
-protection rules needs Admin. Its tokens are the first credentials, which
-nothing can mint before they exist.
+Everything else is minted from these three credentials, so they come first. Creating each one needs a signed-in person, and they must belong to Jim, behind his approval on `infra-credentials`, so an agent can never approve or widen its own access (decision 0010).
 
 ## Before you start
 
-- Signed in to GitHub as `jimhillr` (an admin of jimhillr/monorepo).
-- Signed in to the Auth0 dashboard for the tenant
-  `dev-jdadpn4pckxevrv5.us.auth0.com`.
-- [Create the Auth0 IaC applications](auth0-iac-credentials.md) done or
-  done in the same sitting, since it creates the `infra` environment.
+- Accounts:
+  - GitHub as `jimhillr`, signed in with a passkey or security key.
+  - The Auth0 tenant admin.
+  - The Cloudflare account Super Administrator.
+- Permissions: admin of `jimhillr/monorepo`.
+- Time: about 30 minutes.
+- Cost: $0. Everything is on a free plan, and each mint run uses one Auth0 Machine to Machine token out of the free 1,000 a month.
 
 ## Steps
 
-1. jimhillr/monorepo > Settings > Environments > New environment, named
-   `infra-credentials`.
-   - Required reviewers: `jimhillr` only. Leave "Prevent self-review" off
-     (you are the only reviewer).
-   - Turn **off** "Allow administrators to bypass configured protection
-     rules".
-   - Deployment branches and tags: Selected branches, add `main` only.
-   - No wait timer. Save protection rules.
-2. In Auth0 (manage.auth0.com > Applications > Applications > Create
-   Application), create a Machine to Machine app named `infra-credentials`,
-   authorized for the Auth0 Management API with these scopes only:
-   `read:clients`, `update:clients`, `create:clients`, `update:client_keys`,
-   `read:client_grants`, `create:client_grants`, `update:client_grants`.
-3. From the app's Settings tab, add its Domain, Client ID and Client
-   Secret as secrets of `infra-credentials` (see below).
-4. When the Cloudflare and GitHub stacks arrive, add their
-   credential-capable tokens here too (Cloudflare API Tokens: Edit and
-   Access: Apps and Policies: Edit; the infra GitHub App's key from
-   `github-app-infra.md`). Never as repository secrets.
-5. github.com > Settings > Password and authentication: make sure
-   `jimhillr` signs in with a passkey or security key, since this account's
-   sign-in is now what protects every credential.
+1. **Create the `infra` environment.** In jimhillr/monorepo > Settings > Environments > New environment, name it `infra`. Set Deployment branches to Selected branches, add `main`, and add no reviewers.
+
+2. **Create the `infra-credentials` environment.** Use the same page, with these settings:
+   - Required reviewers: `jimhillr` only.
+   - "Allow administrators to bypass configured protection rules": off.
+   - Deployment branches: `main` only.
+   - No wait timer.
+
+3. **Set up the GitHub App.** Follow [github-app-infra.md](github-app-infra.md).
+
+4. **Create the Auth0 bootstrap app.** In manage.auth0.com > Applications > Create Application:
+   - Choose Machine to Machine and name it `infra-credentials`.
+   - Authorize it for the Auth0 Management API with exactly these scopes: `read:clients`, `update:clients`, `create:clients`, `update:client_keys`, `read:client_grants`, `create:client_grants` and `update:client_grants`.
+   - Store its domain, client ID and secret as shown under "Where secrets go".
+
+5. **Create the Cloudflare bootstrap token.** In dash.cloudflare.com > Manage Account > Account API Tokens > Create Token > Custom token:
+   - Name it `jimhillr-infra-credentials`.
+   - Give it the one permission Account > Account API Tokens > Edit, for this account only.
+   - Store it as shown under "Where secrets go".
+
+6. **Run the first mint.** In Actions > Infra Mint > Run workflow, on `main`, set "what" to `all` and "rotate" to `CLOUDFLARE_API_TOKEN`. That replaces your hand-made deploy token with the minted `jimhillr-deploy`. Approve the run when GitHub asks. Its summary lists every secret it set, and it queues Deploy tofu_state, which needs no approval.
+
+7. **Delete the old token.** Once Deploy tofu_state and the next Pages deploy are green, delete your old hand-made token in My Profile > API Tokens. Automation never deletes, so this one is yours.
+
+8. **Set the Auth0 budget.** Reply in the Claude project with a number for `auth0_m2m_tokens_per_month` in `standards/radar/limits.toml`. It is 0 today; about 60 covers plans, applies, drift and mint runs. An agent makes the edit, since only you set budgets.
 
 ## Where secrets go
 
-All in jimhillr/monorepo > Settings > Environments > `infra-credentials` >
-Environment secrets, nowhere else:
+All of these are secrets of the `infra-credentials` environment:
 
-- `AUTH0_INFRA_CREDENTIALS_DOMAIN`
-- `AUTH0_INFRA_CREDENTIALS_CLIENT_ID`
-- `AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET`
+| Value | Secret |
+| --- | --- |
+| Auth0 tenant domain (`<tenant>.<region>.auth0.com`) | `AUTH0_INFRA_CREDENTIALS_DOMAIN` |
+| Auth0 `infra-credentials` client ID | `AUTH0_INFRA_CREDENTIALS_CLIENT_ID` |
+| Auth0 `infra-credentials` client secret | `AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET` |
+| Cloudflare `jimhillr-infra-credentials` token | `CLOUDFLARE_INFRA_CREDENTIALS_TOKEN` |
+| GitHub App key and ID | see [github-app-infra.md](github-app-infra.md) |
 
-Copy the client secret straight from Auth0 into GitHub; don't save it
-anywhere else.
+None of these may be a repository secret, and none should be stored anywhere else. Copy each value from the vendor page straight into GitHub and keep no copy.
 
 ## Verify
 
-- The environment page shows "Required reviewers: jimhillr", main only, and
-  no admin bypass.
-- Repository secrets (Settings > Secrets and variables > Actions) list no
-  `AUTH0_INFRA_CREDENTIALS_*`.
-- Tell any thread "done"; it deletes the issue. The settings checks
-  `github-infra-credentials-environment`, `github-agent-role` and
-  `github-claude-app-permissions` then come round every 90 days.
+- Settings > Environments shows:
+  - `infra`, limited to `main`.
+  - `infra-credentials`, with `jimhillr` as reviewer, admin bypass off, and limited to `main`.
+- The Infra Mint run is green, and its summary lists the state passwords, the Cloudflare and Auth0 tokens, `TOFU_STATE_ORIGIN` and the Android key.
+- Deploy tofu_state is green, and its smoke check passes.
+- The next Infra Apply run on `main` plans each stack instead of skipping it.
+
+Reply in the Claude project when you're done, and an agent closes the issue. These settings checks in `standards/settings.toml` then come round every 90 days:
+- `github-infra-credentials-environment`
+- `cloudflare-infra-credentials-token`
+- `auth0-infra-apps`
+- `github-app-infra`
 
 ## Undo or rotate
 
-To rotate the Auth0 app's secret: Auth0 > the app > Settings > Rotate
-secret, then overwrite `AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET`. Deleting
-the environment removes the gate and its secrets, so only do that if IaC is
-being retired.
+- **Rotate a minted secret:** run Infra Mint with its name in "rotate". The state passphrase is the exception, because it encrypts state.
+- **Rotate a bootstrap credential:** make a new one on the vendor page, replace its secret in `infra-credentials`, then delete the old one on the vendor page.
+- **After a leak:** revoke the bootstrap credential on the vendor page first. Then run Infra Mint with every minted name in "rotate".
+- **Undo everything:** delete the two environments, the Auth0 apps `infra-credentials`, `infra-read` and `infra-apply`, and the `jimhillr-*` Cloudflare account tokens.

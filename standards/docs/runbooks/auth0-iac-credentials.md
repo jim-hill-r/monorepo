@@ -1,8 +1,7 @@
 # Create the Auth0 IaC applications
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/auth0-iac-credentials.md`). The
-  token-minting workflow (Jim, 2026-11-27) is expected to replace this.
+- **Status:** Replaced by the Infra Mint workflow on 2026-11-27 ([decision 0011](../decisions/0011-mint-secrets-by-workflow.md)), which makes this for you. Kept only to show what a hand-made version looked like; for a rebuild, follow [infra-credentials-environment.md](infra-credentials-environment.md).
 - **Time:** about 15 minutes
 - **Cost:** $0. Each plan and apply gets one Management API token: about 30
   to 60 a month of the free 1,000 M2M tokens.

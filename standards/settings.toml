@@ -98,8 +98,8 @@ every = "90d"
 [[setting]]
 id = "cloudflare-api-token-scopes"
 vendor = "Cloudflare"
-where = "dash.cloudflare.com > My Profile > API Tokens"
-expect = "The token in CLOUDFLARE_API_TOKEN has Cloudflare Pages: Edit, Workers Scripts: Edit and D1: Edit (for the tofu_state Worker), is limited to this account, and doesn't expire within 30 days."
+where = "dash.cloudflare.com > Manage Account > Account API Tokens > jimhillr-deploy"
+expect = "The token in CLOUDFLARE_API_TOKEN is the account-owned jimhillr-deploy, minted by the Infra Mint workflow, with Pages Write, Workers Scripts Write, D1 Write and Account Analytics Read for this account only, and no other token with those permissions is left over from before."
 why = "A token missing a scope, or expired, fails every deploy."
 every = "90d"
 
@@ -114,16 +114,24 @@ every = "30d"
 [[setting]]
 id = "cloudflare-infra-token-scopes"
 vendor = "Cloudflare"
-where = "dash.cloudflare.com > My Profile > API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
-expect = "infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Web Analytics: Read; infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Web Analytics: Edit. Both are limited to this account, neither has any API Tokens permission, and neither expires within 30 days."
-why = "PR plans must not be able to change anything, and IaC must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
+where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Web Analytics Read; jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Web Analytics Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
+why = "PR plans must not be able to change anything, and OpenTofu must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
+every = "90d"
+
+[[setting]]
+id = "cloudflare-infra-credentials-token"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Environments > infra-credentials"
+expect = "The bootstrap token CLOUDFLARE_INFRA_CREDENTIALS_TOKEN, made by hand, has only Account API Tokens Write for this account and is a secret of infra-credentials only."
+why = "It can make any Cloudflare token, so it must stay behind Jim's approval (decision 0010) and do nothing else."
 every = "90d"
 
 [[setting]]
 id = "github-variable-tofu-state-origin"
 vendor = "GitHub"
 where = "jimhillr/monorepo > Settings > Secrets and variables > Actions > Variables"
-expect = "TOFU_STATE_ORIGIN is the state Worker's URL, https://jimhillr-tofu-state.<subdomain>.workers.dev, as the Deploy tofu_state workflow's summary shows it."
+expect = "TOFU_STATE_ORIGIN is the state Worker's URL, https://jimhillr-tofu-state.<subdomain>.workers.dev, as the Deploy tofu_state workflow's summary shows it. The Infra Mint workflow sets it."
 why = "The infra plan, apply and drift workflows read and lock state there (decision 0009); a wrong URL fails every plan."
 every = "180d"
 
@@ -131,7 +139,7 @@ every = "180d"
 id = "github-secrets-tofu-state"
 vendor = "GitHub"
 where = "jimhillr/monorepo > Settings > Secrets and variables > Actions, and Environments > infra"
-expect = "TOFU_STATE_READ_PASSWORD is a repository secret and TOFU_STATE_WRITE_PASSWORD is only in the infra environment, which is limited to main."
+expect = "TOFU_STATE_READ_PASSWORD and TOFU_STATE_PASSPHRASE are repository secrets and TOFU_STATE_WRITE_PASSWORD is only in the infra environment, which is limited to main. The Infra Mint workflow made them, and no copy exists outside GitHub and the Worker."
 why = "The OpenTofu state Worker accepts only these (decision 0009); a write password outside infra would let any PR change state."
 every = "90d"
 
@@ -151,6 +159,14 @@ vendor = "Auth0"
 where = "manage.auth0.com > Settings > Subscription"
 expect = "The tenant is on the Free plan with no payment method."
 why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
+every = "90d"
+
+[[setting]]
+id = "auth0-infra-apps"
+vendor = "Auth0"
+where = "manage.auth0.com > Applications > Machine to Machine, and APIs > Auth0 Management API > Machine to Machine Applications"
+expect = "infra-read has only read:clients and infra-apply only read:clients and update:clients (both minted by the Infra Mint workflow). The bootstrap infra-credentials app, made by hand and stored only in infra-credentials, has only read:clients, update:clients, create:clients, update:client_keys, read:client_grants, create:client_grants and update:client_grants."
+why = "A wider grant would let a PR plan or a non-credential apply change sign-in settings or mint secrets past Jim's approval (decision 0010)."
 every = "90d"
 
 # RapidAPI.

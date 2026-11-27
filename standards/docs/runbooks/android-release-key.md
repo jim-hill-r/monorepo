@@ -1,8 +1,7 @@
 # Make the Android release key
 
 - **Kind:** one-time, optional
-- **Status:** open (`issues/human/optional-create-android-release-key-controlled.md`).
-  The token-minting workflow may generate it instead (Jim, 2026-11-27).
+- **Status:** Replaced by the Infra Mint workflow on 2026-11-27 ([decision 0011](../decisions/0011-mint-secrets-by-workflow.md)), which makes this for you. Kept only to show what a hand-made version looked like; for a rebuild, follow [infra-credentials-environment.md](infra-credentials-environment.md).
 - **Time:** about 10 minutes
 - **Cost:** $0
 

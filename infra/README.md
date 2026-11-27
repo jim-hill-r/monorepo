@@ -86,9 +86,34 @@ that touches state on `main` shares the `infra` concurrency group with the
 state Worker's deploy.
 
 A stack whose secrets aren't set yet is skipped with a notice rather than
-failed, so the workflows can merge before the human setup in `issues/human/`
-is done. `TOFU_STATE_ORIGIN` is a repository variable
-(`issues/human/tofu-state-origin-variable.md`).
+failed, so the workflows can merge before the setup is done.
+`TOFU_STATE_ORIGIN` is a repository variable.
+
+## Minting credentials
+
+OpenTofu never makes a secret: anything a vendor generates would land in
+state (IAC-002). The **Infra Mint** workflow (`infra-mint.yml`, run by hand,
+in `infra-credentials`, so it waits for Jim's approval) makes them instead.
+`scripts/mint.sh` takes each value from the vendor's API response, or from
+`openssl rand`, and pipes it into `gh secret set`, masked in the log. It is
+never written to git, state or a file, and no one sees it (Jim, 2026-11-27).
+
+| Minted | Where | From |
+| --- | --- | --- |
+| `TOFU_STATE_READ_PASSWORD`, `TOFU_STATE_PASSPHRASE` | repository secrets | `openssl rand` |
+| `TOFU_STATE_WRITE_PASSWORD` | `infra` | `openssl rand` |
+| `TOFU_STATE_ORIGIN` | repository variable | the account's workers.dev subdomain |
+| `CLOUDFLARE_API_TOKEN` (`jimhillr-deploy`: Pages, Workers Scripts, D1 Write, Account Analytics Read) | repository secret | Cloudflare account-owned token |
+| `CLOUDFLARE_INFRA_READ_TOKEN` / `_APPLY_TOKEN` | repository / `infra` | Cloudflare account-owned tokens |
+| `AUTH0_INFRA_READ_*` / `AUTH0_INFRA_APPLY_*` | repository / `infra` | Auth0 Machine to Machine apps `infra-read` and `infra-apply` |
+| `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository secrets | `keytool`, in the job |
+
+It makes only what is missing, so it is safe to re-run; the `rotate` input
+names secrets to remake. The state passphrase is never rotated this way,
+since it encrypts state. When the passwords or the deploy token change, it
+queues **Deploy tofu_state**. A person makes only the bootstrap credentials:
+`issues/human/infra-credentials-environment.md`. Tested by
+`tests/mint_sh.test.sh`.
 
 ## Changing a setting
 

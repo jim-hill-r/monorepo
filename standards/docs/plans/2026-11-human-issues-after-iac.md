@@ -17,7 +17,7 @@ secrets that let automation make every other token.
 the `auth0` apply removes the old `cahokia-web` URLs, and IaC never deletes
 (decision 0007, item 8).
 
-## Waiting on Jim's choice: mint tokens by workflow
+## Minted by a workflow (Jim chose this on 2026-11-27)
 
 OpenTofu can't mint them under the rule "never commit secrets to git or store
 them in tf state": an Auth0 client secret or a Cloudflare token value comes
@@ -27,27 +27,29 @@ IAC-002 fails that plan. A workflow outside OpenTofu can: in the
 the vendor API with a bootstrap token and pipes the new value straight into
 `gh secret set`, masked in the log, never on disk, in git or in state.
 
-If Jim chooses that, these fold into the minting workflow:
+These now fold into the Infra Mint workflow (`infra/scripts/mint.sh`), and the files are deleted:
 
 | Issue | What the workflow does instead |
 | --- | --- |
 | `tofu-state-passwords` | Generates both passwords and the passphrase, sets the GitHub secrets |
-| `tofu-state-origin-variable` (PR #726) | Sets `TOFU_STATE_ORIGIN` after the Worker's first deploy |
+| `tofu-state-origin-variable` (PR #726) | Sets `TOFU_STATE_ORIGIN` from the account's workers.dev subdomain |
 | `auth0-iac-credentials` | Creates the infra-read and infra-apply M2M apps and their grants; the M2M budget is still Jim's number |
 | `cloudflare-iac-credentials` | Creates the infra-read and infra-apply tokens |
-| `cloudflare-api-token-workers-d1-edit` | Creates a deploy token with Pages, Workers Scripts and D1 Edit |
-| `cloudflare-dashboard-turn-web-analytics-production` | Adds Account Analytics: Read to the minted read token |
+| `cloudflare-api-token-workers-d1-edit` | Mints `CLOUDFLARE_API_TOKEN` as the account token `jimhillr-deploy` with Pages, Workers Scripts and D1 Write |
+| `cloudflare-dashboard-turn-web-analytics-production` | Gives `jimhillr-deploy` Account Analytics Read |
 | `optional-create-android-release-key-controlled` | Generates the keystore in the job and stores it as secrets |
-| `github-settings-code-security-turn-secret` | A `github` stack sets it, applied in `infra-credentials` |
-| `github-settings-rules-rulesets-default-ruleset` | The same stack adds the required check (never the bypass list, IAC-005) |
 
-`infra-credentials-environment` becomes the one setup task: the two
-environments and three bootstrap tokens (Auth0 with client and grant
-create, Cloudflare with API Tokens: Edit, a fine-grained GitHub token with
-Secrets, Variables, Environments and Administration), all only in
-`infra-credentials`.
+`infra-credentials-environment` is now the one setup task: the two
+environments and three bootstrap credentials (an Auth0 app that can create
+apps and grants, a Cloudflare token with Account API Tokens: Edit, and the
+infra GitHub App from `github-app-infra-credentials`, which Jim asked for in
+place of a PAT), all only in `infra-credentials`.
 
-## Staying with a person whatever the choice
+`github-settings-code-security-turn-secret` and
+`github-settings-rules-rulesets-default-ruleset` stay until the `github`
+stack (`issues/iac-github-stack.md`) applies them through the same app.
+
+## Staying with a person
 
 | Issue | Why |
 | --- | --- |
