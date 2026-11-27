@@ -7,6 +7,7 @@
 //! linked into a consumer's program (ROYL-001).
 
 mod finding;
+mod owe;
 mod parse;
 mod price;
 mod raw;
@@ -14,6 +15,7 @@ mod schema;
 mod secrets;
 
 pub use finding::{Code, Finding, Level};
+pub use owe::{FamilyOwed, FamilyUse, Limit, Owed, Status, Step, owe};
 pub use parse::{Parsed, SCHEMA, parse};
 pub use price::{MILLIONTHS, PriceLine, Priced, TierChoice, Usage, matches, names_family, price};
 pub use schema::*;

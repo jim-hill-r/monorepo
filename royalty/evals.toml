@@ -19,6 +19,15 @@ stages = ["ci"]
 kind = "cargo"
 filter = "royl_002_non_production_is_never_charged"
 
+# ROYL-004: The lowest ceiling wins, and the report says which
+
+[[eval]]
+id = "caps-and-budget-hold"
+requirement = "ROYL-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_004_"
+
 # ROYL-007: A file with only `[project]` stays valid for ever
 
 [[eval]]
