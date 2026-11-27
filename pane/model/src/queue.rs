@@ -319,20 +319,26 @@ pub fn build(pulls: &[Pull], ready: &BTreeSet<u64>) -> Queue {
     q
 }
 
-fn item(p: &Pull) -> QueueItem {
-    let names = || p.labels.iter().map(|l| l.name.as_str());
+/// The attention badges and level of a PR from its labels and author: red
+/// and orange labels, plus [`OUTSIDE_AUTHOR`] (orange) for an author not in
+/// [`KNOWN_AUTHORS`].
+#[must_use]
+pub fn badges(labels: &[Label], author: &str) -> (Vec<String>, Attention) {
+    let names = || labels.iter().map(|l| l.name.as_str());
     let mut badges: Vec<String> = names()
         .filter(|l| DECIDE_LABELS.contains(l) || LOOK_LABELS.contains(l))
         .map(str::to_owned)
         .collect();
-    let outside = !KNOWN_AUTHORS.contains(&p.user.login.as_str());
-    if outside {
-        badges.push(OUTSIDE_AUTHOR.to_owned());
-    }
     let mut level = attention(names());
-    if outside {
+    if !KNOWN_AUTHORS.contains(&author) {
+        badges.push(OUTSIDE_AUTHOR.to_owned());
         level = level.max(Attention::Look);
     }
+    (badges, level)
+}
+
+fn item(p: &Pull) -> QueueItem {
+    let (badges, level) = badges(&p.labels, &p.user.login);
     let covers = stack_size_from_body(p.body.as_deref().unwrap_or_default());
     QueueItem {
         number: p.number,

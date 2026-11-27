@@ -68,3 +68,50 @@ test('the approve page says when GitHub refuses @req:PANE-011', async ({ page })
   await expect(page.getByRole('alert')).toContainText('used up');
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
 });
+
+const merged = {
+  total_count: 2,
+  items: [
+    {
+      number: 21,
+      title: 'pane: a merged change',
+      html_url: `${repo}/pull/21`,
+      body: '**Summary.** Merged without review.',
+      labels: [],
+      user: { login: 'jimhillr-agt' },
+      pull_request: { merged_at: '2026-11-27T12:00:00Z' },
+    },
+    {
+      number: 22,
+      title: 'Tidy the docs',
+      html_url: `${repo}/pull/22`,
+      body: 'Tidy.',
+      labels: [{ name: 'security' }],
+      user: { login: 'jimhillr-agt' },
+      pull_request: { merged_at: '2026-11-27T13:00:00Z' },
+    },
+  ],
+};
+
+test('merged PRs are acknowledged after the fact or flagged @req:PANE-012', async ({ page }) => {
+  await page.route('https://api.github.com/**', (route) => route.fulfill({ json: merged }));
+  await page.goto('/acknowledge');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Acknowledge');
+  const rows = page.getByTestId('ack-list').locator('li');
+  await expect(rows).toHaveCount(2);
+  // Newest merge first; the security label is orange.
+  await expect(rows.first()).toHaveAttribute('data-attention', 'look');
+  await expect(rows.nth(1).getByRole('link', { name: 'Flag for follow-up' })).toHaveAttribute(
+    'href',
+    /^https:\/\/github\.com\/jimhillr\/monorepo\/new\/main\?filename=pane%2Fissues%2Ffollow-up-pr-21\.md&value=/,
+  );
+
+  await rows.first().getByRole('button', { name: 'Acknowledge' }).click();
+  await expect(rows).toHaveCount(1);
+  await page.reload();
+  await expect(page.getByTestId('ack-list').locator('li')).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Acknowledge all 1' }).click();
+  await expect(page.getByText('Every merged pull request is acknowledged.')).toBeVisible();
+});

@@ -9,7 +9,7 @@ use crate::{now, view};
 
 /// GET a public GitHub API URL. No custom headers, so the browser sends a
 /// simple CORS request with no preflight.
-async fn get_text(url: &str) -> Result<String, String> {
+pub(crate) async fn get_text(url: &str) -> Result<String, String> {
     let response = gloo_net::http::Request::get(url)
         .send()
         .await

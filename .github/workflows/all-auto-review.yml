@@ -1,0 +1,59 @@
+---
+# PR-003: jimhillr-reviewer approves the agent PRs its rules allow (decision
+# 0014, "The reviewer account" in standards/docs/pull-requests.md); Jim
+# approves the rest and reviews every merged PR afterwards on pane's
+# Acknowledge page. It runs main's own script on a schedule and never checks
+# out PR code, so a PR can't change the rules it is judged by.
+#
+# REVIEWER_TOKEN is jimhillr-reviewer's fine-grained token (this repo only:
+# Pull requests read and write, Contents, Checks and Commit statuses read).
+# It lives only in the `reviewer` environment, which deploys from main
+# alone; it is never in git or OpenTofu state. Until Jim adds it
+# (issues/human/jimhillr-reviewer-account.md) the run passes and says so.
+name: All Auto Review
+
+'on':
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Decide but don't approve
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auto-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    name: Auto review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: reviewer
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: standards/scripts
+
+      - name: Approve what the rules allow
+        env:
+          GH_TOKEN: ${{ secrets.REVIEWER_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "REVIEWER_TOKEN isn't set yet (issues/human/jimhillr-reviewer-account.md); nothing approved." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          login=$(gh api user --jq .login)
+          if [ "$login" != jimhillr-reviewer ]; then
+            echo "error[PR-003] REVIEWER_TOKEN belongs to $login, not jimhillr-reviewer; nothing approved."
+            exit 1
+          fi
+          bash standards/scripts/auto-review.sh run $DRY_RUN

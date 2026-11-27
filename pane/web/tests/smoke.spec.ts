@@ -42,6 +42,7 @@ const NAV: [string, string, string][] = [
   // [nav label, path, page heading]
   ['Today', '/', 'Today'],
   ['Approve', '/approve', 'Approve'],
+  ['Acknowledge', '/acknowledge', 'Acknowledge'],
   ['Health', '/health', 'Health'],
   ['Projects', '/projects', 'Projects'],
   ['Deliverables', '/deliverables', 'Deliverables'],

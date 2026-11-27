@@ -413,3 +413,8 @@ h1 {
 .meta a.approve {
   font-weight: 600;
 }
+
+/* The Acknowledge page's per-row button sits in the meta line. */
+.meta button.ack {
+  font-size: 0.85rem;
+}

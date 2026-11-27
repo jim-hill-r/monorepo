@@ -106,3 +106,16 @@ evals until they are built.
   or `credential-change`, orange for `security` or `cost`) and a link
   straight to its review form on GitHub. Stacked pull requests show as one
   stack. It reads GitHub without a token and says so when GitHub refuses.
+
+## PANE-012: Jim reviews every merged pull request after the fact
+
+- Priority: must
+- Why: Jim, 2026-11-27: "auto approve plus pane acknowledgements of every
+  pr". Low-risk PRs merge without his approval, so he still reads each one
+  after it lands
+  ([decision 0014](../../standards/docs/decisions/0014-faster-pr-approvals.md)).
+- Accept: the Acknowledge page lists every pull request merged since he
+  started, newest first, with its summary and attention badges, until he
+  acknowledges it (one at a time or all shown), and remembers that across
+  reloads; "Flag for follow-up" opens GitHub's editor with a `fix` issue
+  file for that PR in its project's `issues/`.

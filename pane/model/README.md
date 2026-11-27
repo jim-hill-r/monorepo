@@ -29,6 +29,12 @@ and builds a `Queue`: PRs to approve (clear, then orange), PRs labelled red
 that need a decision, and stacks. `summary` cuts a PR body to its executive
 summary and `attention` turns labels into a red, orange or clear badge.
 
+The `acks` module is the Acknowledge page's post-merge review: it parses
+GitHub's search for merged PRs, keeps the acknowledged numbers in an
+`AckStore`, lists the rest newest first, and builds the "Flag for
+follow-up" link, a GitHub new-file URL prefilled with a `fix` issue file in
+the PR's project.
+
 ## What's in it
 
 | Type | Holds |

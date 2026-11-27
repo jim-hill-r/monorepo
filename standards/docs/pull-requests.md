@@ -98,7 +98,8 @@ these hold:
   under the merge rule instead.
 
 Auto-merge doesn't replace the approval: `jimhillr-agt` can't approve its
-own PRs, so an agent PR still waits for a reviewer (normally Jim). Auto-merge
+own PRs, so an agent PR still waits for a reviewer: `jimhillr-reviewer`
+when its rules allow (see "The reviewer account"), otherwise Jim. Auto-merge
 means Jim's approval is the last step: GitHub squash-merges as soon as the
 approval lands, with no agent run in between.
 
@@ -139,6 +140,63 @@ Jim reviews from pane's **Approve** page (`/approve` on
 <https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
 ones first, with its summary, attention badges and a link to its review
 form.
+
+## The reviewer account
+
+`jimhillr-reviewer` is a GitHub account whose only job is approving the
+agent PRs its rules allow, so Jim doesn't have to (Jim, 2026-11-27: "a
+third GitHub account to do approvals so we can be explicit about what is
+being auto-approved and establish a process for that approver"; decision
+[0014](decisions/0014-faster-pr-approvals.md)). It isn't an agent: no
+Claude session holds its token, and it never writes code, comments or
+merges. Its approval counts toward the Default ruleset's one approval like
+anyone's.
+
+**How it runs.** The `All Auto Review` workflow
+(`.github/workflows/all-auto-review.yml`) runs every 15 minutes on `main`
+with `REVIEWER_TOKEN` from the `reviewer` environment, and calls
+`standards/scripts/auto-review.sh run`. It reads every open PR through the
+API and never checks out PR code, so a PR can't change the rules it is
+judged by.
+
+**What it may approve.** A PR only when every one of these holds (PR-003):
+
+1. Opened by `jimhillr-agt`, out of draft, based on `main` (a stack is
+   approved as its retargeted top PR).
+2. Every check run on the head commit finished and passed (skipped and
+   neutral count), every commit status is success, and `CI result` and
+   `PR summary` both passed. Nothing pending.
+3. No red or orange attention label: `needs-human`, `credential-change`,
+   `security` or `cost`.
+4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
+   `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
+   `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
+   `monorepo/`, `standards/` (its own rules included), and in any project
+   `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
+   `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
+5. At most 100 files and 1,500 changed lines.
+6. No outstanding "changes requested", and no approval of its own on this
+   head commit yet.
+
+Anything else waits for Jim, who approves it from pane's Approve page.
+
+**What it records.** Each approval is a review on the head commit (so a
+push dismisses it) whose text names the rules version and what passed:
+"jimhillr-reviewer rules v1 (decision 0014): checks green on `<sha>`, no
+red or orange label, no protected path, N files, +a/-d." Each run's summary
+lists every open agent PR with "approve" or "skip" and the reason.
+
+**Changing the rules.** Edit `standards/scripts/auto-review.sh` (bump
+`RULES`), its tests in `standards/tests/auto-review.test.sh` and this
+section in one PR. It touches `standards/`, so only Jim can approve it.
+
+## Post-merge review
+
+Jim reads every merged PR afterwards, whoever approved it, on pane's
+**Acknowledge** page (`/acknowledge`): newest first, each with its summary
+and attention badges, until he acknowledges it. "Flag for follow-up" opens
+GitHub's editor with a `fix` issue file for that PR in its project's
+`issues/`, which the normal agent loop then works.
 
 ## PR triage
 

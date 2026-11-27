@@ -1,7 +1,7 @@
 # 0014: Faster pull request approvals
 
-- Status: Proposed. Options 1 and 2 are built in the PR that adds this
-  record, so approving it accepts them; option 3 or 4 is Jim's choice
+- Status: Accepted (Jim chose a reviewer account and post-merge review,
+  2026-11-27); the reviewer starts once its human task is done
 - Date: 2026-11-27
 - Related: [pull-requests.md](../pull-requests.md),
   [review dashboard plan](../../../pane/docs/plans/2026-11-review-dashboard.md),
@@ -40,6 +40,7 @@ a month budget.
 | 2 | **One approval per stack**: a thread with stacked PRs retargets the top one to `main`, so one approval merges the stack | 4 per stack instead of per PR (royalty: 10 approvals become 1) | None: Jim still approves the whole diff | This PR (a rule) |
 | 3 | **One-tap Approve in pane**, and "Approve all clear" | 1, or 1 for a whole batch | New credential: Jim's fine-grained token (Pull requests: read and write, this repo only) as a Worker secret, behind Cloudflare Access | About 3 or 4 threads: pane's Phase 3 Worker and Access first ([PR 759](https://github.com/jimhillr/monorepo/pull/759)), then the approve route |
 | 4 | **Code-owner ruleset**: 0 required approvals, but code-owner review required, with Jim as owner of the risky paths | 0 for most PRs; 4 for PRs touching owned paths or labelled red | Weakens review: agent code outside owned paths merges on green CI with no human look | About 1 thread: `CODEOWNERS`, a required check that fails on red labels, a runbook; Jim edits the ruleset by hand |
+| 5 | **Reviewer account** `jimhillr-reviewer`: a workflow approves, as that account, the agent PRs its written rules allow, and Jim acknowledges every merged PR in pane afterwards | 0 for PRs the rules allow; 4 for the rest; 1 tap per merged PR to acknowledge | No ruleset change; a new token (Pull requests write) that approves without Jim, kept in a main-only environment | This PR, plus Jim's human task |
 
 Free-tier headroom: option 1 makes 2 unauthenticated GitHub API calls a
 page load against a limit of 60 an hour per network. Option 3 adds a few
@@ -107,21 +108,63 @@ listed (auth code inside an app, say) gets through. It relaxes the main
 review control, so only Jim can choose it, and he makes the ruleset change
 himself.
 
+### Option 5: the reviewer account (chosen)
+
+Jim first picked option 4 with a post-merge check ("auto approve plus
+pane acknowledgements of every pr"), then changed it, 2026-11-27: "I think
+we should go with a third GitHub account to do approvals so we can be
+explicit about what is being auto-approved and establish a process for
+that approver. Lets call it jimhillr-reviewer".
+
+- **Who approves.** `jimhillr-reviewer`, a GitHub account with the Write
+  role, used only by the `All Auto Review` workflow. The Default ruleset
+  keeps its one required approval; the reviewer's approval satisfies it
+  for the PRs its rules allow, and Jim's for the rest.
+- **Its rules** (PR-003, `standards/scripts/auto-review.sh`, listed under
+  "The reviewer account" in [pull-requests.md](../pull-requests.md)): an
+  agent PR into `main`, out of draft, every check finished and green, no
+  red or orange label, no protected path (workflows, agent rules,
+  standards, infra, threat models, requirements, evals, auth, costs,
+  security headers, deploy settings), at most 100 files and 1,500 lines,
+  no changes requested.
+- **Its record.** Each approval is pinned to the head commit and its text
+  names the rules version and what passed; each run's summary lists every
+  open agent PR with "approve" or "skip" and why.
+- **Its token.** `REVIEWER_TOKEN`, a fine-grained token on that account
+  (this repo only; Pull requests read and write; Contents, Checks and
+  Commit statuses read), stored only as a secret of the `reviewer`
+  environment, which deploys from `main` alone. It is never in git or
+  OpenTofu state, and no Claude session holds it. It can approve but not
+  push or merge. Making the account and token is a human task
+  ([runbook](../runbooks/jimhillr-reviewer-account.md)); Infra Mint can't
+  make a token for another account.
+- **Why it's safe enough.** The workflow runs `main`'s script on a
+  schedule and never checks out PR code, so a PR can't change its rules,
+  and a PR that changes the rules touches `standards/`, which the rules
+  refuse, so only Jim can approve that.
+- **Post-merge review.** Pane's Acknowledge page lists every merged PR,
+  whoever approved it, until Jim acknowledges it, with a "Flag for
+  follow-up" link that opens a prefilled `fix` issue file on GitHub.
+  Acknowledgements are kept in that browser's storage for now; keeping them
+  across devices waits for pane's write path (Phase 5).
+
+Cost: $0. GitHub accounts, environments and Actions minutes are free for a
+public repo; the workflow runs 96 times a day for under a minute each.
+
 ## Decision
 
-- Options 1 and 2 need no security decision, so the PR that adds this
-  record builds them.
-- Recommended next: **option 4**. It removes the most clicks, needs no new
-  credential, and the code-owner list keeps Jim on the risky paths. Option
-  3 is the choice if Jim wants to keep reading every PR. Jim chooses; until
-  then every PR still needs his approval.
+- Options 1 and 2 (the Approve page and one approval per stack) are built.
+- Option 5: `jimhillr-reviewer` approves what its rules allow, and Jim
+  reviews every merged PR afterwards on pane's Acknowledge page. Options 3
+  and 4 are not taken.
 
 ## Consequences
 
-- Pane's CSP allows `connect-src https://api.github.com`. The page shows
-  GitHub's refusal when the 60-an-hour limit is used up.
+- Pane's CSP allows `connect-src https://api.github.com`. The Approve and
+  Acknowledge pages show GitHub's refusal when the 60-an-hour limit is
+  used up.
 - Threads with stacks follow "Stacked pull requests" in
-  [pull-requests.md](../pull-requests.md), and PR triage counts the step
-  PRs as part of the stack PR.
-- If Jim picks option 3 or 4, a follow-up PR adds its human task and
-  runbook, and this record's status is updated.
+  [pull-requests.md](../pull-requests.md).
+- Until `REVIEWER_TOKEN` exists, `All Auto Review` passes without
+  approving anything, and every PR still waits for Jim.
+- The rules can only get looser through a PR Jim approves himself.

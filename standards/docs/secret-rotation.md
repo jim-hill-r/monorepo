@@ -39,6 +39,7 @@ state").
 | `CLOUDFLARE_INFRA_APPLY_TOKEN` | `infra` | Infra Mint (auto); expires after 180 days | 90 days | scheduled Infra Mint run |
 | `CLOUDFLARE_BILLING_READ_TOKEN` (`jimhillr-billing-read`) | `infra` | Infra Mint (auto); expires after 180 days | 90 days | scheduled Infra Mint run |
 | `GITHUB_BILLING_READ_TOKEN` (fine-grained, Plan read) | `infra` | Jim, [billing-read-credentials.md](runbooks/billing-read-credentials.md); it expires after a year | 365 days | settings check `rotate-github-billing-read-token` |
+| `REVIEWER_TOKEN` (fine-grained, `jimhillr-reviewer`: Pull requests write, Contents, Checks and Commit statuses read) | `reviewer` | Jim, signed in as `jimhillr-reviewer`, [jimhillr-reviewer-account.md](runbooks/jimhillr-reviewer-account.md); it expires after a year | 365 days | settings check `rotate-reviewer-token` |
 | `AUTH0_INFRA_READ_CLIENT_SECRET` | repository | Infra Mint (auto, Auth0 rotate-secret) | 90 days | scheduled Infra Mint run |
 | `AUTH0_INFRA_APPLY_CLIENT_SECRET` | `infra` | Infra Mint (auto, Auth0 rotate-secret) | 90 days | scheduled Infra Mint run |
 | `GH_INFRA_CREDENTIALS_APP_KEY` (GitHub App private key) | `infra-credentials` | Jim, [github-app-infra.md](runbooks/github-app-infra.md) | 180 days | settings check `rotate-github-app-infra-key` |

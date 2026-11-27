@@ -275,3 +275,33 @@ requirement = "PANE-011"
 stages = ["cd"]
 kind = "http"
 path = "/approve"
+
+# PANE-012: Jim reviews every merged pull request after the fact
+
+[[eval]]
+id = "acks-unacknowledged"
+requirement = "PANE-012"
+stages = ["ci"]
+kind = "cargo"
+filter = "lists_unacknowledged_merged_prs_newest_first"
+
+[[eval]]
+id = "acks-flag"
+requirement = "PANE-012"
+stages = ["ci"]
+kind = "cargo"
+filter = "flag_links_a_prefilled_issue_file_in_the_project"
+
+[[eval]]
+id = "acknowledge-page"
+requirement = "PANE-012"
+stages = ["ci"]
+kind = "playwright"
+description = "Merged PRs are listed, acknowledged (kept across reloads) and flagged with a prefilled issue file."
+
+[[eval]]
+id = "acknowledge-page-live"
+requirement = "PANE-012"
+stages = ["cd"]
+kind = "http"
+path = "/acknowledge"
