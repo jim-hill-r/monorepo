@@ -20,3 +20,7 @@ RELEASE_TAG = "controlled_chaos-nightly"
 
 [task_config]
 includes = ["../standards/tasks/bevy-game.toml"]
+
+[tasks.smoke]
+description = "Play smoke/smoke.script under xvfb: screenshots and a video in target/smoke"
+run = "bash smoke/run.sh"

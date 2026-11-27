@@ -82,6 +82,44 @@ cargo run --features bevy/dynamic_linking
 cargo test
 ```
 
+### Scripted runs
+
+`mise run smoke` plays [`smoke/smoke.script`](smoke/smoke.script) (one
+round against the CPU, from the start screen) in the debug build under a
+virtual display, with no one at the keyboard. It saves a screenshot at each
+named step and a video of the run (`smoke.mp4`, when `ffmpeg` is
+installed) in `target/smoke/`, and fails when a check in the script fails
+or the game panics. It needs `xvfb-run` (Linux); play another script with
+`bash smoke/run.sh <file>`.
+
+A scripted run is the same every time: each frame lasts exactly 1/60 s, the
+deck is shuffled with the script's `seed`, and the player's saved display
+settings are neither read nor changed. To run a script in a real window:
+
+```bash
+cargo run -- --script smoke/smoke.script --screenshots target/smoke
+```
+
+A script has one step per line, `<frame> <command> [argument]`:
+
+| Command | What it does |
+| --- | --- |
+| `seed <n>` | Shuffles the deck with seed `n` (first line only; default 0) |
+| `start` | Presses Start Game |
+| `advance` | Presses **Space**: draws a card, or ends the turn |
+| `pick <1-8>` | Presses that digit: attacks or defends with that card |
+| `screenshot <name>` | Saves the window as `<name>.png` |
+| `expect state splash\|in-game` | Fails the run unless the game is on that screen |
+| `expect phase draw\|play\|battle\|end` | Fails the run unless it is that phase |
+| `expect round <n>` | Fails the run unless it is round `n` (one per turn) |
+| `exit` | Ends the script (optional after the last step) |
+
+The game exits with 0 when every check passes, 1 when one fails or a
+screenshot can't be saved, 2 for a bad command line or script, and 101 on a
+panic. `src/script.rs` runs the script and its tests play `smoke.script`
+headless on every `cargo test`, so a rule change that breaks the smoke run
+fails CI.
+
 ### Screenshots of the web build on phone-sized screens
 
 Playwright's `deviceScaleFactor` (and Chrome DevTools' device mode) only
