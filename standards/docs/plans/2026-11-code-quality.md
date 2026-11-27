@@ -7,10 +7,9 @@ Started 2026-11-27 from Jim's request:
 > to base this on but things like clean code or rust best practices would
 > be a good place to start.
 
-Status: **proposed**. The decision is
-[0015](../decisions/0015-code-quality-process.md). Two questions for Jim are
-under [Questions](#questions-for-jim); the plan follows the recommended
-answers until he picks. The work items are issue files in the root
+Status: **approved** by Jim (decision cards, 2026-11-27), with the
+recommended answer to both questions (see [Decisions](#decisions)). The
+decision is [0015](../decisions/0015-code-quality-process.md). The work items are issue files in the root
 [issues/](../../../issues/) with `epic: Code quality`.
 
 This plan is the code twin of the [eval engine](2026-11-eval-engine.md):
@@ -254,4 +253,13 @@ counts that changed, so a reviewer sees "cookbook: 118 → 109".
 
 ## Decisions
 
-*(Filled in when Jim answers.)*
+Jim, 2026-11-27, on decision cards:
+
+1. **Strictness:** "Pedantic via per-project ratchet". Pedantic and the
+   complexity limits go in through each project's baseline, and each
+   project graduates to hard lints at 0.
+2. **Shell scripts:** "Keep Rust-only, port over time". The "no shell
+   scripts" rule stays. Phase 2 lints the existing scripts with ShellCheck
+   and shfmt, the audit fails any new tracked `.sh` file (QUAL-404), and
+   the scripts are ported into `chores` commands as backlog issues, one or
+   two per PR, starting with the ones the hooks and CI run most.

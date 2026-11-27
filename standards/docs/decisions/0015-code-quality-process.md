@@ -1,6 +1,7 @@
 # 0015. A standing code quality process: one standard, a ratchet, triage into issues
 
-- Status: Proposed
+- Status: Accepted
+- Decided by: Jim (decision cards, 2026-11-27: "Pedantic via per-project ratchet" and "Keep Rust-only, port over time")
 - Date: 2026-11-27
 - Asked by: Jim
 - Plan: [2026-11-code-quality.md](../plans/2026-11-code-quality.md)
@@ -57,5 +58,6 @@ across the repo.
 - Agents leave no new findings in files they touch (the ratchet enforces
   it), so quality rises with normal work.
 - New tools go on the tech radar in the PR that adopts each.
-- Open questions (strictness, shell scripts) are in the plan; this record
-  is updated with Jim's answers before it is accepted.
+- Shell stays out: no new `.sh` files (the audit enforces it), and the
+  existing 53 are linted with ShellCheck until each is ported into a
+  `chores` command.
