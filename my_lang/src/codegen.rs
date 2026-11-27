@@ -230,16 +230,26 @@ impl<'ctx> CodeGenerator<'ctx> {
             locals.insert(param_name.clone(), alloca);
         }
 
-        // Compile each statement.
+        // Compile each statement.  In a declaration that may return a value,
+        // a trailing expression statement is the value, as if it were
+        // written `return <expression>`.
         let mut explicit_return = false;
-        for stmt in body {
+        for (index, stmt) in body.iter().enumerate() {
+            let is_last = index + 1 == body.len();
+            if let (true, true, Statement::Expression(expr)) = (allows_return, is_last, stmt) {
+                let val = self.compile_expression(expr, &locals)?;
+                self.builder.build_return(Some(&val))?;
+                explicit_return = true;
+                break;
+            }
             if self.compile_statement(stmt, &mut locals, allows_return)? {
                 explicit_return = true;
                 break; // Stop generating code after a return statement.
             }
         }
 
-        // If no explicit return was emitted, return 0 as a default value.
+        // A body with no return and no trailing expression (empty, or ending
+        // in an assignment), and every `input` declaration, returns 0.
         if !explicit_return {
             let zero = i64_type.const_int(0, false);
             self.builder.build_return(Some(&zero))?;
