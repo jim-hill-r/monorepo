@@ -1,5 +1,7 @@
 # Homer
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/homer.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A CLI tool for looking up and evaluating house details from Zillow. Provide an address to get
 property details, or provide filtering criteria to score how well a property matches your preferences.
 
