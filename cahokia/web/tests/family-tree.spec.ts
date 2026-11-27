@@ -37,6 +37,26 @@ async function treeBox(page: Page) {
   return box;
 }
 
+/** A design system token's colour as the browser computes it. */
+async function token(page: Page, name: string): Promise<string> {
+  return page.evaluate((n) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(${n})`;
+    document.body.appendChild(probe);
+    const value = getComputedStyle(probe).color;
+    probe.remove();
+    return value;
+  }, name);
+}
+
+/** One computed CSS property of the first element matching `selector`. */
+async function computed(page: Page, selector: string, property: string): Promise<string> {
+  return page.locator(selector).first().evaluate(
+    (el, p) => getComputedStyle(el).getPropertyValue(p),
+    property,
+  );
+}
+
 async function openFamilyTree(page: Page) {
   await page.goto('/family-tree');
   await page.waitForLoadState('networkidle');
@@ -72,6 +92,34 @@ test.describe('Family tree page @req:CAHO-001', () => {
     await expect(
       page.locator('.family-tree-edge.parent-child[data-from="henry"][data-to="daniel"]'),
     ).toHaveCount(1);
+  });
+
+  test('takes its colours from the stylesheet, with no inline styles', async ({ page }) => {
+    await openFamilyTree(page);
+    await page.locator('[data-person-id="henry"]').click();
+
+    // A strict CSP (no style-src 'unsafe-inline') blocks style attributes.
+    await expect(page.locator('svg.family-tree [style], .family-tree-toolbar[style]')).toHaveCount(0);
+
+    expect(await computed(page, 'svg.family-tree', 'touch-action')).toBe('none');
+    expect(await computed(page, '.family-tree-edge.on-lineage', 'stroke')).toBe(
+      await token(page, '--ds-color-accent'),
+    );
+    expect(await computed(page, '.family-tree-edge.dimmed', 'stroke')).toBe(
+      await token(page, '--ds-color-border-strong'),
+    );
+    expect(await computed(page, '.family-tree-edge', 'fill')).toBe('none');
+    expect(await computed(page, '.family-tree-person.focus .family-tree-box', 'stroke')).toBe(
+      await token(page, '--ds-color-accent'),
+    );
+    // Without the stylesheet an SVG box is filled black.
+    expect(await computed(page, '.family-tree-box', 'fill')).not.toBe('rgb(0, 0, 0)');
+    expect(await computed(page, '.family-tree-name', 'fill')).toBe(
+      await token(page, '--ds-color-text'),
+    );
+    expect(await computed(page, '.family-tree-years', 'fill')).toBe(
+      await token(page, '--ds-color-text-muted'),
+    );
   });
 
   test('keeps a wide tree inside the page', async ({ page }) => {
