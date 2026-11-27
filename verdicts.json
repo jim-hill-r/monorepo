@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-27T21:51:44.610247577Z",
+  "generated_at": "2026-11-27T21:57:29.329949119Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 10,
-    "percent": 4.8,
-    "musts_percent": 38.2,
-    "judged_percent": 11.7,
+    "percent": 11.2,
+    "musts_percent": 50.0,
+    "judged_percent": 16.4,
     "warn_below": 80.0,
     "warning": true
   },
@@ -243,8 +243,8 @@
       "musts_in_production": 1,
       "coverage": {
         "requirements": 9,
-        "met": 0,
-        "percent": 0.0,
+        "met": 3,
+        "percent": 33.3,
         "musts_met": 0,
         "musts_percent": 0.0,
         "warning": true
@@ -254,9 +254,9 @@
           "requirement": "CHAOS-001",
           "title": "Anyone can play a game in a browser with nothing to install",
           "priority": "must",
-          "verdict": "unknown",
+          "verdict": "not-met",
           "reasons": [
-            "no production-stage results yet"
+            "live-game-wasm failed in cd at 2026-11-27 21:55:17.815082384 UTC"
           ]
         },
         {
@@ -299,10 +299,7 @@
           "requirement": "CHAOS-006",
           "title": "We can see whether people play, without identifying anyone",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "CHAOS-007",
@@ -317,19 +314,13 @@
           "requirement": "CHAOS-008",
           "title": "Desktop and Android builds can be downloaded",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "CHAOS-009",
           "title": "The web build is safe to open",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         }
       ]
     },
@@ -442,10 +433,10 @@
       "musts_in_production": 1,
       "coverage": {
         "requirements": 5,
-        "met": 0,
-        "percent": 0.0,
-        "musts_met": 0,
-        "musts_percent": 0.0,
+        "met": 3,
+        "percent": 60.0,
+        "musts_met": 1,
+        "musts_percent": 50.0,
         "warning": true
       },
       "requirements": [
@@ -453,10 +444,7 @@
           "requirement": "DSGN-001",
           "title": "Every theme is readable for everyone",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "DSGN-002",
@@ -471,10 +459,7 @@
           "requirement": "DSGN-003",
           "title": "People can pick a theme, and the choice sticks",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "DSGN-004",
@@ -489,10 +474,7 @@
           "requirement": "DSGN-005",
           "title": "The preview site shows every combination",
           "priority": "could",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         }
       ]
     },
@@ -781,7 +763,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "home-page-live failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -790,7 +772,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "app-loads-live failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -799,7 +781,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "tracing-page-live failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -808,7 +790,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "capital-level-live failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -817,7 +799,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "home-page-live-for-progress failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -826,7 +808,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "connects-only-to-itself-live failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -835,9 +817,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-27 20:41:59.986633075 UTC",
-            "manifest-live failed in cd at 2026-11-27 20:41:59.986633075 UTC",
-            "no-zoom-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
+            "home-screen-icon-live failed in cd at 2026-11-27 21:50:33.032240833 UTC",
+            "manifest-live failed in cd at 2026-11-27 21:50:33.032240833 UTC",
+            "no-zoom-live failed in cd at 2026-11-27 21:50:33.032240833 UTC"
           ]
         },
         {
@@ -883,10 +865,10 @@
       "musts_in_production": 3,
       "coverage": {
         "requirements": 5,
-        "met": 0,
-        "percent": 0.0,
-        "musts_met": 0,
-        "musts_percent": 0.0,
+        "met": 4,
+        "percent": 80.0,
+        "musts_met": 3,
+        "musts_percent": 75.0,
         "warning": true
       },
       "requirements": [
@@ -894,28 +876,19 @@
           "requirement": "TELE-001",
           "title": "Apps can send events from any page",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "TELE-002",
           "title": "Bad events are refused and nothing unexpected is stored",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "TELE-003",
           "title": "Opted-out and test traffic is never stored",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "TELE-004",
@@ -930,10 +903,7 @@
           "requirement": "TELE-005",
           "title": "Every response carries the security headers",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         }
       ]
     },
