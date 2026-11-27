@@ -1,0 +1,48 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "github_repository_ruleset.ci",
+      "mode": "managed",
+      "type": "github_repository_ruleset",
+      "name": "ci",
+      "provider_name": "registry.opentofu.org/integrations/github",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "CI",
+          "repository": "monorepo",
+          "enforcement": "active",
+          "target": "branch",
+          "bypass_actors": [
+            {
+              "actor_id": 361315700,
+              "actor_type": "User",
+              "bypass_mode": "always"
+            }
+          ],
+          "rules": [
+            {
+              "required_status_checks": [
+                {
+                  "required_check": [
+                    {
+                      "context": "CI result",
+                      "integration_id": 15368
+                    }
+                  ],
+                  "strict_required_status_checks_policy": false
+                }
+              ]
+            }
+          ]
+        },
+        "after_unknown": {},
+        "after_sensitive": {}
+      }
+    }
+  ]
+}

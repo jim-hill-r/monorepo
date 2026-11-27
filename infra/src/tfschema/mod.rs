@@ -6,6 +6,8 @@
 pub mod auth0;
 #[allow(clippy::all, clippy::unwrap_used, clippy::expect_used, unused)]
 pub mod cloudflare;
+#[allow(clippy::all, clippy::unwrap_used, clippy::expect_used, unused)]
+pub mod github;
 
 /// The `auth0/auth0` provider version the bindings were generated from. It
 /// must match `terrars_auth0.json`, which a test checks.
@@ -16,6 +18,11 @@ pub const AUTH0_PROVIDER_VERSION: &str = "1.63.0";
 /// `terrars_cloudflare.json`.
 #[cfg_attr(not(test), allow(dead_code))]
 pub const CLOUDFLARE_PROVIDER_VERSION: &str = "5.29.0";
+
+/// The `integrations/github` provider version, matching
+/// `terrars_github.json`.
+#[cfg_attr(not(test), allow(dead_code))]
+pub const GITHUB_PROVIDER_VERSION: &str = "6.13.0";
 
 #[cfg(test)]
 mod tests {
@@ -32,6 +39,14 @@ mod tests {
         let config: serde_json::Value =
             serde_json::from_str(include_str!("../../terrars_cloudflare.json"))?;
         assert_eq!(config["version"], super::CLOUDFLARE_PROVIDER_VERSION);
+        Ok(())
+    }
+
+    #[test]
+    fn github_version_matches_the_generator_config() -> anyhow::Result<()> {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../../terrars_github.json"))?;
+        assert_eq!(config["version"], super::GITHUB_PROVIDER_VERSION);
         Ok(())
     }
 }

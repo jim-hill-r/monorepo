@@ -18,7 +18,7 @@ cat >"$work/bin/tofu" <<EOF
 #!/usr/bin/env bash
 {
   echo "tofu \$*"
-  echo "  AUTH0_DOMAIN=\${AUTH0_DOMAIN:-} AUTH0_CLIENT_ID=\${AUTH0_CLIENT_ID:-} CLOUDFLARE_API_TOKEN=\${CLOUDFLARE_API_TOKEN:-}"
+  echo "  AUTH0_DOMAIN=\${AUTH0_DOMAIN:-} AUTH0_CLIENT_ID=\${AUTH0_CLIENT_ID:-} CLOUDFLARE_API_TOKEN=\${CLOUDFLARE_API_TOKEN:-} GITHUB_TOKEN=\${GITHUB_TOKEN:-}"
   echo "  TF_VAR_tofu_state_passphrase=\${TF_VAR_tofu_state_passphrase:-} TF_HTTP_PASSWORD=\${TF_HTTP_PASSWORD:-}"
 } >>"$work/tofu.log"
 case "\$1" in
@@ -109,6 +109,21 @@ code=0
 base_env STUB_PLAN_EXIT=2 bash "$script" drift auth0 >/dev/null 2>&1 || code=$?
 [ "$code" = 2 ] && grep -q -- "-refresh-only -lock=false" "$work/tofu.log" && ok "drift exits 2 on drift" || fail "drift: code $code"
 base_env STUB_PLAN_EXIT=0 bash "$script" drift auth0 >/dev/null 2>&1 && ok "no drift passes" || fail "no drift"
+
+# github: the read App's token for plans, the infra App's for credential
+# applies, and no everyday apply tier (decision 0010).
+code=0
+base_env bash "$script" ready github read >/dev/null || code=$?
+[ "$code" = 3 ] && ok "github needs its read token" || fail "github ready without a token: code $code"
+: >"$work/tofu.log"
+base_env GH_INFRA_READ_TOKEN=gh-read bash "$script" plan github read "$work/gh" >/dev/null 2>&1 || fail "github plan"
+grep -q "GITHUB_TOKEN=gh-read" "$work/tofu.log" && ok "github plans read with the read App's token" || fail "github read token: $(cat "$work/tofu.log")"
+: >"$work/tofu.log"
+base_env GH_INFRA_CREDENTIALS_TOKEN=gh-write bash "$script" apply github credentials "$work/gh" >/dev/null 2>&1 || fail "github apply"
+grep -q "GITHUB_TOKEN=gh-write" "$work/tofu.log" && ok "github applies with the infra App's token" || fail "github write token"
+code=0
+out=$(base_env GH_INFRA_READ_TOKEN=gh-read bash "$script" apply github apply "$work/gh" 2>&1) || code=$?
+[ "$code" != 0 ] && grep -q "only in infra-credentials" <<<"$out" && ok "github has no everyday apply" || fail "github apply role: code $code, $out"
 
 # Bad input.
 base_env bash "$script" plan "../etc" read "$work/x" >/dev/null 2>&1 && fail "bad stack accepted" || ok "bad stack names are refused"
