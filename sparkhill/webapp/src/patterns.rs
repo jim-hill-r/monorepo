@@ -2,10 +2,9 @@
 //!
 //! `patterns.json` holds one pattern per lowercase letter, in the format the
 //! canvas's `drawLetter` takes: the letter, its guide-line `boundary` and a
-//! `path` of points where `type` marks each stroke's `start` and `end`. The
-//! strokes come from the public-domain Hershey Simplex Roman font, mapped onto
-//! the canvas guide lines and put into handwriting stroke order (README.md).
-//! They used to be fetched at runtime from Blue Eel's AWS S3 bucket.
+//! `path` of points where `type` marks each stroke's `start` and `end`. They
+//! are the live app's hand-recorded letters (its `master.json` patterns),
+//! copied once so the app fetches nothing at runtime (README.md).
 
 use serde_json::{Map, Value};
 use std::sync::LazyLock;

@@ -58,20 +58,17 @@ Uses the same letter groupings as the original app:
 ### Letter patterns
 
 The demonstrations draw from `src/patterns.json`, bundled into the app, so
-the app fetches nothing at runtime and needs no outside host (it used to load
-them from Blue Eel's AWS S3 bucket). There is one pattern per lowercase
-letter, and a word joins its letters' patterns.
+the app fetches nothing at runtime and needs no outside host. There is one
+pattern per lowercase letter, and a word joins its letters' patterns.
 
-The strokes come from the Hershey Simplex Roman font (`futural`), which is in
-the public domain (Hershey fonts, Dr. A. V. Hershey, U.S. National Bureau of
-Standards). They were converted once: each glyph's height is mapped onto the
-canvas guide lines (ascender to the cap line, x-height to the mean line,
-descender to the beard line), points are spaced about 8 units apart, and
-strokes are put in handwriting order (bowl before stem in a, d, g and q, stem
-before dot in i and j, and v, w and z drawn as one stroke). To change a
-letter, edit its `path` in the JSON; `type` marks each stroke's `start` and
-`end`, and `src/patterns.rs` tests that every practice letter and word has a
-pattern.
+They are the live app's own hand-recorded letters: each is a copy of
+`patterns/<letter>/master.json` from Blue Eel's `eel3-data` S3 bucket, made
+once, with the guide lines from its `dimensions` (in pixels on a 449 pixel
+high canvas) written as the `boundary`, points rounded to 0.1 pixel, and the
+doubled end point the recorder left on some strokes removed. `type` marks
+each stroke's `start` and `end`, and `src/patterns.rs` tests that every
+practice letter and word has a pattern. To change a letter, edit its `path`
+in the JSON. (Before that they were Hershey font approximations, PR #709.)
 
 ## Technology
 
