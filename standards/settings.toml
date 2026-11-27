@@ -120,6 +120,14 @@ why = "PR plans must not be able to change anything, and IaC must never be able 
 every = "90d"
 
 [[setting]]
+id = "github-variable-tofu-state-origin"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions > Variables"
+expect = "TOFU_STATE_ORIGIN is the state Worker's URL, https://jimhillr-tofu-state.<subdomain>.workers.dev, as the Deploy tofu_state workflow's summary shows it."
+why = "The infra plan, apply and drift workflows read and lock state there (decision 0009); a wrong URL fails every plan."
+every = "180d"
+
+[[setting]]
 id = "github-secrets-tofu-state"
 vendor = "GitHub"
 where = "jimhillr/monorepo > Settings > Secrets and variables > Actions, and Environments > infra"
