@@ -1,6 +1,7 @@
 # 0010. A second approval for credential changes: a GitHub environment only Jim can approve
 
-- Status: Proposed
+- Status: Accepted
+- Decided by: Jim (approved PR #705, 2026-11-26, with every default below)
 - Date: 2026-11-26
 - Asked by: Jim
 - Builds on: [0007](0007-infrastructure-as-code.md) (IaC, and its

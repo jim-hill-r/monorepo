@@ -138,3 +138,29 @@ where = "rapidapi.com > My Apps > Billing"
 expect = "The Zillow API subscription is on the free plan, with no payment method and no paid plan."
 why = "homer may use RapidAPI only on its free plan; it must never cost money (AGENTS.md)."
 every = "30d"
+
+# Second approval for credential changes (decision 0010).
+
+[[setting]]
+id = "github-infra-credentials-environment"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Environments > infra-credentials"
+expect = "Required reviewers is jimhillr only, admin bypass is off, deployment branches is main only, and every credential-capable infra token is a secret here and not a repository secret."
+why = "This environment is the second approval for credential changes; IaC never manages it, so only this check notices if it is weakened."
+every = "90d"
+
+[[setting]]
+id = "github-agent-role"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Collaborators and teams, and Rules > Rulesets"
+expect = "jimhillr-agt has the Write role (not Maintain or Admin) and isn't on any ruleset's bypass list."
+why = "An agent account with admin could change the infra-credentials environment and approve its own credential changes."
+every = "90d"
+
+[[setting]]
+id = "github-claude-app-permissions"
+vendor = "GitHub"
+where = "github.com/settings/installations > Claude > Permissions"
+expect = "The Claude GitHub App has no Administration, Environments or Secrets write permission."
+why = "Agents act through the app, so any of these would let them get round the second approval."
+every = "90d"

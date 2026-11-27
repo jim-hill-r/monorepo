@@ -24,6 +24,7 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
+        design_system_dioxus::Stylesheets { default_theme: ui::DEFAULT_THEME }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
 
         Router::<Route> {}
@@ -45,6 +46,8 @@ fn DesktopNavbar() -> Element {
         }
 
         Outlet::<Route> {}
+
+        footer { class: "appearance", design_system_dioxus::ThemePicker {} }
     }
 }
 

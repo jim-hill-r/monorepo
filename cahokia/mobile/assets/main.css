@@ -1,6 +1,9 @@
+/* Colours, fonts and the reset come from the design system
+ * (design_system_dioxus::Stylesheets); the default theme is earthy. */
 body {
-    background-color: #0f1116;
-    color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 20px;
+    margin: var(--ds-space-5);
+}
+
+.appearance {
+    margin-top: var(--ds-space-6);
 }
