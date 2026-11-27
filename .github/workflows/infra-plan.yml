@@ -7,7 +7,7 @@
 # apply will wait for his second approval.
 #
 # Until the Infra Mint workflow has made the secrets (it needs
-# issues/human/infra-credentials-environment.md first) a stack is skipped
+# standards/docs/runbooks/infra-credentials-environment.md first) a stack is skipped
 # with a notice, not failed. Fork PRs get no secrets and skip the same way.
 name: Infra Plan
 

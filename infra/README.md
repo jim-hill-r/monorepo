@@ -115,7 +115,7 @@ approves it, and minted Cloudflare tokens expire 180 days after each mint
 ([rotation plan](../standards/docs/secret-rotation.md)). The state passphrase is never rotated this way,
 since it encrypts state. When the passwords or the deploy token change, it
 queues **Deploy tofu_state**. A person makes only the bootstrap credentials:
-`issues/human/infra-credentials-environment.md`. Tested by
+`standards/docs/runbooks/infra-credentials-environment.md`. Tested by
 `tests/mint_sh.test.sh`.
 
 ## Changing a setting

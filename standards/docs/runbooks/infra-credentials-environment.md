@@ -1,7 +1,7 @@
 # Set up the infra environments and bootstrap credentials
 
 - **Kind:** one-time (again only to rotate a bootstrap credential)
-- **Status:** open (`issues/human/infra-credentials-environment.md`)
+- **Status:** done 2026-11-27 (the first Infra Mint run set every secret; the old hand-made Cloudflare token is retired)
 - **Time:** about 30 minutes
 - **Cost:** $0. Every item is on a free plan, and each Infra Mint run uses one Auth0 Machine to Machine token out of the free 1,000 a month.
 
@@ -53,7 +53,7 @@ Everything else is minted from these three credentials, so they come first. Crea
 
 7. **Delete the old token.** Once Deploy tofu_state and the next Pages deploy are green, delete your old hand-made token in My Profile > API Tokens. Automation never deletes, so this one is yours.
 
-8. **Set the Auth0 budget.** Reply in the Claude project with a number for `auth0_m2m_tokens_per_month` in `standards/radar/limits.toml`. It is 0 today; about 60 covers plans, applies, drift and mint runs. An agent makes the edit, since only you set budgets.
+8. **Set the Auth0 budget.** Reply in the Claude project with a number for `auth0_m2m_tokens_per_month` in `standards/radar/limits.toml`. About 60 covers plans, applies, drift and mint runs. An agent makes the edit, since only you set budgets. (Done 2026-11-27: Jim set a $0 money budget, so it is 60 tokens a month, inside the free 1,000.)
 
 ## Where secrets go
 
