@@ -4,7 +4,7 @@
 - **Status:** open (`issues/human/check-there-still-no-payment-method.md`);
   the `*-billing` and `*-budget` settings checks in
   `standards/settings.toml` ask the same each period
-- **Time:** about 5 minutes
+- **Time:** about 4 minutes
 - **Cost:** $0; it's what keeps everything at $0
 
 ## What it's for
@@ -15,23 +15,30 @@ bill; a card turns on pay-as-you-go.
 
 ## Why a person
 
-These billing pages have no read API an agent can use, and agents must
-never hold a token with billing access.
+What a read-only API can show is checked weekly by the **Billing check**
+(`standards/scripts/billing-check.sh`): Cloudflare's payment methods and
+subscriptions, GitHub's charges this month and PostHog's subscription. The
+rest has no API: a personal GitHub account's card and Actions budget, Auth0's
+plan, RapidAPI billing and claude.ai billing
+([free-tiers.md](../free-tiers.md#billing-checks)).
 
 ## Before you start
 
-- Signed in to GitHub, Cloudflare, Auth0, PostHog (once it exists) and
-  RapidAPI.
+- Signed in to GitHub, Auth0, RapidAPI and claude.ai.
+- Open the latest **All Free Tier Usage** run in jimhillr/monorepo >
+  Actions and look at its **Billing check** table. Do steps 2 and 4 only
+  for a vendor it shows as "not checked".
 
 ## Steps
 
 1. GitHub: github.com/settings/billing > Payment information shows no card;
    Budgets and alerts shows an Actions budget of $0 with "Stop usage" on.
-2. Cloudflare: dash.cloudflare.com > Manage Account > Billing shows the
+2. Cloudflare, only if not checked: dash.cloudflare.com > Manage Account > Billing shows the
    Free plan, no payment method, and no Workers Paid, R2 paid or Images.
 3. Auth0: manage.auth0.com > Settings > Subscription shows Free and no
    card.
-4. PostHog: Settings > Billing shows no card.
+4. PostHog, only if not checked and the account exists: Settings >
+   Organization > Billing shows the free plan and no subscription.
 5. RapidAPI: rapidapi.com > My Apps > Billing shows the free Zillow plan
    and no card.
 6. Claude: claude.ai > Settings > Billing: Claude Code spend this month is

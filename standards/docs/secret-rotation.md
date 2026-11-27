@@ -37,6 +37,8 @@ state").
 | `CLOUDFLARE_API_TOKEN` (`jimhillr-deploy`) | repository | Infra Mint (auto); expires after 180 days | 90 days | scheduled Infra Mint run |
 | `CLOUDFLARE_INFRA_READ_TOKEN` | repository | Infra Mint (auto); expires after 180 days | 90 days | scheduled Infra Mint run |
 | `CLOUDFLARE_INFRA_APPLY_TOKEN` | `infra` | Infra Mint (auto); expires after 180 days | 90 days | scheduled Infra Mint run |
+| `CLOUDFLARE_BILLING_READ_TOKEN` (`jimhillr-billing-read`) | `infra` | Infra Mint (auto); expires after 180 days | 90 days | scheduled Infra Mint run |
+| `GITHUB_BILLING_READ_TOKEN` (fine-grained, Plan read) | `infra` | Jim, [billing-read-credentials.md](runbooks/billing-read-credentials.md); it expires after a year | 365 days | settings check `rotate-github-billing-read-token` |
 | `AUTH0_INFRA_READ_CLIENT_SECRET` | repository | Infra Mint (auto, Auth0 rotate-secret) | 90 days | scheduled Infra Mint run |
 | `AUTH0_INFRA_APPLY_CLIENT_SECRET` | `infra` | Infra Mint (auto, Auth0 rotate-secret) | 90 days | scheduled Infra Mint run |
 | `GH_INFRA_CREDENTIALS_APP_KEY` (GitHub App private key) | `infra-credentials` | Jim, [github-app-infra.md](runbooks/github-app-infra.md) | 180 days | settings check `rotate-github-app-infra-key` |
@@ -46,7 +48,7 @@ state").
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository | not rotated: a new key can't update an installed APK, so testers would have to reinstall | on a leak only | none |
 | `RAPIDAPI_KEY` (homer) | Jim's shell, not GitHub | Jim, [rapidapi-zillow.md](runbooks/rapidapi-zillow.md) | 365 days | settings check `rotate-rapidapi-key` |
 | `POSTHOG_PERSONAL_API_KEY` | repository, once made | Jim, [posthog-sign-up.md](runbooks/posthog-sign-up.md) | 180 days | settings check, added in the PR that first uses it |
-| `POSTHOG_BILLING_READ_KEY` | `infra`, once made | Jim, [posthog-sign-up.md](runbooks/posthog-sign-up.md) | 180 days | settings check, added in the PR that first uses it |
+| `POSTHOG_BILLING_READ_KEY` | `infra`, once made | Jim, [posthog-sign-up.md](runbooks/posthog-sign-up.md) | 180 days | settings check `rotate-posthog-billing-read-key` |
 
 These aren't secrets, or aren't ours to rotate:
 

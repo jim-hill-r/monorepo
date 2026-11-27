@@ -474,6 +474,38 @@ fn test_usage_workflow_only_reads() {
 }
 
 #[test]
+fn test_billing_check_runs_only_from_main_in_infra() {
+    // The read-only billing credentials are secrets of the `infra`
+    // environment, which only `main` can use, so no PR branch gets them.
+    let path = get_workflow_path("all-free-tier-usage.yml");
+    let content = fs::read_to_string(&path).expect("read all-free-tier-usage.yml");
+    let yaml: serde_yaml::Value = serde_yaml::from_str(&content).expect("parse workflow");
+    let job = &yaml["jobs"]["billing"];
+    assert_eq!(job["environment"].as_str(), Some("infra"));
+    assert_eq!(job["if"].as_str(), Some("github.ref == 'refs/heads/main'"));
+    let steps = serde_yaml::to_string(&job["steps"]).unwrap_or_default();
+    assert!(steps.contains("billing-check.sh all"));
+    for name in [
+        "CLOUDFLARE_BILLING_READ_TOKEN",
+        "GITHUB_BILLING_READ_TOKEN",
+        "POSTHOG_BILLING_READ_KEY",
+    ] {
+        assert!(steps.contains(name), "billing job gets {name}");
+        for (id, other) in yaml["jobs"].as_mapping().expect("jobs") {
+            if id.as_str() == Some("billing") {
+                continue;
+            }
+            assert!(
+                !serde_yaml::to_string(other)
+                    .unwrap_or_default()
+                    .contains(name),
+                "only the billing job may see {name}"
+            );
+        }
+    }
+}
+
+#[test]
 fn test_weekly_run_scans_the_whole_history_for_secrets() {
     let path = get_workflow_path("all-free-tier-usage.yml");
     let content = fs::read_to_string(&path).expect("read all-free-tier-usage.yml");
