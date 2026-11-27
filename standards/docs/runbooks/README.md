@@ -40,6 +40,7 @@ run book in the task."
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
+| [List the Squarespace domains](squarespace-domains.md) | one-time, then every 90 days | `list-squarespace-domains.md` |
 
 The Infra Mint workflow (`.github/workflows/infra-mint.yml`, decision 0011)
 makes every other infra secret from the bootstrap credentials and the GitHub App below: the state

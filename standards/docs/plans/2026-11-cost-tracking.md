@@ -57,7 +57,7 @@ usage run has not run yet (its first scheduled run is Monday 2026-11-30).
 | Vendor | Plan | Budget | Expected this month | How the actual is measured | Status |
 | --- | --- | --- | --- | --- | --- |
 | Anthropic, Claude Code | Jim's subscription | $25 a month | $25 | Jim's 30-day settings check `claude-code-budget`. Agents can see whether a session is on overage usage (`rate_limit_info.isUsingOverage` from the session API), but not dollars. | Partly automatic (phase 2) |
-| Squarespace | Jim's account | $0 in the radar | $0 (no `[[cost]]`) | Nothing. If Jim pays for a domain or site there, it is real money the repo doesn't record. | **Ask Jim** |
+| Squarespace | Jim's account, several paid domains (Jim, 2026-11-27) | $0 in the radar (to be set) | not recorded yet | Nothing yet: phase 4 lists each domain as a yearly `[[cost]]` and watches renewals | **Phase 4** |
 | Every other vendor in the tech radar | Free | $0 | $0 | The billing check covers every radar vendor: by API where one exists, by Jim's check otherwise | See overrun switches |
 
 ### Free-tier headroom
@@ -142,8 +142,9 @@ and the digest (weekly), with pane as the place to look anything up.
 
 ## What needs Jim
 
-- **Answers now:** whether anything is paid on Squarespace (domains, a site)
-  so it gets a `[[cost]]` entry; and the Claude overage rule below.
+- **Answers now:** the list of Squarespace domains with their prices and
+  renewal dates, and a Squarespace budget (phase 4,
+  [runbook](../runbooks/squarespace-domains.md)).
 - **Credentials, through the second approval (decision 0010):** phase 1
   needs the usage token to read Cloudflare account analytics; phase 3 needs
   an Auth0 token with `read:stats` and a number for
@@ -185,6 +186,27 @@ Each phase is an issue file with `epic: Cost tracking`.
   and a count of our own M2M token requests (one per infra run), against
   the budget Jim sets.
 
+### Phase 4: Squarespace domains
+
+Jim has several paid domains on Squarespace, the one place we pay money
+outside Claude Code. Squarespace has no public API for domains, so the
+list comes from Jim once and is then kept true by a settings check.
+
+- Jim lists each domain, its yearly price, renewal date, auto-renew
+  setting and what it is for (human task, runbook
+  [squarespace-domains.md](../runbooks/squarespace-domains.md)), and sets
+  the Squarespace budget in the radar.
+- Each domain becomes a `[[cost]]` (`every = "year"`, `vendor =
+  "Squarespace"`) in the `docs/cost.toml` of the project it serves, or in
+  `standards/docs/cost.toml` if it serves none, backed by one decision
+  record for all of them.
+- `[[cost]]` gains a `renews` date. The digest lists renewals due in the
+  next 60 days, so Jim can drop a domain before it is charged again, and
+  domains that serve no project are flagged as ones to consider dropping.
+- The `squarespace-billing` settings check (every 90 days, from the
+  billing check work) also confirms the list, prices and auto-renew still
+  match the `[[cost]]` entries.
+
 ### Then
 
 The monthly cost file, `cost render --ledger` and the `review-costs` skill
@@ -216,8 +238,9 @@ Recommended defaults, which agents follow unless Jim says otherwise:
    the coordinator starts no new threads until the usage resets. $0; it can
    only lower Claude spend. It narrows the coordinator's "keep at least 5
    threads working" rule to "while not on overage", and is in AGENTS.md.
-4. **Squarespace:** list any paid domain or site as a `[[cost]]` with a
-   decision record, so actual money is complete.
+4. **Squarespace (Jim, 2026-11-27: "I have several domains in square
+   space yes"):** each paid domain becomes a yearly `[[cost]]` with a
+   decision record, so actual money is complete (phase 4).
 
 ## Not doing
 
