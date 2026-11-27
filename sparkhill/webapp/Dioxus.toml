@@ -1,0 +1,8 @@
+[application]
+
+[web.app]
+# Page title, as on the live app (blue.eel.education).
+title = "Blue Eel"
+
+[web.server]
+port = 8080

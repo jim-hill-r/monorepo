@@ -118,6 +118,14 @@ To run all CI checks (formatting, linting, build, and tests):
 mise run ci
 ```
 
+## Deploying
+
+`mise run release` bundles the app into `dist/public`, and
+`../webapp_cloudflare` uploads that to Cloudflare Pages at
+<https://jimhillr-sparkhill-webapp.pages.dev> on every push to `main` that
+changes the app. `Dioxus.toml` and `index.html` give the page the live app's
+title, description, theme colour and no-zoom viewport.
+
 ## License
 
 See LICENSE.md in the repository root.

@@ -1,0 +1,9 @@
+# Cloudflare Pages configuration for the Blue Eel web app (sparkhill/webapp).
+# Free plan only (standards/docs/free-tiers.md): static files, no Functions.
+
+name = "jimhillr-sparkhill-webapp"
+compatibility_date = "2026-11-01"
+# `mise run release` in ../webapp runs dx bundle --out-dir dist, which puts
+# the site in dist/public. With no 404.html, Pages serves index.html for any
+# unknown path, so the app's own routes (/letter, /word, ...) load directly.
+pages_build_output_dir = "../webapp/dist/public"

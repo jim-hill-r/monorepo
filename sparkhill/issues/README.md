@@ -1,0 +1,12 @@
+# Epic notes
+
+## Blue Eel parity
+
+Jim (2026-11-27): Blue Eel, the web app in `../webapp`, is top priority:
+deploy it and bring it to parity with the live app at
+<https://blue.eel.education>. It deploys from `../webapp_cloudflare` to
+<https://jimhillr-sparkhill-webapp.pages.dev>. The gaps were found from the
+live app's page head and its public `eel3-data` S3 bucket, because cloud
+sandboxes can't load blue.eel.education itself; add any more Jim lists.
+Work them by `order`. The `@smoke` tests against the deploy are the root
+issue `issues/pages-deploys-smoke-playwright-tests-blueeel.md`.
