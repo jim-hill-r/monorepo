@@ -140,6 +140,12 @@ only for the affected projects in the git hooks and PR CI: `hooks.sh` and
 the PR's audit step pass the list in `COST_PROJECTS`. The account-wide rules
 read every project's file every time, which takes milliseconds.
 
+A requirement can depend on this check through an eval of kind `cost` in
+the project's `evals.toml`: in stage `ci`, `cost check --evals-results`
+writes its result in the eval engine's format, failing on COST-001 to
+COST-007 in the project's own files. See
+[Cost evals](evals.md#cost-evals).
+
 ### Detectors
 
 [`standards/radar/detectors.toml`](../radar/detectors.toml) maps what is in

@@ -1,6 +1,6 @@
 # cookbook: cost analysis. Format and rules: standards/docs/cost.md
-reviewed = "2026-11-26"
-summary = "Static Dioxus site on Cloudflare Pages with Auth0 sign-in. $0 a month."
+reviewed = "2026-11-27"
+summary = "Static Dioxus site on Cloudflare Pages with Auth0 sign-in and PostHog session replay. $0 a month."
 
 [[service]]
 blip = "Cloudflare Pages"
@@ -15,3 +15,11 @@ plan = "free"
 why = "Sign-in (shared free tenant with cahokia)."
 [service.usage]
 auth0_mau = 5
+
+[[service]]
+blip = "PostHog"
+plan = "free"
+why = "Session replay of real visitors on the production host only (public/posthog.js, decision 0001). Guess: a few hundred visits a month, well under the 5,000 free recordings shared by every site."
+[service.usage]
+posthog_recordings_per_month = 300
+posthog_events_per_month = 6000

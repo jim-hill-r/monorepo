@@ -1,18 +1,24 @@
 use crate::Route;
 use crate::progress;
+use crate::technique::{Technique, get_technique_js, set_technique_js};
 use dioxus::document::eval;
 use dioxus::prelude::*;
 
 /// Home page - matches blue.eel.education's opening screen, with the
-/// learner's name, under which their progress is kept (`progress.rs`).
+/// learner's name, under which their progress is kept (`progress.rs`), and
+/// the practice technique (`technique.rs`).
 #[component]
 pub fn Home() -> Element {
     let mut name = use_signal(String::new);
+    let mut technique = use_signal(Technique::default);
 
     // Fill in the name typed last time on this device.
     use_future(move || async move {
         if let Ok(saved) = eval(&progress::get_learner_js()).join::<String>().await {
             name.set(saved);
+        }
+        if let Ok(saved) = eval(&get_technique_js()).join::<String>().await {
+            technique.set(Technique::choose("", &saved));
         }
     });
 
@@ -47,6 +53,26 @@ pub fn Home() -> Element {
                         eval(&progress::set_learner_js(&typed));
                         name.set(typed);
                     },
+                }
+            }
+            label {
+                style: "display: flex; flex-direction: column; align-items: center; gap: 8px; color: #072A40; font-size: 1.1rem;",
+                "Technique"
+                select {
+                    name: "technique",
+                    style: "font-size: 1.1rem; padding: 10px 14px; border: 2px solid #178CA4; border-radius: 8px; background: white; width: 14em; max-width: 80vw;",
+                    onchange: move |e| {
+                        let chosen = Technique::choose("", &e.value());
+                        eval(&set_technique_js(chosen));
+                        technique.set(chosen);
+                    },
+                    for t in Technique::ALL {
+                        option {
+                            value: t.as_str(),
+                            selected: technique() == t,
+                            "{t.as_str()}"
+                        }
+                    }
                 }
             }
             Link {

@@ -1,7 +1,8 @@
 # Make the billing read credentials
 
 - **Kind:** one-time, then the GitHub token yearly
-- **Status:** open (`issues/human/billing-read-credentials.md`)
+- **Status:** open for the GitHub token (`issues/human/billing-read-credentials.md`).
+  Step 1 (Cloudflare) was done on 2026-11-27, and the PostHog key exists.
 - **Time:** about 10 minutes
 - **Cost:** $0. Fine-grained tokens and Cloudflare tokens are free, and the
   weekly check makes three API calls a week.

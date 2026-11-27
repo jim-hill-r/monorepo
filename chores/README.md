@@ -25,15 +25,18 @@ c next-task --skip cookbook/issues/x.md   # an open PR already has it
 c next-task --json
 
 # A PR description in the shape pull-requests.md asks for, checked against
-# PR-001 (exit 1 with the warnings when the summary is missing, over 75
-# words or unlinked).
+# PR-001 (exit 1 with the warnings when a section is missing or empty, an
+# attention tag is unknown, or a summary is over its word limit).
 c pr-body --login jimhillr-agt --requested-by Jim --thread-url <url> \
-  --summary "What, why, tradeoffs. Details in [the plan](standards/docs/plans/x.md)." \
-  --testing "Hooks passed (audit, chores CI)." --footer "<platform lines>" --out body.md
+  --what "At most 50 words." --why "At most 50 words." \
+  --cost "Under 25 words (default None.)" --risk "Under 25 words (default None.)" \
+  --details "Hooks passed (audit, chores CI). [The plan](standards/docs/plans/x.md)." \
+  --footer "<platform lines>" --out body.md
 c pr-body --check body.md                 # check an existing description
 
-# The attention badges pr-body puts under the attribution lines: requirement
-# changes (red for a must) and threat/risk file changes, against the base.
+# The Attention section pr-body puts under the attribution lines: one tag
+# each for requirement changes (red for a must), cost file changes and
+# threat/risk file changes, against the base.
 c badges --base origin/main
 
 # Issue files that pass the audit the first time.
@@ -44,6 +47,13 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
   --requirement "..." --why "..." --unblocks "IaC applies on main"
 ```
 
+```bash
+# Every project's user guide (DOC-005 to DOC-008) against the baseline in
+# standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
+c user-docs
+c user-docs --json
+```
+
 `new-human-task` starts the runbook from
 `standards/docs/runbooks/TEMPLATE.md` (title and status filled in) unless
 `--runbook` names one that exists; the agent still writes its sections.
@@ -52,6 +62,7 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 | --- | --- | --- |
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
+| `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command

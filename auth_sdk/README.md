@@ -10,11 +10,20 @@ Currently targetting auth0 API's, but is designed to be as generic as possible i
 
 ## Platform Support
 
-This library is designed to support multiple platforms:
-- **Web (WebAssembly)**: Full OpenID Connect implementation with browser-based authentication flow
-- **Desktop/Mobile**: Platform-specific implementations (coming soon)
+What works today:
+- **Web (WebAssembly)**: `web::WebAuthProvider`, the full browser redirect flow.
+- **Desktop and mobile (native)**: `native::NativeAuthClient`, the platform-free
+  half of RFC 8252 sign-in. `begin_login()` gives the authorize URL to open in
+  the system browser, and `complete_login()` finishes from the callback URL
+  (a loopback `http://127.0.0.1:<port>/callback` or a custom URL scheme). The
+  app opens the browser and receives the callback itself for now; a loopback
+  listener for desktop and app wiring follow
+  ([plan](docs/plans/2026-11-native-sign-in.md)).
 
-The web-specific dependencies (like `web-sys`) are only included when compiling for WebAssembly targets.
+Both share `flow`, which holds every security check (PKCE, `state`, a required
+ID token and its nonce), so it is tested natively with `cargo test`. The
+web-specific dependencies (like `web-sys`) are only included when compiling
+for WebAssembly targets.
 
 ## Security Features
 
@@ -22,7 +31,8 @@ The auth SDK implements multiple layers of security for OAuth2/OIDC flows:
 
 - **PKCE (Proof Key for Code Exchange)**: Protects against authorization code interception attacks
 - **CSRF Protection**: Uses state parameter validation to prevent cross-site request forgery
-- **Nonce Validation**: Validates ID token nonce to prevent replay attacks (OIDC)
+- **Nonce Validation**: Validates ID token nonce to prevent replay attacks (OIDC). A token response without an ID token is rejected, so this check can't be skipped
+- **Callback Check**: A native callback must be to the configured redirect URI (scheme, host, port and path), and an `error` response becomes `AuthError::AuthorizationDenied`
 - **ID Token Verification**: Automatically validates ID token signatures and claims (OIDC)
 - **SSRF Protection**: Disables HTTP redirects on non-wasm32 targets to prevent server-side request forgery
 
@@ -73,4 +83,5 @@ This approach eliminates the need for separate API calls to fetch user informati
 
 ## Documentation
 
+- [Native sign-in plan](docs/plans/2026-11-native-sign-in.md) - desktop and mobile sign-in, in phases
 - [OAuth2 vs OpenID Connect Research](docs/oauth2_vs_openidconnect_research.md) - Comprehensive comparison and recommendation for migrating to the `openidconnect` crate

@@ -45,6 +45,7 @@ const NAV: [string, string, string][] = [
   ['Acknowledge', '/acknowledge', 'Acknowledge'],
   ['Health', '/health', 'Health'],
   ['Projects', '/projects', 'Projects'],
+  ['Money', '/money', 'Money'],
   ['Deliverables', '/deliverables', 'Deliverables'],
   ['Reviews', '/reviews', 'Reviews'],
   ['Human issues', '/human-issues', 'Human issues'],
@@ -219,6 +220,31 @@ test('a project page shows its sub-projects, documents, deliverables and work @s
 
   await page.getByTestId('project-latest').getByRole('link').first().click();
   await expect(page).toHaveURL(/\/docs\/pane\/.+\.md$/);
+});
+
+test('the money page shows each project this month, a 12-month chart and the budgets @smoke @req:PANE-010', async ({ page }) => {
+  await page.goto('/money');
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Money');
+  const month = page.getByTestId('money-month');
+  await expect(month.getByRole('columnheader', { name: 'Net' })).toBeVisible();
+  await expect(month.getByRole('rowheader', { name: 'Total' })).toBeVisible();
+  await expect(month.locator('tfoot td').last()).toHaveText(/^−?\$[\d,]+\.\d{2}$/);
+  await expect(page.getByTestId('money-chart').locator('svg rect.bar')).toHaveCount(12);
+  // Claude Code is the one vendor with a budget today.
+  await expect(page.getByTestId('money-shared').getByRole('link', { name: 'Claude Code' })).toBeVisible();
+});
+
+test('a project page shows its money from docs/cost.toml @req:PANE-010', async ({ page }) => {
+  await page.goto('/projects/pane');
+
+  const money = page.getByTestId('project-money');
+  await expect(money.getByRole('heading', { name: 'Money' })).toBeVisible();
+  await expect(money.getByRole('link', { name: 'docs/cost.toml' })).toHaveAttribute(
+    'href',
+    /\/blob\/[0-9a-f]+\/pane\/docs\/cost\.toml$/,
+  );
+  await expect(page.getByTestId('project-money-month')).toContainText(/net −?\$[\d,]+\.\d{2}/);
 });
 
 /**

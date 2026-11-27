@@ -43,24 +43,23 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
-- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
-  long to consume quickly. Every PR should include a short executive
-  description of what we are doing, why, and any engineering tradeoffs.
-  Keep this to 75 words. It should link to details in committed
-  docs/plans/issues." Every PR description opens, right after any required
-  attribution lines, with that summary of at most 75 words, and the details
-  live in committed files it links to, not in the description. The format
-  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
-  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
-  warns when it is missing, too long or unlinked.
-- **Attention badges (Jim, 2026-11-27).** "There are some badges I want at
-  the top of a PR to let me know how much attention I should give. First
-  is if a fundamental requirement is changing. Second if anything
-  affecting a threat/risk is changing." Right under the attribution lines
-  every agent PR has the `> **Attention:**` line from `chores badges`
-  (`chores pr-body` writes it), kept current when pushes change the diff.
-  The rules are under "Attention badges" in
-  `standards/docs/pull-requests.md`.
+- **PR description sections (Jim, 2026-11-27).** "Every PR should have
+  these sections: 1) What changed summary (50 words) 2) Why changed
+  summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25
+  words) 5) Details (anything else agents want to include)." Above them,
+  "the top most section should be 1) Attention (list of strongly enum'ed
+  tags)", one of which is cost changed. This replaces the 75-word
+  executive summary. So after any required attribution lines, every PR
+  description has `## Attention` (the tags from `chores badges`: one
+  requirements, one cost and one threat/risk tag from a closed set), `##
+  What changed` (at most 50 words), `## Why` (at most 50), `## Cost
+  changes` and `## Risk changes` (under 25 each, `None.` when nothing
+  changes) and `## Details` (testing, review notes, links to committed
+  plans, decisions and issues). Write it with `chores pr-body`. The format
+  and tags are under "Pull request descriptions" in
+  `standards/docs/pull-requests.md` and in
+  `.github/pull_request_template.md`; the PR summary check (PR-001) warns
+  on a missing section, an unknown tag or a summary over its limit.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
@@ -209,6 +208,17 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **User docs in every project (Jim, 2026-11-27).** "All projects should
+  have user docs for supporting our end users." Every top-level project
+  has a user guide at `<project>/docs/user/README.md` with `## Who it's
+  for`, `## Getting started`, `## How to ...` and `## Getting help`
+  sections ("User docs" in
+  [standards/docs/documentation.md](standards/docs/documentation.md#user-docs),
+  [decision 0017](standards/docs/decisions/0017-user-docs.md)). The audit
+  (`chores user-docs`, DOC-005 to DOC-008) fails a project without one
+  unless it is in the shrinking baseline `standards/user-docs.toml`. A PR
+  that changes what users see or do updates the guide, and a new project
+  ships with one.
 - **Third-party content in athenaeum (Jim, 2026-11-27).** "Including
   copywrited content is fine as long as we reference the original owner
   properly and never sell or expose it as a part of our product." Copies of
@@ -296,8 +306,21 @@ repo, rather than in any one agent tool's settings.
   continue. A thread with nothing running is either resolved as done or
   asks Jim a question that says why it can't close, so it shows as waiting
   on him. A checklist update alone doesn't count.
-- **Starting new work.** There is no scheduled job for new work. Whenever no
-  agent PRs or agent tasks are in flight, the coordinating agent starts a new
+- **Credit window (Jim, 2026-11-27).** "Kick off work as our credit
+  window begins to close to maximize our use of the 5 hr credits. Have
+  that process run all the time." The hourly "Credit window check"
+  scheduled task wakes a standing credit window thread, which reads the
+  five-hour and seven-day usage from the sessions' rate-limit events and
+  asks the coordinating agent to start extra threads when the five-hour window would otherwise end under 85%
+  used, aiming at 95% without running the seven-day window out early.
+  Keeping at least 5 threads working is its floor, and the overage pause
+  still wins. The
+  rule is [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md),
+  the prompt is in
+  [standards/docs/scheduled-tasks/credit-window.md](standards/docs/scheduled-tasks/credit-window.md).
+- **Starting new work.** Apart from the credit window check above, there
+  is no scheduled job for new work. Whenever no agent PRs or agent tasks
+  are in flight, the coordinating agent starts a new
   task by running the `start-a-new-task` skill.
 - **CI on `main` may be red.** Judge a PR by whether the projects it changes
   pass, not by the overall status.
@@ -353,6 +376,7 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 | `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
 | `write-issue` | Write an issue file or a human task with its runbook through the `chores` command. |
+| `eval-triage` | On demand, for the eval calls the daily triage workflow can't make: rollback advice for a deploy that failed its evals, and an eval Jim disputes. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

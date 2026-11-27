@@ -1,7 +1,8 @@
 # Sign up for PostHog
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/create-posthog-cloud-free-plan-no.md`)
+- **Status:** done 2026-11-27 (US region; the project token is in
+  `cookbook/web/public/posthog.js`, the first site to use it)
 - **Time:** about 15 minutes
 - **Cost:** $0 on the free plan, which needs no card: 5,000 web recordings
   and 1,000,000 events a month. Past a free limit, PostHog drops the extra

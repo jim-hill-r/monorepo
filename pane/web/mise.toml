@@ -37,8 +37,11 @@ description = "Build the repo snapshot and review decks into public/, then the r
 # writes public/data/snapshot.json, which dx copies into the bundle as
 # /data/snapshot.json; the reviews task adds the decks under public/reviews/.
 # public/ is gitignored, so neither is ever committed (standards/docs/mise.md:
-# no committed build artifacts).
+# no committed build artifacts). The Money page splits shared costs by the
+# PRs merged each month, read from git, so a shallow CI checkout fetches
+# its history first; without it the page says the split is unavailable.
 run = [
+  "if [ \"$(git rev-parse --is-shallow-repository)\" = true ]; then git fetch --quiet --unshallow origin || echo 'pane: no git history; shared costs are not split'; fi",
   "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json",
   "mise run reviews",
   "dx bundle --platform web --release --out-dir dist --package $DX_PACKAGE",

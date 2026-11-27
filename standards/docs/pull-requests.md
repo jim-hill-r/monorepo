@@ -7,53 +7,83 @@ and every agent thread follow.
 
 ## Pull request descriptions
 
-PR descriptions must be quick to read (Jim, 2026-11-27: "Every PR should
-include a short executive description of what we are doing, why, and any
-engineering tradeoffs. Keep this to 75 words. It should link to details in
-committed docs/plans/issues"). Every PR description, from any agent:
+PR descriptions must be quick to read. Jim, 2026-11-27: "Every PR should
+have these sections: 1) What changed summary (50 words) 2) Why changed
+summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25 words)
+5) Details (anything else agents want to include)", with, above them, "the
+top most section should be 1) Attention (list of strongly enum'ed tags)",
+and "one of the attention tags should definitely be cost changed". This
+replaces the 75-word executive summary.
 
-1. Starts with the attribution lines the agent platform requires (the
+Every PR description, from any agent, has, in this order:
+
+1. The attribution lines the agent platform requires (the
    `claude-projects-attribution` comment and the "Requested by" line), when
    there are any.
-2. Then the **attention badges** line (see [below](#attention-badges)),
-   which tells the reviewer how closely to look.
-3. Then opens with an **executive summary** of at most **75 words**: what the
-   PR does, why, and any engineering tradeoffs. A `## Summary` heading above
-   it is optional.
-4. Links from the summary to the committed details: the plan, decision
-   record, issue file, runbook or doc in the repo that explains the change.
-   Write long explanations there, in the same PR, not in the description.
-5. Keeps anything after the summary short: how it was tested, anything a
-   reviewer should check closely, and screenshots of UI changes
-   ([documentation.md](documentation.md)).
+2. `## Attention`: one bullet per [attention tag](#attention-tags), written
+   by `chores badges`, which tells the reviewer how closely to look.
+3. `## What changed`: at most **50 words** on what the PR changes.
+4. `## Why`: at most **50 words** on why, and any engineering tradeoffs.
+5. `## Cost changes`: under **25 words** on money, free-tier usage or
+   Claude budget the PR moves, or `None.`
+6. `## Risk changes`: under **25 words** on security, threat, requirement
+   or reliability risk the PR moves, or `None.`
+7. `## Details`: anything else, with no limit: the issue it closes, how it
+   was tested (hooks passed, checks that didn't run), what a reviewer
+   should look at closely, screenshots of UI changes
+   ([documentation.md](documentation.md)), and links to the committed plan,
+   decision record, issue file, runbook or doc. Write long explanations
+   there, in the same PR, and link them; don't paste them in.
 
-Link targets don't count toward the 75 words. The
+Then any closing lines the platform asks for. Headings match in any case
+and at any level. Markdown links count as their text, and link targets and
+bare URLs don't count toward the limits. The
 [pull request template](../../.github/pull_request_template.md) has this
-shape. The **PR summary** check (PR-001,
+shape, and `chores pr-body` writes it. The **PR summary** check (PR-001,
 `standards/scripts/pr-summary-check.sh`, run by
-`.github/workflows/pull-request-summary.yml`) warns when the summary is
-missing, longer than 75 words or has no link. It is a warning only, so it
-never blocks a merge; fix the description and the check reruns on the edit.
+`.github/workflows/pull-request-summary.yml`, and `chores pr-body --check`
+with the same rules) warns when a section is missing, empty or still the
+template's placeholder, a summary is over its limit, or the Attention
+section has an unknown tag or not exactly one tag per group. It is a
+warning only, so it never blocks a merge; fix the description and the
+check reruns on the edit.
 
 Dependabot PRs are exempt: their bodies are generated.
 
-### Attention badges
+### Attention tags
 
 Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
 know how much attention I should give. First is if a fundamental
 requirement is changing. Second if anything affecting a threat/risk is
-changing." Every agent PR description has one line right under the
-attribution lines, written by `chores badges` (or `chores pr-body`, which
-calls it) from the PR's diff against `origin/main`:
+changing", and the cost tag above. The Attention section lists exactly one
+tag from each group, from this closed set (`Tag` in `chores/src/badges.rs`;
+the shell check lists the same names). `chores badges` (or `chores
+pr-body`, which calls it) works them out from the PR's diff against
+`origin/main`:
 
 ```markdown
-> **Attention:** 🔴 must requirement changed: `COOK-001` · 🟠 threat/risk files changed: `cookbook/docs/threat.toml`
+## Attention
+
+- 🔴 must-requirement-changed: `COOK-001`
+- 🟠 cost-changed: `cookbook/docs/cost.toml` (the Cost summary check says what moved)
+- 🟢 threat-risk-unchanged
 ```
 
-| Badge | 🟢 | 🟡 / 🟠 | 🔴 |
-| --- | --- | --- | --- |
-| Requirements | No `docs/requirements.md` changed | 🟡 a `should` or `could` requirement, or text outside any requirement, changed | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
-| Threat/risk | No risk file changed | 🟠 a risk file changed | (none: whether a change weakens security is the Security summary's call) |
+| Group | Tag | When |
+| --- | --- | --- |
+| Requirements | 🔴 `must-requirement-changed` | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
+| Requirements | 🟡 `requirement-changed` | A `should` or `could` requirement, or text outside any requirement, changed |
+| Requirements | 🟢 `requirements-unchanged` | No `docs/requirements.md` changed |
+| Cost | 🟠 `cost-changed` | A cost file changed |
+| Cost | 🟢 `cost-unchanged` | No cost file changed |
+| Threat/risk | 🟠 `threat-risk-changed` | A risk file changed |
+| Threat/risk | 🟢 `threat-risk-unchanged` | No risk file changed |
+
+Cost files are the files the [PR cost summary](cost.md) reads: each
+project's `docs/cost.toml`, `standards/radar/limits.toml`,
+`standards/radar/radar.json`, `detectors.toml` and `wrangler` configs. The
+Cost summary job also reads workflow schedules and dependency lines, so its
+`cost` label stays the authority.
 
 Risk files are the security files of the [PR security
 summary](security.md) (each project's `docs/threat.toml`, `_headers` and
@@ -61,12 +91,15 @@ summary](security.md) (each project's `docs/threat.toml`, `_headers` and
 plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
 `infra/src/`, `infra/scripts/`, `standards/settings.toml`,
 `standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
-secret and security check scripts, `SECURITY.md` and `CODEOWNERS`. The
-line is a pointer, not a gate: a requirement change still gets
-`needs-human` ([evals.md](evals.md)), and the Security summary job still
-labels `security` and, when a change weakens anything, `needs-human`. The
-PR-001 check skips the line. When later pushes change what the PR
-touches, rerun `chores badges` and update the line.
+secret and security check scripts, `SECURITY.md` and `CODEOWNERS`.
+
+The tags are pointers, not gates: a requirement change still gets
+`needs-human` ([evals.md](evals.md)), the Cost summary job still labels
+`cost` and `needs-human`, and the Security summary job still labels
+`security` and, when a change weakens anything, `needs-human`. When later
+pushes change what the PR touches, rerun `chores badges` and replace the
+section. A new tag goes in `Tag`, the shell check and this table in the
+same PR.
 
 ## Who owns a PR
 
@@ -154,8 +187,8 @@ reviewable PR, but Jim approves the stack once (decision
 
 1. When every PR in the stack is complete and green, the thread retargets
    the **top** PR to `main`. Its diff is now the whole stack.
-2. It edits the top PR's description: the executive summary covers the
-   whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
+2. It edits the top PR's description: the What changed and Why sections
+   cover the whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
    first, the top one last. Pane's Approve page reads that line.
 3. It moves every other PR in the stack back to draft, with a one-line
    comment naming the top PR, and turns off their auto-merge.
@@ -171,7 +204,7 @@ as part of it, not as orphans.
 
 Jim reviews from pane's **Approve** page (`/approve` on
 <https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
-ones first, with its summary, attention badges and a link to its review
+ones first, with its What changed summary, attention tags and a link to its review
 form.
 
 ## The reviewer account
@@ -227,7 +260,7 @@ section in one PR. It touches `standards/`, so only Jim can approve it.
 
 Jim reads every merged PR afterwards, whoever approved it, on pane's
 **Acknowledge** page (`/acknowledge`): newest first, each with its summary
-and attention badges, until he acknowledges it. "Flag for follow-up" opens
+and attention tags, until he acknowledges it. "Flag for follow-up" opens
 GitHub's editor with a `fix` issue file for that PR in its project's
 `issues/`, which the normal agent loop then works.
 

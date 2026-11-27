@@ -5,7 +5,7 @@
 # webapp_cloudflare jobs (each reports its share, --partial). The cd evals run
 # against https://jimhillr-sparkhill-webapp.pages.dev after webapp_cloudflare
 # deploys: the http evals, and the playwright evals with stage cd, which read
-# the report of the @smoke tests that standards/scripts/smoke.sh runs against
+# the report of the @smoke tests that `evals.sh smoke` runs against
 # the live site (SMOKE_DIR in webapp_cloudflare/mise.toml). Pages answers
 # every path of a single-page app with index.html, so each http eval also
 # checks what the response says.
@@ -345,3 +345,19 @@ requirement = "SPRK-008"
 stages = ["ci"]
 kind = "cargo"
 filter = "practising_only_some_letters_ends_once_they_are_stable"
+
+# SPRK-009: A learner can practise with less help
+
+[[eval]]
+id = "technique-query-and-default"
+requirement = "SPRK-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_query_wins_over_the_saved_technique_and_tracing_is_the_default"
+
+[[eval]]
+id = "techniques-in-the-browser"
+requirement = "SPRK-009"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Pattern keeps the start dots while drawing; Freeform shows nothing; both pass a letter written right; the choice is remembered."

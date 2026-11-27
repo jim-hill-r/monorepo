@@ -12,7 +12,10 @@ learner's progress, the live letter shapes, capitals) are done. Since
 2026-11-27 the sandbox network allows blue.eel.education, so agents can
 open the live app in Playwright to compare. Doing so found two more gaps:
 the Pattern and Freeform techniques (phase 5) and the practice menu and
-settings panel (phase 6). The live app has no capitals level, and its
+settings panel (phase 6). The techniques themselves are done (#901);
+moving a learner from Tracing to Pattern after a level is still open. The
+live app's source is the public repo jimhillr/BlueSteel (Quasar/Vue, in
+`frontend/src/client`). The live app has no capitals level, and its
 Upload Practice switch sends tracings to S3, which SPRK-006 rules out, so
 neither is copied. Never switch Upload Practice on or read the bucket's
 `practice/` files: they hold real learners' data. Add any more gaps Jim
