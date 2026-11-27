@@ -28,6 +28,8 @@ odds, plus each of this week's games' swing on the Bears' playoff and Super
 Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downloads
 the nflverse schedule, runs the simulation and writes `rooting.json`
 ([format](docs/rooting-json.md)).
+`bear_down --week <n> [--season <year>]` rebuilds a past week's guide from
+the results before it, for the [archive](docs/plans/2026-11-archive.md).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
 the remaining work to build v1 is listed in [issues/](issues/).
 
