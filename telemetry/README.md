@@ -44,8 +44,8 @@ are refused, so nothing unexpected is ever stored.
 ## Privacy
 
 - Requests with `DNT: 1` or `Sec-GPC: 1` get a 202 and are not stored.
-- So do requests with `x-monorepo-synthetic: 1` or a user agent containing
-  `monorepo-evals` (UAT, evals and smoke tests; eval engine phase 3), so
+- So do requests with `x-jimhillr-synthetic: 1` or a user agent containing
+  `jimhillr-evals` (UAT, evals and smoke tests; eval engine phase 3), so
   test traffic never counts as fans. Browsers in tests only need the user
   agent, since `navigator.sendBeacon` can't add a header.
 - The IP address is used only as the rate-limit key. It is never stored.

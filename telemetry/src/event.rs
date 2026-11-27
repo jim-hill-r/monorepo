@@ -15,11 +15,11 @@ pub const MAX_MESSAGE: usize = 500;
 
 /// The user agent token every eval, smoke and UAT run sends (eval engine
 /// phase 3, `standards/docs/plans/2026-11-eval-engine.md`).
-pub const SYNTHETIC_AGENT: &str = "monorepo-evals";
+pub const SYNTHETIC_AGENT: &str = "jimhillr-evals";
 
 /// Whether a request is accepted but not stored: Do Not Track, Global
 /// Privacy Control, or synthetic traffic, marked by the
-/// `x-monorepo-synthetic: 1` header or the `monorepo-evals` user agent. A
+/// `x-jimhillr-synthetic: 1` header or the `jimhillr-evals` user agent. A
 /// browser in a test can't add the header to a `navigator.sendBeacon` call,
 /// so the user agent is what marks its events. `header` looks up a request
 /// header by its lowercase name.
@@ -27,7 +27,7 @@ pub fn is_dropped(header: impl Fn(&str) -> Option<String>) -> bool {
     let set = |name: &str| header(name).is_some_and(|value| value.trim() == "1");
     set("dnt")
         || set("sec-gpc")
-        || set("x-monorepo-synthetic")
+        || set("x-jimhillr-synthetic")
         || header("user-agent")
             .is_some_and(|agent| agent.to_ascii_lowercase().contains(SYNTHETIC_AGENT))
 }
@@ -458,21 +458,21 @@ mod tests {
     fn privacy_signals_and_synthetic_traffic_are_dropped() {
         assert!(dropped_with(&[("dnt", "1")]));
         assert!(dropped_with(&[("sec-gpc", "1")]));
-        assert!(dropped_with(&[("x-monorepo-synthetic", "1")]));
+        assert!(dropped_with(&[("x-jimhillr-synthetic", "1")]));
         // A browser run by an eval or smoke test can't add the header to a
         // `sendBeacon` call, but it carries the user agent.
         assert!(dropped_with(&[(
             "user-agent",
-            "Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/131.0 monorepo-evals"
+            "Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/131.0 jimhillr-evals"
         )]));
-        assert!(dropped_with(&[("user-agent", "Monorepo-Evals/1.0")]));
+        assert!(dropped_with(&[("user-agent", "Jimhillr-Evals/1.0")]));
     }
 
     #[test]
     fn real_visitors_are_kept() {
         assert!(!dropped_with(&[]));
         assert!(!dropped_with(&[("dnt", "0"), ("sec-gpc", "0")]));
-        assert!(!dropped_with(&[("x-monorepo-synthetic", "0")]));
+        assert!(!dropped_with(&[("x-jimhillr-synthetic", "0")]));
         assert!(!dropped_with(&[(
             "user-agent",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1"

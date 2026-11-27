@@ -22,7 +22,7 @@ mod worker_glue {
         headers.set("Access-Control-Allow-Methods", "POST, OPTIONS")?;
         headers.set(
             "Access-Control-Allow-Headers",
-            "content-type, x-monorepo-synthetic",
+            "content-type, x-jimhillr-synthetic",
         )?;
         headers.set("Access-Control-Max-Age", "86400")?;
         Ok(response.with_headers(headers))

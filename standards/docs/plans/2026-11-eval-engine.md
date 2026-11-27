@@ -331,7 +331,7 @@ Rules:
   falls back to the other stages. Most of our apps have little traffic, so
   production chaos and `cd` evals carry most of the weight for now.
 - **Our own traffic is excluded.** Every eval and smoke run sends a
-  `monorepo-evals` user agent and an `x-monorepo-synthetic: 1` header. The
+  `jimhillr-evals` user agent and an `x-jimhillr-synthetic: 1` header. The
   PostHog snippet doesn't load for that user agent (so no recording is
   spent), the `telemetry` Worker drops events with either one (so metric
   queries never see them), and Web Analytics ignores headless browsers
@@ -394,7 +394,7 @@ asking:
 | Field | Web apps and sites | Desktop and mobile (webview) | Bevy games |
 | --- | --- | --- | --- |
 | Where | URL and route, a CSS selector path plus the element's text and role, the click's offset inside the element, viewport size, scroll position | Same, plus the app's route | Scene or state name, screen position, world position and the entity under the cursor (name or marker component) |
-| Which build | `commit` and `deploy` from a `<meta name="monorepo-build">` tag every build writes | App version and commit baked in at build time | Version and commit baked in, seed, frame number |
+| Which build | `commit` and `deploy` from a `<meta name="jimhillr-build">` tag every build writes | App version and commit baked in at build time | Version and commit baked in, seed, frame number |
 | Context | Screenshot of the viewport with the pin drawn on it, last 20 console errors, browser and OS | Screenshot, last 20 errors from the log, OS | Screenshot (Bevy's screenshot API), last 20 log errors, the RNG seed and recent inputs when the scripted mode from deploy feedback phase 3c exists |
 | Who and when | `by: jim`, UTC time | Same | Same |
 
@@ -498,7 +498,7 @@ third party's systems, and without spending free-tier room we need.
    network conditions and browser context options. This needs nothing
    deployed and touches no shared infrastructure.
 2. **In our own Workers** (pane's Worker, `telemetry`, bear_down when they
-   exist). A request carrying `x-monorepo-chaos: <fault>` and a valid HMAC
+   exist). A request carrying `x-jimhillr-chaos: <fault>` and a valid HMAC
    signature (secret `EVALS_CHAOS_KEY`, short expiry) makes that one request
    fail in the named way. Without a valid signature the header is ignored.
    Other users' requests are never affected.
@@ -727,7 +727,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 - `feedback/model`, and pane's `/feedback/sign-in` token page and
   `/api/feedback` routes writing `feedback.jsonl` lines and screenshots
   through `pane-edit` PRs.
-- `feedback/toolbar` (wasm), and the `monorepo-build` meta tag, in cookbook
+- `feedback/toolbar` (wasm), and the `jimhillr-build` meta tag, in cookbook
   first, then every web app and Perseus site.
 - The toolbar injected into the cahokia desktop and mobile webviews, with
   sign-in through the deep link.
