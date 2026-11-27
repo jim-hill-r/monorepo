@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T05:25:18.588229218Z",
+  "generated_at": "2026-11-27T05:26:40.215891999Z",
   "projects": [
     {
       "project": "bear_down",
@@ -10,46 +10,31 @@
           "requirement": "BEAR-001",
           "title": "Every game this week gets a verdict",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "BEAR-002",
           "title": "A pick says how much it helps",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "BEAR-003",
           "title": "Every game explains how it reaches the Bears",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "BEAR-004",
           "title": "Conflicting effects are named and netted",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "BEAR-005",
           "title": "\"Doesn't matter\" is earned and explained",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "BEAR-006",
@@ -73,10 +58,7 @@
           "requirement": "BEAR-008",
           "title": "The page says how fresh it is",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "BEAR-009",
