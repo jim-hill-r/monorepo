@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T23:19:39.436162120Z",
+  "generated_at": "2026-11-27T23:22:19.284588139Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -745,7 +745,7 @@
           "priority": "could",
           "verdict": "unknown",
           "reasons": [
-            "no production-stage results yet"
+            "no evals"
           ]
         },
         {
@@ -889,7 +889,7 @@
       "musts": 6,
       "musts_in_production": 6,
       "coverage": {
-        "requirements": 9,
+        "requirements": 8,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
@@ -966,15 +966,6 @@
           "requirement": "SPRK-008",
           "title": "A few letters or words can be practised on their own",
           "priority": "could",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
-        },
-        {
-          "requirement": "SPRK-009",
-          "title": "A learner can practise with less help",
-          "priority": "should",
           "verdict": "unknown",
           "reasons": [
             "no production-stage results yet"
