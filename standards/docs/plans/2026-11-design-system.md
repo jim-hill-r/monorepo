@@ -399,6 +399,18 @@ design system contains a raw colour (`#...`, `rgb(...)`, `hsl(...)`) outside
 from literals. It is a warning until every app in the adoption order has
 moved, then an error, the same path the cost check takes.
 
+Done 2026-11-27, straight as an error: by then phases 2 to 4 had moved
+every adopted project to tokens and none had a raw colour left, so a
+warning stage would have guarded nothing. The rule is
+`standards/scripts/design-check.sh`, run by `//:audit`: DS-001 for CSS
+(hex and the colour functions, `color-mix()` included) and DS-002 for Rust
+colour constructors with literal arguments. A project counts as adopted
+when it has a Cargo dependency on a `design_system` crate, a
+`design/theme.toml`, or an `# affected-by:` line naming `design_system` in
+its `mise.toml` (how the CSS-only apps of phase 5 opt in), so each phase 5
+app is checked from the PR that adopts it. A line that needs an exact colour
+ends with a `ds-allow-raw-colour` comment and a reason.
+
 ### Checking the real pages
 
 Contrast between tokens doesn't prove a page is readable: text can sit on an
@@ -456,7 +468,8 @@ phase 1 is done.
 8. **sparkhill/website** and **profiles/jimhillr** (Perseus, airy): link the
    CSS, replacing their copies of the reset. The compiled Tailwind file in
    sparkhill stays until that site is rebuilt in Dioxus.
-9. Turn the raw-colour lint from a warning into an error.
+9. Turn the raw-colour lint from a warning into an error. Done
+   2026-11-27: it shipped as an error (see [Using the tokens](#using-the-tokens-lint)).
 
 ## Tech radar and Claude support
 

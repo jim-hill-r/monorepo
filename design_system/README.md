@@ -16,8 +16,10 @@ The latest contrast results are in [docs/contrast.md](docs/contrast.md).
 Phase 1 (the source and the check) is done: the token files, the model and
 CLI, the generated CSS, JSON and Rust outputs, custom app themes, the
 contrast check, the Dioxus picker with self-hosted fonts, and the preview
-site at <https://jimhillr-design-system.pages.dev>. Next, apps adopt it, pane and
-bear_down first.
+site at <https://jimhillr-design-system.pages.dev>. Phases 2 to 4 are done
+too: pane, bear_down (with its Bears theme), cookbook, cahokia and
+controlled_chaos use it, and the audit keeps raw colours out of them. Phase 5
+(blueeel, sparkhill and profiles) is next.
 
 ## Using it
 
@@ -154,6 +156,18 @@ preview/             the preview site (its own project, deployed to Cloudflare P
 dist/                tokens.css, base.css, tokens.json (generated, committed)
 docs/contrast.md     every checked pair (generated, committed)
 ```
+
+## No raw colours in adopted apps
+
+Once a project uses the design system, `mise run //:audit` fails on a raw
+colour in its CSS (DS-001: `#hex`, `rgb()`, `hsl()`, `oklch()` and the other
+colour functions) or a Rust colour built from literals (DS-002:
+`Color::srgb(0.1, ...)`, `Srgba::hex("...")`). The check is
+`standards/scripts/design-check.sh`. A project counts as adopted when it
+depends on a `design_system` crate, has a `design/theme.toml`, or has an
+`# affected-by: ../design_system` line in its `mise.toml`, which is how an
+app that only links `dist/` opts in. A line that truly needs an exact colour
+ends with the comment `ds-allow-raw-colour` and a reason.
 
 Everything under `dist/`, `palette/src/generated.rs` and `docs/contrast.md`
 is generated: edit the TOML, then run `mise run render`. CI fails if they
