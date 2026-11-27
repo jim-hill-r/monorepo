@@ -7,7 +7,9 @@ mod state;
 mod tracing_check;
 
 use dioxus::prelude::*;
-use pages::{congratulations::Congratulations, home::Home, letter::Letter, word::Word};
+use pages::{
+    capital::Capital, congratulations::Congratulations, home::Home, letter::Letter, word::Word,
+};
 
 fn main() {
     dioxus::launch(App);
@@ -23,6 +25,8 @@ enum Route {
     Letter {},
     #[route("/word")]
     Word {},
+    #[route("/capital")]
+    Capital {},
     #[route("/congratulations")]
     Congratulations {},
 }
@@ -61,6 +65,11 @@ fn Shell() -> Element {
                     to: Route::Word {},
                     style: "color: white; text-decoration: none; font-size: 0.95rem; opacity: 0.9;",
                     "Words"
+                }
+                Link {
+                    to: Route::Capital {},
+                    style: "color: white; text-decoration: none; font-size: 0.95rem; opacity: 0.9;",
+                    "Capitals"
                 }
             }
 

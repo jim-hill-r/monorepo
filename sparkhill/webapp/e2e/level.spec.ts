@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Drives the practice levels in a browser: Begin, the demonstration, tracing
- * with the mouse, "Try again!", and "Go" from letters to words to the
- * congratulations page. `?practice=` keeps each level to a few letters or
+ * with the mouse, "Try again!", and "Go" from letters to words to capitals to
+ * the congratulations page. `?practice=` keeps each level to a few letters or
  * words (src/state.rs), and a letter is traced right by following the
  * demonstration's own path (`eelCanvas.demonstrationPath()`).
  */
@@ -113,10 +113,26 @@ test('"Go" after the letter level opens the word level', async ({ page }) => {
   await expect(page.getByText('Welcome!')).toBeVisible();
 });
 
-test('"Go" after the word level opens the congratulations page', async ({ page }) => {
+test('"Go" after the word level opens the capital letter level', async ({ page }) => {
   await page.goto('/word?practice=hi');
   await start(page);
   await expectTry(page, 'hi');
+  await finishLevel(page, STABILIZE_COUNT);
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/capital$/);
+  await expect(page.getByText('Welcome!')).toBeVisible();
+});
+
+test('the capital level starts with L', async ({ page }) => {
+  await page.goto('/capital');
+  await start(page);
+  await expectTry(page, 'L');
+});
+
+test('"Go" after the capital level opens the congratulations page', async ({ page }) => {
+  await page.goto('/capital?practice=T');
+  await start(page);
+  await expectTry(page, 'T');
   await finishLevel(page, STABILIZE_COUNT);
   await page.getByRole('button', { name: 'Go' }).click();
   await expect(page).toHaveURL(/\/congratulations$/);

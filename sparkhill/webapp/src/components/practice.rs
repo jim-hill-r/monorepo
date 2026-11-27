@@ -208,6 +208,7 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
 fn next_route(level: &str) -> Route {
     match next_level(level) {
         Some("word") => Route::Word {},
+        Some("capital") => Route::Capital {},
         Some("letter") => Route::Letter {},
         _ => Route::Congratulations {},
     }
@@ -218,8 +219,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn go_after_letters_opens_words_and_after_words_congratulates() {
+    fn go_leads_from_letters_to_words_to_capitals_to_congratulations() {
         assert_eq!(next_route("letter"), Route::Word {});
-        assert_eq!(next_route("word"), Route::Congratulations {});
+        assert_eq!(next_route("word"), Route::Capital {});
+        assert_eq!(next_route("capital"), Route::Congratulations {});
     }
 }
