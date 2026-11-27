@@ -172,6 +172,14 @@ repo, rather than in any one agent tool's settings.
   per project. Agents working on a project add or fix evals as part of the
   work, not as a separate phase. Details are under "Continuous
   improvement" in [standards/docs/evals.md](standards/docs/evals.md).
+- **Code quality ratchet (Jim, 2026-11-27).** "We also need a process for
+  ensuring maintainable code base." Each project's quality findings (clippy
+  pedantic and the complexity limits) may only go down, never up, and gaps
+  become issue files through weekly quality triage, the same loop as evals
+  ([decision 0015](standards/docs/decisions/0015-code-quality-process.md),
+  [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
+  findings in files you touch. Scripts stay Rust-only: add no new `.sh`
+  files, and port existing ones into `chores` commands over time.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
