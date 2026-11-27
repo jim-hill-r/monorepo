@@ -9,6 +9,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod user_docs;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -109,6 +110,15 @@ enum Command {
         #[arg(long, default_value = "origin/main")]
         base: String,
         /// Print JSON instead of the Markdown line.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Check every project's user guide, <project>/docs/user/README.md
+    /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
+    /// against the baseline in standards/user-docs.toml. Exits 1 on any
+    /// error. Run by `mise run //:audit`.
+    UserDocs {
+        /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
     },
@@ -274,6 +284,17 @@ fn run() -> Result<ExitCode> {
                 println!("{}", serde_json::to_string_pretty(&attention)?);
             } else {
                 println!("{}", badges::render(&attention));
+            }
+        }
+        Command::UserDocs { json } => {
+            let report = user_docs::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", user_docs::render(&report));
+            }
+            if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
             }
         }
         Command::NewIssue {

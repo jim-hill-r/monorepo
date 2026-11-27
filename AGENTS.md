@@ -198,6 +198,17 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **User docs in every project (Jim, 2026-11-27).** "All projects should
+  have user docs for supporting our end users." Every top-level project
+  has a user guide at `<project>/docs/user/README.md` with `## Who it's
+  for`, `## Getting started`, `## How to ...` and `## Getting help`
+  sections ("User docs" in
+  [standards/docs/documentation.md](standards/docs/documentation.md#user-docs),
+  [decision 0017](standards/docs/decisions/0017-user-docs.md)). The audit
+  (`chores user-docs`, DOC-005 to DOC-008) fails a project without one
+  unless it is in the shrinking baseline `standards/user-docs.toml`. A PR
+  that changes what users see or do updates the guide, and a new project
+  ships with one.
 - **Third-party content in athenaeum (Jim, 2026-11-27).** "Including
   copywrited content is fine as long as we reference the original owner
   properly and never sell or expose it as a part of our product." Copies of

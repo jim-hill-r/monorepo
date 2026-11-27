@@ -71,13 +71,15 @@ jobs:
         with:
           install: false
 
-      # The audit builds the evals CLI (`evals check`) and the cost CLI
-      # (`cost check`). Cache those builds, saved from main only.
+      # The audit builds the evals CLI (`evals check`), the cost CLI
+      # (`cost check`) and chores (`chores user-docs`). Cache those builds,
+      # saved from main only.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: |
             evals
             cost
+            chores
           key: audit
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
