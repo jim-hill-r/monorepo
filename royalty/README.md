@@ -25,7 +25,7 @@ Phase 1 is being built. The `royalty_model` crate (`model/`) reads and
 validates a `royalty.toml` and works out what a consumer owes; the
 `royalty` command (`cli/`) checks a file and scans a consumer's Cargo
 dependencies, counting seats from git and deployments from the consumer's
-manifests. Writing a report comes next. The full
+manifests, and writes a report for manual payment. The full
 `royalty.toml` format is in the [royalty.toml reference](docs/royalty-toml.md).
 The design, the phases and Jim's answers to its decisions are in the
 [royalty plan](docs/plans/2026-11-royalty-plan.md). The work items are in
@@ -79,6 +79,22 @@ from `git log`, bots left out; only the count is ever printed. Deployments
 are the `[[consumer.deployment]]` manifests whose graph holds the family, or
 one for the project when none is listed. A unit the scan can't count is
 printed as "not measured" and adds nothing; it is never guessed.
+
+### `royalty report [path] [--period YYYY-MM] [--out dir]`
+
+Does what `royalty scan` does and writes two files (into the consumer's
+directory unless `--out` says otherwise):
+
+- `royalty-report.json`, for tools: format version 1, one entry per family
+  with its tier, units, every cap and budget step with the amount after it,
+  the reason for the final number, and each payee's share and payment
+  methods.
+- `royalty-report.md`, for people: the same as a table, then how to pay
+  each payee, the packages with no terms, and notices.
+
+The same inputs give the same bytes, and the report holds package names,
+counts and amounts only: no file paths, no source, and no names or emails
+of the consumer's people. The consumer pays by hand from it.
 
 ## The file today
 

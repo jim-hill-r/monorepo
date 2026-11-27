@@ -269,3 +269,94 @@ fn royl_005_seats_never_print_emails() {
     assert!(!out.contains("acme.example"), "{out}");
     assert!(!out.contains("Person"), "{out}");
 }
+
+fn report(dir: &Path, out: &Path) {
+    let out = out.to_string_lossy().to_string();
+    let output = run(
+        env!("CARGO_BIN_EXE_royalty"),
+        &["report", "--period", "2026-11", "--out", &out],
+        dir,
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn royl_006_the_same_inputs_give_the_same_report_bytes() {
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    let (a, b) = (dir.path().join("a"), dir.path().join("b"));
+    report(&acme, &a);
+    report(&acme, &b);
+    for name in ["royalty-report.json", "royalty-report.md"] {
+        let first = fs::read(a.join(name)).unwrap_or_default();
+        assert!(!first.is_empty(), "{name} is empty");
+        assert_eq!(first, fs::read(b.join(name)).unwrap_or_default(), "{name}");
+    }
+}
+
+#[test]
+fn royl_005_the_report_holds_counts_and_amounts_only() {
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    report(&acme, &acme);
+    let json = fs::read_to_string(acme.join("royalty-report.json")).unwrap_or_default();
+    let md = fs::read_to_string(acme.join("royalty-report.md")).unwrap_or_default();
+    let temp = dir.path().to_string_lossy().to_string();
+    for text in [&json, &md] {
+        assert!(!text.contains(&temp), "a path leaked:\n{text}");
+        assert!(!text.contains("acme.example"), "an email leaked:\n{text}");
+        assert!(!text.contains("Person 1"), "a name leaked:\n{text}");
+        assert!(
+            !text.contains("Acme Example Ltd"),
+            "the consumer's name leaked:\n{text}"
+        );
+    }
+}
+
+#[test]
+fn royl_004_the_report_shows_every_cap_and_how_to_pay() {
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    report(&acme, &acme);
+    let md = fs::read_to_string(acme.join("royalty-report.md")).unwrap_or_default();
+    assert!(
+        md.contains("**Total owed: $45.00** of a $45.00 budget."),
+        "{md}"
+    );
+    assert!(
+        md.contains("| `chartlib` | 0.4.2 | direct | team | 14 seat | $70.00 | $40.00 | $25.00 | Set by the consumer's total budget. |"),
+        "{md}"
+    );
+    assert!(
+        md.contains("| `webframe` | 2.1.0 | direct | production | 2 deployment | $20.00 | $20.00 | $20.00 | Binding `agreement`: never scaled. |"),
+        "{md}"
+    );
+    assert!(
+        md.contains("| `tinycolor` | 1.0.3 | transitive | not billable (transitive) |"),
+        "{md}"
+    );
+    assert!(
+        md.contains("  - Chartlib maintainers: $25.00 by github-sponsors: https://github.com/sponsors/chartlib-example"),
+        "{md}"
+    );
+    let json = fs::read_to_string(acme.join("royalty-report.json")).unwrap_or_default();
+    let value: serde_json::Value = match serde_json::from_str(&json) {
+        Ok(v) => v,
+        Err(e) => panic!("{e}"),
+    };
+    assert_eq!(value["format"], 1);
+    assert_eq!(value["period"], "2026-11");
+    assert_eq!(value["total_cents"], 4500);
+    let chartlib = &value["families"][0];
+    assert_eq!(chartlib["family"], "chartlib");
+    assert_eq!(chartlib["steps"][0]["limit"], "the producer's project cap");
+    assert_eq!(chartlib["steps"][0]["cents"], 4000);
+    assert_eq!(chartlib["steps"][1]["cents"], 2500);
+}

@@ -189,10 +189,7 @@ fn scan_metadata(metadata: &Metadata, deployments: &[(String, PathBuf)]) -> Scan
             Some(member) => deployment_graphs.push(reachable(&[member.id.as_str()], &nodes)),
             None => scan.notices.push(Notice {
                 package: name.clone(),
-                message: format!(
-                    "deployment manifest {} is not a member of this workspace; not counted",
-                    manifest.display()
-                ),
+                message: "its manifest is not a member of this workspace; not counted".into(),
             }),
         }
     }

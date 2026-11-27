@@ -44,6 +44,15 @@ stages = ["ci"]
 kind = "cargo"
 filter = "royl_005_"
 
+# ROYL-006: The same files give the same report
+
+[[eval]]
+id = "report-bytes-are-deterministic"
+requirement = "ROYL-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_006_"
+
 # ROYL-007: A file with only `[project]` stays valid for ever
 
 [[eval]]

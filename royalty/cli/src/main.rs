@@ -3,6 +3,7 @@
 mod check;
 mod owed;
 mod period;
+mod report;
 mod scan;
 mod seats;
 
@@ -48,6 +49,22 @@ enum Command {
         #[arg(long)]
         period: Option<period::Month>,
     },
+    /// Scan like `royalty scan` and write royalty-report.json and
+    /// royalty-report.md: one row per family, every cap and budget step,
+    /// and how to pay each payee. Same inputs, same bytes.
+    Report {
+        /// The consumer's directory. Defaults to the current directory.
+        #[arg(default_value = ".")]
+        path: PathBuf,
+        /// The month to work out, YYYY-MM. Defaults to the current month
+        /// (UTC).
+        #[arg(long)]
+        period: Option<period::Month>,
+        /// Where to write the two files. Defaults to the consumer's
+        /// directory.
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -57,6 +74,11 @@ fn main() -> ExitCode {
         Command::Scan { path, period } => {
             owed::run(&path, period.unwrap_or_else(period::Month::current))
         }
+        Command::Report { path, period, out } => report::run(
+            &path,
+            period.unwrap_or_else(period::Month::current),
+            out.as_deref().unwrap_or(&path),
+        ),
     };
     match result {
         Ok(code) => code,
