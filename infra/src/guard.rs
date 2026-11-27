@@ -9,6 +9,12 @@
 //!   (the budgets in `standards/radar/limits.toml`, the same ones
 //!   `free-tiers.sh` reads), or any resource of a type that can bill.
 //! - IAC-004: it uses a provider or resource type that isn't allowlisted.
+//! - IAC-005: it touches the `infra-credentials` environment or a ruleset's
+//!   bypass list, which IaC never manages (decision 0010, item 7).
+//!
+//! [`credential_changes`] also reports, without failing, whether a plan
+//! changes a credential, so the workflows send it to the `infra-credentials`
+//! environment, where it waits for Jim's second approval (decision 0010).
 
 use anyhow::Context;
 use serde_json::Value;
@@ -104,6 +110,7 @@ pub fn check(plan: &Value, budgets: &Budgets) -> Vec<Finding> {
     findings.extend(no_sensitive_values(plan));
     findings.extend(within_budgets(plan, budgets));
     findings.extend(allowlisted(plan));
+    findings.extend(gate_untouched(plan));
     findings
 }
 
@@ -332,6 +339,164 @@ fn allowlisted(plan: &Value) -> Vec<Finding> {
     findings
 }
 
+/// The GitHub environment that holds the credential-capable tokens and
+/// Jim's second approval (decision 0010). IaC never manages it.
+pub const CREDENTIALS_ENVIRONMENT: &str = "infra-credentials";
+
+/// Resource type prefixes whose every create or update is a credential
+/// change (decision 0010's table). Every GitHub type is here: GitHub can't
+/// separate repo settings from rulesets and secrets, so the `github` stack
+/// always needs the second approval.
+pub const CREDENTIAL_TYPE_PREFIXES: &[&str] = &[
+    "auth0_client_credentials",
+    "auth0_client_grant",
+    "auth0_resource_server",
+    "auth0_connection",
+    "auth0_role",
+    "auth0_user_permission",
+    "auth0_user_role",
+    "cloudflare_api_token",
+    "cloudflare_account_token",
+    "cloudflare_account_member",
+    "cloudflare_zero_trust_access_",
+    "cloudflare_access_",
+    "github_",
+];
+
+/// `auth0_client` attributes that hold no credential, so an update that
+/// changes only these is everyday IaC. Creating a client, or changing any
+/// other attribute (grant types, authentication method, app type, token
+/// settings), is a credential change. A list of what's safe, not of what
+/// isn't, so a new provider attribute counts as a credential until it is
+/// added here.
+pub const AUTH0_CLIENT_NOT_CREDENTIAL: &[&str] = &[
+    "allowed_clients",
+    "allowed_logout_urls",
+    "allowed_origins",
+    "callbacks",
+    "client_id",
+    "description",
+    "id",
+    "initiate_login_uri",
+    "logo_uri",
+    "name",
+    "web_origins",
+];
+
+/// One credential change in a plan.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct CredentialChange {
+    pub address: String,
+    pub kind: String,
+    pub actions: Vec<String>,
+    /// The attributes that change (all of them for a create).
+    pub attributes: Vec<String>,
+}
+
+/// The top-level attributes whose value differs between `before` and
+/// `after`, or that are unknown until apply.
+fn changed_attributes(change: &Value) -> Vec<String> {
+    let empty = serde_json::Map::new();
+    let object = |pointer: &str| {
+        change
+            .pointer(pointer)
+            .and_then(Value::as_object)
+            .unwrap_or(&empty)
+    };
+    let (before, after, unknown) = (
+        object("/change/before"),
+        object("/change/after"),
+        object("/change/after_unknown"),
+    );
+    let mut keys: Vec<&String> = before.keys().chain(after.keys()).collect();
+    keys.sort();
+    keys.dedup();
+    keys.into_iter()
+        .filter(|k| before.get(*k) != after.get(*k) || is_unknown(unknown.get(*k)))
+        .cloned()
+        .collect()
+}
+
+/// Every create or update in the plan that changes a credential (decision
+/// 0010). Reads, no-ops and imports that change nothing are not changes.
+/// An empty list means the plan may apply in the everyday `infra`
+/// environment; otherwise it applies only in `infra-credentials`, after
+/// Jim approves the run.
+pub fn credential_changes(plan: &Value) -> Vec<CredentialChange> {
+    let mut out = Vec::new();
+    for change in resource_changes(plan) {
+        if str_field(change, "mode") == "data" {
+            continue;
+        }
+        let acts = actions(change);
+        if !acts.iter().any(|a| *a == "create" || *a == "update") {
+            continue;
+        }
+        let kind = str_field(change, "type");
+        let attributes = changed_attributes(change);
+        let credential = if kind == "auth0_client" {
+            acts.contains(&"create")
+                || attributes
+                    .iter()
+                    .any(|a| !AUTH0_CLIENT_NOT_CREDENTIAL.contains(&a.as_str()))
+        } else {
+            CREDENTIAL_TYPE_PREFIXES.iter().any(|p| kind.starts_with(p))
+        };
+        if credential {
+            out.push(CredentialChange {
+                address: str_field(change, "address").to_string(),
+                kind: kind.to_string(),
+                actions: acts.iter().map(|a| a.to_string()).collect(),
+                attributes,
+            });
+        }
+    }
+    out
+}
+
+/// IAC-005: IaC never manages its own gate (decision 0010, item 7): no
+/// change to the `infra-credentials` environment, its secrets, variables
+/// or deployment policies, and no change to a ruleset's bypass list. Those
+/// stay settings Jim makes by hand.
+fn gate_untouched(plan: &Value) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    for change in resource_changes(plan) {
+        let acts = actions(change);
+        if str_field(change, "mode") == "data" || acts.iter().all(|a| *a == "no-op" || *a == "read")
+        {
+            continue;
+        }
+        let kind = str_field(change, "type");
+        if !kind.starts_with("github_") {
+            continue;
+        }
+        let address = str_field(change, "address");
+        let names_gate = ["/change/before/environment", "/change/after/environment"]
+            .iter()
+            .any(|p| change.pointer(p).and_then(Value::as_str) == Some(CREDENTIALS_ENVIRONMENT));
+        if names_gate {
+            findings.push(finding(
+                "IAC-005",
+                format!(
+                    "{address} changes the `{CREDENTIALS_ENVIRONMENT}` environment, which holds Jim's second approval; IaC never manages it (decision 0010)"
+                ),
+            ));
+        }
+        if kind == "github_repository_ruleset"
+            && change.pointer("/change/before/bypass_actors")
+                != change.pointer("/change/after/bypass_actors")
+        {
+            findings.push(finding(
+                "IAC-005",
+                format!(
+                    "{address} changes a ruleset's bypass list; only Jim changes who can bypass rules (decision 0010)"
+                ),
+            ));
+        }
+    }
+    findings
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -524,6 +689,69 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn auth0_url_updates_are_not_credential_changes() -> anyhow::Result<()> {
+        assert_eq!(credential_changes(&plan("auth0-import.json")?), []);
+        Ok(())
+    }
+
+    #[test]
+    fn creating_an_auth0_client_is_a_credential_change() -> anyhow::Result<()> {
+        let changes = credential_changes(&plan("credential-auth0.json")?);
+        let addresses: Vec<&str> = changes.iter().map(|c| c.address.as_str()).collect();
+        assert_eq!(
+            addresses,
+            [
+                "auth0_client.new_app",
+                "auth0_client.cookbook",
+                "auth0_client_grant.infra"
+            ]
+        );
+        // The URL-only update in the same plan is not listed.
+        assert_eq!(
+            changes[1].attributes,
+            ["callbacks", "token_endpoint_auth_method"]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn tokens_and_access_are_credential_changes() -> anyhow::Result<()> {
+        let changes = credential_changes(&plan("credential-cloudflare.json")?);
+        let kinds: Vec<&str> = changes.iter().map(|c| c.kind.as_str()).collect();
+        assert_eq!(
+            kinds,
+            [
+                "cloudflare_api_token",
+                "cloudflare_zero_trust_access_policy"
+            ]
+        );
+        // The Pages project in the same plan is not a credential.
+        assert!(credential_changes(&plan("cloudflare.json")?).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn every_github_change_is_a_credential_change() -> anyhow::Result<()> {
+        let changes = credential_changes(&plan("gate.json")?);
+        assert_eq!(changes.len(), 3);
+        assert!(changes.iter().all(|c| c.kind.starts_with("github_")));
+        Ok(())
+    }
+
+    #[test]
+    fn touching_the_gate_fails() -> anyhow::Result<()> {
+        let findings = gate_untouched(&plan("gate.json")?);
+        assert_eq!(ids(&findings), ["IAC-005", "IAC-005"]);
+        assert!(
+            findings[0]
+                .message
+                .contains("github_repository_environment.credentials")
+        );
+        assert!(findings[1].message.contains("bypass list"));
         Ok(())
     }
 }
