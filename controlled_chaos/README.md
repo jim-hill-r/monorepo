@@ -16,7 +16,7 @@ cargo run
 
 | Where | How |
 | --- | --- |
-| Browser | <https://jimhillr-controlled-chaos.pages.dev>. Tap or click to play; on a keyboard, click the page once so it gets the keys. On phones and other high-DPI screens the page is zoomed in for now (see [issues/](issues/)). Redeployed on every merge to `main` that changes the game, and every night. |
+| Browser | <https://jimhillr-controlled-chaos.pages.dev>. Tap or click to play; on a keyboard, click the page once so it gets the keys. Redeployed on every merge to `main` that changes the game, and every night. |
 | macOS | [controlled_chaos-macos.zip](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-macos.zip). Unzip and open "Controlled Chaos". It isn't notarized, so the first time macOS refuses: open System Settings > Privacy & Security, click **Open Anyway**, and confirm. (Or run `xattr -dr com.apple.quarantine "Controlled Chaos.app"`.) |
 | Android | [controlled_chaos-android.apk](https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-android.apk). Open the link on the phone and allow your browser to install unknown apps. Until a release key is set up, uninstall the old build before installing a new one. |
 | Your computer | `mise run dev` (or `cargo run`) in this folder. |
@@ -43,3 +43,14 @@ cargo run --features bevy/dynamic_linking
 # Run tests
 cargo test
 ```
+
+### Screenshots of the web build on phone-sized screens
+
+Playwright's `deviceScaleFactor` (and Chrome DevTools' device mode) only
+fakes `devicePixelRatio`: the canvas's `devicePixelContentBoxSize`, which
+winit sizes the game from, still uses the real screen's ratio. Bevy then
+lays the game out at half size and you see its top-left quarter, zoomed in.
+Real phones and Retina screens don't do this. To check a high-DPI screen
+headlessly, make the ratio real by launching Chromium with
+`--force-device-scale-factor=<ratio>` as well as setting `deviceScaleFactor`
+to the same value.
