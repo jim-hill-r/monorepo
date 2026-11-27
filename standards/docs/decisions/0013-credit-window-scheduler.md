@@ -86,7 +86,9 @@ process, not finished work.
 
 Let `u5` and `u7` be the five-hour and seven-day utilization, `h` the
 hours until the five-hour reset, `d` the days until the seven-day reset,
-and `W` the threads working now (not waiting on Jim).
+`W` the threads working now (not waiting on Jim), and `O` the open
+threads: every thread not yet resolved, blocked ones included, which is
+what the 30-thread cap counts.
 
 1. **Stop.** If `isUsingOverage` is true or any status is not `allowed`,
    start nothing and tell Jim (the overage rule in AGENTS.md wins).
