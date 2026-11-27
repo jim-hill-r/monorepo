@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T21:28:43.089218878Z",
+  "generated_at": "2026-11-27T21:31:13.987916672Z",
   "coverage": {
     "projects": 26,
-    "projects_with_requirements": 7,
+    "projects_with_requirements": 9,
     "percent": 5.0,
-    "musts_percent": 46.4,
+    "musts_percent": 41.9,
     "judged_percent": 12.2,
     "warn_below": 80.0,
     "warning": true
@@ -226,16 +226,99 @@
     },
     {
       "project": "controlled_chaos",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 1,
+      "musts_in_production": 1,
       "coverage": {
-        "requirements": 0,
+        "requirements": 9,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "CHAOS-001",
+          "title": "Anyone can play a game in a browser with nothing to install",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-002",
+          "title": "Every game follows the official rules",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-003",
+          "title": "The game can be played by touch, mouse or keyboard",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-004",
+          "title": "Everything on screen is easy to read, in any colour setting",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-005",
+          "title": "The game remembers display settings between launches",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-006",
+          "title": "We can see whether people play, without identifying anyone",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-007",
+          "title": "The CPU opponent plays sensibly",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-008",
+          "title": "Desktop and Android builds can be downloaded",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CHAOS-009",
+          "title": "The web build is safe to open",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "cookbook",
@@ -342,16 +425,63 @@
     },
     {
       "project": "design_system",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 2,
+      "musts_in_production": 1,
       "coverage": {
-        "requirements": 0,
+        "requirements": 5,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "DSGN-001",
+          "title": "Every theme is readable for everyone",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-002",
+          "title": "An app theme can't make an app harder to use",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-003",
+          "title": "People can pick a theme, and the choice sticks",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-004",
+          "title": "Apps, games and tools get the same values",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "DSGN-005",
+          "title": "The preview site shows every combination",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "evals",
