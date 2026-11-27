@@ -102,6 +102,14 @@ requirement = "COOK-006"
 stages = ["ci"]
 kind = "playwright"
 
+[[eval]]
+id = "recipe-day-links"
+requirement = "COOK-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_adjacent_recipe_days"
+description = "Previous / next day links wrap round the year."
+
 # COOK-007: The recipes are real and varied
 
 [[eval]]

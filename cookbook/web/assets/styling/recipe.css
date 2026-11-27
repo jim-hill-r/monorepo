@@ -84,3 +84,33 @@
 }
 
 /* .back-link is styled in plan.css, which every page loads. */
+
+/* Previous / next day links, one at each end of the row. */
+.recipe-day-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-space-4);
+    margin-top: var(--ds-space-6);
+}
+
+.recipe-day-nav a {
+    padding: var(--ds-space-2) var(--ds-space-4);
+    color: var(--ds-color-text);
+    text-decoration: none;
+    font-weight: var(--ds-weight-strong);
+    border: var(--ds-border-width) solid var(--ds-color-border-strong);
+    border-radius: var(--ds-radius-sm);
+    transition: background-color var(--ds-motion-slow);
+}
+
+.recipe-day-nav a:hover,
+.recipe-day-nav a:focus-visible {
+    background-color: var(--ds-color-accent);
+    color: var(--ds-color-on-accent);
+    border-color: var(--ds-color-accent);
+}
+
+.recipe-day-nav a:focus-visible {
+    outline: var(--ds-focus-width) solid var(--ds-color-focus);
+    outline-offset: var(--ds-focus-offset);
+}

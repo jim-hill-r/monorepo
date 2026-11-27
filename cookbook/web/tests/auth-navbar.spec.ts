@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { mainNavLink } from './nav';
 
 /**
  * Tests for the Cookbook authentication in header.
@@ -105,9 +106,8 @@ test.describe('Authentication in Header', () => {
     await page.waitForLoadState('networkidle');
     
     // Navigate between pages and verify login button is always present in header
-    const recipesLink = page.locator('#header .header-nav a', { hasText: 'Recipes' });
-    // Use force:true for mobile viewports where elements may overlap
-    await recipesLink.click({ force: true });
+    const recipesLink = await mainNavLink(page, 'Recipes');
+    await recipesLink.click();
     await page.waitForLoadState('networkidle');
     
     let header = page.locator('#header');
@@ -115,9 +115,8 @@ test.describe('Authentication in Header', () => {
     const hasAuth1 = await header.locator('button, div').count() > 0;
     expect(hasAuth1).toBeTruthy();
     
-    const plansLink = page.locator('#header .header-nav a', { hasText: 'Plans' });
-    // Use force:true for mobile viewports where elements may overlap
-    await plansLink.click({ force: true });
+    const plansLink = await mainNavLink(page, 'Plans');
+    await plansLink.click();
     await page.waitForLoadState('networkidle');
     
     header = page.locator('#header');
@@ -125,9 +124,8 @@ test.describe('Authentication in Header', () => {
     const hasAuth2 = await header.locator('button, div').count() > 0;
     expect(hasAuth2).toBeTruthy();
     
-    const homeLink = page.locator('#header .header-nav a', { hasText: 'Home' });
-    // Use force:true for mobile viewports where elements may overlap
-    await homeLink.click({ force: true });
+    const homeLink = await mainNavLink(page, 'Home');
+    await homeLink.click();
     await page.waitForLoadState('networkidle');
     
     header = page.locator('#header');

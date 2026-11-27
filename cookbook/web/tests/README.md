@@ -109,6 +109,11 @@ The test suite covers:
   - Header visibility and content on all pages
   - Navigation link functionality (Home, Recipes, Plans)
   - Header persistence during page navigation
+- **Mobile Header** (`mobile-header.spec.ts`): below 768 px the header is
+  one row and its Home / Recipes / Plans links move into the sidebar
+  - `nav.ts` has `mainNavLink`, which finds those links at any width
+- **Recipe Day Links** (`recipe-day-nav.spec.ts`): previous / next day links
+  on each recipe, wrapping from day 365 to day 1
 - **Authentication Navbar**: Tests the authentication navbar functionality
   - Navbar visibility on all pages
   - Login button or loading/error state display
