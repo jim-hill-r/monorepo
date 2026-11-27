@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T05:26:40.215891999Z",
+  "generated_at": "2026-11-27T05:35:03.935844635Z",
   "projects": [
     {
       "project": "bear_down",
@@ -80,10 +80,7 @@
           "requirement": "CAHO-001",
           "title": "A family tree is drawn so anyone can read it",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "CAHO-002",
@@ -100,8 +97,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "setting auth0-cahokia-app has never been checked",
-            "no production-stage results yet"
+            "setting auth0-cahokia-app has never been checked"
           ]
         },
         {
@@ -151,19 +147,13 @@
           "requirement": "COOK-001",
           "title": "There is a recipe for every day of the year",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "COOK-002",
           "title": "Every week has a meal plan with a shopping list",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "COOK-003",
@@ -239,19 +229,13 @@
           "requirement": "PANE-001",
           "title": "Today shows what needs Jim",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "PANE-002",
           "title": "Pane shows the repo as it is on main",
           "priority": "must",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "PANE-003",
@@ -302,10 +286,7 @@
           "requirement": "PANE-008",
           "title": "Executive reviews are read in pane",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "PANE-009",
