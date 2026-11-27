@@ -65,6 +65,16 @@
           "prevent_destroy": true,
           "replace_triggered_by": []
         }
+      },
+      "sparkhill": {
+        "account_id": "${var.cloudflare_account_id}",
+        "auto_install": true,
+        "host": "jimhillr-sparkhill.pages.dev",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        }
       }
     }
   },
