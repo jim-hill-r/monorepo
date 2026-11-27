@@ -46,6 +46,7 @@ state").
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository | not rotated: a new key can't update an installed APK, so testers would have to reinstall | on a leak only | none |
 | `RAPIDAPI_KEY` (homer) | Jim's shell, not GitHub | Jim, [rapidapi-zillow.md](runbooks/rapidapi-zillow.md) | 365 days | settings check `rotate-rapidapi-key` |
 | `POSTHOG_PERSONAL_API_KEY` | repository, once made | Jim, [posthog-sign-up.md](runbooks/posthog-sign-up.md) | 180 days | settings check, added in the PR that first uses it |
+| `POSTHOG_BILLING_READ_KEY` | `infra`, once made | Jim, [posthog-sign-up.md](runbooks/posthog-sign-up.md) | 180 days | settings check, added in the PR that first uses it |
 
 These aren't secrets, or aren't ours to rotate:
 
