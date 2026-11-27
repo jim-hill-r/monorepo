@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T21:49:07.618229448Z",
+  "generated_at": "2026-11-27T21:51:44.610247577Z",
   "coverage": {
     "projects": 27,
-    "projects_with_requirements": 9,
+    "projects_with_requirements": 10,
     "percent": 4.8,
-    "musts_percent": 41.9,
+    "musts_percent": 38.2,
     "judged_percent": 11.7,
     "warn_below": 80.0,
     "warning": true
@@ -536,7 +536,7 @@
       "requirements": []
     },
     {
-      "project": "luggage",
+      "project": "jimhillr",
       "musts": 0,
       "musts_in_production": 0,
       "coverage": {
@@ -549,7 +549,7 @@
       "requirements": []
     },
     {
-      "project": "monorepo",
+      "project": "luggage",
       "musts": 0,
       "musts_in_production": 0,
       "coverage": {
@@ -688,7 +688,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-27 20:58:03.037223303 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-27 21:50:51.492071172 UTC"
           ]
         },
         {
@@ -952,16 +952,63 @@
     },
     {
       "project": "tofu_state",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 3,
+      "musts_in_production": 2,
       "coverage": {
-        "requirements": 0,
+        "requirements": 5,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "TOFU-001",
+          "title": "infra's state is kept and read back",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-002",
+          "title": "Only infra can read or change state",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-003",
+          "title": "Two applies never overwrite each other",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-004",
+          "title": "A bad apply can be rolled back",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "TOFU-005",
+          "title": "Errors and logs never show state",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     }
   ]
 }
