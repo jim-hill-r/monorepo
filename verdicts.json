@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-27T23:28:56.392695020Z",
+  "generated_at": "2026-11-27T23:32:15.061499106Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 11.2,
-    "musts_percent": 36.2,
-    "judged_percent": 16.4,
+    "percent": 10.7,
+    "musts_percent": 31.9,
+    "judged_percent": 13.9,
     "warn_below": 80.0,
     "warning": true
   },
@@ -330,10 +330,10 @@
       "musts_in_production": 3,
       "coverage": {
         "requirements": 9,
-        "met": 2,
-        "percent": 22.2,
-        "musts_met": 2,
-        "musts_percent": 66.7,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
       "requirements": [
@@ -341,13 +341,19 @@
           "requirement": "COOK-001",
           "title": "There is a recipe for every day of the year",
           "priority": "must",
-          "verdict": "met"
+          "verdict": "at-risk",
+          "reasons": [
+            "recipe-pages has no cd results yet"
+          ]
         },
         {
           "requirement": "COOK-002",
           "title": "Every week has a meal plan with a shopping list",
           "priority": "must",
-          "verdict": "met"
+          "verdict": "at-risk",
+          "reasons": [
+            "plan-pages has no cd results yet"
+          ]
         },
         {
           "requirement": "COOK-003",
@@ -657,8 +663,8 @@
       "musts_in_production": 4,
       "coverage": {
         "requirements": 12,
-        "met": 4,
-        "percent": 33.3,
+        "met": 5,
+        "percent": 41.7,
         "musts_met": 4,
         "musts_percent": 100.0,
         "warning": false
@@ -727,7 +733,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-27 22:01:15.592313497 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-27 23:31:39.398405324 UTC"
           ]
         },
         {
@@ -743,10 +749,7 @@
           "requirement": "PANE-010",
           "title": "Each project's revenue and cost is shown by month",
           "priority": "could",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "PANE-011",
