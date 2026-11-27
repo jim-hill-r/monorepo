@@ -16,7 +16,8 @@ test.describe('Session replay privacy', () => {
   test('PostHog does not load off the production host', async ({ page }) => {
     const posthogRequests: string[] = [];
     page.on('request', (request) => {
-      if (request.url().includes('posthog.com')) posthogRequests.push(request.url());
+      const host = new URL(request.url()).hostname;
+      if (host === 'posthog.com' || host.endsWith('.posthog.com')) posthogRequests.push(request.url());
     });
     await page.goto('/');
     await expect(page.locator('.privacy-note')).toBeVisible();
