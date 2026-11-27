@@ -50,6 +50,20 @@ fn run_prints_main_result() {
 }
 
 #[test]
+fn run_prints_trailing_expression_without_return() {
+    let dir = scratch_dir("run-trailing");
+    let file = write_source(
+        &dir,
+        "answer.my",
+        "function square(x) { x * x }\nfunction main() { square(6) + 6 }",
+    );
+    let output = my_lang(&["run".as_ref(), file.as_os_str()]);
+    assert!(output.status.success(), "stderr: {}", stderr(&output));
+    assert_eq!(stdout(&output), "42\n");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn run_passes_arguments_to_main() {
     let dir = scratch_dir("run_args");
     let file = write_source(&dir, "sub.my", "function main(a, b) { return a - b }");

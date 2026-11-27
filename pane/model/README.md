@@ -47,6 +47,7 @@ the PR's project.
 | `Review` | An executive review deck and its scorecard rows. |
 | `Retro` | A retro and its actions. |
 | `Signal`, `Health` | One traffic light (green, amber, red or grey) with its reason and evidence links. |
+| `health::Thresholds`, `health::Rollup` | The thresholds from `pane/health.toml`, and a row's worst-of light with its coverage. |
 
 ## Format version
 
@@ -56,5 +57,20 @@ a new required field). `Snapshot::from_json` refuses a snapshot written with a
 different version, so the web app can say the data is out of date instead of
 showing it wrong.
 
-The health rules (thresholds and roll-ups) are added here in Phase 4 of the
-[review dashboard plan](../docs/plans/2026-11-review-dashboard.md).
+## Health rules
+
+The `health` module holds the traffic-light rules from Phase 4 of the
+[review dashboard plan](../docs/plans/2026-11-review-dashboard.md): one pure
+function per project signal (`build`, `deploy_and_uat`, `observability`,
+`review`, `retros`, `open_issues`, `standards`, `pull_requests`) and system
+signal (`nightly`, `push_main`, `free_tiers`, `pr_queue`, `human_queue`,
+`agent_tasks`, `review_rotation`, `security_scans`), and `roll_up`, which
+gives a row the worst of its non-grey signals and a coverage count such as
+"5 of 7 signals". The functions take ages in whole days and counts that the
+caller has already worked out, so they need no clock and compile to wasm.
+
+Their thresholds are the `Thresholds` type, read from
+[`pane/health.toml`](../health.toml) by `pane_snapshot`
+(`parse::health_thresholds`). Every age rule means "more than N days". A
+missing key takes the plan's starting value and an unknown key is an error,
+so tune a threshold with a one-line PR to that file.

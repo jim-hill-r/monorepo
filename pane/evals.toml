@@ -32,6 +32,8 @@ requirement = "PANE-001"
 stages = ["cd"]
 kind = "http"
 path = "/"
+asset_contains = "Human issues"
+description = "The app shell loads, and the bundle it ships has the Today page's Human issues list."
 
 # PANE-002: Pane shows the repo as it is on main
 
@@ -220,6 +222,17 @@ requirement = "PANE-008"
 stages = ["cd"]
 kind = "http"
 path = "/reviews"
+asset_contains = "The project that has gone longest without a review goes next."
+description = "The app shell loads, and the bundle it ships has the Reviews page."
+
+[[eval]]
+id = "snapshot-reviews-live"
+requirement = "PANE-008"
+stages = ["cd"]
+kind = "http"
+description = "The live snapshot lists the review rotation the Reviews page reads."
+path = "/data/snapshot.json"
+body_contains = "\"path\": \"docs/reviews/2026-11-25-cookbook/deck.md\""
 
 [[eval]]
 id = "review-deck-html-live"
@@ -238,6 +251,7 @@ kind = "http"
 description = "pane's release builds each review deck to a PDF under /reviews/<folder>/."
 path = "/reviews/2026-11-25-cookbook/deck.pdf"
 header = "content-type: application/pdf"
+body_contains = "%PDF"
 
 # PANE-011: Jim can approve the waiting pull requests in a row
 

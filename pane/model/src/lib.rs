@@ -7,6 +7,8 @@
 
 use std::fmt;
 
+pub mod health;
+
 use serde::{Deserialize, Serialize};
 
 /// The repo pane reviews, for links to files and releases on GitHub.

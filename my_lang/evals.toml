@@ -29,6 +29,14 @@ filter = "test_jit_e2e_"
 description = "Source text to result through the public API (tests/integration_tests.rs)."
 
 [[eval]]
+id = "jit-trailing-expression"
+requirement = "LANG-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_jit_trailing_"
+description = "A body that ends in an expression without `return` gives that expression's value (the README examples)."
+
+[[eval]]
 id = "codegen-arithmetic"
 requirement = "LANG-001"
 stages = ["ci"]

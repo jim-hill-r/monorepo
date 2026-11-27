@@ -1,7 +1,7 @@
 # Contributing to design_system/preview
 
 The page is built by `src/main.rs` from `../tokens` (through
-`design_system_model`), `../dist`, `../js/theme.js` and `../dioxus/fonts`.
+`design_system_model`), `../dist`, `../js/theme.js` and `../dioxus/assets/design-system-fonts`.
 Its own layout is `src/preview.css`, which uses only `--ds-` tokens so each
 panel looks the way an app in that theme would.
 
