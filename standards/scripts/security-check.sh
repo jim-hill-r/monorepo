@@ -7,9 +7,11 @@
 #   SEC-006  Every tracked Cargo.lock and package-lock.json has a
 #            .github/dependabot.yml entry for its directory, and every entry's
 #            directory exists (and, for cargo and npm, holds that lockfile).
-#   SEC-007  CI's only git push is evals.sh's push of eval results to the
-#            evals-results data branch: no other `git push` in a workflow,
-#            shared script or shared task file, and never to main.
+#   SEC-007  CI's only git pushes are evals.sh's push of eval results to the
+#            evals-results data branch and coverage.sh's push of coverage
+#            results to the coverage-results data branch: no other `git push`
+#            in a workflow, shared script or shared task file, and never to
+#            main.
 #
 # SEC-001 (gitleaks) is secrets-check.sh, run by the hooks and PR CI.
 set -euo pipefail
@@ -79,10 +81,12 @@ else
   done < <(git ls-files -- ':(glob)**/Cargo.lock' ':(glob)**/package-lock.json')
 fi
 
-# SEC-007: the eval workflows push only to evals-results. Comment lines are
-# skipped; every other line running `git ... push` must be evals.sh's one
-# push, which names its target ref in full. This file holds the pattern.
+# SEC-007: the eval workflows push only to evals-results, and the coverage
+# workflow only to coverage-results. Comment lines are skipped; every other
+# line running `git ... push` must be evals.sh's or coverage.sh's one push,
+# which names its target ref in full. This file holds the patterns.
 allowed='git -C "$work" push --quiet origin HEAD:refs/heads/evals-results'
+allowed_coverage='git -C "$work" push --quiet origin HEAD:refs/heads/coverage-results'
 while IFS=: read -r file line text; do
   [ -n "$file" ] || continue
   [[ "$text" =~ ^[[:space:]]*# ]] && continue
@@ -90,7 +94,10 @@ while IFS=: read -r file line text; do
   if [ "$file" = standards/scripts/evals.sh ] && [[ "$text" == *"$allowed"* ]]; then
     continue
   fi
-  err SEC-007 "$file:$line runs git push; CI may push only eval results to evals-results, through standards/scripts/evals.sh store"
+  if [ "$file" = standards/scripts/coverage.sh ] && [[ "$text" == *"$allowed_coverage"* ]]; then
+    continue
+  fi
+  err SEC-007 "$file:$line runs git push; CI may push only eval results to evals-results (standards/scripts/evals.sh store) and coverage results to coverage-results (standards/scripts/coverage.sh store)"
 done < <(git grep -nE 'git( +-[cC] +[^ ]+)* +push( |$)' -- '.github/workflows/*.yml' '.github/workflows/*.yaml' \
   'standards/scripts/*.sh' 'standards/tasks/*.toml' || true)
 

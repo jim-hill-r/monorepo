@@ -388,6 +388,22 @@
     "budget": 0
   },
   {
+    "name": "cargo-llvm-cov",
+    "ring": "Adopt",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Line coverage of every Rust project each night (COV-001, a warning under 80% for now), stored on the coverage-results branch with the README badge (Jim, 2026-11-27). Pinned in standards/scripts/coverage.sh.",
+    "exemplars": [
+      "standards"
+    ],
+    "sources": [
+      "standards/docs/testing.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Playwright",
     "ring": "Adopt",
     "quadrant": "Tools",
