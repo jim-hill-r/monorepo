@@ -5,13 +5,13 @@ runbook: standards/docs/runbooks/github-code-security.md
 
 ## Requirement
 
-In GitHub, Settings > Code security, turn on secret scanning with push protection, Dependabot alerts, Dependabot security updates and private vulnerability reporting (all free on this public repo).
+In GitHub, Settings > Code security, turn on private vulnerability reporting (free on this public repo). The `github` stack in `infra` turns on the rest (secret scanning with push protection, Dependabot alerts and security updates) once `github-app-infra-read.md` is done.
 
 PR #654. The server-side net for the threat check's secret scanning and dependency audit, see standards/docs/plans/2026-11-threat-check.md.
 
 ## Why it can't be automated
 
-These repository settings need Admin, which `jimhillr-agt` doesn't have. A later `github` stack may manage them, applied only in `infra-credentials`.
+It needs Admin, which `jimhillr-agt` doesn't have, and the GitHub provider (6.13.0) has no resource for private vulnerability reporting, so IaC can't do it either.
 
 ## Runbook
 

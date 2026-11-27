@@ -66,10 +66,12 @@ means Jim's approval is the last step: GitHub squash-merges as soon as the
 approval lands, with no agent run in between.
 
 The ruleset on `main` dismisses an approval when new commits are pushed, so a
-push always needs a fresh approval. Once Jim adds the `CI result` check from
-`pull-request-ci.yml` as a required status check on that ruleset (see
-`issues/human/`), GitHub also waits for green CI on the new head before
-auto-merging. Until then, an agent turns auto-merge on only while every check
+push always needs a fresh approval. Once the `CI` ruleset from the `github`
+stack in `infra` is applied (it requires the `CI result` check from
+`pull-request-ci.yml` on `main`, and waits for
+`issues/human/github-app-infra-read.md` and Jim's approval of its run),
+GitHub also waits for green CI on the new head before auto-merging. Until
+then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
 
 ## PR triage

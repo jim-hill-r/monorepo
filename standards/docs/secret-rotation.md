@@ -42,6 +42,7 @@ state").
 | `AUTH0_INFRA_READ_CLIENT_SECRET` | repository | Infra Mint (auto, Auth0 rotate-secret) | 90 days | scheduled Infra Mint run |
 | `AUTH0_INFRA_APPLY_CLIENT_SECRET` | `infra` | Infra Mint (auto, Auth0 rotate-secret) | 90 days | scheduled Infra Mint run |
 | `GH_INFRA_CREDENTIALS_APP_KEY` (GitHub App private key) | `infra-credentials` | Jim, [github-app-infra.md](runbooks/github-app-infra.md) | 180 days | settings check `rotate-github-app-infra-key` |
+| `GH_INFRA_READ_APP_KEY` (read-only GitHub App private key) | repository | Jim, [github-app-infra-read.md](runbooks/github-app-infra-read.md) | 365 days | settings check `rotate-github-app-infra-read-key` |
 | `AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET` (bootstrap) | `infra-credentials` | Jim, [infra-credentials-environment.md](runbooks/infra-credentials-environment.md) | 180 days | settings check `rotate-auth0-infra-credentials` |
 | `CLOUDFLARE_INFRA_CREDENTIALS_TOKEN` (bootstrap) | `infra-credentials` | Jim, the same runbook; set a 200-day expiry on it when you make it | 180 days | settings check `rotate-cloudflare-infra-credentials` |
 | `TOFU_STATE_PASSPHRASE` | repository | not rotated yet: changing it needs state re-encrypted first (`issues/iac-rotate-state-passphrase.md`) | on a leak only, until that issue lands | none |
@@ -52,7 +53,7 @@ state").
 
 These aren't secrets, or aren't ours to rotate:
 
-- `CLOUDFLARE_ACCOUNT_ID`, `TOFU_STATE_ORIGIN` and `GH_INFRA_CREDENTIALS_APP_ID` are identifiers, not secrets.
+- `CLOUDFLARE_ACCOUNT_ID`, `TOFU_STATE_ORIGIN`, `GH_INFRA_CREDENTIALS_APP_ID` and `GH_INFRA_READ_APP_ID` are identifiers, not secrets.
 - `GITHUB_TOKEN` and the GitHub App installation tokens last an hour at most.
 - The Auth0 domain and client IDs are public.
 - The Claude GitHub App and the claude.ai connectors are signed in and renewed by their own platforms. Their settings checks already cover them.
