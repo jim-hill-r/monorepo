@@ -9,7 +9,8 @@ url = "https://jimhillr-sparkhill.pages.dev"
 access = "public"
 data = "public"
 previews = "public"
-notes = "Perseus export (sparkhill/website). No _headers file yet."
+headers = "sparkhill/website/_headers"
+notes = "Perseus export (sparkhill/website)."
 
 [[surface]]
 name = "Blue Eel"
@@ -18,7 +19,8 @@ url = "https://jimhillr-sparkhill-webapp.pages.dev"
 access = "public"
 data = "public"
 previews = "public"
-notes = "Dioxus web app (sparkhill/webapp). No _headers file yet. Anything a child types stays in the browser."
+headers = "sparkhill/webapp_cloudflare/_headers"
+notes = "Dioxus web app (sparkhill/webapp); the deploy copies _headers into its build output. Anything a child types stays in the browser."
 
 [[secret]]
 name = "CLOUDFLARE_API_TOKEN"
@@ -44,4 +46,4 @@ mitigation = "Only the deploy step on main, with CLOUDFLARE_API_TOKEN, can publi
 id = "SPK-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into a page (XSS) or a site framed by another (clickjacking)."
-mitigation = "Both render escaped text and load only their own scripts. Security headers are still missing (see the FIX issue)."
+mitigation = "Both send security headers from their _headers files (CSP, nosniff, HSTS, frame-ancestors 'none') and render escaped text."

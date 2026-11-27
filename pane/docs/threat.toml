@@ -9,6 +9,7 @@ url = "https://jimhillr-pane.pages.dev"
 access = "public"
 data = "public"
 previews = "public"
+headers = "pane/web/public/_headers"
 notes = "Everything it shows is already public in the repo, so public is right today. Before phase 3 adds the PR-opening token this must become cloudflare-access, previews included."
 
 # Every Pages deploy (push-main.yml, nightly-cd.yml through mise-projects.yml).
@@ -38,7 +39,7 @@ surface = "site"
 id = "PANE-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into the page (XSS) or the site framed by another (clickjacking)."
-mitigation = "Dioxus escapes text it renders and the page loads only its own scripts. Security headers on every response are still missing (see the FIX issue)."
+mitigation = "Security headers from web/public/_headers (CSP, nosniff, no-referrer, HSTS, frame-ancestors 'self'), and Dioxus escaping rendered text."
 surface = "site"
 
 [[threat]]

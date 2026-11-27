@@ -135,11 +135,18 @@ used_by = ["infra-mint.yml"]
 scope = "Private key of the infra GitHub App: Secrets, Environments, Variables and Administration on this repo; infra-credentials only"
 setting = "github-app-infra"
 
+[[secret]]
+name = "GH_INFRA_READ_APP_KEY"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "Private key of the read-only infra GitHub App: Administration and Metadata read on this repo"
+setting = "github-app-infra-read"
+
 [[threat]]
 id = "INFRA-T1"
 stride = "elevation-of-privilege"
 what = "A pull request uses the plan's credentials to change settings."
-mitigation = "infra-plan gets only read-only credentials (read:clients, Account Settings Read, the state read password), and only for PRs from this repo, never forks. Every write credential is in the infra or infra-credentials environment, which run only on main."
+mitigation = "infra-plan gets only read-only credentials (read:clients, Account Settings Read, the read-only GitHub App, the state read password), and only for PRs from this repo, never forks. Every write credential is in the infra or infra-credentials environment, which run only on main."
 
 [[threat]]
 id = "INFRA-T2"
