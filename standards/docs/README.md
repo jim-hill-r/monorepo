@@ -18,6 +18,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Repo health](./repo-health.md) - The README's health badges, and how PR triage checks them and fixes what is red
 - [Scheduled tasks](./scheduled-tasks/) - The exact prompts of the Claude scheduled tasks, such as [PR triage](./scheduled-tasks/pr-triage.md)
+- [Resources](./resources.md) - Every live resource is claimed, and a renamed or removed one is retired and deleted safely
 - [Rust](./rust.md) - Rust coding standards
 - [Security](./security.md) - Security rules and the checks that enforce them (secret scanning, ignored secret files, Dependabot coverage)
 - [Testing](./testing.md) - Testing standards and requirements
