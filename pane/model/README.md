@@ -5,6 +5,21 @@ writes a `Snapshot` to `snapshot.json`, and `pane_web` reads it back, so both
 sides agree on one set of serde types defined here. It is named for what it
 holds: pane's data model.
 
+## Money
+
+The `money` module holds the revenue and cost rules from "Revenue and cost"
+in the [review dashboard plan](../docs/plans/2026-11-review-dashboard.md),
+built on [`cost_model`](../../cost/model) so pane and `cost check` read
+`docs/cost.toml` the same way. `ProjectMoney` is one project's month:
+revenue, direct cost, share of shared costs and net, in whole US cents.
+`monthly_revenue`, `direct_cost` (yearly costs spread over twelve months, a
+once cost only in its month) and `net` work it out from a project's
+`docs/cost.toml`, and `split_shared_costs` splits a shared cost such as Claude
+Code across projects by their share of the month's merged PRs. A PR touching
+two projects counts half to each, a repo-wide PR counts for none, and the
+shares always add up to the whole cost. `month_money` puts them together for
+the Money page.
+
 ## What's in it
 
 | Type | Holds |
