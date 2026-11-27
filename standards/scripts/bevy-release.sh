@@ -3,7 +3,8 @@
 # Android APK. Run from the game's directory; the bevy-game tasks
 # release:web, release:macos and release:android call it.
 #
-#   bevy-release.sh web      dist/web/ (index.html, game.js, game_bg.wasm),
+#   bevy-release.sh web      dist/web/ (index.html, boot.js, game.js,
+#                            game_bg.wasm, and _headers from web/_headers),
 #                            ready for `wrangler pages deploy`. Needs the
 #                            wasm32-unknown-unknown target, wasm-bindgen-cli
 #                            matching the wasm-bindgen in Cargo.lock, and a
@@ -56,25 +57,33 @@ web() {
 <body>
   <div id="loading">Loading $title…</div>
   <canvas id="bevy" tabindex="0"></canvas>
-  <script type="module">
-    import init from "./game.js";
-    const canvas = document.getElementById("bevy");
-    const loading = document.getElementById("loading");
-    // Bevy's winit loop throws a control-flow exception on purpose once it
-    // takes over; anything else is a real failure.
-    init().catch((e) => {
-      if (!String(e).includes("Using exceptions for control flow")) {
-        loading.textContent = "The game failed to start: " + e;
-        throw e;
-      }
-    });
-    // The game takes keyboard input, so give the canvas focus once it shows.
-    new MutationObserver(() => { loading.remove(); canvas.focus(); })
-      .observe(canvas, { attributes: true });
-  </script>
+  <script type="module" src="./boot.js"></script>
 </body>
 </html>
 EOF
+  # The start-up code is a file, not an inline script, so the page works
+  # under a Content-Security-Policy without 'unsafe-inline'.
+  cat >dist/web/boot.js <<'EOF'
+import init from "./game.js";
+const canvas = document.getElementById("bevy");
+const loading = document.getElementById("loading");
+// Bevy's winit loop throws a control-flow exception on purpose once it
+// takes over; anything else is a real failure.
+init().catch((e) => {
+  if (!String(e).includes("Using exceptions for control flow")) {
+    loading.textContent = "The game failed to start: " + e;
+    throw e;
+  }
+});
+// The game takes keyboard input, so give the canvas focus once it shows.
+new MutationObserver(() => { loading.remove(); canvas.focus(); })
+  .observe(canvas, { attributes: true });
+EOF
+  # A game's web/_headers (Cloudflare Pages response headers, such as its
+  # Content-Security-Policy) goes in the build output's root.
+  if [ -f web/_headers ]; then
+    cp web/_headers dist/web/_headers
+  fi
   local f size
   for f in dist/web/*; do
     size=$(wc -c <"$f")

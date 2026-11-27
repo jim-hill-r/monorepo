@@ -243,6 +243,25 @@ mod tests {
         }
     }
 
+    /// Cloudflare Pages sends `public/_headers`; its CSP must let the page
+    /// post to the telemetry Worker, or every vote is silently blocked.
+    #[test]
+    fn the_pages_csp_allows_posting_to_the_telemetry_worker() {
+        let headers = include_str!("../public/_headers");
+        let csp = headers
+            .lines()
+            .find_map(|line| line.trim().strip_prefix("Content-Security-Policy:"))
+            .expect("_headers sends a Content-Security-Policy");
+        let connect = csp
+            .split(';')
+            .map(str::trim)
+            .find_map(|d| d.strip_prefix("connect-src "))
+            .expect("the CSP has a connect-src");
+        let origin = TELEMETRY_URL.trim_end_matches("/event");
+        assert!(connect.split(' ').any(|s| s == origin), "{connect}");
+        assert!(csp.contains("frame-ancestors 'none'"));
+    }
+
     #[test]
     fn a_vote_is_one_feedback_event() {
         assert_eq!(
