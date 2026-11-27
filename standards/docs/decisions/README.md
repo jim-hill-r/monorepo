@@ -24,4 +24,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0011](0011-mint-secrets-by-workflow.md) | Mint infra secrets with a workflow, outside OpenTofu | Accepted |
 | [0014](0014-faster-pr-approvals.md) | Faster PR approvals: an Approve page in pane, one approval per stack, a `jimhillr-reviewer` account for low-risk PRs and post-merge acknowledgement | Accepted |
 | [0015](0015-code-quality-process.md) | A standing code quality process: one standard, a ratchet, triage into issues | Accepted |
-| [0018](0018-feature-flags.md) | Feature flags: flag definitions in the repo, per-user modes and an audit log in D1, a Rust Worker, and a Flags page in pane | Proposed |
+| [0018](0018-feature-flags.md) | Feature flags: our own flags Worker on D1, with a console where app managers set modes per user without git | Proposed |
