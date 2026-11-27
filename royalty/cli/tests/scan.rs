@@ -335,7 +335,7 @@ fn royl_004_the_report_shows_every_cap_and_how_to_pay() {
         "{md}"
     );
     assert!(
-        md.contains("| `webframe` | 2.1.0 | direct | production | 2 deployment | $20.00 | $20.00 | $20.00 | Binding `agreement`: never scaled. |"),
+        md.contains("| `webframe` | 2.1.0 | direct | production | 2 deployment | $20.00 | $20.00 | $20.00 | Binding `agreement`: never scaled. Note: the producer offers a 90-day trial"),
         "{md}"
     );
     assert!(
@@ -448,4 +448,28 @@ fn royl_004_check_fails_on_fail_mode_and_on_a_refused_binding() {
 
 fn stdout_of(output: &Output) -> String {
     String::from_utf8_lossy(&output.stdout).to_string()
+}
+
+#[test]
+fn the_committed_acme_example_report_is_current() {
+    // docs/examples/acme_shop holds this run's report. Regenerate it with
+    // ROYALTY_BLESS=1 cargo test after a change to the report's format.
+    let dir = fixtures();
+    let acme = dir.path().join("acme_shop");
+    commit_as(&acme, 14);
+    let out = dir.path().join("report");
+    report(&acme, &out);
+    let examples = Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/examples/acme_shop");
+    for name in ["royalty-report.json", "royalty-report.md"] {
+        let fresh = fs::read_to_string(out.join(name)).unwrap_or_default();
+        if std::env::var_os("ROYALTY_BLESS").is_some() {
+            let _ = fs::create_dir_all(&examples);
+            let _ = fs::write(examples.join(name), &fresh);
+        }
+        let committed = fs::read_to_string(examples.join(name)).unwrap_or_default();
+        assert_eq!(
+            committed, fresh,
+            "docs/examples/acme_shop/{name} is out of date; run ROYALTY_BLESS=1 cargo test"
+        );
+    }
 }

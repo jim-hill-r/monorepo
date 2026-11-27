@@ -195,7 +195,16 @@ fn family_part(consumer: &Consumer, scanned: &ScannedFamily, owed: &FamilyOwed) 
             .collect(),
         over_budget: owed.over_budget,
         binding_refused: owed.binding_refused,
-        notes: owed.notes.clone(),
+        notes: {
+            let mut notes = owed.notes.clone();
+            if file.terms.trial_days > 0 && owed.before_caps() > 0 {
+                notes.push(format!(
+                    "the producer offers a {}-day trial from the first production use, which this report doesn't apply yet (it needs the payments ledger); owe nothing if the trial hasn't ended",
+                    file.terms.trial_days
+                ));
+            }
+            notes
+        },
         income_ceiling_cents: file.income.as_ref().and_then(|i| i.ceiling_cents),
         payees: payees(file, owed.cents),
     }
@@ -298,8 +307,15 @@ pub fn markdown(report: &Report, owed: &Owed) -> String {
         out.push_str(" **Over budget**: `royalty check` fails until a dependency is removed, a price is agreed or the budget is raised.");
     }
     out.push_str("\n\n## Families\n\n");
-    out.push_str("| Family | Version | Dependency | Tier | Units | Before caps | After producer caps | Owed | Why |\n");
-    out.push_str("| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n");
+    if report.families.is_empty() {
+        out.push_str(&format!(
+            "No dependency has payment terms: {} package(s) scanned, all listed below.\n",
+            report.no_terms.len()
+        ));
+    } else {
+        out.push_str("| Family | Version | Dependency | Tier | Units | Before caps | After producer caps | Owed | Why |\n");
+        out.push_str("| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n");
+    }
     for (family, owed_family) in report.families.iter().zip(&owed.families) {
         let mut why: Vec<String> = Vec::new();
         if let Some(set_by) = &family.set_by {
