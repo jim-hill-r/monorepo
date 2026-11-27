@@ -124,7 +124,11 @@ mise run ci
 `../webapp_cloudflare` uploads that to Cloudflare Pages at
 <https://jimhillr-sparkhill-webapp.pages.dev> on every push to `main` that
 changes the app. `Dioxus.toml` and `index.html` give the page the live app's
-title, description, theme colour and no-zoom viewport.
+title, description, theme colour and no-zoom viewport, and link the web app
+manifest and icons in `public/` (dx copies them into the bundle's
+`/assets/` as they are), so the
+app installs to a phone's home screen and opens full screen like the live
+one. The icons are drawn from `public/icons/icon.svg`.
 
 ## License
 
