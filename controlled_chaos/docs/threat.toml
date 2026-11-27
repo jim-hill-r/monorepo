@@ -1,0 +1,70 @@
+# controlled_chaos: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Bevy card game: a public web build on Pages and nightly macOS and Android builds on a GitHub release. No server, no accounts."
+
+[[surface]]
+name = "site"
+kind = "pages"
+url = "https://jimhillr-controlled-chaos.pages.dev"
+access = "public"
+data = "public"
+previews = "public"
+notes = "Static wasm build."
+
+[[surface]]
+name = "nightly downloads"
+kind = "mobile"
+url = "https://github.com/jimhillr/monorepo/releases/tag/controlled_chaos-nightly"
+access = "public"
+data = "public"
+notes = "macOS zip (not notarized) and an Android APK signed with the release keystore, from nightly-downloads.yml."
+
+# Every Pages deploy (push-main.yml, nightly-cd.yml through mise-projects.yml).
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[[secret]]
+name = "ANDROID_KEYSTORE_BASE64"
+where = "github"
+used_by = ["nightly-downloads.yml Android build, never on pull requests"]
+scope = "Signs the Android APK only"
+setting = "github-secret-android-keystore"
+
+[[secret]]
+name = "ANDROID_KEYSTORE_PASSWORD"
+where = "github"
+used_by = ["nightly-downloads.yml Android build, never on pull requests"]
+scope = "Unlocks the keystore above only"
+setting = "github-secret-android-keystore"
+
+[[threat]]
+id = "CC-T1"
+stride = "tampering"
+what = "Someone changes what the site serves."
+mitigation = "Only the deploy step on main, with CLOUDFLARE_API_TOKEN, can publish; main needs a reviewed PR (github-main-ruleset)."
+surface = "site"
+
+[[threat]]
+id = "CC-T2"
+stride = "elevation-of-privilege"
+what = "Script injected into the page (XSS) or the site framed by another (clickjacking)."
+mitigation = "Dioxus escapes text it renders and the page loads only its own scripts. Security headers on every response are still missing (see the FIX issue)."
+surface = "site"
+
+[[threat]]
+id = "CC-T3"
+stride = "spoofing"
+what = "Someone publishes an APK that installs over ours."
+mitigation = "The keystore is a GitHub secret passed only to the nightly build, never to pull_request runs, so only main can sign."
+surface = "nightly downloads"

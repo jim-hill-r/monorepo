@@ -1,0 +1,47 @@
+# sparkhill: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Two static Pages sites: the Perseus website and the Blue Eel Dioxus web app. No server, no sign-in, no outside service; letter patterns are bundled."
+
+[[surface]]
+name = "website"
+kind = "pages"
+url = "https://jimhillr-sparkhill.pages.dev"
+access = "public"
+data = "public"
+previews = "public"
+notes = "Perseus export (sparkhill/website). No _headers file yet."
+
+[[surface]]
+name = "Blue Eel"
+kind = "pages"
+url = "https://jimhillr-sparkhill-webapp.pages.dev"
+access = "public"
+data = "public"
+previews = "public"
+notes = "Dioxus web app (sparkhill/webapp). No _headers file yet. Anything a child types stays in the browser."
+
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[[threat]]
+id = "SPK-T1"
+stride = "tampering"
+what = "Someone changes what either site serves."
+mitigation = "Only the deploy step on main, with CLOUDFLARE_API_TOKEN, can publish; main needs a reviewed PR (github-main-ruleset)."
+
+[[threat]]
+id = "SPK-T2"
+stride = "elevation-of-privilege"
+what = "Script injected into a page (XSS) or a site framed by another (clickjacking)."
+mitigation = "Both render escaped text and load only their own scripts. Security headers are still missing (see the FIX issue)."

@@ -1,0 +1,48 @@
+# bear_down: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Static site of weekly NFL rooting picks, built by a Rust simulator in CI and served from Pages. No backend, no sign-in; fan feedback goes to the telemetry Worker."
+
+[[surface]]
+name = "site"
+kind = "pages"
+url = "https://jimhillr-bear-down.pages.dev"
+access = "public"
+data = "public"
+previews = "public"
+notes = "Static Dioxus build from public nflverse data."
+
+# Every Pages deploy (push-main.yml, nightly-cd.yml through mise-projects.yml).
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+
+[[threat]]
+id = "BEAR-T1"
+stride = "tampering"
+what = "Someone changes what the site serves."
+mitigation = "Only the deploy step on main, with CLOUDFLARE_API_TOKEN, can publish; main needs a reviewed PR (github-main-ruleset)."
+surface = "site"
+
+[[threat]]
+id = "BEAR-T2"
+stride = "elevation-of-privilege"
+what = "Script injected into the page (XSS) or the site framed by another (clickjacking)."
+mitigation = "Dioxus escapes text it renders and the page loads only its own scripts. Security headers on every response are still missing (see the FIX issue)."
+surface = "site"
+
+[[threat]]
+id = "BEAR-T3"
+stride = "tampering"
+what = "Poisoned upstream data (the nflverse schedule) skews the picks."
+mitigation = "The data is public sports results parsed into typed structs in core, and CI must pass before a deploy; a pick being wrong harms no one's data."
