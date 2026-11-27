@@ -1,7 +1,8 @@
 # 0016. Holding and handling money: a separate free account, accounting books in the repo, a merchant of record for card sales
 
-- Status: Proposed (waiting on Jim's answers to the five questions below;
-  the accounting rules are Jim's and already apply)
+- Status: Proposed. Question 1 answered (Jim, decision card, 2026-11-27:
+  "Separate free account with EIN"); questions 2 to 5 wait on Jim. The
+  accounting rules are Jim's and already apply.
 - Date: 2026-11-27
 - Asked by: Jim (project thread, 2026-11-27: "Have we done a tech selection
   on how we are going to handle our finances? How do we store money and
