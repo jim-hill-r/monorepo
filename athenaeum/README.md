@@ -1,5 +1,7 @@
 # Athenaeum
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/athenaeum.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 This is the knowledge base for information relevant for engineers working in this repo.
 
 Athenaeum means "an institution for the promotion of literary or scientific learning."

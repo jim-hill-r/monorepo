@@ -1,5 +1,7 @@
 # tofu_state
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/tofu_state.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The Cloudflare Worker `jimhillr-tofu-state`, which stores OpenTofu state for
 `infra` ([decision 0009](../standards/docs/decisions/0009-opentofu-state-http-backend.md)).
 It serves OpenTofu's [`http` backend](https://opentofu.org/docs/language/settings/backends/http/)

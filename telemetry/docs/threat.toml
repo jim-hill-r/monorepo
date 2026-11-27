@@ -8,7 +8,8 @@ kind = "worker"
 url = "https://jimhillr-telemetry.jim-hill-r.workers.dev"
 access = "public"
 data = "public"
-notes = "Accepts any origin (Access-Control-Allow-Origin: *) on purpose: events carry no credentials. It returns only status codes, never stored data. No security headers yet."
+headers = "telemetry/src/lib.rs"
+notes = "Accepts any origin (Access-Control-Allow-Origin: *) on purpose: events carry no credentials. It returns only status codes, never stored data. SECURITY_HEADERS in src/lib.rs go on every response."
 
 [[secret]]
 name = "CLOUDFLARE_API_TOKEN"
