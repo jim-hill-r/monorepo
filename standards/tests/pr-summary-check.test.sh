@@ -35,6 +35,13 @@ Adds a PR summary rule so reviewers read PRs fast. See [the plan](standards/docs
 
 $long" "PR-001 ok: executive summary is 13 words."
 
+check "attention badges are not summary" "$attribution
+> **Attention:** 🟢 requirements unchanged · 🟠 threat/risk files changed: \`cookbook/docs/threat.toml\`
+
+Adds a PR summary rule so reviewers read PRs fast. See [the plan](standards/docs/pull-requests.md).
+
+## Testing" "PR-001 ok: executive summary is 13 words."
+
 check "Summary heading is skipped" "$attribution
 
 ## Summary

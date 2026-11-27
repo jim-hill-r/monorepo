@@ -35,6 +35,7 @@ run book in the task."
 | Runbook | Kind | Issue |
 | --- | --- | --- |
 | [Create the read-only infra GitHub App](github-app-infra-read.md) | one-time | `github-app-infra-read.md` |
+| [Set up the jimhillr-reviewer account](jimhillr-reviewer-account.md) | one-time, token yearly | `jimhillr-reviewer-account.md` |
 | [Turn on GitHub code security](github-code-security.md) | one-time (private vulnerability reporting only; the `github` stack does the rest) | `github-settings-code-security-turn-secret.md` |
 | [Sign up for PostHog](posthog-sign-up.md) | one-time | `create-posthog-cloud-free-plan-no.md` |
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |

@@ -1,4 +1,4 @@
-# 0012. Revenue: open books and GitHub Sponsors first, HTTP 402 (x402) staged
+# 0012. Revenue: a public financial ledger and GitHub Sponsors first, HTTP 402 (x402) staged
 
 - Status: Accepted
 - Decided by: Jim (project thread, 2026-11-27: "That all seems pretty reasonable", with every recommended answer)
@@ -38,9 +38,9 @@ Research on 2026-11-27 (details and sources in the plan):
 Architecture E from the plan, with the recommended answer to each of the
 plan's eight questions unless Jim says otherwise:
 
-1. Phases 1 to 3 ($0, no new vendor): the books and runway as files,
+1. Phases 1 to 3 ($0, no new vendor): the financial ledger and runway as files,
    GitHub Sponsors with a shared banner and splash, metering with shadow
-   billing of first-party use, and a public Open books page.
+   billing of first-party use, and a public ledger page.
 2. Phase 4 ($0): an x402 pilot on testnet with the x402.org facilitator.
 3. Phase 5 (gated): x402 on mainnet through Coinbase CDP only after an API
    has outside demand, Jim approves CDP as a vendor (with no card on file),
@@ -49,19 +49,19 @@ plan's eight questions unless Jim says otherwise:
 4. Free cash flow counts Claude Code; Jim's own payments are owner
    contributions. The cutoff is soft for users and hard for new agent work.
 5. GitHub Sponsors only; Jim enters payouts through a pane form; the public
-   books are an `/open` path on the pane Worker; no business set-up until
+   ledger page is an `/open` path on the pane Worker; no business set-up until
    revenue is real.
 6. Added by Jim with his answer ("I want this to be a long term vision as
    apis will definitely be coming on board soon. This revenue plan can also
    include some royalty income."): every new API is born metered and
    402-ready, all income streams share one ledger, and royalty income and
-   owed royalties (through the royalty project) are part of the books.
+   owed royalties (through the royalty project) are part of the ledger.
 
 ## Consequences
 
 - No money, card, domain or paid plan in any phase. Monetization Gateway
   and self-hosted facilitators are ruled out while that holds.
-- The books are public, in git, and every number links to its source.
+- The financial ledger is public, in git, and every number links to its source.
 - Wallet private keys never enter git, state, CI, Workers or browsers.
 - Later phases add a radar blip, a billing-check line, human issues with
   runbooks, and credential changes through `infra-credentials`, each in the

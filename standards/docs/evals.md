@@ -158,7 +158,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `playwright` | Playwright JSON reporter results | `grep` (optional, defaults to `@req:<ID>`) | `@req:COOK-001` in the test title, alongside tags such as `@smoke` |
 | `trycmd` | CLI transcript tests, from the `Testing <case> ... ok` lines trycmd prints inside the saved `cargo test` output | `glob` (optional, defaults to `tests/cmd/<ID>-*.toml`; `*` matches within one path segment) | Case file named `tests/cmd/COOK-001-<what>.toml` |
 | `script` | A Bevy scripted run | `script`, `check` | A named check in the script file |
-| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains` and `max_ms` (the slowest acceptable response, body included) | Declared inline |
+| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains`, `asset_contains` (see [Checking a live page](#checking-a-live-page)) and `max_ms` (the slowest acceptable response, body included) | Declared inline |
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
@@ -199,6 +199,7 @@ error, and the rest follow once every shipping project has its files.
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
+| EVL-006 | An `http` eval `GET`s a `path`, expects a 2xx and checks no content (no `body_contains` or `asset_contains`). |
 
 For EVL-003 a test matches when a Rust `fn` name in the project starts with
 the eval's `filter`, a `.ts` or `.js` file contains its `grep`, or a file
@@ -270,6 +271,29 @@ deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
 
 Run the same checks by hand from a deploying project's directory:
 `EVALS_STAGE=cd DEPLOY_URL=https://jimhillr-cookbook.pages.dev bash ../../standards/scripts/evals.sh run`.
+
+### Checking a live page
+
+cookbook, cahokia and pane are client-rendered Dioxus apps on Cloudflare
+Pages. Their release has no `404.html`, so Pages serves the same
+`index.html` shell, with status 200, for every path, `/recipe/1` and
+`/no-such-page` alike. An `http` eval that only checks the status of a page
+path proves nothing about that page, which is why EVL-006 warns about one.
+Check content instead, in one of three ways:
+
+- **A data file the page reads**, with `body_contains`: pane's
+  `/data/snapshot.json`, bear_down's `/rooting.json`.
+- **The bundle the shell ships**, with `asset_contains`: the eval fetches the
+  page, then every same-origin `<script src>`, stylesheet, `preload` and
+  `modulepreload` it names, and the absolute `.wasm` paths those scripts
+  load (the hashed `web_bg-<hash>.wasm` from `dx bundle`). Each must answer
+  200, and one must contain the text. Content compiled into the app (a
+  recipe title, a sample person, the Auth0 tenant) is in the wasm as plain
+  text, so this catches a deploy whose bundle is missing, stale or broken.
+- **A server-rendered page**, with `body_contains` on the page itself.
+
+Neither proves the page renders in a browser: that is a Playwright smoke run
+against production (`issues/smoke-uat-tag-few-playwright-tests.md`).
 
 ## Human checks
 

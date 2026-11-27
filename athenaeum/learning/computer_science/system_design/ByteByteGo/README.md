@@ -1,3 +1,8 @@
+Notes from [ByteByteGo](https://bytebytego.com/) (Alex Xu's system design newsletter and books).
+`Bytebytego_Big_Archive_System_Design_2023.pdf` in this folder is a copy of
+ByteByteGo's 2023 system design archive, kept for our own reference; the
+material and its copyright are ByteByteGo's.
+
 Top algorithms: https://www.youtube.com/watch?v=xbgzl2maQUU&list=WL&index=2
 
 - Consistent Hashing

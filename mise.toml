@@ -15,6 +15,7 @@ experimental = true
 [monorepo]
 config_roots = [
   "athenaeum",
+  "athenaeum/learning/computer_science/algorithms/neet_code_150",
   "auth_sdk",
   "bear_down",
   "bear_down/cloudflare",
@@ -24,6 +25,7 @@ config_roots = [
   "cahokia",
   "cahokia/cloudflare",
   "cahokia/web",
+  "chores",
   "controlled_chaos",
   "cookbook",
   "cookbook/cloudflare",
