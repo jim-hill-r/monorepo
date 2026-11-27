@@ -11,4 +11,5 @@ Options:
       --min-bathrooms <MIN_BATHROOMS>  Minimum number of bathrooms
       --max-price <MAX_PRICE>          Maximum listing price
       --min-sqft <MIN_SQFT>            Minimum square footage
+      --json                           Print the property details and the evaluation as one JSON object instead of the text report
   -h, --help                           Print help

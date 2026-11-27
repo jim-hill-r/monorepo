@@ -1,0 +1,11 @@
+# Happy path: score a property and print the result as one JSON object.
+bin.name = "homer"
+args = [
+  "--address", "123 Main St, Seattle, WA 98101",
+  "--api-key", "test-key", "--quota-file", "quota.json",
+  "--min-bedrooms", "3",
+  "--min-sqft", "2000",
+  "--max-price", "800000",
+  "--json",
+]
+fs.sandbox = true
