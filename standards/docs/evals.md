@@ -163,6 +163,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
 | `human-check` | Jim checks a setting made by hand | `setting`: an `id` in `standards/settings.toml` (see [Human checks](#human-checks)) | Declared inline, `stages = ["human"]` |
+| `cost` | The project's cost analysis holds (see [Cost evals](#cost-evals)) | None | Declared inline, stages `ci` and/or `observe` only |
 
 A `human` eval (Jim's rating in pane) exists implicitly for every
 requirement and is never listed. Only `human-check` evals list the `human`
@@ -182,6 +183,30 @@ stage.
 `cd`, `chaos` and `observe` are the **production stages**. Every `must`
 requirement needs at least one eval in a production stage.
 
+### Cost evals
+
+A `cost` eval ties a requirement such as `COOK-010: Cookbook runs at $0 a
+month` to the project's `docs/cost.toml` ([cost.md](cost.md)), so a cost
+regression shows in the same verdicts as any other broken promise:
+
+```toml
+[[eval]]
+id = "runs-free"
+requirement = "COOK-010"
+stages = ["ci", "observe"]
+kind = "cost"
+```
+
+- **`ci`:** `cost check` writes the result itself (`cost check
+  --evals-results <file>`), so the cost rules run once. In CI, `evals.sh
+  run` calls it from the top-level project's own job. The eval fails when
+  `cost check` finds anything `--strict` would fail on (COST-001 to
+  COST-007) in the project's own files; the warning-only codes (COST-008 to
+  COST-010) are listed in the note but pass, and account-wide findings
+  belong to no one project.
+- **`observe`:** the weekly actuals compared with the file's expected
+  usage. Not collected yet (cost check phase 4).
+
 ## Checks
 
 `evals check` (the `evals` project, `cargo run -p evals_cli -- check` in
@@ -199,6 +224,7 @@ error, and the rest follow once every shipping project has its files.
 | EVL-002 | Two requirements or two evals in a project share an ID. |
 | EVL-003 | A `cargo`, `playwright` or `trycmd` eval matches no test in the project. |
 | EVL-004 | A `must` requirement has no eval in a production stage. |
+| EVL-005 | A `playwright.config.ts` (or `.js`) anywhere in the repo doesn't add `jimhillr-evals` to its browsers' user agent. |
 | EVL-006 | An `http` eval `GET`s a `path`, expects a 2xx and checks no content (no `body_contains` or `asset_contains`). |
 
 For EVL-003 a test matches when a Rust `fn` name in the project starts with
@@ -247,15 +273,15 @@ from a project directory.
 Stage `cd` runs in the same job, right after `mise run deploy` publishes a
 project that has a `DEPLOY_URL` (pushes to `main`, Nightly CD and manual
 redeploys; never pull requests, and not when `deploy-check.sh` skipped the
-deploy). The `cd evals` step first runs `standards/scripts/smoke.sh`, then
+deploy). The `cd evals` step first runs `evals.sh smoke`, then
 `evals.sh run` with `EVALS_STAGE=cd`:
 
 1. When the deploying project sets `SMOKE_DIR` in its `mise.toml` `[env]`
-   (cookbook/cloudflare sets `"../web"`), `smoke.sh` runs that Playwright
+   (cookbook/cloudflare sets `"../web"`), `evals.sh smoke` runs that Playwright
    project's `@smoke` tests in desktop Chromium against `DEPLOY_URL`. Its
    `playwright.config.ts` reads `BASE_URL`: when set, it starts no dev
-   server, adds `jimhillr-evals/0.1 (synthetic check)` to the user agent and
-   records every test's video, screenshot and trace. The JSON report goes to
+   server and records every test's video, screenshot and trace (its user
+   agent says `jimhillr-evals`, as in every Playwright run). The JSON report goes to
    `target/evals-reports/cd/playwright.json` in the deploying project, and
    everything is kept as the 7-day `smoke-<project>` artifact. A failing
    smoke test only warns in this step; the evals below decide the job.
@@ -267,7 +293,12 @@ deploy). The `cd evals` step first runs `standards/scripts/smoke.sh`, then
    seconds apart, since a fresh deploy can take a moment to reach every
    edge. A site that never answers fails; an eval with a `path` and no
    `DEPLOY_URL` is an `error`. Requests send the user agent
-   `jimhillr-evals/0.1 (synthetic check)`.
+   `jimhillr-evals/0.1 (synthetic check)` and the header
+   `x-jimhillr-synthetic: 1`, so analytics and the `telemetry` Worker skip
+   them. Playwright runs (CI, smoke and UAT) add `jimhillr-evals` to every
+   browser's user agent through the `synthetic()` helper in each
+   `playwright.config.ts` (EVL-005); a browser can't add the header to a
+   beacon, so the user agent is what marks it.
 3. Report kinds (`cargo`, `trycmd`, `playwright`) read only
    `target/evals-reports/cd/`, where the smoke run against production
    writes its report, never the `ci` task's reports.
@@ -284,7 +315,7 @@ deploy). The `cd evals` step first runs `standards/scripts/smoke.sh`, then
 Run the same checks by hand from a deploying project's directory:
 `mise run smoke`, then
 `EVALS_STAGE=cd DEPLOY_URL=https://jimhillr-cookbook.pages.dev bash ../../standards/scripts/evals.sh run`.
-Outside CI, `smoke.sh` skips with a note when it can't install Playwright's
+Outside CI, `evals.sh smoke` skips with a note when it can't install Playwright's
 browser (a cloud sandbox), and cloud sandboxes can't reach `*.pages.dev`.
 
 ### Checking a live page
@@ -533,9 +564,23 @@ the workflow's **dry run** input, or locally with
 `bash standards/scripts/evals.sh triage --dry-run`, to see what it would
 file.
 
-The `eval-triage` skill, where it exists, is for the judgment calls the
+The `eval-triage` skill is for the judgment calls the
 workflow can't make (a disputed eval, rollback advice); it is not a daily
 task.
+
+## Fire drill
+
+The **evals fire drill** workflow (`evals-fire-drill.yml`, run by hand with a
+project and an `http` eval, default cookbook `recipe-page-live`) proves the
+loop still catches a failure. `evals drill --dir <evals-results checkout>`
+points the eval at text the live page doesn't have, runs it against the
+site, adds the failure (in memory only) to the stored results, and checks
+the requirement turns red (amber for a `should`), that triage would file it
+(a dry run of `evals triage`), and that after the real eval passes the
+verdict is back where it started. It only reads: production gets the GET
+requests a `cd` run makes, and nothing is written or pushed. Run it after
+changing the verdict rules, `evals store` or triage. The first drill's retro
+is [evals/docs/fire-drill-2026-11-27.md](../../evals/docs/fire-drill-2026-11-27.md).
 
 ## Project prefixes
 

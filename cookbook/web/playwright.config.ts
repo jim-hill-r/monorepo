@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
+ * A device with `jimhillr-evals` added to its user agent. Every test run
+ * says it is synthetic, so the PostHog snippet doesn't load and the
+ * telemetry Worker drops its events (standards/docs/evals.md, EVL-005).
+ */
+const synthetic = (device: (typeof devices)[string]) => ({
+  ...device,
+  userAgent: `${device.userAgent} jimhillr-evals`,
+});
+
+/**
  * Playwright configuration for Cookbook web application tests.
  *
  * By default the tests start the Dioxus dev server (`mise run dev`) and run
@@ -15,18 +25,6 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 const liveURL = process.env.BASE_URL;
-
-/* Runs against a live site say who they are in the user agent, so
-   analytics and telemetry can drop them (telemetry/README.md). No
-   x-jimhillr-synthetic header: a custom header would make every
-   cross-origin request, such as Auth0's, need a CORS preflight. */
-const SYNTHETIC_UA = 'jimhillr-evals/0.1 (synthetic check)';
-
-/** A device preset, with the synthetic user agent added on live runs. */
-function device(name: keyof typeof devices) {
-  const preset = devices[name];
-  return liveURL ? { ...preset, userAgent: `${preset.userAgent} ${SYNTHETIC_UA}` } : preset;
-}
 
 export default defineConfig({
   testDir: './tests',
@@ -73,27 +71,27 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...device('Desktop Chrome') },
+      use: { ...synthetic(devices['Desktop Chrome']) },
     },
 
     {
       name: 'firefox',
-      use: { ...device('Desktop Firefox') },
+      use: { ...synthetic(devices['Desktop Firefox']) },
     },
 
     {
       name: 'webkit',
-      use: { ...device('Desktop Safari') },
+      use: { ...synthetic(devices['Desktop Safari']) },
     },
 
     /* Test against mobile viewports. */
     {
       name: 'Mobile Chrome',
-      use: { ...device('Pixel 5') },
+      use: { ...synthetic(devices['Pixel 5']) },
     },
     {
       name: 'Mobile Safari',
-      use: { ...device('iPhone 12') },
+      use: { ...synthetic(devices['iPhone 12']) },
     },
   ],
 

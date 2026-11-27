@@ -10,7 +10,7 @@
 # (standards/docs/free-tiers.md).
 # Set SMOKE_DIR in [env] to the web app's Playwright project (such as
 # "../web") to run its `@smoke` tests against DEPLOY_URL after each deploy
-# (the smoke task, standards/scripts/smoke.sh).
+# (the smoke task, `evals.sh smoke`).
 # Needs in [tools]: rust, node, "npm:wrangler".
 
 [fmt-check]
@@ -61,7 +61,7 @@ run = [
 
 [smoke]
 description = "Run the web app's @smoke Playwright tests against DEPLOY_URL (stage cd evals read the report)"
-run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/smoke.sh\""
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" smoke"
 
 [evals]
 description = "Turn the reports ci saved into eval results (standards/docs/evals.md)"

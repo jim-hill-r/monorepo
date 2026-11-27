@@ -1,0 +1,3 @@
+# jimhillr: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-26"
+summary = "Repo tooling and workflow tests that run locally and in CI; no outside service of its own. $0 a month."

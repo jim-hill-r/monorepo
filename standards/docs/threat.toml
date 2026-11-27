@@ -12,7 +12,7 @@ notes = "Each workflow sets permissions; secrets go only to deploy and scheduled
 [[secret]]
 name = "CLOUDFLARE_API_TOKEN"
 where = "github"
-used_by = ["push-main.yml", "nightly-cd.yml", "mise-projects.yml deploy step", "all-free-tier-usage.yml"]
+used_by = ["push-main.yml", "nightly-cd.yml", "mise-projects.yml deploy step", "all-free-tier-usage.yml (usage and threat-live jobs; both only read)"]
 scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
 setting = "cloudflare-api-token-scopes"
 

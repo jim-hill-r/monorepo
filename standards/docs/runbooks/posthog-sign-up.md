@@ -62,7 +62,7 @@ no API that makes the first one.
    `eu.posthog.com/settings/user-api-keys`). It's also under your avatar >
    Account settings > Personal API keys. Click **Create personal API key**,
    then fill in:
-   - **Label:** `monorepo-replay-read`
+   - **Label:** `jimhillr-replay-read`
    - **Access:** only this project, if it lets you pick
    - **Scopes:** **Read** for `session_recording`, `query` and `project`,
      and no access to anything else. Pick them one by one rather than
@@ -70,7 +70,7 @@ no API that makes the first one.
 
    Copy the key (it starts with `phx_`). PostHog shows it only once.
 7. **Make the billing key.** Click Create again, then fill in:
-   - **Label:** `monorepo-billing-read`
+   - **Label:** `jimhillr-billing-read`
    - **Access:** the organization
    - **Scopes:** **Read** for `billing` only
 

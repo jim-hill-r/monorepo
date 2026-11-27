@@ -1,0 +1,9 @@
+reviewed = "2026-11-24"
+summary = "A CLI with docs on Cloudflare Pages. $0 a month."
+
+[[service]]
+blip = "Cloudflare Pages"
+plan = "free"
+why = "Hosts the docs."
+[service.usage]
+pages_projects = 1

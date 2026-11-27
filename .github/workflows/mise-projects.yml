@@ -255,7 +255,7 @@ jobs:
           echo "deployed=true" >> "$GITHUB_OUTPUT"
 
       # Stage cd: right after a deploy, run the project's `@smoke`
-      # Playwright tests against the live site (standards/scripts/smoke.sh;
+      # Playwright tests against the live site (`evals.sh smoke`;
       # nothing when it sets no SMOKE_DIR), check the live site (the `http`
       # evals, joined to DEPLOY_URL) and add the table to the job summary
       # (standards/docs/evals.md). A failed eval of a `must` requirement
@@ -277,7 +277,7 @@ jobs:
           # mise exec loads SMOKE_DIR from the [env] of the project's mise.toml.
           # A failing smoke test only warns here: the evals below turn it
           # into a failed requirement, which fails the job when it's a must.
-          mise exec -- bash "$GITHUB_WORKSPACE/standards/scripts/smoke.sh" \
+          mise exec -- bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" smoke \
             || echo "::warning::smoke tests failed; see the log and the smoke-${PROJECT//\/-} artifact"
           status=0
           bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" run || status=$?

@@ -779,9 +779,9 @@ mod tests {
         assert_eq!(
             addresses,
             [
-                "github_repository.monorepo",
-                "github_repository_vulnerability_alerts.monorepo",
-                "github_repository_dependabot_security_updates.monorepo",
+                "github_repository.jimhillr",
+                "github_repository_vulnerability_alerts.jimhillr",
+                "github_repository_dependabot_security_updates.jimhillr",
                 "github_repository_ruleset.ci",
             ]
         );

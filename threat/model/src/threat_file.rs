@@ -198,6 +198,10 @@ pub struct Threat {
     /// An eval in the project's `evals.toml` that proves the mitigation.
     #[serde(default)]
     pub eval: Option<String>,
+    /// Ids of detectors in `standards/radar/detectors.toml` whose matches
+    /// this threat accounts for (a `risk` or `storage` match, THR-004).
+    #[serde(default)]
+    pub covers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]

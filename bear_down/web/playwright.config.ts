@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
+ * A device with `jimhillr-evals` added to its user agent. Every test run
+ * says it is synthetic, so the PostHog snippet doesn't load and the
+ * telemetry Worker drops its events (standards/docs/evals.md, EVL-005).
+ */
+const synthetic = (device: (typeof devices)[string]) => ({
+  ...device,
+  userAgent: `${device.userAgent} jimhillr-evals`,
+});
+
+/**
  * Playwright tests for the bear_down page. They expect the app on
  * http://localhost:8080 (`mise run dev`, which is dx serve) and stub the
  * telemetry Worker, so no test ever posts a real vote.
@@ -21,8 +31,8 @@ export default defineConfig({
     video: 'off',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
+    { name: 'chromium', use: { ...synthetic(devices['Desktop Chrome']) } },
+    { name: 'Mobile Chrome', use: { ...synthetic(devices['Pixel 5']) } },
   ],
   webServer: {
     command: 'mise run dev',
