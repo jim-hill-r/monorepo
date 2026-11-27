@@ -12,7 +12,8 @@
 #   DOC-001  A project has a README.md.
 #   DOC-002  Its README.md has a heading with the project's name: its package
 #            name, its directory name or its path (bear_down/cloudflare), or
-#            the name with spaces for "_" and "-" (psy_ents -> Psy Ents).
+#            the name with spaces for "_" and "-", optionally after "The"
+#            (psy_ents -> Psy Ents or The Psy Ents).
 #   DOC-003  A project has a CONTRIBUTING.md.
 #   DOC-004  Its CONTRIBUTING.md has a "Getting Started" heading.
 #            standards/docs/documentation.md.
@@ -142,7 +143,8 @@ for d in $projects; do
   if [ ! -f "$d/README.md" ]; then
     err DOC-001 "$d has no README.md"
   elif ! has_heading "$d/README.md" "${name:-$base}" && ! has_heading "$d/README.md" "$base" &&
-    ! has_heading "$d/README.md" "$d" && ! has_heading "$d/README.md" "$(tr '_-' '  ' <<<"${name:-$base}")"; then
+    ! has_heading "$d/README.md" "$d" && ! has_heading "$d/README.md" "$(tr '_-' '  ' <<<"${name:-$base}")" &&
+    ! has_heading "$d/README.md" "The $(tr '_-' '  ' <<<"${name:-$base}")"; then
     err DOC-002 "$d/README.md has no '# ${name:-$base}' heading"
   fi
   if [ ! -f "$d/CONTRIBUTING.md" ]; then

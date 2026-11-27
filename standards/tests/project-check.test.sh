@@ -112,6 +112,9 @@ expect "a heading with the project's path is enough" "$r" 0 "" "DOC-002"
 r=$(new_repo doc2spaces); mkdir -p "$r/psy_ents"; echo '[tools]' >"$r/psy_ents/mise.toml"; docs "$r/psy_ents" "Psy Ents"; add_all "$r"
 expect "a heading with spaces for underscores is enough" "$r" 0 "" "DOC-002"
 
+r=$(new_repo doc2the); mkdir -p "$r/psy_ents"; echo '[tools]' >"$r/psy_ents/mise.toml"; docs "$r/psy_ents" "The Psy Ents"; add_all "$r"
+expect "a spaced heading after The is enough" "$r" 0 "" "DOC-002"
+
 r=$(new_repo held); mkdir -p "$r/issues" "$r/old/sub"; echo '[tools]' >"$r/old/mise.toml"; echo '[tools]' >"$r/old/sub/mise.toml"
 printf '[package]\nname = "old"\n' >"$r/old/Cargo.toml"
 printf '# Priority Projects\n- app\n\n# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/issues/README.md"; add_all "$r"
