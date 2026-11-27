@@ -7,6 +7,12 @@
 # branches never get these credentials.
 #
 #   billing-check.sh [all|cloudflare|github|posthog]
+#   billing-check.sh vendors     the API names it knows, for radar.sh RAD-007
+#
+# `all` covers every vendor in the tech radar (Jim, 2026-11-27): it runs the
+# API check each vendor's `billing.api` in standards/radar/radar.json names,
+# and lists every other vendor with the settings check Jim does for it, or
+# that it has no account.
 #
 #   cloudflare  CLOUDFLARE_BILLING_READ_TOKEN (Billing Read, minted by Infra
 #               Mint) and CLOUDFLARE_ACCOUNT_ID: no payment method, and no
@@ -26,6 +32,9 @@
 # ("Billing checks" in standards/docs/free-tiers.md).
 set -euo pipefail
 
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+RADAR=${RADAR:-$root/standards/radar/radar.json}
+KNOWN="cloudflare github posthog"
 CF_API=${CF_API:-https://api.cloudflare.com/client/v4}
 GH_API=${GH_API:-https://api.github.com}
 POSTHOG_API_HOST=${POSTHOG_API_HOST:-https://us.posthog.com}
@@ -141,15 +150,32 @@ posthog() {
 }
 
 what=${1:-all}
-case "$what" in all | cloudflare | github | posthog) ;; *) echo "usage: billing-check.sh [all|cloudflare|github|posthog]" >&2; exit 2 ;; esac
+case "$what" in
+  vendors) echo "$KNOWN"; exit 0 ;;
+  all | cloudflare | github | posthog) ;;
+  *) echo "usage: billing-check.sh [all|cloudflare|github|posthog|vendors]" >&2; exit 2 ;;
+esac
 { echo "### Billing check"; echo; echo "| Vendor | Result |"; echo "| --- | --- |"; } >>"$summary"
-case "$what" in all | cloudflare) cloudflare ;; esac
-case "$what" in all | github) github ;; esac
-case "$what" in all | posthog) posthog ;; esac
-{
-  echo
-  echo "Auth0, RapidAPI, Claude, and GitHub's card and Actions budget have no API; Jim checks them every 30 days (issues/human/check-there-still-no-payment-method.md)."
-} >>"$summary"
+if [ "$what" = all ]; then
+  for api in $(jq -r '[.[] | select(.kind == "vendor") | .billing.api[]?] | unique | .[]' "$RADAR"); do
+    case " $KNOWN " in *" $api "*) "$api" ;; *) problem radar "billing.api $api has no check here" ;; esac
+  done
+else
+  "$what"
+fi
+if [ "$what" = all ]; then
+  {
+    echo
+    echo "Every vendor in the tech radar ([radar.json](../../standards/radar/radar.json)):"
+    echo
+    echo "| Vendor | Ring | Checked by API | Jim checks |"
+    echo "| --- | --- | --- | --- |"
+    jq -r '.[] | select(.kind == "vendor")
+      | "| \(.name) | \(.ring) | \(if (.billing.api // []) == [] then "-" else (.billing.api | join(", ")) end) | \(
+          if (.billing.human // "") != "" then "`\(.billing.human)` (standards/settings.toml)"
+          elif (.billing.api // []) == [] then "no account" else "-" end) |"' "$RADAR"
+  } >>"$summary"
+fi
 
 if [ "$problems" -gt 0 ]; then
   echo "billing check: $problems problem(s)"

@@ -24,7 +24,7 @@ plan, RapidAPI billing and claude.ai billing
 
 ## Before you start
 
-- Signed in to GitHub, Auth0, RapidAPI and claude.ai.
+- Signed in to GitHub, Auth0, RapidAPI, Squarespace and claude.ai.
 - Open the latest **All Free Tier Usage** run in jimhillr/monorepo >
   Actions and look at its **Billing check** table. Do steps 2 and 4 only
   for a vendor it shows as "not checked".
@@ -43,6 +43,8 @@ plan, RapidAPI billing and claude.ai billing
    and no card.
 6. Claude: claude.ai > Settings > Billing: Claude Code spend this month is
    within $25 and no extra usage is on.
+7. Squarespace: account.squarespace.com > Billing shows no new paid plan,
+   domain or add-on for the monorepo since last time.
 
 ## Where secrets go
 

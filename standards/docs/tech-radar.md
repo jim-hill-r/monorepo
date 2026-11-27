@@ -73,6 +73,7 @@ plus five of ours:
 | `sources` | Repo paths or URLs of the rules, decisions and PRs behind the placement. |
 | `claude` | The Claude Code plugin or MCP server for it, if any (empty when none is known). |
 | `budget` | The most we spend on it a month, in US dollars. `0` means free plans and open source only. |
+| `billing` | Vendors only: how its billing is checked (Jim, 2026-11-27: "the billing check should check every vendor in the tech radar"). `api` names the checks [billing-check.sh](../scripts/billing-check.sh) runs weekly with a read-only credential, `human` is the `standards/settings.toml` id Jim checks (or `""`), and `note` says why. An Adopt or Trial vendor needs at least one of them; one with no account says so in `note`. |
 
 To see it as a picture, give the file's raw GitHub URL to the BYOR tool, or
 render it in pane later. The hosted BYOR tool now only accepts its own outer
@@ -89,7 +90,10 @@ which keeps custom names.
   exemplar) of a blip.
 - `mise run ci` in `standards` runs `radar.sh check`: valid rings, quadrants
   and fields, unique names, exemplar and source paths that exist, a source
-  for every Assess blip, and tables that match the JSON.
+  for every Assess blip, a billing check for every approved vendor
+  (RAD-007), and tables that match the JSON. A vendor that moves into Trial
+  or Adopt gets its `billing` check in the same PR: an API check in
+  `billing-check.sh` where its API allows, otherwise a settings check.
 - **Refresh it twice a year** (Thoughtworks says at least once a year, twice
   is better): set `isNew` to `"FALSE"` on blips that didn't move, move blips
   whose evaluation finished, and drop Hold blips nobody has needed for a year.
@@ -192,5 +196,28 @@ Total budget: **$25 a month** (Claude Code $25). Everything else is $0: free pla
 | terrars (new) | Assess | technology | $0 | [infra](../../infra) | Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26). | - | [0007-infrastructure-as-code.md](../../standards/docs/decisions/0007-infrastructure-as-code.md), [0007-terrars-spike.md](../../standards/docs/decisions/0007-terrars-spike.md) |
 | CDKTF and CDK Terrain (new) | Hold | technology | $0 | none yet | CDKTF was archived by HashiCorp on 2025-12-10; its community fork CDK Terrain supports TypeScript, Python and Go only. No Rust, and it needs Node (decision 0007). | - | [0007-infrastructure-as-code.md](../../standards/docs/decisions/0007-infrastructure-as-code.md) |
 | Perseus and Sycamore 0.8 | Hold | technology | $0 | [profiles/jimhillr](../../profiles/jimhillr), [sparkhill/website](../../sparkhill/website) | Don't start new sites on them; use Dioxus. The existing sites stay pinned to sycamore 0.8 because perseus 0.4.2 needs it. | - | [AGENTS.md](../../AGENTS.md) |
+
+### Billing checks
+
+How the billing of each vendor is checked: weekly by [billing-check.sh](../scripts/billing-check.sh) through a read-only API, or by Jim through a [settings check](../settings.toml). See [Billing checks](free-tiers.md#billing-checks).
+
+| Vendor | Ring | Read-only API check | Jim checks | Why |
+| --- | --- | --- | --- | --- |
+| Auth0 | Adopt | - | `auth0-billing` | The Management API has no plan, subscription or payment endpoint. |
+| Claude Code | Adopt | - | `claude-code-budget` | claude.ai subscription billing has no API. |
+| Cloudflare Pages | Adopt | cloudflare | `cloudflare-billing` | One Cloudflare account: Billing Read shows its payment methods and subscriptions. Jim's yearly check is a backstop. |
+| GitHub (Actions, Dependabot, CodeQL) | Adopt | github | `github-actions-budget` | The billing usage API shows any charge this month. No API shows a personal account's card or Actions budget, so Jim checks those. |
+| Squarespace | Adopt | - | `squarespace-billing` | No public API for account billing. |
+| Cloudflare D1 | Trial | cloudflare | `cloudflare-billing` | Same account as Pages. D1 Free has no billing. |
+| Cloudflare Workers | Trial | cloudflare | `cloudflare-billing` | Same account as Pages. The check fails on Workers Paid. |
+| PostHog | Trial | posthog | - | GET /api/billing/ with a billing:read key shows any subscription or charge. Adding a card is what starts a subscription. |
+| RapidAPI (Zillow data) | Trial | - | `rapidapi-free-plan` | No consumer billing API, and polling the quota header on a schedule would break homer's free-plan rule. |
+| Neon | Assess | - | - | No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007). |
+| Cloudflare R2 | Hold | cloudflare | `cloudflare-billing` | Same account as Pages. The check fails if R2 paid is turned on. |
+| Honeycomb, Sentry and Microsoft Clarity | Hold | - | - | No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007). |
+| Pulumi | Hold | - | - | No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007). |
+| RentCast, ATTOM and HouseCanary | Hold | - | - | No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007). |
+| Supabase and Turso | Hold | - | - | No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007). |
+| Terraform CLI and HCP Terraform | Hold | - | - | No account, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007). |
 
 <!-- radar:end -->

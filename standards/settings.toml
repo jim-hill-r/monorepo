@@ -179,6 +179,14 @@ expect = "The Zillow API subscription is on the free plan, with no payment metho
 why = "homer may use RapidAPI only on its free plan; it must never cost money (AGENTS.md)."
 every = "30d"
 
+[[setting]]
+id = "squarespace-billing"
+vendor = "Squarespace"
+where = "account.squarespace.com > Billing"
+expect = "Nothing the monorepo uses is billed: no new paid plan, domain or add-on since the last check. Your own existing Squarespace plan isn't part of the monorepo's $0 budget."
+why = "Squarespace is an approved vendor with a $0 budget in the tech radar, and it has no billing API, so only you can check it (standards/docs/free-tiers.md#billing-checks)."
+every = "90d"
+
 # Read-only billing credentials for the weekly Billing check
 # (standards/docs/free-tiers.md#billing-checks).
 

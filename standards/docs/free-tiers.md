@@ -209,8 +209,13 @@ raised past the free limit; the script clamps them.
 ## Billing checks
 
 Jim, 2026-11-27: "I feel like we could create some credentials with
-readonly that would let our processes audit things like this." Where a
-vendor's API shows billing, a read-only credential checks it weekly
+readonly that would let our processes audit things like this", and "the
+billing check should check every vendor in the tech radar". Every vendor
+blip in [`radar.json`](../radar/radar.json) has a `billing` entry saying how
+it is checked, and `radar.sh check` fails an Adopt or Trial vendor with no
+check (RAD-007). The table is in the
+[tech radar](tech-radar.md#billing-checks), and each weekly run's summary
+lists every vendor. Where a vendor's API shows billing, a read-only credential checks it weekly
 ([`billing-check.sh`](../scripts/billing-check.sh), the **Billing check**
 job of All Free Tier Usage). Each credential can read billing but never add
 a card, change a plan or spend, and each is a secret of the `infra`
@@ -234,13 +239,16 @@ What no API shows stays on Jim's 30-day check
 | Auth0 | The Management API has no plan, subscription or payment endpoint; plans are only on the dashboard. |
 | RapidAPI | No consumer billing API. The Zillow responses' quota headers show the plan, but polling them on a schedule would break homer's free-plan-only rule. |
 | Claude | claude.ai subscription billing has no API. |
+| Squarespace | No public API for account billing. Jim's own plan there is outside the monorepo's budget; the check is that nothing new is billed for the monorepo. |
+| Assess and Hold vendors (Neon, Supabase, Turso, Pulumi and the rest) | We have no account, so nothing can bill. One that moves into Trial or Adopt gets a check first (RAD-007). |
 
 ## Things only Jim can check
 
 Agents can't see these billing pages. Jim checks them; open checks are
 files in the root [issues/human/](../../issues/human/):
 
-- No payment method on the Auth0 or RapidAPI accounts, no card on GitHub,
+- No payment method on the Auth0 or RapidAPI accounts, nothing new billed
+  on Squarespace, no card on GitHub,
   and GitHub's Actions budget is $0 with "stop usage" on. Cloudflare and
   PostHog only until the Billing check shows them checked.
 - The `CLOUDFLARE_API_TOKEN` secret has no Billing permission. For the

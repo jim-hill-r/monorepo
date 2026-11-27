@@ -107,7 +107,11 @@ repo, rather than in any one agent tool's settings.
     lists every approved, evaluated and held technology and vendor, with its
     exemplar projects. A PR that approves, rejects or drops one, or adds the
     first project to use one, updates `standards/radar/radar.json` in the
-    same PR.
+    same PR. Every vendor there says how its billing is checked (Jim,
+    2026-11-27: "the billing check should check every vendor in the tech
+    radar"): a read-only API check in `standards/scripts/billing-check.sh`
+    where the vendor allows it, otherwise a settings check for Jim; the
+    radar check fails an approved vendor with neither (RAD-007).
 - **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
   plan, except Claude Code (budget $25 a month). Each technology's monthly
   budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method or raise a spending

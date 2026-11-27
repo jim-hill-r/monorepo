@@ -87,6 +87,39 @@ expect_problem "a PostHog subscription" "active paid subscription"
 echo '{"has_active_subscription":false,"current_total_amount_usd":"12.50"}' >"$work/resp/ph-billing"
 expect_problem "a PostHog charge" '12.5'
 
+# Every vendor in the tech radar is in the summary (Jim, 2026-11-27).
+clean
+run "${creds[@]}"
+for v in $(jq -r '.[] | select(.kind == "vendor") | .name | @base64' "$root/standards/radar/radar.json"); do
+  name=$(base64 -d <<<"$v")
+  grep -qF "| $name |" "$work/summary" || fail "summary misses radar vendor $name"
+done
+grep -q '| Neon | Assess | - | no account |' "$work/summary" && grep -q '`auth0-billing`' "$work/summary" &&
+  ok "summary lists every radar vendor and how it is checked" || fail "radar table: $(tail -20 "$work/summary")"
+[ "$(bash "$script" vendors)" = "cloudflare github posthog" ] && ok "vendors lists the API checks" || fail "vendors"
+
+# RAD-007: radar.sh fails a vendor with no billing entry, an unknown api,
+# an unknown setting, or an approved vendor that nothing checks.
+rad() {
+  local fake=$work/radar-root
+  rm -rf "$fake"; mkdir -p "$fake/standards/scripts" "$fake/standards/radar" "$fake/standards/docs"
+  cp "$root/standards/scripts/radar.sh" "$root/standards/scripts/billing-check.sh" "$fake/standards/scripts/"
+  cp "$root/standards/settings.toml" "$fake/standards/"
+  cp "$root/standards/docs/tech-radar.md" "$fake/standards/docs/"
+  jq "$1" "$root/standards/radar/radar.json" >"$fake/standards/radar/radar.json"
+  (cd "$fake" && for p in $(jq -r '.[] | (.exemplars[], (.sources[] | select(test("^https?://") | not)))' standards/radar/radar.json); do
+    [ -e "$p" ] || mkdir -p "$p"; done)
+  bash "$fake/standards/scripts/radar.sh" check 2>&1
+}
+expect_rad() {
+  local name=$1 filter=$2 text=$3 out
+  if out=$(rad "$filter"); then fail "RAD-007 $name passed"; elif grep -q "RAD-007.*$text" <<<"$out"; then ok "RAD-007 $name"; else fail "RAD-007 $name: $out"; fi
+}
+expect_rad "missing billing" 'map(if .name == "Auth0" then del(.billing) else . end)' "Auth0: a vendor needs billing"
+expect_rad "unknown api" 'map(if .name == "Auth0" then .billing.api = ["auth0"] else . end)' "auth0 is not a vendor"
+expect_rad "unknown setting" 'map(if .name == "Auth0" then .billing.human = "nope" else . end)' "nope is not a setting id"
+expect_rad "unchecked Trial vendor" 'map(if .name == "Neon" then .ring = "Trial" else . end)' "Neon: an Trial vendor needs a billing check"
+
 code=0; bash "$script" nope >/dev/null 2>&1 || code=$?
 [ "$code" = 2 ] && ok "an unknown vendor is a usage error" || fail "usage: $code"
 
