@@ -549,7 +549,7 @@ the workflow's **dry run** input, or locally with
 `bash standards/scripts/evals.sh triage --dry-run`, to see what it would
 file.
 
-The `eval-triage` skill, where it exists, is for the judgment calls the
+The `eval-triage` skill is for the judgment calls the
 workflow can't make (a disputed eval, rollback advice); it is not a daily
 task.
 

@@ -342,6 +342,7 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 | `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
 | `write-issue` | Write an issue file or a human task with its runbook through the `chores` command. |
+| `eval-triage` | On demand, for the eval calls the daily triage workflow can't make: rollback advice for a deploy that failed its evals, and an eval Jim disputes. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

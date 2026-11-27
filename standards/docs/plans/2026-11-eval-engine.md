@@ -691,8 +691,11 @@ phase 3.
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
   released binaries. Done (2026-11-27): the `trycmd` kind, collected from
   the saved `cargo test` output.
-- The `eval-triage` skill and its daily scheduled task, replacing the
-  planned nightly FIX task.
+- Done (2026-11-27): eval triage, replacing the planned nightly FIX task.
+  The free `evals-triage.yml` workflow files the issues daily (see
+  "Triage" in [evals.md](../evals.md)); the `eval-triage` skill is for
+  the judgment calls it can't make (rollback advice, a disputed eval),
+  run on demand, not as a daily Claude task (Jim, 2026-11-27).
 - `evals check` makes "every `must` has a production eval" an error.
 
 ### Phase 3: observability
