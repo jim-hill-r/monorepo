@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-27T20:12:20.039294159Z",
+  "generated_at": "2026-11-27T20:13:22.597447127Z",
   "coverage": {
     "projects": 26,
     "projects_with_requirements": 6,
-    "percent": 4.9,
+    "percent": 4.5,
     "musts_percent": 50.0,
     "judged_percent": 12.2,
     "warn_below": 80.0,
@@ -475,8 +475,8 @@
       "musts_in_production": 2,
       "coverage": {
         "requirements": 10,
-        "met": 3,
-        "percent": 30.0,
+        "met": 2,
+        "percent": 20.0,
         "musts_met": 2,
         "musts_percent": 100.0,
         "warning": false
@@ -543,7 +543,10 @@
           "requirement": "PANE-008",
           "title": "Executive reviews are read in pane",
           "priority": "should",
-          "verdict": "met"
+          "verdict": "at-risk",
+          "reasons": [
+            "snapshot-reviews-live has no cd results yet"
+          ]
         },
         {
           "requirement": "PANE-009",
