@@ -9,32 +9,24 @@
 use std::collections::HashSet;
 
 // Time: O(n^2) Space: O(1)
-pub fn has_duplicate_brute_force(nums: &Vec<i64>) -> bool {
-    let l = nums.len();
-    for i in 0..l {
-        for j in i + 1..l {
-            if nums[i] == nums[j] {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// Time: O(nlogn) Space: O(1) or O(n)
-pub fn has_duplicate_sorting(nums: &Vec<i64>) -> bool {
-    let mut sorted_nums = nums.clone();
-    sorted_nums.sort();
-    for i in 1..sorted_nums.len() {
-        if sorted_nums[i] == sorted_nums[i - 1] {
+pub fn has_duplicate_brute_force(nums: &[i64]) -> bool {
+    for (i, a) in nums.iter().enumerate() {
+        if nums[i + 1..].contains(a) {
             return true;
         }
     }
-    return false;
+    false
+}
+
+// Time: O(nlogn) Space: O(1) or O(n)
+pub fn has_duplicate_sorting(nums: &[i64]) -> bool {
+    let mut sorted_nums = nums.to_vec();
+    sorted_nums.sort();
+    sorted_nums.windows(2).any(|pair| pair[0] == pair[1])
 }
 
 // Time: O(n) Space: O(n)
-pub fn has_duplicate_hash_set(nums: &Vec<i64>) -> bool {
+pub fn has_duplicate_hash_set(nums: &[i64]) -> bool {
     let mut seen: HashSet<i64> = HashSet::new();
     for n in nums {
         let is_newly_inserted = seen.insert(*n);
@@ -43,13 +35,13 @@ pub fn has_duplicate_hash_set(nums: &Vec<i64>) -> bool {
         }
     }
 
-    return false;
+    false
 }
 
 // Time: O(n) Space: O(n)
-pub fn has_duplicate_hash_set_length(nums: &Vec<i64>) -> bool {
-    let set: HashSet<i64> = nums.iter().cloned().collect();
-    return set.len() < nums.len();
+pub fn has_duplicate_hash_set_length(nums: &[i64]) -> bool {
+    let set: HashSet<i64> = nums.iter().copied().collect();
+    set.len() < nums.len()
 }
 
 #[cfg(test)]
@@ -69,8 +61,27 @@ mod tests {
     fn example_2() {
         let nums = vec![1, 2, 3, 4];
         assert!(!has_duplicate_brute_force(&nums));
-        // assert!(!has_duplicate_sorting(&nums));
-        // assert!(!has_duplicate_hash_set(&nums));
-        // assert!(!has_duplicate_hash_set_length(&nums));
+        assert!(!has_duplicate_sorting(&nums));
+        assert!(!has_duplicate_hash_set(&nums));
+        assert!(!has_duplicate_hash_set_length(&nums));
+    }
+
+    #[test]
+    fn empty_and_single() {
+        for nums in [vec![], vec![7]] {
+            assert!(!has_duplicate_brute_force(&nums));
+            assert!(!has_duplicate_sorting(&nums));
+            assert!(!has_duplicate_hash_set(&nums));
+            assert!(!has_duplicate_hash_set_length(&nums));
+        }
+    }
+
+    #[test]
+    fn duplicates_far_apart() {
+        let nums = vec![5, 1, 2, 3, 4, 5];
+        assert!(has_duplicate_brute_force(&nums));
+        assert!(has_duplicate_sorting(&nums));
+        assert!(has_duplicate_hash_set(&nums));
+        assert!(has_duplicate_hash_set_length(&nums));
     }
 }
