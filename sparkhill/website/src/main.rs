@@ -11,4 +11,6 @@ pub fn main<G: Html>() -> PerseusApp<G> {
         .template(crate::templates::index::get_template())
         .error_views(crate::error_views::get_error_views())
         .locales_and_translations_manager("en-US", &[])
+        // The security headers Cloudflare Pages sends, at the export's root.
+        .static_alias("/_headers", "_headers")
 }
