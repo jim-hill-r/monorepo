@@ -85,6 +85,15 @@ The application provides the following routes:
 
 Invalid day or week numbers will display a helpful error message.
 
+## Sign-in
+
+Login uses Auth0 through `auth_sdk`. The redirect URI is always the site root
+(`https://jimhillr-cookbook.pages.dev/`, or `http://localhost:8080/` with
+`dx serve`), because Auth0 accepts only an exact Allowed Callback URL; `infra`
+manages that list (`WebApp::callback_urls`). After the redirect, the header
+sends the reader back to the page they clicked Login on.
+`tests/auth-redirect.spec.ts` checks the redirect URI from other pages.
+
 ## Building
 
 This project is part of a Cargo workspace. To build for production from within the `web` directory, use the npm scripts:

@@ -9,7 +9,9 @@ use dioxus::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::{AuthError, AuthProvider, ProviderConfig};
 #[cfg(target_arch = "wasm32")]
-use auth_sdk::web::{WebAuthProvider, fetch_current_location_from_browser};
+use auth_sdk::redirect::redirect_url_for_origin;
+#[cfg(target_arch = "wasm32")]
+use auth_sdk::web::{WebAuthProvider, fetch_origin_from_browser};
 
 const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 const SIDEBAR_CSS: Asset = asset!("/assets/styling/sidebar.css");
@@ -56,7 +58,11 @@ fn App() -> Element {
     #[cfg(target_arch = "wasm32")]
     {
         let auth = use_resource(|| async move {
-            let redirect_url = fetch_current_location_from_browser().unwrap_or_default();
+            // Always the site root, so it matches Auth0's Allowed Callback
+            // URLs from any page; the header sends the user back after.
+            let redirect_url = fetch_origin_from_browser()
+                .map(|origin| redirect_url_for_origin(&origin))
+                .unwrap_or_default();
             match ProviderConfig::auth0(AUTH0_DOMAIN, CLIENT_ID, redirect_url) {
                 Ok(config) => WebAuthProvider::new(config).await,
                 Err(error) => Err(error),
@@ -214,6 +220,17 @@ fn format_auth_error(err: &AuthError) -> String {
 #[cfg(target_arch = "wasm32")]
 fn render_auth_section() -> Element {
     let auth = use_context::<Resource<Result<WebAuthProvider, AuthError>>>();
+
+    // After a sign-in redirect the app loads at `/`; put the user back on the
+    // page they clicked Login from.
+    use_effect(move || {
+        if let Some(Ok(provider)) = &*auth.read()
+            && let Some(route) = provider.return_to().and_then(return_route)
+        {
+            navigator().replace(route);
+        }
+    });
+
     let auth_state = auth.read();
 
     match &*auth_state {
@@ -247,6 +264,18 @@ fn render_auth_section() -> Element {
 #[cfg(not(target_arch = "wasm32"))]
 fn render_auth_section() -> Element {
     rsx! { div { "Login (test mode)" } }
+}
+
+/// The route to send the user back to after a sign-in redirect, from the
+/// same-origin path they clicked Login on. `None` for the home page, where
+/// the redirect already lands.
+#[cfg_attr(not(any(target_arch = "wasm32", test)), allow(dead_code))]
+fn return_route(path: &str) -> Option<Route> {
+    // No route takes a query or hash, so match on the path alone.
+    let path = path.split(['?', '#']).next().unwrap_or("/");
+    path.parse::<Route>()
+        .ok()
+        .filter(|route| *route != Route::Home {})
 }
 
 /// Map a date to its recipe day (1-365).
@@ -780,6 +809,38 @@ fn PageNotFound(route: Vec<String>) -> Element {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn test_redirect_url_is_site_root() {
+        // Auth0's Allowed Callback URLs (infra's WebApp::callback_urls) are
+        // the origins with a trailing slash; the app must send exactly that.
+        assert_eq!(
+            auth_sdk::redirect::redirect_url_for_origin("https://jimhillr-cookbook.pages.dev"),
+            "https://jimhillr-cookbook.pages.dev/"
+        );
+        assert_eq!(
+            auth_sdk::redirect::redirect_url_for_origin("http://localhost:8080"),
+            "http://localhost:8080/"
+        );
+    }
+
+    #[test]
+    fn test_return_route_goes_back_to_the_page() {
+        assert_eq!(
+            return_route("/recipe/100"),
+            Some(Route::Recipe { day: 100 })
+        );
+        assert_eq!(
+            return_route("/plan/12?x=1#top"),
+            Some(Route::Plan { week: 12 })
+        );
+    }
+
+    #[test]
+    fn test_return_route_stays_put_on_home() {
+        // The redirect already lands on `/`, so there is nowhere to go.
+        assert_eq!(return_route("/"), None);
+        assert_eq!(return_route("/?code=abc"), None);
+    }
     use super::*;
 
     /// The Pages `_headers` file, served as real HTTP headers by Cloudflare.
