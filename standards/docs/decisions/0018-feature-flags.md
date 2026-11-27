@@ -1,7 +1,7 @@
 # 0018. Feature flags: our own flags service on Cloudflare, with a management app in each project where its app managers set modes per user
 
-- Status: Proposed
-- Decided by: Jim (pending)
+- Status: Accepted
+- Decided by: Jim (2026-11-27, chose "our flags Worker, D1 and management app" on the decision card, with a management app per project and pane for platform work)
 - Date: 2026-11-27
 - Asked by: Jim
 - Builds on: [0004](0004-database-engine.md) (D1 for data a deployed
