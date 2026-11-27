@@ -462,7 +462,7 @@ fn rust_fn_names(text: &str) -> Vec<String> {
 /// True if `pattern` (with `*` matching within one path segment) matches the
 /// whole of `path` or a tail of it that starts at a segment boundary, so
 /// `tests/cmd/COOK-001-*.toml` finds `cli/tests/cmd/COOK-001-help.toml`.
-fn glob_matches_tail(pattern: &str, path: &str) -> bool {
+pub(crate) fn glob_matches_tail(pattern: &str, path: &str) -> bool {
     let pattern: Vec<&str> = pattern.split('/').collect();
     let path: Vec<&str> = path.split('/').collect();
     if pattern.len() > path.len() {

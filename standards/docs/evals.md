@@ -156,7 +156,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | --- | --- | --- | --- |
 | `cargo` | `cargo test` results | `filter` (optional, defaults to the requirement ID in snake case, `cook_001`) | Test function name starts with the snake-case ID: `fn cook_001_body_text_is_16px()` |
 | `playwright` | Playwright JSON reporter results | `grep` (optional, defaults to `@req:<ID>`) | `@req:COOK-001` in the test title, alongside tags such as `@smoke` |
-| `trycmd` | CLI transcript tests | `glob` (optional, defaults to `tests/cmd/<ID>-*.toml`) | Case file named `tests/cmd/COOK-001-<what>.toml` |
+| `trycmd` | CLI transcript tests, from the `Testing <case> ... ok` lines trycmd prints inside the saved `cargo test` output | `glob` (optional, defaults to `tests/cmd/<ID>-*.toml`; `*` matches within one path segment) | Case file named `tests/cmd/COOK-001-<what>.toml` |
 | `script` | A Bevy scripted run | `script`, `check` | A named check in the script file |
 | `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains` and `max_ms` (the slowest acceptable response, body included) | Declared inline |
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
@@ -217,7 +217,8 @@ to `main` and nightly CI), through the shared tasks and
 `standards/scripts/evals.sh`:
 
 1. The `ci` task saves what the tests print: `cargo test` output to
-   `target/evals-reports/cargo-test.log` (`evals.sh report cargo-test ...`),
+   `target/evals-reports/cargo-test.log` (`evals.sh report cargo-test ...`;
+   it holds the trycmd case lines too),
    and in Dioxus web apps Playwright's JSON report to
    `target/evals-reports/playwright.json` (the `e2e` task adds
    `--reporter=list,json`). `target/` is ignored by git.
@@ -254,7 +255,7 @@ deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
    edge. A site that never answers fails; an eval with a `path` and no
    `DEPLOY_URL` is an `error`. Requests send the user agent
    `jimhillr-evals/0.1 (synthetic check)`.
-2. Report kinds (`playwright`, `trycmd`) read only
+2. Report kinds (`cargo`, `trycmd`, `playwright`) read only
    `target/evals-reports/cd/`, where a `smoke` task run against production
    writes its report, never the `ci` task's reports.
 3. A failed eval of a `must` requirement fails the job (`evals run

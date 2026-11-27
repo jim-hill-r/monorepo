@@ -31,8 +31,9 @@ failures make an eval flaky, how fresh a production result must be) are in
 cargo run -p evals_cli -- check            # warnings, exit 0
 cargo run -p evals_cli -- check --strict   # exit 1 on any finding
 
-# Turn saved test reports into one result per eval (cargo and playwright
-# kinds), appended to evals-results.jsonl. Runs no tests itself.
+# Turn saved test reports into one result per eval (cargo, trycmd and
+# playwright kinds; trycmd's case lines are in the cargo output), appended
+# to evals-results.jsonl. Runs no tests itself.
 cargo test 2>&1 | tee cargo-test.log
 cargo run -p evals_cli -- run --stage ci --project cookbook \
   --cargo-output cargo-test.log --playwright-report web/results.json
