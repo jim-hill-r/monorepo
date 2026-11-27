@@ -119,7 +119,10 @@ these sections, one or more slides each, in this order:
    against its goals, the three biggest blockers, a scorecard (one row each
    for goals, UX, architecture, security, performance, quality, operations
    and tech selection, rated Good, Fair or Poor with a few words of why),
-   and the top five recommendations.
+   and the top five recommendations. Pane reads the scorecard
+   (`pane_snapshot`'s `scorecard` parser) and shows it on its Reviews page,
+   so keep it a `| Area | Rating | Why |` table under a heading that says
+   Scorecard, rated exactly Good, Fair or Poor.
 3. **Purpose and long-term goals**: who it is for, what problem it solves,
    the goals and where they are written down.
 4. **Progress against goals and what is holding it up** (step 3).

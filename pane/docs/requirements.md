@@ -77,7 +77,7 @@ evals until they are built.
 - Priority: should
 - Why: Review decks are how Jim hears about each project in depth.
 - Accept: the Reviews page shows the rotation, each deck as slides in the
-  page, its PDF download and a link to its pull request.
+  page, its PDF download, its scorecard and a link to its pull request.
 
 ## PANE-009: Jim can add a TODO and close a human issue from pane
 

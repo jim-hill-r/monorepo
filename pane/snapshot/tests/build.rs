@@ -264,6 +264,17 @@ fn reads_the_review_rotation() -> TestResult {
             ("2026-11-11", "app/web", "2026-11-11-web"),
         ]
     );
+    let areas: Vec<_> = s.reviews[0]
+        .scorecard
+        .iter()
+        .map(|r| (r.area.as_str(), r.rating.as_str()))
+        .collect();
+    assert_eq!(areas[0], ("Goals", "Poor"));
+    assert_eq!(areas.len(), 6, "{areas:?}");
+    assert!(
+        s.reviews[1].scorecard.is_empty(),
+        "a deck that isn't in the repo has no scorecard"
+    );
 
     fs::remove_file(repo_dir.0.join("docs/reviews/README.md"))?;
     let s = repo::build(&repo_dir.0, "abc", "t")?;
@@ -288,6 +299,33 @@ fn the_real_rotation_table_parses() -> TestResult {
             r.path.starts_with("docs/reviews/") && r.path.ends_with("/deck.md"),
             "{r:?}"
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn every_real_deck_has_a_scorecard() -> TestResult {
+    // pane reads each deck's Scorecard slide (`| Area | Rating | Why |`),
+    // which the deep-project-review skill writes: keep its shape.
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let readme = fs::read_to_string(repo.join("docs/reviews/README.md"))?;
+    for r in pane_snapshot::parse::reviews(&readme) {
+        let Ok(deck) = fs::read_to_string(repo.join(&r.path)) else {
+            continue; // Listed before its PR merged.
+        };
+        let rows = pane_snapshot::parse::scorecard(&deck);
+        assert!(
+            !rows.is_empty(),
+            "{} has no scorecard pane can read",
+            r.path
+        );
+        for row in &rows {
+            assert!(
+                ["Good", "Fair", "Poor"].contains(&row.rating.as_str()),
+                "{}: {row:?} is not rated Good, Fair or Poor",
+                r.path
+            );
+        }
     }
     Ok(())
 }

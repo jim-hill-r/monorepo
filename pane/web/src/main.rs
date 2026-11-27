@@ -2,7 +2,9 @@
 //! (built by `pane_snapshot` in the release) and shows it.
 
 use dioxus::prelude::*;
-use pane_model::{Deliverable, DeliverableKind, HumanIssue, Review, Snapshot, WorkItem, WorkKind};
+use pane_model::{
+    Deliverable, DeliverableKind, HumanIssue, Review, ScorecardRow, Snapshot, WorkItem, WorkKind,
+};
 
 mod markdown;
 mod view;
@@ -711,6 +713,7 @@ fn Reviews() -> Element {
                                     th { scope: "col", "Date" }
                                     th { scope: "col", "Project" }
                                     th { scope: "col", "Deck" }
+                                    th { scope: "col", "Scorecard" }
                                     th { scope: "col", "Comments" }
                                 }
                             }
@@ -744,6 +747,9 @@ fn ReviewRow(review: Review) -> Element {
                 a { href: "{view::deck_pdf_url(&folder)}", "PDF" }
             }
             td {
+                ScorecardSummary { rows: review.scorecard.clone() }
+            }
+            td {
                 if let Some(pr) = &review.pr {
                     a { href: "{pr}", "{view::pr_label(pr)}" }
                 } else {
@@ -771,6 +777,76 @@ fn ReviewLinks(review: Review, show_project: bool) -> Element {
             a { class: "download", href: "{view::deck_pdf_url(&folder)}", "Download PDF" }
             if let Some(pr) = &review.pr {
                 a { href: "{pr}", "Comment on {view::pr_label(pr)}" }
+            }
+        }
+        if !review.scorecard.is_empty() {
+            p { class: "scorecard-line",
+                "Scorecard: "
+                ScorecardSummary { rows: review.scorecard.clone() }
+            }
+        }
+    }
+}
+
+/// A scorecard's ratings counted on one line, such as `2 Good · 4 Fair ·
+/// 1 Poor`, each count coloured by its rating.
+#[component]
+fn ScorecardSummary(rows: Vec<ScorecardRow>) -> Element {
+    if rows.is_empty() {
+        return rsx! {
+            span { class: "muted", "None" }
+        };
+    }
+    let parts: Vec<(String, &str)> = view::scorecard_summary(&rows)
+        .split(" · ")
+        .map(|part| {
+            let label = part.rsplit(' ').next().unwrap_or("");
+            (part.to_owned(), view::rating_class(label))
+        })
+        .collect();
+    rsx! {
+        span { class: "scorecard-summary", "data-testid": "scorecard-summary",
+            for (i , (part , class)) in parts.into_iter().enumerate() {
+                span { key: "{part}",
+                    if i > 0 {
+                        " · "
+                    }
+                    span { class: "rating rating-{class}", "{part}" }
+                }
+            }
+        }
+    }
+}
+
+/// A deck's Scorecard slide as a table: each area, its rating and why.
+#[component]
+fn Scorecard(rows: Vec<ScorecardRow>) -> Element {
+    rsx! {
+        section { class: "group", "data-testid": "review-scorecard",
+            h2 { "Scorecard" }
+            if rows.is_empty() {
+                p { class: "muted", "This deck has no scorecard pane can read." }
+            } else {
+                table { class: "rotation scorecard",
+                    thead {
+                        tr {
+                            th { scope: "col", "Area" }
+                            th { scope: "col", "Rating" }
+                            th { scope: "col", "Why" }
+                        }
+                    }
+                    tbody {
+                        for r in rows {
+                            tr { key: "{r.area}",
+                                th { scope: "row", "{r.area}" }
+                                td {
+                                    span { class: "badge rating-{view::rating_class(&r.rating)}", "{r.rating}" }
+                                }
+                                td { "{r.why}" }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -842,6 +918,7 @@ fn ReviewPage(folder: String) -> Element {
                         "Use the arrow keys to move between slides, and f or Full screen for full screen. "
                         "Leave comments on the pull request, on the lines of the slide."
                     }
+                    Scorecard { rows: review.scorecard.clone() }
                 }
             },
         }

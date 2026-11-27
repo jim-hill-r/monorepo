@@ -10,13 +10,13 @@ one column under 720 px.
 | --- | --- |
 | `/` | Today: counts, human issues waiting on Jim oldest first, and what is new since the last visit (human issues, deliverables, TODOs and FIXes; see below) |
 | `/projects` | Every project, priority first, with type, status, README summary and open items |
-| `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its latest review, its deliverables, and its open TODOs and FIXes (sub-projects included) |
+| `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its latest review and its scorecard counts, its deliverables, and its open TODOs and FIXes (sub-projects included) |
 | `/work` | Every `TODO` and `FIX` from issue files and code comments, FIXes first, filterable by project, kind, where it sits (priority, backlog, other, code comments) and tag, each linking to its line on GitHub |
 | `/human-issues` | Each open human task (a file in `issues/human/`), oldest first, with its age, what it unblocks and a link to the file on GitHub |
 | `/deliverables` | Live sites (`DEPLOY_URL`), game downloads (`RELEASE_TAG`), review decks, and plans, decisions and retros |
 | `/docs/<path>` | One plan, decision or retro rendered from its Markdown (`src/markdown.rs`), with a link to the file on GitHub |
-| `/reviews` | The review rotation from `docs/reviews/README.md`, newest first: date, project, the deck's slides and PDF, and its pull request |
-| `/review/<folder>` | One review deck, such as `/review/2026-11-25-cookbook`: its slides in the page (arrow keys, `f` or the Full screen button), its PDF, its pull request for comments and `deck.md` on GitHub |
+| `/reviews` | The review rotation from `docs/reviews/README.md`, newest first: date, project, the deck's slides and PDF, its scorecard's ratings counted (such as 2 Good · 4 Fair · 1 Poor), and its pull request |
+| `/review/<folder>` | One review deck, such as `/review/2026-11-25-cookbook`: its slides in the page (arrow keys, `f` or the Full screen button), its PDF, its pull request for comments, `deck.md` on GitHub, and its scorecard as a table (area, rating, why) |
 | `/health`, `/add` | Placeholders naming the phase that fills them in |
 
 It uses the [design system](../../design_system/README.md)'s professional

@@ -3,7 +3,7 @@
 
 use pane_model::{
     Deliverable, DeliverableKind, HumanIssue, Link, ProjectStatus, REPO_URL, Retro, RetroAction,
-    Review, WorkItem, WorkKind, WorkSource,
+    Review, ScorecardRow, WorkItem, WorkKind, WorkSource,
 };
 
 /// The project paths in the root `mise.toml`'s `[monorepo].config_roots`.
@@ -181,6 +181,75 @@ pub fn reviews(readme: &str) -> Vec<Review> {
     // Newest first, keeping the table's order within a day.
     found.sort_by(|a, b| b.date.cmp(&a.date));
     found
+}
+
+/// The rows of a deck's Scorecard slide: each `| Area | Rating | Why |`
+/// table under a heading that mentions "Scorecard" (a long scorecard may
+/// continue on a second slide). Columns are found by their header, so their
+/// order may change and the table may gain columns; a table without both an
+/// Area and a Rating column is not a scorecard. The slide ends at the next
+/// heading or `---` slide break. Backticks and `**` are dropped from the
+/// cells, since pane shows them as plain text. Rows without an area or a
+/// rating are skipped.
+pub fn scorecard(deck: &str) -> Vec<ScorecardRow> {
+    let mut found = Vec::new();
+    let mut on_slide = false;
+    let mut header: Option<Vec<String>> = None;
+    for line in deck.lines() {
+        let line = line.trim();
+        if line.starts_with('#') {
+            on_slide = line.to_lowercase().contains("scorecard");
+            header = None;
+            continue;
+        }
+        if line == "---" {
+            on_slide = false;
+            header = None;
+            continue;
+        }
+        if !on_slide {
+            continue;
+        }
+        if !line.starts_with('|') {
+            header = None;
+            continue;
+        }
+        let cells: Vec<String> = table_cells(line).iter().map(|c| plain(c)).collect();
+        let Some(columns) = &header else {
+            header = Some(cells.iter().map(|c| c.to_lowercase()).collect());
+            continue;
+        };
+        if cells
+            .iter()
+            .all(|c| c.chars().all(|ch| ch == '-' || ch == ':'))
+        {
+            continue;
+        }
+        let cell = |name: &str| {
+            columns
+                .iter()
+                .position(|c| c == name)
+                .and_then(|i| cells.get(i))
+                .cloned()
+        };
+        let (Some(area), Some(rating)) = (cell("area"), cell("rating")) else {
+            continue;
+        };
+        if area.is_empty() || rating.is_empty() {
+            continue;
+        }
+        found.push(ScorecardRow {
+            area,
+            rating,
+            why: cell("why").unwrap_or_default(),
+        });
+    }
+    found
+}
+
+/// `cell` without Markdown's backticks and bold markers.
+fn plain(cell: &str) -> String {
+    cell.replace("**", "").replace('`', "").trim().to_owned()
 }
 
 /// The trimmed cells of a Markdown table row.
@@ -786,6 +855,44 @@ mod tests {
         assert_eq!(found[0].project, "y");
         assert_eq!(found[0].path, "docs/reviews/2026-02-02-y/deck.md");
         assert!(reviews("").is_empty());
+    }
+
+    const DECK: &str =
+        include_str!("../tests/fixtures/repo/docs/reviews/2026-11-25-app/deck.md.fixture");
+
+    #[test]
+    fn reads_the_scorecard_slides_of_a_deck() {
+        let rows: Vec<_> = scorecard(DECK)
+            .into_iter()
+            .map(|r| (r.area, r.rating, r.why))
+            .collect();
+        let want = [
+            ("Goals", "Poor", "The core feature is not started"),
+            ("User experience", "Fair", "Fast, but main.rs is huge"),
+            ("Security", "Good", "Static site"),
+            ("Quality", "Good", "CI green"),
+            ("Operations", "Fair", ""),
+            ("Tech selection", "Fair", ""),
+        ]
+        .map(|(a, r, w)| (a.to_owned(), r.to_owned(), w.to_owned()));
+        assert_eq!(rows, want);
+    }
+
+    #[test]
+    fn a_deck_without_a_scorecard_has_none() {
+        assert!(scorecard("").is_empty());
+        assert!(
+            scorecard("# Summary\n\n| Area | Rating |\n| --- | --- |\n| A | Good |\n").is_empty()
+        );
+        // A Scorecard heading over a table without Area and Rating columns.
+        assert!(
+            scorecard("# Scorecard\n\n| Thing | Score |\n| --- | --- |\n| A | 3 |\n").is_empty()
+        );
+        // A table that continues past a slide break is not on the slide.
+        assert!(
+            scorecard("# Scorecard\n\n---\n\n| Area | Rating |\n| --- | --- |\n| A | Good |\n")
+                .is_empty()
+        );
     }
 
     #[test]

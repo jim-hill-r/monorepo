@@ -193,11 +193,26 @@ kind = "cargo"
 filter = "the_real_rotation_table_parses"
 
 [[eval]]
+id = "review-scorecard"
+requirement = "PANE-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "reads_the_scorecard_slides_of_a_deck"
+
+[[eval]]
+id = "review-scorecard-shape"
+requirement = "PANE-008"
+stages = ["ci"]
+kind = "cargo"
+description = "Every deck in the rotation has a scorecard pane can read, rated Good, Fair or Poor."
+filter = "every_real_deck_has_a_scorecard"
+
+[[eval]]
 id = "reviews-page"
 requirement = "PANE-008"
 stages = ["ci"]
 kind = "playwright"
-description = "The Reviews page lists the rotation and opens each deck as slides with its PDF, PR and full screen."
+description = "The Reviews page lists the rotation with scorecard counts and opens each deck as slides with its scorecard, PDF, PR and full screen."
 
 [[eval]]
 id = "reviews-page-live"
