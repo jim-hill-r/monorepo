@@ -7,7 +7,7 @@ The `web` project is the browser-based frontend for the Cookbook application. It
 - **Daily Recipes**: Browse recipes for each day of the year (1-365) at `/recipe/{day}`
   - Recipes are loaded from markdown files in the `../content` directory
   - Each recipe displays title, description, ingredients, instructions, prep/cook time, servings, and tags
-- **Weekly Meal Plans**: Access meal plans for each week of the year (1-52) at `/plan/{week}`
+- **Weekly Meal Plans**: Access meal plans for each week of the year (1-52) at `/plan/{week}`, with a shopping list that sums each ingredient across the week's recipes and lists staples (oils, salt and pepper, garlic) apart
 - **Input Validation**: Automatically validates day and week numbers to ensure they're within valid ranges
 - **Responsive Routing**: Uses Dioxus Router for seamless navigation between pages
 - **Markdown Data Provider**: Uses the `cookbook-data-md` library to read recipes from markdown files
