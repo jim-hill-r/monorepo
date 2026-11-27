@@ -1,4 +1,4 @@
-# 0017. Review roles: who may approve what, as relationships in one file
+# 0019. Review roles: who may approve what, as relationships in one file
 
 - Status: Proposed (waiting for Jim's answers to the questions at the end)
 - Date: 2026-11-27
@@ -124,7 +124,7 @@ starting state, and it matches today's behavior except where the questions
 below say otherwise.
 
 ```toml
-# Who may approve what (decision 0017). Read by `chores gate`.
+# Who may approve what (decision 0019). Read by `chores gate`.
 
 [roles.auto]
 description = "Approves by written rules, no judgment (decision 0014)."
