@@ -176,6 +176,8 @@ mod tests {
             line: 1,
             added: None,
             unblocks: None,
+            why: None,
+            runbook: None,
         }
     }
 

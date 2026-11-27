@@ -47,7 +47,7 @@ A workflow outside OpenTofu mints them: **Infra Mint**
      2026-11-27), which turns its key into an installation token that
      expires within an hour
 
-   The runbook is `standards/docs/runbooks/infra-credentials.md`.
+   The runbook is `standards/docs/runbooks/infra-credentials-environment.md`.
 6. OpenTofu still never generates or copies a secret, and IAC-002 stays.
 
 ## Options considered

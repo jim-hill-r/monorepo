@@ -26,7 +26,10 @@ itself.
    renamed it, also include PRs still labelled `needs-jim`. For each, note the
    number, title, how many days it has been open, and the reason it needs a
    person (from the latest triage comment or the PR description).
-4. Look for stray manual tasks the process missed: issues tagged
+4. Note any task that has no runbook or no "Why it can't be automated"
+   section (`mise run //:issues -- --check` reports ISS-004); list it under
+   "Misfiled" so an agent adds them.
+5. Look for stray manual tasks the process missed: issues tagged
    `agent-ignore` in any other `issues/` folder that say "Needs Jim" or name a
    dashboard, secret or account. List them under "Misfiled" so they can be
    moved.
@@ -62,7 +65,8 @@ Post one message. If nothing is open, say so in one line. Otherwise:
 
 - First line: how many tasks are waiting, and how many are new this week.
 - **New this week**, then **Still open**, oldest first. One line each: the
-  task in plain words, where to do it, and what it unblocks. PRs as
+  task in plain words, where to do it, what it unblocks, and a link to its
+  runbook (the file's `runbook` field, as a GitHub link on `main`). PRs as
   `#<n> <title>: <reason>`.
 - **Checks due**, only when there are any: every open
   `issues/human/settings-check-*.md` task, new or not. These go here and not under

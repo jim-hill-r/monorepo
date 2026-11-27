@@ -1,7 +1,7 @@
 ---
 added: 2026-11-26
 unblocks: "every infra workflow: the Infra Mint workflow makes all other infra tokens and passwords from these, then the state Worker deploys and the plan, apply and drift workflows run (decisions 0007, 0009, 0010)"
-runbook: standards/docs/runbooks/infra-credentials.md
+runbook: standards/docs/runbooks/infra-credentials-environment.md
 ---
 
 ## Requirement
@@ -19,4 +19,4 @@ These are the first credentials everything else is minted from, so no automation
 
 ## Runbook
 
-[standards/docs/runbooks/infra-credentials.md](../../standards/docs/runbooks/infra-credentials.md): about 30 minutes, $0.
+[standards/docs/runbooks/infra-credentials-environment.md](../../standards/docs/runbooks/infra-credentials-environment.md): about 30 minutes, $0.

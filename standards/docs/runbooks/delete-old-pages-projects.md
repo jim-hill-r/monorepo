@@ -1,0 +1,55 @@
+# Delete old Pages projects
+
+- **Kind:** on demand (after a Pages project is renamed or retired)
+- **Status:** open (`issues/human/delete-old-pages-projects-after-jimhillr-rename.md`)
+  for `cahokia-web`, `pane` and `controlled-chaos`
+- **Time:** about 5 minutes
+- **Cost:** $0. Frees three of the 25 budgeted Pages projects.
+
+## What it's for
+
+Old Pages projects keep serving stale builds and count against the Pages
+project budget. Every project is now named `jimhillr-<project>`
+([naming.md](../naming.md#cloudflare-pages-projects)).
+
+## Why a person
+
+It deletes something, and IaC never deletes
+([decision 0007](../decisions/0007-infrastructure-as-code.md), item 8).
+Agents also have no Cloudflare write token for it.
+
+## Before you start
+
+- The new sites are live: `jimhillr-cahokia.pages.dev`,
+  `jimhillr-pane.pages.dev`, `jimhillr-controlled-chaos.pages.dev`.
+- No Auth0 application lists a URL on the old domain. For
+  `cahokia-web.pages.dev` that means the `auth0` stack has been applied
+  once (it sets Cahokia's URLs to exactly the `jimhillr-cahokia` ones), or
+  you've removed those URLs by hand in Auth0 > Applications > Cahokia.
+  Once a project is deleted anyone can claim its `*.pages.dev` name, and
+  Auth0 must not send sign-in tokens there.
+- Signed in to dash.cloudflare.com.
+
+## Steps
+
+1. Auth0 > Applications > Cahokia > Settings: search Allowed Callback
+   URLs, Allowed Web Origins and Allowed Logout URLs for `cahokia-web`.
+   Stop if any is there.
+2. dash.cloudflare.com > Workers & Pages. For each of `cahokia-web`,
+   `pane` (pane-dbc.pages.dev) and `controlled-chaos`
+   (controlled-chaos-5v4.pages.dev): open it > Settings > Delete project,
+   and type its name to confirm.
+
+## Where secrets go
+
+None.
+
+## Verify
+
+Workers & Pages lists only `jimhillr-*` Pages projects, and the old
+`*.pages.dev` URLs no longer load.
+
+## Undo or rotate
+
+A deleted project can't be restored; deploy again under a new name if
+ever needed.

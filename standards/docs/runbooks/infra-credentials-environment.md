@@ -1,8 +1,13 @@
-# Runbook: infra environments and bootstrap credentials
+# Set up the infra environments and bootstrap credentials
 
-## When
+- **Kind:** one-time (again only to rotate a bootstrap credential)
+- **Status:** open (`issues/human/infra-credentials-environment.md`)
+- **Time:** about 30 minutes
+- **Cost:** $0. Every item is on a free plan, and each Infra Mint run uses one Auth0 Machine to Machine token out of the free 1,000 a month.
 
-Once, before infra can run anything, and again only to rotate a bootstrap credential. For [issues/human/infra-credentials-environment.md](../../../issues/human/infra-credentials-environment.md).
+## What it's for
+
+The `infra` and `infra-credentials` environments, and the three bootstrap credentials that the Infra Mint workflow makes every other infra secret from (decision 0011). Until this is done, every infra workflow skips its stacks, and the state Worker can't deploy.
 
 ## Why a person
 

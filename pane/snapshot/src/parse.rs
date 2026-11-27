@@ -369,15 +369,15 @@ pub fn owning_project<'a>(path: &str, roots: &'a [String]) -> Option<&'a str> {
         .map(String::as_str)
 }
 
-/// One human task file (`issues/human/<slug>.md`): the body is the text,
-/// and the front matter's `added` (a `YYYY-MM-DD` date) and `unblocks` give
-/// its age and what it unblocks. `None` without front matter.
+/// One human task file (`issues/human/<slug>.md`): the front matter's
+/// `added` (a `YYYY-MM-DD` date), `unblocks` and `runbook` give its age,
+/// what it unblocks and its runbook. The text is the body's
+/// `## Requirement` section, and `why` its `## Why it can't be automated`
+/// section (ISS-004 in `standards/scripts/issues.sh`); a body without them
+/// is all text. `None` without front matter.
 pub fn human_issue_file(file: &str, contents: &str) -> Option<HumanIssue> {
-    let FrontMatter {
-        fields,
-        body: text,
-        line,
-    } = front_matter(contents)?;
+    let FrontMatter { fields, body, line } = front_matter(contents)?;
+    let (text, why) = human_sections(&body);
     Some(HumanIssue {
         text,
         file: file.to_owned(),
@@ -386,7 +386,27 @@ pub fn human_issue_file(file: &str, contents: &str) -> Option<HumanIssue> {
             .and_then(leading_date)
             .map(str::to_owned),
         unblocks: field(&fields, "unblocks").map(|u| u.trim_end_matches('.').to_owned()),
+        why,
+        runbook: field(&fields, "runbook").map(str::to_owned),
     })
+}
+
+/// Splits a human task's body (words joined by spaces) into its
+/// requirement and why sections; the `## Runbook` section is dropped, since
+/// the `runbook` field gives the link.
+fn human_sections(body: &str) -> (String, Option<String>) {
+    const REQUIREMENT: &str = "## Requirement";
+    const WHY: &str = "## Why it can't be automated";
+    const RUNBOOK: &str = "## Runbook";
+    let Some(rest) = body.strip_prefix(REQUIREMENT) else {
+        return (body.to_owned(), None);
+    };
+    let (rest, _) = rest.split_once(RUNBOOK).unwrap_or((rest, ""));
+    let (text, why) = match rest.split_once(WHY) {
+        Some((text, why)) => (text, Some(why.trim().to_owned())),
+        None => (rest, None),
+    };
+    (text.trim().to_owned(), why.filter(|w| !w.is_empty()))
 }
 
 /// A `YYYY-MM-DD` date at the start of `s`.
@@ -627,9 +647,25 @@ mod tests {
         assert_eq!(bare.added, None);
         assert_eq!(bare.unblocks, None);
 
+        assert_eq!(bare.why, None);
+        assert_eq!(bare.runbook, None);
+
         assert_eq!(
             human_issue_file("issues/human/x.md", "No front matter.\n"),
             None
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reads_a_human_issue_with_its_runbook() -> Result<(), String> {
+        let contents = "---\nadded: 2026-11-27\nrunbook: standards/docs/runbooks/x.md\n---\n\n## Requirement\n\nMake the\ntoken.\n\n## Why it can't be automated\n\nNo API.\n\n## Runbook\n\n[Make the token](../../standards/docs/runbooks/x.md)\n";
+        let issue = human_issue_file("issues/human/x.md", contents).ok_or("no issue")?;
+        assert_eq!(issue.text, "Make the token.");
+        assert_eq!(issue.why.as_deref(), Some("No API."));
+        assert_eq!(
+            issue.runbook.as_deref(),
+            Some("standards/docs/runbooks/x.md")
         );
         Ok(())
     }
