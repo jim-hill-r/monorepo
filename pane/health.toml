@@ -1,0 +1,67 @@
+# pane's traffic-light thresholds, read by pane_snapshot and applied by the
+# health rules in pane_model::health. Starting values are from "Health: the
+# traffic lights" in docs/plans/2026-11-review-dashboard.md; tune them here
+# in a one-line PR. Every age rule means "more than N days", so a value
+# equal to the threshold is still on the healthier side. A missing key takes
+# the plan's value; an unknown key fails the build.
+
+# ---- Project signals ----
+
+[build]
+# Amber when the latest CI run on main is older than this.
+stale_after_days = 2
+
+[observability]
+# Red over this many errors a day since the last deploy.
+red_errors_per_day = 50
+# Amber when errors a day rise by at least this percent after a deploy.
+amber_rise_percent = 50
+
+[review]
+# Scorecard areas rated Poor. Amber also when the review is older than one
+# full rotation, which pane works out from the rotation itself.
+amber_poor_areas = 1
+red_poor_areas = 3
+
+[retros]
+# Amber when a retro action has been open longer than this.
+amber_action_open_days = 30
+
+[open_issues]
+# Red when a FIX has been open longer than this (by git blame date).
+red_fix_open_days = 14
+
+[standards]
+# Amber at this many open code-review findings.
+amber_review_findings = 5
+
+[pull_requests]
+# Amber when a PR touching the project is older than this.
+amber_open_days = 7
+# Red when a PR with failing checks is older than this.
+red_failing_days = 3
+
+# ---- System signals ----
+
+[nightly]
+# Amber when nightly CI or CD didn't run last night.
+stale_after_days = 1
+
+[pr_queue]
+amber_oldest_days = 7
+amber_open_count = 15
+red_oldest_days = 30
+
+[human_queue]
+amber_oldest_days = 14
+red_oldest_days = 30
+
+[agent_tasks]
+# Amber when PR triage has been quiet longer than this.
+amber_triage_quiet_days = 1
+# Red when every agent task has been quiet longer than this.
+red_quiet_days = 3
+
+[review_rotation]
+amber_after_days = 8
+red_after_days = 15
