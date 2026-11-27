@@ -42,6 +42,10 @@ vulnerability is in the root [SECURITY.md](../../SECURITY.md).
 | SEC-003 | A `Cargo.lock` has a RustSec advisory (vulnerable, unsound, yanked, or an unmaintained direct dependency) or a crate from a source other than crates.io or this repo. Config: [`standards/deny.toml`](../deny.toml), or a project's own `deny.toml`. Licences are not checked yet. | The hooks and PR CI (**Dependency audit**) for the lockfiles a change touches, and nightly over every lockfile (`all-dependency-audit.yml`). All through [`standards/scripts/deps-check.sh`](../scripts/deps-check.sh). | Phase 1, as a warning |
 | SEC-004 | A `package-lock.json` has a high or critical advisory in a production dependency (`npm audit --omit=dev --audit-level=high`). | Same as SEC-003. | Phase 1, as a warning |
 
+CodeQL scans our own code (not dependencies): JavaScript/TypeScript and
+GitHub Actions on every PR, and Rust weekly, in
+`.github/workflows/all-codeql.yml` ([decision 0008](decisions/0008-codeql-rust-weekly.md)).
+
 SEC-005 (zizmor) comes next, and SEC-003 to SEC-005 become errors in phase
 4; see the plan.
 

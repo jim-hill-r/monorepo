@@ -1,27 +1,28 @@
 ---
 name: All CodeQL Security Scanning
 
-# This workflow replaces GitHub's default CodeQL setup to exclude Rust scanning.
-# Rust analysis takes ~26 minutes per scan, which is impractical for this monorepo.
+# Advanced CodeQL setup (decision 0008). GitHub's default setup would scan
+# Rust on every PR, which took about 26 minutes here (measured 2026-01, PR
+# #382), so this workflow splits the languages by cost:
 #
-# Languages scanned:
-# - JavaScript/TypeScript (~1 minute)
-# - Actions (~40 seconds)
+# - JavaScript/TypeScript (~1 minute) and Actions (~40 seconds) run on every
+#   PR, every push to main and weekly.
+# - Rust (CodeQL build-mode none, ~26 minutes) runs only weekly and by hand,
+#   so PRs stay fast. Its alerts show in the Security tab like the others.
 #
-# Rust is excluded because:
-# - Takes ~26 minutes per scan
-# - Monorepo has many Rust projects
-# - Most PRs don't modify all Rust code
-# - Rust security is checked by clippy in `mise run ci`
+# PR-time Rust checks are clippy (`mise run ci`) and cargo-deny (SEC-003,
+# standards/docs/security.md). Public repo: CodeQL and Actions minutes are
+# free.
 
-on:
+'on':
   push:
     branches: [main]
   pull_request:
     branches: [main]
   schedule:
-    # Run weekly on Sundays at 2 AM UTC
+    # Sundays at 2 AM UTC
     - cron: '0 2 * * 0'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,16 +33,19 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     strategy:
       fail-fast: false
       matrix:
-        # Only scan JavaScript/TypeScript and Actions, NOT Rust
+        # Fast languages only; Rust is the weekly job below.
         language: ['javascript-typescript', 'actions']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -55,3 +59,27 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
+
+  # Rust: weekly and by hand only (decision 0008).
+  analyze-rust:
+    name: Analyze (rust)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: rust
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:rust"

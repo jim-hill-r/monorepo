@@ -145,62 +145,28 @@ commit within a week.
 
 Tests: `monorepo/workflow_tests/tests/free_tier_tests.rs`.
 
-## codeql.yml
+## all-codeql.yml
 
-This workflow runs CodeQL security scanning on the codebase, analyzing JavaScript/TypeScript and GitHub Actions workflows but **not Rust**.
+Advanced CodeQL setup ([decision 0008](../../standards/docs/decisions/0008-codeql-rust-weekly.md)),
+which replaces GitHub's default setup:
 
-### Why Rust is Excluded
+| Language | When | Time |
+| --- | --- | --- |
+| JavaScript/TypeScript | every PR, every push to `main`, weekly | about 1 minute |
+| GitHub Actions | every PR, every push to `main`, weekly | about 40 seconds |
+| Rust (`build-mode: none`) | weekly (Sundays 2 AM UTC) and by hand (`workflow_dispatch`) | about 26 minutes |
 
-- **Performance**: Rust CodeQL analysis takes ~26 minutes per scan
-- **Scope**: The monorepo contains ~20+ Rust projects
-- **Efficiency**: Most PRs don't modify all Rust code
-- **Alternative**: Rust security is checked by `clippy` in `mise run ci`
+Rust stays off PRs because a whole-repo Rust scan took about 26 minutes
+(PR #382, 2026-01), and the merge rule waits for every check. On PRs, Rust
+is covered by clippy (`mise run ci`) and cargo-deny (SEC-003 in
+[standards/docs/security.md](../../standards/docs/security.md)). All results
+go to the repository's Security tab.
 
-### How It Works
+Default setup must stay **off** in Settings > Code security while this file
+exists: GitHub runs only one of the two. The workflow needs `contents: read`,
+`security-events: write` (to upload results) and `actions: read`.
 
-1. **Trigger**: The workflow runs on:
-   - Push to `main` branch
-   - Pull requests to `main` branch
-   - Weekly schedule (Sundays at 2 AM UTC)
-
-2. **Language Scanning**: 
-   - **JavaScript/TypeScript**: ~1 minute scan time
-   - **GitHub Actions**: ~40 seconds scan time
-   - **Rust**: Excluded (would take ~26 minutes)
-
-3. **Analysis**:
-   - Uses GitHub's CodeQL action
-   - Automatically builds the code (autobuild)
-   - Uploads results to GitHub Security tab
-
-### Relationship to GitHub's Default CodeQL
-
-This custom workflow **replaces** GitHub's default CodeQL setup. When a custom `.github/workflows/codeql.yml` exists:
-- GitHub's automatic default CodeQL is disabled
-- This custom workflow takes over
-- You have full control over which languages are scanned
-
-### Re-enabling Rust Scanning
-
-If Rust security scanning is needed:
-
-**Option 1: Enable in this workflow**
-- Edit `.github/workflows/codeql.yml`
-- Add `'rust'` to the `matrix.language` array
-- Note: This will add ~26 minutes to each PR/push
-
-**Option 2: Create a separate scheduled workflow**
-- Create a new workflow that only runs weekly
-- Only scans Rust
-- Doesn't block PRs with long scan times
-
-### Permissions
-
-The workflow requires:
-- `contents: read` - To checkout the repository
-- `security-events: write` - To upload CodeQL results
-- `actions: read` - To read workflow information
-
+Tests: `monorepo/workflow_tests/tests/codeql_workflow_tests.rs`.
 
 ## all-delete-branches.yml
 

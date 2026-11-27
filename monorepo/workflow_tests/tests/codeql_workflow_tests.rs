@@ -74,11 +74,38 @@ fn test_codeql_workflow_excludes_rust() {
         .any(|lang| lang.as_str() == Some("actions"));
     assert!(has_actions, "CodeQL workflow should include actions");
 
-    // Should NOT include rust
+    // Should NOT include rust: it runs only in the weekly job (decision 0008)
     let has_rust = languages.iter().any(|lang| lang.as_str() == Some("rust"));
     assert!(
         !has_rust,
-        "CodeQL workflow should NOT include rust (takes ~26 minutes)"
+        "PR CodeQL should NOT include rust (takes ~26 minutes); it is weekly"
+    );
+}
+
+#[test]
+fn test_codeql_rust_runs_weekly_and_by_hand_only() {
+    let content =
+        fs::read_to_string(get_codeql_workflow_path()).expect("Failed to read workflow file");
+    let parsed: serde_yaml::Value =
+        serde_yaml::from_str(&content).expect("Failed to parse workflow YAML");
+    let job = &parsed["jobs"]["analyze-rust"];
+    let condition = job["if"].as_str().unwrap_or_default();
+    assert!(
+        condition.contains("schedule") && condition.contains("workflow_dispatch"),
+        "the Rust scan should run only on the schedule or by hand, got {condition:?}"
+    );
+    assert!(
+        !condition.contains("pull_request"),
+        "the Rust scan must not run on PRs"
+    );
+    let steps = serde_yaml::to_string(&job["steps"]).unwrap_or_default();
+    assert!(steps.contains("languages: rust"), "the job scans Rust");
+    assert!(steps.contains("build-mode: none"), "Rust needs no build");
+    assert!(
+        parsed["on"]
+            .as_mapping()
+            .is_some_and(|on| on.contains_key("workflow_dispatch")),
+        "the Rust scan can be run by hand"
     );
 }
 
