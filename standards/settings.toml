@@ -183,8 +183,8 @@ every = "30d"
 id = "squarespace-billing"
 vendor = "Squarespace"
 where = "account.squarespace.com > Billing"
-expect = "Nothing the monorepo uses is billed: no new paid plan, domain or add-on since the last check. Your own existing Squarespace plan isn't part of the monorepo's $0 budget."
-why = "Squarespace is an approved vendor with a $0 budget in the tech radar, and it has no billing API, so only you can check it (standards/docs/free-tiers.md#billing-checks)."
+expect = "Squarespace bills only the domain renewals you already pay for (Jim, 2026-11-27: several domains), with no new domain, paid plan or add-on since the last check, and each renewal's date and price match what the cost framework records once it tracks them."
+why = "Squarespace is an approved vendor with no billing API, so only you can check it. Its domains are real money outside the free-tier rule, and bringing them into the cost framework (docs/cost.toml and the radar budget) is being filed as separate todos (standards/docs/free-tiers.md#billing-checks)."
 every = "90d"
 
 # Read-only billing credentials for the weekly Billing check

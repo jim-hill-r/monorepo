@@ -43,8 +43,8 @@ plan, RapidAPI billing and claude.ai billing
    and no card.
 6. Claude: claude.ai > Settings > Billing: Claude Code spend this month is
    within $25 and no extra usage is on.
-7. Squarespace: account.squarespace.com > Billing shows no new paid plan,
-   domain or add-on for the monorepo since last time.
+7. Squarespace: account.squarespace.com > Billing shows only your existing
+   domain renewals, and no new domain, paid plan or add-on since last time.
 
 ## Where secrets go
 

@@ -239,7 +239,7 @@ What no API shows stays on Jim's 30-day check
 | Auth0 | The Management API has no plan, subscription or payment endpoint; plans are only on the dashboard. |
 | RapidAPI | No consumer billing API. The Zillow responses' quota headers show the plan, but polling them on a schedule would break homer's free-plan-only rule. |
 | Claude | claude.ai subscription billing has no API. |
-| Squarespace | No public API for account billing. Jim's own plan there is outside the monorepo's budget; the check is that nothing new is billed for the monorepo. |
+| Squarespace | No public API for account billing. Jim pays for several domains there (2026-11-27), so it isn't $0: the check is that only those domain renewals are billed, with nothing new. Bringing the domains into the cost framework is a separate todo. |
 | Assess and Hold vendors (Neon, Supabase, Turso, Pulumi and the rest) | We have no account, so nothing can bill. One that moves into Trial or Adopt gets a check first (RAD-007). |
 
 ## Things only Jim can check
@@ -247,8 +247,8 @@ What no API shows stays on Jim's 30-day check
 Agents can't see these billing pages. Jim checks them; open checks are
 files in the root [issues/human/](../../issues/human/):
 
-- No payment method on the Auth0 or RapidAPI accounts, nothing new billed
-  on Squarespace, no card on GitHub,
+- No payment method on the Auth0 or RapidAPI accounts, only the known
+  domain renewals billed on Squarespace, no card on GitHub,
   and GitHub's Actions budget is $0 with "stop usage" on. Cloudflare and
   PostHog only until the Billing check shows them checked.
 - The `CLOUDFLARE_API_TOKEN` secret has no Billing permission. For the

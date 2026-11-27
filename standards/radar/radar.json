@@ -695,7 +695,7 @@
     "billing": {
       "api": [],
       "human": "squarespace-billing",
-      "note": "No public API for account billing."
+      "note": "No public API for account billing. Jim pays for several domains there (2026-11-27), which the settings check confirms are the only charges until the cost framework tracks them."
     }
   },
   {

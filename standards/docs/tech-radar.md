@@ -207,7 +207,7 @@ How the billing of each vendor is checked: weekly by [billing-check.sh](../scrip
 | Claude Code | Adopt | - | `claude-code-budget` | claude.ai subscription billing has no API. |
 | Cloudflare Pages | Adopt | cloudflare | `cloudflare-billing` | One Cloudflare account: Billing Read shows its payment methods and subscriptions. Jim's yearly check is a backstop. |
 | GitHub (Actions, Dependabot, CodeQL) | Adopt | github | `github-actions-budget` | The billing usage API shows any charge this month. No API shows a personal account's card or Actions budget, so Jim checks those. |
-| Squarespace | Adopt | - | `squarespace-billing` | No public API for account billing. |
+| Squarespace | Adopt | - | `squarespace-billing` | No public API for account billing. Jim pays for several domains there (2026-11-27), which the settings check confirms are the only charges until the cost framework tracks them. |
 | Cloudflare D1 | Trial | cloudflare | `cloudflare-billing` | Same account as Pages. D1 Free has no billing. |
 | Cloudflare Workers | Trial | cloudflare | `cloudflare-billing` | Same account as Pages. The check fails on Workers Paid. |
 | PostHog | Trial | posthog | - | GET /api/billing/ with a billing:read key shows any subscription or charge. Adding a card is what starts a subscription. |

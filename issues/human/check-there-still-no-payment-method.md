@@ -5,7 +5,7 @@ runbook: standards/docs/runbooks/payment-method-check.md
 
 ## Requirement
 
-Check there is still no payment method on the GitHub, Auth0 and RapidAPI accounts, that nothing new is billed on Squarespace for the monorepo, that GitHub's Actions budget is $0 with usage stopped at the limit, and that Claude Code spend is within $25. Check Cloudflare and PostHog only while the weekly Billing check shows them as "not checked".
+Check there is still no payment method on the GitHub, Auth0 and RapidAPI accounts, that Squarespace bills only your existing domain renewals, that GitHub's Actions budget is $0 with usage stopped at the limit, and that Claude Code spend is within $25. Check Cloudflare and PostHog only while the weekly Billing check shows them as "not checked".
 
 PR #582. Keeps everything on free tiers, see standards/docs/free-tiers.md.
 
