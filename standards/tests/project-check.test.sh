@@ -98,10 +98,10 @@ r=$(new_repo pocket); mkdir -p "$r/pocket"; echo '[tools]' >"$r/pocket/mise.toml
 expect "a name that only starts with poc is not a PoC" "$r" 0 "" "NAM-004"
 
 r=$(new_repo doc1); rm "$r/app/README.md"; add_all "$r"
-expect "no README.md is a warning" "$r" 0 "warning[DOC-001] app has no README.md"
+expect "no README.md is an error" "$r" 1 "error[DOC-001] app has no README.md"
 
 r=$(new_repo doc2); echo 'No heading here.' >"$r/app/README.md"; add_all "$r"
-expect "README.md without the project heading" "$r" 0 "warning[DOC-002] app/README.md has no '# app' heading"
+expect "README.md without the project heading" "$r" 1 "error[DOC-002] app/README.md has no '# app' heading"
 
 r=$(new_repo doc2dir); add_all "$r"
 expect "a heading with the directory name is enough" "$r" 0 "" "DOC-002"
@@ -109,24 +109,36 @@ expect "a heading with the directory name is enough" "$r" 0 "" "DOC-002"
 r=$(new_repo doc2path); printf '# app/web\n\nWhat it is.\n' >"$r/app/web/README.md"; add_all "$r"
 expect "a heading with the project's path is enough" "$r" 0 "" "DOC-002"
 
+r=$(new_repo doc2spaces); mkdir -p "$r/psy_ents"; echo '[tools]' >"$r/psy_ents/mise.toml"; docs "$r/psy_ents" "Psy Ents"; add_all "$r"
+expect "a heading with spaces for underscores is enough" "$r" 0 "" "DOC-002"
+
+r=$(new_repo held); mkdir -p "$r/issues" "$r/old/sub"; echo '[tools]' >"$r/old/mise.toml"; echo '[tools]' >"$r/old/sub/mise.toml"
+printf '[package]\nname = "old"\n' >"$r/old/Cargo.toml"
+printf '# Priority Projects\n- app\n\n# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/issues/README.md"; add_all "$r"
+expect "on hold projects are exempt from DOC and LIN" "$r" 0 "" "old"
+
+r=$(new_repo notheld); mkdir -p "$r/issues"; rm "$r/tool/CONTRIBUTING.md"
+printf '# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/issues/README.md"; add_all "$r"
+expect "only the On Hold list exempts a project" "$r" 1 "error[DOC-003] tool has no CONTRIBUTING.md"
+
 r=$(new_repo doc3); rm "$r/tool/CONTRIBUTING.md"; add_all "$r"
-expect "no CONTRIBUTING.md is a warning" "$r" 0 "warning[DOC-003] tool has no CONTRIBUTING.md"
+expect "no CONTRIBUTING.md is an error" "$r" 1 "error[DOC-003] tool has no CONTRIBUTING.md"
 
 r=$(new_repo doc4); echo '# Contributing' >"$r/app/CONTRIBUTING.md"; add_all "$r"
-expect "CONTRIBUTING.md without Getting Started" "$r" 0 "warning[DOC-004] app/CONTRIBUTING.md has no 'Getting Started' heading"
+expect "CONTRIBUTING.md without Getting Started" "$r" 1 "error[DOC-004] app/CONTRIBUTING.md has no 'Getting Started' heading"
 
 r=$(new_repo lin1); sed -i '/^unwrap_used/d' "$r/app/Cargo.toml"; add_all "$r"
-expect "missing unwrap_used" "$r" 0 "warning[LIN-001] app/Cargo.toml: [lints.clippy] is missing unwrap_used = \"warn\""
+expect "missing unwrap_used" "$r" 1 "error[LIN-001] app/Cargo.toml: [lints.clippy] is missing unwrap_used = \"warn\""
 
 r=$(new_repo lin1allow); sed -i 's/^unwrap_used = "warn"/unwrap_used = "allow"/' "$r/app/Cargo.toml"; add_all "$r"
-expect "unwrap_used allowed is too weak" "$r" 0 "warning[LIN-001] app/Cargo.toml"
+expect "unwrap_used allowed is too weak" "$r" 1 "error[LIN-001] app/Cargo.toml"
 
 r=$(new_repo lin1ws); sed -i '/^expect_used/d' "$r/tool/Cargo.toml"; add_all "$r"
-expect "workspace missing expect_used" "$r" 0 "warning[LIN-001] tool/cli/Cargo.toml: [workspace.lints.clippy] in tool/Cargo.toml is missing expect_used"
+expect "workspace missing expect_used" "$r" 1 "error[LIN-001] tool/cli/Cargo.toml: [workspace.lints.clippy] in tool/Cargo.toml is missing expect_used"
 
 r=$(new_repo lin1nows); mkdir -p "$r/lone"; echo '[tools]' >"$r/lone/mise.toml"; docs "$r/lone" lone
 printf '[package]\nname = "lone"\n\n[lints]\nworkspace = true\n' >"$r/lone/Cargo.toml"; add_all "$r"
-expect "inherits lints with no workspace" "$r" 0 "warning[LIN-001] lone/Cargo.toml inherits workspace lints but no workspace Cargo.toml was found"
+expect "inherits lints with no workspace" "$r" 1 "error[LIN-001] lone/Cargo.toml inherits workspace lints but no workspace Cargo.toml was found"
 
 r=$(new_repo lin1root); mkdir -p "$r/both"; echo '[tools]' >"$r/both/mise.toml"; docs "$r/both" both
 cat >"$r/both/Cargo.toml" <<'TOML'
@@ -149,7 +161,7 @@ add_all "$r"
 expect "a package that is its own workspace root" "$r" 0 "" "LIN-"
 
 r=$(new_repo lin2); sed -i 's/unsafe_code = "forbid"/unsafe_code = "deny"/' "$r/app/Cargo.toml"; add_all "$r"
-expect "unsafe_code deny without a reason" "$r" 0 "warning[LIN-002] app/Cargo.toml: [lints.rust] is missing unsafe_code = \"forbid\""
+expect "unsafe_code deny without a reason" "$r" 1 "error[LIN-002] app/Cargo.toml: [lints.rust] is missing unsafe_code = \"forbid\""
 
 r=$(new_repo lin2why); sed -i 's/unsafe_code = "forbid"/# deny, not forbid: one #[unsafe(no_mangle)] entry point.\nunsafe_code = "deny"/' "$r/app/Cargo.toml"; add_all "$r"
 expect "unsafe_code deny with a reason" "$r" 0 "" "LIN-002"

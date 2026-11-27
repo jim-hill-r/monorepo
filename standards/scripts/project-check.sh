@@ -11,7 +11,8 @@
 #            or proof) is named poc_<name>. standards/docs/naming.md.
 #   DOC-001  A project has a README.md.
 #   DOC-002  Its README.md has a heading with the project's name: its package
-#            name, its directory name or its path (bear_down/cloudflare).
+#            name, its directory name or its path (bear_down/cloudflare), or
+#            the name with spaces for "_" and "-" (psy_ents -> Psy Ents).
 #   DOC-003  A project has a CONTRIBUTING.md.
 #   DOC-004  Its CONTRIBUTING.md has a "Getting Started" heading.
 #            standards/docs/documentation.md.
@@ -23,16 +24,16 @@
 #            above says why the package needs its one allowed unsafe item.
 #            standards/docs/rust.md.
 #
-# A project is a directory with a mise.toml (not the repo root). NAM-* are
-# errors; DOC-* and LIN-* are warnings until every project passes them, so
-# they never fail the audit yet. Exits non-zero on any error.
+# A project is a directory with a mise.toml (not the repo root). Every check
+# is an error. Projects under the "# On Hold Projects" list in issues/README.md
+# are exempt from DOC-* and LIN-* until they come back off hold. Exits
+# non-zero on any error.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
 errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
-warn() { echo "warning[$1] $2"; }
 
 # package_name DIR: the Cargo.toml [package] name, else the package.json name,
 # else nothing.
@@ -108,6 +109,23 @@ level_ok() {
 
 projects=$(git ls-files -- '*/mise.toml' | xargs -r -n1 dirname | sort -u)
 
+# The on hold projects: the "- name" lines under "# On Hold Projects".
+on_hold=""
+if [ -f issues/README.md ]; then
+  on_hold=$(awk '
+    /^#/ { in_list = ($0 ~ /^#[[:space:]]+On Hold Projects[[:space:]]*$/); next }
+    in_list && /^[[:space:]]*-[[:space:]]+/ { sub(/^[[:space:]]*-[[:space:]]+/, ""); sub(/[[:space:]]+$/, ""); print }
+  ' issues/README.md)
+fi
+# held PATH: PATH is in, or is, an on hold project.
+held() {
+  local p
+  for p in $on_hold; do
+    case "$1" in "$p" | "$p"/*) return 0 ;; esac
+  done
+  return 1
+}
+
 for d in $projects; do
   name=$(package_name "$d")
   base=$(basename "$d")
@@ -120,27 +138,29 @@ for d in $projects; do
     err NAM-004 "$d: proof of concept project '${name:-$base}' must be named poc_<name>"
   fi
 
+  held "$d" && continue
   if [ ! -f "$d/README.md" ]; then
-    warn DOC-001 "$d has no README.md"
+    err DOC-001 "$d has no README.md"
   elif ! has_heading "$d/README.md" "${name:-$base}" && ! has_heading "$d/README.md" "$base" &&
-    ! has_heading "$d/README.md" "$d"; then
-    warn DOC-002 "$d/README.md has no '# ${name:-$base}' heading"
+    ! has_heading "$d/README.md" "$d" && ! has_heading "$d/README.md" "$(tr '_-' '  ' <<<"${name:-$base}")"; then
+    err DOC-002 "$d/README.md has no '# ${name:-$base}' heading"
   fi
   if [ ! -f "$d/CONTRIBUTING.md" ]; then
-    warn DOC-003 "$d has no CONTRIBUTING.md"
+    err DOC-003 "$d has no CONTRIBUTING.md"
   elif ! has_heading "$d/CONTRIBUTING.md" "Getting Started"; then
-    warn DOC-004 "$d/CONTRIBUTING.md has no 'Getting Started' heading"
+    err DOC-004 "$d/CONTRIBUTING.md has no 'Getting Started' heading"
   fi
 done
 
 for f in $(git ls-files -- 'Cargo.toml' '*/Cargo.toml'); do
   grep -q '^\[package\]' "$f" || continue
+  held "$f" && continue
   own=$(lints "$f")
   sec_clippy=lints.clippy sec_rust=lints.rust src=$f where=""
   if grep -qx 'lints workspace true' <<<"$own"; then
     src=$(workspace_of "$f")
     if [ -z "$src" ]; then
-      warn LIN-001 "$f inherits workspace lints but no workspace Cargo.toml was found"
+      err LIN-001 "$f inherits workspace lints but no workspace Cargo.toml was found"
       continue
     fi
     own=$(lints "$src")
@@ -152,7 +172,7 @@ for f in $(git ls-files -- 'Cargo.toml' '*/Cargo.toml'); do
   level_ok "$(level "$sec_clippy" unwrap_used)" warn || missing+=('unwrap_used = "warn"')
   level_ok "$(level "$sec_clippy" expect_used)" warn || missing+=('expect_used = "warn"')
   if [ "${#missing[@]}" -gt 0 ]; then
-    warn LIN-001 "$f: [$sec_clippy]$where is missing $(printf '%s, ' "${missing[@]}" | sed 's/, $//')"
+    err LIN-001 "$f: [$sec_clippy]$where is missing $(printf '%s, ' "${missing[@]}" | sed 's/, $//')"
   fi
   # deny, not forbid, is allowed when a comment just above it says why (the
   # one #[unsafe(...)] a platform entry point or a JIT call needs).
@@ -162,7 +182,7 @@ for f in $(git ls-files -- 'Cargo.toml' '*/Cargo.toml'); do
     unsafe_level=forbid
   fi
   level_ok "$unsafe_level" forbid ||
-    warn LIN-002 "$f: [$sec_rust]$where is missing unsafe_code = \"forbid\""
+    err LIN-002 "$f: [$sec_rust]$where is missing unsafe_code = \"forbid\""
 done
 
 [ "$errors" -eq 0 ]
