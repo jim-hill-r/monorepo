@@ -55,6 +55,7 @@ config_roots = [
   "standards",
   "starcraft",
   "telemetry",
+  "threat",
   "tofu_state",
 ]
 

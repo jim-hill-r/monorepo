@@ -12,7 +12,7 @@ GitHub for free and add no workflow runs, so they cost $0. See
 
 | Area | Status | Runs | Checks |
 | --- | --- | --- | --- |
-| Main CI/CD | [![Main CI/CD](https://github.com/jimhillr/monorepo/actions/workflows/push-main.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/push-main.yml) | Every push to `main` | Repo audit (`mise run //:audit`: standards, issue files, human-task runbooks, cost check, eval check, security rules), then CI, evals and deploy for each changed project |
+| Main CI/CD | [![Main CI/CD](https://github.com/jimhillr/monorepo/actions/workflows/push-main.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/push-main.yml) | Every push to `main` | Repo audit (`mise run //:audit`: standards, issue files, human-task runbooks, cost check, eval check, security rules, threat check), then CI, evals and deploy for each changed project |
 | Nightly CI | [![Nightly CI](https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml) | Daily | Audit, CI and evals in every project, so toolchain and dependency drift shows within a day |
 | Nightly CD | [![Nightly CD](https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml) | Daily | CI and deploy of every site, so expired secrets and broken deploys show |
 | Nightly downloads | [![Nightly downloads](https://github.com/jimhillr/monorepo/actions/workflows/nightly-downloads.yml/badge.svg?branch=main)](https://github.com/jimhillr/monorepo/actions/workflows/nightly-downloads.yml?query=branch%3Amain) | Daily | macOS and Android builds of the games |

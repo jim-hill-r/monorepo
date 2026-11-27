@@ -14,6 +14,7 @@
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
+#   THR-*    Each project's docs/threat.toml (threat-check.sh); warnings only for now.
 #   SEC-*    Secret files ignored and Dependabot covering every lockfile
 #            (security-check.sh, standards/docs/security.md).
 #   DS-*     Projects that adopted the design system use its tokens, not raw
@@ -73,6 +74,9 @@ bash standards/scripts/evals-check.sh
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.
 bash standards/scripts/cost-check.sh
+
+# THR-*: per-project threat models against the security rules. Warnings only.
+bash standards/scripts/threat-check.sh
 
 # SEC-002, SEC-006: repo-wide security guards (see standards/docs/security.md).
 bash standards/scripts/security-check.sh || errors=$((errors + 1))
