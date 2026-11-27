@@ -9,8 +9,9 @@ gaps. It doesn't replace them: the [cost check](2026-11-cost-check.md)
 (limits, budgets, guards), the weekly usage run, [repo health](../repo-health.md)
 and PR triage, the weekly human issues digest and its settings checks
 (`standards/settings.toml`), and the billing checks that the free-tier
-payment check work is adding ("Billing checks" in free-tiers.md, the
-`billing` job in `all-free-tier-usage.yml`). This plan doesn't design those
+payment check work is adding ([Billing checks](../free-tiers.md#billing-checks):
+`standards/scripts/billing-check.sh`, run by the `billing` job in
+`all-free-tier-usage.yml`, for Cloudflare, GitHub and PostHog). This plan doesn't design those
 billing checks; it says where their result goes.
 
 ## Goal
@@ -89,8 +90,8 @@ automation from flipping it; "Detect" is how we'd learn someone did.
 | Payment method on Cloudflare | Tokens have no Billing write (free-tiers.md rule 1) | Billing check (`payment-methods`) | weekly |
 | Cloudflare Workers Paid or any paid subscription | FT-005 rejects paid-only settings | Billing check (`subscriptions`) | weekly |
 | R2 enabled | radar Hold, budget 0, FT checks | Billing check (`subscriptions`), and phase 1 reads `r2/buckets` | weekly |
-| Payment method or subscription on PostHog | rule 1 | Billing check if Jim adds the key, else Jim's check | weekly or 30 days |
-| GitHub Actions budget above $0, or a card | rule 1 | GitHub net usage via billing check if Jim adds the PAT, else Jim's check | weekly or 30 days |
+| Payment method or subscription on PostHog | rule 1 | Billing check (`billing`, PostHog billing API) | weekly |
+| GitHub Actions budget above $0, or a card | rule 1 | Billing check reads the month's net usage; the card and the budget setting have no API, so Jim's check | weekly, and 30 days |
 | Repo made private (Actions minutes start counting) | needs a decision record | **phase 1:** the usage run reads `private` from the repo API | daily |
 | Larger runners | FT-001 rejects them | FT-001 on every PR | every PR |
 | Auth0 card or custom domain | budget 0 for custom domains | Jim's check | 30 days |
