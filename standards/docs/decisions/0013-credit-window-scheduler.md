@@ -90,7 +90,8 @@ hours until the five-hour reset, `d` the days until the seven-day reset,
 threads: every thread not yet resolved, blocked ones included, which is
 what the 30-thread cap counts.
 
-1. **Stop.** If `isUsingOverage` is true or any status is not `allowed`,
+1. **Stop.** If `isUsingOverage` is true or any status is `rejected`
+   (`allowed_warning`, the 90% notice, is not a stop),
    start nothing and tell Jim (the overage rule in AGENTS.md wins).
 2. **Burn rate.** `r` = the rise in `u5` per hour between the newest event
    and one at least 10 minutes older in the same window (same `resetsAt`).
