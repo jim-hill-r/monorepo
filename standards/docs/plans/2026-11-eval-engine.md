@@ -13,6 +13,14 @@ items are issue files in the root [issues/](../../../issues/) with
 `epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
 pane pages, one group per phase below.
 
+> **Update, 2026-11-27.** Jim: "The eval process is a continuous
+> improvement process and should not be considered a one off project." The
+> phases below are the order the engine's capabilities arrive; keeping
+> every requirement green and growing coverage through issue files runs
+> continuously. See "Continuous improvement" in
+> [evals.md](../evals.md#continuous-improvement) and the
+> [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
+
 ## Goal
 
 For every project, at any time, answer one question with evidence: **does

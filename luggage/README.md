@@ -1,5 +1,7 @@
 # Luggage
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/luggage.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Portable Data Platform
 (Private, Personal, Portable)
 

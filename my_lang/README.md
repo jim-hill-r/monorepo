@@ -1,5 +1,7 @@
 # my_lang
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/my_lang.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A programming language implementation that compiles to LLVM IR.
 
 ## Overview
