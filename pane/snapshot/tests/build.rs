@@ -479,6 +479,21 @@ fn reads_cost_files_budgets_and_limits() -> TestResult {
     assert_eq!(app.services[0].usage[0].expected, 2);
     // $12 a year is $1 a month; $5 of revenue in November.
     assert_eq!((app.direct_cost_cents, app.revenue_cents), (100, 500));
+    // Each entry knows the line of its header, for links.
+    assert_eq!(app.services[0].line, 4);
+    assert_eq!(app.costs[0].line, 11);
+    assert_eq!(app.revenue[0].line, 20);
+
+    // Twelve months of money for the top-level projects; outside git
+    // nothing is split.
+    assert!(!costs.history_from_git);
+    assert_eq!(costs.history.len(), 12);
+    let nov = costs.history.last().ok_or("no history")?;
+    assert_eq!(nov.month, "2026-11");
+    let rows: Vec<_> = nov.projects.iter().map(|m| m.project.as_str()).collect();
+    assert_eq!(rows, ["app", "tool"]);
+    assert_eq!(nov.shared_cents, 3000);
+    assert_eq!(nov.totals().shared_cost_cents, 0);
 
     let pages = &costs.account[0];
     assert_eq!(pages.key, "pages_projects");
@@ -569,5 +584,34 @@ fn the_real_repo_cost_files_build() -> TestResult {
     assert!(costs.projects.iter().any(|p| p.project == "pane"));
     assert!(costs.budgets.iter().any(|b| b.vendor == "Claude Code"));
     assert!(costs.account.iter().any(|a| a.key == "pages_projects"));
+    Ok(())
+}
+
+#[test]
+fn splits_shared_costs_by_merged_prs_from_git() -> TestResult {
+    let repo_dir = FixtureRepo::new("money_git")?;
+    fs::remove_dir_all(repo_dir.0.join(".git"))?;
+    git(&repo_dir.0, &["init", "-q"])?;
+    git(&repo_dir.0, &["add", "-A"])?;
+    git(&repo_dir.0, &["commit", "-q", "-m", "fixture (#1)"])?;
+    fs::write(repo_dir.0.join("app/README.md"), "# App\n\nChanged.\n")?;
+    git(&repo_dir.0, &["commit", "-q", "-am", "app: change (#2)"])?;
+    fs::write(repo_dir.0.join("tool/README.md"), "# Tool\n\nChanged.\n")?;
+    git(
+        &repo_dir.0,
+        &["commit", "-q", "-am", "a direct push, not a PR"],
+    )?;
+
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
+    assert!(s.costs.history_from_git);
+    let nov = s.costs.history.last().ok_or("no history")?;
+    // PR 1 touched app and tool (half each), PR 2 only app: app 1.5 of 2.
+    assert_eq!(nov.merged_prs, 2);
+    assert_eq!(nov.project("app").map(|m| m.shared_cost_cents), Some(2250));
+    assert_eq!(nov.project("tool").map(|m| m.shared_cost_cents), Some(750));
+    assert_eq!(nov.totals().shared_cost_cents, 3000);
+    // October had no PRs.
+    let oct = &s.costs.history[10];
+    assert_eq!((oct.month.as_str(), oct.merged_prs), ("2026-10", 0));
     Ok(())
 }

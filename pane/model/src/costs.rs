@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 use cost_model::{CostFile, Every, LimitsFile, Month, Plan, Radar, Scope, monthly_cents};
 use serde::{Deserialize, Serialize};
 
-use crate::money::{direct_cost, monthly_revenue};
+use crate::money::{ProjectMoney, direct_cost, month_money, monthly_revenue};
 
 /// Every project's costs, and the account's, for one month.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,6 +38,56 @@ pub struct Costs {
     /// that the radar doesn't list (which `cost check` reports as COST-003).
     #[serde(default)]
     pub budgets: Vec<VendorBudget>,
+    /// Every project's money for the twelve months ending with
+    /// [`Costs::month`], oldest first, for the Money page's chart.
+    #[serde(default)]
+    pub history: Vec<MonthMoney>,
+    /// Whether the merged PRs behind each month's shared-cost split came
+    /// from git. `false` (a checkout without history) means no month split
+    /// its shared costs, so every project's share is 0.
+    #[serde(default)]
+    pub history_from_git: bool,
+}
+
+/// One month of every project's money.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MonthMoney {
+    /// `YYYY-MM`.
+    pub month: String,
+    /// The month's shared costs: every radar vendor's monthly budget, which
+    /// is what the account is allowed to spend on it (today the Claude Code
+    /// budget). The radar keeps no history, so every month uses today's.
+    pub shared_cents: u64,
+    /// How many merged PRs touched a project that month; the shared cost is
+    /// split by them ([`crate::money::split_shared_costs`]).
+    pub merged_prs: u32,
+    /// One row per project, in project order.
+    #[serde(default)]
+    pub projects: Vec<ProjectMoney>,
+}
+
+impl MonthMoney {
+    /// The month's row for `project`, if it is listed.
+    pub fn project(&self, project: &str) -> Option<&ProjectMoney> {
+        self.projects.iter().find(|m| m.project == project)
+    }
+
+    /// Revenue, direct cost, shared cost and net summed over every project.
+    pub fn totals(&self) -> ProjectMoney {
+        let sum =
+            |f: fn(&ProjectMoney) -> u64| self.projects.iter().map(f).fold(0, u64::saturating_add);
+        let revenue = sum(|m| m.revenue_cents);
+        let direct = sum(|m| m.direct_cost_cents);
+        let shared = sum(|m| m.shared_cost_cents);
+        ProjectMoney {
+            project: String::new(),
+            month: self.month.clone(),
+            revenue_cents: revenue,
+            direct_cost_cents: direct,
+            shared_cost_cents: shared,
+            net_cents: crate::money::net(revenue, direct, shared),
+        }
+    }
 }
 
 /// One project's `docs/cost.toml`.
@@ -71,6 +121,10 @@ pub struct ServiceUse {
     /// `free` or `paid`.
     pub plan: String,
     pub why: String,
+    /// The line of its `[[service]]` header in [`ProjectCosts::file`]; 0
+    /// when unknown.
+    #[serde(default)]
+    pub line: u32,
     /// Expected use of each limit, sorted by key.
     #[serde(default)]
     pub usage: Vec<Usage>,
@@ -110,6 +164,10 @@ pub struct CostLine {
     /// What it adds to [`Costs::month`]: a yearly cost spread over twelve
     /// months, a once cost only in its month.
     pub month_cents: u64,
+    /// The line of its `[[cost]]` header in [`ProjectCosts::file`]; 0 when
+    /// unknown.
+    #[serde(default)]
+    pub line: u32,
 }
 
 /// A `[[revenue]]` entry.
@@ -119,6 +177,10 @@ pub struct RevenueLine {
     pub month: String,
     pub cents: u64,
     pub source: String,
+    /// The line of its `[[revenue]]` header in [`ProjectCosts::file`]; 0
+    /// when unknown.
+    #[serde(default)]
+    pub line: u32,
 }
 
 /// An account-wide limit and what every project together expects to use.
@@ -212,6 +274,7 @@ pub fn build_costs(
                     }
                     .to_string(),
                     why: s.why.clone(),
+                    line: 0,
                     usage: s
                         .usage
                         .iter()
@@ -246,6 +309,7 @@ pub fn build_costs(
                     since: c.since.to_string(),
                     renews: c.renews.map(|d| d.format("%Y-%m-%d").to_string()),
                     month_cents: monthly_cents(c, month),
+                    line: 0,
                 })
                 .collect(),
             revenue: file
@@ -255,6 +319,7 @@ pub fn build_costs(
                     month: r.month.to_string(),
                     cents: r.cents,
                     source: r.source.clone(),
+                    line: 0,
                 })
                 .collect(),
             revenue_cents: monthly_revenue(&file.revenue, month),
@@ -345,7 +410,61 @@ pub fn build_costs(
         projects: project_costs,
         account,
         budgets,
+        history: Vec::new(),
+        history_from_git: false,
     }
+}
+
+/// The `n` months ending with `last`, oldest first.
+pub fn months_ending(last: Month, n: u32) -> Vec<Month> {
+    let index = |m: Month| i64::from(m.year) * 12 + i64::from(m.month) - 1;
+    let end = index(last);
+    (0..i64::from(n))
+        .rev()
+        .filter_map(|back| {
+            let i = end - back;
+            let year = i32::try_from(i.div_euclid(12)).ok()?;
+            let month = u32::try_from(i.rem_euclid(12) + 1).ok()?;
+            Month::new(year, month)
+        })
+        .collect()
+}
+
+/// A month's shared costs: every radar vendor's monthly budget, in cents.
+pub fn shared_cents(radar: &Radar) -> u64 {
+    radar
+        .blips
+        .iter()
+        .filter(|b| b.is_vendor())
+        .map(cost_model::Blip::budget_cents)
+        .fold(0, u64::saturating_add)
+}
+
+/// Every project's money for each of `months`.
+///
+/// `projects` lists every project, in order, with its parsed
+/// `docs/cost.toml` (`None` without one); `shared_cents` is each month's
+/// shared cost; `merged_prs` holds, per month, the projects each PR merged
+/// that month touched. A month with no entry splits nothing.
+pub fn build_history(
+    months: &[Month],
+    projects: &[(&str, Option<&CostFile>)],
+    shared_cents: u64,
+    merged_prs: &BTreeMap<Month, Vec<Vec<String>>>,
+) -> Vec<MonthMoney> {
+    months
+        .iter()
+        .map(|&month| {
+            let prs = merged_prs.get(&month).map_or(&[][..], Vec::as_slice);
+            MonthMoney {
+                month: month.to_string(),
+                shared_cents,
+                merged_prs: u32::try_from(prs.iter().filter(|p| !p.is_empty()).count())
+                    .unwrap_or(u32::MAX),
+                projects: month_money(month, projects, shared_cents, prs),
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -629,6 +748,78 @@ decision = "standards/docs/decisions/0000-example.md"
         assert_eq!(costs.account.len(), 2);
         assert!(costs.account.iter().all(|a| a.expected == 0));
         assert_eq!(costs.budgets.len(), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn months_ending_counts_back_across_years() {
+        let months: Vec<String> = months_ending(
+            Month {
+                year: 2026,
+                month: 2,
+            },
+            4,
+        )
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+        assert_eq!(months, ["2025-11", "2025-12", "2026-01", "2026-02"]);
+        assert_eq!(months_ending(nov(), 12).len(), 12);
+        assert!(months_ending(nov(), 0).is_empty());
+    }
+
+    #[test]
+    fn shared_cents_sums_vendor_budgets_only() -> TestResult {
+        // Squarespace $2 and Claude Code $25; Rust is a technology.
+        assert_eq!(shared_cents(&parse_radar(RADAR)?), 2700);
+        Ok(())
+    }
+
+    #[test]
+    fn history_splits_each_month_by_its_merged_prs() -> TestResult {
+        let site = parse_cost_file(SITE)?;
+        let oct = Month {
+            year: 2026,
+            month: 10,
+        };
+        let prs = BTreeMap::from([(
+            nov(),
+            vec![
+                vec!["site".to_string()],
+                vec!["site".to_string(), "tool".to_string()],
+                Vec::new(),
+            ],
+        )]);
+        let history = build_history(
+            &[oct, nov()],
+            &[("site", Some(&site)), ("tool", None)],
+            2000,
+            &prs,
+        );
+        assert_eq!(history.len(), 2);
+
+        // October: no merged PRs, so nothing is split.
+        assert_eq!(history[0].month, "2026-10");
+        assert_eq!(history[0].merged_prs, 0);
+        assert_eq!(history[0].totals().shared_cost_cents, 0);
+        assert_eq!(
+            history[0].project("site").map(|m| m.revenue_cents),
+            Some(50)
+        );
+
+        // November: site 1.5 of 2 PRs, tool 0.5; the repo-wide PR doesn't count.
+        let n = &history[1];
+        assert_eq!(n.merged_prs, 2);
+        assert_eq!(n.shared_cents, 2000);
+        let site_nov = n.project("site").ok_or("no site row")?;
+        assert_eq!(site_nov.shared_cost_cents, 1500);
+        assert_eq!(site_nov.direct_cost_cents, 400);
+        assert_eq!(n.project("tool").map(|m| m.shared_cost_cents), Some(500));
+        let totals = n.totals();
+        assert_eq!(totals.shared_cost_cents, 2000);
+        assert_eq!(totals.revenue_cents, 450);
+        assert_eq!(totals.net_cents, 450 - 400 - 2000);
+        assert!(n.project("nope").is_none());
         Ok(())
     }
 
