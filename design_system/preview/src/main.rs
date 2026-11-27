@@ -168,6 +168,8 @@ fn build(dir: &Path, out: &Path) -> Result<usize, String> {
         ("dist/tokens.css", "tokens.css"),
         ("dist/base.css", "base.css"),
         ("js/theme.js", "theme.js"),
+        // Cloudflare Pages reads it from the build output's root.
+        ("preview/_headers", "_headers"),
     ] {
         fs::copy(dir.join(from), out.join(to)).map_err(|e| format!("{from}: {e}"))?;
     }
@@ -227,6 +229,34 @@ mod tests {
             )
             .contains("data-a11y=\"on\"")
         );
+    }
+
+    /// The `_headers` CSP allows no inline script, so the page may only load
+    /// scripts from files.
+    #[test]
+    fn page_has_no_inline_script() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let ds = DesignSystem::load(&dir).unwrap();
+        let html = page(&ds, &[], "");
+        for tag in html.match_indices("<script").map(|(i, _)| &html[i..]) {
+            let open = &tag[..tag.find('>').unwrap()];
+            assert!(open.contains(" src=\""), "inline script: {open}");
+        }
+        assert!(!html.contains(" onclick="), "inline event handler");
+    }
+
+    #[test]
+    fn headers_file_sends_the_security_headers() {
+        let headers = include_str!("../_headers");
+        for name in [
+            "Content-Security-Policy:",
+            "frame-ancestors 'none'",
+            "X-Content-Type-Options: nosniff",
+            "Referrer-Policy:",
+            "Strict-Transport-Security:",
+        ] {
+            assert!(headers.contains(name), "{name}");
+        }
     }
 
     #[test]

@@ -233,6 +233,14 @@ why = "It can write every infra secret, so a wider install or extra permission w
 every = "90d"
 
 [[setting]]
+id = "github-app-infra-read"
+vendor = "GitHub"
+where = "github.com/settings/apps > the read-only infra app (standards/docs/runbooks/github-app-infra-read.md)"
+expect = "The read-only infra GitHub App is private to jimhillr and installed only on jimhillr/monorepo. Its only permissions are Administration (read) and Metadata (read), with no write permission. Its private key is only the repository secret GH_INFRA_READ_APP_KEY."
+why = "Every PR's code can reach its key, so a write permission would let any PR change repo settings without the second approval (decision 0010)."
+every = "90d"
+
+[[setting]]
 id = "github-agent-role"
 vendor = "GitHub"
 where = "jimhillr/monorepo > Settings > Collaborators and teams, and Rules > Rulesets"
@@ -266,6 +274,14 @@ where = "github.com/settings/apps > the infra app > Private keys"
 expect = "The app has exactly one private key, made within the last 180 days and stored as GH_INFRA_CREDENTIALS_APP_KEY in infra-credentials (standards/docs/runbooks/github-app-infra.md, Undo or rotate)."
 why = "It can write every infra secret; a key that never changes stays useful to anyone who ever copied it."
 every = "180d"
+
+[[setting]]
+id = "rotate-github-app-infra-read-key"
+vendor = "GitHub"
+where = "github.com/settings/apps > the read-only infra app > Private keys"
+expect = "The app has exactly one private key, made within the last 365 days and stored as the repository secret GH_INFRA_READ_APP_KEY (standards/docs/runbooks/github-app-infra-read.md, Undo or rotate)."
+why = "It reads repo settings for every infra plan; a key that never changes stays useful to anyone who ever copied it."
+every = "365d"
 
 [[setting]]
 id = "rotate-auth0-infra-credentials"

@@ -222,6 +222,10 @@ host = "fonts.gstatic.com"
 why = "Free web fonts."
 
 [[allow]]
+host = "registry.opentofu.org"
+why = "The OpenTofu provider registry, free and open source; infra's tofu validate fetches provider schemas from it."
+
+[[allow]]
 host = "mise.jdx.dev"
 why = "The task runner's docs and installer."
 
@@ -253,6 +257,16 @@ detector = "*"
 why = "The radar, limits and detectors name every vendor by design."
 
 [[exempt]]
+path = "standards/settings.toml"
+detector = "*"
+why = "The list of settings made by hand names each vendor's dashboard by design; it uses no service itself."
+
+[[exempt]]
+path = "standards/scripts/billing-check.sh"
+detector = "*"
+why = "The billing check reads each radar vendor's billing by design (free, read-only); the vendors are the radar's, not standards'."
+
+[[exempt]]
 path = "cost/"
 detector = "*"
 why = "The cost check's own tests use detector fixtures."
@@ -282,3 +296,8 @@ why = "FT-002 searches the workflows for a RapidAPI key."
 path = "monorepo/workflow_tests/"
 detector = "rapidapi"
 why = "Tests for the FT-002 guard."
+
+[[exempt]]
+path = "monorepo/workflow_tests/"
+detector = "auth0"
+why = "Tests that assert which Auth0 secret names the infra workflows use; infra's docs/cost.toml counts the Auth0 use."

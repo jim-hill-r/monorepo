@@ -1,7 +1,12 @@
 # Turn on GitHub code security
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/github-settings-code-security-turn-secret.md`)
+- **Status:** open (`issues/human/github-settings-code-security-turn-secret.md`),
+  for private vulnerability reporting only. Since 2026-11-27 the `github`
+  stack in `infra` manages secret scanning, push protection, Dependabot
+  alerts and Dependabot security updates, once
+  [the read-only infra GitHub App](github-app-infra-read.md) exists and
+  Jim approves its run.
 - **Time:** about 3 minutes
 - **Cost:** $0. All of these are free on a public repo.
 
@@ -15,8 +20,10 @@ security update PRs, and lets outsiders report a vulnerability privately.
 ## Why a person
 
 These are repository settings that need Admin, which `jimhillr-agt`
-doesn't have. A later `github` stack in `infra` may manage them, applied
-only in `infra-credentials`.
+doesn't have. The `github` stack in `infra` now manages all of them but
+private vulnerability reporting, which the GitHub provider (6.13.0) has no
+resource for. Doing the others by hand too is harmless: IaC then imports
+them unchanged.
 
 ## Before you start
 

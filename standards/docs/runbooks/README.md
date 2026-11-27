@@ -34,8 +34,8 @@ run book in the task."
 
 | Runbook | Kind | Issue |
 | --- | --- | --- |
-| [Turn on GitHub code security](github-code-security.md) | one-time | `github-settings-code-security-turn-secret.md` |
-| [Require CI on the main ruleset](github-ruleset-required-check.md) | one-time | `github-settings-rules-rulesets-default-ruleset.md` |
+| [Create the read-only infra GitHub App](github-app-infra-read.md) | one-time | `github-app-infra-read.md` |
+| [Turn on GitHub code security](github-code-security.md) | one-time (private vulnerability reporting only; the `github` stack does the rest) | `github-settings-code-security-turn-secret.md` |
 | [Sign up for PostHog](posthog-sign-up.md) | one-time | `create-posthog-cloud-free-plan-no.md` |
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
@@ -78,6 +78,12 @@ and apply tokens, the Auth0 read and apply apps and the Android release key.
 | [Create the Auth0 IaC applications](auth0-iac-credentials.md) | Infra Mint, `auth0` |
 | [Create the Cloudflare IaC tokens](cloudflare-iac-credentials.md) | Infra Mint, `cloudflare` |
 | [Make the OpenTofu state passwords](tofu-state-passwords.md) | Infra Mint, `state` |
+
+### Replaced by the `github` stack in `infra` (keep for a rebuild by hand)
+
+| Runbook | Now made by |
+| --- | --- |
+| [Require CI on the main ruleset](github-ruleset-required-check.md) | The `CI` ruleset in `infra/src/stacks/github.rs`, applied after Jim approves the `infra-credentials` run |
 | [Change the Cloudflare deploy token's permissions](cloudflare-deploy-token.md) | Infra Mint, `cloudflare` (`jimhillr-deploy`) |
 | [Make the Android release key](android-release-key.md) | Infra Mint, `android` |
 

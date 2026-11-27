@@ -52,8 +52,22 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      # The github stack reads with a token from the read-only infra GitHub
+      # App, minted for this run only
+      # (standards/docs/runbooks/github-app-infra-read.md).
+      - name: GitHub App token (github stack)
+        id: gh-read
+        if: matrix.stack == 'github' && vars.GH_INFRA_READ_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.GH_INFRA_READ_APP_ID }}
+          private-key: ${{ secrets.GH_INFRA_READ_APP_KEY }}
+          repositories: ${{ github.event.repository.name }}
+
       - id: ready
         name: Check the stack is set up
+        env:
+          GH_INFRA_READ_TOKEN: ${{ steps.gh-read.outputs.token }}
         run: |
           if bash scripts/tofu.sh ready "${{ matrix.stack }}" read; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -72,4 +86,6 @@ jobs:
           save-if: false
       - name: Refresh-only plan
         if: steps.ready.outputs.ready == 'true'
+        env:
+          GH_INFRA_READ_TOKEN: ${{ steps.gh-read.outputs.token }}
         run: bash scripts/tofu.sh drift "${{ matrix.stack }}"

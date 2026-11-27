@@ -1,7 +1,11 @@
 # Require CI on the main ruleset
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/github-settings-rules-rulesets-default-ruleset.md`)
+- **Status:** replaced by IaC on 2026-11-27: the `github` stack in
+  `infra` adds a `CI` ruleset on `main` that requires `CI result` from
+  GitHub Actions, beside the Default ruleset. Its apply waits for
+  [the read-only infra GitHub App](github-app-infra-read.md) and Jim's
+  approval. Keep this page for a rebuild by hand.
 - **Time:** about 3 minutes
 - **Cost:** $0
 
