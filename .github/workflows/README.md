@@ -86,8 +86,9 @@ ruleset.
 
 Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
 warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
-when its description doesn't open with a linked executive summary of at most
-75 words, after the attribution lines ("Pull request descriptions" in
+when its description is missing a section (Attention, What changed, Why,
+Cost changes, Risk changes, Details), has an unknown attention tag, or has a
+summary over its word limit ("Pull request descriptions" in
 [standards/docs/pull-requests.md](../../standards/docs/pull-requests.md)).
 Warnings only, so it never fails and CI result doesn't wait for it. It runs
 on edits, so fixing the description clears the warning without re-running

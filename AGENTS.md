@@ -43,16 +43,23 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
-- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
-  long to consume quickly. Every PR should include a short executive
-  description of what we are doing, why, and any engineering tradeoffs.
-  Keep this to 75 words. It should link to details in committed
-  docs/plans/issues." Every PR description opens, right after any required
-  attribution lines, with that summary of at most 75 words, and the details
-  live in committed files it links to, not in the description. The format
-  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
-  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
-  warns when it is missing, too long or unlinked.
+- **PR description sections (Jim, 2026-11-27).** "Every PR should have
+  these sections: 1) What changed summary (50 words) 2) Why changed
+  summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25
+  words) 5) Details (anything else agents want to include)." Above them,
+  "the top most section should be 1) Attention (list of strongly enum'ed
+  tags)", one of which is cost changed. This replaces the 75-word
+  executive summary. So after any required attribution lines, every PR
+  description has `## Attention` (the tags from `chores badges`: one
+  requirements, one cost and one threat/risk tag from a closed set), `##
+  What changed` (at most 50 words), `## Why` (at most 50), `## Cost
+  changes` and `## Risk changes` (under 25 each, `None.` when nothing
+  changes) and `## Details` (testing, review notes, links to committed
+  plans, decisions and issues). Write it with `chores pr-body`. The format
+  and tags are under "Pull request descriptions" in
+  `standards/docs/pull-requests.md` and in
+  `.github/pull_request_template.md`; the PR summary check (PR-001) warns
+  on a missing section, an unknown tag or a summary over its limit.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
@@ -303,6 +310,12 @@ and the PR must say which checks didn't run.
 - List the project's tasks: `mise tasks`
 - List the open issues: `mise run //:issues` (`-- --human` for human tasks)
 - Check the repo standards: `mise run //:audit`
+- Routine agent work (pick the next issue, write a PR description, write
+  an issue file): `cargo run --quiet --manifest-path chores/Cargo.toml --
+  <command>`; the commands are in [chores/README.md](chores/README.md).
+  When you notice routine work a script could do, add a command there
+  rather than repeating it by hand
+  ([baked skills plan](standards/docs/plans/2026-11-baked-skills.md)).
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
@@ -322,6 +335,7 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 | `code-review` | Review one project against the standards and record five TODOs. |
 | `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
+| `write-issue` | Write an issue file or a human task with its runbook through the `chores` command. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

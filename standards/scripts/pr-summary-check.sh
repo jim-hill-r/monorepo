@@ -1,57 +1,131 @@
 #!/usr/bin/env bash
-# PR-001: a pull request description opens with a short executive summary
-# (Jim, 2026-11-27): what the PR does, why, and any engineering tradeoffs,
-# in at most 75 words, linking to the committed docs, plans or issues that
-# hold the details. See "Pull request descriptions" in
-# standards/docs/pull-requests.md.
+# PR-001: a pull request description has the sections Jim asked for
+# (2026-11-27), after the attribution lines:
+#
+#   ## Attention      one bullet per tag: exactly one requirements tag, one
+#                     cost tag and one threat/risk tag, from the closed set
+#                     below (`chores badges` writes it)
+#   ## What changed   at most 50 words
+#   ## Why            at most 50 words
+#   ## Cost changes   under 25 words ("None." when nothing changes)
+#   ## Risk changes   under 25 words ("None." when nothing changes)
+#   ## Details        anything else: testing, review notes, links
+#
+# See "Pull request descriptions" in standards/docs/pull-requests.md.
+# `chores pr-body --check` applies the same rules; keep the two in step.
 #
 #   PR_BODY="$(cat body.md)" bash standards/scripts/pr-summary-check.sh
 #   bash standards/scripts/pr-summary-check.sh <body.md
 #
-# The summary is the text after the attribution lines (HTML comments and the
-# "_Requested by" line) up to the first heading or rule. A leading
-# "## Summary" heading is allowed and skipped. Link targets don't count as
-# words. Warnings only: it always exits 0, and in GitHub Actions it prints
-# ::warning annotations and writes the job summary.
+# A section runs from its heading (any level, any case) to the next heading
+# or rule. HTML comments are ignored, Markdown links count as their text,
+# and link targets and bare URLs don't count. Warnings only: it always exits
+# 0, and in GitHub Actions it prints ::warning annotations and writes the
+# job summary.
 set -uo pipefail
 
-max_words=75
+# The attention tags, by group. Keep in step with `Tag` in chores/src/badges.rs.
+requirement_tags="must-requirement-changed requirement-changed requirements-unchanged"
+cost_tags="cost-changed cost-unchanged"
+risk_tags="threat-risk-changed threat-risk-unchanged"
+
 body=${PR_BODY-$(cat)}
-body=${body//$'\r'/}
-# Drop HTML comments, including multi-line ones like the template's guidance.
-body=$(perl -0pe 's/<!--.*?-->//gs' <<<"$body")
 
-summary=$(awk '
-  !started && /^_Requested by / { next }                  # attribution line
-  !started && /^[[:space:]]*$/ { next }                   # leading blanks
-  !started && /^#+[[:space:]]+[Ss]ummary[[:space:]]*$/ { started = 1; next }
-  /^#/ || /^(---|\*\*\*|___)[[:space:]]*$/ { exit }
-  { started = 1; print }
-' <<<"$body")
-
-# Markdown links count as their text; bare URLs and link targets don't count.
-words=$(sed -E 's/\]\([^)]*\)/]/g; s#https?://[^[:space:]]+##g' <<<"$summary" | wc -w)
-words=${words// /}
+# One line per section: name, max words, found (0/1), words, placeholder (0/1).
+report=$(PR_BODY=$body perl -e '
+  my $b = $ENV{PR_BODY};
+  $b =~ s/\r//g;
+  $b =~ s/<!--.*?-->//gs;
+  my @sections = (["Attention", 0], ["What changed", 50], ["Why", 50], ["Cost changes", 24],
+                  ["Risk changes", 24], ["Details", 0]);
+  my (%found, %text, $cur);
+  for my $line (split /\n/, $b) {
+    if ($line =~ /^#+\s+(.*?)\s*$/) {
+      my $h = lc $1;
+      $cur = undef;
+      for my $s (@sections) {
+        if ($h eq lc $s->[0]) { $cur = $s->[0]; $found{$cur} = 1; $text{$cur} //= ""; }
+      }
+      next;
+    }
+    if ($line =~ /^(---|\*\*\*|___)\s*$/) { $cur = undef; next; }
+    $text{$cur} .= "$line\n" if defined $cur;
+  }
+  for my $s (@sections) {
+    my ($name, $max) = @$s;
+    my $t = $text{$name} // "";
+    (my $w = $t) =~ s/\]\([^)]*\)/]/g;
+    $w =~ s{https?://\S+}{}g;
+    my @words = split " ", $w;
+    (my $trim = $t) =~ s/^\s+|\s+$//g;
+    my $placeholder = ($trim =~ /^<.*>$/s) ? 1 : 0;
+    printf "%s\t%d\t%d\t%d\t%d\n", $name, $max, $found{$name} ? 1 : 0,
+      scalar @words, $placeholder;
+  }
+  # Attention bullets: the first word after "- " with a letter in it.
+  for my $line (split /\n/, $text{"Attention"} // "") {
+    next unless $line =~ /^\s*- (.*)$/;
+    my ($tag) = grep { /[A-Za-z0-9]/ } split " ", $1;
+    $tag //= "";
+    $tag =~ s/:$//; $tag =~ s/^`+|`+$//g;
+    print "tag\t$tag\n";
+  }
+')
 
 warnings=()
-if [ "$words" -eq 0 ]; then
-  warnings+=("The description has no executive summary: open it, after the attribution lines, with at most $max_words words on what, why and tradeoffs.")
-elif [ "$words" -gt "$max_words" ]; then
-  warnings+=("The executive summary is $words words; keep it to $max_words and link to committed docs, plans or issues for the details.")
+counts=()
+req=0 cost=0 risk=0
+while IFS=$'\t' read -r kind tag; do
+  [ "$kind" = tag ] || continue
+  if [[ " $requirement_tags " == *" $tag "* ]]; then req=$((req + 1))
+  elif [[ " $cost_tags " == *" $tag "* ]]; then cost=$((cost + 1))
+  elif [[ " $risk_tags " == *" $tag "* ]]; then risk=$((risk + 1))
+  else
+    known="$requirement_tags $cost_tags $risk_tags"
+    warnings+=("\"$tag\" is not an attention tag; use one of ${known// /, }.")
+  fi
+done <<<"$report"
+if grep -q $'^Attention\t0\t1' <<<"$report"; then
+  for pair in "requirements:$req" "cost:$cost" "threat/risk:$risk"; do
+    n=${pair##*:}
+    [ "$n" -eq 1 ] || warnings+=("The \"## Attention\" section has $n ${pair%:*} tags; it needs exactly one.")
+  done
 fi
-if grep -qF '<Summary:' <<<"$summary"; then
-  warnings+=("The executive summary is still the template's placeholder; replace it with what, why and tradeoffs.")
-fi
-if [ "$words" -gt 0 ] && ! grep -qE '\]\(|https?://' <<<"$summary"; then
-  warnings+=("The executive summary has no link; point it at the committed docs, plan or issue file that holds the details.")
-fi
+report=$(grep -v $'^tag\t' <<<"$report")
 
+while IFS=$'\t' read -r name max found words placeholder; do
+  if [ "$found" -eq 0 ]; then
+    if [ "$name" = Attention ]; then
+      warnings+=("The description has no \"## Attention\" section; run \`chores badges\` and put its output first.")
+    else
+      warnings+=("The description has no \"## $name\" section.")
+    fi
+    continue
+  fi
+  [ "$max" -eq 0 ] && continue # Attention and Details: no word limit
+  counts+=("$name $words")
+  limit="at most $max words"
+  [ "$max" -eq 24 ] && limit="under 25 words"
+  if [ "$placeholder" -eq 1 ]; then
+    warnings+=("The \"## $name\" section is still the template's placeholder.")
+  elif [ "$words" -eq 0 ]; then
+    case $name in
+      Cost* | Risk*) warnings+=("The \"## $name\" section is empty; write \"None.\" when nothing changes.") ;;
+      *) warnings+=("The \"## $name\" section is empty; keep it to $limit.") ;;
+    esac
+  elif [ "$words" -gt "$max" ]; then
+    warnings+=("The \"## $name\" section is $words words; keep it to $limit and move the rest to Details or a linked doc.")
+  fi
+done <<<"$report"
+
+summary_line="$(IFS=,; echo "${counts[*]}")"
+summary_line=${summary_line//,/, }
 if [ "${#warnings[@]}" -eq 0 ]; then
-  echo "PR-001 ok: executive summary is $words words."
+  echo "PR-001 ok: $summary_line words."
 else
   for w in "${warnings[@]}"; do
     if [ -n "${GITHUB_ACTIONS-}" ]; then
-      echo "::warning title=PR-001 PR summary::$w"
+      echo "::warning title=PR-001 PR description::$w"
     else
       echo "warning[PR-001] $w"
     fi
@@ -60,9 +134,9 @@ fi
 
 if [ -n "${GITHUB_STEP_SUMMARY-}" ]; then
   {
-    echo "### PR summary (PR-001)"
+    echo "### PR description (PR-001)"
     echo
-    echo "Executive summary: $words words (limit $max_words)."
+    echo "Words per section: ${summary_line:-none found}. Limits: What changed and Why at most 50, Cost changes and Risk changes under 25."
     for w in "${warnings[@]}"; do echo "- $w"; done
   } >>"$GITHUB_STEP_SUMMARY"
 fi

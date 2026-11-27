@@ -1,18 +1,34 @@
 <!--
 Keep any attribution lines your agent platform requires above everything else.
 
-Executive summary, at most 75 words (Jim, 2026-11-27): what this PR does,
-why, and any engineering tradeoffs. Link to the committed plan, decision,
-issue file or doc that holds the details instead of writing them here.
+Six sections (Jim, 2026-11-27): Attention first, then five summaries. Keep the first four short and useful; put
+everything else in Details or in a committed plan, decision, issue file or
+doc that Details links to. `chores pr-body` writes this shape, and the PR
+summary check (PR-001) warns when a section is missing, a tag is unknown
+or a summary is over its limit.
 See "Pull request descriptions" in standards/docs/pull-requests.md.
 -->
 
-<Summary: what, why, tradeoffs. Details in [the plan](standards/docs/plans/...).>
+## Attention
 
-## Testing
+<Run `chores badges` and paste its bullets: one requirements tag and one threat/risk tag. See "Attention tags" in standards/docs/pull-requests.md.>
 
-<Hooks passed, or the commands you ran and their result. Say which checks didn't run.>
+## What changed
 
-## Review notes
+<At most 50 words: what this PR changes.>
 
-<Anything a reviewer should look at closely. Screenshots for UI changes. Delete if empty.>
+## Why
+
+<At most 50 words: why it changes, and any engineering tradeoffs.>
+
+## Cost changes
+
+<Under 25 words: money, free-tier usage or Claude budget this changes, or "None.">
+
+## Risk changes
+
+<Under 25 words: security, threat, requirement or reliability risk this changes, or "None.">
+
+## Details
+
+<Anything else: the issue it closes, how it was tested (hooks passed, checks that didn't run), what a reviewer should look at closely, screenshots, links to the plan or decision.>

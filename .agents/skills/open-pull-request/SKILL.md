@@ -28,19 +28,55 @@ as "Pull request descriptions" in `standards/docs/pull-requests.md` says
 (Jim, 2026-11-27), following `.github/pull_request_template.md`:
 
 1. The attribution lines your platform requires, if any, first.
-2. An **executive summary of at most 75 words**: what the PR does, why, and
-   any engineering tradeoffs, linking to the committed plan, decision,
-   issue file or doc that holds the details. Put long explanations in those
-   files, in the same PR, never in the description.
-3. Then, briefly:
-   - which issue it addresses (the issue file it deletes, or the
-     `TODO`/`FIX` comment),
-   - how it was tested (the hooks passed, or which commands you ran by hand
-     and their result, and any check you couldn't run),
-   - anything a reviewer should look at closely.
+2. `## Attention`: the attention tags, one requirements, one cost and one
+   threat/risk tag, from `chores badges` (never written by hand).
+3. `## What changed`: at most 50 words.
+4. `## Why`: at most 50 words, with any engineering tradeoffs.
+5. `## Cost changes`: under 25 words, or `None.`
+6. `## Risk changes`: under 25 words, or `None.`
+7. `## Details`: everything else: the issue it addresses (the issue file
+   it deletes, or the `TODO`/`FIX` comment), how it was tested (the hooks
+   passed, or which commands you ran by hand and their result, and any
+   check you couldn't run), anything a reviewer should look at closely,
+   and links to the committed plan, decision, issue file or doc. Put long
+   explanations in those files, in the same PR, never in the description.
 
-The **PR summary** check (PR-001) warns when the summary is missing, over 75
-words or has no link; fix the description, and it reruns on the edit.
+Build it with the `pr-body` command rather than by hand. It writes that
+shape and exits 1, printing the PR-001 warnings, until every section is
+there and within its word limit, so the description is right before the
+PR exists:
+
+```bash
+cargo run --quiet --manifest-path chores/Cargo.toml -- pr-body \
+  --login <github login> --requested-by <name> --thread-url <project thread link> \
+  --what "<what changed, at most 50 words>" \
+  --why "<why, and tradeoffs, at most 50 words>" \
+  --cost "<under 25 words; leave the flag out for None.>" \
+  --risk "<under 25 words; leave the flag out for None.>" \
+  --details "<issue it closes; hooks passed, or what you ran; checks that didn't run; review notes; links>" \
+  --footer "<closing lines your platform asks for>" --out /tmp/pr-body.md
+```
+
+Pass the attribution and footer exactly as your platform's instructions
+give them, and leave out the flags it doesn't ask for. Your judgment is
+only the words. Send the printed body as the PR description.
+
+The **Attention** section comes from `chores badges --base origin/main`
+(commit first so the diff is complete): 🔴 `must-requirement-changed`,
+🟡 `requirement-changed` or 🟢 `requirements-unchanged`; 🟠
+`cost-changed` or 🟢 `cost-unchanged`; 🟠 `threat-risk-changed` or 🟢
+`threat-risk-unchanged` ("Attention tags" in
+`standards/docs/pull-requests.md`). Never edit the tags by hand. When a
+later push changes which files the PR touches, run `chores badges` and
+replace the section. A red requirement tag means the PR gets
+`needs-human` and waits for Jim. The Cost changes and Risk changes
+summaries are your words on what actually moves; the tags only say which
+files changed.
+
+The **PR summary** check (PR-001) warns when a section is missing or
+empty, a summary is over its limit, or a tag is unknown; fix the
+description (`pr-body --check <file>` checks an edited one), and it reruns
+on the edit.
 
 ## Mark it ready for review
 
@@ -52,8 +88,9 @@ Mark the PR ready for review once **all** of these hold:
 - CI for the changed projects passes on the PR's head commit.
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
 - You've re-read the full diff and would be comfortable with a human reviewing it.
-- The description opens with a linked executive summary of at most 75
-  words, and the PR summary check shows no warning.
+- The description has the Attention, What changed, Why, Cost changes,
+  Risk changes and Details sections, and the PR summary check shows no
+  warning.
 
 Ready for review hands the PR to a human; it is not approval.
 
@@ -72,7 +109,7 @@ your own PR, so it waits for a human's approval either way.
 If your PR is one of a stack (its base is another PR's branch), don't hand
 Jim each step. Once every PR in the stack is complete and green, retarget
 the top PR to `main`, add a `Stack: #a, #b, #c` line to its description
-(lowest first, top last) with a summary of the whole stack, move the other
+(lowest first, top last), with What changed and Why covering the whole stack, move the other
 step PRs back to draft with a comment naming the top PR, and mark only the
 top PR ready. Close the step PRs once it merges. The steps are under
 "Stacked pull requests" in `standards/docs/pull-requests.md` (decision
