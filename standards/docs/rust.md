@@ -94,4 +94,4 @@ workspace = true
 
 ## Enforcement
 
-These rules are not checked automatically yet; porting the LIN-001 and LIN-002 checks to `mise run //:audit` is tracked in `standards/issues/`.
+`mise run //:audit` checks LIN-001 and LIN-002 for every tracked Cargo.toml with a `[package]` (`standards/scripts/project-check.sh`), as warnings for now. A stricter clippy level (`deny`, `forbid`) passes LIN-001. `unsafe_code = "deny"` passes LIN-002 only when a comment on the line above says why the package needs its one `#[allow(unsafe_code)]` item, such as a platform entry point.

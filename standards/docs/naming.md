@@ -3,6 +3,11 @@
 - All deployments MUST be kebab-case.
 - All Proof of Concept projects must begin with poc (ie: poc_project_name)
 
+`mise run //:audit` fails with NAM-001 on a project directory that isn't
+snake_case, NAM-002 on a Cargo or npm package name that matches neither
+rule above, and NAM-004 on a project whose package name or path says `poc`
+or `proof` without the `poc_` prefix (`standards/scripts/project-check.sh`).
+
 ## Cloudflare Pages projects
 
 Every Cloudflare Pages project MUST be named `jimhillr-<project>` (Jim,
