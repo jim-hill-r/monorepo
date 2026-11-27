@@ -39,8 +39,9 @@ surface = "site"
 id = "PANE-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into the page (XSS) or the site framed by another (clickjacking)."
-mitigation = "Security headers from web/public/_headers (CSP, nosniff, no-referrer, HSTS, frame-ancestors 'self'), and Dioxus escaping rendered text."
+mitigation = "Security headers from web/public/_headers (CSP with no inline script, nosniff, no-referrer, HSTS, frame-ancestors 'self'), and Dioxus escaping rendered text. The one raw-HTML spot, the deliverable view, renders repo Markdown through web/src/markdown.rs, which turns any raw HTML in it into escaped text."
 surface = "site"
+covers = ["raw-html"]
 
 [[threat]]
 id = "PANE-T3"

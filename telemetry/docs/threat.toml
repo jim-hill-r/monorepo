@@ -44,3 +44,11 @@ stride = "information-disclosure"
 what = "Events end up holding personal data."
 mitigation = "Only the enumerated fields are written; the IP goes to the rate limiter, never to a blob."
 surface = "event API"
+
+[[threat]]
+id = "TEL-T4"
+stride = "tampering"
+what = "Any website's scripts can post events, because CORS allows every origin."
+mitigation = "Deliberate: sites post with navigator.sendBeacon from their own origins, and no event carries credentials or reads anything back, so an open origin exposes nothing. Forged events are bounded by TEL-T1's rate limit and TEL-T2's validation."
+surface = "event API"
+covers = ["cors-any-origin"]

@@ -1,6 +1,7 @@
 //! The `threat` command. See `threat/README.md`.
 
 mod check;
+mod live;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -22,8 +23,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Check every project's docs/threat.toml (THR-001 to THR-009, except
-    /// THR-004, which comes in phase 3).
+    /// Check every project's docs/threat.toml (THR-001 to THR-009; THR-004
+    /// runs the shared detectors in standards/radar/detectors.toml).
     Check {
         /// Repo root. Defaults to the nearest directory above the current
         /// one that holds standards/settings.toml.
@@ -39,6 +40,28 @@ enum Command {
         #[arg(long)]
         strict: bool,
         /// The date to check against, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<Date>,
+    },
+    /// The weekly live check (standards/scripts/threat-live.sh runs it).
+    /// With only --account, prints the URLs to request, one per line. With
+    /// --probes too, compares the account and the responses with every
+    /// threat model, prints a Markdown report and exits 1 on any finding.
+    Live {
+        /// Repo root, as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// JSON: {"pages": [{"name", "domains", "preview_url"}], "workers": [names] or null}.
+        #[arg(long)]
+        account: PathBuf,
+        /// JSON: [{"url", "status" (0 when the request failed), "location", "headers": {lowercase name: value}}].
+        #[arg(long)]
+        probes: Option<PathBuf>,
+        /// Write an issue file for each unclaimed Pages project or Worker
+        /// under this directory (as issues/<name>.md).
+        #[arg(long)]
+        issues_dir: Option<PathBuf>,
+        /// The date for new issue files, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long)]
         today: Option<Date>,
     },
@@ -75,6 +98,29 @@ fn run(cli: Cli) -> Result<ExitCode> {
             );
             let fails = report.findings.iter().any(|f| f.code.can_fail());
             Ok(if strict && fails {
+                ExitCode::FAILURE
+            } else {
+                ExitCode::SUCCESS
+            })
+        }
+        Command::Live {
+            root,
+            account,
+            probes,
+            issues_dir,
+            today,
+        } => {
+            let root = find_root(root)?;
+            let today = today.unwrap_or_else(utc_today).to_string();
+            let outcome = live::live(
+                &root,
+                &account,
+                probes.as_deref(),
+                issues_dir.as_deref(),
+                &today,
+            )?;
+            print!("{}", outcome.output);
+            Ok(if outcome.findings > 0 {
                 ExitCode::FAILURE
             } else {
                 ExitCode::SUCCESS
