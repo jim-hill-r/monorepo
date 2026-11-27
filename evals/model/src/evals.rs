@@ -109,6 +109,10 @@ pub enum Kind {
     /// Jim checks a setting made by hand; `setting` is an `id` in
     /// `standards/settings.toml`.
     HumanCheck { setting: String },
+    /// The project's cost analysis holds: `cost check` finds nothing that
+    /// can fail in its `docs/cost.toml` (stage `ci`), and its actual usage
+    /// stays within what that file expects (stage `observe`).
+    Cost {},
 }
 
 impl Kind {
@@ -123,6 +127,7 @@ impl Kind {
             Kind::Fault { .. } => "fault",
             Kind::Judge { .. } => "judge",
             Kind::HumanCheck { .. } => "human-check",
+            Kind::Cost {} => "cost",
         }
     }
 
@@ -146,6 +151,7 @@ impl Kind {
             "fault" => &["fault", "grep"],
             "judge" => &["rubric"],
             "human-check" => &["setting"],
+            "cost" => &[],
             _ => return None,
         })
     }
@@ -272,7 +278,7 @@ fn check_keys(table: &toml::Table) -> Vec<ParseError> {
             .unwrap_or_default();
         let Some(kind_fields) = Kind::fields(kind) else {
             errors.push(ParseError::whole_file(format!(
-                "eval `{name}`: unknown kind `{kind}`; expected cargo, playwright, trycmd, script, http, metric, fault, judge or human-check"
+                "eval `{name}`: unknown kind `{kind}`; expected cargo, playwright, trycmd, script, http, metric, fault, judge, human-check or cost"
             )));
             continue;
         };
@@ -324,6 +330,14 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
     }
     if eval.stages.contains(&Stage::Judge) != matches!(eval.kind, Kind::Judge { .. }) {
         problems.push("a judge eval runs in the judge stage only, and only judge evals do".into());
+    }
+    if matches!(eval.kind, Kind::Cost {})
+        && eval
+            .stages
+            .iter()
+            .any(|s| !matches!(s, Stage::Ci | Stage::Observe))
+    {
+        problems.push("a cost eval runs in the ci and observe stages only".into());
     }
 
     match &eval.kind {
@@ -410,7 +424,7 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
                 ));
             }
         }
-        Kind::Cargo { .. } | Kind::Playwright { .. } | Kind::Trycmd { .. } => {}
+        Kind::Cargo { .. } | Kind::Playwright { .. } | Kind::Trycmd { .. } | Kind::Cost {} => {}
     }
     problems
 }
@@ -666,6 +680,30 @@ body_contains = "Cookbook"
         assert!(
             errors(&one_eval("stages = [\"human\"]\nkind = \"human-check\""))[0]
                 .contains("setting"),
+        );
+    }
+
+    #[test]
+    fn checks_cost_evals() {
+        let file = match parse_evals(&one_eval("stages = [\"ci\", \"observe\"]\nkind = \"cost\"")) {
+            Ok(file) => file,
+            Err(e) => panic!("{e:?}"),
+        };
+        assert_eq!(file.evals[0].kind, Kind::Cost {});
+        assert_eq!(file.evals[0].kind.name(), "cost");
+        assert!(file.evals[0].runs_in_production());
+        assert_eq!(file.evals[0].test_selector(), None);
+
+        for stages in ["\"cd\"", "\"ci\", \"chaos\""] {
+            assert_eq!(
+                errors(&one_eval(&format!("stages = [{stages}]\nkind = \"cost\""))),
+                vec!["eval `e`: a cost eval runs in the ci and observe stages only"],
+                "{stages}"
+            );
+        }
+        assert_eq!(
+            errors(&one_eval("stages = [\"ci\"]\nkind = \"cost\"\nmax = 0")),
+            vec!["eval `e`: `max` is not a field of a cost eval"]
         );
     }
 
