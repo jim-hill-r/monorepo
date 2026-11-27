@@ -1,6 +1,7 @@
 //! The `cost` command. See `cost/README.md`.
 
 mod check;
+mod evals;
 mod git;
 mod render;
 mod summary;
@@ -43,6 +44,14 @@ enum Command {
         /// The date to check against, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long)]
         today: Option<NaiveDate>,
+        /// Also append one eval result per `cost` eval in the checked
+        /// projects' evals.toml (stage ci) to this JSON Lines file, in the
+        /// eval engine's results format.
+        #[arg(long)]
+        evals_results: Option<PathBuf>,
+        /// The commit the results are for. Defaults to $GITHUB_SHA.
+        #[arg(long)]
+        commit: Option<String>,
     },
     /// Compare the working tree with the merge base of --base and print the
     /// PR's cost summary as Markdown: cost files changed, services, usage,
@@ -105,6 +114,8 @@ fn run(cli: Cli) -> Result<ExitCode> {
             projects,
             strict,
             today,
+            evals_results,
+            commit,
         } => {
             let root = find_root(root)?;
             let today = today.unwrap_or_else(|| chrono::Utc::now().date_naive());
@@ -115,8 +126,18 @@ fn run(cli: Cli) -> Result<ExitCode> {
             println!(
                 "cost check: {} finding(s) in {} project(s)",
                 report.findings.len(),
-                report.checked
+                report.projects.len()
             );
+            if let Some(path) = evals_results {
+                let ctx = evals::RunContext::from_env(commit, chrono::Utc::now());
+                let results = evals::results(&root, &report.projects, &report.findings, &ctx);
+                evals::append(&path, &results)?;
+                println!(
+                    "cost check: {} eval result(s) appended to {}",
+                    results.len(),
+                    path.display()
+                );
+            }
             let fails = report.findings.iter().any(|f| f.code.can_fail());
             Ok(if strict && fails {
                 ExitCode::FAILURE
