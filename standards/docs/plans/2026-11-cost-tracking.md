@@ -11,8 +11,11 @@ and PR triage, the weekly human issues digest and its settings checks
 (`standards/settings.toml`), and the billing checks that the free-tier
 payment check work is adding ([Billing checks](../free-tiers.md#billing-checks):
 `standards/scripts/billing-check.sh`, run by the `billing` job in
-`all-free-tier-usage.yml`, for Cloudflare, GitHub and PostHog). This plan doesn't design those
-billing checks; it says where their result goes.
+`all-free-tier-usage.yml`). Jim, 2026-11-27: "the billing check should
+check every vendor in the tech radar", so it covers every vendor blip in
+`radar.json`, by API where the vendor has one (Cloudflare, GitHub, PostHog
+today) and by Jim's settings check otherwise. This plan doesn't design
+those billing checks; it says where their result goes.
 
 ## Goal
 
@@ -55,7 +58,7 @@ usage run has not run yet (its first scheduled run is Monday 2026-11-30).
 | --- | --- | --- | --- | --- | --- |
 | Anthropic, Claude Code | Jim's subscription | $25 a month | $25 | Jim's 30-day settings check `claude-code-budget`. Agents can see whether a session is on overage usage (`rate_limit_info.isUsingOverage` from the session API), but not dollars. | Partly automatic (phase 2) |
 | Squarespace | Jim's account | $0 in the radar | $0 (no `[[cost]]`) | Nothing. If Jim pays for a domain or site there, it is real money the repo doesn't record. | **Ask Jim** |
-| Every other vendor | Free | $0 | $0 | Billing checks where an API exists, Jim's checks otherwise | See overrun switches |
+| Every other vendor in the tech radar | Free | $0 | $0 | The billing check covers every radar vendor: by API where one exists, by Jim's check otherwise | See overrun switches |
 
 ### Free-tier headroom
 
@@ -97,6 +100,7 @@ automation from flipping it; "Detect" is how we'd learn someone did.
 | Auth0 card or custom domain | budget 0 for custom domains | Jim's check | 30 days |
 | RapidAPI paid plan | approved on the free plan only | Jim's check | 30 days |
 | Claude Code extra usage | no agent changes the plan | **phase 2:** overage flag every triage run, plus Jim's check | three times a day, and 30 days |
+| Any radar vendor not listed above (Squarespace, Auth0, RapidAPI, Claude Code, and each new one) | rule 1; a new vendor needs Jim's sign-off | The billing check's per-vendor list: an API check where one exists, else a settings check in `standards/settings.toml` | weekly or 30 days |
 | A new vendor or `[[cost]]` | COST-004, the PR cost summary labels `needs-human` | the PR cost summary | every PR |
 
 ## Thresholds
