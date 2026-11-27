@@ -48,11 +48,29 @@ The start screen has two settings:
 
 - **Colours: Dark / Light** switches the colour scheme. Dark is the default.
 - **Accessible: Off / On** turns on accessible mode: WCAG AAA contrast,
-  text one step larger, and the design system's accessible palette.
+  text one step larger, and the design system's accessible palette. It
+  starts on when nothing is saved yet and the browser asks for more
+  contrast (`prefers-contrast: more`). Bevy doesn't expose that setting on
+  desktop or Android, so there it starts off.
 
-The choice lasts until the game closes. `src/theme.rs` holds it
-(`GameTheme`) and has the tests that check every button and text colour
-against its background in all four combinations.
+The game remembers the choice between launches, in a few lines of TOML
+kept on the player's device, never on a server:
+
+| Platform | Where |
+| --- | --- |
+| Web | the browser's `localStorage`, key `controlled_chaos.settings` |
+| macOS | `~/Library/Application Support/controlled_chaos/settings.toml` |
+| Linux | `$XDG_CONFIG_HOME/controlled_chaos/settings.toml` (or `~/.config/...`) |
+| Windows | `%APPDATA%\controlled_chaos\settings.toml` |
+| Android | `settings.toml` in the app's internal data directory |
+
+Delete the file (or clear the site's data) to go back to the defaults. A
+setting the game can't read keeps its default, so a damaged file never
+stops the game from starting.
+
+`src/theme.rs` holds the choice (`GameTheme`) and has the tests that check
+every button and text colour against its background in all four
+combinations. `src/settings.rs` loads and saves it.
 
 ## Development
 
