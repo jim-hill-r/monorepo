@@ -1,0 +1,97 @@
+{
+  "lines": {
+    "count": 34478,
+    "covered": 25324,
+    "percent": 73.45
+  },
+  "projects": [
+    {
+      "project": "auth_sdk",
+      "percent": 100
+    },
+    {
+      "project": "bear_down",
+      "percent": 92.77
+    },
+    {
+      "project": "blueeel",
+      "percent": 0
+    },
+    {
+      "project": "cahokia",
+      "percent": 92.72
+    },
+    {
+      "project": "controlled_chaos",
+      "percent": 86.57
+    },
+    {
+      "project": "cookbook",
+      "percent": 90.79
+    },
+    {
+      "project": "cost",
+      "percent": 91.98
+    },
+    {
+      "project": "design_system",
+      "percent": 47.54
+    },
+    {
+      "project": "evals",
+      "percent": 91.79
+    },
+    {
+      "project": "homer",
+      "percent": 96.06
+    },
+    {
+      "project": "infra",
+      "percent": 17.54
+    },
+    {
+      "project": "luggage",
+      "percent": 83.24
+    },
+    {
+      "project": "monorepo",
+      "percent": 90.91
+    },
+    {
+      "project": "my_lang",
+      "percent": 93.03
+    },
+    {
+      "project": "pane",
+      "percent": 80.19
+    },
+    {
+      "project": "profiles/content_provider",
+      "percent": 0
+    },
+    {
+      "project": "profiles/jimhillr",
+      "percent": 0
+    },
+    {
+      "project": "sparkhill/cloudflare",
+      "percent": 0
+    },
+    {
+      "project": "sparkhill/webapp",
+      "percent": 84.84
+    },
+    {
+      "project": "sparkhill/website",
+      "percent": 0
+    },
+    {
+      "project": "starcraft",
+      "percent": 0
+    },
+    {
+      "project": "tofu_state",
+      "percent": 98.28
+    }
+  ]
+}
