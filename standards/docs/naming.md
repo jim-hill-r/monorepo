@@ -50,6 +50,7 @@ row here before a project's first `docs/requirements.md`.
 | cahokia | `CAHO` |
 | controlled_chaos | `CHAOS` |
 | cookbook | `COOK` |
+| design_system | `DSGN` |
 | evals | `EVAL` |
 | homer | `HOME` |
 | luggage | `LUGG` |
