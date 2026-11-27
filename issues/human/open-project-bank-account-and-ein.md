@@ -6,7 +6,7 @@ runbook: standards/docs/runbooks/open-project-bank-account-and-ein.md
 
 ## Requirement
 
-Once you accept decision 0016 question 1 (a), get a free EIN from the IRS as a sole proprietor and open a separate free checking account used only for project money (your own bank or credit union, or Relay Starter if you pick 2 (b)). Do it before setting up GitHub Sponsors (decision 0012 phase 2), so the first payout lands there and the W-9 carries the EIN, not your SSN. See standards/docs/decisions/0016-holding-and-handling-money.md.
+Get a free EIN from the IRS as a sole proprietor and open a separate free checking account used only for project money at your own bank or credit union. Do it before setting up GitHub Sponsors (decision 0012 phase 2), so the first payout lands there and the W-9 carries the EIN, not your SSN. See standards/docs/decisions/0016-holding-and-handling-money.md.
 
 ## Why it can't be automated
 

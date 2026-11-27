@@ -1,8 +1,9 @@
 # 0016. Holding and handling money: a separate free account, accounting books in the repo, a merchant of record for card sales
 
-- Status: Proposed. Question 1 answered (Jim, decision card, 2026-11-27:
-  "Separate free account with EIN"); questions 2 to 5 wait on Jim. The
-  accounting rules are Jim's and already apply.
+- Status: Accepted
+- Decided by: Jim (2026-11-27: question 1 on a decision card, "Separate
+  free account with EIN"; questions 2 to 5 in the project thread, "All
+  recommended"). The accounting rules are Jim's own.
 - Date: 2026-11-27
 - Asked by: Jim (project thread, 2026-11-27: "Have we done a tech selection
   on how we are going to handle our finances? How do we store money and
@@ -201,7 +202,7 @@ Each answer's money cost, free-tier position and Claude Code effort
    payout** (recommended; a one-time fee you choose, outside our budgets).
    (b) Wait until phase 5 as 0012 says.
 
-## Consequences if accepted as recommended
+## Consequences
 
 - 0012's answer 8 ("no business set-up until revenue is real") narrows:
   the EIN and separate account come before Sponsors; the LLC still waits.

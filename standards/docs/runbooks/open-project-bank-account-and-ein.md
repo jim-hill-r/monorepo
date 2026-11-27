@@ -1,7 +1,7 @@
 # Get a free EIN and open a separate free account for project money
 
 - **Kind:** one-time
-- **Status:** open (issues/human/open-project-bank-account-and-ein.md), waiting on decision 0016
+- **Status:** open (issues/human/open-project-bank-account-and-ein.md)
 - **Time:** about 60 minutes (10 for the EIN, the rest for the account)
 - **Cost:** $0 (the EIN is free from the IRS; pick an account with no
   monthly fee and no minimum balance). Never pay a third-party site for an
@@ -24,11 +24,10 @@ No API does this, and no agent may hold a credential that can move money.
 
 ## Before you start
 
-- Decision 0016 accepted with question 1 (a).
 - Your SSN and address, for the IRS form (it stays with the IRS and the
   bank, never in the repo or a chat).
-- Pick the bank from question 2: your own bank or credit union (a second
-  free checking account) or Relay Starter.
+- The bank: your own bank or credit union, as a second free checking
+  account (decision 0016, question 2).
 
 ## Steps
 
