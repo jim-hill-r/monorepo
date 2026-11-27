@@ -24,6 +24,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   project's `issues/` and never only in a chat thread. Agents don't work
   them. A weekly Claude scheduled task, "Weekly human issues digest", reports
   them to Jim with the `human-issues-digest` skill (decision 0002).
+- **Every human task has a runbook (Jim, 2026-11-27).** "Whenever asking
+  for human help, document the requirement, why it can't be automated and
+  create a run book. Link the run book in the task." Each
+  `issues/human/` file has `## Requirement`, `## Why it can't be automated`
+  and `## Runbook` sections and a `runbook:` front matter field, and its
+  runbook (steps, permissions, where secrets go, how to verify, cost) is
+  in `standards/docs/runbooks/`, added in the same PR. Runbooks outlive
+  their tasks, so every human task in the architecture, one-time ones
+  included, stays documented. The audit enforces it (ISS-004); the format
+  is under "Human issues" in `standards/docs/issue-management.md`.
 - **Settings made by hand** (connectors, secrets, Auth0, Cloudflare tokens,
   billing) are listed in `standards/settings.toml`, never with a secret's
   value. A change that makes or needs one adds its entry in the same PR; the

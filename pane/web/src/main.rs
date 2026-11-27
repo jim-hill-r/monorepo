@@ -328,7 +328,8 @@ fn TodayBody(snapshot: Snapshot) -> Element {
     }
 }
 
-/// One human issue: its text, age, date, GitHub link and what it unblocks.
+/// One human issue: its text, age, date, GitHub and runbook links, what it
+/// unblocks, and why only a person can do it.
 #[component]
 fn HumanIssueRow(issue: HumanIssue, commit: String, now: i64) -> Element {
     let age = issue
@@ -337,6 +338,10 @@ fn HumanIssueRow(issue: HumanIssue, commit: String, now: i64) -> Element {
         .and_then(|d| view::days_since(d, now))
         .map(view::days_label);
     let url = view::github_line_url(&commit, &issue.file, issue.line);
+    let runbook = issue
+        .runbook
+        .as_deref()
+        .map(|r| view::github_file_url(&commit, r));
     rsx! {
         li {
             p { class: "row-text", "{issue.text}" }
@@ -348,9 +353,15 @@ fn HumanIssueRow(issue: HumanIssue, commit: String, now: i64) -> Element {
                     span { "Added {added}" }
                 }
                 a { href: "{url}", "Open on GitHub" }
+                if let Some(runbook) = &runbook {
+                    a { href: "{runbook}", "Runbook" }
+                }
             }
             if let Some(unblocks) = &issue.unblocks {
                 p { class: "muted unblocks", "Unblocks {unblocks}" }
+            }
+            if let Some(why) = &issue.why {
+                p { class: "muted why", "Why a person: {why}" }
             }
         }
     }

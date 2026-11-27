@@ -194,13 +194,22 @@ pub fn human_issue_file_name(setting: &str) -> String {
 
 /// The human task file (`issues/human/settings-check-<id>.md`) for a due check,
 /// added on `added` (`YYYY-MM-DD`).
+///
+/// It has the three sections every human task needs (ISS-004 in
+/// `standards/scripts/issues.sh`), and links the one runbook for answering a
+/// settings check.
 pub fn human_issue_file(due: &DueCheck<'_>, covers: &[String], added: &str) -> String {
     format!(
-        "---\nadded: {added}\nunblocks: \"an up-to-date check of {} in standards/settings.toml\"\n---\n\n{}\n",
-        due.setting.id,
-        human_issue_line(due, covers)
+        "---\nadded: {added}\nunblocks: \"an up-to-date check of {id} in standards/settings.toml\"\nrunbook: {SETTINGS_CHECK_RUNBOOK}\n---\n\n## Requirement\n\n{line}\n\n## Why it can't be automated\n\nThis setting is made by hand in {vendor} ({location}), and no file in the repo or API an agent can reach holds it, so only a person can look at it.\n\n## Runbook\n\n[Answer a settings check](../../{SETTINGS_CHECK_RUNBOOK})\n",
+        id = due.setting.id,
+        line = human_issue_line(due, covers),
+        vendor = due.setting.vendor,
+        location = due.setting.location,
     )
 }
+
+/// The runbook every settings check task links, from the repo root.
+pub const SETTINGS_CHECK_RUNBOOK: &str = "standards/docs/runbooks/settings-check.md";
 
 /// One sentence asking Jim to check a due setting: the body of its human
 /// task. `covers` lists the requirements whose `human-check` evals name the
@@ -413,7 +422,7 @@ every = "0d"
         );
         assert_eq!(
             human_issue_file(&due[0], &[], "2026-01-01"),
-            "---\nadded: 2026-01-01\nunblocks: \"an up-to-date check of claude-connectors in standards/settings.toml\"\n---\n\nCheck claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)\n"
+            "---\nadded: 2026-01-01\nunblocks: \"an up-to-date check of claude-connectors in standards/settings.toml\"\nrunbook: standards/docs/runbooks/settings-check.md\n---\n\n## Requirement\n\nCheck claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)\n\n## Why it can't be automated\n\nThis setting is made by hand in Claude (claude.ai > Settings > Connectors), and no file in the repo or API an agent can reach holds it, so only a person can look at it.\n\n## Runbook\n\n[Answer a settings check](../../standards/docs/runbooks/settings-check.md)\n"
         );
     }
 

@@ -12,6 +12,10 @@
 #   ISS-002  Every issue file starts with front matter and has the required
 #            fields with allowed values.
 #   ISS-003  Human tasks (tag `human`) live only in issues/human/.
+#   ISS-004  Every human task has `## Requirement`, `## Why it can't be
+#            automated` and `## Runbook` sections, and a `runbook` front
+#            matter field naming a file in standards/docs/runbooks/ that
+#            exists.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -28,7 +32,9 @@ issue_files() {
 }
 
 # Prints one tab-separated record per file:
-# path, kind, priority, tags, epic, order, added, unblocks, first body line.
+# path, kind, priority, tags, epic, order, added, unblocks, first body line
+# (headings skipped), runbook, and which of the three human task sections
+# are present (r, w and b for Requirement, Why and Runbook).
 records() {
   issue_files | while IFS= read -r f; do
     awk -v file="$f" '
@@ -45,11 +51,14 @@ records() {
         f[key] = val($0)
         next
       }
-      !fm && body == "" && $0 != "" { body = $0 }
+      !fm && /^## Requirement[ \t]*$/ { sections = sections "r" }
+      !fm && /^## Why it can.t be automated[ \t]*$/ { sections = sections "w" }
+      !fm && /^## Runbook[ \t]*$/ { sections = sections "b" }
+      !fm && body == "" && $0 != "" && $0 !~ /^#/ { body = $0 }
       END {
         if (bad || fm) { printf "%s\037BAD\n", file; exit }
         gsub(/\t/, " ", body)
-        printf "%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\n", file, f["kind"], f["priority"], f["tags"], f["epic"], f["order"], f["added"], f["unblocks"], body
+        printf "%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\n", file, f["kind"], f["priority"], f["tags"], f["epic"], f["order"], f["added"], f["unblocks"], body, f["runbook"], sections
       }' "$f"
   done
 }
@@ -60,7 +69,7 @@ check() {
   while IFS= read -r f; do
     err ISS-001 "$f: ISSUES.md files are retired; make one file per issue in an issues/ folder"
   done < <(git ls-files -- 'ISSUES.md' '*/ISSUES.md' 'HUMAN_ISSUES.md')
-  while IFS=$'\037' read -r path kind priority tags _epic order added _unblocks body; do
+  while IFS=$'\037' read -r path kind priority tags _epic order added _unblocks body runbook sections; do
     if [ "$kind" = BAD ]; then
       err ISS-002 "$path: must start with front matter between two '---' lines"
       continue
@@ -68,6 +77,16 @@ check() {
     [[ "$added" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || err ISS-002 "$path: 'added' must be a YYYY-MM-DD date"
     [ -n "$body" ] || err ISS-002 "$path: says nothing after the front matter"
     if [[ "$path" == issues/human/* ]]; then
+      [[ "$sections" == *r* ]] || err ISS-004 "$path: needs a '## Requirement' section: what to do and what it unblocks"
+      [[ "$sections" == *w* ]] || err ISS-004 "$path: needs a '## Why it can't be automated' section"
+      [[ "$sections" == *b* ]] || err ISS-004 "$path: needs a '## Runbook' section linking its runbook"
+      if [ -z "$runbook" ]; then
+        err ISS-004 "$path: needs 'runbook: standards/docs/runbooks/<name>.md' in its front matter"
+      elif [[ "$runbook" != standards/docs/runbooks/*.md ]]; then
+        err ISS-004 "$path: 'runbook' must be a file in standards/docs/runbooks/ (from the repo root)"
+      elif [ ! -f "$runbook" ]; then
+        err ISS-004 "$path: runbook $runbook doesn't exist"
+      fi
       continue
     fi
     [[ "$kind" =~ ^(todo|fix)$ ]] || err ISS-002 "$path: 'kind' must be todo or fix"
@@ -92,8 +111,8 @@ case "$mode" in
   --check) check ;;
   --human)
     records | awk -F'\037' '$1 ~ /^issues\/human\// { print $7 "\037" $0 }' | sort |
-      while IFS=$'\037' read -r _ path _ _ _ _ _ added unblocks body; do
-        echo "- $added $path: $body${unblocks:+ (Unblocks $unblocks.)}"
+      while IFS=$'\037' read -r _ path _ _ _ _ _ added unblocks body runbook _; do
+        echo "- $added $path: $body${unblocks:+ (Unblocks $unblocks.)}${runbook:+ Runbook: $runbook}"
       done
     ;;
   list | --list)
@@ -104,7 +123,7 @@ case "$mode" in
         epic = $5; sub(/ \/ .*/, "", epic)
         printf "%d\037%s\037%s\037%08d\037%s\n", rank, dir, epic, ($6 == "" ? 99999999 : $6), $0
       }' | sort -t$'\037' -k1,1n -k2,2 -k3,3 -k4,4n -k5,5 |
-      while IFS=$'\037' read -r _ dir _ _ path kind priority tags epic _ _ _ body; do
+      while IFS=$'\037' read -r _ dir _ _ path kind priority tags epic _ _ _ body _ _; do
         extra=${tags:+ $tags}
         echo "- [$priority] $(echo "$kind" | tr a-z A-Z)$extra $path${epic:+ ($epic)}: $body"
       done
