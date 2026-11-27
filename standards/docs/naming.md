@@ -52,8 +52,8 @@ row here before a project's first `docs/requirements.md`.
 | cookbook | `COOK` |
 | evals | `EVAL` |
 | homer | `HOME` |
+| jimhillr | `JIMH` |
 | luggage | `LUGG` |
-| monorepo | `MONO` |
 | my_lang | `LANG` |
 | pane | `PANE` |
 | profiles | `PROF` |
@@ -64,5 +64,7 @@ row here before a project's first `docs/requirements.md`.
 | starcraft | `STAR` |
 
 `EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-004), so
-it is not a project prefix. `MONO` covers repo-wide process requirements
-such as change failure rate and lead time.
+it is not a project prefix. `JIMH`, the `jimhillr` project's prefix, covers
+repo-wide process requirements such as change failure rate and lead time.
+It replaced `MONO` when the `monorepo` folder was renamed, before any
+`MONO` requirement existed.

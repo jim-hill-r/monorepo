@@ -12,7 +12,7 @@ Tests validate that workflow files are correctly configured and contain the nece
 ## Running Tests
 
 ```bash
-cd monorepo
+cd jimhillr
 mise run test
 ```
 

@@ -32,7 +32,7 @@ Inventory of every project with a `mise.toml`, 2026-11-26.
 | HTTP API | luggage (on hold, not deployed) | HTTP smoke test of the OpenAPI routes against `cargo run` | Same test against the deployed URL | Workers Logs, or `tracing` output to the `telemetry` Worker |
 | Library | auth_sdk, cahokia/ui, cookbook/core, profiles/content_provider, luggage crates | Unit tests plus the consumers' CI (`affected-by`) | Nothing to release | Through the apps that use it |
 | Content and docs | cookbook/content and data_md, athenaeum, bogan, psy_ents, royalty, bear_down docs | Markdown and link checks; cookbook content is checked by building and smoke testing the site | Nothing to release | None |
-| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, monorepo/workflow_tests | Existing CI until removed | None | None |
+| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, jimhillr/workflow_tests | Existing CI until removed | None | None |
 
 Cloudflare adds the numbers (errors, page performance, deploys) next to those
 recordings.

@@ -77,7 +77,7 @@ and its apply mints one from the infra GitHub App, whose key is only in
 `infra-credentials`.
 
 `scripts/tofu.sh` does the work; the workflows only pass it secrets
-(tested by `tests/tofu_sh.test.sh` and `monorepo/workflow_tests`).
+(tested by `tests/tofu_sh.test.sh` and `jimhillr/workflow_tests`).
 
 | Workflow | When | State password | Vendor credentials | Environment |
 | --- | --- | --- | --- | --- |

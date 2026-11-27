@@ -1,4 +1,4 @@
-# monorepo
+# jimhillr
 
 A Cargo workspace for code about the repository itself rather than any one
 project. Today that is [workflow_tests](workflow_tests/README.md), which

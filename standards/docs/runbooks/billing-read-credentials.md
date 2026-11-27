@@ -42,7 +42,9 @@ stays on your 30-day [payment method check](payment-method-check.md).
    [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
    (Settings > Developer settings > Personal access tokens > Fine-grained
    tokens > Generate new token), then fill in:
-   - **Token name:** `monorepo-billing-read`
+   - **Token name:** `jimhillr-billing-read` (a token already made under
+     the old name `monorepo-billing-read` keeps working; use the new name
+     when you regenerate it)
    - **Expiration:** 1 year (366 days)
    - **Resource owner:** `jimhillr`
    - **Repository access:** Public repositories (read-only). It needs no
