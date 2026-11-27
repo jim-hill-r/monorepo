@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T20:39:18.049754847Z",
+  "generated_at": "2026-11-27T20:51:22.271476585Z",
   "coverage": {
     "projects": 26,
     "projects_with_requirements": 6,
-    "percent": 4.5,
-    "musts_percent": 50.0,
+    "percent": 5.0,
+    "musts_percent": 54.2,
     "judged_percent": 12.2,
     "warn_below": 80.0,
     "warning": true
@@ -471,13 +471,13 @@
     },
     {
       "project": "pane",
-      "musts": 2,
-      "musts_in_production": 2,
+      "musts": 4,
+      "musts_in_production": 4,
       "coverage": {
-        "requirements": 10,
-        "met": 2,
-        "percent": 20.0,
-        "musts_met": 2,
+        "requirements": 12,
+        "met": 4,
+        "percent": 33.3,
+        "musts_met": 4,
         "musts_percent": 100.0,
         "warning": false
       },
@@ -545,7 +545,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-27 20:34:20.941771174 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-27 20:39:38.415473061 UTC"
           ]
         },
         {
@@ -565,6 +565,18 @@
           "reasons": [
             "no evals"
           ]
+        },
+        {
+          "requirement": "PANE-011",
+          "title": "Jim can approve the waiting pull requests in a row",
+          "priority": "must",
+          "verdict": "met"
+        },
+        {
+          "requirement": "PANE-012",
+          "title": "Jim reviews every merged pull request after the fact",
+          "priority": "must",
+          "verdict": "met"
         }
       ]
     },
@@ -626,7 +638,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "home-page-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
@@ -635,7 +647,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "app-loads-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
@@ -644,7 +656,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "tracing-page-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
@@ -653,7 +665,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "capital-level-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
@@ -662,7 +674,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "home-page-live-for-progress failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
@@ -671,7 +683,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "connects-only-to-itself-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
@@ -680,9 +692,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-27 20:08:45.879932525 UTC",
-            "manifest-live failed in cd at 2026-11-27 20:08:45.879932525 UTC",
-            "no-zoom-live failed in cd at 2026-11-27 20:08:45.879932525 UTC"
+            "home-screen-icon-live failed in cd at 2026-11-27 20:41:59.986633075 UTC",
+            "manifest-live failed in cd at 2026-11-27 20:41:59.986633075 UTC",
+            "no-zoom-live failed in cd at 2026-11-27 20:41:59.986633075 UTC"
           ]
         },
         {
