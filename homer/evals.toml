@@ -1,0 +1,202 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# homer has no deploy and no workflow may use the RapidAPI key, so every
+# eval runs against a mock of the Zillow API. The trycmd evals name the
+# existing case files in tests/cmd/ with `glob`. They list the `cd` stage
+# for the run against the release binary that eval engine phase 2 adds
+# (issues/eval-engine-phase-2-trycmd-script.md); until then their results
+# come from the `cli-transcripts` cargo eval, which runs every case.
+
+prefix = "HOME"
+
+# HOME-001: An address looks up the property's details
+
+[[eval]]
+id = "parse-details"
+requirement = "HOME-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_parse_property_details"
+description = "Zillow fields map to details; unknown, fractional or out-of-range numbers become None."
+
+[[eval]]
+id = "details-from-mock-api"
+requirement = "HOME-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_property_details_success_against_mock_server"
+
+[[eval]]
+id = "lookup-transcript"
+requirement = "HOME-001"
+stages = ["ci", "cd"]
+kind = "trycmd"
+glob = "tests/cmd/lookup.toml"
+
+# HOME-002: A property is scored against Jim's preferences
+
+[[eval]]
+id = "evaluate-criteria"
+requirement = "HOME-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_evaluate_"
+description = "Each criterion, the match score, and unknown values counting as not met."
+
+[[eval]]
+id = "report-shows-score"
+requirement = "HOME-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_format_property_shows_match_score"
+
+[[eval]]
+id = "report-lists-misses"
+requirement = "HOME-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_format_property_unmet_criteria"
+
+[[eval]]
+id = "score-transcript"
+requirement = "HOME-002"
+stages = ["ci", "cd"]
+kind = "trycmd"
+glob = "tests/cmd/score.toml"
+
+# HOME-003: Results can be read by scripts
+
+[[eval]]
+id = "json-shape"
+requirement = "HOME-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_format_json"
+
+[[eval]]
+id = "json-transcript"
+requirement = "HOME-003"
+stages = ["ci"]
+kind = "trycmd"
+glob = "tests/cmd/score-json.toml"
+
+# HOME-004: homer never costs money
+
+[[eval]]
+id = "quota-saved-from-api"
+requirement = "HOME-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_quota_"
+description = "Quota headers are saved, including from a 429, and a reset allows requests again."
+
+[[eval]]
+id = "used-up-quota-blocks-request"
+requirement = "HOME-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_used_up_quota_stops_before_the_next_request"
+
+[[eval]]
+id = "unreported-request-counts"
+requirement = "HOME-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_request_without_quota_headers"
+
+[[eval]]
+id = "quota-stops-until-reset"
+requirement = "HOME-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "used_up_quota_"
+
+[[eval]]
+id = "quota-warning"
+requirement = "HOME-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "warning_"
+
+[[eval]]
+id = "corrupt-quota-file-stops"
+requirement = "HOME-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "load_missing_file_is_none_and_corrupt_file_is_error"
+
+[[eval]]
+id = "rapidapi-free-plan"
+requirement = "HOME-004"
+stages = ["human"]
+kind = "human-check"
+setting = "rapidapi-free-plan"
+
+[[eval]]
+id = "quota-used-up-transcript"
+requirement = "HOME-004"
+stages = ["ci", "cd"]
+kind = "trycmd"
+description = "With the saved quota used up, homer stops before contacting the API (tests/cmd/HOME-004-*.toml)."
+
+# HOME-005: The API key is never shown
+
+[[eval]]
+id = "cli-transcripts"
+requirement = "HOME-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "cli_transcripts"
+description = "Runs every tests/cmd case, including help-hides-api-key."
+
+[[eval]]
+id = "help-hides-key"
+requirement = "HOME-005"
+stages = ["ci", "cd"]
+kind = "trycmd"
+glob = "tests/cmd/help-hides-api-key.toml"
+
+# HOME-006: Mistakes and API failures give a clear message
+
+[[eval]]
+id = "api-error-status"
+requirement = "HOME-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_property_details_non_2xx_status_is_error"
+
+[[eval]]
+id = "long-error-body-cut"
+requirement = "HOME-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_summarize_error_body"
+
+[[eval]]
+id = "non-json-reply"
+requirement = "HOME-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_property_details_non_json_body_is_error"
+
+[[eval]]
+id = "bad-bathrooms-rejected"
+requirement = "HOME-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_parse_bathroom_count_rejects_bad_values"
+
+[[eval]]
+id = "missing-key-transcript"
+requirement = "HOME-006"
+stages = ["ci"]
+kind = "trycmd"
+glob = "tests/cmd/missing-api-key.toml"
+
+[[eval]]
+id = "invalid-option-transcript"
+requirement = "HOME-006"
+stages = ["ci"]
+kind = "trycmd"
+glob = "tests/cmd/invalid-min-bathrooms.toml"

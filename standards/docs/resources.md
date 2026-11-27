@@ -142,7 +142,7 @@ Worker, binding, URL or release:
 ## Checks
 
 All in [`standards/scripts/resources.sh`](../scripts/resources.sh), tested
-in `monorepo/workflow_tests/tests/resources_tests.rs`.
+in `jimhillr/workflow_tests/tests/resources_tests.rs`.
 
 | Check | Where it runs | What it does |
 | --- | --- | --- |

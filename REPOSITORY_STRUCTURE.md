@@ -10,7 +10,7 @@ This document describes the organization and structure of this monorepo to help 
 ├── .github/              # GitHub Actions workflows and repo configuration
 │   ├── workflows/        # CI/CD and maintenance workflows (pull-request-ci.yml, push-main.yml, nightly-ci.yml, nightly-cd.yml, ...)
 │   └── dependabot.yml    # Dependency update configuration
-├── monorepo/            # High-level monorepo functionality workspace
+├── jimhillr/            # Code about the repository itself (workflow tests)
 │   └── workflow_tests/  # Tests for GitHub Actions workflows
 ├── profiles/            # User profiles and personal content
 │   ├── jimhillr/        # Personal profile website for jimhillr
@@ -28,8 +28,8 @@ This document describes the organization and structure of this monorepo to help 
 
 ## Key Directories
 
-### `/monorepo/`
-Contains high-level monorepo functionality and tools:
+### `/jimhillr/`
+Contains code about the repository itself rather than any one project:
 - `workflow_tests/` - Rust-based tests for GitHub Actions workflows
 
 ### `/profiles/`
@@ -87,7 +87,7 @@ See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` f
 - The Pull Request CI workflow automatically validates changed projects on PRs
 - The push-main workflow validates and deploys changed projects on main branch commits
 - Tests should be run before committing changes
-- Workflow tests are located at `monorepo/workflow_tests/` and validate GitHub Actions configurations
+- Workflow tests are located at `jimhillr/workflow_tests/` and validate GitHub Actions configurations
 
 ## Important Notes for Agents
 

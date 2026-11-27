@@ -15,13 +15,15 @@ committed docs/plans/issues"). Every PR description, from any agent:
 1. Starts with the attribution lines the agent platform requires (the
    `claude-projects-attribution` comment and the "Requested by" line), when
    there are any.
-2. Then opens with an **executive summary** of at most **75 words**: what the
+2. Then the **attention badges** line (see [below](#attention-badges)),
+   which tells the reviewer how closely to look.
+3. Then opens with an **executive summary** of at most **75 words**: what the
    PR does, why, and any engineering tradeoffs. A `## Summary` heading above
    it is optional.
-3. Links from the summary to the committed details: the plan, decision
+4. Links from the summary to the committed details: the plan, decision
    record, issue file, runbook or doc in the repo that explains the change.
    Write long explanations there, in the same PR, not in the description.
-4. Keeps anything after the summary short: how it was tested, anything a
+5. Keeps anything after the summary short: how it was tested, anything a
    reviewer should check closely, and screenshots of UI changes
    ([documentation.md](documentation.md)).
 
@@ -34,6 +36,37 @@ missing, longer than 75 words or has no link. It is a warning only, so it
 never blocks a merge; fix the description and the check reruns on the edit.
 
 Dependabot PRs are exempt: their bodies are generated.
+
+### Attention badges
+
+Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
+know how much attention I should give. First is if a fundamental
+requirement is changing. Second if anything affecting a threat/risk is
+changing." Every agent PR description has one line right under the
+attribution lines, written by `chores badges` (or `chores pr-body`, which
+calls it) from the PR's diff against `origin/main`:
+
+```markdown
+> **Attention:** 🔴 must requirement changed: `COOK-001` · 🟠 threat/risk files changed: `cookbook/docs/threat.toml`
+```
+
+| Badge | 🟢 | 🟡 / 🟠 | 🔴 |
+| --- | --- | --- | --- |
+| Requirements | No `docs/requirements.md` changed | 🟡 a `should` or `could` requirement, or text outside any requirement, changed | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
+| Threat/risk | No risk file changed | 🟠 a risk file changed | (none: whether a change weakens security is the Security summary's call) |
+
+Risk files are the security files of the [PR security
+summary](security.md) (each project's `docs/threat.toml`, `_headers` and
+`wrangler` configs, workflows, gitleaks, cargo-deny and zizmor configs)
+plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
+`infra/src/`, `infra/scripts/`, `standards/settings.toml`,
+`standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
+secret and security check scripts, `SECURITY.md` and `CODEOWNERS`. The
+line is a pointer, not a gate: a requirement change still gets
+`needs-human` ([evals.md](evals.md)), and the Security summary job still
+labels `security` and, when a change weakens anything, `needs-human`. The
+PR-001 check skips the line. When later pushes change what the PR
+touches, rerun `chores badges` and update the line.
 
 ## Who owns a PR
 
@@ -171,7 +204,7 @@ judged by.
 4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
    `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
    `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
-   `monorepo/`, `standards/` (its own rules included), and in any project
+   `jimhillr/`, `standards/` (its own rules included), and in any project
    `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
    `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
 5. At most 100 files and 1,500 changed lines.
