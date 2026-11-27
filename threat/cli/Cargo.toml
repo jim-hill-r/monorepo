@@ -1,0 +1,20 @@
+[package]
+name = "threat_cli"
+description = "The threat command: checks every project's docs/threat.toml against standards/docs/security.md."
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "threat"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+threat_model = { path = "../model" }
+
+[dev-dependencies]
+tempfile = "3"
