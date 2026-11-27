@@ -1,10 +1,12 @@
 # Cloudflare Pages response headers (https://developers.cloudflare.com/pages/configuration/headers/).
 # `mise run release:web` (standards/scripts/bevy-release.sh) copies this file
 # into dist/web, the Pages build output. The game loads only its own files
-# (index.html, boot.js, game.js, game_bg.wasm); the other origin is
-# Cloudflare Web Analytics, which Pages injects.
+# (index.html, boot.js, game.js, game_bg.wasm). connect-src also allows the
+# telemetry Worker that gameplay events go to (src/telemetry.rs, ENDPOINT; a
+# test keeps the two in step) and Cloudflare Web Analytics, which Pages
+# injects.
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; connect-src 'self' https://jimhillr-telemetry.jim-hill-r.workers.dev https://cloudflareinsights.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

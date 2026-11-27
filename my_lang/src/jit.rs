@@ -238,11 +238,66 @@ mod tests {
 
     #[test]
     fn test_jit_no_args_returns_constant() {
+        // A body that ends in an expression gives that expression's value.
         let runner = make_runner("function answer() { 42 }");
-        // The body is an expression statement (not a return), so the function
-        // returns the implicit 0.
         let result = runner.call("answer", &[]).expect("call should succeed");
-        assert_eq!(result, 0);
+        assert_eq!(result, 42);
+    }
+
+    #[test]
+    fn test_jit_trailing_expression_is_the_value() {
+        let runner = make_runner("function add(a, b) { a + b }");
+        assert_eq!(runner.call("add", &[3, 4]).expect("call should succeed"), 7);
+    }
+
+    #[test]
+    fn test_jit_trailing_expression_after_assignment() {
+        let runner = make_runner("function compute() { x = 10; x + 5 }");
+        assert_eq!(
+            runner.call("compute", &[]).expect("call should succeed"),
+            15
+        );
+    }
+
+    #[test]
+    fn test_jit_trailing_call_is_the_value() {
+        let runner = make_runner("function square(x) { x * x } function main() { square(6) + 6 }");
+        assert_eq!(runner.call("main", &[]).expect("call should succeed"), 42);
+    }
+
+    #[test]
+    fn test_jit_only_the_last_expression_is_the_value() {
+        let runner = make_runner("function pick() { 1; 2; 3 }");
+        assert_eq!(runner.call("pick", &[]).expect("call should succeed"), 3);
+    }
+
+    #[test]
+    fn test_jit_return_before_trailing_expression_wins() {
+        let runner = make_runner("function early() { return 1; 2 }");
+        assert_eq!(runner.call("early", &[]).expect("call should succeed"), 1);
+    }
+
+    #[test]
+    fn test_jit_trailing_expression_in_output() {
+        let runner = make_runner("output write(v) { v * 2 }");
+        assert_eq!(
+            runner.call("write", &[21]).expect("call should succeed"),
+            42
+        );
+    }
+
+    #[test]
+    fn test_jit_body_ending_in_assignment_gives_zero() {
+        let runner = make_runner("function store() { x = 10 }");
+        assert_eq!(runner.call("store", &[]).expect("call should succeed"), 0);
+    }
+
+    #[test]
+    fn test_jit_input_trailing_expression_gives_zero() {
+        // `input` declarations return no value, so a trailing expression is
+        // only evaluated.
+        let runner = make_runner("input read(v) { v }");
+        assert_eq!(runner.call("read", &[5]).expect("call should succeed"), 0);
     }
 
     #[test]

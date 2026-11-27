@@ -27,6 +27,14 @@ pub struct Thresholds {
     pub flaky_window: usize,
     pub fresh_days: i64,
     pub stale_days: i64,
+    /// Eval coverage (the share of a project's `must` requirements that are
+    /// met) below this percentage is a warning, and its badge is not green.
+    #[serde(default = "default_coverage_warn")]
+    pub coverage_warn: f64,
+}
+
+fn default_coverage_warn() -> f64 {
+    80.0
 }
 
 impl Default for Thresholds {
@@ -37,6 +45,7 @@ impl Default for Thresholds {
             flaky_window: 7,
             fresh_days: 2,
             stale_days: 3,
+            coverage_warn: default_coverage_warn(),
         }
     }
 }
@@ -59,6 +68,11 @@ impl Thresholds {
         if thresholds.fresh_days <= 0 || thresholds.fresh_days > thresholds.stale_days {
             return Err(ParseError::whole_file(
                 "fresh_days must be positive and no more than stale_days",
+            ));
+        }
+        if !(0.0..=100.0).contains(&thresholds.coverage_warn) {
+            return Err(ParseError::whole_file(
+                "coverage_warn must be a percentage from 0 to 100",
             ));
         }
         Ok(thresholds)

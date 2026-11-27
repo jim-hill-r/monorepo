@@ -8,8 +8,8 @@ changed: the broken content stayed local and was reverted, and every result
 went into a temporary copy of `evals-results`.
 
 The drill is now repeatable: the **evals fire drill** workflow
-(`.github/workflows/evals-fire-drill.yml`, run by hand) does the production
-half against the live site (see "Fire drill" in
+(`.github/workflows/evals-fire-drill.yml`, run by hand, which runs
+`evals drill`) does the production half against the live site (see "Fire drill" in
 [standards/docs/evals.md](../../standards/docs/evals.md#fire-drill)).
 
 ## What we did and what happened
@@ -22,13 +22,13 @@ half against the live site (see "Fire drill" in
 | CI break: remove recipe 200's `day-200` tag | `day-files-exist` (COOK-001) fails | The build script stops the build first. **No eval result at all** with `--partial`, `error` without it (issue filed) |
 | CD break: `recipe-page-live` looks for a string that isn't on the page | result `fail` | `fail`: "body doesn't contain ..." |
 | Verdict after the CD failure | COOK-001 red | `not-met` |
-| Triage | a `kind: fix` issue for COOK-001 | Not live yet: the free triage workflow is still an issue (`issues/eval-triage-free-workflow.md`). The drill reports what it should file |
+| Triage | a `kind: fix` issue for COOK-001 | Not live on the day. `evals-triage.yml` landed later the same day, and the drill now checks a dry run of it plans the issue |
 | Next good CD run | COOK-001 green | `met` (one failure in the last 7 runs is under the flaky threshold of 2) |
 
 The CD half ran from a cloud sandbox whose proxy blocks `*.pages.dev`, so it
-ran there against a local stand-in page; the workflow runs the same script
-against the live site from GitHub Actions, and that run is linked from the
-PR.
+ran there against a local stand-in page; the workflow ran the same steps
+against the live site from GitHub Actions and passed (COOK-001 met, not met,
+met).
 
 ## What we found
 
@@ -41,9 +41,9 @@ PR.
 2. **A build failure leaves no eval result.** The PR check fails, so nothing
    ships, but the verdicts can't see it.
    [issues/eval-build-failure-leaves-no-result.md](../../issues/eval-build-failure-leaves-no-result.md).
-3. **Triage is the missing link.** Red verdicts reach `verdicts.json`, but
-   nothing files the `FIX` yet. Covered by the triage workflow issue; when it
-   lands, the drill should check it would file one.
+3. **Triage was the missing link.** Red verdicts reached `verdicts.json`,
+   but nothing filed the `FIX`. The daily `evals-triage.yml` now does, and
+   `evals drill` checks that a dry run of triage picks the requirement up.
 4. **An unreachable site is a `fail`, not an `error`.** From the sandbox the
    proxy refused the request and both page evals recorded `fail`. That is
    right for production (users can't reach it either), but a runner network
@@ -58,5 +58,4 @@ PR.
 ## Next drill
 
 Run the workflow after any change to the verdict rules, `evals store` or
-the triage workflow, and once triage files issues, extend the drill to check
-the `FIX` it would file.
+the triage workflow.
