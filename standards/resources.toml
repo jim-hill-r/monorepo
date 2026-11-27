@@ -1,0 +1,29 @@
+# Resources that are live on purpose without a project file claiming them
+# ([[keep]]), and resources given up on purpose ([[retired]]).
+# Rules, field meanings and the safe deletion order: standards/docs/resources.md.
+#
+# Most resources need no entry: a wrangler.toml, threat.toml, the release
+# matrix or an open PR already claims them. Renaming or removing a resource
+# adds a [[retired]] entry for the old one in the same PR. Adding any entry
+# needs Jim's approval (the PR is labelled needs-human), and approving a
+# [[retired]] entry is the approval to delete that resource.
+#
+# Never put a secret here: names, addresses and dates only.
+#
+# Both lists are empty today. Add entries in this shape:
+#
+# [[keep]]
+# kind = "pages"
+# name = "example-landing"
+# why = "Jim's hand-made landing page, not in the repo."
+# review = "2027-05-26"
+#
+# [[retired]]
+# kind = "pages"   # pages | worker | d1 | kv | queue | cron | dns | auth0-url | branch | release
+# name = "old-name"
+# url = "https://old-name.pages.dev"
+# replaced_by = "jimhillr-new-name"
+# why = "Renamed to the jimhillr-{project} scheme."
+# retired = "2026-11-27"
+# delete_after = "2026-12-04"
+# deleted = ""

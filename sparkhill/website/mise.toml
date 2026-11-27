@@ -26,9 +26,16 @@ run = "perseus export -s -w --wasm-bindgen-path \"$(command -v wasm-bindgen)\" -
 # Use the wasm-bindgen and wasm-opt that mise installed (see [tools]), so
 # perseus-cli downloads nothing. Cargo.lock stays in lockfile format 3, the
 # only one perseus-cli 0.4.2 can read.
+# The export has no 404 page of its own, and without a 404.html Cloudflare
+# Pages answers every unknown URL with the home page and status 200, so
+# release also writes the 404 error view to dist/exported/404.html. It runs
+# after the export, which empties dist/exported, and reuses its Wasm bundle.
 [tasks.release]
-description = "Static export (output in dist/exported), which ../cloudflare deploys"
-run = "perseus export --release --wasm-bindgen-path \"$(command -v wasm-bindgen)\" --wasm-opt-path \"$(command -v wasm-opt)\""
+description = "Static export with a 404 page (output in dist/exported), which ../cloudflare deploys"
+run = [
+  "perseus export --release --wasm-bindgen-path \"$(command -v wasm-bindgen)\" --wasm-opt-path \"$(command -v wasm-opt)\"",
+  "perseus export-error-page --code 404 --output dist/exported/404.html --wasm-bindgen-path \"$(command -v wasm-bindgen)\" --wasm-opt-path \"$(command -v wasm-opt)\"",
+]
 
 # Playwright smoke tests of the release export: e2e/serve.mjs serves
 # dist/exported as Cloudflare Pages does, and the tests load it at desktop

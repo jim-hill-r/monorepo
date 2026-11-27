@@ -110,6 +110,12 @@ only for the affected projects in the git hooks and PR CI: `hooks.sh` and
 the PR's audit step pass the list in `COST_PROJECTS`. The account-wide rules
 read every project's file every time, which takes milliseconds.
 
+A requirement can depend on this check through an eval of kind `cost` in
+the project's `evals.toml`: in stage `ci`, `cost check --evals-results`
+writes its result in the eval engine's format, failing on COST-001 to
+COST-007 in the project's own files. See
+[Cost evals](evals.md#cost-evals).
+
 ### Detectors
 
 [`standards/radar/detectors.toml`](../radar/detectors.toml) maps what is in
@@ -130,6 +136,12 @@ through a series of small PRs. Comment lines don't count.
 | a `rapidapi.com` host, a `RAPIDAPI_` name or an `X-RapidAPI-` header | RapidAPI (Zillow data) |
 | a workflow named `<project>.yml` or `<project>-*.yml` with a `schedule:` | GitHub Actions minutes |
 | any other `https://` host | COST-009 |
+
+A detector can also carry a `threat` field saying what a match means for
+the project's threat model; the threat check reads the same matches for
+THR-004 ([security.md](security.md#threat-models)). A detector with a
+`threat` but no `blip` (a deploy URL, `wrangler secret put`, raw HTML, CORS
+open to every origin) matters only to the threat check and costs nothing.
 
 Links a person follows (an HTML or rsx `href`, a Markdown link) are not
 services, so they never raise COST-009. When a host costs nothing (a docs

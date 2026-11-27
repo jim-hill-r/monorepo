@@ -8,9 +8,9 @@ check each requirement are in [evals.toml](../evals.toml).
 Drafted by an agent on 2026-11-26 from the Goal, The site and Phases
 sections of the [review dashboard plan](plans/2026-11-review-dashboard.md)
 and the existing tests. Pane has no deep review yet. PANE-001 to PANE-006
-cover what is built (phases 0 and 1) and PANE-008 the Reviews page (phase 2);
-PANE-007, PANE-009 and PANE-010 are the plan's later phases and have no
-evals until they are built.
+cover what is built (phases 0 and 1), PANE-008 the Reviews page (phase 2)
+and PANE-010 the Money page (phase 7); PANE-007 and PANE-009 are the plan's
+later phases and have no evals until they are built.
 
 ## PANE-001: Today shows what needs Jim
 
@@ -93,3 +93,29 @@ evals until they are built.
 - Why: Jim wants to know whether each project pays for itself.
 - Accept: a project shows its revenue and its costs per month and whether
   it covers them.
+
+## PANE-011: Jim can approve the waiting pull requests in a row
+
+- Priority: must
+- Why: Jim approves many agent PRs a day, and finding and opening each one
+  took 5 or 6 clicks
+  ([decision 0014](../../standards/docs/decisions/0014-faster-pr-approvals.md)).
+- Accept: the Approve page lists every open pull request out of draft whose
+  checks passed and that still needs a review, clear ones first, with its
+  summary (at most 75 words), its attention badges (red for `needs-human`
+  or `credential-change`, orange for `security` or `cost`) and a link
+  straight to its review form on GitHub. Stacked pull requests show as one
+  stack. It reads GitHub without a token and says so when GitHub refuses.
+
+## PANE-012: Jim reviews every merged pull request after the fact
+
+- Priority: must
+- Why: Jim, 2026-11-27: "auto approve plus pane acknowledgements of every
+  pr". Low-risk PRs merge without his approval, so he still reads each one
+  after it lands
+  ([decision 0014](../../standards/docs/decisions/0014-faster-pr-approvals.md)).
+- Accept: the Acknowledge page lists every pull request merged since he
+  started, newest first, with its summary and attention badges, until he
+  acknowledges it (one at a time or all shown), and remembers that across
+  reloads; "Flag for follow-up" opens GitHub's editor with a `fix` issue
+  file for that PR in its project's `issues/`.

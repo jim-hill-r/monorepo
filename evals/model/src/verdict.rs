@@ -5,7 +5,7 @@
 //! | Not met | The latest result of any production-stage eval failed, Jim's latest rating is "not met" and no `cd` result has come in since, or Jim's latest answer to a `human-check` eval's setting is "not ok". Amber (at risk) for `should` and `could`. |
 //! | At risk | A `human-check` eval's setting was never checked, or was last checked longer ago than twice its `every`. An eval failed `flaky_failures` of its last `flaky_window` runs, a metric is within `near_threshold` of its limit, the judge says not met (unless Jim rated it met since), a `ci` eval's latest result failed, an eval errored or never ran, or the newest production result is older than `stale_days` (or not younger than `fresh_days`). |
 //! | Met | Every eval's latest result passes, and a production-stage result is younger than `fresh_days`. |
-//! | Unknown | Retired, no evals, or no production-stage results yet. |
+//! | Unknown | Retired, no evals, or no production-stage results yet (at risk instead when a `ci` eval's latest result failed or a `human-check` is at risk, so a known failure never shows as grey). |
 
 use std::collections::BTreeMap;
 
@@ -27,6 +27,14 @@ pub struct Thresholds {
     pub flaky_window: usize,
     pub fresh_days: i64,
     pub stale_days: i64,
+    /// Eval coverage (the share of a project's `must` requirements that are
+    /// met) below this percentage is a warning, and its badge is not green.
+    #[serde(default = "default_coverage_warn")]
+    pub coverage_warn: f64,
+}
+
+fn default_coverage_warn() -> f64 {
+    80.0
 }
 
 impl Default for Thresholds {
@@ -37,6 +45,7 @@ impl Default for Thresholds {
             flaky_window: 7,
             fresh_days: 2,
             stale_days: 3,
+            coverage_warn: default_coverage_warn(),
         }
     }
 }
@@ -59,6 +68,11 @@ impl Thresholds {
         if thresholds.fresh_days <= 0 || thresholds.fresh_days > thresholds.stale_days {
             return Err(ParseError::whole_file(
                 "fresh_days must be positive and no more than stale_days",
+            ));
+        }
+        if !(0.0..=100.0).contains(&thresholds.coverage_warn) {
+            return Err(ParseError::whole_file(
+                "coverage_warn must be a percentage from 0 to 100",
             ));
         }
         Ok(thresholds)
@@ -235,14 +249,24 @@ pub fn verdict(
         return report(Verdict::Unknown, vec!["no evals".into()]);
     }
     let Some(newest_production) = newest_production else {
-        if check_risks.is_empty() {
+        // A failing ci eval is known bad news: it must not hide as grey
+        // (found by the 2026-11-27 fire drill, evals/docs/fire-drill-2026-11-27.md).
+        let mut risks: Vec<String> = runs
+            .iter()
+            .filter(|((_, stage), list)| {
+                *stage == Stage::Ci && list.last().is_some_and(|r| r.status == ResultStatus::Fail)
+            })
+            .map(|((eval_id, _), _)| format!("{eval_id} is failing in ci"))
+            .collect();
+        risks.extend(check_risks);
+        if risks.is_empty() {
             return report(
                 Verdict::Unknown,
                 vec!["no production-stage results yet".into()],
             );
         }
-        check_risks.push("no production-stage results yet".into());
-        return report(Verdict::AtRisk, check_risks);
+        risks.push("no production-stage results yet".into());
+        return report(Verdict::AtRisk, risks);
     };
 
     // At risk.
@@ -517,6 +541,27 @@ mod tests {
         let report = run(Priority::Must, &layout_evals(), &results);
         assert_eq!(report.verdict, Verdict::AtRisk);
         assert_eq!(report.reasons, vec!["layout is failing in ci"]);
+    }
+
+    #[test]
+    fn ci_failure_without_production_results_is_at_risk_not_unknown() {
+        let evals = vec![eval("sums", &[Stage::Ci], playwright())];
+        let results = vec![result("sums", Stage::Ci, ResultStatus::Fail, 1)];
+        let report = run(Priority::Should, &evals, &results);
+        assert_eq!(report.verdict, Verdict::AtRisk);
+        assert_eq!(
+            report.reasons,
+            vec!["sums is failing in ci", "no production-stage results yet"]
+        );
+
+        let results = vec![
+            result("sums", Stage::Ci, ResultStatus::Fail, 2),
+            result("sums", Stage::Ci, ResultStatus::Pass, 1),
+        ];
+        assert_eq!(
+            run(Priority::Should, &evals, &results).verdict,
+            Verdict::Unknown
+        );
     }
 
     #[test]

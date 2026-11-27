@@ -1,0 +1,363 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# The cargo and playwright evals read the reports of the webapp and
+# webapp_cloudflare jobs (each reports its share, --partial). The cd evals run
+# against https://jimhillr-sparkhill-webapp.pages.dev after webapp_cloudflare
+# deploys: the http evals, and the playwright evals with stage cd, which read
+# the report of the @smoke tests that standards/scripts/smoke.sh runs against
+# the live site (SMOKE_DIR in webapp_cloudflare/mise.toml). Pages answers
+# every path of a single-page app with index.html, so each http eval also
+# checks what the response says.
+
+prefix = "SPRK"
+
+# SPRK-001: A learner can start practising straight away
+
+[[eval]]
+id = "begin-opens-the-letter-level"
+requirement = "SPRK-001"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Home shows Blue Eel and Writing made simple!; Begin opens the letter level at b."
+
+[[eval]]
+id = "home-page-live"
+requirement = "SPRK-001"
+stages = ["cd"]
+kind = "http"
+path = "/"
+body_contains = "apple-mobile-web-app-title\" content=\"Blue Eel\""
+max_ms = 3000
+
+[[eval]]
+id = "first-session-judged"
+requirement = "SPRK-001"
+stages = ["judge"]
+kind = "judge"
+rubric = """
+Open the live app on a phone-sized screen as a new visitor. Pass if, with
+nothing but a name typed, Begin then Start shows a letter being drawn and a
+way to try it, with no sign-in, pop-up or download on the way. Fail on any
+error, blank screen, or a step a young child couldn't follow."""
+
+# SPRK-002: Every letter is shown being written before the learner tries it
+
+[[eval]]
+id = "every-letter-has-a-pattern"
+requirement = "SPRK-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_letter_has_a_pattern"
+
+[[eval]]
+id = "every-practice-expression-has-patterns"
+requirement = "SPRK-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_practice_expression_has_patterns"
+
+[[eval]]
+id = "every-stroke-starts-and-ends"
+requirement = "SPRK-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "each_stroke_starts_and_ends"
+
+[[eval]]
+id = "patterns-are-bundled"
+requirement = "SPRK-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "no_runtime_fetch"
+
+[[eval]]
+id = "app-loads-live"
+requirement = "SPRK-002"
+stages = ["cd"]
+kind = "http"
+path = "/letter"
+body_contains = "<div id=\"main\">"
+description = "The app shell that draws the demonstrations is served; the patterns are inside its bundle."
+
+[[eval]]
+id = "demonstrations-judged"
+requirement = "SPRK-002"
+stages = ["judge"]
+kind = "judge"
+rubric = """
+On the live app, watch the demonstrations of b, a, g, hi and the capitals
+T and S. Pass if each draws a clear, correctly shaped letter stroke by
+stroke, in the usual school stroke order and direction, sitting on the
+guide lines (tall letters to the cap line, g's tail to the beard line).
+Fail on a wrong or jumbled shape, strokes drawn in a strange order, or a
+letter off its lines."""
+
+# SPRK-003: A tracing is checked fairly
+
+[[eval]]
+id = "the-pattern-passes-anywhere"
+requirement = "SPRK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_pattern_itself_passes_at_any_canvas_size_and_place"
+
+[[eval]]
+id = "a-shaky-tracing-passes"
+requirement = "SPRK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_shaky_tracing_still_passes"
+
+[[eval]]
+id = "no-letter-passes-as-another"
+requirement = "SPRK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "no_letter_passes_as_another"
+
+[[eval]]
+id = "backwards-strokes-fail"
+requirement = "SPRK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_stroke_drawn_backwards_fails"
+
+[[eval]]
+id = "wrong-size-or-lines-fail"
+requirement = "SPRK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_letter_too_small_or_on_the_wrong_lines_fails"
+
+[[eval]]
+id = "misses-retry-then-move-on"
+requirement = "SPRK-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_miss_keeps_the_letter_until_the_retry_limit"
+
+[[eval]]
+id = "tracing-in-the-browser"
+requirement = "SPRK-003"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Tracing along the demonstration says Great job!; a scribble says Try again! 3 times, then moves on."
+
+[[eval]]
+id = "tracing-page-live"
+requirement = "SPRK-003"
+stages = ["cd"]
+kind = "http"
+path = "/letter?practice=b"
+body_contains = "<div id=\"main\">"
+description = "The tracing page is served; the tracing-in-the-browser smoke tests trace letters on it."
+
+[[eval]]
+id = "tracing-judged"
+requirement = "SPRK-003"
+stages = ["judge"]
+kind = "judge"
+rubric = """
+On the live app, trace b carefully but by hand, then trace d where b is
+asked for, then draw b with its stroke reversed. Pass if the careful b is
+accepted and both the d and the reversed b get "Try again!". Fail if a
+careful tracing is refused twice in a row or a wrong letter is accepted."""
+
+# SPRK-004: Learners move from letters to words to capitals
+
+[[eval]]
+id = "stable-letters-open-the-next-group"
+requirement = "SPRK-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "letters_traced_right_first_time_stabilize_and_open_the_next_batch"
+
+[[eval]]
+id = "levels-end-when-stable"
+requirement = "SPRK-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_letter_level_ends_once_every_letter_is_stable"
+
+[[eval]]
+id = "misses-never-end-a-level"
+requirement = "SPRK-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "misses_alone_never_end_a_level"
+
+[[eval]]
+id = "levels-in-order"
+requirement = "SPRK-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "go_leads_from_letters_to_words_to_capitals_to_congratulations"
+
+[[eval]]
+id = "go-through-every-level"
+requirement = "SPRK-004"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Go leads letters, words, capitals, congratulations, and Start Over goes home."
+
+[[eval]]
+id = "capital-level-live"
+requirement = "SPRK-004"
+stages = ["cd"]
+kind = "http"
+path = "/capital"
+body_contains = "<div id=\"main\">"
+
+# SPRK-005: Each learner's progress is kept on their device
+
+[[eval]]
+id = "progress-saved-per-learner"
+requirement = "SPRK-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "progress_is_kept_per_learner_and_level"
+
+[[eval]]
+id = "saved-progress-carries-on"
+requirement = "SPRK-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "saved_progress_carries_on_where_the_learner_was"
+
+[[eval]]
+id = "blank-name-is-standard"
+requirement = "SPRK-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_blank_name_is_the_default_learner"
+
+[[eval]]
+id = "reload-carries-on"
+requirement = "SPRK-005"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "A reload carries on where the learner was; another name starts afresh."
+
+[[eval]]
+id = "home-page-live-for-progress"
+requirement = "SPRK-005"
+stages = ["cd"]
+kind = "http"
+path = "/"
+body_contains = "<div id=\"main\">"
+description = "The app is served; the reload-carries-on smoke tests reload a session on it."
+
+[[eval]]
+id = "progress-judged"
+requirement = "SPRK-005"
+stages = ["judge"]
+kind = "judge"
+rubric = """
+On the live app, begin as "Ada", trace two letters right, close the tab,
+open the app again and begin as "Ada". Then begin as "Bo". Pass if Ada
+carries on at her third letter and Bo starts at b. Fail if either starts
+in the wrong place or the name box forgets Ada."""
+
+# SPRK-006: Nothing a learner types or draws leaves their device
+
+[[eval]]
+id = "no-request-leaves-the-site"
+requirement = "SPRK-006"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "A session makes requests only to its own site, none naming the learner, and sets no cookies."
+
+[[eval]]
+id = "no-outside-host-in-source"
+requirement = "SPRK-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "webapp_needs_no_outside_host"
+
+[[eval]]
+id = "security-headers-in-release"
+requirement = "SPRK-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "release_adds_the_security_headers"
+
+[[eval]]
+id = "connects-only-to-itself-live"
+requirement = "SPRK-006"
+stages = ["cd"]
+kind = "http"
+path = "/"
+header = "content-security-policy: connect-src 'self';"
+
+# SPRK-007: Blue Eel works and installs like an app on a phone or tablet
+
+[[eval]]
+id = "manifest-and-icons"
+requirement = "SPRK-007"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Title, theme colour, no-zoom viewport, a full-screen manifest and icons that load."
+
+[[eval]]
+id = "manifest-live"
+requirement = "SPRK-007"
+stages = ["cd"]
+kind = "http"
+path = "/assets/manifest.webmanifest"
+body_contains = "\"display\": \"standalone\""
+
+[[eval]]
+id = "home-screen-icon-live"
+requirement = "SPRK-007"
+stages = ["cd"]
+kind = "http"
+path = "/assets/icons/icon-192.png"
+header = "content-type: image/png"
+
+[[eval]]
+id = "no-zoom-live"
+requirement = "SPRK-007"
+stages = ["cd"]
+kind = "http"
+path = "/"
+body_contains = "user-scalable=no"
+
+# SPRK-008: A few letters or words can be practised on their own
+
+[[eval]]
+id = "practice-query-in-order"
+requirement = "SPRK-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_practice_query_names_the_expressions_in_order"
+
+[[eval]]
+id = "practice-query-drops-unknowns"
+requirement = "SPRK-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_practice_query_drops_unknown_and_repeated_expressions"
+
+[[eval]]
+id = "practice-ends-when-stable"
+requirement = "SPRK-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "practising_only_some_letters_ends_once_they_are_stable"
+
+# SPRK-009: A learner can practise with less help
+
+[[eval]]
+id = "technique-query-and-default"
+requirement = "SPRK-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_query_wins_over_the_saved_technique_and_tracing_is_the_default"
+
+[[eval]]
+id = "techniques-in-the-browser"
+requirement = "SPRK-009"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Pattern keeps the start dots while drawing; Freeform shows nothing; both pass a letter written right; the choice is remembered."

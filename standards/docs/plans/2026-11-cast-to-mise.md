@@ -42,7 +42,7 @@ everywhere. CI becomes one job per changed project, run in parallel.
    project, and a non-blocking `pull-request-mise-ci.yml`.
 2. **Switch CI/CD to mise.** Replace the PR, main and nightly workflows and the
    artifacts-triggered CD; delete the nightly audit and the commit-artifacts
-   step; drop the Cast-specific workflow tests in `monorepo/workflow_tests`.
+   step; drop the Cast-specific workflow tests in `jimhillr/workflow_tests`.
 3. **Remove Cast.** Delete `cast/`, every `Cast.toml`, `.cast` in
    `.gitignore`, the standards Rust CLI, committed artifacts and the Cast
    entries in `.vscode/settings.json`. Rewrite the AGENTS.md "Dev commands"

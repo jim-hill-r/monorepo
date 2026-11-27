@@ -3,6 +3,7 @@ use crate::canvas_js::CANVAS_JS;
 use crate::patterns::demonstration_js;
 use crate::progress;
 use crate::state::{AppState, PracticePhase, next_level, practice_from_query};
+use crate::technique::{Technique, get_technique_js};
 use crate::tracing_check;
 use dioxus::document::eval;
 use dioxus::prelude::*;
@@ -21,6 +22,8 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
     let mut learner = use_signal(|| None::<String>);
     // The level is fixed for the page, so a signal lets each handler read it.
     let level_name = use_signal(|| level.clone());
+    // How the demonstration shows each letter, chosen on Start.
+    let mut technique = use_signal(Technique::default);
 
     // Initialize the canvas JS library once
     use_effect(move || {
@@ -38,6 +41,11 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             .join::<String>()
             .await
             .unwrap_or_default();
+        let saved_technique = eval(&get_technique_js())
+            .join::<String>()
+            .await
+            .unwrap_or_default();
+        technique.set(Technique::choose(&query, &saved_technique));
         if let Some(expressions) = practice_from_query(&query) {
             learner.set(None);
             state.write().practise_only(expressions);
@@ -62,7 +70,7 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             phase.set(PracticePhase::Watching);
             eval(&format!(
                 "window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{ window._eelAnimDone = true; }}); {}",
-                demonstration_js(&letter)
+                demonstration_js(&letter, technique())
             ));
         }
     };
@@ -71,7 +79,10 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         // User indicates they're ready to try - enable recording
         phase.set(PracticePhase::Drawing);
         feedback.set("Begin!".to_string());
-        eval("window.eelCanvas.clear(); window.eelCanvas.startRecording();");
+        eval(&format!(
+            "{} window.eelCanvas.startRecording();",
+            technique().drawing_canvas_js()
+        ));
     };
 
     let on_done = move |_| async move {
@@ -108,7 +119,10 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             feedback.set("Amazing!".to_string());
         } else if try_again {
             feedback.set("Try again!".to_string());
-            eval("window.eelCanvas.clear(); window.eelCanvas.startRecording();");
+            eval(&format!(
+                "{} window.eelCanvas.startRecording();",
+                technique().drawing_canvas_js()
+            ));
         } else if let Some(next) = next_expr {
             feedback.set(
                 if success {
@@ -121,7 +135,7 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             phase.set(PracticePhase::Watching);
             eval(&format!(
                 "window.eelCanvas.clear(); {}",
-                demonstration_js(&next)
+                demonstration_js(&next, technique())
             ));
         }
     };

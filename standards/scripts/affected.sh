@@ -20,7 +20,7 @@
 # Changes to the root mise.toml, standards/scripts/ or the mise CI workflows
 # affect every project, except with --changed-only (or AFFECTED_CHANGED_ONLY=1),
 # which PR CI and the git hooks use. Then such a change affects only:
-#   - the projects that test those files (`standards` and `monorepo`, through
+#   - the projects that test those files (`standards` and `jimhillr`, through
 #     their own paths and affected-by lines);
 #   - for a script in standards/scripts/, the projects whose mise.toml or
 #     included standards/tasks file names it.

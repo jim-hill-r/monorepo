@@ -330,6 +330,23 @@ had no settings check (added).
 
 ### Phase 3: detectors, workflows, PR summary, live check
 
+Status: SEC-005 (zizmor, warnings) runs in the hooks, PR CI's **Workflow
+audit** and nightly, and every action is pinned to a commit; the findings
+left in the credential-holding infra workflows are a fix issue for a
+`credential-change` PR (2026-11-27). `threat summary --base` and PR CI's
+**Security summary** job set the `security` and `needs-human` labels; the
+hooks pass the affected projects to the threat check through the audit
+(2026-11-27). The rules are in [security.md](../security.md#pr-security-summary).
+
+Status (2026-11-27): THR-004 is built on the shared detectors (each
+detector in `detectors.toml` has an optional `threat` field; threat-only
+detectors have no `blip`, and a `[[threat]]` acknowledges a risky construct
+with `covers`), and the weekly live check is the `threat-live` job of
+`all-free-tier-usage.yml` (`threat live` and `threat-live.sh`). The live
+check fails its run and leaves issue files for PR triage to commit, because
+CI never pushes to `main` (SEC-007). Both are documented in
+[security.md](../security.md#drift)..
+
 - THR-004 through the shared detectors (after cost check phase 2 adds them).
 - SEC-005 (zizmor) as warnings, and pin third-party actions to commits.
 - `threat summary --base` and the PR CI step with the `security` and

@@ -1,5 +1,7 @@
 # cost
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/cost.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The cost check: it holds each project's cost analysis
 (`<project>/docs/cost.toml`) to the budgets in the tech radar and the free
 limits in `standards/radar/limits.toml`, so a PR that could change what the
@@ -24,6 +26,9 @@ cargo run -p cost_cli -- check
 cargo run -p cost_cli -- check --projects cookbook,pane
 # Exit 1 on any finding except COST-008 to COST-010 (phase 3).
 cargo run -p cost_cli -- check --strict
+# Also append a result for each `cost` eval in the checked projects'
+# evals.toml (stage ci) to the eval engine's results file.
+cargo run -p cost_cli -- check --projects cookbook --evals-results target/evals-reports/evals-results.jsonl
 
 # The [[cost]] entries that renew in the next 60 days (or already passed
 # their `renews` date), soonest first; the human issues digest lists them.

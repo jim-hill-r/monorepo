@@ -21,6 +21,14 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
 - **Practising a few letters**: `?practice=` with letters or words, such as
   `/letter?practice=b,c`, `/word?practice=hi` or `/capital?practice=T`, practises only those, as one
   batch, instead of the whole level. Anything without a pattern is ignored
+- **Techniques**: as on the live app, the home page's Technique picker (or
+  `?tech=Tracing`, `?tech=Pattern` or `?tech=Freeform`, which wins) sets how
+  much the demonstration shows (`src/technique.rs`). Tracing, the default,
+  animates every stroke; Pattern shows only each stroke's start and end
+  dots, which stay on the canvas while the learner draws; Freeform shows
+  nothing. The choice is kept in `localStorage`. The live app also moves a
+  learner from Tracing to Pattern when a level is done; that isn't copied
+  yet
 
 ## Technical Details
 
@@ -112,7 +120,8 @@ cargo test
 ```
 
 The Playwright tests in `e2e/` drive the app in a browser: Begin, tracing a
-letter right and a scribble ("Try again!"), and "Go" from the letter level to
+letter right and a scribble ("Try again!"), the Pattern and Freeform
+techniques (`e2e/technique.spec.ts`, which reads the canvas's pixels), and "Go" from the letter level to
 the word level and on to the congratulations page. They keep each level short
 with `?practice=`, and trace a letter by following the demonstration's own
 path, which the canvas hands out as `window.eelCanvas.demonstrationPath()`.
@@ -125,6 +134,16 @@ npm test
 ```
 
 `mise run test` runs the Rust tests and then these.
+
+The tests tagged `@smoke` (Begin, tracing, every level, saved progress,
+privacy and install) also run against the live site after every deploy, and
+their report feeds the `cd` evals in `../evals.toml`. With `BASE_URL` set,
+the tests start no dev server and record a video, screenshot and trace of
+each test. To run them against production by hand:
+
+```bash
+BASE_URL=https://jimhillr-sparkhill-webapp.pages.dev npx playwright test --grep @smoke --project chromium
+```
 
 To run all CI checks (formatting, linting, build, and tests):
 

@@ -13,6 +13,14 @@ items are issue files in the root [issues/](../../../issues/) with
 `epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
 pane pages, one group per phase below.
 
+> **Update, 2026-11-27.** Jim: "The eval process is a continuous
+> improvement process and should not be considered a one off project." The
+> phases below are the order the engine's capabilities arrive; keeping
+> every requirement green and growing coverage through issue files runs
+> continuously. See "Continuous improvement" in
+> [evals.md](../evals.md#continuous-improvement) and the
+> [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
+
 ## Goal
 
 For every project, at any time, answer one question with evidence: **does
@@ -239,7 +247,7 @@ engine and in pane:
 | **Not met** (red) | The latest result of any eval in `cd`, `chaos` or `observe` failed, or Jim's latest rating since the last deploy is "not met". For a `should` or `could` requirement this shows as amber. |
 | **At risk** (amber) | An eval failed 2 or more of its last 7 runs (flaky), a `metric` is within 10% of its threshold, the judge says not met, a `ci` eval is failing on main, or the newest production result is older than 3 days. |
 | **Met** (green) | Every eval's latest result passes, and at least one production-stage result is under 2 days old. |
-| **Unknown** (grey) | No evals, or no production-stage results yet. |
+| **Unknown** (grey) | No evals, or no production-stage results yet, unless a `ci` eval is failing (then at risk: a known failure never shows grey). |
 
 `error` results count as at risk, not as failures of the product: the fix is
 in the eval. A project's requirement coverage ("9 of 12 musts evaluated in
@@ -580,7 +588,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   here is the thing to avoid; human issues that create a
   setting add its manifest entry in the same PR.
 - **Evals of kind `human-check`** in a project's `evals.toml` (or the
-  `monorepo` project's, for repo-wide settings such as Claude connectors)
+  `jimhillr` project's, for repo-wide settings such as Claude connectors)
   point a requirement at a setting: `kind = "human-check"`,
   `setting = "<id>"`, `stages = ["human"]`. `evals check` reports a
   `setting` that isn't in the manifest (EVL-001 widened) and a manifest
@@ -604,7 +612,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   `evals human-checks due --write`; `evals verdicts` will read the same
   file. A
   manifest entry that no eval names is not a warning: most settings are
-  repo-wide and have no requirement until the `MONO-xxx` ones exist.
+  repo-wide and have no requirement until the `JIMH-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
   production eval. A check past twice its `every` with no answer makes it
   at risk, never met: an unchecked setting is unknown, not fine.
@@ -633,7 +641,7 @@ it worked: the requirement turns green or it doesn't.
 ### Process evals (later)
 
 The same engine can grade our own process, from GitHub data alone, as
-requirements of a `monorepo` project (`MONO-xxx`):
+requirements of the `jimhillr` project (`JIMH-xxx`):
 
 - Change failure rate: production deploys followed by a `FIX` or rollback
   within 48 hours.
@@ -681,9 +689,13 @@ phase 3.
   the `smoke` reports from `target/evals-reports/cd/` once projects have
   `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
-  released binaries.
-- The `eval-triage` skill and its daily scheduled task, replacing the
-  planned nightly FIX task.
+  released binaries. Done (2026-11-27): the `trycmd` kind, collected from
+  the saved `cargo test` output.
+- Done (2026-11-27): eval triage, replacing the planned nightly FIX task.
+  The free `evals-triage.yml` workflow files the issues daily (see
+  "Triage" in [evals.md](../evals.md)); the `eval-triage` skill is for
+  the judgment calls it can't make (rollback advice, a disputed eval),
+  run on demand, not as a daily Claude task (Jim, 2026-11-27).
 - `evals check` makes "every `must` has a production eval" an error.
 
 ### Phase 3: observability
@@ -692,7 +704,9 @@ Needs the `telemetry` Worker, Web Analytics and PostHog from deploy feedback,
 phases 4 and 5.
 
 - Synthetic traffic tagging in every runner, the PostHog snippet and the
-  `telemetry` Worker.
+  `telemetry` Worker. Done for the runners (Playwright configs, EVL-005,
+  and the `evals` HTTP client) and the Worker; the PostHog snippet skips
+  the `jimhillr-evals` user agent when session replay adds it.
 - The `metric` kind with the Web Analytics, Analytics Engine, PostHog and
   GitHub sources; `daily-observe-evals.yml` and the post-deploy run.
 
@@ -741,7 +755,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 ### Phase 8: process evals
 
-- `MONO-xxx` requirements and the GitHub-derived metrics above.
+- `JIMH-xxx` requirements and the GitHub-derived metrics above.
 - Feed them into pane's system signals and the deep project review deck.
 
 ## Things Jim does

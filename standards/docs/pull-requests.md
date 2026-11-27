@@ -5,6 +5,102 @@ either merged or closed. Nothing is left open without someone owning the next
 step. This page is the policy that the "PR triage" scheduled agent task
 and every agent thread follow.
 
+## Pull request descriptions
+
+PR descriptions must be quick to read. Jim, 2026-11-27: "Every PR should
+have these sections: 1) What changed summary (50 words) 2) Why changed
+summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25 words)
+5) Details (anything else agents want to include)", with, above them, "the
+top most section should be 1) Attention (list of strongly enum'ed tags)",
+and "one of the attention tags should definitely be cost changed". This
+replaces the 75-word executive summary.
+
+Every PR description, from any agent, has, in this order:
+
+1. The attribution lines the agent platform requires (the
+   `claude-projects-attribution` comment and the "Requested by" line), when
+   there are any.
+2. `## Attention`: one bullet per [attention tag](#attention-tags), written
+   by `chores badges`, which tells the reviewer how closely to look.
+3. `## What changed`: at most **50 words** on what the PR changes.
+4. `## Why`: at most **50 words** on why, and any engineering tradeoffs.
+5. `## Cost changes`: under **25 words** on money, free-tier usage or
+   Claude budget the PR moves, or `None.`
+6. `## Risk changes`: under **25 words** on security, threat, requirement
+   or reliability risk the PR moves, or `None.`
+7. `## Details`: anything else, with no limit: the issue it closes, how it
+   was tested (hooks passed, checks that didn't run), what a reviewer
+   should look at closely, screenshots of UI changes
+   ([documentation.md](documentation.md)), and links to the committed plan,
+   decision record, issue file, runbook or doc. Write long explanations
+   there, in the same PR, and link them; don't paste them in.
+
+Then any closing lines the platform asks for. Headings match in any case
+and at any level. Markdown links count as their text, and link targets and
+bare URLs don't count toward the limits. The
+[pull request template](../../.github/pull_request_template.md) has this
+shape, and `chores pr-body` writes it. The **PR summary** check (PR-001,
+`standards/scripts/pr-summary-check.sh`, run by
+`.github/workflows/pull-request-summary.yml`, and `chores pr-body --check`
+with the same rules) warns when a section is missing, empty or still the
+template's placeholder, a summary is over its limit, or the Attention
+section has an unknown tag or not exactly one tag per group. It is a
+warning only, so it never blocks a merge; fix the description and the
+check reruns on the edit.
+
+Dependabot PRs are exempt: their bodies are generated.
+
+### Attention tags
+
+Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
+know how much attention I should give. First is if a fundamental
+requirement is changing. Second if anything affecting a threat/risk is
+changing", and the cost tag above. The Attention section lists exactly one
+tag from each group, from this closed set (`Tag` in `chores/src/badges.rs`;
+the shell check lists the same names). `chores badges` (or `chores
+pr-body`, which calls it) works them out from the PR's diff against
+`origin/main`:
+
+```markdown
+## Attention
+
+- 🔴 must-requirement-changed: `COOK-001`
+- 🟠 cost-changed: `cookbook/docs/cost.toml` (the Cost summary check says what moved)
+- 🟢 threat-risk-unchanged
+```
+
+| Group | Tag | When |
+| --- | --- | --- |
+| Requirements | 🔴 `must-requirement-changed` | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
+| Requirements | 🟡 `requirement-changed` | A `should` or `could` requirement, or text outside any requirement, changed |
+| Requirements | 🟢 `requirements-unchanged` | No `docs/requirements.md` changed |
+| Cost | 🟠 `cost-changed` | A cost file changed |
+| Cost | 🟢 `cost-unchanged` | No cost file changed |
+| Threat/risk | 🟠 `threat-risk-changed` | A risk file changed |
+| Threat/risk | 🟢 `threat-risk-unchanged` | No risk file changed |
+
+Cost files are the files the [PR cost summary](cost.md) reads: each
+project's `docs/cost.toml`, `standards/radar/limits.toml`,
+`standards/radar/radar.json`, `detectors.toml` and `wrangler` configs. The
+Cost summary job also reads workflow schedules and dependency lines, so its
+`cost` label stays the authority.
+
+Risk files are the security files of the [PR security
+summary](security.md) (each project's `docs/threat.toml`, `_headers` and
+`wrangler` configs, workflows, gitleaks, cargo-deny and zizmor configs)
+plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
+`infra/src/`, `infra/scripts/`, `standards/settings.toml`,
+`standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
+secret and security check scripts, `SECURITY.md` and `CODEOWNERS`.
+
+The tags are pointers, not gates: a requirement change still gets
+`needs-human` ([evals.md](evals.md)), the Cost summary job still labels
+`cost` and `needs-human`, and the Security summary job still labels
+`security` and, when a change weakens anything, `needs-human`. When later
+pushes change what the PR touches, rerun `chores badges` and replace the
+section. A new tag goes in `Tag`, the shell check and this table in the
+same PR.
+
 ## Who owns a PR
 
 | Author | Owner | Who merges |
@@ -13,9 +109,16 @@ and every agent thread follow.
 | A human (including `jimhillr`) | The author | Any agent, once it is mergeable. Drafts are left alone. |
 | An agent account (login ends in `-agt`) | The agent thread that opened it | Any agent, including the thread that opened it, once it is mergeable. Agents never approve their own PRs. |
 | An agent account whose thread is gone | PR triage (adopted) | Any agent, once it is mergeable |
+| `jimhillr-agt`, opened by PR triage from the `evals-triage` branch | PR triage | Any agent, once it is mergeable (Jim approves) |
 
 An agent PR is **orphaned** when the thread that opened it is resolved or no
 longer exists and the PR has had no activity for 24 hours. Triage adopts it.
+
+The daily eval triage workflow pushes the issue files it writes to the
+`evals-triage` branch but can't open a PR (a PR made with a workflow's
+token runs no CI), so PR triage opens it as a draft, as long as the branch
+only adds `*/issues/eval-*.md` files, and marks it ready once its checks are
+green ([evals.md](evals.md#triage)).
 
 ## When a PR is mergeable
 
@@ -61,7 +164,8 @@ these hold:
   under the merge rule instead.
 
 Auto-merge doesn't replace the approval: `jimhillr-agt` can't approve its
-own PRs, so an agent PR still waits for a reviewer (normally Jim). Auto-merge
+own PRs, so an agent PR still waits for a reviewer: `jimhillr-reviewer`
+when its rules allow (see "The reviewer account"), otherwise Jim. Auto-merge
 means Jim's approval is the last step: GitHub squash-merges as soon as the
 approval lands, with no agent run in between.
 
@@ -73,6 +177,92 @@ stack in `infra` is applied (it requires the `CI result` check from
 GitHub also waits for green CI on the new head before auto-merging. Until
 then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
+
+## Stacked pull requests
+
+A stack is a chain of PRs where each one's base is the branch of the one
+below it, so they reach `main` only together. Each step stays its own
+reviewable PR, but Jim approves the stack once (decision
+[0014](decisions/0014-faster-pr-approvals.md)):
+
+1. When every PR in the stack is complete and green, the thread retargets
+   the **top** PR to `main`. Its diff is now the whole stack.
+2. It edits the top PR's description: the What changed and Why sections
+   cover the whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
+   first, the top one last. Pane's Approve page reads that line.
+3. It moves every other PR in the stack back to draft, with a one-line
+   comment naming the top PR, and turns off their auto-merge.
+4. It marks the top PR ready and turns on auto-merge as usual. One
+   approval squash-merges the whole stack as one commit.
+5. Once it merges, the thread (or PR triage) closes the step PRs with a
+   comment saying they merged in the top PR.
+
+A change to a step after this is made on that step's branch and merged up
+through the stack to the top branch, which needs a fresh approval like any
+push. PR triage treats the draft step PRs of a stack whose top PR is open
+as part of it, not as orphans.
+
+Jim reviews from pane's **Approve** page (`/approve` on
+<https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
+ones first, with its What changed summary, attention tags and a link to its review
+form.
+
+## The reviewer account
+
+`jimhillr-reviewer` is a GitHub account whose only job is approving the
+agent PRs its rules allow, so Jim doesn't have to (Jim, 2026-11-27: "a
+third GitHub account to do approvals so we can be explicit about what is
+being auto-approved and establish a process for that approver"; decision
+[0014](decisions/0014-faster-pr-approvals.md)). It isn't an agent: no
+Claude session holds its token, and it never writes code, comments or
+merges. Its approval counts toward the Default ruleset's one approval like
+anyone's.
+
+**How it runs.** The `All Auto Review` workflow
+(`.github/workflows/all-auto-review.yml`) runs every 15 minutes on `main`
+with `REVIEWER_TOKEN` from the `reviewer` environment, and calls
+`standards/scripts/auto-review.sh run`. It reads every open PR through the
+API and never checks out PR code, so a PR can't change the rules it is
+judged by.
+
+**What it may approve.** A PR only when every one of these holds (PR-003):
+
+1. Opened by `jimhillr-agt`, out of draft, based on `main` (a stack is
+   approved as its retargeted top PR).
+2. Every check run on the head commit finished and passed (skipped and
+   neutral count), every commit status is success, and `CI result` and
+   `PR summary` both passed. Nothing pending.
+3. No red or orange attention label: `needs-human`, `credential-change`,
+   `security` or `cost`.
+4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
+   `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
+   `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
+   `jimhillr/`, `standards/` (its own rules included), and in any project
+   `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
+   `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
+5. At most 100 files and 1,500 changed lines.
+6. No outstanding "changes requested", and no approval of its own on this
+   head commit yet.
+
+Anything else waits for Jim, who approves it from pane's Approve page.
+
+**What it records.** Each approval is a review on the head commit (so a
+push dismisses it) whose text names the rules version and what passed:
+"jimhillr-reviewer rules v1 (decision 0014): checks green on `<sha>`, no
+red or orange label, no protected path, N files, +a/-d." Each run's summary
+lists every open agent PR with "approve" or "skip" and the reason.
+
+**Changing the rules.** Edit `standards/scripts/auto-review.sh` (bump
+`RULES`), its tests in `standards/tests/auto-review.test.sh` and this
+section in one PR. It touches `standards/`, so only Jim can approve it.
+
+## Post-merge review
+
+Jim reads every merged PR afterwards, whoever approved it, on pane's
+**Acknowledge** page (`/acknowledge`): newest first, each with its summary
+and attention tags, until he acknowledges it. "Flag for follow-up" opens
+GitHub's editor with a `fix` issue file for that PR in its project's
+`issues/`, which the normal agent loop then works.
 
 ## PR triage
 
@@ -148,6 +338,8 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   for review, turn on auto-merge (see "Auto-merge") and flag it.
 - If it's ready for review, green, not `needs-human` and auto-merge is off,
   turn auto-merge on.
+- If it's an orphaned stack whose steps are all green, collapse it as
+  "Stacked pull requests" says, so it needs one approval.
 - Otherwise add `needs-human` and flag it.
 
 ### Main health

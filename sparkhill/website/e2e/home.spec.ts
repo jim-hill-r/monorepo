@@ -34,6 +34,8 @@ test.describe('home page', () => {
     const problems = await openHome(page);
     await expect(page).toHaveURL(/\/en-US\/?$/);
     await expect(page).toHaveTitle('Spark Hill - Reading Instruction');
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /readers/i);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /^https:\/\//);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await expect(page.locator('main')).toHaveCount(1);
     for (const id of [...SECTIONS, 'testimonials']) {
@@ -49,7 +51,8 @@ test.describe('home page', () => {
     // A failed hydration either throws (a page error) or renders the page a
     // second time next to the exported HTML.
     await expect(page.locator('main')).toHaveCount(1);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(5);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 2 })).toHaveCount(4);
     await expect(page.getByText('Everyone deserves to read')).toHaveCount(1);
     expect(problems).toEqual([]);
   });
@@ -63,6 +66,9 @@ test.describe('home page', () => {
     // bg-sky-900 on the nav comes from the stylesheets: unstyled it is clear.
     const navBackground = await page.locator('nav').evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(navBackground).not.toBe('rgba(0, 0, 0, 0)');
+    // index.css styles the section h2s as large as the prose h1 (2.25em).
+    const sectionHeading = await page.locator('#what-we-do').evaluate((el) => getComputedStyle(el).fontSize);
+    expect(sectionHeading).toBe('36px');
     // theme.css's @font-face: the page's own font, not a fallback.
     expect(await page.evaluate(async () => (await document.fonts.load('16px Niramit')).length)).toBe(1);
     expect(problems).toEqual([]);
@@ -124,4 +130,28 @@ test.describe('nav on a phone', () => {
     }
     expect(problems).toEqual([]);
   });
+});
+
+test.describe('a page that does not exist', () => {
+  for (const path of ['/no-such-page', '/en-US/no-such-page']) {
+    test(`${path} answers 404 with a way back home`, async ({ page }) => {
+      const problems: string[] = [];
+      page.on('pageerror', (err) => problems.push(`page error: ${err.message}`));
+      page.on('response', (res) => {
+        // The page itself is meant to be a 404; anything it loads isn't.
+        if (res.url().startsWith('http://localhost') && res.status() >= 400 && !res.url().endsWith(path)) {
+          problems.push(`${res.status()} ${res.url()}`);
+        }
+      });
+      const response = await page.goto(path);
+      expect(response?.status()).toBe(404);
+      await page.waitForLoadState('networkidle');
+      await expect(page).toHaveTitle('Page not found');
+      await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+      await page.getByRole('link', { name: 'Go to the home page' }).click();
+      await expect(page).toHaveURL(/\/en-US\/?$/);
+      await expect(page.getByText('Everyone deserves to read')).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+  }
 });

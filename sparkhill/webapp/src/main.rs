@@ -4,6 +4,7 @@ mod pages;
 mod patterns;
 mod progress;
 mod state;
+mod technique;
 mod tracing_check;
 
 use dioxus::prelude::*;

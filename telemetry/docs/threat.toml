@@ -8,7 +8,8 @@ kind = "worker"
 url = "https://jimhillr-telemetry.jim-hill-r.workers.dev"
 access = "public"
 data = "public"
-notes = "Accepts any origin (Access-Control-Allow-Origin: *) on purpose: events carry no credentials. It returns only status codes, never stored data. No security headers yet."
+headers = "telemetry/src/lib.rs"
+notes = "Accepts any origin (Access-Control-Allow-Origin: *) on purpose: events carry no credentials. It returns only status codes, never stored data. SECURITY_HEADERS in src/lib.rs go on every response."
 
 [[secret]]
 name = "CLOUDFLARE_API_TOKEN"
@@ -44,3 +45,11 @@ stride = "information-disclosure"
 what = "Events end up holding personal data."
 mitigation = "Only the enumerated fields are written; the IP goes to the rate limiter, never to a blob."
 surface = "event API"
+
+[[threat]]
+id = "TEL-T4"
+stride = "tampering"
+what = "Any website's scripts can post events, because CORS allows every origin."
+mitigation = "Deliberate: sites post with navigator.sendBeacon from their own origins, and no event carries credentials or reads anything back, so an open origin exposes nothing. Forged events are bounded by TEL-T1's rate limit and TEL-T2's validation."
+surface = "event API"
+covers = ["cors-any-origin"]

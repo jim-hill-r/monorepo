@@ -1,5 +1,7 @@
 # bear_down
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/bear_down.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A small static website that tells a Chicago Bears fan which NFL games to root
 for each week to give the Bears the best chance of winning the Super Bowl.
 

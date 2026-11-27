@@ -1,7 +1,8 @@
 # Sign up for PostHog
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/create-posthog-cloud-free-plan-no.md`)
+- **Status:** done 2026-11-27 (US region; the project token is in
+  `cookbook/web/public/posthog.js`, the first site to use it)
 - **Time:** about 15 minutes
 - **Cost:** $0 on the free plan, which needs no card: 5,000 web recordings
   and 1,000,000 events a month. Past a free limit, PostHog drops the extra
@@ -62,7 +63,7 @@ no API that makes the first one.
    `eu.posthog.com/settings/user-api-keys`). It's also under your avatar >
    Account settings > Personal API keys. Click **Create personal API key**,
    then fill in:
-   - **Label:** `monorepo-replay-read`
+   - **Label:** `jimhillr-replay-read`
    - **Access:** only this project, if it lets you pick
    - **Scopes:** **Read** for `session_recording`, `query` and `project`,
      and no access to anything else. Pick them one by one rather than
@@ -70,7 +71,7 @@ no API that makes the first one.
 
    Copy the key (it starts with `phx_`). PostHog shows it only once.
 7. **Make the billing key.** Click Create again, then fill in:
-   - **Label:** `monorepo-billing-read`
+   - **Label:** `jimhillr-billing-read`
    - **Access:** the organization
    - **Scopes:** **Read** for `billing` only
 

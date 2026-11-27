@@ -1,0 +1,10 @@
+# chores: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Rust CLI agents run on the working tree: reads repo files, writes new issue and runbook files on request. No network, no data, no secrets."
+
+[[surface]]
+name = "chores CLI"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Run by agents in their own sandbox on repo files only. No network, no credentials; it never calls GitHub."

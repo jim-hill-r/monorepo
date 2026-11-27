@@ -11,8 +11,9 @@ base = 1.125
 [accessible.fonts]
 # Atkinson Hyperlegible (SIL Open Font License) replaces decorative fonts:
 # the earthy serif, the colorful rounded face and the 8-bit pixel font. The
-# font files are self-hosted from design_system/fonts/; until a page loads
-# them, the system sans stack is used.
+# font files are self-hosted from
+# design_system/dioxus/assets/design-system-fonts/; until a page loads them,
+# the system sans stack is used.
 heading = "'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
 body = "'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
 
