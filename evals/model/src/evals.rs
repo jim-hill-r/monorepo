@@ -84,6 +84,12 @@ pub enum Kind {
         header: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         body_contains: Option<String>,
+        /// Text one of the page's own scripts, stylesheets or wasm modules
+        /// must contain. Every same-origin asset the page names must also
+        /// answer 200. It checks what a client-rendered app shipped, since
+        /// its HTML is the same shell on every path.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        asset_contains: Option<String>,
         /// The slowest acceptable response, in milliseconds.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         max_ms: Option<u64>,
@@ -145,6 +151,7 @@ impl Kind {
                 "status",
                 "header",
                 "body_contains",
+                "asset_contains",
                 "max_ms",
             ],
             "metric" => &["source", "metric", "min", "max", "window"],
@@ -351,6 +358,7 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
             method,
             status,
             header,
+            asset_contains,
             max_ms,
             ..
         } => {
@@ -386,6 +394,9 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
             }
             if *max_ms == Some(0) {
                 problems.push("max_ms must be more than 0".into());
+            }
+            if asset_contains.as_deref() == Some("") {
+                problems.push("asset_contains must not be empty".into());
             }
         }
         Kind::Metric {
@@ -718,6 +729,7 @@ body_contains = "Cookbook"
             ("path = \"/\"\nstatus = 999", "not an HTTP status"),
             ("path = \"/\"\nheader = \"text/html\"", "\"name: value\""),
             ("path = \"/\"\nmax_ms = 0", "max_ms must be more than 0"),
+            ("path = \"/\"\nasset_contains = \"\"", "must not be empty"),
         ];
         for (fields, expected) in cases {
             let found = errors(&one_eval(&format!(

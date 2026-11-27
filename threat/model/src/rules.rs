@@ -584,6 +584,12 @@ mod tests {
     }
 
     #[test]
+    fn test_thr003_token_access_is_closed() {
+        let api = "[[surface]]\nname = \"state\"\nkind = \"api\"\naccess = \"token\"\ndata = \"private\"\n";
+        assert_eq!(codes(&format!("{api}{THREAT}")), Vec::<&str>::new());
+    }
+
+    #[test]
     fn test_thr005_secrets_need_a_scope_and_a_known_setting() {
         let good = "[[secret]]\nname = \"TOKEN\"\nwhere = \"github\"\nscope = \"read\"\nsetting = \"cf-token\"\n";
         assert_eq!(codes(good), Vec::<&str>::new());

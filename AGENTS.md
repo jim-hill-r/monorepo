@@ -43,6 +43,24 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
+  long to consume quickly. Every PR should include a short executive
+  description of what we are doing, why, and any engineering tradeoffs.
+  Keep this to 75 words. It should link to details in committed
+  docs/plans/issues." Every PR description opens, right after any required
+  attribution lines, with that summary of at most 75 words, and the details
+  live in committed files it links to, not in the description. The format
+  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
+  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
+  warns when it is missing, too long or unlinked.
+- **Attention badges (Jim, 2026-11-27).** "There are some badges I want at
+  the top of a PR to let me know how much attention I should give. First
+  is if a fundamental requirement is changing. Second if anything
+  affecting a threat/risk is changing." Right under the attribution lines
+  every agent PR has the `> **Attention:**` line from `chores badges`
+  (`chores pr-body` writes it), kept current when pushes change the diff.
+  The rules are under "Attention badges" in
+  `standards/docs/pull-requests.md`.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
@@ -149,6 +167,27 @@ repo, rather than in any one agent tool's settings.
   Agents never approve a `credential-change` PR, never put a
   credential-capable token anywhere but that environment, and never ask
   for admin rights for `jimhillr-agt` or the Claude GitHub App.
+- **Evals are continuous improvement (Jim, 2026-11-27).** "The eval
+  process is a continuous improvement process and should not be considered
+  a one off project. The evals should always be green and a system of
+  feedback to our todo process should be the way in which individual
+  projects improve their eval coverage." So every requirement's verdict
+  should be green; any requirement that is not met, at risk or unknown
+  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  normal agent loop works it. Each project grows its own eval coverage
+  through those issues: requirements for anything it ships, evals that
+  check real content in production, and an eval coverage figure and badge
+  per project. Agents working on a project add or fix evals as part of the
+  work, not as a separate phase. Details are under "Continuous
+  improvement" in [standards/docs/evals.md](standards/docs/evals.md).
+- **Code quality ratchet (Jim, 2026-11-27).** "We also need a process for
+  ensuring maintainable code base." Each project's quality findings (clippy
+  pedantic and the complexity limits) may only go down, never up, and gaps
+  become issue files through weekly quality triage, the same loop as evals
+  ([decision 0015](standards/docs/decisions/0015-code-quality-process.md),
+  [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
+  findings in files you touch. Scripts stay Rust-only: add no new `.sh`
+  files, and port existing ones into `chores` commands over time.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -160,6 +199,20 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **Third-party content in athenaeum (Jim, 2026-11-27).** "Including
+  copywrited content is fine as long as we reference the original owner
+  properly and never sell or expose it as a part of our product." Copies of
+  others' work may live in `athenaeum`, which is for agents and people to
+  understand our coding stance, with the owner named and the original
+  linked beside them; never ship them in a product. Details are in
+  [athenaeum/CONTRIBUTING.md](athenaeum/CONTRIBUTING.md).
+- **Code quality references in athenaeum (Jim, 2026-11-27).** "We can use
+  athenaeum project as a store for important documents/blog posts/patterns
+  we discover so we can reference them as we write software." Before
+  leaning on a design or code quality idea, read its note in
+  [athenaeum/resources/code_quality/](athenaeum/resources/code_quality/README.md),
+  and when a source changes how we write code here, add a note for it
+  there. The standards still hold the rules; the notes explain them.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit
@@ -171,14 +224,20 @@ repo, rather than in any one agent tool's settings.
   token and key labels, resource names, crates, folders) use `jimhillr`,
   such as `x-jimhillr-synthetic` and the `jimhillr-evals` user agent. The
   only exceptions are names we don't own: the GitHub repository
-  `jimhillr/monorepo` itself and mise's `monorepo_root` setting. Existing
-  `monorepo` names are being renamed
-  (`issues/rename-monorepo-identifiers-jimhillr.md`).
+  `jimhillr/monorepo` itself and mise's `monorepo_root` setting and
+  `[monorepo]` table. The repo-tooling project that was `monorepo/` is now
+  `jimhillr/`. Prose may still call the repository a monorepo.
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
   changes what the repo uses or costs, and `needs-human` when it adds a
   vendor or money or raises a budget (standards/docs/cost.md).
+- **Retire what you rename (Jim, 2026-11-26).** Renaming or removing a
+  resource (a Pages project, Worker, binding, URL, release) retires the old
+  one in `standards/resources.toml` in the same PR, with Jim's approval
+  (`needs-human`). Nothing is deleted just because it is unclaimed; the
+  rules and the safe deletion order are in
+  [standards/docs/resources.md](standards/docs/resources.md).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
@@ -189,6 +248,16 @@ repo, rather than in any one agent tool's settings.
   for reasons the PR didn't cause. A pending check is never green. Agents
   still never approve their own PRs. Details are in
   `standards/docs/pull-requests.md`.
+- **The reviewer account (Jim, 2026-11-27).** "A third GitHub account to
+  do approvals so we can be explicit about what is being auto-approved and
+  establish a process for that approver." `jimhillr-reviewer` approves
+  only the green, unlabelled, low-risk agent PRs its written rules allow
+  (the `All Auto Review` workflow, "The reviewer account" in
+  `standards/docs/pull-requests.md`, decision 0014); Jim approves the
+  rest, and reads every merged PR afterwards on pane's Acknowledge page.
+  Agents never hold or ask for its token, never remove a red or orange
+  label to get a PR approved, and never split a change to dodge its
+  protected paths or size limit.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
   or closed). The policy is in `standards/docs/pull-requests.md`. A scheduled
   agent task, "PR triage", runs three times a day as `jimhillr-agt` on
@@ -248,6 +317,12 @@ and the PR must say which checks didn't run.
 - List the project's tasks: `mise tasks`
 - List the open issues: `mise run //:issues` (`-- --human` for human tasks)
 - Check the repo standards: `mise run //:audit`
+- Routine agent work (pick the next issue, write a PR description, write
+  an issue file): `cargo run --quiet --manifest-path chores/Cargo.toml --
+  <command>`; the commands are in [chores/README.md](chores/README.md).
+  When you notice routine work a script could do, add a command there
+  rather than repeating it by hand
+  ([baked skills plan](standards/docs/plans/2026-11-baked-skills.md)).
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
@@ -267,6 +342,7 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 | `code-review` | Review one project against the standards and record five TODOs. |
 | `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
+| `write-issue` | Write an issue file or a human task with its runbook through the `chores` command. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

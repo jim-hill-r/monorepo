@@ -1,5 +1,5 @@
 //! `evals run`: turns the test reports a project's tasks already wrote into
-//! one result per eval (the `cargo` and `playwright` kinds), and makes the
+//! one result per eval (the `cargo`, `trycmd` and `playwright` kinds), and makes the
 //! requests of the `http` kind (see `http.rs`). `cost check` writes the
 //! `ci` results of `cost` evals. Other kinds are left for later phases and
 //! produce no result.
@@ -9,6 +9,7 @@ use evals_model::{
     By, Eval, EvalResult, EvalsFile, Kind, Priority, Requirement, ResultStatus, Stage,
 };
 
+use crate::check::glob_matches_tail;
 use crate::http::{self, Fetch, Retry};
 use crate::reports::{Outcome, TestCase, cargo_test_matches};
 
@@ -17,6 +18,8 @@ use crate::reports::{Outcome, TestCase, cargo_test_matches};
 pub struct Reports {
     pub cargo: Option<Vec<TestCase>>,
     pub playwright: Option<Vec<TestCase>>,
+    /// trycmd cases, read from the same `cargo test` output.
+    pub trycmd: Option<Vec<TestCase>>,
 }
 
 /// Where and when this run happened, copied into every result.
@@ -74,6 +77,7 @@ pub fn collect(
             }
             Kind::Cargo { .. } => (&reports.cargo, "cargo"),
             Kind::Playwright { .. } => (&reports.playwright, "playwright"),
+            Kind::Trycmd { .. } => (&reports.trycmd, "trycmd"),
             // `cost check --evals-results` writes these results itself, so
             // the cost rules run once (standards/docs/evals.md).
             Kind::Cost {} if ctx.stage == Stage::Ci => continue,
@@ -146,6 +150,7 @@ fn matching<'a>(eval: &Eval, cases: &'a [TestCase]) -> Vec<&'a TestCase> {
         .iter()
         .filter(|case| match eval.kind {
             Kind::Cargo { .. } => cargo_test_matches(&case.name, &selector),
+            Kind::Trycmd { .. } => glob_matches_tail(&selector, &case.name),
             _ => case.name.contains(&selector),
         })
         .collect()
@@ -323,6 +328,7 @@ kind = "cost"
     #[test]
     fn collects_cargo_and_playwright_evals_for_the_stage() -> anyhow::Result<()> {
         let reports = Reports {
+            trycmd: None,
             cargo: Some(parse_cargo_output(
                 "test units::tests::cook_002_cups ... ok\ntest units::tests::cook_002_grams ... ok\n",
             )),
@@ -419,6 +425,58 @@ kind = "cost"
     }
 
     #[test]
+    fn trycmd_evals_match_case_files_by_glob() {
+        let file = match parse_evals(
+            r#"
+prefix = "HOME"
+
+[[eval]]
+id = "score"
+requirement = "HOME-001"
+stages = ["ci"]
+kind = "trycmd"
+
+[[eval]]
+id = "help"
+requirement = "HOME-002"
+stages = ["ci"]
+kind = "trycmd"
+glob = "cmd/help*.toml"
+"#,
+        ) {
+            Ok(file) => file,
+            Err(errors) => panic!("{errors:?}"),
+        };
+        let reports = Reports {
+            cargo: Some(Vec::new()),
+            playwright: None,
+            trycmd: Some(crate::reports::parse_trycmd_output(
+                "Testing tests/cmd/HOME-001-score.toml ... ok 3ms\n\
+                 Testing tests/cmd/HOME-001-score-json.toml ... failed 3ms\n\
+                 Testing tests/cmd/help.toml ... ok\n\
+                 Testing tests/cmd/help-hides-api-key.toml ... ok\n",
+            )),
+        };
+        let (results, notes) = collect(&file, &reports, &ctx());
+        assert!(notes.is_empty(), "{notes:?}");
+        assert_eq!(
+            statuses(&results),
+            vec![
+                (
+                    "score",
+                    ResultStatus::Fail,
+                    "1 of 2 tests failed: tests/cmd/HOME-001-score-json.toml"
+                ),
+                ("help", ResultStatus::Pass, "2 tests passed"),
+            ]
+        );
+        assert_eq!(results[0].kind, "trycmd");
+
+        let (results, _) = collect(&file, &Reports::default(), &ctx());
+        assert_eq!(results[0].note.as_deref(), Some("no trycmd report"));
+    }
+
+    #[test]
     fn only_a_failed_must_fails_the_run() {
         let (requirements, errors) = evals_model::parse_requirements(
             "# Requirements\n\n## COOK-001: Must\n\n- Priority: must\n- Why: w\n- Accept: a\n\n## COOK-002: Should\n\n- Priority: should\n- Why: w\n- Accept: a\n",
@@ -449,6 +507,7 @@ kind = "cost"
     #[test]
     fn failures_errors_and_skips() {
         let reports = Reports {
+            trycmd: None,
             cargo: Some(parse_cargo_output(
                 "test cook_002_a ... ok\ntest cook_002_b ... FAILED\n",
             )),
@@ -472,6 +531,7 @@ kind = "cost"
         );
 
         let reports = Reports {
+            trycmd: None,
             cargo: Some(parse_cargo_output(
                 "test cook_002_a ... ignored\ntest cook_002_b ... ignored\n",
             )),
@@ -494,6 +554,7 @@ kind = "cost"
     #[test]
     fn a_skipped_test_beside_a_pass_still_passes() {
         let reports = Reports {
+            trycmd: None,
             cargo: Some(parse_cargo_output(
                 "test cook_002_a ... ok\ntest cook_002_b ... ignored\n",
             )),
@@ -509,6 +570,7 @@ kind = "cost"
         let mut ctx = ctx();
         ctx.partial = true;
         let reports = Reports {
+            trycmd: None,
             cargo: Some(parse_cargo_output("test web::other_test ... ok\n")),
             playwright: Some(Vec::new()),
         };
@@ -516,6 +578,7 @@ kind = "cost"
         assert!(results.is_empty(), "{results:?}");
 
         let reports = Reports {
+            trycmd: None,
             cargo: Some(parse_cargo_output("test cook_002_a ... FAILED\n")),
             playwright: None,
         };

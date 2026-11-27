@@ -1,0 +1,29 @@
+# homer: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Local CLI that looks up Zillow data through RapidAPI's free plan. Runs on Jim's machine only; no deploy."
+
+[[surface]]
+name = "homer CLI"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Reads RAPIDAPI_KEY from the environment and keeps a quota file under XDG_STATE_HOME."
+
+[[secret]]
+name = "RAPIDAPI_KEY"
+where = "local"
+used_by = ["homer --api-key / RAPIDAPI_KEY"]
+scope = "The homer RapidAPI app on the free plan; the quota guard stops before the free limit"
+setting = "rotate-rapidapi-key"
+
+[[threat]]
+id = "HOMER-T1"
+stride = "information-disclosure"
+what = "The RapidAPI key leaks through shell history, logs or an error message."
+mitigation = "clap hides the env value (hide_env_values), the key is never written to a file, and gitleaks scans every commit."
+
+[[threat]]
+id = "HOMER-T2"
+stride = "denial-of-service"
+what = "Too many calls push RapidAPI past its free quota, which would cost money."
+mitigation = "The quota file in src/quota.rs refuses calls past the free limit; there are no scheduled runs (AGENTS.md)."

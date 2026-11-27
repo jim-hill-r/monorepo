@@ -13,6 +13,14 @@ items are issue files in the root [issues/](../../../issues/) with
 `epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
 pane pages, one group per phase below.
 
+> **Update, 2026-11-27.** Jim: "The eval process is a continuous
+> improvement process and should not be considered a one off project." The
+> phases below are the order the engine's capabilities arrive; keeping
+> every requirement green and growing coverage through issue files runs
+> continuously. See "Continuous improvement" in
+> [evals.md](../evals.md#continuous-improvement) and the
+> [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
+
 ## Goal
 
 For every project, at any time, answer one question with evidence: **does
@@ -580,7 +588,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   here is the thing to avoid; human issues that create a
   setting add its manifest entry in the same PR.
 - **Evals of kind `human-check`** in a project's `evals.toml` (or the
-  `monorepo` project's, for repo-wide settings such as Claude connectors)
+  `jimhillr` project's, for repo-wide settings such as Claude connectors)
   point a requirement at a setting: `kind = "human-check"`,
   `setting = "<id>"`, `stages = ["human"]`. `evals check` reports a
   `setting` that isn't in the manifest (EVL-001 widened) and a manifest
@@ -604,7 +612,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   `evals human-checks due --write`; `evals verdicts` will read the same
   file. A
   manifest entry that no eval names is not a warning: most settings are
-  repo-wide and have no requirement until the `MONO-xxx` ones exist.
+  repo-wide and have no requirement until the `JIMH-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
   production eval. A check past twice its `every` with no answer makes it
   at risk, never met: an unchecked setting is unknown, not fine.
@@ -633,7 +641,7 @@ it worked: the requirement turns green or it doesn't.
 ### Process evals (later)
 
 The same engine can grade our own process, from GitHub data alone, as
-requirements of a `monorepo` project (`MONO-xxx`):
+requirements of the `jimhillr` project (`JIMH-xxx`):
 
 - Change failure rate: production deploys followed by a `FIX` or rollback
   within 48 hours.
@@ -681,7 +689,8 @@ phase 3.
   the `smoke` reports from `target/evals-reports/cd/` once projects have
   `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
-  released binaries.
+  released binaries. Done (2026-11-27): the `trycmd` kind, collected from
+  the saved `cargo test` output.
 - The `eval-triage` skill and its daily scheduled task, replacing the
   planned nightly FIX task.
 - `evals check` makes "every `must` has a production eval" an error.
@@ -741,7 +750,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 ### Phase 8: process evals
 
-- `MONO-xxx` requirements and the GitHub-derived metrics above.
+- `JIMH-xxx` requirements and the GitHub-derived metrics above.
 - Feed them into pane's system signals and the deep project review deck.
 
 ## Things Jim does

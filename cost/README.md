@@ -1,5 +1,7 @@
 # cost
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/cost.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The cost check: it holds each project's cost analysis
 (`<project>/docs/cost.toml`) to the budgets in the tech radar and the free
 limits in `standards/radar/limits.toml`, so a PR that could change what the

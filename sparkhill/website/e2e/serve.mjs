@@ -2,8 +2,9 @@
 // so the Playwright tests load exactly the files ../cloudflare deploys.
 //
 // Like Pages, a path is tried as a file, then with `.html`, then as a folder
-// with `index.html`, and anything else is a 404 (the site has no 404.html,
-// so Pages would serve its own). Usage: node e2e/serve.mjs [port]
+// with `index.html`, and anything else gets the export's `404.html` with
+// status 404 (Pages serves the nearest 404.html; the site has one, at the
+// root). Usage: node e2e/serve.mjs [port]
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve } from 'node:path';
@@ -42,7 +43,13 @@ function lookup(urlPath) {
 createServer((req, res) => {
   const file = lookup(new URL(req.url ?? '/', 'http://localhost').pathname);
   if (!file) {
-    res.writeHead(404, { 'content-type': 'text/plain' }).end('Not found');
+    const notFound = join(root, '404.html');
+    if (!isFile(notFound)) {
+      res.writeHead(404, { 'content-type': 'text/plain' }).end('Not found');
+      return;
+    }
+    res.writeHead(404, { 'content-type': types['.html'] });
+    createReadStream(notFound).pipe(res);
     return;
   }
   res.writeHead(200, { 'content-type': types[extname(file)] ?? 'application/octet-stream' });

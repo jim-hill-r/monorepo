@@ -2,7 +2,24 @@
 # Run with: mise run <task>
 
 [tools]
-rust = { version = "stable", components = "rustfmt,clippy" }
+rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
 
 [task_config]
 includes = ["../standards/tasks/rust.toml"]
+
+# The `web` module is built only for wasm32, so the standard host-only steps
+# never compile it or its tests. The last two steps lint it and build its tests
+# for wasm32, so it can't rot unnoticed. They don't run the wasm tests: that
+# would need a wasm test runner, and the logic worth testing lives in
+# `redirect.rs`, which `cargo test` runs natively.
+[tasks.ci]
+description = "Everything CI checks, plus clippy and a test build of the wasm32-only web module"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
+  "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
+  "cargo test --no-run --target wasm32-unknown-unknown",
+]

@@ -42,12 +42,12 @@ You can run either check by hand without committing:
 A change to the root `mise.toml`, `standards/scripts/` or the mise CI
 workflows doesn't check every project, in the hooks or in PR CI
 (`--changed-only`). It checks only the projects that test those files,
-`standards` (its own scripts and `standards/tests/`) and `monorepo` (the
+`standards` (its own scripts and `standards/tests/`) and `jimhillr` (the
 workflow tests, through the `# affected-by:` lines in its `mise.toml`), plus,
 for a script, the projects whose `mise.toml` or included
 `standards/tasks/*.toml` file names it. Pushes to `main` and the nightly runs
 still check every project. A Markdown file outside any project, such as
-`AGENTS.md`, checks only `monorepo`.
+`AGENTS.md`, checks only `jimhillr`.
 
 Before running a project's tools, the hook clears git's own variables
 (`GIT_DIR`, `GIT_INDEX_FILE` and the rest of `git rev-parse --local-env-vars`),

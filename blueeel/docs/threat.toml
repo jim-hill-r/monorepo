@@ -1,0 +1,10 @@
+# blueeel: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Dioxus reading app with no deploy yet; no secrets, no sign-in."
+
+[[surface]]
+name = "app"
+kind = "library"
+access = "none"
+data = "public"
+notes = "Not built or served anywhere yet. Add a surface before the first deploy."

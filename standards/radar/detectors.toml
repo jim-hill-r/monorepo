@@ -293,11 +293,11 @@ detector = "rapidapi"
 why = "FT-002 searches the workflows for a RapidAPI key."
 
 [[exempt]]
-path = "monorepo/workflow_tests/"
+path = "jimhillr/workflow_tests/"
 detector = "rapidapi"
 why = "Tests for the FT-002 guard."
 
 [[exempt]]
-path = "monorepo/workflow_tests/"
+path = "jimhillr/workflow_tests/"
 detector = "auth0"
 why = "Tests that assert which Auth0 secret names the infra workflows use; infra's docs/cost.toml counts the Auth0 use."

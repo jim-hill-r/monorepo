@@ -32,6 +32,8 @@ requirement = "COOK-001"
 stages = ["cd"]
 kind = "http"
 path = "/recipe/1"
+asset_contains = "New Year's Day Celebration Pancakes"
+description = "The app shell loads, and the bundle it ships has day 1's recipe."
 
 # COOK-002: Every week has a meal plan with a shopping list
 
@@ -61,6 +63,8 @@ requirement = "COOK-002"
 stages = ["cd"]
 kind = "http"
 path = "/plan/1"
+asset_contains = "Week 1 Plan"
+description = "The app shell loads, and the bundle it ships has week 1's plan."
 
 # COOK-003: The shopping list adds up
 

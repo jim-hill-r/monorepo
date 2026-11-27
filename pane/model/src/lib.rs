@@ -7,6 +7,9 @@
 
 use std::fmt;
 
+pub mod health;
+pub mod signals;
+
 use serde::{Deserialize, Serialize};
 
 /// The repo pane reviews, for links to files and releases on GitHub.
@@ -37,6 +40,10 @@ pub struct Snapshot {
     pub reviews: Vec<Review>,
     #[serde(default)]
     pub retros: Vec<Retro>,
+    /// The traffic-light thresholds from `pane/health.toml`, so the web app
+    /// applies the same rules the snapshot was built with.
+    #[serde(default)]
+    pub thresholds: health::Thresholds,
 }
 
 impl Snapshot {
@@ -53,6 +60,7 @@ impl Snapshot {
             deliverables: Vec::new(),
             reviews: Vec::new(),
             retros: Vec::new(),
+            thresholds: health::Thresholds::default(),
         }
     }
 
@@ -155,6 +163,11 @@ pub struct WorkItem {
     /// comment's marker, such as `agent-generated`.
     #[serde(default)]
     pub tags: Vec<String>,
+    /// `YYYY-MM-DD` it was added: an issue file's `added`, or the `git
+    /// blame` date of a `FIX` comment's line. `None` when unknown, such as
+    /// a `TODO` comment or a line from a shallow clone's boundary commit.
+    #[serde(default)]
+    pub added: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -323,6 +336,10 @@ pub struct Link {
     pub url: String,
 }
 
+pub mod acks;
+pub mod money;
+pub mod queue;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -346,6 +363,7 @@ mod tests {
             section: Some("Priority Issues".into()),
             epic: Some("Phase 0: foundations".into()),
             tags: vec!["agent-generated".into()],
+            added: Some("2026-11-26".into()),
         });
         s.human_issues.push(HumanIssue {
             text: "Create the Access application.".into(),
