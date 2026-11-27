@@ -62,6 +62,7 @@ row here before a project's first `docs/requirements.md`.
 | sparkhill | `SPRK` |
 | standards | `STND` |
 | starcraft | `STAR` |
+| telemetry | `TELE` |
 
 `EVL` is taken by the `evals check` finding codes (EVL-001 to EVL-006), so
 it is not a project prefix. `MONO` covers repo-wide process requirements
