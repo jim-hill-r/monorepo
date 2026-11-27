@@ -19,7 +19,4 @@ page.
 
 ## Not done yet
 
-- **CI.** CI doesn't build or test this crate yet, because it needs GTK and
-  WebKit system packages
-  ([issue](../issues/ci-builds-desktop-and-mobile.md)).
 - **Store builds.** Nothing builds or signs an iOS or Android package yet.

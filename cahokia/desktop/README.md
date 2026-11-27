@@ -21,6 +21,3 @@ page.
 
 - **Sign-in.** The Login button does nothing until `auth_sdk` supports
   desktop platforms (a `TODO` in `src/main.rs`).
-- **CI.** CI doesn't build or test this crate yet, because it needs GTK and
-  WebKit system packages
-  ([issue](../issues/ci-builds-desktop-and-mobile.md)).
