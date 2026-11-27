@@ -1,0 +1,124 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# The `cargo` evals name existing tests with `filter`. The `http` evals run
+# against DEPLOY_URL after each deploy. Eval requests carry the
+# `jimhillr-evals` user agent, which the Worker drops before reading the
+# body, so they never store a data point and can't send a body; a POST with
+# no body answering 202 (not 400) is how production shows the drop works.
+# TELE-004 has no production eval yet: it needs the `metric` kind
+# (issues/eval-engine-phase-3-metric-eval.md) to read the stored data.
+
+prefix = "TELE"
+
+# TELE-001: Apps can send events from any page
+
+[[eval]]
+id = "feedback-vote-stored"
+requirement = "TELE-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_feedback_vote_becomes_one_data_point"
+
+[[eval]]
+id = "exposure-stored"
+requirement = "TELE-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "an_exposure_names_the_arm_and_tab"
+
+[[eval]]
+id = "other-kinds-stored"
+requirement = "TELE-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_other_kinds_are_accepted"
+
+[[eval]]
+id = "preflight-live"
+requirement = "TELE-001"
+stages = ["cd"]
+kind = "http"
+path = "/event"
+method = "OPTIONS"
+status = 204
+header = "access-control-allow-origin: *"
+
+# TELE-002: Bad events are refused and nothing unexpected is stored
+
+[[eval]]
+id = "bad-events-refused"
+requirement = "TELE-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "bad_events_are_refused"
+
+[[eval]]
+id = "get-refused-live"
+requirement = "TELE-002"
+stages = ["cd"]
+kind = "http"
+path = "/event"
+status = 405
+body_contains = "use POST"
+
+# TELE-003: Opted-out and test traffic is never stored
+
+[[eval]]
+id = "opt-out-and-synthetic-dropped"
+requirement = "TELE-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "privacy_signals_and_synthetic_traffic_are_dropped"
+
+[[eval]]
+id = "real-visitors-kept"
+requirement = "TELE-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "real_visitors_are_kept"
+
+[[eval]]
+id = "synthetic-dropped-live"
+requirement = "TELE-003"
+stages = ["cd"]
+kind = "http"
+path = "/event"
+method = "POST"
+status = 202
+description = "An empty POST with the eval user agent gets 202, not the 400 an empty body would get if it were read."
+
+# TELE-004: No personal details are stored
+
+[[eval]]
+id = "notes-scrubbed"
+requirement = "TELE-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "notes_lose_emails_and_phone_numbers_and_are_cut"
+
+[[eval]]
+id = "vote-note-scrubbed"
+requirement = "TELE-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_feedback_vote_becomes_one_data_point"
+description = "The phone number in a vote's note is stored as [number]."
+
+# TELE-005: Every response carries the security headers
+
+[[eval]]
+id = "security-headers"
+requirement = "TELE-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "sends_the_security_headers"
+
+[[eval]]
+id = "security-headers-live"
+requirement = "TELE-005"
+stages = ["cd"]
+kind = "http"
+path = "/"
+status = 404
+header = "content-security-policy: default-src 'none'"
