@@ -43,24 +43,23 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
-- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
-  long to consume quickly. Every PR should include a short executive
-  description of what we are doing, why, and any engineering tradeoffs.
-  Keep this to 75 words. It should link to details in committed
-  docs/plans/issues." Every PR description opens, right after any required
-  attribution lines, with that summary of at most 75 words, and the details
-  live in committed files it links to, not in the description. The format
-  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
-  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
-  warns when it is missing, too long or unlinked.
-- **Attention badges (Jim, 2026-11-27).** "There are some badges I want at
-  the top of a PR to let me know how much attention I should give. First
-  is if a fundamental requirement is changing. Second if anything
-  affecting a threat/risk is changing." Right under the attribution lines
-  every agent PR has the `> **Attention:**` line from `chores badges`
-  (`chores pr-body` writes it), kept current when pushes change the diff.
-  The rules are under "Attention badges" in
-  `standards/docs/pull-requests.md`.
+- **PR description sections (Jim, 2026-11-27).** "Every PR should have
+  these sections: 1) What changed summary (50 words) 2) Why changed
+  summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25
+  words) 5) Details (anything else agents want to include)." Above them,
+  "the top most section should be 1) Attention (list of strongly enum'ed
+  tags)", one of which is cost changed. This replaces the 75-word
+  executive summary. So after any required attribution lines, every PR
+  description has `## Attention` (the tags from `chores badges`: one
+  requirements, one cost and one threat/risk tag from a closed set), `##
+  What changed` (at most 50 words), `## Why` (at most 50), `## Cost
+  changes` and `## Risk changes` (under 25 each, `None.` when nothing
+  changes) and `## Details` (testing, review notes, links to committed
+  plans, decisions and issues). Write it with `chores pr-body`. The format
+  and tags are under "Pull request descriptions" in
+  `standards/docs/pull-requests.md` and in
+  `.github/pull_request_template.md`; the PR summary check (PR-001) warns
+  on a missing section, an unknown tag or a summary over its limit.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
