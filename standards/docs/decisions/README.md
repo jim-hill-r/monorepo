@@ -22,4 +22,5 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0009](0009-opentofu-state-http-backend.md) | OpenTofu state in a Cloudflare Worker with D1 | Accepted |
 | [0010](0010-credential-second-approval.md) | A second approval for credential changes: a GitHub environment only Jim can approve | Accepted |
 | [0011](0011-mint-secrets-by-workflow.md) | Mint infra secrets with a workflow, outside OpenTofu | Accepted |
+| [0014](0014-faster-pr-approvals.md) | Faster PR approvals: an Approve page in pane, one approval per stack, a `jimhillr-reviewer` account for low-risk PRs and post-merge acknowledgement | Accepted |
 | [0015](0015-code-quality-process.md) | A standing code quality process: one standard, a ratchet, triage into issues | Accepted |

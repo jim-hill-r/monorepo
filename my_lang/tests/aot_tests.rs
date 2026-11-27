@@ -34,6 +34,12 @@ fn executable_prints_main_result() {
 }
 
 #[test]
+fn executable_prints_trailing_expression_of_main() {
+    let source = "function square(x) { x * x }\nfunction main() { square(6) + 6 }";
+    assert_eq!(build_and_run("trailing", source), "42\n");
+}
+
+#[test]
 fn executable_calls_other_functions() {
     let source = "function square(x) { return x * x }\n\
                   function main() { return square(6) + 1 }";
