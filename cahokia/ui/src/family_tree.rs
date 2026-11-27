@@ -39,29 +39,12 @@ const WHEEL_ZOOM_RATE: f64 = 0.0015;
 const MIN_VIEW_HEIGHT: f64 = 240.0;
 const MAX_VIEW_HEIGHT: f64 = 640.0;
 
-// Colours are the design system's --ds- tokens, so the tree follows the
-// page's theme, light or dark, and accessible mode. They are set through
-// `style` because SVG presentation attributes don't read CSS variables.
-const BACKGROUND: &str = "var(--ds-color-surface)";
-const LINE_COLOUR: &str = "var(--ds-color-border-strong)";
-const HIGHLIGHT_COLOUR: &str = "var(--ds-color-accent)";
-const TEXT_COLOUR: &str = "var(--ds-color-text)";
-const MUTED_TEXT_COLOUR: &str = "var(--ds-color-text-muted)";
-/// A box's fill: the surface tinted with one of the data colours, light
-/// enough that the name and years keep their contrast.
-const fn person_fill(sex: &Sex) -> &'static str {
-    match sex {
-        Sex::Male => {
-            "color-mix(in srgb, var(--ds-color-data-4) 16%, var(--ds-color-surface-raised))"
-        }
-        Sex::Female => {
-            "color-mix(in srgb, var(--ds-color-data-5) 16%, var(--ds-color-surface-raised))"
-        }
-        Sex::Unknown => {
-            "color-mix(in srgb, var(--ds-color-data-3) 16%, var(--ds-color-surface-raised))"
-        }
-    }
-}
+// Colours, line widths and the frame's look are in `family_tree.css`, as
+// classes on each element, because a `style` attribute needs
+// `style-src 'unsafe-inline'` in the Content Security Policy. The colours
+// are the design system's --ds- tokens, so the tree follows the page's
+// theme, light or dark, and accessible mode.
+const FAMILY_TREE_CSS: Asset = asset!("/assets/styling/family_tree.css");
 /// Opacity of people and lines outside the focus person's lineage.
 const DIMMED_OPACITY: &str = "0.3";
 
@@ -202,10 +185,10 @@ pub fn FamilyTreeView(
     let has_focus = lineage.is_some();
 
     rsx! {
+        document::Link { rel: "stylesheet", href: FAMILY_TREE_CSS }
         div { class: "family-tree-view",
             div {
                 class: "family-tree-toolbar",
-                style: "display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px;",
                 button {
                     r#type: "button",
                     class: "family-tree-zoom-in",
@@ -264,7 +247,6 @@ pub fn FamilyTreeView(
                 tabindex: "0",
                 width: "100%",
                 height: "{view_height}",
-                style: "display: block; background-color: {BACKGROUND}; border: var(--ds-border-width) solid var(--ds-color-border); font-family: var(--ds-font-body); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; max-height: 75vh;",
                 onmounted: move |evt| async move {
                     drawing.set(Some(evt.data()));
                     if measure().await.is_some() {
@@ -428,10 +410,10 @@ fn EdgeLine(edge: Edge, highlight: Highlight) -> Element {
         EdgeKind::Spouse => "spouse",
     };
     let dash = (edge.kind == EdgeKind::Spouse).then_some("6 4");
-    let (state, stroke, width, opacity) = match highlight {
-        Highlight::Normal => ("", LINE_COLOUR, "2", None),
-        Highlight::Lineage => (" on-lineage", HIGHLIGHT_COLOUR, "3.5", None),
-        Highlight::Dimmed => (" dimmed", LINE_COLOUR, "2", Some(DIMMED_OPACITY)),
+    let (state, opacity) = match highlight {
+        Highlight::Normal => ("", None),
+        Highlight::Lineage => (" on-lineage", None),
+        Highlight::Dimmed => (" dimmed", Some(DIMMED_OPACITY)),
     };
     rsx! {
         path {
@@ -439,7 +421,6 @@ fn EdgeLine(edge: Edge, highlight: Highlight) -> Element {
             "data-from": "{edge.from}",
             "data-to": "{edge.to}",
             d: edge_path(&edge),
-            style: "fill: none; stroke: {stroke}; stroke-width: {width};",
             stroke_dasharray: dash,
             opacity,
         }
@@ -465,13 +446,12 @@ fn PersonBox(
         Sex::Female => "female",
         Sex::Unknown => "unknown",
     };
-    let fill = person_fill(sex);
-    let (role_class, stroke, stroke_width, opacity) = match role {
-        None => ("", LINE_COLOUR, "1.5", None),
-        Some(LineageRole::Focus) => (" focus", HIGHLIGHT_COLOUR, "4", None),
-        Some(LineageRole::Ancestor) => (" ancestor", HIGHLIGHT_COLOUR, "2.5", None),
-        Some(LineageRole::Descendant) => (" descendant", HIGHLIGHT_COLOUR, "2.5", None),
-        Some(LineageRole::Other) => (" dimmed", LINE_COLOUR, "1.5", Some(DIMMED_OPACITY)),
+    let (role_class, opacity) = match role {
+        None => ("", None),
+        Some(LineageRole::Focus) => (" focus", None),
+        Some(LineageRole::Ancestor) => (" ancestor", None),
+        Some(LineageRole::Descendant) => (" descendant", None),
+        Some(LineageRole::Other) => (" dimmed", Some(DIMMED_OPACITY)),
     };
     let max_chars = ((node.width - 2.0 * TEXT_PADDING) / (NAME_FONT_SIZE * CHAR_WIDTH_RATIO))
         .floor()
@@ -504,7 +484,6 @@ fn PersonBox(
             tabindex: "0",
             "aria-pressed": pressed,
             "aria-label": "{name}",
-            style: "cursor: pointer;",
             opacity,
             onclick: move |_| on_pick.call(id.clone()),
             onkeydown: move |evt| {
@@ -516,10 +495,10 @@ fn PersonBox(
             },
             title { "{name}" }
             rect {
+                class: "family-tree-box",
                 width: "{node.width}",
                 height: "{node.height}",
                 rx: "8",
-                style: "fill: {fill}; stroke: {stroke}; stroke-width: {stroke_width};",
             }
             text {
                 class: "family-tree-name",
@@ -528,7 +507,6 @@ fn PersonBox(
                 text_anchor: "middle",
                 font_size: "{NAME_FONT_SIZE}",
                 font_weight: "600",
-                style: "fill: {TEXT_COLOUR};",
                 "{label}"
             }
             if let Some(years) = years {
@@ -538,7 +516,6 @@ fn PersonBox(
                     y: "{years_y}",
                     text_anchor: "middle",
                     font_size: "{YEARS_FONT_SIZE}",
-                    style: "fill: {MUTED_TEXT_COLOUR};",
                     "{years}"
                 }
             }
@@ -685,6 +662,19 @@ mod tests {
     }
 
     #[test]
+    fn sets_no_inline_styles_so_a_strict_csp_allows_it() {
+        // A `style` attribute is blocked by a CSP without
+        // `style-src 'unsafe-inline'`; the stylesheet does the styling.
+        let plain = render(family());
+        let focused = dioxus_ssr::render_element(rsx! {
+            FamilyTreeView { tree: family(), initial_focus: "kid1".to_string() }
+        });
+        for html in [plain, focused] {
+            assert!(!html.contains("style=\""), "inline style in {html}");
+        }
+    }
+
+    #[test]
     fn draws_a_box_per_person_with_name_and_years() {
         let html = render(family());
         assert_eq!(html.matches("class=\"family-tree-person").count(), 4);
@@ -735,7 +725,9 @@ mod tests {
         let height = (layout.height() + 32.0).clamp(MIN_VIEW_HEIGHT, MAX_VIEW_HEIGHT);
         assert!(html.contains(&format!("width=\"100%\" height=\"{height}\"")));
         assert!(html.contains("transform=\"translate(16 16) scale(1)\""));
-        assert!(html.contains("touch-action: none"));
+        // Touch drags pan the tree instead of scrolling the page.
+        let css = include_str!("../assets/styling/family_tree.css");
+        assert!(css.contains("svg.family-tree {") && css.contains("touch-action: none;"));
         assert!(html.contains(">100%</span>"));
     }
 
