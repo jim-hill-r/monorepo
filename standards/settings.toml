@@ -111,6 +111,14 @@ expect = "The account is on the Free plan with no payment method and no paid add
 why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
 every = "30d"
 
+[[setting]]
+id = "github-secrets-tofu-state"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions, and Environments > infra"
+expect = "TOFU_STATE_READ_PASSWORD is a repository secret and TOFU_STATE_WRITE_PASSWORD is only in the infra environment, which is limited to main."
+why = "The OpenTofu state Worker accepts only these (decision 0009); a write password outside infra would let any PR change state."
+every = "90d"
+
 # Auth0.
 
 [[setting]]

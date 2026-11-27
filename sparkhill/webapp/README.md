@@ -21,6 +21,20 @@ The canvas component faithfully replicates blue.eel.education's `EelCanvas`:
 - Color scheme: `#178CA4` user strokes, `#F9F7F0` background
 - Letter and word demonstration animations from stroke patterns bundled in `src/patterns.json` (see "Letter patterns")
 
+### Checking a tracing
+
+When the learner presses ✓, the canvas hands its recording (the strokes in
+canvas pixels and where its guide lines are) to `src/tracing_check.rs`, which
+checks it against the letter's pattern. Both are scaled so the cap line to
+the base line is 100 units and moved to the left edge, so a letter can be
+drawn anywhere across the canvas but must sit on the right guide lines. It
+passes when its size and height on the lines, the start and end of every
+stroke (no stroke missing, none extra) and the shape of its ink are close to
+the pattern's. The tolerances allow for a wobbly finger, and a test checks
+that no letter passes as another. A miss says "Try again!"; after
+`RETRY_LIMIT` misses the next letter comes up and the missed one returns
+later.
+
 ### Letter Sequences
 
 Uses the same letter groupings as the original app:

@@ -3,6 +3,7 @@ mod components;
 mod pages;
 mod patterns;
 mod state;
+mod tracing_check;
 
 use dioxus::prelude::*;
 use pages::{congratulations::Congratulations, home::Home, letter::Letter, word::Word};
@@ -14,6 +15,7 @@ fn main() {
 /// Application routes matching blue.eel.education's navigation structure
 #[derive(Clone, Routable, Debug, PartialEq)]
 enum Route {
+    #[layout(Shell)]
     #[route("/")]
     Home {},
     #[route("/letter")]
@@ -24,9 +26,18 @@ enum Route {
     Congratulations {},
 }
 
-/// Root application component with navigation and routing
+/// Root application component: the router
 #[component]
 fn App() -> Element {
+    rsx! {
+        Router::<Route> {}
+    }
+}
+
+/// Navigation header and page content, around every route. It is a layout
+/// inside the router because `Link` needs a parent router.
+#[component]
+fn Shell() -> Element {
     rsx! {
         div {
             style: "font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; background-color: #f9f9f9;",
@@ -55,7 +66,7 @@ fn App() -> Element {
             // Page content
             main {
                 style: "padding: 16px;",
-                Router::<Route> {}
+                Outlet::<Route> {}
             }
         }
     }

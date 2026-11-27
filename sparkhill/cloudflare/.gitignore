@@ -1,0 +1,4 @@
+/target
+.wrangler/
+# No dependencies, so nothing to lock (and no Dependabot entry needed).
+Cargo.lock

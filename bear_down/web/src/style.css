@@ -39,3 +39,17 @@ footer { color: var(--ds-color-text-muted); font-size: 0.85rem; }
 footer p { margin: 4px 0; }
 footer.appearance { margin-top: 24px; }
 @media (max-width: 480px) { .pick { text-align: left; } }
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 16px; padding: 14px 16px; text-align: center;
+  background: var(--ds-color-accent); color: var(--ds-color-on-accent);
+  border: 3px solid var(--ds-color-text); border-radius: var(--ds-radius-md);
+}
+.banner p { margin: 0; }
+.banner-headline { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; }
+.banner-line { font-size: 0.95rem; margin-top: 2px !important; opacity: 0.95; }
+.banner-bear { font-size: 2rem; line-height: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .banner-bear { animation: banner-bounce 1.2s ease-in-out 3; }
+}
+@keyframes banner-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }

@@ -3,7 +3,9 @@ mod templates;
 
 use perseus::prelude::*;
 
-#[perseus::main(perseus_axum::dflt_server)]
+// Export only: the site is built into static files (`perseus export`) and
+// served by Cloudflare Pages, so it needs no server at runtime.
+#[perseus::main_export]
 pub fn main<G: Html>() -> PerseusApp<G> {
     PerseusApp::new()
         .template(crate::templates::index::get_template())

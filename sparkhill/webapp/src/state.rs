@@ -147,6 +147,8 @@ impl AppState {
                     history.single_attempt_successes += 1;
                     history.total_single_attempt_successes += 1;
                 }
+                // Count the next time this expression comes up afresh.
+                history.attempts = 0;
                 // Stabilize if enough single-attempt successes
                 if history.single_attempt_successes >= self.stabilize_count {
                     // Remove from active queue and add to stable
@@ -165,5 +167,53 @@ impl AppState {
     /// Whether the session is complete (no active, stable, or pending)
     pub fn is_complete(&self) -> bool {
         self.expression.is_none() && self.active_queue.is_empty() && self.pending_queue.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn attempts(state: &AppState, expr: &str) -> usize {
+        state.history.get(expr).map_or(0, |h| h.attempts)
+    }
+
+    #[test]
+    fn a_miss_keeps_the_letter_until_the_retry_limit() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        assert_eq!(state.expression.as_deref(), Some("b"));
+        for tries in 1..RETRY_LIMIT {
+            state.record_attempt(false);
+            assert_eq!(state.expression.as_deref(), Some("b"));
+            assert_eq!(attempts(&state, "b"), tries);
+        }
+        state.record_attempt(false);
+        assert_eq!(state.expression.as_deref(), Some("c"));
+        assert_eq!(attempts(&state, "b"), 0);
+        assert_eq!(state.consecutive_fails, 1);
+    }
+
+    #[test]
+    fn a_success_moves_on_and_counts_afresh_next_time() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        state.record_attempt(true);
+        assert_eq!(state.expression.as_deref(), Some("c"));
+        assert_eq!(attempts(&state, "b"), 0);
+        assert_eq!(state.history["b"].single_attempt_successes, 1);
+    }
+
+    #[test]
+    fn letters_traced_right_first_time_stabilize_and_open_the_next_batch() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        let mut steps = 0;
+        while !state.pending_queue.is_empty() {
+            state.record_attempt(true);
+            steps += 1;
+            assert!(steps < 1_000, "the next batch never opens");
+        }
+        assert!(state.history["b"].single_attempt_successes >= STABILIZE_COUNT);
     }
 }

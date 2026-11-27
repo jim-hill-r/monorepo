@@ -36,6 +36,14 @@ enum Command {
         #[arg(long, default_value = concat!(env!("CARGO_MANIFEST_DIR"), "/out"))]
         out: PathBuf,
     },
+    /// Print the `-backend-config` arguments for a stack's state URL on the
+    /// state Worker, for `tofu init` in the workflows.
+    BackendConfig {
+        /// The stack, such as `auth0`.
+        stack: String,
+        /// The state Worker's origin, such as `https://jimhillr-tofu-state.<subdomain>.workers.dev`.
+        origin: String,
+    },
     /// Check a plan (`tofu show -json plan.tfplan > plan.json`) against the
     /// plan guards; fails on any finding.
     Guard {
@@ -69,6 +77,12 @@ fn main() -> anyhow::Result<()> {
                 for stack in &stacks {
                     println!("wrote {}", stack.path(&out).display());
                 }
+            }
+            Ok(())
+        }
+        Command::BackendConfig { stack, origin } => {
+            for arg in synth::backend_config_args(&stack, &origin)? {
+                println!("{arg}");
             }
             Ok(())
         }

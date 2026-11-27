@@ -8,3 +8,18 @@ cargo-binstall = "latest"
 
 [task_config]
 includes = ["../../standards/tasks/perseus-web.toml"]
+
+# Export only (docs/decisions/0001-static-site-on-cloudflare-pages.md): there
+# is no server to `perseus serve`, so dev serves the static export, as
+# Cloudflare Pages does, and rebuilds it on changes.
+[tasks.dev]
+description = "Export the site and serve the static files, rebuilding on changes"
+run = "perseus export -s -w"
+
+# perseus-cli looks up the latest wasm-opt on the GitHub API unless it is
+# given a version, and that unauthenticated call is rate-limited on shared
+# runners. Pin it (binaryen's release tag). wasm-bindgen's version comes
+# from Cargo.lock, which perseus-cli 0.4.2 only reads in lockfile format 3.
+[tasks.release]
+description = "Static export (output in dist/exported), which ../cloudflare deploys"
+run = "perseus export --release --wasm-opt-version version_123"
