@@ -217,8 +217,21 @@ repo, rather than in any one agent tool's settings.
   continue. A thread with nothing running is either resolved as done or
   asks Jim a question that says why it can't close, so it shows as waiting
   on him. A checklist update alone doesn't count.
-- **Starting new work.** There is no scheduled job for new work. Whenever no
-  agent PRs or agent tasks are in flight, the coordinating agent starts a new
+- **Credit window (Jim, 2026-11-27).** "Kick off work as our credit
+  window begins to close to maximize our use of the 5 hr credits. Have
+  that process run all the time." The hourly "Credit window check"
+  scheduled task wakes the coordinating agent, which reads the five-hour
+  and seven-day usage from its session's rate-limit events and starts
+  extra threads when the five-hour window would otherwise end under 85%
+  used, aiming at 95% without running the seven-day window out early.
+  Keeping at least 5 threads working is its floor, and the overage pause
+  still wins. The
+  rule is [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md),
+  the prompt is in
+  [standards/docs/scheduled-tasks/credit-window.md](standards/docs/scheduled-tasks/credit-window.md).
+- **Starting new work.** Apart from the credit window check above, there
+  is no scheduled job for new work. Whenever no agent PRs or agent tasks
+  are in flight, the coordinating agent starts a new
   task by running the `start-a-new-task` skill.
 - **CI on `main` may be red.** Judge a PR by whether the projects it changes
   pass, not by the overall status.

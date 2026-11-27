@@ -22,3 +22,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0009](0009-opentofu-state-http-backend.md) | OpenTofu state in a Cloudflare Worker with D1 | Accepted |
 | [0010](0010-credential-second-approval.md) | A second approval for credential changes: a GitHub environment only Jim can approve | Accepted |
 | [0011](0011-mint-secrets-by-workflow.md) | Mint infra secrets with a workflow, outside OpenTofu | Accepted |
+| [0013](0013-credit-window-scheduler.md) | Start work by the Claude usage window, checked every hour | Accepted |
