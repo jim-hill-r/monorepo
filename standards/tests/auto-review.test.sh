@@ -62,6 +62,14 @@ check "a failing commit status" "pane/web/src/main.rs" \
 
 check "Jim review missing" "pane/web/src/main.rs" \
   "$(jq -c 'del(.check_runs[] | select(.name == "Jim review"))' <<<"$green")" '[]' "skip: check Jim review has not passed"
+check "an older cancelled run of a check doesn't count" "pane/web/src/main.rs" \
+  "$(jq -c '.check_runs += [{"name":"Jim review","status":"completed","conclusion":"cancelled","started_at":"2026-01-01T00:00:00Z"}]
+    | (.check_runs[] | select(.name == "Jim review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
+  '[]' "approve:"
+check "a newer failing run does count" "pane/web/src/main.rs" \
+  "$(jq -c '.check_runs += [{"name":"Jim review","status":"completed","conclusion":"failure","started_at":"2026-01-01T00:02:00Z"}]
+    | (.check_runs[] | select(.name == "Jim review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
+  '[]' "skip: check Jim review is failure"
 check "wrangler.jsonc" "pane/cloudflare/wrangler.jsonc" "$green" '[]' "skip: touches pane/cloudflare/wrangler.jsonc"
 
 pr false jimhillr-agt '[]' 40 main $'## Attention\n\n- 🔴 must-requirement-changed: `COOK-001`\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n'

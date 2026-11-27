@@ -117,10 +117,13 @@ decide() {
   [ -z "$blocked" ] || { echo "skip: touches $blocked"; return; }
 
   # Every check run on the head finished and passed (skipped and neutral
-  # count as passed), and every commit status is success.
+  # count as passed), and every commit status is success. A check that ran
+  # more than once (a re-run, or Jim review on a later event) counts by its
+  # latest run.
   local bad
   bad=$(jq -r --arg self "$SELF_CHECK" '
-    [(.check_runs[]? | select(.name != $self)
+    .check_runs = ([.check_runs[]?] | group_by(.name) | map(max_by(.started_at // "")))
+    | [(.check_runs[]? | select(.name != $self)
       | select(.status != "completed" or ((.conclusion // "") | IN("success", "skipped", "neutral") | not))
       | "\(.name) is \(.conclusion // .status)"),
      (.statuses[]? | select(.state != "success") | "\(.context) is \(.state)")]
