@@ -4,7 +4,7 @@ theme: uncover
 paginate: true
 ---
 
-# The Psy Ents
+# The Psy Ents Go Climbing
 
 ---
 
