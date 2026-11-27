@@ -190,6 +190,13 @@ repo, rather than in any one agent tool's settings.
   understand our coding stance, with the owner named and the original
   linked beside them; never ship them in a product. Details are in
   [athenaeum/CONTRIBUTING.md](athenaeum/CONTRIBUTING.md).
+- **Code quality references in athenaeum (Jim, 2026-11-27).** "We can use
+  athenaeum project as a store for important documents/blog posts/patterns
+  we discover so we can reference them as we write software." Before
+  leaning on a design or code quality idea, read its note in
+  [athenaeum/resources/code_quality/](athenaeum/resources/code_quality/README.md),
+  and when a source changes how we write code here, add a note for it
+  there. The standards still hold the rules; the notes explain them.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit
