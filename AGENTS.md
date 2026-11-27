@@ -173,7 +173,9 @@ repo, rather than in any one agent tool's settings.
   mergeable PR (per the merge rule above), closes superseded or pinned bumps
   (and conflicting ones Dependabot can't rebase, so it recreates them), adopts
   orphaned agent PRs, turns on auto-merge for ready agent PRs, hands bumps that break the build to an agent to fix, and
-  labels only real decisions for a person `needs-human`. Safe to approve means
+  labels only real decisions for a person `needs-human`. Each run also
+  checks the README's repo health badges and tries to fix what is red, at
+  most one fix PR per run ([standards/docs/repo-health.md](standards/docs/repo-health.md)). Safe to approve means
   green checks, no conflict, never the pinned bumps above, no auth or secrets
   changes unless trivially safe, and for a major bump (a 0.x minor bump counts
   as major) release notes with no breaking change that CI wouldn't catch

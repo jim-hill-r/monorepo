@@ -148,6 +148,13 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   turn auto-merge on.
 - Otherwise add `needs-human` and flag it.
 
+### Main health
+
+After the PRs, each run checks the README's repo health badges (the
+latest run on `main` of every workflow that runs there) and tries to fix
+anything red, at most one fix PR per run. The rules are in
+[repo-health.md](repo-health.md).
+
 ### Reporting
 
 Each run reports once in the Claude project, and only when it merged, closed or

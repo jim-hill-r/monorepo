@@ -44,7 +44,9 @@ their own access.
 5. **Scheduled tasks.** In the project, add (each a fresh session that
    follows AGENTS.md):
    - "PR triage", 7:50, 12:50 and 17:50 New York time, run as
-     `jimhillr-agt`: the PR lifecycle in AGENTS.md.
+     `jimhillr-agt`: the PR lifecycle in AGENTS.md and the repo health
+     check. Paste the prompt from
+     `standards/docs/scheduled-tasks/pr-triage.md`.
    - "Weekly human issues digest", Mondays 5:41 AM New York: run the
      `human-issues-digest` skill.
    - "Weekly deep project review", weekly: run the `deep-project-review`

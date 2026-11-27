@@ -1,5 +1,14 @@
 # GitHub Actions Workflows
 
+## Repo health badges
+
+Every workflow that runs on `main` by itself (a push to `main` or a
+schedule) has a status badge in the "Repo health" table of the root
+README, and PR triage checks them three times a day
+([standards/docs/repo-health.md](../../standards/docs/repo-health.md)).
+A new workflow like that adds its badge in the same PR;
+`monorepo/workflow_tests/tests/readme_badges_tests.rs` fails otherwise.
+
 ## CI/CD with mise
 
 Every project is a directory with a `mise.toml` that includes one shared task
