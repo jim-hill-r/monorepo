@@ -50,6 +50,7 @@ vendor = "Squarespace"            # a vendor blip in radar.json
 cents = 1200
 every = "year"                    # "month", "year" or "once"
 since = "2026-12"                 # first month it is paid, YYYY-MM
+renews = "2027-12-01"             # next charge, YYYY-MM-DD; required for "year"
 decision = "standards/docs/decisions/0006-cookbook-domain.md"  # required when cents > 0
 
 [[revenue]]
@@ -66,6 +67,7 @@ source = "None yet"
 | `[[service]].plan` | `free`. `paid` only for a blip whose radar budget is above $0 (today only Claude Code). |
 | `[[service]].usage` | Expected use at the project's normal level, keyed by `key` in [limits.toml](../radar/limits.toml). Leave out what you can't estimate; a guess with a note beats nothing. |
 | `[[cost]]` | `name`, `vendor` (a vendor blip), `cents`, `every`, `since`, and `decision` when `cents > 0`. |
+| `[[cost]].renews` | `YYYY-MM-DD`, the next charge. Required when `every = "year"`, optional for `month`, not allowed for `once`. Move it on a year (or month) after each renewal; `cost renewals --within 60` lists the ones coming up. |
 | `[[revenue]]` | `month`, `cents`, `source`. |
 
 Unknown fields are errors, so a typo can't hide a cost.
@@ -93,7 +95,7 @@ hook and CI run sees it. Until phase 3 of the plan every finding is a
 | Code | Fires when |
 | --- | --- |
 | COST-001 | A project has no `docs/cost.toml`. |
-| COST-002 | The file doesn't parse, or has an unknown field, plan, `every` or usage key. |
+| COST-002 | The file doesn't parse, or has an unknown field, plan, `every` or usage key, or a yearly `[[cost]]` has no `renews` (or a one-off one has). |
 | COST-003 | A `[[service]]` or `[[cost]]` names a blip that isn't a vendor in `radar.json`, or one in Assess or Hold. |
 | COST-004 | `plan` isn't `free` for a blip whose budget is $0, or a `[[cost]]` with `cents > 0` has no `decision` pointing at an existing, accepted decision record. |
 | COST-005 | Expected usage is over our budget for a limit (or the free limit, where we have no budget). Limits with `scope = "account"` are summed across every project. |
@@ -101,8 +103,9 @@ hook and CI run sees it. Until phase 3 of the plan every finding is a
 | COST-007 | **Drift:** the project's files use a service its `[[service]]` list doesn't name, or more of a counted limit (Pages projects, Workers, Cron Triggers, D1 databases) than its `[service.usage]` expects. See "Detectors" below. |
 | COST-008 | `reviewed` is more than 180 days old. A warning even after phase 3. |
 | COST-009 | An `https://` (or `wss://`) host in the project's source or config that no detector or allow entry knows. A warning even after phase 3, until the allowlist settles. |
+| COST-010 | A `[[cost]]`'s `renews` date has passed: the file wasn't updated after the renewal. Check what was charged and set the next date. A warning even after phase 3. |
 
-The per-project rules (COST-001 to COST-004 and COST-007 to COST-009) run
+The per-project rules (COST-001 to COST-004 and COST-007 to COST-010) run
 only for the affected projects in the git hooks and PR CI: `hooks.sh` and
 the PR's audit step pass the list in `COST_PROJECTS`. The account-wide rules
 read every project's file every time, which takes milliseconds.

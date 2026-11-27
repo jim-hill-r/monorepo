@@ -24,7 +24,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Check every project's docs/cost.toml (COST-001 to COST-009).
+    /// Check every project's docs/cost.toml (COST-001 to COST-010).
     Check {
         /// Repo root. Defaults to the nearest directory above the current
         /// one that holds standards/radar/limits.toml.
@@ -36,8 +36,8 @@ enum Command {
         /// or repeated. Without it every project is checked.
         #[arg(long, value_delimiter = ',')]
         projects: Option<Vec<String>>,
-        /// Exit with status 1 on any finding except COST-008. Without it
-        /// findings are warnings and the exit status is 0.
+        /// Exit with status 1 on any finding except COST-008 to COST-010.
+        /// Without it findings are warnings and the exit status is 0.
         #[arg(long)]
         strict: bool,
         /// The date to check against, YYYY-MM-DD. Defaults to today (UTC).
@@ -60,6 +60,19 @@ enum Command {
         json: Option<PathBuf>,
         /// The date to price recurring money in, YYYY-MM-DD. Defaults to
         /// today (UTC).
+        #[arg(long)]
+        today: Option<NaiveDate>,
+    },
+    /// List the [[cost]] entries whose `renews` date (the next charge) is
+    /// within --within days, soonest first, including any already passed.
+    Renewals {
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// How many days ahead to look.
+        #[arg(long, default_value_t = 60)]
+        within: i64,
+        /// The date to count from, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long)]
         today: Option<NaiveDate>,
     },
@@ -127,6 +140,18 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 std::fs::write(&path, serde_json::to_string_pretty(&summary)? + "\n")
                     .map_err(|e| anyhow::anyhow!("writing {}: {e}", path.display()))?;
             }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Renewals {
+            root,
+            within,
+            today,
+        } => {
+            let root = find_root(root)?;
+            let today = today.unwrap_or_else(|| chrono::Utc::now().date_naive());
+            let projects = check::parsed_projects(&root)?;
+            let due = cost_model::renewals(&projects, today, within);
+            print!("{}", cost_model::render_renewals(&due, today, within));
             Ok(ExitCode::SUCCESS)
         }
         Command::Render { root, check } => {

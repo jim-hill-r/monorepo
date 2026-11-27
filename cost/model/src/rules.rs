@@ -1,5 +1,5 @@
-//! The rules. Per-project rules (COST-001 to COST-004, COST-008) look at one
-//! file; account-wide rules (COST-005, COST-006) need every project's file.
+//! The rules. Per-project rules (COST-001 to COST-004, COST-008, COST-010)
+//! look at one file; account-wide rules (COST-005, COST-006) need every project's file.
 
 use std::collections::BTreeMap;
 
@@ -113,6 +113,32 @@ pub fn check_project(
                     service.blip
                 ),
             );
+        }
+    }
+    for cost in &file.cost {
+        match (cost.every, cost.renews) {
+            (Every::Year, None) => add(
+                Code::Cost002,
+                format!(
+                    "cost `{}` is paid every year but has no `renews` date (the next charge, YYYY-MM-DD)",
+                    cost.name
+                ),
+            ),
+            (Every::Once, Some(_)) => add(
+                Code::Cost002,
+                format!(
+                    "cost `{}` is paid once, so it can't have a `renews` date",
+                    cost.name
+                ),
+            ),
+            (_, Some(renews)) if renews < today => add(
+                Code::Cost010,
+                format!(
+                    "cost `{}` renewed on {renews}; check what was charged and set `renews` to the next charge",
+                    cost.name
+                ),
+            ),
+            _ => {}
         }
     }
     for cost in &file.cost {
@@ -286,6 +312,79 @@ pub fn check_account(
     findings
 }
 
+/// A `[[cost]]` whose next charge is coming up, or already passed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Renewal {
+    /// The project whose `docs/cost.toml` lists it.
+    pub project: String,
+    pub name: String,
+    pub vendor: String,
+    pub cents: u64,
+    pub every: Every,
+    pub renews: NaiveDate,
+}
+
+impl Renewal {
+    /// Days from `today` to the charge; negative once it has passed.
+    pub fn days_from(&self, today: NaiveDate) -> i64 {
+        (self.renews - today).num_days()
+    }
+}
+
+/// Every `[[cost]]` whose `renews` date is at most `within` days after
+/// `today`, past dates included (COST-010 reports those too), soonest
+/// first.
+pub fn renewals(projects: &[Project], today: NaiveDate, within: i64) -> Vec<Renewal> {
+    let mut due: Vec<Renewal> = projects
+        .iter()
+        .flat_map(|p| {
+            p.file.cost.iter().filter_map(|c| {
+                let renews = c.renews?;
+                ((renews - today).num_days() <= within).then(|| Renewal {
+                    project: p.name.clone(),
+                    name: c.name.clone(),
+                    vendor: c.vendor.clone(),
+                    cents: c.cents,
+                    every: c.every,
+                    renews,
+                })
+            })
+        })
+        .collect();
+    due.sort_by(|a, b| (a.renews, &a.project, &a.name).cmp(&(b.renews, &b.project, &b.name)));
+    due
+}
+
+/// One line per renewal, for `cost renewals` and the digest.
+pub fn render_renewals(due: &[Renewal], today: NaiveDate, within: i64) -> String {
+    if due.is_empty() {
+        return format!("No renewals in the next {within} days.\n");
+    }
+    let mut out = String::new();
+    for r in due {
+        let days = r.days_from(today);
+        let when = match days {
+            d if d < 0 => format!("renewed {} ({} days ago, update `renews`)", r.renews, -d),
+            0 => format!("renews {} (today)", r.renews),
+            1 => format!("renews {} (in 1 day)", r.renews),
+            d => format!("renews {} (in {d} days)", r.renews),
+        };
+        let every = match r.every {
+            Every::Month => "a month",
+            Every::Year => "a year",
+            Every::Once => "once",
+        };
+        out.push_str(&format!(
+            "{}: {} ({}), {} {every}, {when}\n",
+            r.project,
+            r.name,
+            r.vendor,
+            money(r.cents)
+        ));
+    }
+    out
+}
+
 pub(crate) fn money(cents: u64) -> String {
     format!("${}.{:02}", cents / 100, cents % 100)
 }
@@ -359,8 +458,20 @@ checked = "2026-11-26"
     }
 
     fn domain(cents: u64, every: &str, since: &str, decision: &str) -> String {
+        let renews = if every == "year" {
+            "renews = \"2027-06-01\"\n"
+        } else {
+            ""
+        };
         format!(
-            "[[cost]]\nname = \"domain\"\nvendor = \"Squarespace\"\ncents = {cents}\nevery = \"{every}\"\nsince = \"{since}\"\n{decision}\n"
+            "[[cost]]\nname = \"domain\"\nvendor = \"Squarespace\"\ncents = {cents}\nevery = \"{every}\"\nsince = \"{since}\"\n{renews}{decision}\n"
+        )
+    }
+
+    fn renewing(every: &str, renews: Option<&str>) -> String {
+        let renews = renews.map_or(String::new(), |d| format!("renews = \"{d}\"\n"));
+        format!(
+            "{HEAD}[[cost]]\nname = \"domain\"\nvendor = \"Squarespace\"\ncents = 0\nevery = \"{every}\"\nsince = \"2026-01\"\n{renews}"
         )
     }
 
@@ -443,6 +554,37 @@ checked = "2026-11-26"
         assert!(!findings[0].code.can_fail());
     }
 
+    #[test]
+    fn test_cost_002_yearly_cost_needs_renews_and_once_cant_have_it() {
+        let findings = check(&renewing("year", None));
+        assert_eq!(codes(&findings), ["COST-002"]);
+        assert!(findings[0].message.contains("`renews`"), "{}", findings[0]);
+        assert!(findings[0].code.can_fail());
+        let findings = check(&renewing("once", Some("2027-01-01")));
+        assert_eq!(codes(&findings), ["COST-002"]);
+        assert!(findings[0].message.contains("paid once"), "{}", findings[0]);
+        assert!(check(&renewing("month", None)).is_empty());
+        assert!(check(&renewing("month", Some("2026-12-01"))).is_empty());
+        assert!(
+            check(&renewing("year", Some("2026-11-26"))).is_empty(),
+            "today is not past"
+        );
+    }
+
+    #[test]
+    fn test_cost_010_past_renewal_is_a_warning_only() {
+        let findings = check(&renewing("year", Some("2026-11-25")));
+        assert_eq!(codes(&findings), ["COST-010"]);
+        assert!(
+            findings[0].message.contains("2026-11-25"),
+            "{}",
+            findings[0]
+        );
+        assert!(!findings[0].code.can_fail());
+        let monthly = check(&renewing("month", Some("2026-10-01")));
+        assert_eq!(codes(&monthly), ["COST-010"]);
+    }
+
     fn project(name: &str, text: &str) -> Project {
         Project {
             name: name.to_string(),
@@ -508,6 +650,7 @@ checked = "2026-11-26"
                 year: 2026,
                 month: 11,
             },
+            renews: None,
             decision: None,
             notes: None,
         };
@@ -529,5 +672,52 @@ checked = "2026-11-26"
         assert_eq!(monthly_cents(&cost(Every::Once, 999), nov), 999);
         assert_eq!(monthly_cents(&cost(Every::Once, 999), dec), 0);
         assert_eq!(monthly_cents(&cost(Every::Month, 500), oct), 0);
+    }
+
+    #[test]
+    fn test_renewals_lists_due_and_past_soonest_first() {
+        let cost = |name: &str, every: &str, renews: Option<&str>| {
+            let renews = renews.map_or(String::new(), |d| format!("renews = \"{d}\"\n"));
+            format!(
+                "[[cost]]\nname = \"{name}\"\nvendor = \"Squarespace\"\ncents = 2000\nevery = \"{every}\"\nsince = \"2026-01\"\n{renews}"
+            )
+        };
+        let projects = [
+            project(
+                "pane",
+                &format!(
+                    "{HEAD}{}{}",
+                    cost("pane.dev", "year", Some("2027-01-25")),
+                    cost("late", "year", Some("2027-01-26"))
+                ),
+            ),
+            project(
+                "cookbook",
+                &format!(
+                    "{HEAD}{}{}{}",
+                    cost("cookbook.dev", "year", Some("2026-12-01")),
+                    cost("old", "year", Some("2026-11-20")),
+                    cost("plan", "month", None)
+                ),
+            ),
+        ];
+        let due = renewals(&projects, today(), 60);
+        let names: Vec<&str> = due.iter().map(|r| r.name.as_str()).collect();
+        assert_eq!(names, ["old", "cookbook.dev", "pane.dev"]);
+        assert_eq!(due[0].days_from(today()), -6);
+        assert_eq!(due[2].days_from(today()), 60);
+        assert_eq!(due[2].project, "pane");
+
+        let text = render_renewals(&due, today(), 60);
+        assert_eq!(
+            text,
+            "cookbook: old (Squarespace), $20.00 a year, renewed 2026-11-20 (6 days ago, update `renews`)\n\
+             cookbook: cookbook.dev (Squarespace), $20.00 a year, renews 2026-12-01 (in 5 days)\n\
+             pane: pane.dev (Squarespace), $20.00 a year, renews 2027-01-25 (in 60 days)\n"
+        );
+        assert_eq!(
+            render_renewals(&[], today(), 30),
+            "No renewals in the next 30 days.\n"
+        );
     }
 }
