@@ -31,6 +31,9 @@ pub fn web_apps() -> Vec<WebApp> {
         WebApp::new("design_system").web_analytics(),
         WebApp::new("pane").web_analytics(),
         WebApp::new("sparkhill").web_analytics(),
+        // Blue Eel. Web Analytics isn't on yet; that adds a Cloudflare
+        // resource, so it waits for its own PR.
+        WebApp::new("sparkhill_webapp"),
     ]
 }
 
