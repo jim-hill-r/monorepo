@@ -258,6 +258,7 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 | `code-review` | Review one project against the standards and record five TODOs. |
 | `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
+| `eval-triage` | Turn the eval verdicts into issue files (a `FIX` per `must` not met, a `TODO` per broken eval) and rollback steps, in one PR. Run daily by the "Daily eval triage" scheduled task. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

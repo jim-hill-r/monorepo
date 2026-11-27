@@ -682,8 +682,9 @@ phase 3.
   `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
   released binaries.
-- The `eval-triage` skill and its daily scheduled task, replacing the
-  planned nightly FIX task.
+- Done (2026-11-27): the `eval-triage` skill, replacing the planned
+  nightly FIX task. Its daily scheduled task waits for Jim to add it
+  (`issues/human/schedule-daily-eval-triage.md`).
 - `evals check` makes "every `must` has a production eval" an error.
 
 ### Phase 3: observability

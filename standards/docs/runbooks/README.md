@@ -42,6 +42,7 @@ run book in the task."
 | [Make the billing read credentials](billing-read-credentials.md) | one-time, then yearly | `billing-read-credentials.md` |
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
 | [List the Squarespace domains](squarespace-domains.md) | one-time, then every 90 days | `list-squarespace-domains.md` |
+| [Schedule the daily eval triage](eval-triage-task.md) | one-time | `schedule-daily-eval-triage.md` |
 
 The Infra Mint workflow (`.github/workflows/infra-mint.yml`, decision 0011)
 makes every other infra secret from the bootstrap credentials and the GitHub App below: the state
