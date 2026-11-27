@@ -19,6 +19,13 @@ stages = ["ci"]
 kind = "cargo"
 filter = "royl_002_non_production_is_never_charged"
 
+[[eval]]
+id = "development-stage-scan-owes-nothing"
+requirement = "ROYL-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_002_a_development_stage_consumer_owes_nothing"
+
 # ROYL-004: The lowest ceiling wins, and the report says which
 
 [[eval]]
@@ -27,6 +34,15 @@ requirement = "ROYL-004"
 stages = ["ci"]
 kind = "cargo"
 filter = "royl_004_"
+
+# ROYL-005: Offline and private by default
+
+[[eval]]
+id = "scan-never-fetches"
+requirement = "ROYL-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "royl_005_"
 
 # ROYL-007: A file with only `[project]` stays valid for ever
 

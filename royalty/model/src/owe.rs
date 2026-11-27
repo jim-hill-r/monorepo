@@ -5,7 +5,7 @@
 //! `docs/royalty-toml.md`. Phase 1 has no ledger, so year-to-date totals
 //! are zero and a `year_cents` limit applies to the one period on its own.
 
-use crate::price::{Priced, Usage, names_family, price};
+use crate::price::{Priced, TierChoice, Usage, names_family, price};
 use crate::schema::*;
 
 /// One producer family the scan found, with its terms and its use.
@@ -248,10 +248,15 @@ fn one_family(consumer: &Consumer, family_use: &FamilyUse<'_>) -> FamilyOwed {
         notes: Vec::new(),
     };
 
-    // Step 2: out of reach.
-    if usage.dependency == Dependency::Transitive && producer.terms.reach == Reach::Direct {
+    // Step 2: out of reach. Non-production use is reported as that instead
+    // (it is free either way), because it says more.
+    let production = owed.priced.tier != TierChoice::NonProduction;
+    if production
+        && usage.dependency == Dependency::Transitive
+        && producer.terms.reach == Reach::Direct
+    {
         owed.priced = Priced {
-            tier: crate::price::TierChoice::NoMatch,
+            tier: TierChoice::NoMatch,
             lines: Vec::new(),
             cents: 0,
         };

@@ -1,6 +1,8 @@
 //! The `royalty` command. See `royalty/README.md`.
 
 mod check;
+mod owed;
+mod scan;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -31,12 +33,22 @@ enum Command {
         #[arg(long)]
         strict: bool,
     },
+    /// Scan a consumer's Cargo dependencies for royalty.toml files and
+    /// print what is owed this period. Runs `cargo metadata --locked
+    /// --offline`, so it needs a Cargo.lock and the sources on disk.
+    Scan {
+        /// The consumer's directory (with Cargo.toml, Cargo.lock and
+        /// optionally royalty.toml). Defaults to the current directory.
+        #[arg(default_value = ".")]
+        path: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let result = match cli.command {
         Command::Check { path, strict } => check::run(&path, strict),
+        Command::Scan { path } => owed::run(&path),
     };
     match result {
         Ok(code) => code,

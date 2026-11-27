@@ -18,7 +18,12 @@ fn royalty_files(dir: &Path, out: &mut Vec<PathBuf>) {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
         if path.is_dir() {
-            if !name.starts_with('.') && name != "target" && name != "node_modules" {
+            // Test fixtures hold example producers with terms on purpose.
+            if !name.starts_with('.')
+                && name != "target"
+                && name != "node_modules"
+                && name != "fixtures"
+            {
                 royalty_files(&path, out);
             }
         } else if name == "royalty.toml" {

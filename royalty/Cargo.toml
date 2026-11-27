@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = ["model", "cli"]
+# Consumer and producer workspaces the scanner tests copy and scan.
+exclude = ["cli/tests/fixtures"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,5 +19,6 @@ unsafe_code = "forbid"
 anyhow = "1.0"
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 serde_ignored = "0.1"
 toml = "1"
