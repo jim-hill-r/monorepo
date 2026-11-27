@@ -588,7 +588,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   here is the thing to avoid; human issues that create a
   setting add its manifest entry in the same PR.
 - **Evals of kind `human-check`** in a project's `evals.toml` (or the
-  `monorepo` project's, for repo-wide settings such as Claude connectors)
+  `jimhillr` project's, for repo-wide settings such as Claude connectors)
   point a requirement at a setting: `kind = "human-check"`,
   `setting = "<id>"`, `stages = ["human"]`. `evals check` reports a
   `setting` that isn't in the manifest (EVL-001 widened) and a manifest
@@ -612,7 +612,7 @@ connector sign-in, a token missing a scope, a callback URL dropped).
   `evals human-checks due --write`; `evals verdicts` will read the same
   file. A
   manifest entry that no eval names is not a warning: most settings are
-  repo-wide and have no requirement until the `MONO-xxx` ones exist.
+  repo-wide and have no requirement until the `JIMH-xxx` ones exist.
 - **Verdicts.** A failed human check makes its requirement not met, like a
   production eval. A check past twice its `every` with no answer makes it
   at risk, never met: an unchecked setting is unknown, not fine.
@@ -641,7 +641,7 @@ it worked: the requirement turns green or it doesn't.
 ### Process evals (later)
 
 The same engine can grade our own process, from GitHub data alone, as
-requirements of a `monorepo` project (`MONO-xxx`):
+requirements of the `jimhillr` project (`JIMH-xxx`):
 
 - Change failure rate: production deploys followed by a `FIX` or rollback
   within 48 hours.
@@ -701,7 +701,9 @@ Needs the `telemetry` Worker, Web Analytics and PostHog from deploy feedback,
 phases 4 and 5.
 
 - Synthetic traffic tagging in every runner, the PostHog snippet and the
-  `telemetry` Worker.
+  `telemetry` Worker. Done for the runners (Playwright configs, EVL-005,
+  and the `evals` HTTP client) and the Worker; the PostHog snippet skips
+  the `jimhillr-evals` user agent when session replay adds it.
 - The `metric` kind with the Web Analytics, Analytics Engine, PostHog and
   GitHub sources; `daily-observe-evals.yml` and the post-deploy run.
 
@@ -750,7 +752,7 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 ### Phase 8: process evals
 
-- `MONO-xxx` requirements and the GitHub-derived metrics above.
+- `JIMH-xxx` requirements and the GitHub-derived metrics above.
 - Feed them into pane's system signals and the deep project review deck.
 
 ## Things Jim does

@@ -13,6 +13,12 @@ name: All Free Tier Usage
 # The same weekly run scans the whole git history for secrets (SEC-001, the
 # threat check's full-history scan, standards/docs/security.md), so a new
 # gitleaks rule catches an old commit within a week.
+#
+# A `threat-live` job compares what is deployed on Cloudflare with the
+# threat models (standards/scripts/threat-live.sh, "Live check" in
+# standards/docs/security.md): unclaimed Pages projects or Workers, sites
+# behind Access that aren't, APIs that answer without a token and public
+# sites missing security headers. Same read-only token as `usage`.
 on:
   schedule:
     # Mondays at 3 PM UTC (7 AM Pacific)
@@ -94,3 +100,32 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}  # mise's gitleaks download
           MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
         run: bash standards/scripts/secrets-check.sh history
+
+  threat-live:
+    name: Live threat check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Deployed sites against their threat models
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          THREAT_LIVE_OUT: ${{ runner.temp }}/threat-live
+        run: bash standards/scripts/threat-live.sh
+
+      # The issue files for unclaimed deployments, for PR triage to commit
+      # (standards/docs/repo-health.md); CI never pushes to main.
+      - name: Keep the report and issue files
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: threat-live
+          path: |
+            ${{ runner.temp }}/threat-live/report.md
+            ${{ runner.temp }}/threat-live/issues/
+          if-no-files-found: ignore
+          retention-days: 7

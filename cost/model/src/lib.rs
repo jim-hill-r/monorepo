@@ -20,7 +20,7 @@ mod summary;
 pub use cost_file::{Cost, CostFile, Every, Plan, Revenue, Service, parse_cost_file};
 pub use detectors::{
     Allow, Detection, Detector, Detectors, DetectorsFile, Exempt, Hit, Scan, SourceFile,
-    UNKNOWN_HOST, UnknownHost, check_drift, parse_detectors,
+    ThreatHint, UNKNOWN_HOST, UnknownHost, check_drift, parse_detectors,
 };
 pub use finding::{Code, Finding};
 pub use limits::{Limit, LimitsFile, Scope, parse_limits};

@@ -55,7 +55,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             }
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl prose prose-stone") {
-                    h1(id="what-we-do", class="text-sky-700") { "What we do" }
+                    h2(id="what-we-do", class="section-heading text-sky-700") { "What we do" }
                     p {
                         "We provide a range of services to help individuals improve their reading skills. \
                         These services may include one-on-one tutoring or small group instruction, using \
@@ -75,7 +75,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
                         img(src=".perseus/static/images/Classroom.e9004107.jpg", alt="Classroom")
                     }
                     div(class="xl:w-3/4") {
-                        h1(id="who-we-are", class="text-sky-700") { "Who we are" }
+                        h2(id="who-we-are", class="section-heading text-sky-700") { "Who we are" }
                         p {
                             "Meagan has extensive experience working with struggling readers and readers \
                             who just need a little boost."
@@ -105,7 +105,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             }
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl prose prose-stone") {
-                    h1(id="how-we-do-it", class="text-sky-700") { "How we do it" }
+                    h2(id="how-we-do-it", class="section-heading text-sky-700") { "How we do it" }
                     p {
                         "There are several tests that are commonly used to diagnose dyslexia, including \
                         the Dyslexia Early Screening Test (DEST), the Phonological Awareness Test (PAT), \
@@ -122,7 +122,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             }
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl prose prose-stone text-center pb-10") {
-                    h1(id="testimonials", class="text-sky-700") { "Testimonials" }
+                    h2(id="testimonials", class="section-heading text-sky-700") { "Testimonials" }
                     p { "Read what families say about us on Nextdoor." }
                     a(href=CONTACT_URL, target="_blank", rel="noopener noreferrer", class="not-prose no-underline text-2xl p-2 pt-1 rounded-full text-sky-700 border-2 border-sky-700 hover:border-transparent hover:bg-teal-500") { "Nextdoor" }
                 }
@@ -210,6 +210,13 @@ mod tests {
         }
         assert!(html.contains("<header"));
         assert!(html.contains("<footer"));
+    }
+
+    #[test]
+    fn has_one_h1_and_a_h2_per_section() {
+        let html = render();
+        assert_eq!(html.matches("<h1").count(), 1);
+        assert_eq!(html.matches("<h2").count(), 4);
     }
 
     #[test]

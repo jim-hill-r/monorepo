@@ -131,6 +131,12 @@ through a series of small PRs. Comment lines don't count.
 | a workflow named `<project>.yml` or `<project>-*.yml` with a `schedule:` | GitHub Actions minutes |
 | any other `https://` host | COST-009 |
 
+A detector can also carry a `threat` field saying what a match means for
+the project's threat model; the threat check reads the same matches for
+THR-004 ([security.md](security.md#threat-models)). A detector with a
+`threat` but no `blip` (a deploy URL, `wrangler secret put`, raw HTML, CORS
+open to every origin) matters only to the threat check and costs nothing.
+
 Links a person follows (an HTML or rsx `href`, a Markdown link) are not
 services, so they never raise COST-009. When a host costs nothing (a docs
 site, a registry, a free CDN), add it to `[[allow]]` with a `why`. When a
