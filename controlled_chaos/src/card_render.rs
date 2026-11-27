@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::card::Card;
 use crate::state::AppState;
+use crate::theme::{self, GameTheme};
 
 /// Width of a rendered card in pixels.
 pub const CARD_WIDTH: f32 = 120.0;
@@ -12,8 +13,8 @@ pub const CARD_HEIGHT: f32 = 180.0;
 /// Height of the artwork placeholder area inside a card.
 pub const CARD_ARTWORK_HEIGHT: f32 = 80.0;
 
-/// Background color of the artwork placeholder.
-pub const CARD_ARTWORK_COLOR: Color = Color::srgb(0.4, 0.4, 0.6);
+/// Width of the category-coloured frame around a card, in pixels.
+pub const CARD_FRAME_WIDTH: f32 = 4.0;
 
 /// Marks the root UI node of a rendered card visual.
 ///
@@ -59,9 +60,13 @@ impl Plugin for CardRenderPlugin {
 
 /// Startup system: spawns a UI card visual for every [`Card`] entity present
 /// at launch.
-pub fn spawn_card_visuals_from_cards(mut commands: Commands, cards: Query<(Entity, &Card)>) {
+pub fn spawn_card_visuals_from_cards(
+    mut commands: Commands,
+    theme: Res<GameTheme>,
+    cards: Query<(Entity, &Card)>,
+) {
     for (entity, card) in &cards {
-        let visual = spawn_card_visual(&mut commands, entity, card);
+        let visual = spawn_card_visual(&mut commands, entity, card, &theme);
         debug!(
             "Spawned card visual {:?} for source entity {:?} ({})",
             visual, entity, card.name
@@ -89,12 +94,25 @@ pub fn cleanup_orphaned_visuals(
 ///
 /// The hierarchy is:
 /// ```text
-/// CardVisualRoot (colored frame, CARD_WIDTH × CARD_HEIGHT)
+/// CardVisualRoot (surface body with a category-coloured frame, CARD_WIDTH × CARD_HEIGHT)
 ///   ├── CardNameText   (card name, top of frame)
-///   ├── CardArtwork    (artwork placeholder, colored rectangle)
+///   ├── CardArtwork    (artwork placeholder, a block of the category colour)
 ///   └── CardStatsText  (card stats / power value, bottom of frame)
 /// ```
-pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -> Entity {
+///
+/// The category colour is the design system's data colour for it, drawn as
+/// the frame and the artwork block but never behind text, because the data
+/// palette is only guaranteed 3:1 against `surface`. Labels use `text` on
+/// `surface`.
+pub fn spawn_card_visual(
+    commands: &mut Commands,
+    source: Entity,
+    card: &Card,
+    theme: &GameTheme,
+) -> Entity {
+    let tokens = theme.tokens();
+    let category = card.category.frame_color(tokens);
+    let label = theme::color(tokens.text);
     commands
         .spawn((
             CardVisualRoot { source },
@@ -106,9 +124,11 @@ pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::SpaceBetween,
                     padding: UiRect::all(Val::Px(8.0)),
+                    border: UiRect::all(Val::Px(CARD_FRAME_WIDTH)),
                     ..default()
                 },
-                background_color: BackgroundColor(card.category.frame_color()),
+                background_color: BackgroundColor(theme::color(tokens.surface)),
+                border_color: BorderColor(category),
                 ..default()
             },
         ))
@@ -119,8 +139,8 @@ pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -
                 TextBundle::from_section(
                     card.name.clone(),
                     TextStyle {
-                        font_size: 14.0,
-                        color: Color::WHITE,
+                        font_size: theme.font(14.0),
+                        color: label,
                         ..default()
                     },
                 ),
@@ -131,11 +151,11 @@ pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -
                 CardArtwork,
                 NodeBundle {
                     style: Style {
-                        width: Val::Px(CARD_WIDTH - 16.0),
+                        width: Val::Px(CARD_WIDTH - 2.0 * (8.0 + CARD_FRAME_WIDTH)),
                         height: Val::Px(CARD_ARTWORK_HEIGHT),
                         ..default()
                     },
-                    background_color: BackgroundColor(CARD_ARTWORK_COLOR),
+                    background_color: BackgroundColor(category),
                     ..default()
                 },
             ));
@@ -146,8 +166,8 @@ pub fn spawn_card_visual(commands: &mut Commands, source: Entity, card: &Card) -
                 TextBundle::from_section(
                     format!("{} | Power: {}", card.category.label(), card.value),
                     TextStyle {
-                        font_size: 12.0,
-                        color: Color::WHITE,
+                        font_size: theme.font(12.0),
+                        color: label,
                         ..default()
                     },
                 ),
@@ -166,6 +186,7 @@ mod tests {
     fn make_test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins);
+        app.init_resource::<GameTheme>();
         app
     }
 
@@ -179,7 +200,7 @@ mod tests {
         // Run spawn as a one-shot system so commands are fully flushed.
         app.world_mut()
             .run_system_once(move |mut commands: Commands| {
-                spawn_card_visual(&mut commands, source, &card);
+                spawn_card_visual(&mut commands, source, &card, &GameTheme::default());
             });
 
         let mut q = app.world_mut().query::<&CardVisualRoot>();
@@ -195,7 +216,7 @@ mod tests {
         let source = app.world_mut().spawn(card.clone()).id();
         app.world_mut()
             .run_system_once(move |mut commands: Commands| {
-                spawn_card_visual(&mut commands, source, &card);
+                spawn_card_visual(&mut commands, source, &card, &GameTheme::default());
             });
 
         let mut q = app.world_mut().query::<(&CardVisualRoot, &Children)>();
@@ -214,7 +235,7 @@ mod tests {
         let source = app.world_mut().spawn(card.clone()).id();
         app.world_mut()
             .run_system_once(move |mut commands: Commands| {
-                spawn_card_visual(&mut commands, source, &card);
+                spawn_card_visual(&mut commands, source, &card, &GameTheme::default());
             });
 
         let mut q = app.world_mut().query::<(&CardVisualRoot, &Children)>();
@@ -233,7 +254,7 @@ mod tests {
         let source = app.world_mut().spawn(card.clone()).id();
         app.world_mut()
             .run_system_once(move |mut commands: Commands| {
-                spawn_card_visual(&mut commands, source, &card);
+                spawn_card_visual(&mut commands, source, &card, &GameTheme::default());
             });
 
         let mut q = app.world_mut().query::<(&CardVisualRoot, &Children)>();
@@ -285,7 +306,7 @@ mod tests {
         let card_entity = app.world_mut().spawn(card.clone()).id();
         app.world_mut()
             .run_system_once(move |mut commands: Commands| {
-                spawn_card_visual(&mut commands, card_entity, &card);
+                spawn_card_visual(&mut commands, card_entity, &card, &GameTheme::default());
             });
 
         // Despawn the card entity to orphan the visual.
@@ -311,7 +332,7 @@ mod tests {
         let card_entity = app.world_mut().spawn(card.clone()).id();
         app.world_mut()
             .run_system_once(move |mut commands: Commands| {
-                spawn_card_visual(&mut commands, card_entity, &card);
+                spawn_card_visual(&mut commands, card_entity, &card, &GameTheme::default());
             });
 
         app.add_systems(Update, cleanup_orphaned_visuals);
