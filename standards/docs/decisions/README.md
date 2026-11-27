@@ -24,3 +24,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0011](0011-mint-secrets-by-workflow.md) | Mint infra secrets with a workflow, outside OpenTofu | Accepted |
 | [0014](0014-faster-pr-approvals.md) | Faster PR approvals: an Approve page in pane, one approval per stack, a `jimhillr-reviewer` account for low-risk PRs and post-merge acknowledgement | Accepted |
 | [0015](0015-code-quality-process.md) | A standing code quality process: one standard, a ratchet, triage into issues | Accepted |
+| [0017](0017-review-roles.md) | Review roles: who may approve what (credential, critical and standard reviewers per domain), as relationships in one file | Proposed |
