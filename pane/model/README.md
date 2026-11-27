@@ -47,6 +47,7 @@ the PR's project.
 | `Review` | An executive review deck and its scorecard rows. |
 | `Retro` | A retro and its actions. |
 | `Signal`, `Health` | One traffic light (green, amber, red or grey) with its reason and evidence links. |
+| `audit::Audit`, `audit::parse` | The repo audit's findings, read from its output (`level[CODE] <subject> ...` lines and a closing `audit:` line); each finding belongs to the longest config root that contains its subject. `Snapshot.audit` is `None` without them. |
 | `signals::project_signals` | A project's Review, Retros, Open issues and Standards lights, worked out from the snapshot alone. |
 | `health::Thresholds`, `health::Rollup` | The thresholds from `pane/health.toml`, and a row's worst-of light with its coverage. |
 
@@ -88,7 +89,7 @@ signals the snapshot can light on its own:
 | Review | The newest deck in the rotation for the project's top-level folder (`cookbook` for `cookbook/web`), its scorecard rows rated Poor, and a rotation of one week per top-level project that isn't on hold. |
 | Retros | The project's newest retro; each open action has been open since the retro's date. |
 | Open issues | The project's `FIX` items, aged from `WorkItem::added`, and the human issues whose `unblocks` names the project as a whole word. |
-| Standards | Open code-review findings (agent-generated `TODO`s outside any epic). Grey until the audit's findings are in the snapshot. |
+| Standards | The project's own audit errors in `Snapshot::audit` (red, each one linked as evidence), then its open code-review findings (agent-generated `TODO`s outside any epic). Grey when the snapshot was built without the audit, or the audit didn't finish. |
 
 Ages are whole days from a date to `taken_at` (`signals::days_between`), so
 the lights depend only on the snapshot. Each signal links its evidence (the

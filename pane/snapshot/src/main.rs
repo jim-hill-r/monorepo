@@ -1,12 +1,13 @@
 //! `pane_snapshot`: write `snapshot.json` for a checkout of the monorepo.
 //!
 //! ```text
-//! pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME]
+//! pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME] [--audit FILE]
 //! ```
 //!
 //! `--repo` defaults to the git top level of the current directory, `--out`
 //! to `snapshot.json`, `--commit` to `git rev-parse HEAD` in the repo, and
-//! `--taken-at` to now (UTC).
+//! `--taken-at` to now (UTC). `--audit` is the saved output of
+//! `mise run //:audit`; without it the Standards light is grey.
 
 use std::path::PathBuf;
 use std::process::{Command, ExitCode};
@@ -18,6 +19,7 @@ struct Args {
     out: PathBuf,
     commit: Option<String>,
     taken_at: Option<String>,
+    audit: Option<PathBuf>,
 }
 
 fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
@@ -26,6 +28,7 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
         out: PathBuf::from("snapshot.json"),
         commit: None,
         taken_at: None,
+        audit: None,
     };
     while let Some(flag) = args.next() {
         let mut value = || args.next().ok_or_else(|| format!("{flag} needs a value"));
@@ -34,9 +37,10 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
             "--out" => parsed.out = PathBuf::from(value()?),
             "--commit" => parsed.commit = Some(value()?),
             "--taken-at" => parsed.taken_at = Some(value()?),
+            "--audit" => parsed.audit = Some(PathBuf::from(value()?)),
             "-h" | "--help" => {
                 return Err(
-                    "usage: pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME]"
+                    "usage: pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME] [--audit FILE]"
                         .to_owned(),
                 );
             }
@@ -71,7 +75,10 @@ fn run() -> Result<(), String> {
         .unwrap_or_else(|| "unknown".to_owned());
     let taken_at = args.taken_at.unwrap_or_else(time::now_rfc3339);
 
-    let snapshot = repo::build(&repo_dir, &commit, &taken_at)?;
+    let mut snapshot = repo::build(&repo_dir, &commit, &taken_at)?;
+    if let Some(file) = &args.audit {
+        snapshot.audit = repo::audit(file, &snapshot)?;
+    }
     let json = snapshot.to_json().map_err(|e| e.to_string())?;
     if let Some(parent) = args.out.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;
