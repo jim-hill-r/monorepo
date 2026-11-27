@@ -168,8 +168,8 @@ Each phase is an issue file with `epic: Cost tracking`.
 ### Phase 2: Claude Code and the digest
 
 - PR triage reads `isUsingOverage` from the session API each run. If it is
-  true, it reports red and, if Jim agrees (question below), the coordinator
-  starts no new threads until the next reset.
+  true, it reports red and the coordinator starts no new threads until the
+  next reset (AGENTS.md, Jim, 2026-11-27).
 - The `human-issues-digest` skill gets the Cost section.
 - free-tiers.md gets an "Overrun switches" section with the table above,
   so a new vendor adds its switches in the same PR.
@@ -206,11 +206,11 @@ Recommended defaults, which agents follow unless Jim says otherwise:
 1. **Thresholds:** the ladder above (yellow at 80% of budget, red at 100%).
 2. **Usage run:** daily instead of weekly. $0; about 30 runner minutes a
    month on a public repo.
-3. **Claude overage:** when a session reports overage usage, PR triage
-   reports it to Jim and the coordinator starts no new threads until the
-   usage resets. $0; it can only lower Claude spend. This narrows the
-   coordinator's "keep at least 5 threads working" rule to "while not on
-   overage", so it needs Jim's yes.
+3. **Claude overage (decided, Jim, 2026-11-27: "Pause and tell me"):**
+   when a session reports overage usage, PR triage reports it to Jim and
+   the coordinator starts no new threads until the usage resets. $0; it can
+   only lower Claude spend. It narrows the coordinator's "keep at least 5
+   threads working" rule to "while not on overage", and is in AGENTS.md.
 4. **Squarespace:** list any paid domain or site as a `[[cost]]` with a
    decision record, so actual money is complete.
 

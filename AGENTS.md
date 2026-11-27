@@ -191,6 +191,13 @@ repo, rather than in any one agent tool's settings.
   as major) release notes with no breaking change that CI wouldn't catch
   (Jim, 2026-11-26). It reads this file for extra pins, so list
   any new pins here.
+- **Pause on Claude overage (Jim, 2026-11-27).** When any agent session
+  reports overage usage (`rate_limit_info.isUsingOverage` from the session
+  API), the coordinating agent starts no new threads until the usage
+  resets, and PR triage reports it to Jim. Running threads finish their
+  current step. This overrides "keep threads working". The tracking
+  process is in
+  [standards/docs/plans/2026-11-cost-tracking.md](standards/docs/plans/2026-11-cost-tracking.md).
 - **Never idle without saying why (Jim, 2026-11-26).** Before an agent's
   thread goes quiet, it posts a short message saying what it is waiting on
   (a hook or CI run, a review, an answer) and roughly when it expects to
