@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T22:06:00.613510011Z",
+  "generated_at": "2026-11-27T22:07:16.813376773Z",
   "coverage": {
     "projects": 27,
-    "projects_with_requirements": 10,
+    "projects_with_requirements": 11,
     "percent": 11.2,
-    "musts_percent": 50.0,
+    "musts_percent": 44.7,
     "judged_percent": 16.4,
     "warn_below": 80.0,
     "warning": true
@@ -493,16 +493,73 @@
     },
     {
       "project": "homer",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 4,
+      "musts_in_production": 4,
       "coverage": {
-        "requirements": 0,
+        "requirements": 6,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "HOME-001",
+          "title": "An address looks up the property's details",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "HOME-002",
+          "title": "A property is scored against Jim's preferences",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "HOME-003",
+          "title": "Results can be read by scripts",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "HOME-004",
+          "title": "homer never costs money",
+          "priority": "must",
+          "verdict": "at-risk",
+          "reasons": [
+            "setting rapidapi-free-plan has never been checked",
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "HOME-005",
+          "title": "The API key is never shown",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "HOME-006",
+          "title": "Mistakes and API failures give a clear message",
+          "priority": "should",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "infra",
