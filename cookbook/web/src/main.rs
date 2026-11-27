@@ -95,7 +95,8 @@ fn App() -> Element {
     use_context_provider(|| sidebar_visible);
 
     rsx! {
-        // Include this CSP in server response headers for defense in depth redundancy
+        // Cloudflare Pages also sends this CSP, plus frame-ancestors, as a real
+        // header from public/_headers; tests keep the two in step.
         // CSP Analysis: Modern Dioxus (v0.7.x) compiles to WebAssembly and doesn't require
         // unsafe-eval or unsafe-inline for scripts. WASM modules and proper event binding
         // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
@@ -754,6 +755,45 @@ fn PageNotFound(route: Vec<String>) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The Pages `_headers` file, served as real HTTP headers by Cloudflare.
+    const PAGES_HEADERS: &str = include_str!("../public/_headers");
+
+    /// The value of `name` in the `/*` rule of `_headers`.
+    fn pages_header(name: &str) -> Option<&'static str> {
+        let prefix = format!("{name}:");
+        PAGES_HEADERS
+            .lines()
+            .skip_while(|line| line.trim() != "/*")
+            .skip(1)
+            .take_while(|line| line.starts_with(char::is_whitespace))
+            .find_map(|line| line.trim().strip_prefix(prefix.as_str()))
+            .map(str::trim)
+    }
+
+    #[test]
+    fn pages_headers_csp_is_the_meta_csp_plus_frame_ancestors() {
+        assert_eq!(
+            pages_header("Content-Security-Policy"),
+            Some(format!("{CONTENT_SECURITY_POLICY}; frame-ancestors 'none'").as_str())
+        );
+    }
+
+    #[test]
+    fn pages_headers_send_the_security_headers() {
+        assert_eq!(pages_header("Referrer-Policy"), Some("no-referrer"));
+        assert_eq!(pages_header("X-Content-Type-Options"), Some("nosniff"));
+        assert_eq!(pages_header("X-Frame-Options"), Some("DENY"));
+        assert_eq!(
+            pages_header("Strict-Transport-Security"),
+            Some("max-age=31536000; includeSubDomains")
+        );
+    }
+
+    #[test]
+    fn pages_header_ignores_headers_outside_the_catch_all_rule() {
+        assert_eq!(pages_header("Not-A-Header"), None);
+    }
 
     #[test]
     fn test_recipe_valid_day_in_range() {

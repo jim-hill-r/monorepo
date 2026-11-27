@@ -82,19 +82,21 @@ test.describe('Authentication in Header', () => {
     ];
     
     for (const path of pages) {
+      // Wait for the header itself, not 'networkidle': the Auth0 discovery
+      // request can keep the network busy past the test timeout on CI.
       await page.goto(path);
-      await page.waitForLoadState('networkidle');
-      
+
       // Verify header exists on each page
       const header = page.locator('#header');
       await expect(header).toBeVisible();
-      
-      // Check that login button or loading/error state is in header
-      const hasLoginButton = await header.locator('button', { hasText: 'Login' }).isVisible().catch(() => false);
-      const hasLoadingState = await header.locator('div', { hasText: 'Loading authentication' }).isVisible().catch(() => false);
-      const hasError = await header.locator('.error').isVisible().catch(() => false);
-      
-      expect(hasLoginButton || hasLoadingState || hasError).toBeTruthy();
+
+      // The login button, or the loading or error state, is in the header.
+      // expect() retries until one renders.
+      const authState = header
+        .locator('button', { hasText: 'Login' })
+        .or(header.locator('div', { hasText: 'Loading authentication' }))
+        .or(header.locator('.error'));
+      await expect(authState.first()).toBeVisible();
     }
   });
 
