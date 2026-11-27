@@ -60,6 +60,8 @@ requirement = "CAHO-001"
 stages = ["cd"]
 kind = "http"
 path = "/family-tree"
+asset_contains = "Thomas Reed"
+description = "The app shell loads, and the bundle it ships has the sample family."
 
 # CAHO-002: Odd or broken family data never breaks the tree
 
@@ -127,6 +129,8 @@ requirement = "CAHO-003"
 stages = ["cd"]
 kind = "http"
 path = "/"
+asset_contains = "dev-jdadpn4pckxevrv5.us.auth0.com/authorize"
+description = "The app shell loads, and the bundle it ships signs in with cahokia's Auth0 tenant."
 
 [[eval]]
 id = "auth0-callbacks"

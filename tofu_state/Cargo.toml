@@ -10,7 +10,7 @@ license = "MIT"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-base64 = "0.22"
+base64 = "0.23"
 serde_json = "1"
 
 # Only the Worker build needs the Workers runtime; native builds and tests

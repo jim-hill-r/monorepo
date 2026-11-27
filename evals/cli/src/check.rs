@@ -22,7 +22,7 @@ pub const SETTING_CHECKS: &str = "standards/settings-checks.jsonl";
 /// One problem, printed as `warning[EVL-001] cookbook/evals.toml: ...`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Finding {
-    /// `EVL-001` to `EVL-004`, or `None` for a malformed file.
+    /// `EVL-001` to `EVL-006`, or `None` for a malformed file.
     pub code: Option<&'static str>,
     pub path: String,
     pub line: Option<usize>,
@@ -240,6 +240,23 @@ pub fn check_project(
         }
     }
 
+    // EVL-006: a page request must check what came back, not only that
+    // something answered.
+    for eval in &evals {
+        if shallow_http(&eval.kind) {
+            finding(
+                Some("EVL-006"),
+                &evals_path,
+                None,
+                format!(
+                    "http eval `{}` only checks that its path answers; a single-page app \
+                     answers every path with the same page, so add body_contains or asset_contains",
+                    eval.id
+                ),
+            );
+        }
+    }
+
     // EVL-004: every active must requirement needs a production-stage eval.
     for requirement in &requirements {
         if requirement.priority != Priority::Must || !requirement.is_active() {
@@ -262,6 +279,22 @@ pub fn check_project(
     }
 
     findings
+}
+
+/// EVL-006: a `GET` of a `path` that expects a 2xx and checks no content.
+fn shallow_http(kind: &Kind) -> bool {
+    let Kind::Http {
+        path: Some(_),
+        method,
+        status,
+        body_contains: None,
+        asset_contains: None,
+        ..
+    } = kind
+    else {
+        return false;
+    };
+    method.as_deref().unwrap_or("GET") == "GET" && (200..300).contains(&status.unwrap_or(200))
 }
 
 /// Reads the `## Requirement prefixes` table in `naming.md`.
@@ -462,7 +495,7 @@ fn rust_fn_names(text: &str) -> Vec<String> {
 /// True if `pattern` (with `*` matching within one path segment) matches the
 /// whole of `path` or a tail of it that starts at a segment boundary, so
 /// `tests/cmd/COOK-001-*.toml` finds `cli/tests/cmd/COOK-001-help.toml`.
-fn glob_matches_tail(pattern: &str, path: &str) -> bool {
+pub(crate) fn glob_matches_tail(pattern: &str, path: &str) -> bool {
     let pattern: Vec<&str> = pattern.split('/').collect();
     let path: Vec<&str> = path.split('/').collect();
     if pattern.len() > path.len() {
@@ -559,8 +592,8 @@ kind = "cargo"
     #[test]
     fn evl_001_unknown_or_retired_requirement() {
         let evals = format!(
-            "{EVALS_OK}\n[[eval]]\nid = \"gone\"\nrequirement = \"COOK-009\"\nstages = [\"cd\"]\nkind = \"http\"\npath = \"/\"\n\
-             [[eval]]\nid = \"print\"\nrequirement = \"COOK-003\"\nstages = [\"cd\"]\nkind = \"http\"\npath = \"/print\"\n"
+            "{EVALS_OK}\n[[eval]]\nid = \"gone\"\nrequirement = \"COOK-009\"\nstages = [\"cd\"]\nkind = \"http\"\npath = \"/\"\nbody_contains = \"x\"\n\
+             [[eval]]\nid = \"print\"\nrequirement = \"COOK-003\"\nstages = [\"cd\"]\nkind = \"http\"\npath = \"/print\"\nbody_contains = \"x\"\n"
         );
         let findings = check(Some(REQS), Some(&evals));
         assert_eq!(codes(&findings), vec![Some("EVL-001"), Some("EVL-001")]);
@@ -574,7 +607,7 @@ kind = "cargo"
         let reqs =
             format!("{REQS}\n## COOK-002: Again\n\n- Priority: could\n- Why: w\n- Accept: a\n");
         let evals = format!(
-            "{EVALS_OK}\n[[eval]]\nid = \"layout\"\nrequirement = \"COOK-001\"\nstages = [\"cd\"]\nkind = \"http\"\npath = \"/\"\n"
+            "{EVALS_OK}\n[[eval]]\nid = \"layout\"\nrequirement = \"COOK-001\"\nstages = [\"cd\"]\nkind = \"http\"\npath = \"/\"\nbody_contains = \"x\"\n"
         );
         let findings = check(Some(&reqs), Some(&evals));
         assert_eq!(codes(&findings), vec![Some("EVL-002"), Some("EVL-002")]);
@@ -638,6 +671,25 @@ kind = "trycmd"
 
         // Without an evals.toml every active must is reported.
         assert_eq!(codes(&check(Some(REQS), None)), vec![Some("EVL-004")]);
+    }
+
+    #[test]
+    fn evl_006_http_eval_without_a_content_check() {
+        let base = "prefix = \"COOK\"\n[[eval]]\nid = \"live\"\nrequirement = \"COOK-001\"\nstages = [\"cd\"]\nkind = \"http\"\n";
+        let findings = check(Some(REQS), Some(&format!("{base}path = \"/recipe/1\"\n")));
+        assert_eq!(codes(&findings), vec![Some("EVL-006")]);
+        assert!(findings[0].message.contains("`live`"));
+
+        for fields in [
+            "path = \"/\"\nbody_contains = \"Cookbook\"",
+            "path = \"/\"\nasset_contains = \"Pancakes\"",
+            "path = \"/old\"\nstatus = 301",
+            "path = \"/\"\nmethod = \"OPTIONS\"\nstatus = 204",
+            "url = \"https://a/\"",
+        ] {
+            let findings = check(Some(REQS), Some(&format!("{base}{fields}\n")));
+            assert_eq!(codes(&findings), vec![], "{fields}");
+        }
     }
 
     #[test]

@@ -45,6 +45,17 @@ only, and its only push is to `evals-results` (SEC-007). It never fails the
 run. It is a separate workflow because a reusable workflow whose job asks
 for write fails to start when a caller (pull requests) grants only read.
 
+### evals-triage.yml
+
+Daily at 4:30 AM Pacific, after Nightly CI and Nightly CD. Runs
+`standards/scripts/evals.sh triage`, which writes a `FIX` or `TODO` issue
+file for each requirement that is not green and has no open issue, and
+force-pushes them as one commit to the `evals-triage` branch; PR triage
+opens the pull request from it (a PR opened with the workflow's own token
+would run no CI). Its only pushes are to `evals-triage` (SEC-007). Nothing
+is pushed on a quiet day. See
+[standards/docs/evals.md](../../standards/docs/evals.md#triage).
+
 ### pull-request-ci.yml
 
 Runs on every pull request against the projects it changes. Never deploys.
@@ -70,6 +81,17 @@ and passes only when every project passed and no secret was found. It is the one
 require, so GitHub auto-merge waits for green CI (see the Auto-merge section
 of `standards/docs/pull-requests.md`). Rename it only together with that
 ruleset.
+
+### pull-request-summary.yml
+
+Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
+warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
+when its description doesn't open with a linked executive summary of at most
+75 words, after the attribution lines ("Pull request descriptions" in
+[standards/docs/pull-requests.md](../../standards/docs/pull-requests.md)).
+Warnings only, so it never fails and CI result doesn't wait for it. It runs
+on edits, so fixing the description clears the warning without re-running
+project CI.
 
 ### push-main.yml
 
@@ -241,6 +263,22 @@ The workflow never deletes the default branch and skips any branch that is the h
 
 - `contents: write` - To delete branch refs
 - `pull-requests: read` - To find branches with open pull requests
+
+## pull-request-closed-cleanup.yml
+
+Runs when a pull request closes, merged or not, and deletes the Actions
+caches scoped to its `refs/pull/N/merge` ref (GitHub's documented cache
+clean-up pattern). Those caches can only ever be restored by that PR, but they
+count toward the repo's 10 GB cache limit until GitHub evicts them after 7
+unused days. It never touches `main`'s caches or another PR's, and the run
+summary says how many it deleted. Phase 2 of the
+[resource cleanup plan](../../standards/docs/plans/2026-11-resource-cleanup.md).
+
+### Permissions
+
+- `actions: write` - To list and delete caches
+
+Tests: `monorepo/workflow_tests/tests/pull_request_closed_cleanup_workflow_tests.rs`.
 
 ## pull-request-agent-skills.yml
 

@@ -1,12 +1,13 @@
 //! The `threat` command. See `threat/README.md`.
 
 mod check;
+mod summary;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{Result, bail};
+use anyhow::{Context as _, Result, bail};
 use clap::{Parser, Subcommand};
 use threat_model::Date;
 
@@ -41,6 +42,21 @@ enum Command {
         /// The date to check against, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long)]
         today: Option<Date>,
+    },
+    /// The PR's security summary: compares the working tree with the merge
+    /// base of --base, prints Markdown for the job summary and, with
+    /// --labels, writes the labels to set (security, needs-human), one per
+    /// line. Exit 0 either way.
+    Summary {
+        /// Repo root, as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The branch the PR merges into, for example origin/main.
+        #[arg(long)]
+        base: String,
+        /// Write the labels to this file, one per line.
+        #[arg(long)]
+        labels: Option<PathBuf>,
     },
 }
 
@@ -79,6 +95,17 @@ fn run(cli: Cli) -> Result<ExitCode> {
             } else {
                 ExitCode::SUCCESS
             })
+        }
+        Command::Summary { root, base, labels } => {
+            let root = find_root(root)?;
+            let summary = summary::summary(&root, &base)?;
+            print!("{}", summary.render());
+            if let Some(path) = labels {
+                let text: String = summary.labels().iter().map(|l| format!("{l}\n")).collect();
+                std::fs::write(&path, text)
+                    .with_context(|| format!("writing {}", path.display()))?;
+            }
+            Ok(ExitCode::SUCCESS)
         }
     }
 }

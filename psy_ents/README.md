@@ -1,5 +1,7 @@
 # Psy Ents
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/psy_ents.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The Psy Ents is a children's book, written as Marp slide decks with one deck
 per story. The main characters are psychic tree creatures (ents) who learn
 about science on their wild adventures, so the name is a play on words:
