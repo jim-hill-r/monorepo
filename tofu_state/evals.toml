@@ -1,0 +1,169 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# The `cargo` evals name the protocol tests in src/backend.rs with
+# `filter`. tests/e2e.sh (real tofu against wrangler dev) also runs in ci,
+# but isn't a report the engine reads yet. The `http` evals use the
+# Worker's full URL, since tofu_state has no DEPLOY_URL: it deploys from
+# tofu-state-deploy.yml, which doesn't run the cd evals yet
+# (issues/run-cd-evals-after-deploy.md). They hold no password, so TOFU-003
+# has no production eval until then.
+
+prefix = "TOFU"
+
+# TOFU-001: infra's state is kept and read back
+
+[[eval]]
+id = "write-then-read"
+requirement = "TOFU-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "write_then_read_returns_the_latest_state"
+
+[[eval]]
+id = "empty-stack-is-204"
+requirement = "TOFU-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "empty_stack_reads_as_no_content"
+
+[[eval]]
+id = "stacks-are-separate"
+requirement = "TOFU-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "stacks_are_separate"
+
+[[eval]]
+id = "bad-bodies-rejected"
+requirement = "TOFU-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "bad_bodies_are_rejected"
+
+[[eval]]
+id = "other-paths-refused"
+requirement = "TOFU-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "other_paths_and_methods_are_refused"
+
+[[eval]]
+id = "serves-the-state-protocol-live"
+requirement = "TOFU-001"
+stages = ["cd"]
+kind = "http"
+url = "https://jimhillr-tofu-state.jim-hill-r.workers.dev/"
+status = 404
+body_contains = "state lives at /states/"
+description = "The live Worker is up and answers with the state protocol's own 404."
+
+# TOFU-002: Only infra can read or change state
+
+[[eval]]
+id = "wrong-password-unauthorized"
+requirement = "TOFU-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "wrong_or_missing_password_is_unauthorized"
+
+[[eval]]
+id = "read-password-only-gets"
+requirement = "TOFU-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "read_password_can_only_get"
+
+[[eval]]
+id = "unset-passwords-refuse"
+requirement = "TOFU-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "unset_passwords_refuse_everything"
+
+[[eval]]
+id = "constant-time-compare"
+requirement = "TOFU-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "constant_time_eq_matches_only_equal_strings"
+
+[[eval]]
+id = "write-password-wins"
+requirement = "TOFU-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "write_password_wins_when_both_match"
+
+[[eval]]
+id = "no-password-unauthorized-live"
+requirement = "TOFU-002"
+stages = ["cd"]
+kind = "http"
+url = "https://jimhillr-tofu-state.jim-hill-r.workers.dev/states/auth0"
+status = 401
+body_contains = "unauthorized"
+
+[[eval]]
+id = "no-password-cant-lock-live"
+requirement = "TOFU-002"
+stages = ["cd"]
+kind = "http"
+url = "https://jimhillr-tofu-state.jim-hill-r.workers.dev/states/auth0"
+method = "LOCK"
+status = 401
+
+# TOFU-003: Two applies never overwrite each other
+
+[[eval]]
+id = "lock-is-exclusive"
+requirement = "TOFU-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "lock_is_exclusive_and_conflict_returns_the_holder"
+
+[[eval]]
+id = "only-holder-writes"
+requirement = "TOFU-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "only_the_lock_holder_can_write_while_locked"
+
+[[eval]]
+id = "lost-lock-write-fails"
+requirement = "TOFU-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_write_naming_a_lost_lock_fails"
+
+[[eval]]
+id = "unlock-same-id"
+requirement = "TOFU-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "unlock_only_for_the_same_id"
+
+[[eval]]
+id = "lock-needs-id"
+requirement = "TOFU-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "lock_needs_lock_info_with_an_id"
+
+# TOFU-004: A bad apply can be rolled back
+
+[[eval]]
+id = "last-versions-kept"
+requirement = "TOFU-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "only_the_last_versions_are_kept"
+
+# TOFU-005: Errors and logs never show state
+
+[[eval]]
+id = "store-errors-are-silent"
+requirement = "TOFU-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "store_errors_say_nothing_about_state"
