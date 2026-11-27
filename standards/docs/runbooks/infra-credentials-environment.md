@@ -43,6 +43,7 @@ Everything else is minted from these three credentials, so they come first. Crea
 5. **Create the Cloudflare bootstrap token.** In dash.cloudflare.com > Manage Account > Account API Tokens > Create Token > Custom token:
    - Name it `jimhillr-infra-credentials`.
    - Give it the one permission Account > Account API Tokens > Edit, for this account only.
+   - Set its TTL end date about 200 days out, so a missed rotation makes it expire ([rotation plan](../secret-rotation.md)).
    - Store it as shown under "Where secrets go".
 
 6. **Run the first mint.** In Actions > Infra Mint > Run workflow, on `main`, set "what" to `all` and "rotate" to `CLOUDFLARE_API_TOKEN`. That replaces your hand-made deploy token with the minted `jimhillr-deploy`. Approve the run when GitHub asks. Its summary lists every secret it set, and it queues Deploy tofu_state, which needs no approval.

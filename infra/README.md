@@ -109,7 +109,10 @@ never written to git, state or a file, and no one sees it (Jim, 2026-11-27).
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository secrets | `keytool`, in the job |
 
 It makes only what is missing, so it is safe to re-run; the `rotate` input
-names secrets to remake. The state passphrase is never rotated this way,
+names secrets to remake, and `auto` remakes the quarterly set. A scheduled
+run does that on the 1st of January, April, July and October, after Jim
+approves it, and minted Cloudflare tokens expire 180 days after each mint
+([rotation plan](../standards/docs/secret-rotation.md)). The state passphrase is never rotated this way,
 since it encrypts state. When the passwords or the deploy token change, it
 queues **Deploy tofu_state**. A person makes only the bootstrap credentials:
 `issues/human/infra-credentials-environment.md`. Tested by

@@ -201,8 +201,18 @@ fn drift_is_weekly_read_only_and_unlocked() {
 fn mint_runs_by_hand_from_main_in_infra_credentials() {
     let (_, wf) = load("infra-mint.yml");
     let on = wf["on"].as_mapping().expect("on");
-    assert_eq!(on.len(), 1, "only workflow_dispatch may start a mint");
+    assert_eq!(
+        on.len(),
+        2,
+        "only a person or the quarterly schedule may start a mint"
+    );
     assert!(wf["on"].get("workflow_dispatch").is_some());
+    assert!(wf["on"]["schedule"].as_sequence().is_some());
+    let mint = job_yaml(&wf, "mint");
+    assert!(
+        mint.contains("github.event_name == 'schedule' && 'auto'"),
+        "the scheduled run rotates the quarterly set"
+    );
     let job = &wf["jobs"]["mint"];
     assert_eq!(job["environment"].as_str(), Some("infra-credentials"));
     assert_eq!(job["if"].as_str(), Some("github.ref == 'refs/heads/main'"));

@@ -131,7 +131,11 @@ repo, rather than in any one agent tool's settings.
   it (Jim, 2026-11-27,
   [decision 0011](standards/docs/decisions/0011-mint-secrets-by-workflow.md)).
   A new credential is added to `infra/scripts/mint.sh`, not to a human
-  task.
+  task. Every long-lived secret has a rotation cadence and owner in
+  [standards/docs/secret-rotation.md](standards/docs/secret-rotation.md)
+  (Jim, 2026-11-27): Infra Mint rotates what it makes every quarter, and
+  a settings check reminds Jim of the rest. A PR that adds a long-lived
+  secret adds its row there.
 - **Second approval for credentials (Jim, 2026-11-26).** A credential
   change (new or edited Auth0 apps and grants, token scopes, Access
   policies, GitHub secrets, environments or rulesets) applies only after
