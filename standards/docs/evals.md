@@ -18,6 +18,35 @@ Both live in the project's top-level directory (the one with its
 `mise.toml`), so `cookbook/docs/requirements.md` covers `cookbook/web` and
 `cookbook/cloudflare` too.
 
+## Continuous improvement
+
+Evals are an ongoing process, not a project with an end (Jim,
+2026-11-27): "The evals should always be green and a system of feedback to
+our todo process should be the way in which individual projects improve
+their eval coverage."
+
+- **Green is the normal state.** A requirement that is not met or at risk
+  is a bug in the product or in its evals, and gets a `FIX` (product) or
+  `TODO` (eval) issue file in its project's `issues/`. A `must` that stays
+  unknown (no production result) gets a `TODO` to add a production eval.
+- **The loop files the work.** Eval triage reads `verdicts.json` and files
+  those issues; agents work them like any other issue. Nothing is left for
+  someone to notice.
+- **Coverage grows through issues.** Every project that ships something has
+  requirements and evals. Each project's eval coverage (how many of its
+  requirements are green on production evidence) is measured and shown as
+  a badge, and a gap becomes an issue, the same way code coverage works
+  ([testing.md](testing.md#code-coverage)).
+- **Work includes its evals.** A change that adds or alters what a project
+  promises adds or updates the eval that checks it in the same PR.
+- **Production evals check content.** An `http` eval of a page or data file
+  checks what the response says (`body_contains`), not only that it
+  answered: a single-page app answers every path.
+
+The phases in the [plan](./plans/2026-11-eval-engine.md) are the order the
+engine's *capabilities* arrive (metrics, chaos, ratings, in-app feedback,
+judge); the improvement loop above runs all the time, from today.
+
 ## Requirements
 
 ### Format

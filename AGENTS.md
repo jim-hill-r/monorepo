@@ -149,6 +149,19 @@ repo, rather than in any one agent tool's settings.
   Agents never approve a `credential-change` PR, never put a
   credential-capable token anywhere but that environment, and never ask
   for admin rights for `jimhillr-agt` or the Claude GitHub App.
+- **Evals are continuous improvement (Jim, 2026-11-27).** "The eval
+  process is a continuous improvement process and should not be considered
+  a one off project. The evals should always be green and a system of
+  feedback to our todo process should be the way in which individual
+  projects improve their eval coverage." So every requirement's verdict
+  should be green; any requirement that is not met, at risk or unknown
+  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  normal agent loop works it. Each project grows its own eval coverage
+  through those issues: requirements for anything it ships, evals that
+  check real content in production, and an eval coverage figure and badge
+  per project. Agents working on a project add or fix evals as part of the
+  work, not as a separate phase. Details are under "Continuous
+  improvement" in [standards/docs/evals.md](standards/docs/evals.md).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
