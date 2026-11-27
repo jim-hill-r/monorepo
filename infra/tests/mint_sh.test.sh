@@ -141,6 +141,20 @@ code=0
 mint MINT_ROTATE="GH_INFRA_CREDENTIALS_APP_KEY" bash "$script" run state >/dev/null 2>&1 || code=$?
 [ "$code" != 0 ] && ok "rotate refuses names it doesn't make" || fail "unknown rotate accepted"
 
+# MINT_ROTATE=auto (the quarterly schedule) remakes the rotatable secrets
+# and nothing that must stay.
+pass_before=$(secret repo TOFU_STATE_PASSPHRASE)
+key_before=$(secret repo ANDROID_KEYSTORE_BASE64)
+write_before=$(secret infra TOFU_STATE_WRITE_PASSWORD)
+: >"$work/out"
+mint MINT_ROTATE=auto bash "$script" run all >/dev/null 2>&1 || fail "auto rotation run"
+[ "$(secret infra TOFU_STATE_WRITE_PASSWORD)" != "$write_before" ] && [ "$(secret repo AUTH0_INFRA_READ_CLIENT_SECRET)" = rotated-read ] &&
+  grep -q "PUT https://cf/accounts/acct/tokens/tok-deploy/value" "$work/curl.log" && grep -q "deploy=true" "$work/out" &&
+  ok "auto rotation remakes the passwords and tokens" || fail "auto rotation"
+[ "$(secret repo TOFU_STATE_PASSPHRASE)" = "$pass_before" ] && [ "$(secret repo ANDROID_KEYSTORE_BASE64)" = "$key_before" ] &&
+  ok "auto rotation keeps the passphrase and the Android key" || fail "auto rotation touched what must stay"
+grep -qE '"expires_on":"[0-9]{4}-[0-9]{2}-[0-9]{2}T' "$work/curl.log" && ok "minted Cloudflare tokens expire" || fail "no expires_on"
+
 # A missing Cloudflare permission group fails with the close matches.
 reset
 sed -i 's/{"id":"r1","name":"Account Web Analytics Read"},//' "$work/bin/curl"

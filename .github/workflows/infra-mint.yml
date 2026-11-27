@@ -5,10 +5,17 @@
 # git or OpenTofu state. Run it by hand; it runs in `infra-credentials`, so
 # it waits for Jim's approval every time (decision 0010).
 #
+# Each quarter a scheduled run rotates every rotatable minted secret
+# (`rotate` = auto); it waits for Jim's approval like any other run. The
+# plan is standards/docs/secret-rotation.md.
+#
 # The steps are in infra/scripts/mint.sh, tested by infra/tests/mint_sh.test.sh.
 name: Infra Mint
 
 'on':
+  schedule:
+    # 14:17 UTC on the 1st of January, April, July and October.
+    - cron: '17 14 1 1,4,7,10 *'
   workflow_dispatch:
     inputs:
       what:
@@ -23,7 +30,7 @@ name: Infra Mint
           - auth0
           - android
       rotate:
-        description: Secrets to remake even though they exist, space-separated (e.g. CLOUDFLARE_API_TOKEN)
+        description: Secrets to remake even though they exist, space-separated (e.g. CLOUDFLARE_API_TOKEN), or auto for the quarterly set
         type: string
         default: ''
 
@@ -72,8 +79,8 @@ jobs:
         id: mint
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          WHAT: ${{ inputs.what }}
-          MINT_ROTATE: ${{ inputs.rotate }}
+          WHAT: ${{ inputs.what || 'all' }}
+          MINT_ROTATE: ${{ github.event_name == 'schedule' && 'auto' || inputs.rotate }}
           AUTH0_INFRA_CREDENTIALS_DOMAIN: ${{ secrets.AUTH0_INFRA_CREDENTIALS_DOMAIN }}
           AUTH0_INFRA_CREDENTIALS_CLIENT_ID: ${{ secrets.AUTH0_INFRA_CREDENTIALS_CLIENT_ID }}
           AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET: ${{ secrets.AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET }}
