@@ -95,10 +95,13 @@ nothing.
 1. **Stop.** If `isUsingOverage` is true or any status is `rejected`
    (`allowed_warning`, the 90% notice, is not a stop),
    start nothing and tell Jim (the overage rule in AGENTS.md wins).
-2. **Burn rate.** `r` = the rise in `u5` per hour between the newest event
-   and one at least 10 minutes older in the same window (same `resetsAt`).
-   With no such pair, `r = 0.02 × W`. The cost of one more thread is
-   `t = r / W`, or 0.02 an hour when `W` is 0.
+2. **Burn rate.** `r` = the larger of the rise in `u5` per hour since
+   the newest event at least 10 minutes older, and the rise since the last
+   burst of threads started, both in the same window (same `resetsAt`).
+   Freshly started threads burn fastest (on 2026-11-27, 8 new threads
+   took the window from 3% to 19% in 8 minutes), so an hour-old sample
+   must not hide a recent burst. With no usable pair, `r = 0.02 × W`. The
+   cost of one more thread is `t = r / W`, or 0.02 an hour when `W` is 0.
 3. **Projection.** `p = u5 + r × h`, the use expected when the window resets.
 4. **Weekly guard.** The week's elapsed share is `e = 1 − d / 7`. If
    `u7 > e + 0.15` (ahead of an even pace through the week) and `d > 0.5`,
@@ -109,7 +112,9 @@ nothing.
    no cap on open threads: threads waiting on Jim don't use credits, so
    they don't hold back new work.
 6. **Ease off.** If `p > 1.0` and `h > 1`, start nothing beyond the
-   5-thread floor; running threads finish their work.
+   5-thread floor; running threads finish their work. This holds even
+   when a longer average looks lower: reaching the limit early stalls
+   every thread until the reset.
 7. **Floor.** In every other case keep the existing floor of 5 working
    threads.
 
