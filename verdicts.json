@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-11-27T19:16:29.619408848Z",
+  "generated_at": "2026-11-27T19:18:11.057532231Z",
   "coverage": {
     "projects": 26,
-    "projects_with_requirements": 4,
+    "projects_with_requirements": 5,
     "percent": 4.9,
-    "musts_percent": 84.6,
+    "musts_percent": 57.9,
     "judged_percent": 12.2,
     "warn_below": 80.0,
     "warning": true
@@ -568,16 +568,92 @@
     },
     {
       "project": "sparkhill",
-      "musts": 0,
-      "musts_in_production": 0,
+      "musts": 6,
+      "musts_in_production": 6,
       "coverage": {
-        "requirements": 0,
+        "requirements": 8,
         "met": 0,
         "percent": 0.0,
         "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "requirement": "SPRK-001",
+          "title": "A learner can start practising straight away",
+          "priority": "must",
+          "verdict": "not-met",
+          "reasons": [
+            "home-page-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-002",
+          "title": "Every letter is shown being written before the learner tries it",
+          "priority": "must",
+          "verdict": "not-met",
+          "reasons": [
+            "app-loads-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-003",
+          "title": "A tracing is checked fairly",
+          "priority": "must",
+          "verdict": "not-met",
+          "reasons": [
+            "tracing-page-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-004",
+          "title": "Learners move from letters to words to capitals",
+          "priority": "must",
+          "verdict": "not-met",
+          "reasons": [
+            "capital-level-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-005",
+          "title": "Each learner's progress is kept on their device",
+          "priority": "must",
+          "verdict": "not-met",
+          "reasons": [
+            "home-page-live-for-progress failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-006",
+          "title": "Nothing a learner types or draws leaves their device",
+          "priority": "must",
+          "verdict": "not-met",
+          "reasons": [
+            "connects-only-to-itself-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-007",
+          "title": "Blue Eel works and installs like an app on a phone or tablet",
+          "priority": "should",
+          "verdict": "at-risk",
+          "reasons": [
+            "home-screen-icon-live failed in cd at 2026-11-27 19:15:37.644672405 UTC",
+            "manifest-live failed in cd at 2026-11-27 19:15:37.644672405 UTC",
+            "no-zoom-live failed in cd at 2026-11-27 19:15:37.644672405 UTC"
+          ]
+        },
+        {
+          "requirement": "SPRK-008",
+          "title": "A few letters or words can be practised on their own",
+          "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        }
+      ]
     },
     {
       "project": "standards",
