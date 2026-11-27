@@ -5,7 +5,7 @@
 # webapp_cloudflare jobs (each reports its share, --partial). The cd evals run
 # against https://jimhillr-sparkhill-webapp.pages.dev after webapp_cloudflare
 # deploys: the http evals, and the playwright evals with stage cd, which read
-# the report of the @smoke tests that standards/scripts/smoke.sh runs against
+# the report of the @smoke tests that `evals.sh smoke` runs against
 # the live site (SMOKE_DIR in webapp_cloudflare/mise.toml). Pages answers
 # every path of a single-page app with index.html, so each http eval also
 # checks what the response says.

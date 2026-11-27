@@ -10,6 +10,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod user_docs;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -144,6 +145,15 @@ enum Command {
         /// Also write the verdict as JSON to this file.
         #[arg(long)]
         json: Option<PathBuf>,
+    },
+    /// Check every project's user guide, <project>/docs/user/README.md
+    /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
+    /// against the baseline in standards/user-docs.toml. Exits 1 on any
+    /// error. Run by `mise run //:audit`.
+    UserDocs {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
     /// agent-generated and dated today.
@@ -330,6 +340,17 @@ fn run() -> Result<ExitCode> {
                 json,
             };
             if !gate::run(&root, &args)? {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::UserDocs { json } => {
+            let report = user_docs::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", user_docs::render(&report));
+            }
+            if !report.errors.is_empty() {
                 return Ok(ExitCode::FAILURE);
             }
         }

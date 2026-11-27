@@ -53,6 +53,13 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
   --requirement "..." --why "..." --unblocks "IaC applies on main"
 ```
 
+```bash
+# Every project's user guide (DOC-005 to DOC-008) against the baseline in
+# standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
+c user-docs
+c user-docs --json
+```
+
 `new-human-task` starts the runbook from
 `standards/docs/runbooks/TEMPLATE.md` (title and status filled in) unless
 `--runbook` names one that exists; the agent still writes its sections.
@@ -62,6 +69,7 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
+| `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command

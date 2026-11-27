@@ -1,0 +1,37 @@
+# User docs baseline: the projects that don't have a passing user guide
+# yet (DOC-005 to DOC-007), each with the issue file that tracks writing it,
+# or "on hold" for a project under "# On Hold Projects" in issues/README.md.
+# Checked by `chores user-docs` in `mise run //:audit` (DOC-008). Rules in
+# "User docs" in standards/docs/documentation.md, decision 0017.
+#
+# The list only shrinks: remove a project's line in the PR that adds its
+# guide (the check fails while a passing project is still listed), and never
+# add one. A new project ships with its guide.
+
+[missing]
+athenaeum = "athenaeum/issues/write-user-guide.md"
+auth_sdk = "auth_sdk/issues/write-user-guide.md"
+bear_down = "bear_down/issues/write-user-guide.md"
+blueeel = "blueeel/issues/write-user-guide.md"
+bogan = "bogan/issues/write-user-guide.md"
+chores = "chores/issues/write-user-guide.md"
+controlled_chaos = "controlled_chaos/issues/write-user-guide.md"
+cookbook = "cookbook/issues/write-user-guide.md"
+cost = "cost/issues/write-user-guide.md"
+design_system = "design_system/issues/write-user-guide.md"
+evals = "evals/issues/write-user-guide.md"
+homer = "homer/issues/write-user-guide.md"
+infra = "infra/issues/write-user-guide.md"
+jimhillr = "jimhillr/issues/write-user-guide.md"
+luggage = "on hold"
+my_lang = "my_lang/issues/write-user-guide.md"
+pane = "pane/issues/write-user-guide.md"
+profiles = "on hold"
+psy_ents = "psy_ents/issues/write-user-guide.md"
+royalty = "royalty/issues/write-user-guide.md"
+sparkhill = "sparkhill/issues/write-user-guide.md"
+standards = "standards/issues/write-user-guide.md"
+starcraft = "on hold"
+telemetry = "telemetry/issues/write-user-guide.md"
+threat = "threat/issues/write-user-guide.md"
+tofu_state = "tofu_state/issues/write-user-guide.md"

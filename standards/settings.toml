@@ -31,7 +31,7 @@ every = "30d"
 id = "claude-scheduled-tasks"
 vendor = "Claude"
 where = "claude.ai > the Monorepo project > Scheduled tasks"
-expect = "PR triage (7:50, 12:50 and 17:50 New York), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
+expect = "PR triage (7:50, 12:50 and 17:50 New York), Credit window check (hourly), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
 why = "PRs stop merging and human tasks stop reaching Jim when a task is paused or failing."
 every = "30d"
 

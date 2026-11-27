@@ -12,7 +12,7 @@ import { isPhone, mainNavLink } from './nav';
  *   npm test
  */
 
-test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
+test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
   test('should display header on home page', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
