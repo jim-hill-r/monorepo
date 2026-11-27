@@ -25,8 +25,10 @@
 //! - [`PlanReader`]: Trait for reading plans from a data source
 //! - [`PlanWriter`]: Trait for writing plans to a data source
 //! - [`markdown`]: A small Markdown parser for prose such as the home page intro
+//! - [`shopping`]: Sums a week's ingredients into a shopping list, with staples apart
 
 pub mod markdown;
+pub mod shopping;
 
 use std::fmt;
 use uuid::Uuid;

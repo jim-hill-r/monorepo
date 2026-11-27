@@ -35,6 +35,17 @@
     padding-bottom: var(--ds-space-2);
 }
 
+.plan-shopping-list h3 {
+    font-size: 1.3rem;
+    margin: var(--ds-space-5) 0 var(--ds-space-1);
+    color: var(--ds-color-text);
+}
+
+.plan-shopping-list .shopping-staples-note {
+    margin: 0 0 var(--ds-space-3);
+    color: var(--ds-color-text-muted);
+}
+
 .plan-shopping-list .shopping-list {
     list-style: none;
     padding-left: 0;
