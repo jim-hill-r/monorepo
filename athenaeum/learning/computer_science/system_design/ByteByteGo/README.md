@@ -1,3 +1,5 @@
+Notes from [ByteByteGo](https://bytebytego.com/) (Alex Xu's system design newsletter and books).
+
 Top algorithms: https://www.youtube.com/watch?v=xbgzl2maQUU&list=WL&index=2
 
 - Consistent Hashing
