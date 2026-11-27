@@ -1,0 +1,5 @@
+# Common error: --min-bathrooms must be a non-negative, finite number.
+bin.name = "homer"
+args = ["--address", "123 Main St, Seattle, WA 98101", "--api-key", "test-key", "--min-bathrooms", "NaN"]
+env.remove = ["RAPIDAPI_KEY", "HOMER_QUOTA_FILE"]
+status.code = 2

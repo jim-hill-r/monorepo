@@ -67,7 +67,7 @@ quota, go to stderr, so stdout is always just the JSON.
 | `--quota-file` | Where homer keeps the RapidAPI quota it last saw (or set `HOMER_QUOTA_FILE`); see [Free quota](#free-quota) |
 | `--min-bedrooms` | Minimum number of bedrooms |
 | `--max-bedrooms` | Maximum number of bedrooms |
-| `--min-bathrooms` | Minimum number of bathrooms |
+| `--min-bathrooms` | Minimum number of bathrooms (a non-negative number, such as 1.5) |
 | `--max-price` | Maximum listing price |
 | `--min-sqft` | Minimum square footage |
 | `--json` | Print the details and evaluation as one JSON object instead of the text report |
