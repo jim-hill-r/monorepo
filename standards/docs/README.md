@@ -16,6 +16,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Naming](./naming.md) - Naming conventions
 - [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md), the [eval engine](./plans/2026-11-eval-engine.md), the [cost check](./plans/2026-11-cost-check.md), the [threat check](./plans/2026-11-threat-check.md), the [design system](./plans/2026-11-design-system.md) and [resource cleanup](./plans/2026-11-resource-cleanup.md)
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
+- [Resources](./resources.md) - Every live resource is claimed, and a renamed or removed one is retired and deleted safely
 - [Rust](./rust.md) - Rust coding standards
 - [Security](./security.md) - Security rules and the checks that enforce them (secret scanning, ignored secret files, Dependabot coverage)
 - [Testing](./testing.md) - Testing standards and requirements
