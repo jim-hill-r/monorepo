@@ -93,6 +93,14 @@ expect = "The CLOUDFLARE_ACCOUNT_ID repo secret exists."
 why = "Every Cloudflare Pages deploy uses it."
 every = "90d"
 
+[[setting]]
+id = "github-secret-android-keystore"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "The ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD repo secrets exist, and no copy of the keystore is in the repo or anywhere public."
+why = "nightly-downloads.yml signs controlled_chaos's Android APK with them; a lost key means testers must reinstall, a leaked one lets anyone sign over our app."
+every = "180d"
+
 # Cloudflare.
 
 [[setting]]

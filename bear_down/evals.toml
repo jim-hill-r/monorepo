@@ -145,3 +145,34 @@ stages = ["cd"]
 kind = "http"
 path = "/rooting.json"
 body_contains = "\"generated_at\""
+
+# BEAR-010: Fans can say when a verdict looks wrong
+
+[[eval]]
+id = "every-game-has-a-vote"
+requirement = "BEAR-010"
+stages = ["ci"]
+kind = "playwright"
+grep = "Verdict votes"
+description = "Every game asks whether its verdict looks right, takes a note, and Do Not Track turns it off."
+
+[[eval]]
+id = "live-telemetry-takes-votes"
+requirement = "BEAR-010"
+stages = ["cd"]
+kind = "http"
+url = "https://jimhillr-telemetry.jim-hill-r.workers.dev/event"
+method = "OPTIONS"
+status = 204
+description = "The telemetry Worker that votes go to is up and answers the browser's CORS check."
+
+[[eval]]
+id = "fans-are-voting"
+requirement = "BEAR-010"
+stages = ["observe"]
+kind = "metric"
+source = "analytics-engine"
+metric = "bear_down_feedback_events"
+min = 1
+window = "14d"
+description = "At least one real vote arrived in the past two weeks (in season)."

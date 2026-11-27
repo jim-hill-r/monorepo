@@ -45,6 +45,17 @@ only, and its only push is to `evals-results` (SEC-007). It never fails the
 run. It is a separate workflow because a reusable workflow whose job asks
 for write fails to start when a caller (pull requests) grants only read.
 
+### evals-triage.yml
+
+Daily at 4:30 AM Pacific, after Nightly CI and Nightly CD. Runs
+`standards/scripts/evals.sh triage`, which writes a `FIX` or `TODO` issue
+file for each requirement that is not green and has no open issue, and
+force-pushes them as one commit to the `evals-triage` branch; PR triage
+opens the pull request from it (a PR opened with the workflow's own token
+would run no CI). Its only pushes are to `evals-triage` (SEC-007). Nothing
+is pushed on a quiet day. See
+[standards/docs/evals.md](../../standards/docs/evals.md#triage).
+
 ### pull-request-ci.yml
 
 Runs on every pull request against the projects it changes. Never deploys.

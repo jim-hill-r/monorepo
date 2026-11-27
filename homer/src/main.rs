@@ -190,7 +190,11 @@ impl ZillowClient {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().unwrap_or_default();
-            anyhow::bail!("Zillow API returned status {}: {}", status, body);
+            anyhow::bail!(
+                "Zillow API returned status {}: {}",
+                status,
+                summarize_error_body(&body)
+            );
         }
 
         let raw: serde_json::Value = response
@@ -198,6 +202,23 @@ impl ZillowClient {
             .context("Failed to parse Zillow API response")?;
 
         parse_property_details(&raw, address)
+    }
+}
+
+/// How many characters of an error response body to show.
+const ERROR_BODY_LIMIT: usize = 300;
+
+/// Shorten an error response body for an error message.
+///
+/// Collapses runs of whitespace into single spaces and keeps at most
+/// [`ERROR_BODY_LIMIT`] characters (never splitting a character), adding
+/// " (truncated)" when it cuts. A gateway error page can be long HTML that
+/// would otherwise flood the terminal and hide the status.
+fn summarize_error_body(body: &str) -> String {
+    let collapsed = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    match collapsed.char_indices().nth(ERROR_BODY_LIMIT) {
+        Some((cut, _)) => format!("{} (truncated)", &collapsed[..cut]),
+        None => collapsed,
     }
 }
 
@@ -1000,6 +1021,89 @@ mod tests {
             message.contains("rate limited"),
             "unexpected error: {message}"
         );
+    }
+
+    #[test]
+    fn test_property_details_long_error_body_is_truncated() {
+        let mut server = mockito::Server::new();
+        let page = format!(
+            "<html>\n  <head><title>502 Bad Gateway</title></head>\n  <body>\n{}\n  </body>\n</html>",
+            "    <p>upstream proxy error</p>\n".repeat(200)
+        );
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(502)
+            .with_body(page)
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let err = client
+            .property_details("123 Main St")
+            .expect_err("a 502 response must be an error");
+
+        let message = err.to_string();
+        assert!(message.contains("502"), "unexpected error: {message}");
+        assert!(
+            message.contains("<title>502 Bad Gateway</title>"),
+            "unexpected error: {message}"
+        );
+        assert!(
+            message.ends_with("(truncated)"),
+            "unexpected error: {message}"
+        );
+        assert!(
+            !message.contains('\n'),
+            "whitespace not collapsed: {message}"
+        );
+        assert!(
+            message.len() < 400,
+            "message too long: {} bytes",
+            message.len()
+        );
+    }
+
+    #[test]
+    fn test_summarize_error_body_keeps_short_body() {
+        assert_eq!(summarize_error_body("rate limited"), "rate limited");
+    }
+
+    #[test]
+    fn test_summarize_error_body_collapses_whitespace() {
+        assert_eq!(
+            summarize_error_body("  bad\n\n   request\t here  "),
+            "bad request here"
+        );
+    }
+
+    #[test]
+    fn test_summarize_error_body_empty() {
+        assert_eq!(summarize_error_body(""), "");
+        assert_eq!(summarize_error_body(" \n\t "), "");
+    }
+
+    #[test]
+    fn test_summarize_error_body_at_limit_is_not_truncated() {
+        let body = "a".repeat(ERROR_BODY_LIMIT);
+        assert_eq!(summarize_error_body(&body), body);
+    }
+
+    #[test]
+    fn test_summarize_error_body_over_limit_is_truncated() {
+        let body = "a".repeat(ERROR_BODY_LIMIT + 1);
+        let expected = format!("{} (truncated)", "a".repeat(ERROR_BODY_LIMIT));
+        assert_eq!(summarize_error_body(&body), expected);
+    }
+
+    #[test]
+    fn test_summarize_error_body_cuts_on_char_boundary() {
+        // Multi-byte characters must not be split.
+        let body = "é".repeat(ERROR_BODY_LIMIT + 10);
+        let summary = summarize_error_body(&body);
+        let kept = summary.trim_end_matches(" (truncated)");
+        assert_eq!(kept.chars().count(), ERROR_BODY_LIMIT);
+        assert!(kept.chars().all(|c| c == 'é'));
+        assert!(summary.ends_with(" (truncated)"));
     }
 
     #[test]

@@ -1,0 +1,10 @@
+# my_lang: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Compiler that runs locally; no network, no secrets."
+
+[[surface]]
+name = "compiler"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Reads source files it is given and writes output files; it runs nothing it compiles."

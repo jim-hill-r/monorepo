@@ -39,7 +39,7 @@ vulnerability is in the root [SECURITY.md](../../SECURITY.md).
 | --- | --- | --- | --- |
 | SEC-001 | A secret in a commit: gitleaks' default rules plus ours in [`.gitleaks.toml`](../../.gitleaks.toml) (PostHog personal keys, Auth0 client secrets). | Pre-commit (the staged diff), pre-push (the pushed commits), PR CI (the **Secret scan** job over the PR's commits, part of **CI result**), and weekly over the whole history (`all-free-tier-usage.yml`). All through [`standards/scripts/secrets-check.sh`](../scripts/secrets-check.sh). | Phase 1, as an error |
 | SEC-002 | `.gitignore` doesn't ignore `.env`, `.dev.vars`, `*.pem`, `*.key`, `*.p12`, `*.jks` or `*.keystore`, or a tracked file is one of them (`*.example` files are allowed). | `//:audit`, through [`standards/scripts/security-check.sh`](../scripts/security-check.sh). | Phase 1, as an error |
-| SEC-007 | A workflow, shared script or shared task file runs `git push` other than `evals.sh store`'s push of eval results to the `evals-results` branch `coverage.sh store`'s push of coverage results to the `coverage-results` branch and `feedback.sh store`'s push of fan feedback to the `feedback-data` branch, so CI never writes `main`. | `//:audit`, through `security-check.sh`. | Phase 1, as an error |
+| SEC-007 | A workflow, shared script or shared task file runs `git push` other than `evals.sh store`'s push of eval results to the `evals-results` branch `coverage.sh store`'s push of coverage results to the `coverage-results` branch `feedback.sh store`'s push of fan feedback to the `feedback-data` branch, and `evals.sh triage`'s push (or delete) of the `evals-triage` branch, which PR triage opens a reviewed pull request from, so CI never writes `main`. | `//:audit`, through `security-check.sh`. | Phase 1, as an error |
 | SEC-006 | A tracked `Cargo.lock` or `package-lock.json` has no entry in `.github/dependabot.yml`, or an entry's directory doesn't exist or has no lockfile (a Cargo workspace has one entry, at its root). | `//:audit`, through `security-check.sh`. | Phase 1, as an error |
 | SEC-003 | A `Cargo.lock` has a RustSec advisory (vulnerable, unsound, yanked, or an unmaintained direct dependency) or a crate from a source other than crates.io or this repo. Config: [`standards/deny.toml`](../deny.toml), or a project's own `deny.toml`. Licences are not checked yet. | The hooks and PR CI (**Dependency audit**) for the lockfiles a change touches, and nightly over every lockfile (`all-dependency-audit.yml`). All through [`standards/scripts/deps-check.sh`](../scripts/deps-check.sh). | Phase 1, as a warning |
 | SEC-004 | A `package-lock.json` has a high or critical advisory in a production dependency (`npm audit --omit=dev --audit-level=high`). | Same as SEC-003. | Phase 1, as a warning |
@@ -119,7 +119,7 @@ notes = "optional"
 name = "site"                     # unique in the file
 kind = "pages"                    # pages | worker | api | desktop | mobile | cli | library
 url = "https://jimhillr-cookbook.pages.dev"   # optional
-access = "public"                 # public | auth0 | cloudflare-access | none (not deployed)
+access = "public"                 # public | auth0 | cloudflare-access | token (a machine's shared secret) | none (not deployed)
 data = "public"                   # public | personal | private (Jim-only) | secret
 previews = "public"               # pages only, and required there: what preview URLs expose
 headers = "cookbook/web/public/_headers"      # repo-relative; required when public and web

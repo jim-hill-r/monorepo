@@ -77,6 +77,9 @@ pub enum Access {
     Public,
     Auth0,
     CloudflareAccess,
+    /// A shared secret a machine client sends (basic auth or a bearer
+    /// token), listed as a `[[secret]]`. For APIs only people never use.
+    Token,
     /// Not deployed or not reachable from outside.
     None,
 }
@@ -87,6 +90,7 @@ impl Access {
             Access::Public => "public",
             Access::Auth0 => "auth0",
             Access::CloudflareAccess => "cloudflare-access",
+            Access::Token => "token",
             Access::None => "none",
         }
     }

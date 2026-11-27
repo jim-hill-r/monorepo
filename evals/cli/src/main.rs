@@ -7,6 +7,7 @@ mod publish;
 mod reports;
 mod run;
 mod store;
+mod triage;
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -132,6 +133,29 @@ enum Command {
         /// Print verdicts.json instead of text.
         #[arg(long)]
         json: bool,
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The time to judge against (RFC 3339). Defaults to now.
+        #[arg(long)]
+        now: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// File the work the verdicts call for: a `fix` issue for a requirement
+    /// that fails in production, a `todo` for an eval that is broken, flaky
+    /// or stale and for a `must` with no production evidence, unless an open
+    /// issue file names the requirement. Without --write it only lists them.
+    /// The daily evals-triage.yml workflow runs it.
+    Triage {
+        /// The checkout of the `evals-results` branch.
+        #[arg(long)]
+        dir: PathBuf,
+        /// Write the issue files into the repo at --root.
+        #[arg(long)]
+        write: bool,
+        /// With --write, write at most this many new issue files; the next
+        /// run files the rest.
+        #[arg(long, default_value_t = 10)]
+        limit: usize,
         /// Repo root. Defaults as for `check`.
         #[arg(long)]
         root: Option<PathBuf>,
@@ -446,6 +470,32 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             } else {
                 print!("{}", store::render(&verdicts));
             }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Triage {
+            dir,
+            write,
+            limit,
+            root,
+            now,
+        } => {
+            let root = resolve_root(root)?;
+            let now = now.unwrap_or_else(chrono::Utc::now);
+            let all = store::read_results(&dir)?;
+            let verdicts = store::compute(&root, &all, None, now)?;
+            let findings = triage::triage(&root, &verdicts, &all, now, write.then_some(limit))?;
+            for finding in &findings {
+                println!("{}", finding.line());
+            }
+            let wrote = findings
+                .iter()
+                .filter(|f| matches!(f.outcome, triage::Outcome::Wrote(_)))
+                .count();
+            println!(
+                "evals triage: {} requirement(s) need work, {wrote} new issue file(s){}",
+                findings.len(),
+                if write { "" } else { " (dry run)" }
+            );
             Ok(ExitCode::SUCCESS)
         }
     }

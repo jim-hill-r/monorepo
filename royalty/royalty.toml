@@ -1,0 +1,8 @@
+# The royalty.toml format is designed in docs/plans/2026-11-royalty-plan.md.
+# This file has no [terms], so it means "no payment terms": royalty is free
+# for everyone.
+schema = 1
+
+[project]
+name = "royalty"
+description = "Open source royalties for libraries and frameworks: a royalty.toml says how a producer wants to be paid, and a scanner works out what a consumer owes under tiers and caps."

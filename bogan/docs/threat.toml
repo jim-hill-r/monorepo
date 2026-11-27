@@ -1,0 +1,10 @@
+# bogan: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Marketplace project in early design; nothing deployed, no secrets."
+
+[[surface]]
+name = "design"
+kind = "library"
+access = "none"
+data = "public"
+notes = "Nothing runs yet. Write the real model before the first deploy or sign-in."

@@ -704,7 +704,37 @@ fn test_evals_store_pushes_only_to_the_evals_results_branch() {
         .lines()
         .filter(|l| l.contains("\" push ") && !l.trim_start().starts_with('#'))
         .collect();
-    assert_eq!(pushes.len(), 1, "evals.sh pushes once: {pushes:?}");
-    assert!(pushes[0].contains("HEAD:refs/heads/evals-results"));
-    assert!(!pushes[0].contains("--force") && !pushes[0].contains(" -f "));
+    let (results, others): (Vec<&str>, Vec<&str>) = pushes
+        .iter()
+        .partition(|l| l.contains("refs/heads/evals-results"));
+    assert_eq!(results.len(), 1, "evals.sh store pushes once: {pushes:?}");
+    assert!(results[0].contains("HEAD:refs/heads/evals-results"));
+    assert!(!results[0].contains("--force") && !results[0].contains(" -f "));
+    // The only other pushes are evals.sh triage's, to evals-triage.
+    assert_eq!(others.len(), 2, "{others:?}");
+    for push in others {
+        assert!(
+            push.ends_with(" refs/heads/evals-triage")
+                || push.ends_with(":refs/heads/evals-triage"),
+            "{push}"
+        );
+    }
+}
+
+#[test]
+fn test_evals_triage_runs_daily_and_pushes_only_through_evals_sh() {
+    let (content, parsed) = load("evals-triage.yml");
+    assert!(!parsed["on"]["schedule"].is_null());
+    assert!(!parsed["on"]["workflow_dispatch"].is_null());
+    assert_eq!(parsed["permissions"]["contents"].as_str(), Some("read"));
+    let job = &parsed["jobs"]["triage"];
+    assert_eq!(job["permissions"]["contents"].as_str(), Some("write"));
+    assert_eq!(job["permissions"]["pull-requests"].as_str(), Some("read"));
+    assert_eq!(job["if"].as_str(), Some("github.ref == 'refs/heads/main'"));
+    assert!(content.contains("evals.sh triage"));
+    assert!(!content.contains("git push"), "the push lives in evals.sh");
+    assert!(
+        !content.contains("gh pr create"),
+        "a PR opened with the workflow token runs no CI; PR triage opens it"
+    );
 }
