@@ -38,6 +38,13 @@ scope = "Fine-grained token: Plan read and public repositories read-only; infra 
 setting = "rotate-github-billing-read-token"
 
 [[secret]]
+name = "REVIEWER_TOKEN"
+where = "github"
+used_by = ["all-auto-review.yml"]
+scope = "jimhillr-reviewer's fine-grained token, this repo only: Pull requests read and write, Contents, Checks and Commit statuses read; reviewer environment, main only"
+setting = "rotate-reviewer-token"
+
+[[secret]]
 name = "POSTHOG_BILLING_READ_KEY"
 where = "github"
 used_by = ["all-free-tier-usage.yml billing check"]
@@ -61,3 +68,9 @@ id = "STD-T3"
 stride = "information-disclosure"
 what = "A secret is committed."
 mitigation = "gitleaks in the hooks, PR CI and a weekly full-history scan (SEC-001), plus GitHub push protection."
+
+[[threat]]
+id = "STD-T4"
+stride = "elevation-of-privilege"
+what = "An agent PR gets itself approved by jimhillr-reviewer: it loosens the reviewer's rules, hides a risky change from them, or reaches REVIEWER_TOKEN (decision 0014)."
+mitigation = "All Auto Review runs main's own script on a schedule and never checks out PR code; REVIEWER_TOKEN lives only in the reviewer environment, which deploys from main; the rules refuse any PR touching .github/, standards/ (the rules themselves), infra, threat models, requirements, evals, auth or deploy settings, any red or orange label, and any diff over 1,500 lines; approvals pin the head commit and the ruleset dismisses them on a push; the token can't push or merge; Jim reads every merged PR on pane's Acknowledge page."
