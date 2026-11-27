@@ -7,12 +7,29 @@ use sycamore::prelude::*;
 const CONTACT_URL: &str = "https://nextdoor.com/pages/private-reading-tutor-oceanside-ca/";
 
 fn index_page<G: Html>(cx: Scope) -> View<G> {
-    page(cx, t!(cx, "tagline"))
+    page(cx, t!(cx, "tagline"), link!(cx, ""))
+}
+
+/// A link to one of the page's sections, from `home`, the page's own URL
+/// with its locale (`en-US/`). A bare `/#id` would send the Perseus router
+/// to `/`, which redirects to the locale page at the top and loses the
+/// section. `rel="external"` makes the router leave the click to the
+/// browser, so it scrolls in place on `/en-US/`, or loads it from `/en-US`
+/// (where Perseus's own redirect leaves the address).
+fn section_link<G: Html>(cx: Scope, home: &str, id: &str, label: &'static str) -> View<G> {
+    let href = format!("{home}#{id}");
+    view! { cx,
+        a(href=href, rel="external", class="text-sky-50 hover:text-teal-500 pr-4 pl-4 hidden md:flex") { (label) }
+    }
 }
 
 /// The whole home page: nav, the four sections and the footer. It takes the
-/// translated tagline so tests can render it without a translator.
-fn page<G: Html>(cx: Scope, tagline: String) -> View<G> {
+/// translated tagline and the locale's home URL so tests can render it
+/// without a translator.
+fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
+    let what_we_do = section_link(cx, &home, "what-we-do", "What we do");
+    let who_we_are = section_link(cx, &home, "who-we-are", "Who we are");
+    let how_we_do_it = section_link(cx, &home, "how-we-do-it", "How we do it");
     view! { cx,
         header {
             nav(class="bg-sky-900") {
@@ -20,9 +37,9 @@ fn page<G: Html>(cx: Scope, tagline: String) -> View<G> {
                     div(class="flex items-center justify-start flex-wrap pt-3 pb-3 md:pt-4 md:pb-4 md:justify-end") {
                         a(href="/", class="text-sky-50 text-2xl font-semibold pb-2") { "Spark Hill" }
                         div(class="flex-grow")
-                        a(href="/#what-we-do", class="text-sky-50 hover:text-teal-500 pr-4 pl-4 hidden md:flex") { "What we do" }
-                        a(href="/#who-we-are", class="text-sky-50 hover:text-teal-500 pr-4 pl-4 hidden md:flex") { "Who we are" }
-                        a(href="/#how-we-do-it", class="text-sky-50 hover:text-teal-500 pr-4 pl-4 hidden md:flex") { "How we do it" }
+                        (what_we_do)
+                        (who_we_are)
+                        (how_we_do_it)
                         a(href=CONTACT_URL, target="_blank", rel="noopener noreferrer", class="p-2 pt-1 border-2 rounded-full text-sky-50 border-sky-50 hover:border-transparent hover:bg-teal-500") { "Contact Us" }
                     }
                 }
@@ -152,8 +169,10 @@ mod tests {
     use std::collections::HashSet;
     use std::path::Path;
 
+    const HOME: &str = "en-US/";
+
     fn render() -> String {
-        sycamore::render_to_string(|cx| page(cx, "Everyone deserves to read".to_string()))
+        sycamore::render_to_string(|cx| page(cx, "Everyone deserves to read".into(), HOME.into()))
     }
 
     /// Every value of `attr="..."` in the HTML, in order.
@@ -209,7 +228,7 @@ mod tests {
         let html = render();
         let ids: HashSet<_> = attr_values(&html, "id").into_iter().collect();
         for href in attr_values(&html, "href") {
-            if let Some(anchor) = href.strip_prefix("/#") {
+            if let Some(anchor) = href.strip_prefix(&format!("{HOME}#")) {
                 assert!(ids.contains(anchor), "no section for {href}");
             }
         }
@@ -220,7 +239,9 @@ mod tests {
         // The site has one page, so internal links are "/" or its anchors.
         for href in attr_values(&render(), "href") {
             assert!(
-                href == "/" || href.starts_with("/#") || href.starts_with("https://"),
+                href == "/"
+                    || href.starts_with(&format!("{HOME}#"))
+                    || href.starts_with("https://"),
                 "{href} goes to a page the site doesn't have"
             );
         }
@@ -238,6 +259,19 @@ mod tests {
         let html = render();
         assert!(!html.contains("Ms. Smith"));
         assert!(!html.contains("Ms. Jones"));
+    }
+
+    #[test]
+    fn section_links_are_left_to_the_browser() {
+        let html = render();
+        let section_links: Vec<_> = tags(&html)
+            .into_iter()
+            .filter(|t| t.contains(&format!("href=\"{HOME}#")))
+            .collect();
+        assert_eq!(section_links.len(), 3);
+        for tag in section_links {
+            assert!(tag.contains("rel=\"external\""), "{tag}");
+        }
     }
 
     #[test]
