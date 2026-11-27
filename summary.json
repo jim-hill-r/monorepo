@@ -1,17 +1,21 @@
 {
   "lines": {
-    "count": 34478,
-    "covered": 25324,
-    "percent": 73.45
+    "count": 46736,
+    "covered": 33405,
+    "percent": 71.48
   },
   "projects": [
+    {
+      "project": "athenaeum/learning/computer_science/algorithms/neet_code_150",
+      "percent": 100
+    },
     {
       "project": "auth_sdk",
       "percent": 100
     },
     {
       "project": "bear_down",
-      "percent": 92.77
+      "percent": 90.52
     },
     {
       "project": "blueeel",
@@ -23,31 +27,31 @@
     },
     {
       "project": "controlled_chaos",
-      "percent": 86.57
+      "percent": 94.01
     },
     {
       "project": "cookbook",
-      "percent": 90.79
+      "percent": 91.25
     },
     {
       "project": "cost",
-      "percent": 91.98
+      "percent": 92.18
     },
     {
       "project": "design_system",
-      "percent": 47.54
+      "percent": 50.38
     },
     {
       "project": "evals",
-      "percent": 91.79
+      "percent": 92.26
     },
     {
       "project": "homer",
-      "percent": 96.06
+      "percent": 96.94
     },
     {
       "project": "infra",
-      "percent": 17.54
+      "percent": 19.13
     },
     {
       "project": "luggage",
@@ -59,11 +63,11 @@
     },
     {
       "project": "my_lang",
-      "percent": 93.03
+      "percent": 93.3
     },
     {
       "project": "pane",
-      "percent": 80.19
+      "percent": 56.55
     },
     {
       "project": "profiles/content_provider",
@@ -79,15 +83,27 @@
     },
     {
       "project": "sparkhill/webapp",
-      "percent": 84.84
+      "percent": 82.58
+    },
+    {
+      "project": "sparkhill/webapp_cloudflare",
+      "percent": 0
     },
     {
       "project": "sparkhill/website",
-      "percent": 0
+      "percent": 89.86
     },
     {
       "project": "starcraft",
       "percent": 0
+    },
+    {
+      "project": "telemetry",
+      "percent": 97.76
+    },
+    {
+      "project": "threat",
+      "percent": 91.93
     },
     {
       "project": "tofu_state",
