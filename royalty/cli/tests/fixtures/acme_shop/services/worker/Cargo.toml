@@ -1,0 +1,15 @@
+[package]
+name = "shop_worker"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+webframe = { path = "../../../producers/webframe" }
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[lints.rust]
+unsafe_code = "forbid"

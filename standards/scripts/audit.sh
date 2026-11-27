@@ -14,6 +14,7 @@
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
+#   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh); warnings only for now.
 #   THR-*    Each project's docs/threat.toml (threat-check.sh); warnings only for now.
 #   RES-*    Resources (resources.sh check, standards/docs/resources.md):
 #            dropped claims retired (with a base), no references to
@@ -77,6 +78,9 @@ bash standards/scripts/evals-check.sh
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.
 bash standards/scripts/cost-check.sh
+
+# ROY-001, RTOML-*: every project's royalty.toml. Warnings only.
+bash standards/scripts/royalty-check.sh
 
 # THR-*: per-project threat models against the security rules. Warnings only.
 bash standards/scripts/threat-check.sh
