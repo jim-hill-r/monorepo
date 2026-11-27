@@ -30,6 +30,7 @@ pub fn web_apps() -> Vec<WebApp> {
             .web_analytics(),
         WebApp::new("design_system").web_analytics(),
         WebApp::new("pane").web_analytics(),
+        WebApp::new("sparkhill").web_analytics(),
     ]
 }
 
