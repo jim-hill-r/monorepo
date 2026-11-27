@@ -18,6 +18,12 @@ name: evals store
         description: Git ref the results are for. Empty checks out the triggering commit.
         type: string
         default: ''
+      pattern:
+        description: >-
+          Artifacts to store. Nightly CD stores only its cd results
+          (evals-results-cd-*), since Nightly CI already stores that night's ci ones.
+        type: string
+        default: evals-results-*
 
 permissions:
   contents: read
@@ -39,15 +45,14 @@ jobs:
           key: evals-audit
           save-if: false
 
-      # Every project job's evals-results-<project> artifact from this run.
+      # Every project job's evals-results-<project> (stage ci) and
+      # evals-results-cd-<project> artifact from this run.
       - uses: actions/download-artifact@v4
         with:
-          pattern: evals-results-*
+          pattern: ${{ inputs.pattern }}
           path: ${{ runner.temp }}/evals
 
       - name: Store eval results
-        env:
-          EVALS_STAGE: ci
         run: |
           shopt -s nullglob
           bash standards/scripts/evals.sh store "$RUNNER_TEMP"/evals/*/evals-results.jsonl

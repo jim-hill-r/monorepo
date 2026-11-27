@@ -599,13 +599,82 @@ fn stores_evals(name: &str, mise_job: &str) {
 fn test_push_main_and_nightly_ci_store_eval_results() {
     stores_evals("push-main.yml", "ci-cd");
     stores_evals("nightly-ci.yml", "ci");
-    for name in ["pull-request-ci.yml", "nightly-cd.yml"] {
-        let (content, _) = load(name);
-        assert!(
-            !content.contains("evals-store.yml"),
-            "{name} must not store results"
-        );
-    }
+    stores_evals("nightly-cd.yml", "cd");
+    let (_, parsed) = load("nightly-cd.yml");
+    assert_eq!(
+        parsed["jobs"]["store-evals"]["with"]["pattern"].as_str(),
+        Some("evals-results-cd-*"),
+        "Nightly CD stores only its cd results; Nightly CI stores the ci ones"
+    );
+    let (_, parsed) = load("evals-store.yml");
+    assert_eq!(
+        parsed["on"]["workflow_call"]["inputs"]["pattern"]["default"].as_str(),
+        Some("evals-results-*"),
+        "by default every results artifact is stored, ci and cd"
+    );
+    let (content, _) = load("pull-request-ci.yml");
+    assert!(
+        !content.contains("evals-store.yml"),
+        "pull requests must not store results"
+    );
+}
+
+#[test]
+fn test_cd_evals_run_right_after_a_deploy() {
+    let steps = mise_projects_steps("project");
+    let deploy = step_index(&steps, "mise run deploy");
+    let cd = step_index(&steps, "cd evals");
+    let upload = step_index(&steps, "Upload cd eval results");
+    assert!(
+        deploy < cd && cd < upload,
+        "deploy, then cd evals, then upload"
+    );
+    assert_eq!(steps[deploy]["id"].as_str(), Some("deploy"));
+    assert!(
+        steps[deploy]["run"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("echo \"deployed=true\" >> \"$GITHUB_OUTPUT\""),
+        "the deploy step says when it really deployed"
+    );
+
+    let step = &steps[cd];
+    assert_eq!(step["env"]["EVALS_STAGE"].as_str(), Some("cd"));
+    assert!(
+        step["env"]["DEPLOY_URL"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("deploy_urls"),
+        "http evals are joined to the project's DEPLOY_URL"
+    );
+    assert!(
+        step["if"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("steps.deploy.outputs.deployed == 'true'"),
+        "cd evals run only after a deploy that happened"
+    );
+    assert!(
+        step["continue-on-error"].is_null(),
+        "a failed must eval fails the deploy job"
+    );
+    let run = step["run"].as_str().unwrap_or_default();
+    assert!(run.contains("evals.sh\" run"), "should run the evals");
+    assert!(
+        run.contains("evals.sh\" publish"),
+        "should write the job summary"
+    );
+    assert!(
+        run.contains("evals-results-cd-"),
+        "cd results get their own artifact, so Nightly CD can store only them"
+    );
+
+    let script = fs::read_to_string(get_repo_root().join("standards/scripts/evals.sh"))
+        .unwrap_or_else(|e| panic!("read evals.sh: {e}"));
+    assert!(
+        script.contains("args+=(--fail-on-must)"),
+        "the cd stage fails on a failed must eval"
+    );
 }
 
 #[test]

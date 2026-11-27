@@ -1,6 +1,7 @@
 //! The `evals` command. See `evals/README.md`.
 
 mod check;
+mod http;
 mod human_checks;
 mod publish;
 mod reports;
@@ -14,7 +15,7 @@ use std::process::ExitCode;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{Parser, Subcommand, ValueEnum};
-use evals_model::{ResultStatus, Stage, parse_evals};
+use evals_model::{ResultStatus, Stage, parse_evals, parse_requirements};
 
 #[derive(Parser)]
 #[command(
@@ -42,7 +43,8 @@ enum Command {
     },
     /// Turn the test reports a project's tasks already wrote into one result
     /// per eval, appended to a JSONL file. Collects `cargo` and `playwright`
-    /// evals; runs no tests itself.
+    /// evals (it runs no tests itself) and makes the requests of `http`
+    /// evals.
     Run {
         /// The stage to collect, such as `ci`.
         #[arg(long, value_enum)]
@@ -70,6 +72,17 @@ enum Command {
         /// `skip` or `error`.
         #[arg(long)]
         partial: bool,
+        /// The deployed site that `http` evals with a `path` are joined to.
+        /// Defaults to $DEPLOY_URL.
+        #[arg(long)]
+        deploy_url: Option<String>,
+        /// Exit with status 1 when an eval of a `must` requirement failed.
+        /// The `cd` step after a deploy uses it.
+        #[arg(long)]
+        fail_on_must: bool,
+        /// Tries per `http` eval before it fails, 5 seconds apart.
+        #[arg(long, default_value_t = 3)]
+        http_attempts: u32,
     },
     /// Settings made by hand (standards/settings.toml) that Jim checks on a
     /// schedule, and his answers (standards/settings-checks.jsonl).
@@ -223,6 +236,9 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
             commit,
             out,
             partial,
+            deploy_url,
+            fail_on_must,
+            http_attempts,
         } => {
             let root = resolve_root(root)?;
             let evals_path = root.join(&project).join(check::EVALS);
@@ -269,8 +285,17 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 evidence,
                 at: chrono::Utc::now(),
                 partial,
+                deploy_url: deploy_url.or_else(|| env("DEPLOY_URL")),
             };
-            let (results, notes) = run::collect(&file, &reports, &ctx);
+            let client = http::Client::new();
+            let runner = run::HttpRunner {
+                fetch: &client,
+                retry: http::Retry {
+                    attempts: http_attempts,
+                    ..http::Retry::default()
+                },
+            };
+            let (results, notes) = run::collect(&file, &reports, &ctx, &runner);
             for note in notes {
                 println!("note: {note}");
             }
@@ -284,6 +309,28 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                 results.len(),
                 out.display()
             );
+            if fail_on_must {
+                let path = root.join(&ctx.project).join(check::REQUIREMENTS);
+                let text = fs::read_to_string(&path)
+                    .with_context(|| format!("reading {}", path.display()))?;
+                let (requirements, _) = parse_requirements(&text);
+                let failed = run::failed_musts(&results, &requirements);
+                if !failed.is_empty() {
+                    for r in &failed {
+                        eprintln!(
+                            "evals: {} ({}) failed: {}",
+                            r.eval,
+                            r.requirement,
+                            r.note.as_deref().unwrap_or_default()
+                        );
+                    }
+                    eprintln!(
+                        "evals run: {} eval(s) of a must requirement failed",
+                        failed.len()
+                    );
+                    return Ok(ExitCode::FAILURE);
+                }
+            }
             Ok(ExitCode::SUCCESS)
         }
         Command::HumanChecks { command } => match command {

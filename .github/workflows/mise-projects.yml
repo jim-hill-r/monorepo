@@ -210,6 +210,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: mise run deploy
+        id: deploy
         if: inputs.deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -249,3 +250,40 @@ jobs:
             [ -z "$version" ] || echo "| This deployment | $version |"
             echo "| Commit | \`$(git rev-parse HEAD)\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+
+      # Stage cd: right after a deploy, check the live site (the `http`
+      # evals, joined to DEPLOY_URL) and add the table to the job summary
+      # (standards/docs/evals.md). A failed eval of a `must` requirement
+      # fails the job, so a broken deploy shows red on main; the site is
+      # already live, so roll back by running Push Main CI/CD by hand with
+      # the project and a good ref (standards/docs/mise.md).
+      # Exit status 2 is a bug in the engine, which warns and never fails.
+      - name: cd evals
+        id: cd-evals
+        if: ${{ !cancelled() && steps.deploy.outputs.deployed == 'true' }}
+        env:
+          EVALS_STAGE: cd
+          EVALS_RESULTS: ${{ runner.temp }}/cd/evals-results.jsonl
+          DEPLOY_URL: ${{ fromJSON(needs.plan.outputs.deploy_urls)[matrix.project] }}
+          PROJECT: ${{ matrix.project }}
+        run: |
+          echo "artifact=evals-results-cd-${PROJECT//\//-}" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/cd"
+          status=0
+          bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" run || status=$?
+          bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" publish || true
+          if [ "$status" -eq 2 ]; then
+            echo "::warning::evals run failed (exit 2); see the log"
+            exit 0
+          fi
+          exit "$status"
+
+      - name: Upload cd eval results
+        if: ${{ !cancelled() && steps.cd-evals.outputs.artifact }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.cd-evals.outputs.artifact }}
+          path: ${{ runner.temp }}/cd/evals-results.jsonl
+          retention-days: 14
+          if-no-files-found: ignore

@@ -16,6 +16,19 @@ opentofu = "1.13.10"
 [task_config]
 includes = ["../standards/tasks/rust.toml"]
 
+# Cloud sandboxes often can't install wrangler or OpenTofu, which
+# tests/e2e.sh needs; the git hooks then skip this project (git-hooks.md).
+[tasks."ci:check-tools"]
+description = "Fail, naming what is missing, when ci can't run here"
+run = '''
+missing=""
+command -v wrangler >/dev/null || missing="$missing wrangler"
+command -v tofu >/dev/null || missing="$missing tofu"
+[ -z "$missing" ] && exit 0
+echo "missing$missing, which tests/e2e.sh needs"
+exit 1
+'''
+
 [tasks.ci]
 description = "Native tests, the Worker build and lints, and the end-to-end test with real OpenTofu"
 depends = ["ci:deps"]
