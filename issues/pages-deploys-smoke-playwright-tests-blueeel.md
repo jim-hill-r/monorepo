@@ -7,4 +7,6 @@ order: 70
 added: 2026-11-26
 ---
 
-Add Pages deploys and `@smoke` Playwright tests for blueeel and sparkhill/webapp, matching cookbook, pane and cahokia.
+Add `@smoke` Playwright tests for sparkhill/webapp (deployed by
+`sparkhill/webapp_cloudflare`), and a Pages deploy and `@smoke` tests for
+blueeel, matching cookbook, pane and cahokia.

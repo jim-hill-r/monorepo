@@ -50,6 +50,7 @@ config_roots = [
   "sparkhill",
   "sparkhill/cloudflare",
   "sparkhill/webapp",
+  "sparkhill/webapp_cloudflare",
   "sparkhill/website",
   "standards",
   "starcraft",

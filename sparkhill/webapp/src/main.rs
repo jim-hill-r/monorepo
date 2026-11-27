@@ -2,6 +2,7 @@ mod canvas_js;
 mod components;
 mod pages;
 mod patterns;
+mod progress;
 mod state;
 mod tracing_check;
 

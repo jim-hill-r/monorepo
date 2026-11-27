@@ -1,6 +1,7 @@
 use crate::Route;
 use crate::canvas_js::CANVAS_JS;
 use crate::patterns::demonstration_js;
+use crate::progress;
 use crate::state::{AppState, PracticePhase, next_level, practice_from_query};
 use crate::tracing_check;
 use dioxus::document::eval;
@@ -15,6 +16,11 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
     let mut phase = use_signal(|| PracticePhase::Start);
     let mut feedback = use_signal(|| "Have fun!".to_string());
     let mut canvas_initialized = use_signal(|| false);
+    // Whose progress this is, or `None` while practising `?practice=` only,
+    // which is never saved.
+    let mut learner = use_signal(|| None::<String>);
+    // The level is fixed for the page, so a signal lets each handler read it.
+    let level_name = use_signal(|| level.clone());
 
     // Initialize the canvas JS library once
     use_effect(move || {
@@ -33,9 +39,22 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             .await
             .unwrap_or_default();
         if let Some(expressions) = practice_from_query(&query) {
+            learner.set(None);
             state.write().practise_only(expressions);
+            state.write().start_practice();
+        } else {
+            // Carry on from the learner's saved progress, if any.
+            let loaded = eval(&progress::load_js(&level_name.read()))
+                .join::<String>()
+                .await
+                .unwrap_or_default();
+            let (name, saved) = progress::parse_loaded(&loaded);
+            learner.set(Some(name));
+            match saved {
+                Some(saved) => state.set(saved),
+                None => state.write().start_practice(),
+            }
         }
-        state.write().start_practice();
         let expr = state.read().expression.clone();
         if let Some(ref letter) = expr {
             // Animate the letter demonstration from the bundled patterns
@@ -77,6 +96,11 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 .is_some_and(|h| h.attempts > 0);
         let next_expr = state_write.expression.clone();
         let is_done = state_write.is_complete();
+        if let Some(name) = learner.read().as_deref()
+            && let Some(js) = progress::save_js(name, &level_name.read(), &state_write)
+        {
+            eval(&js);
+        }
         drop(state_write);
 
         if is_done {
