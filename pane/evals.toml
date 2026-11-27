@@ -173,5 +173,26 @@ stages = ["ci"]
 kind = "playwright"
 description = "Not yet checked at phone width: no test sets a 375 px viewport."
 
-# PANE-007 to PANE-010 have no evals yet: they come with the review
-# dashboard plan's phases 2 to 7.
+# PANE-007, PANE-009 and PANE-010 have no evals yet: they come with the
+# review dashboard plan's phases 3 to 7.
+
+# PANE-008: Executive reviews are read in pane (phase 2). The Reviews page
+# evals come with it; these check the decks pane's release builds.
+
+[[eval]]
+id = "review-deck-html-live"
+requirement = "PANE-008"
+stages = ["cd"]
+kind = "http"
+description = "pane's release builds each review deck to HTML under /reviews/<folder>/."
+path = "/reviews/2026-11-25-cookbook/deck.html"
+body_contains = "marpit"
+
+[[eval]]
+id = "review-deck-pdf-live"
+requirement = "PANE-008"
+stages = ["cd"]
+kind = "http"
+description = "pane's release builds each review deck to a PDF under /reviews/<folder>/."
+path = "/reviews/2026-11-25-cookbook/deck.pdf"
+header = "content-type: application/pdf"

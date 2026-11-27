@@ -119,8 +119,14 @@ mise run release
 This first runs [`pane_snapshot`](../snapshot) to write
 `public/data/snapshot.json` (a snapshot of the whole repo at the current
 commit, with the time it was taken), then `dx bundle`, which copies it into
-the bundle as `/data/snapshot.json`. `public/` is gitignored, so the snapshot
-is never committed. The output will be in the `dist/` directory and ready for
+the bundle as `/data/snapshot.json`. Next, `mise run reviews` builds every
+review deck in [`docs/reviews/`](../../docs/reviews) to HTML and PDF with
+[`review-decks.sh`](../../standards/scripts/review-decks.sh), into
+`public/reviews/<folder>/` (`deck.html`, `deck.pdf` and the deck's images),
+so the site serves them under `/reviews/<folder>/`. That step needs Node and a
+Chrome or Chromium (set `CHROME_PATH` if Marp can't find one); `dev` skips it.
+`public/` is gitignored, so neither the snapshot nor the decks are ever
+committed. The output will be in the `dist/` directory and ready for
 deployment.
 
 **Note:** The `Dioxus.toml` configuration disables wasm-opt (by setting level to 0) to avoid SIGABRT errors during release builds. This is a known issue where wasm-opt can crash on certain builds.
