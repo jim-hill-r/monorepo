@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Blue Eel icon: a traced "e" on the app's guide lines. -->
+  <rect width="512" height="512" rx="96" fill="#178CA4"/>
+  <g stroke="#F9F7F0" stroke-opacity="0.45" stroke-width="6">
+    <line x1="64" y1="176" x2="448" y2="176"/>
+    <line x1="64" y1="368" x2="448" y2="368"/>
+  </g>
+  <path d="M168 276 H344 C344 216 304 176 256 176 C200 176 160 220 160 272 C160 328 200 368 256 368 C292 368 318 352 336 326"
+        fill="none" stroke="#F9F7F0" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,5 +1,7 @@
 # infra
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/infra.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Infrastructure as code for the monorepo: the settings we used to click
 through vendor dashboards (Auth0 applications first, then GitHub and
 Cloudflare) written as Rust, in the style of the AWS CDK. It is named for
@@ -26,6 +28,7 @@ How it works:
 | --- | --- | --- |
 | `auth0` | The cookbook and cahokia Auth0 applications: callback, web origin and logout URLs for production, Pages previews (`https://*.<pages project>.pages.dev`) and localhost, and the Single Page Application type | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` from the environment |
 | `cloudflare` | Web Analytics on each production Pages site (`cloudflare_web_analytics_site`, beacon auto-installed); wrangler still creates and deploys the Pages projects | `CLOUDFLARE_API_TOKEN` and `TF_VAR_cloudflare_account_id` from the environment |
+| `github` | This repository (imported, with every setting written out), secret scanning and push protection, Dependabot alerts and security updates, and a `CI` ruleset that requires `CI result` from GitHub Actions on `main`. Never the `Default` ruleset (provider 6.13.0 can't express its unattributed-changes rule, so an update would drop it), any bypass list or the `infra-credentials` environment | `GITHUB_TOKEN` from the environment: a token minted per run from the read-only infra GitHub App for plans, and from the infra GitHub App for applies |
 
 Every resource that already exists is brought in with an `import` block, and
 every resource has `prevent_destroy`: IaC never deletes anything (decision
@@ -66,6 +69,15 @@ counts as a credential until it is added there.
 
 ## Workflows
 
+The `github` stack has no everyday apply tier: GitHub can't separate its
+settings from rulesets and secrets, so every change it makes is a
+credential change (decision 0010) and applies only in `infra-credentials`.
+Its plans mint a token from the read-only infra GitHub App
+(`GH_INFRA_READ_APP_ID` variable, `GH_INFRA_READ_APP_KEY` repository
+secret, [runbook](../standards/docs/runbooks/github-app-infra-read.md)),
+and its apply mints one from the infra GitHub App, whose key is only in
+`infra-credentials`.
+
 `scripts/tofu.sh` does the work; the workflows only pass it secrets
 (tested by `tests/tofu_sh.test.sh` and `monorepo/workflow_tests`).
 
@@ -105,6 +117,7 @@ never written to git, state or a file, and no one sees it (Jim, 2026-11-27).
 | `TOFU_STATE_ORIGIN` | repository variable | the account's workers.dev subdomain |
 | `CLOUDFLARE_API_TOKEN` (`jimhillr-deploy`: Pages, Workers Scripts, D1 Write, Account Analytics Read) | repository secret | Cloudflare account-owned token |
 | `CLOUDFLARE_INFRA_READ_TOKEN` / `_APPLY_TOKEN` | repository / `infra` | Cloudflare account-owned tokens |
+| `CLOUDFLARE_BILLING_READ_TOKEN` (`jimhillr-billing-read`: Billing Read) | `infra` | Cloudflare account-owned token, for the weekly billing check |
 | `AUTH0_INFRA_READ_*` / `AUTH0_INFRA_APPLY_*` | repository / `infra` | Auth0 Machine to Machine apps `infra-read` and `infra-apply` |
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository secrets | `keytool`, in the job |
 

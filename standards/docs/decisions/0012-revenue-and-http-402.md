@@ -1,7 +1,7 @@
 # 0012. Revenue: open books and GitHub Sponsors first, HTTP 402 (x402) staged
 
-- Status: Proposed
-- Decided by: waiting for Jim
+- Status: Accepted
+- Decided by: Jim (project thread, 2026-11-27: "That all seems pretty reasonable", with every recommended answer)
 - Date: 2026-11-27
 - Asked by: Jim
 - Plan: [2026-11-revenue-402.md](../plans/2026-11-revenue-402.md)
@@ -33,7 +33,7 @@ Research on 2026-11-27 (details and sources in the plan):
 - Our only money cost is Claude Code ($25 a month), so stopping apps saves
   nothing; pausing agent work does.
 
-## Decision (proposed)
+## Decision
 
 Architecture E from the plan, with the recommended answer to each of the
 plan's eight questions unless Jim says otherwise:
@@ -48,6 +48,14 @@ plan's eight questions unless Jim says otherwise:
    professional has been consulted.
 4. Free cash flow counts Claude Code; Jim's own payments are owner
    contributions. The cutoff is soft for users and hard for new agent work.
+5. GitHub Sponsors only; Jim enters payouts through a pane form; the public
+   books are an `/open` path on the pane Worker; no business set-up until
+   revenue is real.
+6. Added by Jim with his answer ("I want this to be a long term vision as
+   apis will definitely be coming on board soon. This revenue plan can also
+   include some royalty income."): every new API is born metered and
+   402-ready, all income streams share one ledger, and royalty income and
+   owed royalties (through the royalty project) are part of the books.
 
 ## Consequences
 

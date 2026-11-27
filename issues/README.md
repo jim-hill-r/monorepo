@@ -11,11 +11,11 @@ To see the list, run `mise run //:issues` (it is generated, never
 committed).
 
 # Priority Projects
+- sparkhill (Blue Eel first: Jim, 2026-11-27)
 - cookbook
 - homer
 - controlled_chaos
 - royalty
-- sparkhill
 - pane
 
 # On Hold Projects

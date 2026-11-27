@@ -124,8 +124,8 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
         .unwrap_or_else(|| panic!("no jobs"));
     assert_eq!(
         jobs.len(),
-        5,
-        "expected the ci job, the secret scan, the dependency audit, the cost summary and the CI result gate"
+        7,
+        "expected the ci job, the secret scan, the dependency audit, the workflow audit, the cost and security summaries and the CI result gate"
     );
     let gate = &parsed["jobs"]["ci-result"];
     assert_eq!(
@@ -599,13 +599,82 @@ fn stores_evals(name: &str, mise_job: &str) {
 fn test_push_main_and_nightly_ci_store_eval_results() {
     stores_evals("push-main.yml", "ci-cd");
     stores_evals("nightly-ci.yml", "ci");
-    for name in ["pull-request-ci.yml", "nightly-cd.yml"] {
-        let (content, _) = load(name);
-        assert!(
-            !content.contains("evals-store.yml"),
-            "{name} must not store results"
-        );
-    }
+    stores_evals("nightly-cd.yml", "cd");
+    let (_, parsed) = load("nightly-cd.yml");
+    assert_eq!(
+        parsed["jobs"]["store-evals"]["with"]["pattern"].as_str(),
+        Some("evals-results-cd-*"),
+        "Nightly CD stores only its cd results; Nightly CI stores the ci ones"
+    );
+    let (_, parsed) = load("evals-store.yml");
+    assert_eq!(
+        parsed["on"]["workflow_call"]["inputs"]["pattern"]["default"].as_str(),
+        Some("evals-results-*"),
+        "by default every results artifact is stored, ci and cd"
+    );
+    let (content, _) = load("pull-request-ci.yml");
+    assert!(
+        !content.contains("evals-store.yml"),
+        "pull requests must not store results"
+    );
+}
+
+#[test]
+fn test_cd_evals_run_right_after_a_deploy() {
+    let steps = mise_projects_steps("project");
+    let deploy = step_index(&steps, "mise run deploy");
+    let cd = step_index(&steps, "cd evals");
+    let upload = step_index(&steps, "Upload cd eval results");
+    assert!(
+        deploy < cd && cd < upload,
+        "deploy, then cd evals, then upload"
+    );
+    assert_eq!(steps[deploy]["id"].as_str(), Some("deploy"));
+    assert!(
+        steps[deploy]["run"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("echo \"deployed=true\" >> \"$GITHUB_OUTPUT\""),
+        "the deploy step says when it really deployed"
+    );
+
+    let step = &steps[cd];
+    assert_eq!(step["env"]["EVALS_STAGE"].as_str(), Some("cd"));
+    assert!(
+        step["env"]["DEPLOY_URL"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("deploy_urls"),
+        "http evals are joined to the project's DEPLOY_URL"
+    );
+    assert!(
+        step["if"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("steps.deploy.outputs.deployed == 'true'"),
+        "cd evals run only after a deploy that happened"
+    );
+    assert!(
+        step["continue-on-error"].is_null(),
+        "a failed must eval fails the deploy job"
+    );
+    let run = step["run"].as_str().unwrap_or_default();
+    assert!(run.contains("evals.sh\" run"), "should run the evals");
+    assert!(
+        run.contains("evals.sh\" publish"),
+        "should write the job summary"
+    );
+    assert!(
+        run.contains("evals-results-cd-"),
+        "cd results get their own artifact, so Nightly CD can store only them"
+    );
+
+    let script = fs::read_to_string(get_repo_root().join("standards/scripts/evals.sh"))
+        .unwrap_or_else(|e| panic!("read evals.sh: {e}"));
+    assert!(
+        script.contains("args+=(--fail-on-must)"),
+        "the cd stage fails on a failed must eval"
+    );
 }
 
 #[test]
@@ -635,7 +704,37 @@ fn test_evals_store_pushes_only_to_the_evals_results_branch() {
         .lines()
         .filter(|l| l.contains("\" push ") && !l.trim_start().starts_with('#'))
         .collect();
-    assert_eq!(pushes.len(), 1, "evals.sh pushes once: {pushes:?}");
-    assert!(pushes[0].contains("HEAD:refs/heads/evals-results"));
-    assert!(!pushes[0].contains("--force") && !pushes[0].contains(" -f "));
+    let (results, others): (Vec<&str>, Vec<&str>) = pushes
+        .iter()
+        .partition(|l| l.contains("refs/heads/evals-results"));
+    assert_eq!(results.len(), 1, "evals.sh store pushes once: {pushes:?}");
+    assert!(results[0].contains("HEAD:refs/heads/evals-results"));
+    assert!(!results[0].contains("--force") && !results[0].contains(" -f "));
+    // The only other pushes are evals.sh triage's, to evals-triage.
+    assert_eq!(others.len(), 2, "{others:?}");
+    for push in others {
+        assert!(
+            push.ends_with(" refs/heads/evals-triage")
+                || push.ends_with(":refs/heads/evals-triage"),
+            "{push}"
+        );
+    }
+}
+
+#[test]
+fn test_evals_triage_runs_daily_and_pushes_only_through_evals_sh() {
+    let (content, parsed) = load("evals-triage.yml");
+    assert!(!parsed["on"]["schedule"].is_null());
+    assert!(!parsed["on"]["workflow_dispatch"].is_null());
+    assert_eq!(parsed["permissions"]["contents"].as_str(), Some("read"));
+    let job = &parsed["jobs"]["triage"];
+    assert_eq!(job["permissions"]["contents"].as_str(), Some("write"));
+    assert_eq!(job["permissions"]["pull-requests"].as_str(), Some("read"));
+    assert_eq!(job["if"].as_str(), Some("github.ref == 'refs/heads/main'"));
+    assert!(content.contains("evals.sh triage"));
+    assert!(!content.contains("git push"), "the push lives in evals.sh");
+    assert!(
+        !content.contains("gh pr create"),
+        "a PR opened with the workflow token runs no CI; PR triage opens it"
+    );
 }

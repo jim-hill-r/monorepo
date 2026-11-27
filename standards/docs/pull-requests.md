@@ -5,6 +5,36 @@ either merged or closed. Nothing is left open without someone owning the next
 step. This page is the policy that the "PR triage" scheduled agent task
 and every agent thread follow.
 
+## Pull request descriptions
+
+PR descriptions must be quick to read (Jim, 2026-11-27: "Every PR should
+include a short executive description of what we are doing, why, and any
+engineering tradeoffs. Keep this to 75 words. It should link to details in
+committed docs/plans/issues"). Every PR description, from any agent:
+
+1. Starts with the attribution lines the agent platform requires (the
+   `claude-projects-attribution` comment and the "Requested by" line), when
+   there are any.
+2. Then opens with an **executive summary** of at most **75 words**: what the
+   PR does, why, and any engineering tradeoffs. A `## Summary` heading above
+   it is optional.
+3. Links from the summary to the committed details: the plan, decision
+   record, issue file, runbook or doc in the repo that explains the change.
+   Write long explanations there, in the same PR, not in the description.
+4. Keeps anything after the summary short: how it was tested, anything a
+   reviewer should check closely, and screenshots of UI changes
+   ([documentation.md](documentation.md)).
+
+Link targets don't count toward the 75 words. The
+[pull request template](../../.github/pull_request_template.md) has this
+shape. The **PR summary** check (PR-001,
+`standards/scripts/pr-summary-check.sh`, run by
+`.github/workflows/pull-request-summary.yml`) warns when the summary is
+missing, longer than 75 words or has no link. It is a warning only, so it
+never blocks a merge; fix the description and the check reruns on the edit.
+
+Dependabot PRs are exempt: their bodies are generated.
+
 ## Who owns a PR
 
 | Author | Owner | Who merges |
@@ -13,9 +43,16 @@ and every agent thread follow.
 | A human (including `jimhillr`) | The author | Any agent, once it is mergeable. Drafts are left alone. |
 | An agent account (login ends in `-agt`) | The agent thread that opened it | Any agent, including the thread that opened it, once it is mergeable. Agents never approve their own PRs. |
 | An agent account whose thread is gone | PR triage (adopted) | Any agent, once it is mergeable |
+| `jimhillr-agt`, opened by PR triage from the `evals-triage` branch | PR triage | Any agent, once it is mergeable (Jim approves) |
 
 An agent PR is **orphaned** when the thread that opened it is resolved or no
 longer exists and the PR has had no activity for 24 hours. Triage adopts it.
+
+The daily eval triage workflow pushes the issue files it writes to the
+`evals-triage` branch but can't open a PR (a PR made with a workflow's
+token runs no CI), so PR triage opens it as a draft, as long as the branch
+only adds `*/issues/eval-*.md` files, and marks it ready once its checks are
+green ([evals.md](evals.md#triage)).
 
 ## When a PR is mergeable
 
@@ -66,10 +103,12 @@ means Jim's approval is the last step: GitHub squash-merges as soon as the
 approval lands, with no agent run in between.
 
 The ruleset on `main` dismisses an approval when new commits are pushed, so a
-push always needs a fresh approval. Once Jim adds the `CI result` check from
-`pull-request-ci.yml` as a required status check on that ruleset (see
-`issues/human/`), GitHub also waits for green CI on the new head before
-auto-merging. Until then, an agent turns auto-merge on only while every check
+push always needs a fresh approval. Once the `CI` ruleset from the `github`
+stack in `infra` is applied (it requires the `CI result` check from
+`pull-request-ci.yml` on `main`, and waits for
+`issues/human/github-app-infra-read.md` and Jim's approval of its run),
+GitHub also waits for green CI on the new head before auto-merging. Until
+then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
 
 ## PR triage

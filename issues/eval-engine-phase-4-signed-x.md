@@ -7,4 +7,4 @@ order: 150
 added: 2026-11-26
 ---
 
-Eval engine phase 4. Add the signed `x-monorepo-chaos` header (HMAC with `EVALS_CHAOS_KEY`, short expiry, ignored when invalid) to the `telemetry` Worker and pane's Worker, with the `api-error`, `api-slow` and `upstream-down` faults, and ask Jim to create the secret.
+Eval engine phase 4. Add the signed `x-jimhillr-chaos` header (HMAC with `EVALS_CHAOS_KEY`, short expiry, ignored when invalid) to the `telemetry` Worker and pane's Worker, with the `api-error`, `api-slow` and `upstream-down` faults, and ask Jim to create the secret.

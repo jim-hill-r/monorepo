@@ -1,5 +1,7 @@
 # Cookbook
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/cookbook.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A Dioxus workspace for building web applications with Rust.
 
 ## Development
@@ -215,6 +217,26 @@ To check the workspace without building:
 ```bash
 cargo check
 ```
+
+## Release size
+
+The workspace `[profile.release]` in `Cargo.toml` tunes the release wasm for
+size (`opt-level = "z"`, `lto`, `codegen-units = 1`). `dx bundle --release`
+builds with it through dx's `wasm-release` profile, which inherits from
+`release`. `strip` is `"debuginfo"`, not `true`: stripping symbols also drops
+the `target_features` section, and wasm-bindgen then refuses the wasm.
+`core/tests/release_profile.rs` checks both.
+
+Measured on 2026-11-27 with `dx` 0.7.10, as `web_bg.wasm` after wasm-bindgen
+and before wasm-opt (the sandbox couldn't run wasm-opt; it shrinks both
+further, and the 2026-11-25 deep review measured 3,432,336 bytes after it):
+
+| Build | Bytes | Gzip |
+| --- | --- | --- |
+| No release profile | 3,621,099 | 959,911 |
+| Size-tuned release profile | 1,918,087 | 615,229 |
+
+That is 47% smaller (36% gzipped).
 
 ## Running Tests
 

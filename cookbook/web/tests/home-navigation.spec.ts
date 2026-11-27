@@ -21,7 +21,9 @@ test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
     
     // Look for a link or button that navigates to recipes
     // Using a flexible selector that works with different UI implementations
-    const recipesLink = page.locator('a[href^="/recipe"], button:has-text("Recipes"), .recipe-card a, .navigation-card a:has-text("Recipe")').first();
+    // Scoped to the page body: on phones the header's Recipes link is hidden
+    // (it moves into the sidebar).
+    const recipesLink = page.locator('#content').locator('a[href^="/recipe"], button:has-text("Recipes"), .recipe-card a, .navigation-card a:has-text("Recipe")').first();
     // Ensure a recipes navigation target is present and visible
     await expect(recipesLink).toBeVisible();
   });
@@ -31,7 +33,7 @@ test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
     await page.waitForLoadState('networkidle');
     
     // Look for a link or button that navigates to plans
-    const plansLink = page.locator('a[href="/plan/1"], button:has-text("Plans"), .plan-card a, .navigation-card a:has-text("Plan")').first();
+    const plansLink = page.locator('#content').locator('a[href="/plan/1"], button:has-text("Plans"), .plan-card a, .navigation-card a:has-text("Plan")').first();
     await expect(plansLink).toBeVisible();
   });
 

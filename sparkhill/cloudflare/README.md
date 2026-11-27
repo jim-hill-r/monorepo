@@ -20,5 +20,5 @@ CI deploys on every push to `main` that touches this project or the
 website (`# affected-by: ../website` in `mise.toml`), and Nightly CD
 rebuilds it every night, like the other `cloudflare` projects.
 
-The Blue Eel web app (`../webapp`) is not deployed yet; the root issue
-`issues/pages-deploys-smoke-playwright-tests-blueeel.md` covers it.
+The Blue Eel web app (`../webapp`) deploys separately, from
+`../webapp_cloudflare`, to <https://jimhillr-sparkhill-webapp.pages.dev>.

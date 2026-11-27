@@ -5,9 +5,9 @@ import { join } from 'path';
 
 /**
  * Cahokia in every design system combination: five themes, light and
- * dark, standard and accessible (20 in all). Each loads the main pages with
- * the reader's saved choice and runs axe for WCAG 2 A and AA, plus AAA
- * contrast (7:1) in accessible mode.
+ * dark, standard and accessible (20 in all). Each loads every main page,
+ * one test per page, with the reader's saved choice and runs axe for WCAG 2
+ * A and AA, plus AAA contrast (7:1) in accessible mode.
  *
  * The themes come from design_system/dist/tokens.json, so a new theme is
  * tested without editing this file. Runs in desktop Chromium only: the other
@@ -33,12 +33,14 @@ test.describe('Design system themes', () => {
     for (const scheme of schemes) {
       for (const a11y of ['off', 'on']) {
         const name = `${theme} ${scheme}${a11y === 'on' ? ' accessible' : ''}`;
-        test(`${name} has no accessibility violations`, async ({ page }) => {
-          await page.addInitScript((choice) => {
-            window.localStorage.setItem('ds-theme', JSON.stringify(choice));
-          }, { theme, scheme, a11y });
+        // One test per page, so each stays well inside the test timeout:
+        // all five pages with axe in one test outran CI's 60s budget.
+        for (const path of pages) {
+          test(`${name} ${path} has no accessibility violations`, async ({ page }) => {
+            await page.addInitScript((choice) => {
+              window.localStorage.setItem('ds-theme', JSON.stringify(choice));
+            }, { theme, scheme, a11y });
 
-          for (const path of pages) {
             await page.goto(path);
             await page.waitForLoadState('networkidle');
 
@@ -58,8 +60,8 @@ test.describe('Design system themes', () => {
                 .analyze();
               expect(aaa.violations, `${name} ${path} (AAA contrast)`).toEqual([]);
             }
-          }
-        });
+          });
+        }
       }
     }
   }

@@ -3,6 +3,11 @@
 - All deployments MUST be kebab-case.
 - All Proof of Concept projects must begin with poc (ie: poc_project_name)
 
+`mise run //:audit` fails with NAM-001 on a project directory that isn't
+snake_case, NAM-002 on a Cargo or npm package name that matches neither
+rule above, and NAM-004 on a project whose package name or path says `poc`
+or `proof` without the `poc_` prefix (`standards/scripts/project-check.sh`).
+
 ## Cloudflare Pages projects
 
 Every Cloudflare Pages project MUST be named `jimhillr-<project>` (Jim,
@@ -11,6 +16,11 @@ kebab-case: `cahokia/cloudflare` deploys `jimhillr-cahokia` and
 `controlled_chaos` deploys `jimhillr-controlled-chaos`. The name is the
 `name` in the project's `wrangler.toml`, and the site is served at
 `https://jimhillr-<project>.pages.dev`, which is the project's `DEPLOY_URL`.
+When one top-level project deploys a second site, the second Pages project
+adds its sub-project directory in kebab-case: `sparkhill/cloudflare` deploys
+the website as `jimhillr-sparkhill`, and `sparkhill/webapp_cloudflare`
+deploys the Blue Eel web app (`sparkhill/webapp`) as
+`jimhillr-sparkhill-webapp`.
 
 A `*.pages.dev` subdomain is global across all Cloudflare accounts. When
 another account already has `<name>.pages.dev`, Cloudflare quietly gives a

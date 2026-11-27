@@ -1,0 +1,12 @@
+[package]
+name = "threat_model"
+description = "Types and rules for each project's docs/threat.toml (THR-001 to THR-009). No I/O."
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }

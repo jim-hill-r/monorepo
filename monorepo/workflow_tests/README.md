@@ -1,4 +1,4 @@
-# Workflow Tests
+# workflow_tests
 
 This project contains Rust-based tests for GitHub Actions workflows in this repository.
 

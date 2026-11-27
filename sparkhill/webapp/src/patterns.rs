@@ -1,11 +1,10 @@
 //! Letter stroke patterns for the tracing demonstrations, bundled with the app.
 //!
-//! `patterns.json` holds one pattern per lowercase letter, in the format the
+//! `patterns.json` holds one pattern per letter, lowercase and capital, in the format the
 //! canvas's `drawLetter` takes: the letter, its guide-line `boundary` and a
-//! `path` of points where `type` marks each stroke's `start` and `end`. The
-//! strokes come from the public-domain Hershey Simplex Roman font, mapped onto
-//! the canvas guide lines and put into handwriting stroke order (README.md).
-//! They used to be fetched at runtime from Blue Eel's AWS S3 bucket.
+//! `path` of points where `type` marks each stroke's `start` and `end`. They
+//! are the live app's hand-recorded letters (its `master.json` patterns),
+//! copied once so the app fetches nothing at runtime (README.md).
 
 use serde_json::{Map, Value};
 use std::sync::LazyLock;
@@ -41,11 +40,13 @@ pub fn demonstration_js(expression: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{DEFAULT_LETTER_SEQUENCES, DEFAULT_WORD_SEQUENCES};
+    use crate::state::{
+        DEFAULT_CAPITAL_SEQUENCES, DEFAULT_LETTER_SEQUENCES, DEFAULT_WORD_SEQUENCES,
+    };
 
     #[test]
     fn every_letter_has_a_pattern() {
-        for c in 'a'..='z' {
+        for c in ('a'..='z').chain('A'..='Z') {
             assert!(
                 patterns_json(&c.to_string()).is_some(),
                 "no pattern for {c}"
@@ -58,6 +59,7 @@ mod tests {
         for expr in DEFAULT_LETTER_SEQUENCES
             .iter()
             .chain(DEFAULT_WORD_SEQUENCES)
+            .chain(DEFAULT_CAPITAL_SEQUENCES)
             .flat_map(|s| s.iter())
         {
             assert!(patterns_json(expr).is_some(), "no pattern for {expr}");
@@ -92,7 +94,8 @@ mod tests {
 
     #[test]
     fn unknown_characters_fall_back() {
-        assert_eq!(patterns_json("A"), None);
+        assert_eq!(patterns_json("é"), None);
+        assert_eq!(patterns_json("1"), None);
         assert_eq!(patterns_json(""), None);
         assert_eq!(demonstration_js("?"), "window._eelAnimDone = true;");
         assert!(demonstration_js("a").starts_with("window.eelCanvas.drawLetter("));

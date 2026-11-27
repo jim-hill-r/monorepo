@@ -57,6 +57,13 @@ needed() {
       echo "CLOUDFLARE_INFRA_${r}_TOKEN"
       echo CLOUDFLARE_ACCOUNT_ID
       ;;
+    github)
+      # Every github change is a credential change (decision 0010), so it
+      # has no everyday apply tier. The tokens are minted per run from the
+      # infra GitHub Apps by actions/create-github-app-token.
+      [ "$r" != APPLY ] || die "the github stack applies only in infra-credentials (decision 0010)"
+      echo "GH_INFRA_${r}_TOKEN"
+      ;;
     *) die "no credentials known for stack $1; add them to infra/scripts/tofu.sh" ;;
   esac
 }
@@ -85,6 +92,10 @@ credentials() {
       local t="CLOUDFLARE_INFRA_${r}_TOKEN"
       export CLOUDFLARE_API_TOKEN=${!t}
       export TF_VAR_cloudflare_account_id=$CLOUDFLARE_ACCOUNT_ID
+      ;;
+    github)
+      local t="GH_INFRA_${r}_TOKEN"
+      export GITHUB_TOKEN=${!t}
       ;;
   esac
   export TF_VAR_tofu_state_passphrase=$TOFU_STATE_PASSPHRASE

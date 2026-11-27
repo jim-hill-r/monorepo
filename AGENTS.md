@@ -43,6 +43,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
+  long to consume quickly. Every PR should include a short executive
+  description of what we are doing, why, and any engineering tradeoffs.
+  Keep this to 75 words. It should link to details in committed
+  docs/plans/issues." Every PR description opens, right after any required
+  attribution lines, with that summary of at most 75 words, and the details
+  live in committed files it links to, not in the description. The format
+  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
+  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
+  warns when it is missing, too long or unlinked.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
@@ -107,7 +117,11 @@ repo, rather than in any one agent tool's settings.
     lists every approved, evaluated and held technology and vendor, with its
     exemplar projects. A PR that approves, rejects or drops one, or adds the
     first project to use one, updates `standards/radar/radar.json` in the
-    same PR.
+    same PR. Every vendor there says how its billing is checked (Jim,
+    2026-11-27: "the billing check should check every vendor in the tech
+    radar"): a read-only API check in `standards/scripts/billing-check.sh`
+    where the vendor allows it, otherwise a settings check for Jim; the
+    radar check fails an approved vendor with neither (RAD-007).
 - **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
   plan, except Claude Code (budget $25 a month). Each technology's monthly
   budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method or raise a spending
@@ -145,6 +159,19 @@ repo, rather than in any one agent tool's settings.
   Agents never approve a `credential-change` PR, never put a
   credential-capable token anywhere but that environment, and never ask
   for admin rights for `jimhillr-agt` or the Claude GitHub App.
+- **Evals are continuous improvement (Jim, 2026-11-27).** "The eval
+  process is a continuous improvement process and should not be considered
+  a one off project. The evals should always be green and a system of
+  feedback to our todo process should be the way in which individual
+  projects improve their eval coverage." So every requirement's verdict
+  should be green; any requirement that is not met, at risk or unknown
+  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  normal agent loop works it. Each project grows its own eval coverage
+  through those issues: requirements for anything it ships, evals that
+  check real content in production, and an eval coverage figure and badge
+  per project. Agents working on a project add or fix evals as part of the
+  work, not as a separate phase. Details are under "Continuous
+  improvement" in [standards/docs/evals.md](standards/docs/evals.md).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -161,6 +188,15 @@ repo, rather than in any one agent tool's settings.
   it never collides with another account's `*.pages.dev` name. The audit
   enforces it (FT-006); details in
   [standards/docs/naming.md](standards/docs/naming.md#cloudflare-pages-projects).
+- **Name things `jimhillr`, not `monorepo` (Jim, 2026-11-27).** "Lets
+  not use the nomenclature monorepo anywhere in our implementations. Use
+  jimhillr instead." New identifiers (headers, user agents, meta tags,
+  token and key labels, resource names, crates, folders) use `jimhillr`,
+  such as `x-jimhillr-synthetic` and the `jimhillr-evals` user agent. The
+  only exceptions are names we don't own: the GitHub repository
+  `jimhillr/monorepo` itself and mise's `monorepo_root` setting. Existing
+  `monorepo` names are being renamed
+  (`issues/rename-monorepo-identifiers-jimhillr.md`).
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
@@ -191,6 +227,13 @@ repo, rather than in any one agent tool's settings.
   as major) release notes with no breaking change that CI wouldn't catch
   (Jim, 2026-11-26). It reads this file for extra pins, so list
   any new pins here.
+- **Pause on Claude overage (Jim, 2026-11-27).** When any agent session
+  reports overage usage (`rate_limit_info.isUsingOverage` from the session
+  API), the coordinating agent starts no new threads until the usage
+  resets, and PR triage reports it to Jim. Running threads finish their
+  current step. This overrides "keep threads working". The tracking
+  process is in
+  [standards/docs/plans/2026-11-cost-tracking.md](standards/docs/plans/2026-11-cost-tracking.md).
 - **Never idle without saying why (Jim, 2026-11-26).** Before an agent's
   thread goes quiet, it posts a short message saying what it is waiting on
   (a hook or CI run, a review, an answer) and roughly when it expects to

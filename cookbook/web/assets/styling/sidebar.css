@@ -73,6 +73,45 @@
   outline-offset: var(--ds-focus-offset);
 }
 
+/* The header's Home / Recipes / Plans links, shown only below 768 px. */
+.sidebar-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+    margin-bottom: var(--ds-space-5);
+    padding-bottom: var(--ds-space-4);
+    border-bottom: 2px solid var(--ds-color-accent);
+  }
+
+  .sidebar-nav a {
+    display: block;
+    padding: var(--ds-space-2) var(--ds-space-3);
+    color: var(--ds-color-text);
+    text-decoration: none;
+    font-weight: var(--ds-weight-strong);
+    border-radius: var(--ds-radius-sm);
+    border: var(--ds-border-width) solid var(--ds-color-border);
+    transition: all var(--ds-motion-slow) var(--ds-ease);
+  }
+
+  .sidebar-nav a:hover,
+  .sidebar-nav a:focus-visible {
+    background-color: var(--ds-color-accent);
+    color: var(--ds-color-on-accent);
+    border-color: var(--ds-color-accent);
+  }
+
+  .sidebar-nav a:focus-visible {
+    outline: var(--ds-focus-width) solid var(--ds-color-focus);
+    outline-offset: var(--ds-focus-offset);
+  }
+}
+
 /* The design system's appearance picker, one control per line. */
 .sidebar-appearance {
   margin-bottom: var(--ds-space-6);

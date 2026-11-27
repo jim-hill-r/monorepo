@@ -1,5 +1,7 @@
 # Homer
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/homer.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A CLI tool for looking up and evaluating house details from Zillow. Provide an address to get
 property details, or provide filtering criteria to score how well a property matches your preferences.
 
@@ -79,6 +81,10 @@ Sign up for the free plan and set your API key via:
 
 - The `--api-key` flag
 - The `RAPIDAPI_KEY` environment variable
+
+When RapidAPI answers with an error status, homer stops with that status and
+the start of the response body, whitespace collapsed and cut to about 300
+characters, so a long gateway error page doesn't flood the terminal.
 
 ## Free quota
 

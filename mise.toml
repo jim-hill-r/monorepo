@@ -50,10 +50,12 @@ config_roots = [
   "sparkhill",
   "sparkhill/cloudflare",
   "sparkhill/webapp",
+  "sparkhill/webapp_cloudflare",
   "sparkhill/website",
   "standards",
   "starcraft",
   "telemetry",
+  "threat",
   "tofu_state",
 ]
 
@@ -91,3 +93,8 @@ run = "bash standards/scripts/setup-hooks.sh"
 description = "List the projects that publish nightly downloads to a GitHub Release (JSON array)"
 dir = "{{config_root}}"
 run = "bash standards/scripts/downloads.sh list"
+
+[tasks."pr-summary"]
+description = "Warn when a PR description (PR_BODY or stdin) lacks a linked executive summary of at most 75 words (PR-001)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/pr-summary-check.sh"

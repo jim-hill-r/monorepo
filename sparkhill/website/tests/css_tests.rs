@@ -68,3 +68,31 @@ fn test_reset_css_structure() {
     assert!(css_content.contains("margin: 0"), "Should reset margins");
     assert!(css_content.contains("padding: 0"), "Should reset padding");
 }
+
+/// Every `url(...)` in the stylesheets points at a file the export serves.
+/// Perseus serves `static/` at `/.perseus/static/`, so a root path such as
+/// `/fonts/x.ttf` would 404 on the live site.
+#[test]
+fn test_css_urls_point_at_static_files() {
+    for entry in fs::read_dir("static/css").expect("Failed to read static/css") {
+        let path = entry.expect("Failed to read a static/css entry").path();
+        let css = fs::read_to_string(&path).expect("Failed to read a stylesheet");
+        for rest in css.split("url(").skip(1) {
+            let url = rest
+                .split(')')
+                .next()
+                .unwrap_or_default()
+                .trim_matches(|c| c == '"' || c == '\'');
+            if url.starts_with("data:") {
+                continue;
+            }
+            let file = url
+                .strip_prefix("/.perseus/static/")
+                .unwrap_or_else(|| panic!("{url} in {path:?} isn't under /.perseus/static/"));
+            assert!(
+                Path::new("static").join(file).exists(),
+                "{url} in {path:?} has no file in static/"
+            );
+        }
+    }
+}

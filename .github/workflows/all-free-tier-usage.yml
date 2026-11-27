@@ -6,6 +6,10 @@ name: All Free Tier Usage
 # its warning level. It only reads; it never creates, deletes or upgrades
 # anything. The nightly run is to call it first and stop if it fails.
 #
+# A `billing` job checks, with read-only billing credentials, that
+# Cloudflare, GitHub and PostHog still have no payment method, paid plan or
+# charge (standards/scripts/billing-check.sh).
+#
 # The same weekly run scans the whole git history for secrets (SEC-001, the
 # threat check's full-history scan, standards/docs/security.md), so a new
 # gitleaks rule catches an old commit within a week.
@@ -34,7 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Check usage against free tier budgets
         env:
@@ -43,17 +49,43 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash standards/scripts/free-tiers.sh usage
 
+  # Read-only billing credentials prove there is still no payment method,
+  # paid plan or charge where the vendor's API can show it
+  # (standards/scripts/billing-check.sh, Jim, 2026-11-27). They are secrets
+  # of the `infra` environment, which only `main` can use, so no PR branch
+  # ever gets them. A credential that isn't made yet is a warning.
+  billing:
+    name: Billing check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: infra
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: No payment method, paid plan or charge
+        env:
+          CLOUDFLARE_BILLING_READ_TOKEN: ${{ secrets.CLOUDFLARE_BILLING_READ_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_BILLING_READ_TOKEN: ${{ secrets.GITHUB_BILLING_READ_TOKEN }}
+          GITHUB_BILLING_USER: ${{ github.repository_owner }}
+          POSTHOG_BILLING_READ_KEY: ${{ secrets.POSTHOG_BILLING_READ_KEY }}
+          POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST || 'https://us.posthog.com' }}
+        run: bash standards/scripts/billing-check.sh all
+
   secrets-history:
     name: Secret scan (full history)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
           install: false
 

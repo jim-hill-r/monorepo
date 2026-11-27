@@ -12,6 +12,11 @@
 #       $EVALS_RESULTS (default target/evals-reports/evals-results.jsonl).
 #       Does nothing when the top-level project has no evals.toml. This is
 #       the shared `evals` task.
+#       With EVALS_STAGE=cd (the step after `deploy` in mise-projects.yml)
+#       it reads reports from target/evals-reports/cd/ instead (a `smoke`
+#       task's), makes the requests of the `http` evals against
+#       $DEPLOY_URL, and exits 1 when an eval of a `must` requirement
+#       failed.
 #   evals.sh publish
 #       Writes the job summary for $EVALS_RESULTS ($GITHUB_STEP_SUMMARY, or
 #       standard output). Does nothing when the file doesn't exist.
@@ -26,6 +31,15 @@
 #   evals.sh verdicts [--project <p>] [--json]
 #       Fetches the evals-results branch and prints every requirement's
 #       current verdict (evals verdicts).
+#   evals.sh triage [--dry-run]
+#       Files the work the verdicts call for (evals triage): in a worktree of
+#       origin/main, writes a FIX or TODO issue file for each requirement
+#       that is not green and has no open issue naming it, commits them, and
+#       force-pushes that one commit to the evals-triage branch, which PR
+#       triage opens a pull request from. Does nothing while a pull request
+#       from evals-triage is open, and deletes a leftover evals-triage
+#       branch when there is nothing to file. The evals-triage.yml workflow
+#       runs it daily; its pushes go only to evals-triage (SEC-007).
 #
 # The evals CLI is built from evals/ with cargo the first time it is needed.
 set -uo pipefail
@@ -53,7 +67,14 @@ case "${1:-}" in
       echo "evals: $top has no evals.toml, nothing to collect"
       exit 0
     fi
-    args=(run --root "$root" --stage "${EVALS_STAGE:-ci}" --project "$top" --out "$results")
+    stage=${EVALS_STAGE:-ci}
+    args=(run --root "$root" --stage "$stage" --project "$top" --out "$results")
+    # The ci task's reports are for the build in the runner; cd evals read
+    # only what ran against the deployed site.
+    if [ "$stage" = cd ]; then
+      reports_dir="$reports_dir/cd"
+      args+=(--fail-on-must)
+    fi
     [ -f "$reports_dir/cargo-test.log" ] && args+=(--cargo-output "$reports_dir/cargo-test.log")
     [ -f "$reports_dir/playwright.json" ] && args+=(--playwright-report "$reports_dir/playwright.json")
     # A sub-project (cookbook/web), or a top-level project that has
@@ -85,7 +106,8 @@ case "${1:-}" in
     set -e
     branch=evals-results
     projects=$(cat "${files[@]}" | jq -rs 'map(.project) | unique | join(" ")')
-    message="evals: ${EVALS_STAGE:-ci} ${projects} run ${GITHUB_RUN_ID:-local}"
+    stages=$(cat "${files[@]}" | jq -rs 'map(.stage) | unique | join("+")')
+    message="evals: ${stages} ${projects} run ${GITHUB_RUN_ID:-local}"
     # Build once, before the retry loop.
     cargo build --quiet --manifest-path "$root/evals/Cargo.toml" -p evals_cli
     work=$(mktemp -d)
@@ -140,8 +162,83 @@ case "${1:-}" in
     fi
     evals_cli verdicts --root "$root" --dir "$work" "$@"
     ;;
+  triage)
+    shift
+    set -e
+    branch=evals-triage
+    summary=${GITHUB_STEP_SUMMARY:-/dev/stdout}
+    dry=false
+    [ "${1:-}" = --dry-run ] && dry=true
+    repo=${GITHUB_REPOSITORY:-jimhillr/monorepo}
+    if ! $dry && command -v gh >/dev/null; then
+      open=$(gh api "repos/$repo/pulls?state=open&head=${repo%%/*}:$branch" --jq '.[0].number // empty')
+      if [ -n "$open" ]; then
+        echo "evals: pull request #$open from $branch is still open; filing nothing until it closes" | tee -a "$summary"
+        exit 0
+      fi
+    fi
+    results=$(mktemp -d)
+    work=$(mktemp -d)
+    trap 'rm -rf "$results"; git -C "$root" worktree remove --force "$work" 2>/dev/null || true' EXIT
+    if ! git -C "$root" fetch --quiet --depth=1 origin "+refs/heads/evals-results:refs/remotes/origin/evals-results"; then
+      echo "evals: no evals-results branch yet, so nothing to triage"
+      exit 0
+    fi
+    git -C "$root" archive origin/evals-results | tar -x -C "$results"
+    git -C "$root" fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main"
+    rmdir "$work"
+    git -C "$root" worktree add --quiet --detach "$work" origin/main
+    cargo build --quiet --manifest-path "$root/evals/Cargo.toml" -p evals_cli
+    args=(triage --root "$work" --dir "$results")
+    $dry || args+=(--write)
+    report=$(evals_cli "${args[@]}")
+    mapfile -t files < <(git -C "$work" status --porcelain --untracked-files=all | sed 's/^?? //')
+    {
+      echo "## Eval triage"
+      echo
+      if $dry; then
+        echo "Dry run: nothing written."
+      elif [ ${#files[@]} -eq 0 ]; then
+        echo "Nothing new to file: every requirement is green, already has an open issue, or waits on a human check."
+      else
+        echo "New issue files:"
+        echo
+        printf -- '- `%s`\n' "${files[@]}"
+      fi
+      echo
+      echo '```text'
+      echo "$report"
+      echo '```'
+    } >>"$summary"
+    if $dry; then
+      exit 0
+    fi
+    if [ ${#files[@]} -eq 0 ]; then
+      if git -C "$root" ls-remote --exit-code --heads origin "$branch" >/dev/null; then
+        git -C "$work" push --quiet origin --delete refs/heads/evals-triage
+        echo "evals: nothing to file; deleted the leftover $branch branch"
+      fi
+      exit 0
+    fi
+    ids=$(for f in "${files[@]}"; do basename "$f" .md; done \
+      | sed -E 's/^eval-([a-z]+-[0-9]+)-.*/\1/' | tr a-z A-Z | sort -u | paste -sd, - | sed 's/,/, /g')
+    git -C "$work" add -A
+    git -C "$work" -c user.name='github-actions[bot]' \
+      -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+      commit --quiet -F - <<EOF2
+evals: triage files issues for $ids
+
+Eval triage (evals-triage.yml run ${GITHUB_RUN_ID:-local}) found requirements
+that are not green and have no open issue, and filed one issue file each.
+Agents work them like any other issue. Only issue files change.
+
+$report
+EOF2
+    git -C "$work" push --quiet --force origin HEAD:refs/heads/evals-triage
+    echo "evals: pushed the triage commit to $branch for PR triage to open"
+    ;;
   *)
-    echo "usage: evals.sh report <name> <command...> | run | publish | store <results...> | verdicts" >&2
+    echo "usage: evals.sh report <name> <command...> | run | publish | store <results...> | verdicts | triage [--dry-run]" >&2
     exit 2
     ;;
 esac

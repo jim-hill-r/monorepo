@@ -313,6 +313,14 @@ SEC tools, in the `evals-check.sh` shape.
 
 ### Phase 2: the threat model as warnings
 
+Status: the `threat` project and `threat check` (THR-001 to THR-003, THR-005
+to THR-009) are built and run from `//:audit` as warnings (2026-11-27). The
+format and rules are in [security.md](../security.md#threat-models). Every
+project except the on-hold luggage, starcraft and profiles has a
+`docs/threat.toml` (2026-11-27). The gaps they found are FIX issues: five
+sites without security headers (THR-007), and the Android keystore secret
+had no settings check (added).
+
 - The `threat` project with THR-001 to THR-003 and THR-005 to THR-009 as
   warnings, unit-tested per rule, run from `//:audit`.
 - `docs/threat.toml` for the projects that deploy or sign in first (pane,
@@ -321,6 +329,14 @@ SEC tools, in the `evals-check.sh` shape.
   Access) turn into `FIX` lines.
 
 ### Phase 3: detectors, workflows, PR summary, live check
+
+Status: SEC-005 (zizmor, warnings) runs in the hooks, PR CI's **Workflow
+audit** and nightly, and every action is pinned to a commit; the findings
+left in the credential-holding infra workflows are a fix issue for a
+`credential-change` PR (2026-11-27). `threat summary --base` and PR CI's
+**Security summary** job set the `security` and `needs-human` labels; the
+hooks pass the affected projects to the threat check through the audit
+(2026-11-27). The rules are in [security.md](../security.md#pr-security-summary).
 
 - THR-004 through the shared detectors (after cost check phase 2 adds them).
 - SEC-005 (zizmor) as warnings, and pin third-party actions to commits.
