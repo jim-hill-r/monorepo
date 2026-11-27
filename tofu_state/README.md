@@ -38,12 +38,22 @@ touches git.
 
 ## Deploy
 
-`mise run deploy` needs `CLOUDFLARE_API_TOKEN` (Workers Scripts and D1
-edit), `CLOUDFLARE_ACCOUNT_ID` and both passwords in the environment. It
-checks the Workers budget (`free-tiers.sh worker`), finds or creates the D1
-database (`free-tiers.sh d1-database`), applies the migrations, deploys, and
-copies the two passwords into Worker secrets. It isn't run by CI yet: see
-`tofu_state/issues/deploy-workflow.md`.
+`.github/workflows/tofu-state-deploy.yml` deploys on every push to `main`
+that changes `tofu_state/` (or by hand), in the `infra` environment, the only
+place the write password lives. It runs `mise run deploy:worker` (plain `deploy` does nothing, because
+`push-main.yml` runs it in every changed project), which:
+
+1. checks the Workers budget (`free-tiers.sh worker`),
+2. finds or creates the D1 database (`free-tiers.sh d1-database`),
+3. applies the migrations and deploys,
+4. copies the two passwords from GitHub into Worker secrets.
+
+Then `scripts/smoke.sh` checks the live Worker: no password gets `401`, the
+read password reads every stack in `infra/out/` and can't `LOCK`. The
+Worker's origin comes from the account's workers.dev subdomain
+(`scripts/origin.sh`), so nothing hard-codes it. The first run needs
+`issues/human/tofu-state-passwords.md` and
+`issues/human/cloudflare-api-token-workers-d1-edit.md`.
 
 ## Rolling back a bad apply
 

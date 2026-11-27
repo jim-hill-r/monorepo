@@ -151,4 +151,8 @@ n=$(d1 "SELECT COUNT(*) AS n FROM states WHERE stack = 'e2e'" | jq '.[0].results
 [ "$n" = "10" ] || fail "kept $n versions, not 10"
 pass "only the last 10 versions are kept"
 
+TOFU_STATE_READ_PASSWORD=$read_pw bash scripts/smoke.sh "$origin" >"$work/smoke.log" 2>&1 ||
+  { cat "$work/smoke.log" >&2; fail "smoke check"; }
+pass "the deploy smoke check passes against the Worker"
+
 echo "e2e: all passed"

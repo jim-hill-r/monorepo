@@ -40,7 +40,15 @@ run = [
   "wrangler dev --local",
 ]
 
+# push-main.yml runs `deploy` in every changed project, in the shared
+# `production` environment, which never holds the write password. So the
+# real deploy is `deploy:worker`, run only by tofu-state-deploy.yml in the
+# `infra` environment.
 [tasks.deploy]
+description = "Nothing here: tofu-state-deploy.yml deploys the Worker (mise run deploy:worker)"
+run = "echo 'deploy: tofu_state deploys from tofu-state-deploy.yml in the infra environment'"
+
+[tasks."deploy:worker"]
 description = "Deploy the Worker, its D1 database and its two password secrets, within the free tier budgets"
 run = [
   "test -n \"${TOFU_STATE_READ_PASSWORD:-}\" && test -n \"${TOFU_STATE_WRITE_PASSWORD:-}\" || { echo 'deploy: TOFU_STATE_READ_PASSWORD and TOFU_STATE_WRITE_PASSWORD must be set (issues/human/tofu-state-passwords.md)'; exit 1; }",
