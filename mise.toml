@@ -52,6 +52,7 @@ config_roots = [
   "sparkhill/website",
   "standards",
   "starcraft",
+  "tofu_state",
 ]
 
 [tasks."affected"]

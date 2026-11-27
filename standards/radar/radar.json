@@ -583,8 +583,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. Planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API; not deployed yet.",
-    "exemplars": [],
+    "description": "Approved vendor, Free plan only. tofu_state is the first Worker (OpenTofu's http state backend, decision 0009), written in Rust with workers-rs. Also planned for the telemetry Worker, Analytics Engine and Web Analytics (decision 0001) and for pane's API.",
+    "exemplars": [
+      "tofu_state"
+    ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",
       "pane/issues"
@@ -598,10 +600,13 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "The hosted database (decision 0004, Jim 2026-11-26), used only when a deployed service must write data at runtime, until a need comes up that it can't meet. Part of an approved vendor, Free plan only. No project uses it yet.",
-    "exemplars": [],
+    "description": "The hosted database (decision 0004, Jim 2026-11-26), used only when a deployed service must write data at runtime, until a need comes up that it can't meet. Part of an approved vendor, Free plan only. First used by tofu_state for OpenTofu state (decision 0009).",
+    "exemplars": [
+      "tofu_state"
+    ],
     "sources": [
-      "standards/docs/decisions/0004-database-engine.md"
+      "standards/docs/decisions/0004-database-engine.md",
+      "standards/docs/decisions/0009-opentofu-state-http-backend.md"
     ],
     "claude": "Cloudflare MCP servers (Claude connector directory) and the Cloudflare Claude Code plugin with Workers, Wrangler and D1 skills.",
     "budget": 0

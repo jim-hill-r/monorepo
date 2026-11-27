@@ -310,17 +310,28 @@ case "$url" in
     page=$(sed -E 's/.*page=([0-9]+)$/\1/' <<<"$url")
     jq -c --argjson p "$page" '{{success: true, result: .[(($p - 1) * 10):($p * 10)]}}' "{dir}/all-pages.json" ;;
   *workers/scripts*) cat "{dir}/workers.json" ;;
+  *d1/database*) jq -c '{{success: true, result: .}}' "{dir}/d1.json" ;;
   *) echo "unexpected url $url" >&2; exit 22 ;;
 esac
 "#,
             dir = dir.display()
         ),
     );
+    if !dir.join("d1.json").exists() {
+        write(&dir.join("d1.json"), "[]");
+    }
+    // `wrangler d1 create NAME` adds NAME to d1.json, as Cloudflare would.
     write_exe(
         &dir.join("bin/wrangler"),
         &format!(
-            "#!/usr/bin/env bash\necho \"$@\" >> \"{}/wrangler.log\"\n",
-            dir.display()
+            r#"#!/usr/bin/env bash
+echo "$@" >> "{dir}/wrangler.log"
+if [ "$1 $2" = "d1 create" ]; then
+  jq --arg n "$3" '. + [{{uuid: "new-uuid", name: $n}}]' "{dir}/d1.json" > "{dir}/d1.tmp"
+  mv "{dir}/d1.tmp" "{dir}/d1.json"
+fi
+"#,
+            dir = dir.display()
         ),
     );
     format!(
@@ -476,6 +487,120 @@ fn test_weekly_run_scans_the_whole_history_for_secrets() {
     assert!(
         steps.contains("secrets-check.sh history"),
         "SEC-001 full-history scan"
+    );
+}
+
+fn run_guard(dir: &Path, path: &str, args: &[&str], envs: &[(&str, &str)]) -> Output {
+    let project = dir.join("project");
+    write(
+        &project.join("wrangler.toml"),
+        "name = \"jimhillr-tofu-state\"\nmain = \"build/worker/shim.mjs\"\n",
+    );
+    let mut cmd = Command::new("bash");
+    cmd.arg(script())
+        .args(args)
+        .current_dir(&project)
+        .env("PATH", path)
+        .env("CLOUDFLARE_API_TOKEN", "test-token")
+        .env("CLOUDFLARE_ACCOUNT_ID", "test-account");
+    for (k, v) in envs {
+        cmd.env(k, v);
+    }
+    cmd.output().expect("run free-tiers.sh")
+}
+
+#[test]
+fn test_worker_passes_within_budget_and_for_an_existing_worker() {
+    let dir = temp_dir("worker-ok");
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["worker"], &[]);
+    assert!(out.status.success(), "{}", stdout(&out));
+    write(
+        &dir.join("workers.json"),
+        "{\"success\":true,\"result\":[{\"id\":\"jimhillr-tofu-state\"}]}",
+    );
+    let out = run_guard(
+        &dir,
+        &path,
+        &["worker"],
+        &[("FREE_TIERS_WORKERS_BUDGET", "1")],
+    );
+    assert!(stdout(&out).contains("exists"), "{}", stdout(&out));
+    assert!(out.status.success());
+}
+
+#[test]
+fn test_worker_stops_at_the_budget() {
+    let dir = temp_dir("worker-budget");
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(
+        &dir,
+        &path,
+        &["worker"],
+        &[("FREE_TIERS_WORKERS_BUDGET", "1")],
+    );
+    assert!(!out.status.success());
+    assert!(stdout(&out).contains("not deploying"), "{}", stdout(&out));
+}
+
+#[test]
+fn test_d1_database_prints_an_existing_id_without_creating() {
+    let dir = temp_dir("d1-exists");
+    write(
+        &dir.join("d1.json"),
+        r#"[{"uuid":"abc-123","name":"jimhillr-tofu-state"}]"#,
+    );
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["d1-database", "jimhillr-tofu-state"], &[]);
+    assert!(out.status.success(), "{}", stdout(&out));
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "abc-123");
+    assert_eq!(wrangler_log(&dir), "");
+}
+
+#[test]
+fn test_d1_database_creates_a_missing_database() {
+    let dir = temp_dir("d1-create");
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["d1-database", "jimhillr-tofu-state"], &[]);
+    assert!(out.status.success(), "{}", stdout(&out));
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "new-uuid");
+    assert_eq!(wrangler_log(&dir).trim(), "d1 create jimhillr-tofu-state");
+}
+
+#[test]
+fn test_d1_database_stops_at_the_free_limit_and_checks_the_name() {
+    let dir = temp_dir("d1-limit");
+    let dbs: Vec<String> = (0..10)
+        .map(|i| format!(r#"{{"uuid":"u{i}","name":"jimhillr-db-{i}"}}"#))
+        .collect();
+    write(&dir.join("d1.json"), &format!("[{}]", dbs.join(",")));
+    let path = stub_bin(&dir, &[]);
+    let out = run_guard(&dir, &path, &["d1-database", "jimhillr-tofu-state"], &[]);
+    assert!(!out.status.success());
+    assert!(stdout(&out).contains("not creating"), "{}", stdout(&out));
+    let out = run_guard(&dir, &path, &["d1-database", "state"], &[]);
+    assert!(!out.status.success());
+    assert_eq!(wrangler_log(&dir), "", "nothing should be created");
+}
+
+#[test]
+fn test_tofu_state_deploy_goes_through_the_guards() {
+    let tasks = fs::read_to_string(get_repo_root().join("tofu_state/mise.toml"))
+        .expect("read tofu_state/mise.toml");
+    let worker = tasks
+        .find("free-tiers.sh\\\" worker")
+        .expect("deploy runs the worker guard");
+    let d1 = tasks
+        .find("free-tiers.sh\\\" d1-database")
+        .expect("deploy gets the D1 database through the guard");
+    let deploy = tasks.find("wrangler deploy").expect("deploy runs wrangler");
+    assert!(
+        worker < deploy && d1 < deploy,
+        "the guards must run before wrangler deploys"
+    );
+    assert!(
+        !tasks.contains("d1 create"),
+        "only free-tiers.sh may create D1 databases"
     );
 }
 

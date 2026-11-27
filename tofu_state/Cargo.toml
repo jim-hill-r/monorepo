@@ -1,0 +1,31 @@
+[package]
+name = "tofu_state"
+version = "0.1.0"
+edition = "2024"
+description = "OpenTofu http state backend on Cloudflare Workers and D1 (decision 0009)"
+publish = false
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+base64 = "0.22"
+serde_json = "1"
+
+# Only the Worker build needs the Workers runtime; native builds and tests
+# use the protocol in src/backend.rs with an in-memory store.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+worker = { version = "0.9", features = ["d1"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
