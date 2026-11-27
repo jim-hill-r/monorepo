@@ -1,6 +1,6 @@
 # 0019. Review roles: who may approve what, as relationships in one file
 
-- Status: Proposed (waiting for Jim's answers to the questions at the end)
+- Status: Proposed (Jim answered the first four questions on 2026-11-27; three follow-ups are at the end)
 - Date: 2026-11-27
 - Asked by: Jim
 - Builds on: [0010](0010-credential-second-approval.md) (the second
@@ -43,7 +43,7 @@ relationships, not from rules written into code. It has three parts:
 - **Tuples**: facts of the form *subject* has *relation* to *object*, such
   as "`jimhillr` is a member of `critical-reviewer`".
 - **Rewrites**: rules that derive one relation from another, such as "a
-  `credential-reviewer` is also a `critical-reviewer`".
+  collaborator on the repo is a `product-reviewer`".
 - **A check**: a pure function over the tuples and rewrites.
 
 We need the model, not a server. Our tuples number in the tens, change a
@@ -66,12 +66,13 @@ subject ──member──▶ role ──reviews──▶ domain ◀──touche
 2. **Roles** are named groups of subjects. A member is a login, or a
    relationship GitHub already holds: `github:owner` and
    `github:collaborators` (read from `author_association`, as the `Human
-   review` check does today). A role can include another role, which is
-   the rewrite: `credential-reviewer` ⊂ `critical-reviewer` ⊂
-   `standard-reviewer`.
+   review` check does today). Roles don't include each other
+   (Jim: "No but one review from me should satisfy both roles"): each role
+   lists its own members, and one approval counts for every role its
+   author holds.
 3. **Domains** are what a PR can touch: `requirements`, `cost`,
-   `threat-risk`, `credentials`, `governance` (the rules themselves) and
-   `code` (everything else). Each domain has **levels**, and each level
+   `threat-risk`, `credentials`, `platform` (the rules and the shared
+   tooling) and `product` (the things users use). Each domain has **levels**, and each level
    names the role that must approve it. The attention tags already are
    domain levels: `must-requirement-changed` is `requirements` at level
    `critical`.
@@ -83,22 +84,51 @@ The check: a PR may merge when, for every domain level it touches, a
 member of that level's role has approved its head commit (or opened the
 PR), and no member of a required role has asked for changes.
 
-### Roles or domains? Both, on different axes
+### Roles follow domains
 
 Jim asked whether roles should follow tiers (credential, critical,
-standard) or domains (cost, risk, requirements). They answer different
-questions, so the model keeps both:
+standard) or domains (cost, risk, requirements). His answers on 2026-11-27
+settled it as domains, with one role each:
 
-- A **domain** says *what* changed. It is a property of the PR.
-- A **role** says *who* is trusted. It is a property of people.
-- The **policy** is the table that joins them: this domain at this level
-  needs that role.
+| Role | Approves | Members today |
+| --- | --- | --- |
+| `credential-reviewer` | Anything that makes or changes a secret, token, grant or ruleset | Jim |
+| `critical-reviewer` | A change to a `must` requirement | Jim |
+| `cost-reviewer` | Every cost change ("Cost-reviewer.. again me") | Jim |
+| `threat-reviewer` | Every threat or risk change ("Always. We should have a threat-reviewer and have it be just me") | Jim |
+| `technical-platform-reviewer` | The rules, workflows and platform projects ("A technical-platform-reviewer should be just me for now") | Jim |
+| `product-reviewer` | Product projects (the old standard reviewer) | Any human collaborator |
+| `auto` | Product changes that touch nothing above, by written rules | `jimhillr-reviewer` |
 
-Three tier roles are enough today because one person holds every role. The
-day someone should own only cost, add a role `cost-reviewer`, point the
-`cost` domain at it, and nothing else changes. No code changes either
-way. Starting with a role per domain would mean six roles that all hold
-the same one person.
+A domain says *what* changed, a role says *who* is trusted, and the policy
+file joins them. One approval from Jim satisfies every role he holds, so a
+PR that touches cost and a threat model still needs one click. Handing
+cost to someone else later is one line in the file.
+
+### Technical platform and products
+
+Jim, 2026-11-27: "Lets introduce somewhere in our processes the concept of
+technical platform versus products. Every project of codebase should live
+in one of these two categories."
+
+- A **product** is something an end user uses: a site, an app, a game.
+- The **technical platform** is everything products are built, checked,
+  deployed and governed with: standards, shared libraries, tooling,
+  infrastructure, and the rules agents follow.
+
+Every top-level folder is listed under exactly one category in
+`standards/reviewers.toml`, and the audit fails a folder that is in
+neither or both (REV-002). Root files and dot folders (`AGENTS.md`,
+`.github/`, `.agents/`, `mise.toml`) are always platform. The category
+decides the reviewer, and other processes can read it too: the deep review
+rotation, cost attribution, the tech radar and pane's project list.
+
+Proposed split (follow-up question 2 asks about the unsure ones):
+
+| Category | Projects |
+| --- | --- |
+| Technical platform | `standards`, `chores`, `infra`, `tofu_state`, `evals`, `cost`, `threat`, `telemetry`, `jimhillr`, `auth_sdk`, `design_system`, `pane`, `athenaeum`, `issues`, `docs` |
+| Product | `bear_down`, `blueeel`, `bogan`, `cahokia`, `controlled_chaos`, `cookbook`, `homer`, `luggage`, `my_lang`, `profiles`, `psy_ents`, `royalty`, `sparkhill`, `starcraft` |
 
 ### Fixed rules the file can't change
 
@@ -108,63 +138,93 @@ tested, not in the policy:
 - An `agent`, `bot` or `auto-reviewer` is never a member of a human role,
   even if a line in the file names it.
 - `auto-reviewer` can only hold the `auto` role, and `auto` can only be
-  required by level `none`.
+  required by a `product` level.
 - The repo owner is a member of every role, so a bad edit can't lock
   everyone out.
-- A change to the policy file touches `governance` at the level of the
-  highest role it edits. Changing who is a `credential-reviewer` needs a
-  `credential-reviewer`.
+- A change to the policy file needs every role it edits, on top of the
+  `technical-platform-reviewer`. Changing who is a `credential-reviewer`
+  needs a `credential-reviewer`.
 - The check reads the policy from the base branch, so a PR can't grant
   itself an approver.
 
 ## The policy file
 
 `standards/reviewers.toml`, a protected path. This is the whole proposed
-starting state, and it matches today's behavior except where the questions
-below say otherwise.
+starting state.
 
 ```toml
 # Who may approve what (decision 0019). Read by `chores gate`.
+# Roles don't include each other. One approval counts for every role its
+# author holds.
 
 [roles.auto]
 description = "Approves by written rules, no judgment (decision 0014)."
 members = ["jimhillr-reviewer"]
 
-[roles.standard-reviewer]
+[roles.product-reviewer]
 description = "Any human who can push to the repo."
-members = ["github:collaborators", "role:critical-reviewer"]
+members = ["github:collaborators"]
+
+[roles.technical-platform-reviewer]
+description = "The rules agents follow and the tooling every product is built with."
+members = ["jimhillr"]
 
 [roles.critical-reviewer]
-description = "Changes to what the products promise and the rules agents follow."
-members = ["role:credential-reviewer"]
+description = "Changes to what a product must do."
+members = ["jimhillr"]
+
+[roles.cost-reviewer]
+description = "Anything that moves money, free-tier usage or a budget."
+members = ["jimhillr"]
+
+[roles.threat-reviewer]
+description = "Anything that changes what is exposed or trusted."
+members = ["jimhillr"]
 
 [roles.credential-reviewer]
 description = "Anything that makes or changes a secret, token, grant or ruleset."
-members = ["github:owner"]
+members = ["jimhillr"]
+
+# Every top-level folder is in exactly one list (REV-002).
+[projects]
+platform = ["standards", "chores", "infra", "tofu_state", "evals", "cost",
+  "threat", "telemetry", "jimhillr", "auth_sdk", "design_system", "pane",
+  "athenaeum", "issues", "docs"]
+product = ["bear_down", "blueeel", "bogan", "cahokia", "controlled_chaos",
+  "cookbook", "homer", "luggage", "my_lang", "profiles", "psy_ents",
+  "royalty", "sparkhill", "starcraft"]
 
 # Each domain: how a PR touches it, and who must approve at each level.
 [domains.requirements]
-levels = { must-requirement-changed = "critical-reviewer", requirement-changed = "standard-reviewer" }
+levels = { must-requirement-changed = "critical-reviewer", requirement-changed = "product-reviewer" }
 
 [domains.cost]
-levels = { needs-human = "critical-reviewer", cost-changed = "standard-reviewer" }
-# needs-human: a new vendor, money, or a raised budget (cost summary).
+levels = { cost-changed = "cost-reviewer" }   # the tag or the `cost` label
 
 [domains.threat-risk]
-levels = { weakened = "critical-reviewer", threat-risk-changed = "standard-reviewer" }
-# weakened: the Security summary says the change weakens something.
+levels = { threat-risk-changed = "threat-reviewer" }   # the tag or the `security` label
 
 [domains.credentials]
 levels = { credential-change = "credential-reviewer" }
 environments = ["infra-credentials"]   # its required reviewers must equal this role
 
-[domains.governance]
-levels = { rules-changed = "critical-reviewer" }
-paths = ["AGENTS.md", "standards/", ".github/", ".agents/"]
+[domains.platform]
+levels = { changed = "technical-platform-reviewer" }   # any file in a platform project or at the root
 
-[domains.code]
-levels = { none = "auto" }             # only when nothing above is touched
+[domains.product]
+levels = { needs-human = "product-reviewer", changed = "auto" }
+# needs-human: the label, a failed size limit, or anything the auto rules refuse.
 ```
+
+What changes from today's behavior:
+
+- Cost changes go back to needing Jim (they were "any human collaborator"
+  for a few hours).
+- Threat and risk changes need Jim. Today they are only kept away from
+  `jimhillr-reviewer`.
+- Every change to a platform project needs Jim. Today `jimhillr-reviewer`
+  may approve small green changes in `chores`, `evals`, `cost`, `pane`,
+  `telemetry`, `design_system` and `athenaeum` (follow-up question 1).
 
 ## Where it is enforced
 
@@ -173,11 +233,11 @@ One decision function, several readers. Nothing else keeps its own list.
 | Reader | Today | With this decision |
 | --- | --- | --- |
 | `Human review` check (`chores gate`) | Hard-coded tags and "any human collaborator" | Reads the file; reports each touched domain, the role it needs and who satisfied it. Renamed `Review roles` |
-| `jimhillr-reviewer` (`auto-review.sh`) | Its own label, tag and path lists | Approves only when `Review roles` says every touched level needs `auto`. Size limit and green checks stay |
+| `jimhillr-reviewer` (`auto-review.sh`) | Its own label, tag and path lists | Approves only when `Review roles` says every touched level needs `auto`, which only product changes can. Size limit and green checks stay |
 | `main` ruleset | Requires `CI result` and `Human review` | Requires `CI result` and `Review roles` |
 | `infra-credentials` environment | Jim, set by hand | Still set by hand (agents must not hold that power). The settings check and infra drift compare its reviewers with `credential-reviewer` and report a mismatch |
 | PR triage prompt | Prose rules naming Jim | "Never approve what `Review roles` holds; merge when it is green" |
-| Pane's Approve page | Labels and tags | Shows "needs critical-reviewer (requirements)" and who can give it |
+| Pane's Approve page | Labels and tags | Shows "needs cost-reviewer, threat-reviewer" and who can give it |
 | Labels (`needs-human`, `cost`, `security`, `credential-change`) | Each set by its own job | Kept as inputs and as what people filter by. `needs-human` is set whenever a level above `auto` is unmet |
 
 GitHub's own approval count stays at one. The `Review roles` check is what
@@ -200,13 +260,16 @@ against the $25 a month budget.
 
 Each phase is one PR, and each leaves behavior the same or stricter.
 
-1. **Model and file.** `standards/reviewers.toml`, a `review_roles` module
-   in `chores` (parse, fixed rules, check), and `chores gate` reading it.
-   Same verdicts as today. Audit rule REV-001 fails a file that breaks a
-   fixed rule or names an unknown role.
-2. **All domains.** Add `credentials`, `governance` and the `needs-human`
-   and `weakened` levels to the check. Rename it `Review roles`.
-   `auto-review.sh` drops its own lists and follows the check.
+1. **Model, file and categories.** `standards/reviewers.toml` with the
+   roles and the platform and product lists, a `review_roles` module in
+   `chores` (parse, fixed rules, check), and `chores gate` reading it for
+   requirements and cost. Audit rules REV-001 (a file that breaks a fixed
+   rule or names an unknown role) and REV-002 (a folder in neither or both
+   categories). AGENTS.md and `REPOSITORY_STRUCTURE.md` gain the platform
+   and product rule.
+2. **All domains.** Add `threat-risk`, `credentials`, `platform` and
+   `product` to the check. Rename it `Review roles`. `auto-review.sh`
+   drops its own lists and follows the check.
 3. **Outside GitHub's reach.** Settings check and drift report for the
    `infra-credentials` reviewers. Pane shows the needed role. The triage
    prompt, AGENTS.md and `pull-requests.md` point at the file and drop
@@ -218,28 +281,46 @@ Each phase is one PR, and each leaves behavior the same or stricter.
 - **A wrong file locks PRs or opens them.** The fixed rules, REV-001, the
   base-branch read and the owner fallback bound both failures.
 - **The check is repo code.** A PR could change `chores` or the workflow.
-  Those paths are `governance`, the check builds from the base branch, and
+  Those paths are `platform`, the check builds from the base branch, and
   credentials keep their second gate (the environment) outside the repo,
   as decision 0010 wanted.
 - **`github:collaborators` is whoever GitHub says.** Adding a collaborator
-  with push access makes them a `standard-reviewer`. That is the intent,
+  with push access makes them a `product-reviewer`. That is the intent,
   and the settings check lists collaborators for Jim on its schedule.
 
-## Questions for Jim
+## Jim's answers (2026-11-27)
 
-Today every human role resolves to Jim alone, so these answers change
-nothing until a second person is added. Each costs $0 either way.
+1. *Does a credential reviewer count as a critical reviewer, and so on?*
+   "No but one review from me should satisfy both roles." Roles don't
+   include each other; one approval counts for every role its author holds.
+2. *What does a cost change need?* "Cost-reviewer.. again me."
+3. *What do rule changes need?* "Lets make this a
+   technical-platform-reviewer and make the standard one a
+   product-reviewer. A technical-platform-reviewer should be just me for
+   now. Lets introduce somewhere in our processes the concept of technical
+   platform versus products. Every project of codebase should live in one
+   of these two categories."
+4. *Should a threat or risk change need a human?* "Always. We should have
+   a threat-reviewer and have it be just me."
 
-1. **Does a credential reviewer count as a critical reviewer, and a
-   critical one as standard?** Recommended: yes. Otherwise a person in the
-   top role must be added to all three.
-2. **What does a cost change need?** You first said cost changes must be
-   reviewed by you, then that any human collaborator is fine. Recommended:
-   `standard-reviewer` for a cost file change, `critical-reviewer` when the
-   Cost summary says it adds a vendor or money or raises a budget.
-3. **What do rule changes need** (AGENTS.md, `standards/`, workflows, this
-   file)? Recommended: `critical-reviewer`.
-4. **Should a `threat-risk-changed` PR need a human at all?** Today it is
-   only kept away from `jimhillr-reviewer`. Recommended: yes,
-   `standard-reviewer`, and `critical-reviewer` when the Security summary
-   says the change weakens something.
+## Follow-up questions for Jim
+
+Each costs $0 either way; the difference is how many PRs wait for you.
+
+1. **Does every change to a platform project need the
+   technical-platform-reviewer, or only changes to the rules?**
+   Recommended: every change. It is the simple reading of "platform versus
+   products", and a platform bug reaches every product. It means
+   `jimhillr-reviewer` approves product changes only, so the small green
+   PRs in `chores`, `evals`, `cost`, `pane`, `telemetry`, `design_system`
+   and `athenaeum` start waiting for you. The other choice keeps the fast
+   lane for those and holds only the rules (`AGENTS.md`, `standards/`,
+   `.github/`, `.agents/`, `infra/`).
+2. **Is the split right?** The ones I was least sure of: `pane` (your
+   review dashboard, listed as platform), `royalty` (listed as a product,
+   since others would use it), `auth_sdk` and `design_system` (platform,
+   as shared libraries), `my_lang` (product) and `athenaeum` (platform,
+   as reference material).
+3. **Does `critical-reviewer` stay for `must` requirement changes?** You
+   renamed the other two original roles. Recommended: keep it, with you as
+   the only member.
