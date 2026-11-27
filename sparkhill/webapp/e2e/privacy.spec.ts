@@ -8,6 +8,14 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 
 type Point = { x: number; y: number; type?: string };
 
+/**
+ * Hosts only `dx serve` itself asks for: its dev-build toast loads the Inter
+ * font from Google Fonts. The release build has no toast, and the live
+ * site's Content-Security-Policy allows only its own origin (the
+ * connects-only-to-itself-live eval), so the app never reaches them.
+ */
+const DEV_SERVER_ONLY = new Set(['fonts.googleapis.com', 'fonts.gstatic.com']);
+
 /** A name unlikely to appear in any file name or asset. */
 const NAME = 'Zephyrina';
 
@@ -44,8 +52,9 @@ test('a learner\'s name and tracings never leave the device @req:SPRK-006', asyn
   for (const request of requests) {
     const url = new URL(request.url());
     if (url.protocol === 'data:' || url.protocol === 'blob:') continue;
-    expect(url.host, request.url()).toBe(site);
     expect(request.url(), 'the request names the learner').not.toContain(NAME);
+    if (DEV_SERVER_ONLY.has(url.host)) continue;
+    expect(url.host, request.url()).toBe(site);
     expect(request.postData() ?? '', 'the request carries the learner\'s name').not.toContain(NAME);
   }
   const cookies = await page.context().cookies();
