@@ -107,3 +107,10 @@ workspace = true
 ## Enforcement
 
 `mise run //:audit` checks LIN-001 and LIN-002 for every tracked Cargo.toml with a `[package]` (`standards/scripts/project-check.sh`), as warnings for now. A stricter clippy level (`deny`, `forbid`) passes LIN-001. `unsafe_code = "deny"` passes LIN-002 only when a comment on the line above says why the package needs its one `#[allow(unsafe_code)]` item, such as a platform entry point.
+
+## Further reading
+
+The sources behind these rules (the Rust API Guidelines, Clippy, Effective
+Rust, Rust Design Patterns, and the general design books) are summarised,
+with what we take from each, in
+[athenaeum/resources/code_quality/](../../athenaeum/resources/code_quality/README.md).

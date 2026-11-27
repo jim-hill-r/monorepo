@@ -13,7 +13,7 @@ unsafe_code = "forbid"
 [dependencies]
 design_system_dioxus = { path = "../../design_system/dioxus" }
 dioxus = { version = "0.7.2", features = ["web", "router"] }
-gloo-net = { version = "0.6", default-features = false, features = ["http"] }
+gloo-net = { version = "0.8", default-features = false, features = ["http"] }
 js-sys = "0.3"
 pane_model = { path = "../model" }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }

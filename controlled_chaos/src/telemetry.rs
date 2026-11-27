@@ -414,4 +414,41 @@ mod tests {
             assert_eq!(value % ROUND_STEP, 0, "{event}");
         }
     }
+
+    /// Cloudflare Pages sends `web/_headers` (copied into `dist/web` by
+    /// `bevy-release.sh`). `navigator.sendBeacon` is bound by `connect-src`,
+    /// so the Worker's origin must be in it or every event is dropped.
+    #[test]
+    fn the_pages_csp_allows_sending_to_the_telemetry_worker() {
+        let headers = include_str!("../web/_headers");
+        let header = |name: &str| {
+            headers
+                .lines()
+                .find_map(|line| line.trim().strip_prefix(name)?.strip_prefix(':'))
+                .map(str::trim)
+                .unwrap_or_else(|| panic!("_headers sends no {name}"))
+        };
+        let csp = header("Content-Security-Policy");
+        let directive = |name: &str| {
+            csp.split(';')
+                .map(str::trim)
+                .find_map(|d| d.strip_prefix(name)?.strip_prefix(' '))
+                .unwrap_or_else(|| panic!("the CSP has no {name}: {csp}"))
+        };
+        let origin = ENDPOINT.trim_end_matches("/event");
+        assert!(
+            directive("connect-src").split(' ').any(|s| s == origin),
+            "{csp}"
+        );
+        // Bevy's wasm needs 'wasm-unsafe-eval' to compile.
+        assert!(
+            directive("script-src").contains("'wasm-unsafe-eval'"),
+            "{csp}"
+        );
+        assert_eq!(directive("frame-ancestors"), "'none'");
+        assert_eq!(header("X-Content-Type-Options"), "nosniff");
+        assert_eq!(header("X-Frame-Options"), "DENY");
+        assert!(!header("Referrer-Policy").is_empty());
+        assert!(header("Strict-Transport-Security").starts_with("max-age="));
+    }
 }

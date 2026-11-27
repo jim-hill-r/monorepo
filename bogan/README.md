@@ -1,5 +1,7 @@
 # Bogan
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/bogan.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Bogan is an original online marketplace built around supply-chain
 transparency. It is for small sellers and makers, and for the buyers who
 want to see where their goods come from: each listing shows who made the

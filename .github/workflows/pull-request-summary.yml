@@ -1,0 +1,41 @@
+---
+# PR-001: warns when a pull request description doesn't open with a linked
+# executive summary of at most 75 words (standards/docs/pull-requests.md,
+# "Pull request descriptions"). Warnings only, so it never fails and CI
+# result doesn't wait for it. Runs on edits too, so fixing the description
+# clears the warning without re-running project CI.
+name: PR summary
+
+'on':
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pull-request-summary-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  summary:
+    name: PR summary
+    # Dependabot writes its own bodies (standards/docs/pull-requests.md).
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The root installs no tools; skip the monorepo-wide install.
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
+        with:
+          install: false
+
+      - name: Check the executive summary
+        env:
+          # Passed through the environment, never interpolated into the script.
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: mise run --quiet //:pr-summary
