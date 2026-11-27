@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Letter and word sequences matching blue.eel.education
@@ -61,7 +62,7 @@ pub enum PracticePhase {
 }
 
 /// History for a single expression
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ExpressionHistory {
     pub attempts: usize,
     pub total_attempts: usize,
@@ -70,8 +71,9 @@ pub struct ExpressionHistory {
     pub success: bool,
 }
 
-/// Application state for the practice session
-#[derive(Clone, Debug)]
+/// Application state for the practice session. It is saved as JSON for
+/// each learner (`progress.rs`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppState {
     pub expression: Option<String>,
     pub active_queue: Vec<String>,

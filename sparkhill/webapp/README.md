@@ -12,6 +12,12 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
 - **Progress tracking**: Letter sequences matching the original app, with retry and stabilize logic
 - **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). "Go" then opens the word level after letters, and the congratulations page after words
 - **Congratulations page**: Shown when all expressions are mastered
+- **Each learner's progress**: the learner types their name on the home page
+  ("Standard" when blank, as in the live app), and `src/progress.rs` saves
+  each level's progress under it in the browser's `localStorage` after every
+  tracing, so a reload carries on where they were and each learner on a
+  device has their own. Nothing leaves the device. `?practice=` sessions are
+  never saved
 - **Practising a few letters**: `?practice=` with letters or words, such as
   `/letter?practice=b,c` or `/word?practice=hi`, practises only those, as one
   batch, instead of the whole level. Anything without a pattern is ignored
