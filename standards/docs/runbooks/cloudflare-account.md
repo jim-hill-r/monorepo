@@ -8,7 +8,8 @@
 ## What it's for
 
 Cloudflare hosts every site (Pages, `jimhillr-<project>.pages.dev`),
-Workers such as `jimhillr-tofu-state`, and Web Analytics. Deploys in
+Workers such as `jimhillr-tofu-state` and `jimhillr-telemetry`, Workers
+Analytics Engine (the `telemetry` dataset) and Web Analytics. Deploys in
 `push-main.yml`, `nightly-cd.yml` and `tofu-state-deploy.yml` use one
 deploy token.
 
@@ -33,7 +34,14 @@ token can't be made without one that can make tokens.
    permissions](cloudflare-deploy-token.md)). Never Billing or API Tokens.
    Set an expiry and note it.
 4. Add both to GitHub as below.
-5. Connect Cloudflare read-only in Claude ([Set up Claude](claude-setup.md)).
+5. Turn on Workers Analytics Engine: Workers & Pages > Analytics Engine
+   (`https://dash.cloudflare.com/<account id>/workers/analytics-engine`),
+   then the button that enables it. Cloudflare has no API for this switch,
+   and until it is on, deploying a Worker with an Analytics Engine binding
+   (`telemetry`) fails with "You need to enable Analytics Engine" (code
+   10089). The Free plan allows 100,000 data points a day; add no payment
+   method. (Jim turned it on 2026-11-27.)
+6. Connect Cloudflare read-only in Claude ([Set up Claude](claude-setup.md)).
 
 ## Where secrets go
 
@@ -43,7 +51,9 @@ with the token).
 
 ## Verify
 
-A push to `main` that changes a site deploys it. The settings checks
+A push to `main` that changes a site deploys it, and the telemetry
+deploy passes (`https://jimhillr-telemetry.jim-hill-r.workers.dev/event`
+answers a `GET` with 405). The settings checks
 `github-secret-cloudflare-*`, `cloudflare-api-token-scopes` and
 `cloudflare-billing` answer "ok".
 
