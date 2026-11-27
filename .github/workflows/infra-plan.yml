@@ -29,7 +29,9 @@ jobs:
     outputs:
       stacks: ${{ steps.list.outputs.stacks }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - id: list
         run: echo "stacks=$(ls infra/out | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
 
@@ -55,12 +57,26 @@ jobs:
       CLOUDFLARE_INFRA_READ_TOKEN: ${{ secrets.CLOUDFLARE_INFRA_READ_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      # The github stack reads with a token from the read-only infra GitHub
+      # App, minted for this run only
+      # (standards/docs/runbooks/github-app-infra-read.md).
+      - name: GitHub App token (github stack)
+        id: gh-read
+        if: matrix.stack == 'github' && vars.GH_INFRA_READ_APP_ID != '' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          app-id: ${{ vars.GH_INFRA_READ_APP_ID }}
+          private-key: ${{ secrets.GH_INFRA_READ_APP_KEY }}
+          repositories: ${{ github.event.repository.name }}
+
       - id: ready
         name: Check the stack is set up
+        env:
+          GH_INFRA_READ_TOKEN: ${{ steps.gh-read.outputs.token }}
         run: |
           if bash scripts/tofu.sh ready "${{ matrix.stack }}" read; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -69,12 +85,12 @@ jobs:
             echo "::notice::${{ matrix.stack }} is not set up yet, so no plan ran (see issues/human/)"
           fi
 
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         if: steps.ready.outputs.ready == 'true'
         with:
           working_directory: infra
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         if: steps.ready.outputs.ready == 'true'
         with:
           workspaces: infra
@@ -82,11 +98,13 @@ jobs:
 
       - name: tofu plan and the plan guards
         if: steps.ready.outputs.ready == 'true'
+        env:
+          GH_INFRA_READ_TOKEN: ${{ steps.gh-read.outputs.token }}
         run: bash scripts/tofu.sh plan "${{ matrix.stack }}" read "$RUNNER_TEMP/plan"
 
       - name: Keep the result for labelling
         if: steps.ready.outputs.ready == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: result-${{ matrix.stack }}
           path: ${{ runner.temp }}/plan/result
@@ -101,7 +119,7 @@ jobs:
       pull-requests: write
       issues: write  # create the label the first time
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: result-*
           path: results

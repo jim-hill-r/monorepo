@@ -1,0 +1,57 @@
+---
+# Each week: export fan feedback (votes and A/B exposures) from the
+# telemetry Worker's Analytics Engine dataset into the feedback-data branch
+# as JSON Lines, with a Markdown summary per A/B arm for each week
+# (bear_down/docs/plans/2026-11-fan-feedback.md, step 5). Analytics Engine
+# is only the inbox; the files are the record.
+#
+# It reads 8 days, so a week overlaps the last run, and feedback.sh drops
+# the duplicates. The only job with contents: write, and its only push is
+# to feedback-data (SEC-007). The steps are in standards/scripts/feedback.sh,
+# tested by standards/tests/feedback.test.sh.
+name: Telemetry Feedback Export
+
+'on':
+  schedule:
+    # 6 AM Pacific Time on Tuesday (14:00 UTC), after Monday Night Football.
+    - cron: '0 14 * * 2'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Days of events to read (Analytics Engine keeps about 90)
+        type: string
+        default: '8'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telemetry-feedback-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read this week's events
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DAYS: ${{ inputs.days || '8' }}
+        run: bash standards/scripts/feedback.sh query bear_down "$DAYS" >"$RUNNER_TEMP/bear_down.jsonl"
+
+      - name: Store them on feedback-data
+        run: |
+          bash standards/scripts/feedback.sh store bear_down "$RUNNER_TEMP/bear_down.jsonl"
+          {
+            echo "## Fan feedback export"
+            echo
+            echo "$(grep -c . "$RUNNER_TEMP/bear_down.jsonl" || true) events read from Analytics Engine."
+            echo "Files: [feedback-data/bear_down](../../tree/feedback-data/bear_down)"
+          } >>"$GITHUB_STEP_SUMMARY"

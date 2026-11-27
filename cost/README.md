@@ -1,5 +1,7 @@
 # cost
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/cost.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 The cost check: it holds each project's cost analysis
 (`<project>/docs/cost.toml`) to the budgets in the tech radar and the free
 limits in `standards/radar/limits.toml`, so a PR that could change what the
@@ -11,7 +13,7 @@ are in the [cost check plan](../standards/docs/plans/2026-11-cost-check.md).
 
 | Crate | Job |
 | --- | --- |
-| `model` (`cost_model`) | Serde types for `docs/cost.toml`, `limits.toml`, `detectors.toml` and the radar's vendor blips; the rules (COST-001 to COST-009), the detectors and the PR summary as pure functions. No I/O, so pane and the eval engine can use the same rules and money maths. |
+| `model` (`cost_model`) | Serde types for `docs/cost.toml`, `limits.toml`, `detectors.toml` and the radar's vendor blips; the rules (COST-001 to COST-010), the detectors, the PR summary and the renewals list as pure functions. No I/O, so pane and the eval engine can use the same rules and money maths. |
 | `cli` (`cost_cli`) | The `cost` binary. It reads files through git (tracked files only), and at a commit through one `git cat-file --batch`. |
 
 ## Commands
@@ -22,8 +24,12 @@ cargo run -p cost_cli -- check
 # Only report per-project findings for some projects; account-wide totals
 # (COST-005, COST-006) still read every project.
 cargo run -p cost_cli -- check --projects cookbook,pane
-# Exit 1 on any finding except COST-008 and COST-009 (phase 3).
+# Exit 1 on any finding except COST-008 to COST-010 (phase 3).
 cargo run -p cost_cli -- check --strict
+
+# The [[cost]] entries that renew in the next 60 days (or already passed
+# their `renews` date), soonest first; the human issues digest lists them.
+cargo run -p cost_cli -- renewals --within 60
 
 # The PR cost summary against a base branch, as Markdown; --json also
 # writes the labels (`cost`, `needs-human`) and reasons for PR CI.

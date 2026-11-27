@@ -10,6 +10,8 @@ cargo-binstall = "latest"
 # the wasm-bindgen in Cargo.lock exactly (tests/tools.rs checks it).
 "github:wasm-bindgen/wasm-bindgen" = "0.2.106"
 "github:WebAssembly/binaryen" = "version_123"
+# For the Playwright smoke tests of the export (e2e/, `mise run e2e`).
+node = "24"
 
 [task_config]
 includes = ["../../standards/tasks/perseus-web.toml"]
@@ -24,6 +26,49 @@ run = "perseus export -s -w --wasm-bindgen-path \"$(command -v wasm-bindgen)\" -
 # Use the wasm-bindgen and wasm-opt that mise installed (see [tools]), so
 # perseus-cli downloads nothing. Cargo.lock stays in lockfile format 3, the
 # only one perseus-cli 0.4.2 can read.
+# The export has no 404 page of its own, and without a 404.html Cloudflare
+# Pages answers every unknown URL with the home page and status 200, so
+# release also writes the 404 error view to dist/exported/404.html. It runs
+# after the export, which empties dist/exported, and reuses its Wasm bundle.
 [tasks.release]
-description = "Static export (output in dist/exported), which ../cloudflare deploys"
-run = "perseus export --release --wasm-bindgen-path \"$(command -v wasm-bindgen)\" --wasm-opt-path \"$(command -v wasm-opt)\""
+description = "Static export with a 404 page (output in dist/exported), which ../cloudflare deploys"
+run = [
+  "perseus export --release --wasm-bindgen-path \"$(command -v wasm-bindgen)\" --wasm-opt-path \"$(command -v wasm-opt)\"",
+  "perseus export-error-page --code 404 --output dist/exported/404.html --wasm-bindgen-path \"$(command -v wasm-bindgen)\" --wasm-opt-path \"$(command -v wasm-opt)\"",
+]
+
+# Playwright smoke tests of the release export: e2e/serve.mjs serves
+# dist/exported as Cloudflare Pages does, and the tests load it at desktop
+# and phone widths. As in the dioxus-web e2e task, a tool a cloud sandbox
+# can't install skips them outside CI (CI unset) and fails them in CI.
+[tasks.e2e]
+description = "Export the site, then run the Playwright smoke tests on it"
+run = """
+skip() {
+  echo "e2e: $1" >&2
+  if [ -n "${CI:-}" ]; then exit 1; fi
+  echo "e2e: Playwright tests not checked here; PR CI runs them" >&2
+  exit 0
+}
+npm ci || skip "couldn't install the npm packages"
+mise run release || skip "couldn't export the site"
+npx playwright install --with-deps chromium || skip "couldn't install Playwright's browsers"
+mkdir -p target/evals-reports
+rm -f target/evals-reports/playwright.json
+PLAYWRIGHT_JSON_OUTPUT_FILE="$PWD/target/evals-reports/playwright.json" npm test -- --reporter=list,json
+"""
+
+[tasks.test]
+description = "Rust tests, then the Playwright smoke tests (e2e)"
+run = ["cargo test", "mise run e2e"]
+
+[tasks.ci]
+description = "Everything CI checks; makes no artifacts (test reports go in target/evals-reports)"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo build",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
+  "mise run e2e",
+]

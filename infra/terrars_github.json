@@ -1,0 +1,12 @@
+{
+  "provider": "integrations/github",
+  "version": "6.13.0",
+  "include": [
+    "repository",
+    "repository_dependabot_security_updates",
+    "repository_ruleset",
+    "repository_vulnerability_alerts"
+  ],
+  "dest": "src/tfschema/github",
+  "binary": "tofu"
+}

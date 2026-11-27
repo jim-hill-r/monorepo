@@ -1,6 +1,11 @@
-# Monorepo Workspace
+# monorepo
 
-This workspace contains projects specific to high-level monorepo functionality.
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/monorepo.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
+A Cargo workspace for code about the repository itself rather than any one
+project. Today that is [workflow_tests](workflow_tests/README.md), which
+checks the GitHub Actions workflows in `.github/workflows/`. How to build
+and test it is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Projects
 

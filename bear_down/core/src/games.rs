@@ -350,6 +350,46 @@ impl Schedule {
     pub fn latest_played(&self) -> Option<&Game> {
         latest_played(&self.games)
     }
+
+    /// The schedule as it stood just before week `week` of season `year`,
+    /// for rebuilding a past week's guide.
+    ///
+    /// Later seasons are dropped. In `year`, every game from week `week` on
+    /// loses its score, playoff games after week `week` are dropped (their
+    /// matchups give away who made it), and betting lines are kept only for
+    /// weeks `week` and `week + 1`, about what nflverse had published then
+    /// (decision 0004). Earlier seasons are kept whole. Fails if `year` has
+    /// no week `week`.
+    pub fn as_of(&self, year: u16, week: u8) -> Result<Schedule, String> {
+        let season = self
+            .season(year)
+            .ok_or_else(|| format!("no {year} season in the schedule"))?;
+        if season.week(week).is_none() {
+            return Err(format!("the {year} season has no week {week}"));
+        }
+        let games = self
+            .games
+            .iter()
+            .filter(|game| game.season < year || (game.season == year && keep(game, week)))
+            .map(|game| {
+                let mut game = game.clone();
+                if game.season == year && game.week >= week {
+                    game.score = None;
+                    if game.week > week.saturating_add(1) {
+                        game.spread_line = None;
+                    }
+                }
+                game
+            })
+            .collect();
+        Ok(Schedule { games })
+    }
+}
+
+/// Whether `game` was on the schedule before week `week` of its season:
+/// every regular-season game, and playoff games up to that week.
+fn keep(game: &Game, week: u8) -> bool {
+    !game.game_type.is_playoff() || game.week <= week
 }
 
 /// One season's games, regular season and playoffs.
@@ -459,6 +499,88 @@ mod tests {
             Ok(schedule) => schedule,
             Err(error) => panic!("fixture should parse: {error}"),
         }
+    }
+
+    fn seasons() -> Schedule {
+        match Schedule::parse(include_str!("../fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("seasons.csv should parse: {error}"),
+        }
+    }
+
+    fn as_of(schedule: &Schedule, year: u16, week: u8) -> Schedule {
+        match schedule.as_of(year, week) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("{year} week {week}: {error}"),
+        }
+    }
+
+    #[test]
+    fn as_of_a_week_unplays_it_and_everything_after() {
+        let full = seasons();
+        let past = as_of(&full, 2024, 12);
+        assert_eq!(past.latest_season().map(|season| season.year), Some(2024));
+        let Some(season) = past.latest_season() else {
+            panic!("2024 is kept");
+        };
+        assert_eq!(season.current_week().map(|week| week.number), Some(12));
+        assert!(season.played().all(|game| game.week < 12));
+        assert_eq!(
+            season.played().count(),
+            full.season(2024)
+                .map_or(0, |s| s.played().filter(|game| game.week < 12).count())
+        );
+        // No playoff games: their matchups would give the field away.
+        assert_eq!(season.playoffs().count(), 0);
+        assert_eq!(season.regular_season().count(), 272);
+        // Earlier seasons are untouched.
+        assert_eq!(past.season(2023), full.season(2023));
+        // Lines only for this week and next.
+        for game in season.remaining() {
+            assert_eq!(
+                game.spread_line.is_some(),
+                game.week <= 13
+                    && full
+                        .games()
+                        .iter()
+                        .any(|g| g.id == game.id && g.spread_line.is_some()),
+                "{}",
+                game.id
+            );
+        }
+    }
+
+    #[test]
+    fn as_of_a_playoff_round_keeps_that_round_only() {
+        let full = seasons();
+        let Some(divisional) = full
+            .season(2024)
+            .and_then(|season| {
+                season
+                    .playoffs()
+                    .find(|game| game.game_type == GameType::Divisional)
+            })
+            .map(|game| game.week)
+        else {
+            panic!("2024 has a divisional round");
+        };
+        let past = as_of(&full, 2024, divisional);
+        let Some(season) = past.season(2024) else {
+            panic!("2024 is kept");
+        };
+        assert_eq!(season.remaining().count(), 4);
+        assert!(season.games().iter().all(|game| game.week <= divisional));
+        assert_eq!(
+            season.regular_season().filter(|g| g.is_played()).count(),
+            272
+        );
+    }
+
+    #[test]
+    fn as_of_needs_a_real_season_and_week() {
+        let full = seasons();
+        assert!(full.as_of(1990, 1).is_err());
+        assert!(full.as_of(2024, 30).is_err());
     }
 
     fn game<'a>(schedule: &'a Schedule, id: &str) -> &'a Game {

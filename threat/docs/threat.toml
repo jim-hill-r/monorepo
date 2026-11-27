@@ -1,0 +1,10 @@
+# threat: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Rust CLI that checks each project's docs/threat.toml; reads only repo files, holds no data and no secrets."
+
+[[surface]]
+name = "threat CLI"
+kind = "cli"
+access = "none"
+data = "public"
+notes = "Run by the audit, the hooks and PR CI on repo files only. No network, no credentials."

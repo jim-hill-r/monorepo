@@ -1,5 +1,7 @@
 # Auth SDK
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/auth_sdk.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 ## auth_sdk
 
 Generic library for producing auth flows in applications.

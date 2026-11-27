@@ -1,5 +1,7 @@
 # telemetry
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/telemetry.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A small Rust Cloudflare Worker with one route, `POST /event`. It checks each
 event, rate-limits it per IP address, and writes it to the `telemetry`
 Analytics Engine dataset. It is phase 5 of the
@@ -44,8 +46,10 @@ are refused, so nothing unexpected is ever stored.
 ## Privacy
 
 - Requests with `DNT: 1` or `Sec-GPC: 1` get a 202 and are not stored.
-- So do requests with `x-monorepo-synthetic: 1` (UAT, evals and smoke
-  tests; eval engine phase 3), so test traffic never counts as fans.
+- So do requests with `x-jimhillr-synthetic: 1` or a user agent containing
+  `jimhillr-evals` (UAT, evals and smoke tests; eval engine phase 3), so
+  test traffic never counts as fans. Browsers in tests only need the user
+  agent, since `navigator.sendBeacon` can't add a header.
 - The IP address is used only as the rate-limit key. It is never stored.
 - Notes, error messages and CLI errors have anything that looks like an
   email address or a phone number replaced with `[email]` or `[number]`,
@@ -65,8 +69,9 @@ Each event is one Analytics Engine data point, indexed by `project`:
 | `double2` | | week | week | | | | |
 
 Analytics Engine is only the inbox. Per the repo's "files before databases"
-rule, a weekly workflow (fan feedback plan, step 5) exports the votes into
-the repo as JSON Lines files.
+rule, `telemetry-feedback-export.yml` exports bear_down's votes and
+exposures each week into the repo's `feedback-data` branch as JSON Lines
+files, with a summary per A/B arm (`standards/scripts/feedback.sh`).
 
 ## Free tier
 

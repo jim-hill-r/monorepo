@@ -1,5 +1,7 @@
 # design_system
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/design_system.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 One design system for every app in the monorepo: five themes (earthy, airy,
 professional, colorful and gamey 8-bit), each in light and dark, each with an
 accessible mode on top. That is 20 combinations, and CI proves every one
@@ -16,8 +18,10 @@ The latest contrast results are in [docs/contrast.md](docs/contrast.md).
 Phase 1 (the source and the check) is done: the token files, the model and
 CLI, the generated CSS, JSON and Rust outputs, custom app themes, the
 contrast check, the Dioxus picker with self-hosted fonts, and the preview
-site at <https://jimhillr-design-system.pages.dev>. Next, apps adopt it, pane and
-bear_down first.
+site at <https://jimhillr-design-system.pages.dev>. Phases 2 to 4 are done
+too: pane, bear_down (with its Bears theme), cookbook, cahokia and
+controlled_chaos use it, and the audit keeps raw colours out of them. Phase 5
+(blueeel, sparkhill and profiles) is next.
 
 ## Using it
 
@@ -76,6 +80,20 @@ script either, so it puts `data-theme` and `data-ds-default` with its default
 theme on `<html>` in its `index.html`; the page has the right default from
 first paint, and a saved choice applies as soon as the app starts. Pages without Dioxus inline `js/theme.js` the same
 way, with `data-ds-default` (and optionally `data-ds-themes`) on `<html>`.
+
+In the browser `Stylesheets` also links its CSS as files instead of an
+inline `<style>`: `fonts.css` (in the `design-system-fonts` asset folder,
+next to the fonts it names), then `tokens.css`, the app's theme and
+`base.css`, all served from the app's own `/assets/`. So the app's Content
+Security Policy needs only `style-src 'self'`, with no `'unsafe-inline'`
+(static Cloudflare Pages can't send a per-request nonce, and a hash would
+change with every build). An app with a custom theme passes it as a file
+too, `app_stylesheet: THEME_CSS.to_string()` with
+`const THEME_CSS: Asset = asset!("/assets/theme.css")`; the older
+`app_css: Some(include_str!(...).into())` still works but is always inlined,
+so it needs `'unsafe-inline'`. Desktop, mobile and the server-side render
+keep one inline `<style>`; `delivery: Delivery::Inline` (or `Files`)
+overrides the default.
 
 **Games and native UI** use the `design_system_palette` crate, which has every
 value as a constant and no dependencies:
@@ -149,16 +167,31 @@ model/               design_system_model: parse, resolve, contrast maths
 cli/                 design_system_cli: render and check
 palette/             design_system_palette: the values as Rust constants (generated)
 dioxus/              design_system_dioxus: Stylesheets, ThemePicker, use_theme for Dioxus 0.7
-dioxus/fonts/        Atkinson Hyperlegible and Press Start 2P (SIL OFL), latin subsets
+dioxus/assets/       tokens.css and base.css (generated copies of dist/), linked in the browser
+dioxus/assets/design-system-fonts/
+                     Atkinson Hyperlegible and Press Start 2P (SIL OFL), latin subsets, and fonts.css
 preview/             the preview site (its own project, deployed to Cloudflare Pages)
 dist/                tokens.css, base.css, tokens.json (generated, committed)
 docs/contrast.md     every checked pair (generated, committed)
 ```
 
-Everything under `dist/`, `palette/src/generated.rs` and `docs/contrast.md`
-is generated: edit the TOML, then run `mise run render`. CI fails if they
+## No raw colours in adopted apps
+
+Once a project uses the design system, `mise run //:audit` fails on a raw
+colour in its CSS (DS-001: `#hex`, `rgb()`, `hsl()`, `oklch()` and the other
+colour functions) or a Rust colour built from literals (DS-002:
+`Color::srgb(0.1, ...)`, `Srgba::hex("...")`). The check is
+`standards/scripts/design-check.sh`. A project counts as adopted when it
+depends on a `design_system` crate, has a `design/theme.toml`, or has an
+`# affected-by: ../design_system` line in its `mise.toml`, which is how an
+app that only links `dist/` opts in. A line that truly needs an exact colour
+ends with the comment `ds-allow-raw-colour` and a reason.
+
+Everything under `dist/`, `dioxus/assets/*.css`, `palette/src/generated.rs`
+and `docs/contrast.md` is generated: edit the TOML, then run `mise run render`. CI fails if they
 don't match.
 
-The fonts live in `dioxus/fonts/` rather than a top-level `fonts/` (as the
-plan sketched) because Dioxus's `asset!` only reads files inside the crate
+The fonts live in `dioxus/assets/design-system-fonts/` rather than a
+top-level `fonts/` (as the plan sketched), and `dioxus/assets/` holds copies
+of the dist CSS, because Dioxus's `asset!` only reads files inside the crate
 that uses it. Other stacks copy them from there, as the preview does.

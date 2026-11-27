@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use rand::SeedableRng;
+use rand::rngs::SmallRng;
 
 use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
 use crate::card::Card;
@@ -71,6 +73,12 @@ pub struct ActionDeckResource(pub Deck);
 #[derive(Resource)]
 pub struct AttackerCardResource(pub Card);
 
+/// Seeds the action deck's shuffle, so a game deals the same cards every
+/// time. Scripted runs ([`crate::script`]) insert it; without it each game
+/// shuffles at random.
+#[derive(Resource, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ShuffleSeed(pub u64);
+
 /// Marks the root of the game UI so it can be cleaned up on exit.
 #[derive(Component, Debug)]
 pub struct GameUiRoot;
@@ -125,7 +133,7 @@ pub const STARTING_HAND_SIZE: usize = 3;
 /// battle phase.  A value of `0` ensures it always loses.
 const EMPTY_HAND_CARD: &str = "Empty Hand";
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, seed: Option<Res<ShuffleSeed>>) {
     let library = CardLibrary::default_library();
     info!(
         "Card library contains {} cards: {}",
@@ -142,7 +150,10 @@ fn setup(mut commands: Commands) {
             return;
         }
     };
-    action_deck.shuffle();
+    match seed {
+        Some(seed) => action_deck.shuffle_with(&mut SmallRng::seed_from_u64(seed.0)),
+        None => action_deck.shuffle(),
+    }
 
     info!(
         "Action deck initialized with {} cards.",
@@ -1272,6 +1283,30 @@ mod tests {
             app.world().get_resource::<AiOpponent>().is_some(),
             "setup should insert AiOpponent resource"
         );
+    }
+
+    fn dealt_hands(seed: Option<u64>) -> Vec<Vec<String>> {
+        let mut app = make_test_app();
+        if let Some(seed) = seed {
+            app.insert_resource(ShuffleSeed(seed));
+        }
+        app.world_mut().run_system_once(setup);
+        let engine = &app.world().resource::<RulesEngineResource>().0;
+        engine
+            .players
+            .iter()
+            .map(|p| p.hand.iter().map(|c| c.name.clone()).collect())
+            .collect()
+    }
+
+    #[test]
+    fn setup_with_a_seed_deals_the_same_hands_every_time() {
+        assert_eq!(dealt_hands(Some(7)), dealt_hands(Some(7)));
+    }
+
+    #[test]
+    fn setup_with_different_seeds_deals_different_hands() {
+        assert_ne!(dealt_hands(Some(7)), dealt_hands(Some(8)));
     }
 
     #[test]

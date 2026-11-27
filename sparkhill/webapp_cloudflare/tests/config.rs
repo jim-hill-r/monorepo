@@ -51,3 +51,23 @@ fn free_plan_settings_only() {
 fn ignores_wrangler_state() {
     assert!(read(".gitignore").contains(".wrangler/"));
 }
+
+#[test]
+fn release_adds_the_security_headers() {
+    // Pages reads _headers from the build output's root; release copies it
+    // there after the dx bundle.
+    assert!(read("mise.toml").contains(r#"cp \"{{config_root}}/_headers\" dist/public/_headers"#));
+    let headers = read("_headers");
+    for required in [
+        "Content-Security-Policy:",
+        "frame-ancestors 'none'",
+        "X-Content-Type-Options: nosniff",
+        "Referrer-Policy:",
+        "Strict-Transport-Security:",
+    ] {
+        assert!(
+            headers.contains(required),
+            "_headers should send {required}"
+        );
+    }
+}

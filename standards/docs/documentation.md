@@ -2,6 +2,7 @@
     - {Name of the project} section which includes a short description (executive summary) of the goal of the project, including why it was named that.
 - All projects MUST include a CONTRIBUTING.md. The CONTRIBUTING.md should include the following sections:
     - A `Getting Started` section which describes how to install the project's toolchain, how to build, and how to test.
+- `mise run //:audit` checks both for every project (a directory with a `mise.toml`): DOC-001 (no README.md), DOC-002 (no heading with the project's package name, directory name or path, such as `bear_down/cloudflare`), DOC-003 (no CONTRIBUTING.md) and DOC-004 (no `Getting Started` heading). They are warnings until every project passes, then they become errors (`standards/scripts/project-check.sh`).
 
 ## Retros
 

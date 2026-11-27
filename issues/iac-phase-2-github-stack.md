@@ -7,4 +7,4 @@ order: 60
 added: 2026-11-26
 ---
 
-Decision 0007, phase 2: a `github` stack in `infra` that imports this repo and manages delete head branches on merge, the `main` ruleset (with the `CI result` required check, which replaces that human issue), labels such as `needs-human`, and the `infra` environment. First add a human issue for a fine-grained token with Administration on this repo only (read for plans, write for apply) and a yearly rotation check.
+Decision 0007, phase 2: the `github` stack in `infra` (`src/stacks/github.rs`) already imports this repo (delete head branches on merge included), code security and a `CI` ruleset. Add the labels the workflows and triage use (`needs-human`, `credential-change`, `cost`) with `github_issue_label` and the `infra` environment with `github_repository_environment` (never `infra-credentials`, IAC-005). Both need more permissions on the read-only infra GitHub App (Issues: read, Environments: read) and the infra GitHub App (Issues: write); update their runbooks and the `github-app-infra*` settings checks. Plans and applies already use the two apps, so no token is needed.

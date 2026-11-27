@@ -7,6 +7,8 @@ deploy it and bring it to parity with the live app at
 <https://blue.eel.education>. It deploys from `../webapp_cloudflare` to
 <https://jimhillr-sparkhill-webapp.pages.dev>. The gaps were found from the
 live app's page head and its public `eel3-data` S3 bucket, because cloud
-sandboxes can't load blue.eel.education itself; add any more Jim lists.
-Work them by `order`. The `@smoke` tests against the deploy are the root
-issue `issues/pages-deploys-smoke-playwright-tests-blueeel.md`.
+sandboxes can't load blue.eel.education itself. The four gaps found
+(install icons, each learner's progress, the live letter shapes, capitals)
+are done; add any more Jim lists and work them by `order`. The web app's
+`@smoke` Playwright tests run against the deploy after every push to `main`
+and feed the `cd` evals in `../evals.toml`.

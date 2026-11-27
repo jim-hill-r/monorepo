@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
  * page links a web app manifest whose icons load, and has the live app's
  * title, theme colour and no-zoom viewport (index.html).
  */
-test('links a manifest with icons that load', async ({ page, request }) => {
+test('links a manifest with icons that load @smoke @req:SPRK-007', async ({ page, request }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('Blue Eel');
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#178CA4');

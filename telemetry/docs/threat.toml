@@ -1,0 +1,47 @@
+# telemetry: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "One public Worker route, POST /event, that validates small JSON events and writes them to Analytics Engine. No sign-in; events carry no personal data, and the IP is used only for rate limiting, never stored."
+
+[[surface]]
+name = "event API"
+kind = "worker"
+url = "https://jimhillr-telemetry.jim-hill-r.workers.dev"
+access = "public"
+data = "public"
+headers = "telemetry/src/lib.rs"
+notes = "Accepts any origin (Access-Control-Allow-Origin: *) on purpose: events carry no credentials. It returns only status codes, never stored data. SECURITY_HEADERS in src/lib.rs go on every response."
+
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["mise-projects.yml deploy step"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[[threat]]
+id = "TEL-T1"
+stride = "denial-of-service"
+what = "A flood of events uses up the Workers or Analytics Engine free quota."
+mitigation = "The LIMITER rate limit (10 per 10 seconds per IP), a 4 KB body cap, and free-tier budgets in standards/radar/limits.toml."
+surface = "event API"
+
+[[threat]]
+id = "TEL-T2"
+stride = "tampering"
+what = "Fake or oversized events skew the feedback numbers or smuggle data in."
+mitigation = "src/event.rs accepts only known kinds, with each field from a fixed list or capped in length; anything else is a 400."
+surface = "event API"
+
+[[threat]]
+id = "TEL-T3"
+stride = "information-disclosure"
+what = "Events end up holding personal data."
+mitigation = "Only the enumerated fields are written; the IP goes to the rate limiter, never to a blob."
+surface = "event API"

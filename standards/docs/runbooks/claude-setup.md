@@ -51,9 +51,6 @@ their own access.
      `human-issues-digest` skill.
    - "Weekly deep project review", weekly: run the `deep-project-review`
      skill.
-   - "Daily eval triage", daily at 7:30 New York (4:30 AM Pacific): paste
-     the prompt from `standards/docs/scheduled-tasks/eval-triage.md`
-     ([Schedule the daily eval triage](eval-triage-task.md)).
 
 ## Where secrets go
 

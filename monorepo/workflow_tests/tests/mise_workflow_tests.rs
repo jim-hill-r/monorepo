@@ -124,8 +124,8 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
         .unwrap_or_else(|| panic!("no jobs"));
     assert_eq!(
         jobs.len(),
-        5,
-        "expected the ci job, the secret scan, the dependency audit, the cost summary and the CI result gate"
+        8,
+        "expected the ci job, the secret scan, the dependency audit, the workflow audit, the cost and security summaries, the resource entries label and the CI result gate"
     );
     let gate = &parsed["jobs"]["ci-result"];
     assert_eq!(
@@ -487,7 +487,7 @@ fn test_evals_run_after_ci_and_publish_their_results() {
     );
 
     let upload = &steps[upload];
-    assert_eq!(upload["with"]["retention-days"].as_u64(), Some(14));
+    assert_eq!(upload["with"]["retention-days"].as_u64(), Some(7));
     assert!(
         upload["uses"]
             .as_str()
@@ -629,6 +629,11 @@ fn test_cd_evals_run_right_after_a_deploy() {
         deploy < cd && cd < upload,
         "deploy, then cd evals, then upload"
     );
+    assert_eq!(
+        steps[upload]["with"]["retention-days"].as_u64(),
+        Some(7),
+        "cd eval results are read in the same run, so they keep 7 days (RES-003)"
+    );
     assert_eq!(steps[deploy]["id"].as_str(), Some("deploy"));
     assert!(
         steps[deploy]["run"]
@@ -704,7 +709,37 @@ fn test_evals_store_pushes_only_to_the_evals_results_branch() {
         .lines()
         .filter(|l| l.contains("\" push ") && !l.trim_start().starts_with('#'))
         .collect();
-    assert_eq!(pushes.len(), 1, "evals.sh pushes once: {pushes:?}");
-    assert!(pushes[0].contains("HEAD:refs/heads/evals-results"));
-    assert!(!pushes[0].contains("--force") && !pushes[0].contains(" -f "));
+    let (results, others): (Vec<&str>, Vec<&str>) = pushes
+        .iter()
+        .partition(|l| l.contains("refs/heads/evals-results"));
+    assert_eq!(results.len(), 1, "evals.sh store pushes once: {pushes:?}");
+    assert!(results[0].contains("HEAD:refs/heads/evals-results"));
+    assert!(!results[0].contains("--force") && !results[0].contains(" -f "));
+    // The only other pushes are evals.sh triage's, to evals-triage.
+    assert_eq!(others.len(), 2, "{others:?}");
+    for push in others {
+        assert!(
+            push.ends_with(" refs/heads/evals-triage")
+                || push.ends_with(":refs/heads/evals-triage"),
+            "{push}"
+        );
+    }
+}
+
+#[test]
+fn test_evals_triage_runs_daily_and_pushes_only_through_evals_sh() {
+    let (content, parsed) = load("evals-triage.yml");
+    assert!(!parsed["on"]["schedule"].is_null());
+    assert!(!parsed["on"]["workflow_dispatch"].is_null());
+    assert_eq!(parsed["permissions"]["contents"].as_str(), Some("read"));
+    let job = &parsed["jobs"]["triage"];
+    assert_eq!(job["permissions"]["contents"].as_str(), Some("write"));
+    assert_eq!(job["permissions"]["pull-requests"].as_str(), Some("read"));
+    assert_eq!(job["if"].as_str(), Some("github.ref == 'refs/heads/main'"));
+    assert!(content.contains("evals.sh triage"));
+    assert!(!content.contains("git push"), "the push lives in evals.sh");
+    assert!(
+        !content.contains("gh pr create"),
+        "a PR opened with the workflow token runs no CI; PR triage opens it"
+    );
 }
