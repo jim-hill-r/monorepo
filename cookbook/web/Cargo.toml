@@ -8,6 +8,7 @@ workspace = true
 
 [dependencies]
 dioxus = { workspace = true, features = ["web", "router"] }
+design_system_dioxus = { path = "../../design_system/dioxus" }
 auth_sdk = { workspace = true }
 chrono = { workspace = true }
 cookbook_core = { path = "../core" }

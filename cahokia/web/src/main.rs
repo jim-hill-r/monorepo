@@ -119,6 +119,9 @@ fn App() -> Element {
             content: CONTENT_SECURITY_POLICY,
         }
         document::Link { rel: "icon", href: FAVICON }
+        // The design system's tokens and base sheet, before the app's own
+        // sheets so they can use the tokens.
+        design_system_dioxus::Stylesheets { default_theme: ui::DEFAULT_THEME }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: HEADER_CSS }
 
@@ -195,7 +198,7 @@ fn WebNavbar() -> Element {
         Sidebar {
             is_open: sidebar_open,
             h2 { "Controls" }
-            p { "Future controls will be added here." }
+            design_system_dioxus::ThemePicker {}
             nav {
                 class: "sidebar-links",
                 ul {
@@ -305,8 +308,8 @@ mod tests {
         // the redirect URI is the site root from every page, never the
         // current page URL.
         assert_eq!(
-            redirect_url_for_origin("https://cahokia-web.pages.dev"),
-            "https://cahokia-web.pages.dev/"
+            redirect_url_for_origin("https://jimhillr-cahokia.pages.dev"),
+            "https://jimhillr-cahokia.pages.dev/"
         );
         assert_eq!(
             redirect_url_for_origin("http://localhost:8080"),

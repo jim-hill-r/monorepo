@@ -75,8 +75,8 @@ test.describe('Sidebar Component @req:CAHO-005', () => {
     // Verify the content heading
     await expect(sidebarContent.locator('h2')).toHaveText('Controls');
     
-    // Verify the placeholder text
-    await expect(sidebarContent.locator('p')).toContainText('Future controls will be added here');
+    // The design system's appearance picker is the first control.
+    await expect(sidebarContent.locator('.ds-theme-picker')).toBeVisible();
   });
 
   test('should close sidebar when close button is clicked', async ({ page }) => {

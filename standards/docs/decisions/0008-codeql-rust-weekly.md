@@ -1,6 +1,6 @@
 # 0008. Keep the custom CodeQL workflow and add a weekly Rust scan
 
-- Status: Proposed (accepted when Jim merges the PR that adds it)
+- Status: Accepted (Jim approved the PR that adds it, 2026-11-27)
 - Date: 2026-11-26
 - Asked by: Jim ("I have dependabot and I think I have a custom GitHub
   workflow for security scanning. One of the human issues was to turn on

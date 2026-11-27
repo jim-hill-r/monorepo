@@ -913,10 +913,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "design_system_dioxus"
+version = "0.1.0"
+dependencies = [
+ "dioxus",
+ "serde",
+ "serde_json",
+ "web-sys",
+]
+
+[[package]]
 name = "desktop"
 version = "0.1.0"
 dependencies = [
  "auth_sdk",
+ "design_system_dioxus",
  "dioxus",
  "dioxus-ssr",
  "ui",
@@ -3241,6 +3252,7 @@ name = "mobile"
 version = "0.1.0"
 dependencies = [
  "auth_sdk",
+ "design_system_dioxus",
  "dioxus",
  "dioxus-ssr",
  "ui",
@@ -5886,6 +5898,7 @@ name = "web"
 version = "0.1.0"
 dependencies = [
  "auth_sdk",
+ "design_system_dioxus",
  "dioxus",
  "dioxus-ssr",
  "ui",

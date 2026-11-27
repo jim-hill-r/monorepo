@@ -9,6 +9,7 @@ This crate provides core data structures and functionality for managing genealog
 - **Ancestry Events**: Track significant life events (Birth, Death, Marriage, Divorce, Adoption, etc.)
 - **Family Tree**: Build and query a graph-based family tree structure
 - **Layout**: Arrange a family tree into generation rows, then into boxes and lines with coordinates for drawing
+- **Pan, zoom and focus**: `Viewport` maps layout coordinates to the screen (pan, zoom around a point, fit, centre on a person), and `FamilyTree::lineage()` gives a focus person's ancestors and descendants and which lines join them, for highlighting
 - **Sample family**: `sample::sample_family_tree()` returns a made-up three-generation family of ten people, which the apps show until a user enters their own
 
 ## Usage

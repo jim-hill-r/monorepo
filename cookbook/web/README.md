@@ -11,6 +11,7 @@ The `web` project is the browser-based frontend for the Cookbook application. It
 - **Input Validation**: Automatically validates day and week numbers to ensure they're within valid ranges
 - **Responsive Routing**: Uses Dioxus Router for seamless navigation between pages
 - **Markdown Data Provider**: Uses the `cookbook-data-md` library to read recipes from markdown files
+- **Themes**: Uses the shared [design system](../../design_system/README.md), earthy by default. The sidebar's Appearance picker switches between the five themes, light or dark, and accessible mode, and remembers the choice in the browser. The CSS in `assets/styling/` uses only `--ds-` tokens, never its own colours. `tests/design-system.spec.ts` runs axe on the main pages in all 20 combinations.
 
 ## Prerequisites
 

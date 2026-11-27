@@ -1,6 +1,7 @@
 mod canvas_js;
 mod components;
 mod pages;
+mod patterns;
 mod state;
 
 use dioxus::prelude::*;

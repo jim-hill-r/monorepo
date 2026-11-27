@@ -49,6 +49,13 @@ A **Dependency audit** job runs cargo-deny and `npm audit` for the lockfiles
 the PR changes (`standards/scripts/deps-check.sh`, SEC-003 and SEC-004).
 Warnings only for now, so CI result doesn't wait for it.
 
+A **Cost summary** job runs `cost summary --base origin/<base>` (the `cost`
+project, [standards/docs/cost.md](../../standards/docs/cost.md)) and writes
+what the PR changes about cost to the job summary: cost files changed, and
+services, usage, money and budgets that moved. It labels the PR `cost` when
+anything moved, and `needs-human` when it adds a vendor or money to a project
+or raises a budget. Informational, so CI result doesn't wait for it.
+
 A last job, **CI result**, always runs after the projects and the secret scan
 and passes only when every project passed and no secret was found. It is the one check the `main` ruleset should
 require, so GitHub auto-merge waits for green CI (see the Auto-merge section

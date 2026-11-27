@@ -16,13 +16,10 @@ pub fn web_apps() -> Vec<WebApp> {
             "savzmZnyHcvewGkQX8aaInwPFonC9k2x",
             "cookbook",
         )),
-        // cahokia's Pages project predates the `jimhillr-` naming rule.
-        WebApp::new("cahokia")
-            .pages_project("cahokia-web")
-            .sign_in(Auth0App::import(
-                "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E",
-                "cahokia",
-            )),
+        WebApp::new("cahokia").sign_in(Auth0App::import(
+            "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E",
+            "cahokia",
+        )),
     ]
 }
 

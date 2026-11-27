@@ -66,7 +66,15 @@ rsx! {
 accessible mode: system, on or off) that saves the choice in `localStorage`.
 `Stylesheets` applies the saved choice once the app starts. To apply it
 before first paint, also inline `design_system_dioxus::head_script(...)` in
-the app's `index.html`. Pages without Dioxus inline `js/theme.js` the same
+the app's `index.html`.
+
+In the browser (wasm) the picker and `Stylesheets` read and write the
+choice with `web-sys`, not an inline script or `eval`, so they work under a
+strict Content Security Policy like cookbook's and cahokia's
+(`script-src 'self' 'wasm-unsafe-eval'`). Such an app can't inline the head
+script either, so it puts `data-theme` and `data-ds-default` with its default
+theme on `<html>` in its `index.html`; the page has the right default from
+first paint, and a saved choice applies as soon as the app starts. Pages without Dioxus inline `js/theme.js` the same
 way, with `data-ds-default` (and optionally `data-ds-themes`) on `<html>`.
 
 **Games and native UI** use the `design_system_palette` crate, which has every

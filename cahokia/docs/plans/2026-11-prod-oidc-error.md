@@ -41,6 +41,11 @@ expected one, not a captured one. Step 1 below checks it.
 
 ### 3. Auth0 doesn't know about the production domain yet (needs Jim)
 
+(Update 2026-11-26: the Pages project was renamed to `jimhillr-cahokia`, so
+production is now <https://jimhillr-cahokia.pages.dev>; see "Cloudflare
+Pages projects" in standards/docs/naming.md. `issues/human/` has the new
+URLs. The steps below keep the old name as it was when written.)
+
 `cahokia-web.pages.dev` is new, so the Auth0 application almost certainly
 doesn't list it. The browser calls the token endpoint directly, so Auth0 also
 needs the origin for CORS. An agent can't check or change the Auth0

@@ -3,6 +3,6 @@
 # and the first deploy creates this Pages project, within the free tier
 # budget (standards/docs/free-tiers.md).
 
-name = "controlled-chaos"
+name = "jimhillr-controlled-chaos"
 compatibility_date = "2026-11-01"
 pages_build_output_dir = "dist/web"

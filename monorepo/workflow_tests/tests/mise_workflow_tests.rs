@@ -96,6 +96,27 @@ fn test_pull_request_ci_checks_affected_projects() {
 }
 
 #[test]
+fn test_pull_request_ci_writes_the_cost_summary_and_labels() {
+    let (_, parsed) = load("pull-request-ci.yml");
+    let job = &parsed["jobs"]["cost"];
+    assert_eq!(job["name"].as_str(), Some("Cost summary"));
+    assert_eq!(
+        job["permissions"]["pull-requests"].as_str(),
+        Some("write"),
+        "the job labels the PR"
+    );
+    let steps = serde_yaml::to_string(&job["steps"]).unwrap_or_default();
+    assert!(
+        steps.contains("summary --base") && steps.contains("GITHUB_STEP_SUMMARY"),
+        "the job should write `cost summary` to the job summary"
+    );
+    assert!(
+        steps.contains("needs-human") && steps.contains("cost"),
+        "the job should set the cost and needs-human labels"
+    );
+}
+
+#[test]
 fn test_pull_request_ci_has_one_requirable_result_check() {
     let (_, parsed) = load("pull-request-ci.yml");
     let jobs = parsed["jobs"]
@@ -103,8 +124,8 @@ fn test_pull_request_ci_has_one_requirable_result_check() {
         .unwrap_or_else(|| panic!("no jobs"));
     assert_eq!(
         jobs.len(),
-        4,
-        "expected the ci job, the secret scan, the dependency audit and the CI result gate"
+        5,
+        "expected the ci job, the secret scan, the dependency audit, the cost summary and the CI result gate"
     );
     let gate = &parsed["jobs"]["ci-result"];
     assert_eq!(

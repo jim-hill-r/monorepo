@@ -19,7 +19,7 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
 The canvas component faithfully replicates blue.eel.education's `EelCanvas`:
 - Writing guidelines at the correct ratios (cap, mean, base, beard lines)
 - Color scheme: `#178CA4` user strokes, `#F9F7F0` background
-- Letter demonstration animations fetched from S3
+- Letter and word demonstration animations from stroke patterns bundled in `src/patterns.json` (see "Letter patterns")
 
 ### Letter Sequences
 
@@ -30,6 +30,24 @@ Uses the same letter groupings as the original app:
 4. v, m, n, p
 5. j, k, w
 6. q, w, x, y, z
+
+### Letter patterns
+
+The demonstrations draw from `src/patterns.json`, bundled into the app, so
+the app fetches nothing at runtime and needs no outside host (it used to load
+them from Blue Eel's AWS S3 bucket). There is one pattern per lowercase
+letter, and a word joins its letters' patterns.
+
+The strokes come from the Hershey Simplex Roman font (`futural`), which is in
+the public domain (Hershey fonts, Dr. A. V. Hershey, U.S. National Bureau of
+Standards). They were converted once: each glyph's height is mapped onto the
+canvas guide lines (ascender to the cap line, x-height to the mean line,
+descender to the beard line), points are spaced about 8 units apart, and
+strokes are put in handwriting order (bowl before stem in a, d, g and q, stem
+before dot in i and j, and v, w and z drawn as one stroke). To change a
+letter, edit its `path` in the JSON; `type` marks each stroke's `start` and
+`end`, and `src/patterns.rs` tests that every practice letter and word has a
+pattern.
 
 ## Technology
 

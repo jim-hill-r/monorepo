@@ -101,6 +101,7 @@ mise's version service. Follow these steps there; each one is safe to repeat.
    | `controlled_chaos`, `starcraft` | alsa and libudev (`pkg-config`) | `standards/tasks/bevy-game.toml` |
    | `my_lang` | LLVM 18 headers | `my_lang/mise.toml` |
    | `luggage` | the Swagger UI zip from GitHub, or `SWAGGER_UI_DOWNLOAD_URL` | `luggage/mise.toml` |
+   | `infra` | registry.opentofu.org, for `tofu validate` | `infra/mise.toml` |
 
    `cahokia/web` and `cookbook/web` need none: without `dx` their Rust
    checks still run and the Playwright step skips itself (step 5). Add a

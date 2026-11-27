@@ -1,0 +1,11 @@
+{
+  "format_version": "1.2",
+  "planned_values": {"root_module": {}},
+  "resource_changes": [
+    {"address": "auth0_client.cookbook", "mode": "managed", "type": "auth0_client", "name": "cookbook", "provider_name": "registry.opentofu.org/auth0/auth0",
+     "change": {"actions": ["forget"], "before": {"name": "cookbook"}, "after": null,
+       "after_unknown": {}, "before_sensitive": {}, "after_sensitive": false},
+     "action_reason": "delete_because_no_resource_config"}
+  ],
+  "configuration": {"root_module": {}}
+}

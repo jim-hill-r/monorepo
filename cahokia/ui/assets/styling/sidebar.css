@@ -1,32 +1,38 @@
+/* Colours, type and spacing come from the design system's tokens. */
 #sidebar {
   position: fixed;
   top: 0;
   right: -300px; /* Start hidden off-screen to the right */
   width: 300px;
   height: 100vh;
-  background-color: #654321; /* Dark earthy brown */
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.5);
-  transition: right 0.3s ease-in-out;
+  background-color: var(--ds-color-surface-raised);
+  border-left: var(--ds-border-width) solid var(--ds-color-border-strong);
+  transition: right var(--ds-motion-slow) ease-in-out;
   z-index: 1000;
   overflow-y: auto;
 }
 
 #sidebar.open {
   right: 0; /* Slide in to visible position */
+  box-shadow: var(--ds-shadow-3);
 }
 
 .sidebar-content {
-  padding: 2rem 1.5rem;
-  color: #f5e6d3; /* Light earthy cream color */
+  padding: var(--ds-space-6) var(--ds-space-5);
+  color: var(--ds-color-text);
 }
 
 .sidebar-content h2 {
-  color: #f5e6d3;
+  color: var(--ds-color-text);
   margin-top: 0;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #8b7355;
-  padding-bottom: 0.5rem;
+  margin-bottom: var(--ds-space-5);
+  font-size: var(--ds-text-xl);
+  border-bottom: 2px solid var(--ds-color-accent);
+  padding-bottom: var(--ds-space-2);
+}
+
+.sidebar-content p {
+  margin-bottom: var(--ds-space-4);
 }
 
 .sidebar-content ul {
@@ -36,8 +42,8 @@
 }
 
 .sidebar-content li {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #8b7355;
+  padding: var(--ds-space-3) 0;
+  border-bottom: var(--ds-border-width) solid var(--ds-color-border);
 }
 
 .sidebar-content li:last-child {
@@ -45,28 +51,45 @@
 }
 
 .sidebar-content a {
-  color: #f5e6d3;
+  color: var(--ds-color-link);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color var(--ds-motion-fast) var(--ds-ease);
 }
 
 .sidebar-content a:hover {
-  color: #ffffff;
+  color: var(--ds-color-accent-hover);
+  text-decoration: underline;
 }
 
 .sidebar-content button {
-  background-color: #8b7355;
-  color: #f5e6d3;
+  background-color: var(--ds-color-accent);
+  color: var(--ds-color-on-accent);
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border-radius: var(--ds-radius-sm);
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
-  margin-top: 0.5rem;
+  font-size: var(--ds-text-base);
+  transition: background-color var(--ds-motion-fast) var(--ds-ease);
+  margin-top: var(--ds-space-2);
   width: 100%;
 }
 
 .sidebar-content button:hover {
-  background-color: #a0826d;
+  background-color: var(--ds-color-accent-hover);
+}
+
+/* The design system's appearance picker, one control per line. */
+.sidebar-content .ds-theme-picker {
+  flex-direction: column;
+  align-items: stretch;
+  margin: var(--ds-space-5) 0;
+}
+
+.sidebar-content .ds-theme-picker legend {
+  float: none;
+  margin-bottom: var(--ds-space-2);
+}
+
+.sidebar-content .ds-theme-picker label {
+  justify-content: space-between;
 }
