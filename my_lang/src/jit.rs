@@ -42,6 +42,14 @@ pub enum JitError {
     FunctionNotFound(String),
     /// The function was called with more arguments than are supported.
     TooManyArguments,
+    /// The function was called with a different number of arguments than it
+    /// declares.
+    ArgumentCountMismatch {
+        /// The number of parameters the function declares.
+        expected: usize,
+        /// The number of arguments passed to [`JitRunner::call`].
+        given: usize,
+    },
 }
 
 impl std::fmt::Display for JitError {
@@ -52,6 +60,9 @@ impl std::fmt::Display for JitError {
             JitError::JitCreationFailed(msg) => write!(f, "JIT creation failed: {msg}"),
             JitError::FunctionNotFound(name) => write!(f, "function not found: '{name}'"),
             JitError::TooManyArguments => write!(f, "too many arguments (max 8 supported)"),
+            JitError::ArgumentCountMismatch { expected, given } => {
+                write!(f, "expected {expected} arguments, got {given}")
+            }
         }
     }
 }
@@ -113,16 +124,16 @@ impl<'ctx> JitRunner<'ctx> {
     /// Up to 8 arguments are supported.  All my_lang values are `i64`, so
     /// every argument and the return value must be a 64-bit signed integer.
     ///
-    /// # Safety
-    ///
-    /// This function is safe to call, but internally uses `unsafe` code to
-    /// invoke the JIT-compiled native function pointer.
+    /// This function is safe to call. Internally it uses the crate's only
+    /// `unsafe` block to invoke the JIT-compiled native function pointer,
+    /// after checking that `args` matches the function's declared arity.
     ///
     /// # Errors
     ///
     /// Returns [`JitError::FunctionNotFound`] if no function with `name`
-    /// exists, or [`JitError::TooManyArguments`] if more than 8 arguments are
-    /// provided.
+    /// exists, [`JitError::TooManyArguments`] if more than 8 arguments are
+    /// provided, or [`JitError::ArgumentCountMismatch`] if the number of
+    /// arguments differs from the function's parameter count.
     pub fn call(&self, name: &str, args: &[i64]) -> Result<i64, JitError> {
         let addr = self
             .engine
@@ -133,9 +144,36 @@ impl<'ctx> JitRunner<'ctx> {
             return Err(JitError::FunctionNotFound(name.to_string()));
         }
 
+        if args.len() > 8 {
+            return Err(JitError::TooManyArguments);
+        }
+
+        // Calling a native function with the wrong number of arguments is
+        // undefined behaviour, so check the declared arity first.
+        let expected = self
+            .engine
+            .get_function_value(name)
+            .map_err(|_| JitError::FunctionNotFound(name.to_string()))?
+            .count_params() as usize;
+        if args.len() != expected {
+            return Err(JitError::ArgumentCountMismatch {
+                expected,
+                given: args.len(),
+            });
+        }
+
         // All my_lang parameters and return values are i64.
         // We dispatch on the number of arguments at compile time so that the
         // C calling convention is respected.
+        //
+        // SAFETY: `addr` is the non-zero address LLVM's execution engine gave
+        // for `name`, a function the code generator emitted with the C calling
+        // convention, `args.len()` parameters of type i64 (checked above) and
+        // an i64 return. `self.engine` owns the machine code and lives as long
+        // as `self`, so the pointer stays valid for the call. Every my_lang
+        // function only does integer arithmetic and calls other functions in
+        // the same module, so the call itself can't violate memory safety.
+        #[allow(unsafe_code)]
         let result = unsafe {
             type F0 = unsafe extern "C" fn() -> i64;
             type F1 = unsafe extern "C" fn(i64) -> i64;
@@ -165,6 +203,7 @@ impl<'ctx> JitRunner<'ctx> {
                 [a0, a1, a2, a3, a4, a5, a6, a7] => {
                     std::mem::transmute::<usize, F8>(addr)(*a0, *a1, *a2, *a3, *a4, *a5, *a6, *a7)
                 }
+                // Unreachable: more than 8 arguments was rejected above.
                 _ => return Err(JitError::TooManyArguments),
             }
         };
@@ -324,6 +363,41 @@ mod tests {
         let many_args = [0i64; 9];
         let result = runner.call("foo", &many_args);
         assert!(matches!(result, Err(JitError::TooManyArguments)));
+    }
+
+    #[test]
+    fn test_jit_too_few_arguments_is_an_error() {
+        let runner = make_runner("function add(a, b) { a + b }");
+        let result = runner.call("add", &[1]);
+        assert!(matches!(
+            result,
+            Err(JitError::ArgumentCountMismatch {
+                expected: 2,
+                given: 1
+            })
+        ));
+    }
+
+    #[test]
+    fn test_jit_extra_arguments_are_an_error() {
+        let runner = make_runner("function answer() { return 42 }");
+        let result = runner.call("answer", &[1, 2]);
+        assert!(matches!(
+            result,
+            Err(JitError::ArgumentCountMismatch {
+                expected: 0,
+                given: 2
+            })
+        ));
+    }
+
+    #[test]
+    fn test_argument_count_mismatch_message() {
+        let err = JitError::ArgumentCountMismatch {
+            expected: 2,
+            given: 1,
+        };
+        assert_eq!(err.to_string(), "expected 2 arguments, got 1");
     }
 
     #[test]
