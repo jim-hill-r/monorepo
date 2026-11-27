@@ -11,6 +11,7 @@
 //! - **Code Generator**: Compiles the AST to LLVM IR (using inkwell)
 //! - **JIT Runner**: Runs compiled functions in-process
 //! - **AOT Compiler**: Emits native object files and executables
+//! - **Command line**: `my_lang build` and `my_lang run` (see [`cli`])
 //!
 //! ## LLVM Support
 //!
@@ -34,6 +35,7 @@
 //! - ✅ JIT Runner and AOT Compiler: Implemented
 
 pub mod aot;
+pub mod cli;
 pub mod codegen;
 pub mod jit;
 pub mod lexer;

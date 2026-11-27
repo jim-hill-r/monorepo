@@ -23,6 +23,8 @@ Tests are currently organized as:
 - `integration_tests.rs`: the lexer → parser → codegen pipeline and the JIT runner
 - `aot_tests.rs`: AOT compilation; builds real executables and object files and
   runs them, so it needs a system C compiler (`cc`)
+- `cli_tests.rs`: the `my_lang` binary's `build` and `run` commands on real
+  source files (also needs `cc`)
 
 ## Writing Tests
 

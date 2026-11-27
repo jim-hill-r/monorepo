@@ -142,6 +142,31 @@ aot::compile_to_object("function add(a, b) { return a + b }", Path::new("add.o")
 - Linking needs a system C compiler: `$CC` if set, otherwise `cc`.
 - Only the host target is supported (no cross-compilation yet).
 
+## Command Line
+
+The `my_lang` binary compiles and runs programs without writing any Rust.
+Source files can have any extension; the examples use `.my`.
+
+```bash
+cargo install --path .              # or: cargo run -- <command>
+
+my_lang run answer.my               # JIT-runs main and prints its result
+my_lang run add.my 3 4              # passes 3 and 4 to main(a, b)
+my_lang build answer.my             # writes the executable ./answer
+my_lang build answer.my -o bin/app  # writes bin/app
+./answer                            # prints main's result
+```
+
+- **`my_lang run <file> [args...]`** compiles `file` with the JIT, calls its
+  `main` with the integer arguments (one per parameter, at most 8) and prints
+  the result.
+- **`my_lang build <file> [-o <output>]`** compiles `file` to a native
+  executable with the AOT compiler. Without `-o` the executable is named after
+  the source file, minus its extension. Its `main` must take no parameters.
+
+Errors go to standard error, prefixed `my_lang:`, and the exit status is 1.
+The code is in `src/cli.rs`; `src/main.rs` only parses arguments.
+
 ## Lexer Features
 
 The lexer supports the following token types:
@@ -191,6 +216,7 @@ while let token = lexer.next_token() {
 - ✅ Code Generator: Implemented — compiles AST to LLVM IR via inkwell (integer arithmetic, comparisons, function calls, variable assignments)
 - ✅ JIT Runner: Implemented — executes compiled functions directly in-process via LLVM JIT
 - ✅ AOT Compiler: Implemented — emits native object files and executables
+- ✅ Command line: `my_lang build` and `my_lang run`
 
 ## Getting Started
 
