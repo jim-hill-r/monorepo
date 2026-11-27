@@ -198,18 +198,46 @@ they must reach Jim rather than sit in a project's issues or a chat thread
 
   ```markdown
   ---
-  added: 2026-11-25
-  unblocks: "sign-in on PR previews (the preview deploys issue)"
+  added: 2026-11-27
+  unblocks: "IaC applies on main (decision 0007)"
+  runbook: standards/docs/runbooks/tofu-state-passwords.md
   ---
 
-  In the Auth0 dashboard, add the Cloudflare Pages preview domains to the
-  allowed callback URLs for cookbook and cahokia.
+  ## Requirement
+
+  Make two long random passwords for the OpenTofu state Worker and add
+  them as GitHub secrets.
+
+  ## Why it can't be automated
+
+  Nothing in automation can make a secret yet without its value passing
+  through git, a log or state.
+
+  ## Runbook
+
+  [Make the OpenTofu state passwords](../../standards/docs/runbooks/tofu-state-passwords.md)
   ```
 
-  Say what to do, where, and why; `added` (required) says when, and
-  `unblocks` what it unblocks. `kind` and `priority` aren't used here.
-  `mise run //:audit` fails (ISS-003) if an issue elsewhere is tagged
-  `human`.
+  Every human task has these three sections (Jim, 2026-11-27: "document
+  the requirement, why it can't be automated and create a run book. Link
+  the run book in the task"):
+  - **Requirement**: what to do, where, and what it unblocks.
+  - **Why it can't be automated**: the reason no workflow or agent can do
+    it (no API, a signed-in account, a first credential, a sign-off, a
+    delete). If a bootstrap credential could make it, put it in the
+    token-minting workflow instead of here.
+  - **Runbook**: a link to its runbook in
+    [`standards/docs/runbooks/`](runbooks/README.md), the step-by-step
+    page (permissions, steps, where secrets go, how to verify, cost). Add
+    the runbook in the same PR, or link an existing one. Runbooks stay
+    after the task is done, so a rebuild can follow them.
+
+  Front matter: `added` (required) says when, `runbook` (required) is the
+  runbook's path from the repo root, and `unblocks` what it unblocks.
+  `kind` and `priority` aren't used here. `mise run //:audit` fails
+  (ISS-003) if an issue elsewhere is tagged `human`, and (ISS-004) if a
+  human task lacks one of the three sections or its `runbook` field, or
+  the runbook file doesn't exist.
 - **PRs that need a person** get the `needs-human` label instead (see
   [pull-requests.md](pull-requests.md)). They are not copied into a file;
   the digest reads the label.
@@ -231,7 +259,8 @@ each setting made by hand that is due for Jim to look at, from
 ### Closing one
 
 Do the task, then delete its file in a PR (an agent will do this when told a
-task is done). If the task unblocks an agent issue, that issue becomes
+task is done). Keep its runbook: mark it done with the date, and fix any
+step that turned out different on the day. If the task unblocks an agent issue, that issue becomes
 workable as usual.
 
 ## Open PRs from before the change

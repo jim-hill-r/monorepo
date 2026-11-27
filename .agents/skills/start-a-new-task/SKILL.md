@@ -19,7 +19,9 @@ Be eager: take the first issue that qualifies under these rules.
 2. Skip anything tagged `agent-ignore`, and never take work from
    `issues/human/`: those tasks need a person. If an issue turns out to need
    one (a dashboard, a secret, a sign-off), add a file to `issues/human/` for
-   that part.
+   that part, saying why it can't be automated and linking its runbook in
+   `standards/docs/runbooks/`, which you write in the same PR (the format
+   is under "Human issues" in `standards/docs/issue-management.md`).
 3. Never work in a project listed under `# On Hold Projects` in the root
    `issues/README.md`.
 4. Search in this order and stop at the first hit:

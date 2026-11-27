@@ -1,7 +1,10 @@
 ---
 added: 2026-11-26
 unblocks: "the second approval for credential changes (decision 0010): until this is done, IaC can't apply any credential change"
+runbook: standards/docs/runbooks/infra-credentials-environment.md
 ---
+
+## Requirement
 
 Set up the `infra-credentials` GitHub environment (about 20 minutes, decision 0010):
 
@@ -11,3 +14,11 @@ Set up the `infra-credentials` GitHub environment (about 20 minutes, decision 00
 4. Make sure `jimhillr` signs in with a passkey or security key.
 
 Reply when done and an agent closes this; the settings checks `github-infra-credentials-environment`, `github-agent-role` and `github-claude-app-permissions` in `standards/settings.toml` then come round every 90 days.
+
+## Why it can't be automated
+
+It is the gate on agents, so agents must not be able to make or change it: creating an environment and its protection rules needs Admin, which `jimhillr-agt` doesn't have. Its tokens are the first credentials, which nothing can mint before they exist.
+
+## Runbook
+
+[Set up the infra-credentials environment](../../standards/docs/runbooks/infra-credentials-environment.md)
