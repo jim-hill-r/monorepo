@@ -43,6 +43,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **Short PR descriptions (Jim, 2026-11-27).** "PR descriptions are too
+  long to consume quickly. Every PR should include a short executive
+  description of what we are doing, why, and any engineering tradeoffs.
+  Keep this to 75 words. It should link to details in committed
+  docs/plans/issues." Every PR description opens, right after any required
+  attribution lines, with that summary of at most 75 words, and the details
+  live in committed files it links to, not in the description. The format
+  is under "Pull request descriptions" in `standards/docs/pull-requests.md`
+  and in `.github/pull_request_template.md`; the PR summary check (PR-001)
+  warns when it is missing, too long or unlinked.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
