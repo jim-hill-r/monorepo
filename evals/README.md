@@ -55,6 +55,11 @@ cargo run -p evals_cli -- human-checks answer claude-connectors --not-ok "GitHub
 # verdicts.json (standards/scripts/evals.sh store does the git part).
 cargo run -p evals_cli -- store --results evals-results.jsonl --dir ../evals-results
 
+# File the work the verdicts call for: a FIX or TODO issue file for each
+# requirement that is not green and has no open issue (--write writes them,
+# at most --limit). standards/scripts/evals.sh triage runs it daily.
+cargo run -p evals_cli -- triage --dir ../evals-results --write
+
 # Every requirement's current verdict, from a checkout of that branch
 # (standards/scripts/evals.sh verdicts fetches it for you).
 cargo run -p evals_cli -- verdicts --dir ../evals-results --project cookbook
