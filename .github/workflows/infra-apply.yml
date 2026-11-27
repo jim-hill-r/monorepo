@@ -109,7 +109,7 @@ jobs:
       apply: ${{ steps.route.outputs.apply }}
       credentials: ${{ steps.route.outputs.credentials }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: plan-*
           path: plans
@@ -155,7 +155,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: plan-${{ matrix.stack }}
           path: ${{ runner.temp }}/plan
@@ -206,7 +206,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash infra/scripts/env-gate.sh infra-credentials
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: plan-${{ matrix.stack }}
           path: ${{ runner.temp }}/plan
