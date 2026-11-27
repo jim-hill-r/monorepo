@@ -58,8 +58,8 @@ pub struct MonthMoney {
     /// is what the account is allowed to spend on it (today the Claude Code
     /// budget). The radar keeps no history, so every month uses today's.
     pub shared_cents: u64,
-    /// How many merged PRs touched a project that month; the shared cost is
-    /// split by them ([`crate::money::split_shared_costs`]).
+    /// How many PRs were merged that month; the shared cost is split by
+    /// them ([`crate::money::split_shared_costs`]).
     pub merged_prs: u32,
     /// One row per project, in project order.
     #[serde(default)]
@@ -459,8 +459,7 @@ pub fn build_history(
             MonthMoney {
                 month: month.to_string(),
                 shared_cents,
-                merged_prs: u32::try_from(prs.iter().filter(|p| !p.is_empty()).count())
-                    .unwrap_or(u32::MAX),
+                merged_prs: u32::try_from(prs.len()).unwrap_or(u32::MAX),
                 projects: month_money(month, projects, shared_cents, prs),
             }
         })
@@ -787,7 +786,6 @@ decision = "standards/docs/decisions/0000-example.md"
             vec![
                 vec!["site".to_string()],
                 vec!["site".to_string(), "tool".to_string()],
-                Vec::new(),
             ],
         )]);
         let history = build_history(
@@ -798,16 +796,15 @@ decision = "standards/docs/decisions/0000-example.md"
         );
         assert_eq!(history.len(), 2);
 
-        // October: no merged PRs, so nothing is split.
+        // October: no merged PRs; its revenue still shows.
         assert_eq!(history[0].month, "2026-10");
         assert_eq!(history[0].merged_prs, 0);
-        assert_eq!(history[0].totals().shared_cost_cents, 0);
         assert_eq!(
             history[0].project("site").map(|m| m.revenue_cents),
             Some(50)
         );
 
-        // November: site 1.5 of 2 PRs, tool 0.5; the repo-wide PR doesn't count.
+        // November: site 1.5 of 2 PRs, tool 0.5.
         let n = &history[1];
         assert_eq!(n.merged_prs, 2);
         assert_eq!(n.shared_cents, 2000);

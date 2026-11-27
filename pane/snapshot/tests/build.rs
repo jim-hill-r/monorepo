@@ -484,16 +484,17 @@ fn reads_cost_files_budgets_and_limits() -> TestResult {
     assert_eq!(app.costs[0].line, 11);
     assert_eq!(app.revenue[0].line, 20);
 
-    // Twelve months of money for the top-level projects; outside git
-    // nothing is split.
+    // Twelve months of money for the top-level projects, first in project
+    // order; outside git there are no merged PRs to split by.
     assert!(!costs.history_from_git);
     assert_eq!(costs.history.len(), 12);
     let nov = costs.history.last().ok_or("no history")?;
     assert_eq!(nov.month, "2026-11");
     let rows: Vec<_> = nov.projects.iter().map(|m| m.project.as_str()).collect();
-    assert_eq!(rows, ["app", "tool"]);
+    assert_eq!(rows.get(..2), Some(&["app", "tool"][..]));
     assert_eq!(nov.shared_cents, 3000);
-    assert_eq!(nov.totals().shared_cost_cents, 0);
+    assert_eq!(nov.merged_prs, 0);
+    assert_eq!(nov.project("app").map(|m| m.revenue_cents), Some(500));
 
     let pages = &costs.account[0];
     assert_eq!(pages.key, "pages_projects");

@@ -192,7 +192,7 @@ fn MoneyBody(snapshot: Snapshot) -> Element {
         }
         if !costs.history_from_git {
             p { class: "muted", role: "note", "data-testid": "money-no-history",
-                "This snapshot was built without git history, so shared costs aren't split across projects."
+                "This snapshot was built without git history, so shared costs can't be split by merged PRs."
             }
         }
         section { class: "group", "data-testid": "money-month",
