@@ -1,12 +1,12 @@
 {
   "import": [
     {
-      "id": "savzmZnyHcvewGkQX8aaInwPFonC9k2x",
-      "to": "auth0_client.cookbook"
-    },
-    {
       "id": "6CHDECRfCsyYdCFq1hwqKNwCHxxmum3E",
       "to": "auth0_client.cahokia"
+    },
+    {
+      "id": "savzmZnyHcvewGkQX8aaInwPFonC9k2x",
+      "to": "auth0_client.cookbook"
     }
   ],
   "provider": {

@@ -263,6 +263,11 @@ detector = "unknown-host"
 why = "Test links for the Markdown renderer."
 
 [[exempt]]
+path = "infra/src/tfschema/"
+detector = "unknown-host"
+why = "Generated provider bindings; the hosts are examples in the provider's attribute docs, not services."
+
+[[exempt]]
 path = "profiles/content_provider/src/lib.rs"
 detector = "unknown-host"
 why = "Links on the profile page, not services."

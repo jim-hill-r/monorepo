@@ -13,11 +13,13 @@ pub const DEV_PORT: u16 = 8080;
 pub struct WebApp {
     /// The monorepo project, such as `cookbook`. Used for resource names.
     pub project: String,
-    /// The Cloudflare Pages project name. `jimhillr-{project}` unless the
-    /// project hasn't been renamed yet.
+    /// The Cloudflare Pages project name, `jimhillr-{project}`, which is
+    /// also its `pages.dev` subdomain (AGENTS.md, FT-006).
     pub pages_project: String,
     /// The Auth0 application it signs in with, if any.
     pub sign_in: Option<Auth0App>,
+    /// Whether Cloudflare Web Analytics is on for the production site.
+    pub web_analytics: bool,
 }
 
 impl WebApp {
@@ -27,7 +29,19 @@ impl WebApp {
             project: project.to_string(),
             pages_project: format!("jimhillr-{}", project.replace('_', "-")),
             sign_in: None,
+            web_analytics: false,
         }
+    }
+
+    /// Turn on Cloudflare Web Analytics for the production site.
+    pub fn web_analytics(mut self) -> Self {
+        self.web_analytics = true;
+        self
+    }
+
+    /// The production host, `<pages host>.pages.dev`.
+    pub fn production_host(&self) -> String {
+        format!("{}.pages.dev", self.pages_project)
     }
 
     /// Sign in with an Auth0 application.
@@ -36,16 +50,16 @@ impl WebApp {
         self
     }
 
-    /// The production origin, `https://<pages project>.pages.dev`.
+    /// The production origin, `https://<pages host>.pages.dev`.
     pub fn production_origin(&self) -> String {
-        format!("https://{}.pages.dev", self.pages_project)
+        format!("https://{}", self.production_host())
     }
 
     /// Every preview of this project. Pages previews are
-    /// `<branch or hash>.<pages project>.pages.dev`, one level under the
+    /// `<branch or hash>.<pages host>.pages.dev`, one level under the
     /// project, which is the one left-most wildcard level Auth0 allows.
     pub fn preview_origin(&self) -> String {
-        format!("https://*.{}.pages.dev", self.pages_project)
+        format!("https://*.{}", self.production_host())
     }
 
     /// The origin `dx serve` uses.
