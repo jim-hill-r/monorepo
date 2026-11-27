@@ -219,6 +219,16 @@ repo, rather than in any one agent tool's settings.
   for reasons the PR didn't cause. A pending check is never green. Agents
   still never approve their own PRs. Details are in
   `standards/docs/pull-requests.md`.
+- **The reviewer account (Jim, 2026-11-27).** "A third GitHub account to
+  do approvals so we can be explicit about what is being auto-approved and
+  establish a process for that approver." `jimhillr-reviewer` approves
+  only the green, unlabelled, low-risk agent PRs its written rules allow
+  (the `All Auto Review` workflow, "The reviewer account" in
+  `standards/docs/pull-requests.md`, decision 0014); Jim approves the
+  rest, and reads every merged PR afterwards on pane's Acknowledge page.
+  Agents never hold or ask for its token, never remove a red or orange
+  label to get a PR approved, and never split a change to dodge its
+  protected paths or size limit.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
   or closed). The policy is in `standards/docs/pull-requests.md`. A scheduled
   agent task, "PR triage", runs three times a day as `jimhillr-agt` on
