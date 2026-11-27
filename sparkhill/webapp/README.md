@@ -10,7 +10,7 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
 - **Letter practice**: Canvas-based letter tracing with animated demonstrations and writing guidelines
 - **Word practice**: Word-level tracing practice
 - **Progress tracking**: Letter sequences matching the original app, with retry and stabilize logic
-- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). "Go" then opens the word level after letters, and the congratulations page after words
+- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). "Go" then opens the word level after letters, the capital letter level after words, and the congratulations page after capitals
 - **Congratulations page**: Shown when all expressions are mastered
 - **Each learner's progress**: the learner types their name on the home page
   ("Standard" when blank, as in the live app), and `src/progress.rs` saves
@@ -19,7 +19,7 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
   device has their own. Nothing leaves the device. `?practice=` sessions are
   never saved
 - **Practising a few letters**: `?practice=` with letters or words, such as
-  `/letter?practice=b,c` or `/word?practice=hi`, practises only those, as one
+  `/letter?practice=b,c`, `/word?practice=hi` or `/capital?practice=T`, practises only those, as one
   batch, instead of the whole level. Anything without a pattern is ignored
 
 ## Technical Details
@@ -55,13 +55,24 @@ Uses the same letter groupings as the original app:
 5. j, k, w
 6. q, w, x, y, z
 
+Capital letters (`/capital`) come after the words. The live app has a
+recorded pattern for every capital, but its order isn't known, so they are
+grouped from straight strokes to curves:
+1. L, T, I, H, E, F
+2. A, V, W, M, N
+3. K, X, Y, Z
+4. C, O, Q, G, S
+5. D, P, B, R, J, U
+
 ### Letter patterns
 
 The demonstrations draw from `src/patterns.json`, bundled into the app, so
 the app fetches nothing at runtime and needs no outside host. There is one
-pattern per lowercase letter, and a word joins its letters' patterns.
+pattern per letter, lowercase and capital, and a word joins its
+letters' patterns.
 
-They are the live app's own hand-recorded letters: each is a copy of
+They are the live app's own hand-recorded letters (Jim confirmed they are his
+to publish, 2026-11-27): each is a copy of
 `patterns/<letter>/master.json` from Blue Eel's `eel3-data` S3 bucket, made
 once, with the guide lines from its `dimensions` (in pixels on a 449 pixel
 high canvas) written as the `boundary`, points rounded to 0.1 pixel, and the
