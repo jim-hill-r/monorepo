@@ -29,7 +29,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # The root installs no tools; skip the monorepo-wide install.
       - uses: jdx/mise-action@v5
+        with:
+          install: false
 
       - name: Check the executive summary
         env:
