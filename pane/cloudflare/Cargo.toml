@@ -22,7 +22,7 @@ unsafe_code = "forbid"
 [dependencies]
 
 [dev-dependencies]
-toml = "0.8"
+toml = "1.2"
 
 # The Worker glue only builds for wasm, so `cargo test` checks the routes
 # natively without it.
