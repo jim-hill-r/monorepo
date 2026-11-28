@@ -807,6 +807,61 @@ pub fn security_scans(alerts: Option<SecurityAlerts>) -> Signal {
     }
 }
 
+/// A project's `must` requirements by verdict, and all its requirements.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct MustVerdicts {
+    pub musts: u32,
+    pub met: u32,
+    pub at_risk: u32,
+    pub not_met: u32,
+    /// Every active requirement, `must` or not.
+    pub requirements: u32,
+    /// Of those, the ones met.
+    pub requirements_met: u32,
+}
+
+/// **Requirements**: the worst verdict of the project's `must`
+/// requirements, with the requirement coverage. `None` when the snapshot
+/// has no eval results. Grey with no musts, or when no must has a verdict
+/// yet (all unknown); amber when some musts are met and the rest unknown.
+pub fn requirements(verdicts: Option<MustVerdicts>) -> Signal {
+    const NAME: &str = "Requirements";
+    let Some(v) = verdicts else {
+        return signal(NAME, Health::Grey, "No eval results");
+    };
+    if v.musts == 0 {
+        let reason = if v.requirements == 0 {
+            "No requirements".to_owned()
+        } else {
+            format!(
+                "No must requirements; {} of {} requirements met",
+                v.requirements_met, v.requirements
+            )
+        };
+        return signal(NAME, Health::Grey, reason);
+    }
+    let unknown = v.musts.saturating_sub(v.met + v.at_risk + v.not_met);
+    let (health, worst) = if v.not_met > 0 {
+        (Health::Red, format!("{} must(s) not met", v.not_met))
+    } else if v.at_risk > 0 {
+        (Health::Amber, format!("{} must(s) at risk", v.at_risk))
+    } else if v.met == 0 {
+        (Health::Grey, "No must judged yet".to_owned())
+    } else if unknown > 0 {
+        (Health::Amber, format!("{unknown} must(s) unknown"))
+    } else {
+        (Health::Green, "Every must met".to_owned())
+    };
+    signal(
+        NAME,
+        health,
+        format!(
+            "{worst}; {} of {} musts and {} of {} requirements met",
+            v.met, v.musts, v.requirements_met, v.requirements
+        ),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1164,6 +1219,38 @@ mod tests {
         assert_eq!(review_rotation(Some(9), t).health, Health::Amber);
         assert_eq!(review_rotation(Some(15), t).health, Health::Amber);
         assert_eq!(review_rotation(Some(16), t).health, Health::Red);
+    }
+
+    #[test]
+    fn requirements_edges() {
+        let v = |musts, met, at_risk, not_met| {
+            Some(MustVerdicts {
+                musts,
+                met,
+                at_risk,
+                not_met,
+                requirements: musts + 2,
+                requirements_met: met + 1,
+            })
+        };
+        assert_eq!(requirements(None).health, Health::Grey);
+        assert_eq!(
+            requirements(Some(MustVerdicts::default())).reason,
+            "No requirements"
+        );
+        assert_eq!(requirements(v(0, 0, 0, 0)).health, Health::Grey);
+        let red = requirements(v(4, 2, 1, 1));
+        assert_eq!(red.health, Health::Red);
+        assert_eq!(
+            red.reason,
+            "1 must(s) not met; 2 of 4 musts and 3 of 6 requirements met"
+        );
+        assert_eq!(requirements(v(4, 3, 1, 0)).health, Health::Amber);
+        assert_eq!(requirements(v(4, 0, 0, 0)).health, Health::Grey);
+        let unknown = requirements(v(4, 3, 0, 0));
+        assert_eq!(unknown.health, Health::Amber);
+        assert!(unknown.reason.starts_with("1 must(s) unknown"));
+        assert_eq!(requirements(v(4, 4, 0, 0)).health, Health::Green);
     }
 
     #[test]

@@ -185,6 +185,17 @@ secrets from the bootstrap credentials (decision 0011). Every job that touches s
 `tofu_state/README.md`. Tests: `jimhillr/workflow_tests/tests/infra_workflows_tests.rs`
 and `tofu_state_deploy_tests.rs`.
 
+## pane-redeploy.yml (Pane redeploy)
+
+Runs when Push Main CI/CD, Nightly CI or Nightly CD finishes on `main` (and
+on `workflow_dispatch`), and deploys `pane/cloudflare` from the latest
+`main` through `mise-projects.yml`. Those runs store their eval results on
+the `evals-results` branch after their own jobs, so this redeploy is what
+puts the new verdicts and runs on each Project page's Requirements section
+(pane's snapshot reads the branch at build time). A newer run cancels a
+pending redeploy (`pane-redeploy` concurrency group). Tests:
+`jimhillr/workflow_tests/tests/pane_redeploy_workflow_tests.rs`.
+
 ## pull-request-review-decks.yml (Review decks)
 
 Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).
