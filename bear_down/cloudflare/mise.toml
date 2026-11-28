@@ -16,12 +16,13 @@ DEPLOY_URL = "https://jimhillr-bear-down.pages.dev"
 [task_config]
 includes = ["../../standards/tasks/cloudflare-pages.toml"]
 
-# Simulate the season (the CLI downloads nflverse games.csv itself), then
-# bundle the web app, which serves the fresh rooting.json from public/.
+# Simulate the season (the CLI downloads nflverse games.csv itself) for the
+# Bears into rooting.json and for every other team into teams/<team>.json
+# (decision 0010), then bundle the web app, which serves them from public/.
 [tasks.release]
 description = "Run the simulation and build the web app this project deploys"
 dir = "{{config_root}}/.."
 run = [
-  "cargo run --release -p bear_down_cli -- --out web/public/rooting.json",
+  "cargo run --release -p bear_down_cli -- --out web/public/rooting.json --teams-dir web/public/teams",
   "cd web && mise run release",
 ]

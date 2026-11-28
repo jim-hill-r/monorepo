@@ -12,9 +12,15 @@ pub struct Rooting {
     pub week: Option<u8>,
     pub simulations: u32,
     pub latest_game: Option<LatestGame>,
-    pub bears: Bears,
+    /// The team the guide is for (decision 0010). Missing in older files,
+    /// which are all the Bears'.
+    #[serde(default = "bears")]
+    pub team: String,
+    /// That team's record and odds; `bears` in older files.
+    #[serde(alias = "bears")]
+    pub focus: Focus,
     /// The celebration banner the nightly build worked out: only after a
-    /// Bears win. Missing in older files.
+    /// win by the guide's team. Missing in older files.
     #[serde(default)]
     pub banner: Option<Banner>,
     pub nfc_north_divisional: f64,
@@ -31,11 +37,16 @@ pub struct LatestGame {
     pub home_score: u16,
 }
 
+/// The Bears' abbreviation, the team of files without a `team`.
+fn bears() -> String {
+    bear_down_core::BEARS.to_string()
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct Bears {
+pub struct Focus {
     pub record: Record,
     pub odds: Odds,
-    /// Games ahead of the best NFC North rival; missing in older files.
+    /// Games ahead of the best division rival; missing in older files.
     #[serde(default)]
     pub division_lead: Option<f64>,
     /// That rival.
@@ -142,10 +153,10 @@ pub fn no_pick_label(tier: Tier) -> &'static str {
 /// What the rankings optimize.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Goal {
-    /// The Bears winning the Super Bowl (decision 0002).
+    /// The guide's team winning the Super Bowl (decision 0002).
     #[default]
     SuperBowl,
-    /// The Bears making the playoffs (Jim, 2026-11-26).
+    /// The guide's team making the playoffs (Jim, 2026-11-26).
     Playoffs,
     /// All four NFC North teams reaching the divisional round (decision 0007).
     NfcNorth,
@@ -200,9 +211,15 @@ impl Rooting {
         games
     }
 
-    /// True when the Bears can no longer make the playoffs.
-    pub fn bears_eliminated(&self) -> bool {
-        self.bears.odds.playoffs <= 0.0
+    /// True when the guide's team can no longer make the playoffs.
+    pub fn eliminated(&self) -> bool {
+        self.focus.odds.playoffs <= 0.0
+    }
+
+    /// Whether the guide's team plays in the NFC North, so the NFC North
+    /// goal (decision 0007) is offered.
+    pub fn nfc_north_team(&self) -> bool {
+        bear_down_core::is_nfc_north(&self.team)
     }
 }
 
@@ -535,10 +552,40 @@ mod tests {
 
     #[test]
     fn eliminated_when_playoff_odds_are_zero() {
-        let mut r = Rooting::parse(SAMPLE).expect("sample parses");
-        assert!(!r.bears_eliminated());
-        r.bears.odds.playoffs = 0.0;
-        assert!(r.bears_eliminated());
+        let mut r = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting,
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        assert!(!r.eliminated());
+        r.focus.odds.playoffs = 0.0;
+        assert!(r.eliminated());
+    }
+
+    #[test]
+    fn a_guide_names_its_team_and_older_files_are_the_bears() {
+        let r = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting,
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        assert_eq!(r.team, "CHI");
+        assert!(r.nfc_north_team());
+        // An older file: no `team`, and `bears` for the team's odds.
+        let mut json: serde_json::Value = match serde_json::from_str(SAMPLE) {
+            Ok(json) => json,
+            Err(error) => panic!("sample is JSON: {error}"),
+        };
+        if let Some(fields) = json.as_object_mut() {
+            fields.remove("team");
+            if let Some(focus) = fields.remove("focus") {
+                fields.insert("bears".to_string(), focus);
+            }
+        }
+        let older = Rooting::parse(&json.to_string());
+        assert_eq!(older.as_ref().map(|r| r.team.as_str()), Ok("CHI"));
+        assert_eq!(older.map(|r| r.focus), Ok(r.focus.clone()));
+        json["team"] = "KC".into();
+        let chiefs = Rooting::parse(&json.to_string());
+        assert_eq!(chiefs.map(|r| r.nfc_north_team()), Ok(false));
     }
     #[test]
     fn archive_weeks_are_offered_newest_first_without_the_current_one() {

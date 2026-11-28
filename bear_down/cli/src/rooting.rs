@@ -22,10 +22,13 @@ pub struct Guide {
     pub simulations: u32,
     /// The most recent game with a final score, to show how fresh the data is.
     pub latest_game: Option<LatestGame>,
-    /// The Bears' record and odds.
-    pub bears: Bears,
+    /// The team the guide is for, as an nflverse abbreviation: `CHI` for
+    /// `rooting.json`, any team for `teams/<team>.json`.
+    pub team: String,
+    /// That team's record and odds.
+    pub focus: Focus,
     /// The celebration banner, worked out from the current results: only
-    /// when the Bears' most recent game was a win, otherwise `None`.
+    /// when the team's most recent game was a win, otherwise `None`.
     pub banner: Option<Banner>,
     /// The chance all four NFC North teams reach the divisional round.
     pub nfc_north_divisional: f64,
@@ -46,7 +49,7 @@ pub struct LatestGame {
 
 /// The focus team's record and odds.
 #[derive(Debug, Serialize)]
-pub struct Bears {
+pub struct Focus {
     pub record: RecordEntry,
     pub odds: Odds,
     /// Games ahead of the best division rival, by record alone (no
@@ -100,9 +103,9 @@ pub struct GameEntry {
     pub away: String,
     pub home: String,
     pub home_win_probability: f64,
-    /// The swing on the Bears winning the Super Bowl (the default goal).
+    /// The swing on the team winning the Super Bowl (the default goal).
     pub champion: SwingEntry,
-    /// The swing on the Bears making the playoffs.
+    /// The swing on the team making the playoffs.
     pub playoffs: SwingEntry,
     /// The swing on all four NFC North teams reaching the divisional round.
     pub nfc_north: SwingEntry,
@@ -121,10 +124,10 @@ pub struct SwingEntry {
     /// The team to root for, or `None` for "doesn't matter".
     pub root_for: Option<String>,
     /// How much the game matters: `matters`, `small`, `negligible` or
-    /// `none` (it can't reach the Bears).
+    /// `none` (it can't reach the team).
     pub tier: &'static str,
     /// The plain-language explanation, never empty: the channels through
-    /// which the game reaches the Bears, or why it doesn't.
+    /// which the game reaches the team, or why it doesn't.
     pub why: Vec<String>,
     /// The measured channels behind `why`, biggest first. Empty for the
     /// NFC North goal.
@@ -167,7 +170,8 @@ impl Guide {
             week: simulation.week,
             simulations: simulation.simulations,
             latest_game: latest.and_then(LatestGame::new),
-            bears: Bears {
+            team: team(focus),
+            focus: Focus {
                 record: record(standings.record(focus)),
                 odds: odds(simulation.odds(focus)),
                 division_lead: division_lead(standings, focus).0,
@@ -179,7 +183,9 @@ impl Guide {
                 .games
                 .iter()
                 .map(|impact| {
-                    GameEntry::new(impact, standings, &|team| simulation.odds(team).playoffs)
+                    GameEntry::new(focus, impact, standings, &|team| {
+                        simulation.odds(team).playoffs
+                    })
                 })
                 .collect(),
         }
@@ -201,7 +207,12 @@ impl LatestGame {
 }
 
 impl GameEntry {
-    fn new(impact: &GameImpact, standings: &Standings, playoff_odds: &dyn Fn(Team) -> f64) -> Self {
+    fn new(
+        focus: Team,
+        impact: &GameImpact,
+        standings: &Standings,
+        playoff_odds: &dyn Fn(Team) -> f64,
+    ) -> Self {
         let swing = |swing: &Swing, goal: Goal| {
             let (root, tier) = why::verdict(impact, goal, swing);
             SwingEntry {
@@ -211,7 +222,7 @@ impl GameEntry {
                 std_error: swing.std_error,
                 root_for: root.map(team),
                 tier: tier.name(),
-                why: why::reasons(impact, goal, swing, standings, playoff_odds),
+                why: why::reasons(focus, impact, goal, swing, standings, playoff_odds),
                 channels: why::shown_channels(impact, goal)
                     .into_iter()
                     .filter_map(|channel| {

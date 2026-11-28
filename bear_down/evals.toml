@@ -176,3 +176,29 @@ metric = "bear_down_feedback_events"
 min = 1
 window = "14d"
 description = "At least one real vote arrived in the past two weeks (in season)."
+
+# BEAR-011: A fan can pick any team
+
+[[eval]]
+id = "any-team-gets-its-own-guide"
+requirement = "BEAR-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "any_team_gets_its_own_guide"
+description = "The Steelers' guide before 2025 week 18 explains every game for the Steelers, never the Bears."
+
+[[eval]]
+id = "team-picker"
+requirement = "BEAR-011"
+stages = ["ci"]
+kind = "playwright"
+grep = "Any team"
+description = "Picking a team shows its guide, puts it in the link, remembers it, and keeps votes and the archive to the Bears."
+
+[[eval]]
+id = "live-guide-for-another-team"
+requirement = "BEAR-011"
+stages = ["cd"]
+kind = "http"
+path = "/teams/KC.json"
+body_contains = "\"team\": \"KC\""

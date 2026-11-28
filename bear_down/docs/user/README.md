@@ -5,7 +5,8 @@
 bear_down is for Chicago Bears fans who watch the rest of the NFL on a
 Sunday and wonder whom to cheer for. For every game on this week's slate it
 tells you which team to root for to give the Bears the best chance of
-winning the Super Bowl, and how much that game really matters.
+winning the Super Bowl, and how much that game really matters. Fans of any
+other NFL team can pick theirs and get the same guide for their team.
 
 It works this out by playing the rest of the season and the playoffs
 100,000 times on a computer, once with each result of each game, and
@@ -25,6 +26,26 @@ so the odds include the latest scores.
    Super Bowl odds, a winning streak or the next playoff round. It is
    rebuilt every night, and disappears after a loss.
 3. Below that is this week's list of games, the most important first.
+
+The page opens on the Bears. To follow another team, see "How to pick your
+team" below.
+
+## How to pick your team
+
+At the top of the page, **Your team** lists all 32 NFL teams. Choose yours
+and the page shows that team's guide: its record and odds, and which games
+to root for to help that team win the Super Bowl or make the playoffs,
+with every explanation written for that team.
+
+- Your browser remembers the team, so the page opens on it next time.
+- The address changes to include the team (for example `?team=DET` for
+  the Lions), so you can bookmark it or send the link to a friend and it
+  opens on that team.
+- The look stays the Bears' navy and orange for every team (you can change
+  the colours under Appearance).
+- The **NFC North** button and the "all four NFC North teams" odds appear
+  only for the Bears, Lions, Packers and Vikings.
+- Vote buttons and **Past weeks** are on the Bears' guide only for now.
 
 ## How to read this week's rooting list
 
@@ -60,16 +81,19 @@ simulated, and the latest game it includes.
 
 ## How to change what the games are ranked by
 
-Above the list are three buttons. The one that's highlighted is in use:
+Above the list are three buttons (two for a team outside the NFC North).
+The one that's highlighted is in use:
 
-- **Bears Super Bowl** (the default): ranks games by how much they move the
-  Bears' chance of winning the Super Bowl.
+- **Bears Super Bowl** (the default; it carries your team's name when you
+  pick another team): ranks games by how much they move the Bears' chance
+  of winning the Super Bowl.
 - **Make the playoffs:** ranks games by how much they move the Bears'
   chance of making the playoffs at all. Use it when you just want to get
   in.
-- **NFC North:** ranks games by how much they move the chance that the
-  Bears, Lions, Packers and Vikings all reach the divisional round. It's a
-  long shot for division pride, so many games show "Doesn't matter" here.
+- **NFC North** (for NFC North teams only): ranks games by how much they
+  move the chance that the Bears, Lions, Packers and Vikings all reach the
+  divisional round. It's a long shot for division pride, so many games show
+  "Doesn't matter" here.
 
 The line under the buttons says which goal the list is using. Your choice
 resets to Bears Super Bowl when you reload the page.
@@ -125,6 +149,9 @@ At the bottom of the page, **Appearance** has three choices: **Theme**
   the next update. Check back after the nightly update.
 - **I can't see the vote buttons.** Your browser has Do Not Track or Global
   Privacy Control on, so voting is off. Everything else still works.
+- **The page shows a different team than I expected.** It opens on the
+  team in the link, or else the team you picked last in this browser.
+  Choose yours under **Your team**.
 - **A friend sees a slightly different verdict on a close game.** We're
   testing two "doesn't matter" lines, so some browsers call a few more
   tiny edges than others. The big games are the same for everyone.

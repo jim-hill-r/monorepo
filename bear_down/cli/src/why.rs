@@ -1,8 +1,9 @@
-//! Plain-language explanations of how a game reaches the Bears, written
-//! from what the simulation measured (step 5 of
+//! Plain-language explanations of how a game reaches the focus team (the
+//! Bears by default, or any team a fan picks), written from what the
+//! simulation measured (step 5 of
 //! `docs/plans/2026-11-robust-recommendations.md`): each channel's share of
 //! the swing (division title, wild card, seeding by record or by a named
-//! tiebreaker step, the NFC playoff field, the Super Bowl opponent), which
+//! tiebreaker step, the conference's playoff field, the Super Bowl opponent), which
 //! team it favors and how big it is, the net when they disagree, and for a
 //! "doesn't matter" game why it doesn't (BEAR-003 to BEAR-006).
 
@@ -14,9 +15,9 @@ use bear_down_core::{
 /// Which goal a set of reasons explains.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Goal {
-    /// The Bears winning the Super Bowl.
+    /// The focus team winning the Super Bowl.
     Champion,
-    /// The Bears making the playoffs.
+    /// The focus team making the playoffs.
     Playoffs,
     /// All four NFC North teams reaching the divisional round.
     NfcNorth,
@@ -91,9 +92,11 @@ pub fn share(channel: &ChannelImpact, goal: Goal) -> Option<(f64, f64)> {
     }
 }
 
-/// The plain-language explanation of `goal`'s verdict for one game. Never
-/// empty: every game says how it reaches the Bears, or why it can't.
+/// The plain-language explanation of `goal`'s verdict for one game, for a
+/// fan of `focus`. Never empty: every game says how it reaches the focus
+/// team, or why it can't.
 pub fn reasons(
+    focus: Team,
     impact: &GameImpact,
     goal: Goal,
     swing: &Swing,
@@ -105,7 +108,7 @@ pub fn reasons(
     let (away, home) = (impact.away, impact.home);
 
     if tier == Tier::None {
-        return vec![closed(impact, standings)];
+        return vec![closed(focus, impact, standings)];
     }
 
     if goal == Goal::NfcNorth {
@@ -115,7 +118,7 @@ pub fn reasons(
     let mut why = Vec::new();
     match root {
         Some(root) => {
-            if let Some(line) = rivalry(impact, root, standings, playoff_odds) {
+            if let Some(line) = rivalry(focus, impact, root, standings, playoff_odds) {
                 why.push(line);
             }
             if tier == Tier::Small {
@@ -127,15 +130,19 @@ pub fn reasons(
             }
         }
         None if tier == Tier::Small => why.push(format!(
-            "Too close to call: {} at {} moves the Bears' {} odds by {}, near the 0.05-point line.",
+            "Too close to call: {} at {} moves {} {} odds by {}, near the 0.05-point line.",
             nickname(away),
             nickname(home),
+            possessive(focus),
             goal.unit(),
             give_or_take(swing, goal)
         )),
         None => {
             let lean = if swing.swing() == 0.0 && swing.std_error == 0.0 {
-                "no simulated season came out differently for the Bears".to_string()
+                format!(
+                    "no simulated season came out differently for {}",
+                    the(focus)
+                )
             } else if swing.matters() {
                 let better = if swing.swing() > 0.0 { home } else { away };
                 format!(
@@ -150,9 +157,10 @@ pub fn reasons(
                 )
             };
             why.push(format!(
-                "Doesn't matter: {} at {} moves the Bears' {} odds by under 0.05 points ({lean}).",
+                "Doesn't matter: {} at {} moves {} {} odds by under 0.05 points ({lean}).",
                 nickname(away),
                 nickname(home),
+                possessive(focus),
                 goal.unit()
             ));
         }
@@ -160,7 +168,7 @@ pub fn reasons(
 
     let shown = shown_channels(impact, goal);
     for channel in shown.iter().take(MAX_CHANNELS) {
-        why.push(channel_line(impact, channel, goal));
+        why.push(channel_line(focus, impact, channel, goal));
     }
     let favors =
         |channel: &&ChannelImpact| share(channel, goal).is_some_and(|(swing, _)| swing > 0.0);
@@ -178,7 +186,7 @@ pub fn reasons(
         why.push(net);
     }
     if shown.is_empty() {
-        why.push(links(impact, &record));
+        why.push(links(focus, impact, &record));
     }
     why
 }
@@ -186,20 +194,21 @@ pub fn reasons(
 /// One channel's line, as in "Seeding, decided by strength of victory in
 /// 1.2% of seasons: a Saints win helps the Bears by 0.010 Super Bowl
 /// points."
-fn channel_line(impact: &GameImpact, channel: &ChannelImpact, goal: Goal) -> String {
+fn channel_line(focus: Team, impact: &GameImpact, channel: &ChannelImpact, goal: Goal) -> String {
     let (swing, _) = share(channel, goal).unwrap_or_default();
     let favored = if swing > 0.0 {
         impact.home
     } else {
         impact.away
     };
+    let (ours, theirs) = (focus.conference(), other_conference(focus.conference()));
     let label = match channel.channel {
-        Channel::DivisionTitle => "NFC North title",
-        Channel::WildCard => "Wild card",
-        Channel::Seed => "Seeding",
-        Channel::PlayoffPath => "NFC playoff field (who else gets in, and where)",
-        Channel::SuperBowlOpponent => "Super Bowl opponent (who wins the AFC)",
-        Channel::Chance => "Chance",
+        Channel::DivisionTitle => format!("{} title", focus.division()),
+        Channel::WildCard => "Wild card".to_string(),
+        Channel::Seed => "Seeding".to_string(),
+        Channel::PlayoffPath => format!("{ours} playoff field (who else gets in, and where)"),
+        Channel::SuperBowlOpponent => format!("Super Bowl opponent (who wins the {theirs})"),
+        Channel::Chance => "Chance".to_string(),
     };
     let seasons = if impact.pairs == 0 {
         0.0
@@ -216,41 +225,47 @@ fn channel_line(impact: &GameImpact, channel: &ChannelImpact, goal: Goal) -> Str
     };
     let winner = a_win(favored);
     format!(
-        "{label}{cause}: {winner} helps the Bears by {}.",
+        "{label}{cause}: {winner} helps {} by {}.",
+        the(focus),
         points(swing.abs(), goal)
     )
 }
 
 /// Why a game with every link closed can't matter.
-fn closed(impact: &GameImpact, standings: &Standings) -> String {
+fn closed(focus: Team, impact: &GameImpact, standings: &Standings) -> String {
     if !impact.relevance.focus_alive {
-        return "The Bears can no longer make the playoffs, so no result this week can change their odds.".to_string();
+        return format!(
+            "{} can no longer make the playoffs, so no result this week can change their odds.",
+            capitalize(&the(focus))
+        );
     }
     let record = |team: Team| format_record(standings.record(team));
     format!(
-        "Can't matter: the {} ({}) and the {} ({}) are both out of the playoff race, and neither plays a team still in it, so no result changes anything for the Bears.",
+        "Can't matter: the {} ({}) and the {} ({}) are both out of the playoff race, and neither plays a team still in it, so no result changes anything for {}.",
         nickname(impact.away),
         record(impact.away),
         nickname(impact.home),
-        record(impact.home)
+        record(impact.home),
+        the(focus)
     )
 }
 
 /// The open links in words, for a game none of whose channels showed up in
 /// the simulation: each team's place in the race, and whether it is on the
-/// Bears' schedule.
-fn links(impact: &GameImpact, record: &dyn Fn(Team) -> String) -> String {
+/// focus team's schedule.
+fn links(focus: Team, impact: &GameImpact, record: &dyn Fn(Team) -> String) -> String {
     let mut parts = Vec::new();
     if impact.relevance.links.contains(&Link::FocusPlays) {
-        parts.push("the Bears play in it".to_string());
+        parts.push(format!("{} play in it", the(focus)));
     }
+    let race = format!("are still in the {} race", focus.conference());
     for team in [impact.away, impact.home] {
-        if team == Team::BEARS {
+        if team == focus {
             continue;
         }
         let has = |wanted: &dyn Fn(&Link) -> bool| impact.relevance.links.iter().any(wanted);
         let status = if has(&|link| *link == Link::Race(team)) {
-            "are still in the NFC race"
+            race.as_str()
         } else if has(&|link| *link == Link::SuperBowlRace(team)) {
             "could still be the Super Bowl opponent"
         } else {
@@ -264,8 +279,11 @@ fn links(impact: &GameImpact, record: &dyn Fn(Team) -> String) -> String {
             _ => None,
         });
         let tail = match schedule {
-            Some(contenders) if contenders.contains(&Team::BEARS) => {
-                " and are on the Bears' schedule (strength of victory and schedule)".to_string()
+            Some(contenders) if contenders.contains(&focus) => {
+                format!(
+                    " and are on {} schedule (strength of victory and schedule)",
+                    possessive(focus)
+                )
             }
             Some(contenders)
                 if !has(&|link| {
@@ -286,54 +304,65 @@ fn links(impact: &GameImpact, record: &dyn Fn(Team) -> String) -> String {
         ));
     }
     format!(
-        "How it could reach the Bears, though too slightly to show up in the simulation: {}.",
+        "How it could reach {}, though too slightly to show up in the simulation: {}.",
+        the(focus),
         list(&parts)
     )
 }
 
 /// The lead line for a pick: why the team rooted against matters.
 fn rivalry(
+    focus: Team,
     impact: &GameImpact,
     root: Team,
     standings: &Standings,
     playoff_odds: &dyn Fn(Team) -> f64,
 ) -> Option<String> {
-    let bears = Team::BEARS;
+    let (division, conference) = (focus.division(), focus.conference());
     let other = if root == impact.home {
         impact.away
     } else {
         impact.home
     };
     let record = |team: Team| format_record(standings.record(team));
-    if root == bears || other == bears {
-        let opponent = if root == bears { other } else { root };
-        let mut line = format!("The Bears' own game: a win over the {}", nickname(opponent));
-        if opponent.division() == Division::NFC_NORTH {
-            line.push_str(", a division rival, counts twice in the NFC North race");
-        } else if opponent.conference() == Conference::Nfc {
-            line.push_str(" also counts in the NFC conference-record tiebreaker");
-        }
-        line.push('.');
-        Some(line)
-    } else if other.division() == Division::NFC_NORTH {
+    if root == focus || other == focus {
+        let opponent = if root == focus { other } else { root };
+        let tail = if opponent.division() == division {
+            format!(", a division rival, counts twice in the {division} race")
+        } else if opponent.conference() == conference {
+            format!(" also counts in the {conference} conference-record tiebreaker")
+        } else {
+            String::new()
+        };
         Some(format!(
-            "The {} ({}) are an NFC North rival of the Bears ({}).",
+            "{} own game: a win over the {}{tail}.",
+            capitalize(&possessive(focus)),
+            nickname(opponent)
+        ))
+    } else if other.division() == division {
+        Some(format!(
+            "The {} ({}) are {} rival of {} ({}).",
             nickname(other),
             record(other),
-            record(bears)
+            a_or_an(&division.to_string()),
+            the(focus),
+            record(focus)
         ))
-    } else if other.conference() == Conference::Nfc && playoff_odds(other) >= CONTENDER {
+    } else if other.conference() == conference && playoff_odds(other) >= CONTENDER {
         Some(format!(
-            "The {} ({}) compete with the Bears ({}) for NFC playoff spots and seeding.",
+            "The {} ({}) compete with {} ({}) for {conference} playoff spots and seeding.",
             nickname(other),
             record(other),
-            record(bears)
+            the(focus),
+            record(focus)
         ))
-    } else if root.conference() == Conference::Afc && other.conference() == Conference::Afc {
-        Some(
-            "An AFC game, so it reaches the Bears mostly through the Super Bowl opponent and the tiebreakers of teams on their schedule."
-                .to_string(),
-        )
+    } else if root.conference() != conference && other.conference() != conference {
+        Some(format!(
+            "{} {} game, so it reaches {} mostly through the Super Bowl opponent and the tiebreakers of teams on their schedule.",
+            capitalize(a_or_an(&root.conference().to_string())),
+            root.conference(),
+            the(focus)
+        ))
     } else {
         None
     }
@@ -417,12 +446,36 @@ fn give_or_take(swing: &Swing, goal: Goal) -> String {
 /// "a Saints win", or "an Eagles win".
 fn a_win(team: Team) -> String {
     let name = nickname(team);
-    let article = if name.starts_with(['A', 'E', 'I', 'O', 'U']) {
-        "an"
-    } else {
-        "a"
-    };
-    format!("{article} {name} win")
+    format!("{} {name} win", a_or_an(name))
+}
+
+/// The article for a word or name: "an" before a vowel sound ("an
+/// Eagles", "an AFC", "an NFC North"), "a" otherwise.
+fn a_or_an(word: &str) -> &'static str {
+    // Spelled-out letters such as NFC ("en-eff-cee") sound like a vowel.
+    let initialism = word.len() >= 2 && word.chars().take(3).all(|c| c.is_ascii_uppercase());
+    let vowel = word.starts_with(['A', 'E', 'I', 'O', 'U'])
+        || (initialism && word.starts_with(['F', 'H', 'L', 'M', 'N', 'R', 'S', 'X']));
+    if vowel { "an" } else { "a" }
+}
+
+/// The team as a sentence names it: "the Bears".
+pub fn the(team: Team) -> String {
+    format!("the {}", nickname(team))
+}
+
+/// The team's possessive: "the Bears'". Every nickname is a plural ending
+/// in "s".
+pub fn possessive(team: Team) -> String {
+    format!("the {}'", nickname(team))
+}
+
+/// The other conference: the one a Super Bowl opponent comes from.
+pub fn other_conference(conference: Conference) -> Conference {
+    match conference {
+        Conference::Afc => Conference::Nfc,
+        Conference::Nfc => Conference::Afc,
+    }
 }
 
 /// The phrase with its first letter in upper case.

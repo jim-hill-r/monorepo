@@ -3,11 +3,16 @@
 //! is described in `docs/rooting-json.md`.
 //!
 //! Usage: `bear_down [--games <path or URL>] [--out <path>] [--simulations <n>]
-//! [--week <n> [--season <year>]]`. `--week` rebuilds a past week's guide
-//! from the results before it, for the archive
-//! (`docs/plans/2026-11-archive.md`).
+//! [--week <n> [--season <year>]] [--team <abbr>] [--teams-dir <dir>]`.
+//! `--week` rebuilds a past week's guide from the results before it, for the
+//! archive (`docs/plans/2026-11-archive.md`). `--team` writes the guide for
+//! another team than the Bears, and `--teams-dir` also writes every other
+//! team's guide to `<dir>/<team>.json`, for the team picker
+//! (`docs/decisions/0010-any-team.md`).
 
+use std::path::Path;
 use std::process::ExitCode;
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use bear_down_core::{
@@ -35,6 +40,11 @@ struct Args {
     week: Option<u8>,
     /// The season of `week`; `None` is the latest one.
     season: Option<u16>,
+    /// The team the guide at `out` is for.
+    team: Team,
+    /// Where to write every other team's guide, as `<team>.json`; `None`
+    /// writes only `out`.
+    teams_dir: Option<String>,
 }
 
 fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
@@ -44,6 +54,8 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
         simulations: None,
         week: None,
         season: None,
+        team: Team::BEARS,
+        teams_dir: None,
     };
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
@@ -77,6 +89,12 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
                         .map_err(|_| format!("--season {text:?} is not a year"))?,
                 );
             }
+            "--team" => {
+                let text = value()?;
+                parsed.team = Team::from_abbr(&text.to_ascii_uppercase())
+                    .ok_or_else(|| format!("--team {text:?} is not an nflverse team"))?;
+            }
+            "--teams-dir" => parsed.teams_dir = Some(value()?),
             "--help" | "-h" => return Err(usage()),
             other => return Err(format!("unknown argument {other:?}\n{}", usage())),
         }
@@ -88,7 +106,7 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Result<Args, String> {
 }
 
 fn usage() -> String {
-    "usage: bear_down [--games <path or URL>] [--out <path>] [--simulations <n>] [--week <n> [--season <year>]]"
+    "usage: bear_down [--games <path or URL>] [--out <path>] [--simulations <n>] [--week <n> [--season <year>]] [--team <abbr>] [--teams-dir <dir>]"
         .to_string()
 }
 
@@ -111,13 +129,43 @@ fn run(args: &Args) -> Result<(), String> {
         None => schedule,
     };
     let generated_at = rfc3339(SystemTime::now());
-    let guide = build(&schedule, args.simulations, generated_at)?;
+    write_guide(
+        &schedule,
+        args.simulations,
+        &generated_at,
+        args.team,
+        &args.out,
+    )?;
+    if let Some(dir) = &args.teams_dir {
+        std::fs::create_dir_all(dir).map_err(|error| format!("couldn't create {dir}: {error}"))?;
+        let others: Vec<Team> = Team::all().filter(|&team| team != args.team).collect();
+        for_each_in_parallel(&others, |team| {
+            let out = Path::new(dir).join(format!("{}.json", team.abbr()));
+            write_guide(
+                &schedule,
+                args.simulations,
+                &generated_at,
+                team,
+                &out.to_string_lossy(),
+            )
+        })?;
+    }
+    Ok(())
+}
+
+/// Builds `team`'s guide from `schedule` and writes it to `out`.
+fn write_guide(
+    schedule: &Schedule,
+    simulations: Option<u32>,
+    generated_at: &str,
+    team: Team,
+    out: &str,
+) -> Result<(), String> {
+    let guide = build(schedule, simulations, generated_at.to_string(), team)?;
     let json = serde_json::to_string_pretty(&guide).map_err(|error| error.to_string())?;
-    std::fs::write(&args.out, json + "\n")
-        .map_err(|error| format!("couldn't write {}: {error}", args.out))?;
+    std::fs::write(out, json + "\n").map_err(|error| format!("couldn't write {out}: {error}"))?;
     eprintln!(
-        "bear_down: wrote {} (season {}, week {}, {} games, {} simulations)",
-        args.out,
+        "bear_down: wrote {out} ({team}, season {}, week {}, {} games, {} simulations)",
         guide.season,
         guide
             .week
@@ -126,6 +174,37 @@ fn run(args: &Args) -> Result<(), String> {
         guide.simulations
     );
     Ok(())
+}
+
+/// Runs `job` for every team, on as many threads as the machine has cores,
+/// and returns the first error.
+fn for_each_in_parallel(
+    teams: &[Team],
+    job: impl Fn(Team) -> Result<(), String> + Sync,
+) -> Result<(), String> {
+    let threads = std::thread::available_parallelism().map_or(1, usize::from);
+    let queue = Mutex::new(teams.iter().copied());
+    let errors = Mutex::new(Vec::new());
+    std::thread::scope(|scope| {
+        for _ in 0..threads.min(teams.len()) {
+            scope.spawn(|| {
+                loop {
+                    let next = queue.lock().map_or(None, |mut teams| teams.next());
+                    let Some(team) = next else { break };
+                    if let Err(error) = job(team)
+                        && let Ok(mut errors) = errors.lock()
+                    {
+                        errors.push(format!("{team}: {error}"));
+                    }
+                }
+            });
+        }
+    });
+    let errors = errors.into_inner().unwrap_or_default();
+    match errors.into_iter().next() {
+        Some(error) => Err(error),
+        None => Ok(()),
+    }
 }
 
 fn read_games(source: &str) -> Result<String, String> {
@@ -155,21 +234,22 @@ fn as_of(schedule: &Schedule, season: Option<u16>, week: u8) -> Result<Schedule,
     schedule.as_of(year, week)
 }
 
-/// Simulates the schedule's latest season and builds the guide.
+/// Simulates the schedule's latest season and builds `team`'s guide.
 fn build(
     schedule: &Schedule,
     simulations: Option<u32>,
     generated_at: String,
+    team: Team,
 ) -> Result<rooting::Guide, String> {
     let season = schedule.latest_season().ok_or("games.csv has no games")?;
-    let simulation = run_simulation(schedule, simulations)?;
+    let simulation = run_simulation(schedule, simulations, team)?;
     let standings = Standings::from_season(&season)?;
     let banner = banner::banner(&banner::Context {
         season: &season,
         standings: &standings,
         focus: simulation.focus,
         odds: simulation.odds(simulation.focus),
-        odds_before: odds_before(schedule, simulations),
+        odds_before: odds_before(schedule, simulations, team),
     });
     Ok(rooting::Guide::new(
         &simulation,
@@ -180,30 +260,39 @@ fn build(
     ))
 }
 
-/// Simulates the rest of the schedule's latest season.
-fn run_simulation(schedule: &Schedule, simulations: Option<u32>) -> Result<Simulation, String> {
+/// Simulates the rest of the schedule's latest season, measuring each
+/// game's swing on `team`.
+fn run_simulation(
+    schedule: &Schedule,
+    simulations: Option<u32>,
+    team: Team,
+) -> Result<Simulation, String> {
     let season = schedule.latest_season().ok_or("games.csv has no games")?;
     let ratings = Ratings::from_schedule(schedule, EloParams::default());
     let week = season.current_week().map_or(0, |week| week.number);
     let mut config = SimConfig::weekly(season.year, week);
+    config.focus = team;
     if let Some(simulations) = simulations {
         config.simulations = simulations;
     }
     simulate(&season, &ratings, &config)
 }
 
-/// The Bears' odds just before the week of their latest regular-season
-/// game, for the banner's "odds up from" line: a second simulation of the
-/// schedule as it stood then. `None` when there is no such game or it was a
-/// playoff game.
-fn odds_before(schedule: &Schedule, simulations: Option<u32>) -> Option<TeamOdds> {
+/// `team`'s odds just before the week of its latest regular-season game,
+/// for the banner's "odds up from" line: a second simulation of the
+/// schedule as it stood then. `None` when there is no such game, it was a
+/// playoff game or it wasn't a win (the banner only follows a win).
+fn odds_before(schedule: &Schedule, simulations: Option<u32>, team: Team) -> Option<TeamOdds> {
     let season = schedule.latest_season()?;
-    let game = banner::latest_game(&season, Team::BEARS)?;
+    let game = banner::latest_game(&season, team)?;
+    if game.winner() != Some(team.abbr()) {
+        return None;
+    }
     if game.game_type.is_playoff() {
         return None;
     }
     let before = schedule.as_of(season.year, game.week).ok()?;
-    let simulation = run_simulation(&before, simulations).ok()?;
+    let simulation = run_simulation(&before, simulations, team).ok()?;
     Some(simulation.odds(simulation.focus))
 }
 
@@ -255,6 +344,8 @@ mod tests {
                 simulations: None,
                 week: None,
                 season: None,
+                team: Team::BEARS,
+                teams_dir: None,
             })
         );
     }
@@ -276,6 +367,8 @@ mod tests {
                 simulations: Some(500),
                 week: None,
                 season: None,
+                team: Team::BEARS,
+                teams_dir: None,
             })
         );
         assert_eq!(
@@ -294,6 +387,75 @@ mod tests {
         assert!(args(&["--week", "twelve"]).is_err());
         assert!(args(&["--season", "2024"]).is_err());
         assert!(args(&["--week", "3", "--season", "last"]).is_err());
+    }
+
+    #[test]
+    fn team_options_pick_the_guides_team() {
+        let parsed = args(&["--team", "kc", "--teams-dir", "web/public/teams"]);
+        assert_eq!(
+            parsed.map(|a| (a.team.abbr(), a.teams_dir)),
+            Ok(("KC", Some("web/public/teams".to_string())))
+        );
+        assert!(args(&["--team", "Bears"]).is_err());
+        assert!(args(&["--team"]).is_err());
+    }
+
+    #[test]
+    fn any_team_gets_its_own_guide() {
+        // 2025 before week 18: the Steelers and Ravens play for the AFC
+        // North title.
+        let Some(steelers) = Team::from_abbr("PIT") else {
+            panic!("PIT is a team");
+        };
+        let guide = match build(&before_week_18(), Some(1_000), String::new(), steelers) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!(guide.team, "PIT");
+        assert_eq!(guide.games.len(), 16);
+        let own_game = guide
+            .games
+            .iter()
+            .find(|game| game.away == "PIT" || game.home == "PIT");
+        let Some(own_game) = own_game else {
+            panic!("the Steelers play in week 18");
+        };
+        // The team's own game is always a pick for it (BEAR-001).
+        assert_eq!(
+            own_game.champion.why[0].split(':').next(),
+            Some("The Steelers' own game")
+        );
+        assert!(own_game.champion.root_for.is_some());
+        assert!(
+            own_game
+                .champion
+                .why
+                .iter()
+                .any(|line| line.contains("AFC North")),
+            "{:?}",
+            own_game.champion.why
+        );
+        for game in &guide.games {
+            for swing in [&game.champion, &game.playoffs] {
+                assert!(!swing.why.is_empty(), "{}", game.id);
+                for line in &swing.why {
+                    // Explanations are about the Steelers, never the Bears,
+                    // unless the Bears play in the game.
+                    if game.away != "CHI" && game.home != "CHI" {
+                        assert!(!line.contains("Bears"), "{}: {line}", game.id);
+                    }
+                    assert!(!line.contains("NFC North title"), "{}: {line}", game.id);
+                    assert!(!line.contains("NFC playoff field"), "{}: {line}", game.id);
+                }
+            }
+        }
+        let json = match serde_json::to_value(&guide) {
+            Ok(json) => json,
+            Err(error) => panic!("guide should serialize: {error}"),
+        };
+        assert_eq!(json["team"], "PIT");
+        let record = &json["focus"]["record"];
+        assert_eq!(record["wins"].as_u64().map(|w| w > 0), Some(true));
     }
 
     #[test]
@@ -348,6 +510,7 @@ mod tests {
             &before_week_18(),
             Some(2_000),
             "2026-01-01T00:00:00Z".into(),
+            Team::BEARS,
         ) {
             Ok(guide) => guide,
             Err(error) => panic!("build should succeed: {error}"),
@@ -365,7 +528,8 @@ mod tests {
             "week",
             "simulations",
             "latest_game",
-            "bears",
+            "team",
+            "focus",
             "banner",
             "nfc_north_divisional",
             "games",
@@ -390,9 +554,9 @@ mod tests {
                 assert!(game[goal].get(key).is_some(), "{goal} should have {key}");
             }
         }
-        let odds = &json["bears"]["odds"];
+        let odds = &json["focus"]["odds"];
         assert!(odds["playoffs"].as_f64() >= odds["champion"].as_f64());
-        let record = &json["bears"]["record"];
+        let record = &json["focus"]["record"];
         assert_eq!(
             record["wins"].as_u64().unwrap_or(0)
                 + record["losses"].as_u64().unwrap_or(0)
@@ -401,8 +565,8 @@ mod tests {
         );
         // 2025 before week 18: the 11-5 Bears led the 9-6-1 Packers by a
         // game and a half.
-        assert_eq!(json["bears"]["division_lead"].as_f64(), Some(1.5));
-        assert_eq!(json["bears"]["division_rival"], "GB");
+        assert_eq!(json["focus"]["division_lead"].as_f64(), Some(1.5));
+        assert_eq!(json["focus"]["division_rival"], "GB");
         // Their latest game, week 17 at the 49ers, was a 42-38 loss.
         assert!(json["banner"].is_null());
     }
@@ -418,7 +582,12 @@ mod tests {
                 Ok(schedule) => schedule,
                 Err(error) => panic!("2025 week {week}: {error}"),
             };
-            match build(&schedule, Some(2_000), "2026-01-01T00:00:00Z".into()) {
+            match build(
+                &schedule,
+                Some(2_000),
+                "2026-01-01T00:00:00Z".into(),
+                Team::BEARS,
+            ) {
                 Ok(guide) => guide.banner,
                 Err(error) => panic!("build should succeed: {error}"),
             }
@@ -452,7 +621,7 @@ mod tests {
             Ok(schedule) => schedule,
             Err(error) => panic!("2024 week 12: {error}"),
         };
-        let guide = match build(&past, Some(500), String::new()) {
+        let guide = match build(&past, Some(500), String::new(), Team::BEARS) {
             Ok(guide) => guide,
             Err(error) => panic!("build should succeed: {error}"),
         };
@@ -472,7 +641,7 @@ mod tests {
 
     #[test]
     fn every_game_is_explained_from_what_was_measured() {
-        let guide = match build(&before_week_18(), Some(2_000), String::new()) {
+        let guide = match build(&before_week_18(), Some(2_000), String::new(), Team::BEARS) {
             Ok(guide) => guide,
             Err(error) => panic!("build should succeed: {error}"),
         };
@@ -545,13 +714,18 @@ mod tests {
     /// Rams in week 14).
     #[test]
     fn golden_week_2018_week_17() {
-        let guide = match build(&before_week(2018, 17), Some(4_000), String::new()) {
+        let guide = match build(
+            &before_week(2018, 17),
+            Some(4_000),
+            String::new(),
+            Team::BEARS,
+        ) {
             Ok(guide) => guide,
             Err(error) => panic!("build should succeed: {error}"),
         };
         assert_eq!((guide.season, guide.week), (2018, Some(17)));
         assert_eq!(guide.games.len(), 16);
-        assert!((guide.bears.odds.playoffs - 1.0).abs() < 1e-12);
+        assert!((guide.focus.odds.playoffs - 1.0).abs() < 1e-12);
         let game = |away: &str, home: &str| match guide
             .games
             .iter()
@@ -614,7 +788,12 @@ mod tests {
     /// loss to the Rams (they lost, and got in when the Rams won).
     #[test]
     fn golden_week_2020_week_17() {
-        let guide = match build(&before_week(2020, 17), Some(4_000), String::new()) {
+        let guide = match build(
+            &before_week(2020, 17),
+            Some(4_000),
+            String::new(),
+            Team::BEARS,
+        ) {
             Ok(guide) => guide,
             Err(error) => panic!("build should succeed: {error}"),
         };

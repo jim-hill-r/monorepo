@@ -1,7 +1,11 @@
 # rooting.json
 
-The `bear_down` CLI writes `rooting.json`, and the web page fetches it from
-the same origin at page load (decision 0001). The Rust types are in
+The `bear_down` CLI writes `rooting.json`, the Bears' guide, and the web
+page fetches it from the same origin at page load (decision 0001). With
+`--teams-dir` it also writes every other team's guide in the same format,
+as `teams/<team>.json` such as `teams/KC.json`, which the page fetches
+when a fan picks that team (decision 0010). Everything below about "the
+Bears" holds for the guide's team. The Rust types are in
 `cli/src/rooting.rs`; change this file with them.
 
 Probabilities are shares from 0 to 1. Teams are nflverse abbreviations, for
@@ -14,12 +18,13 @@ example `CHI`, `DET`, `GB`, `MIN`. Dates are `YYYY-MM-DD`.
 | `week` | number or null | The current week: the first with a game left. Null once the regular season is over. |
 | `simulations` | number | How many seasons were simulated. |
 | `latest_game` | object or null | The latest game with a final score: `id`, `gameday`, `away`, `home`, `away_score`, `home_score`. Shows how fresh the data is (decision 0006). |
-| `bears.record` | object | `wins`, `losses`, `ties`. |
-| `bears.division_lead` | number | Games ahead of the best NFC North rival, by record alone (no tiebreakers; a tie counts half): positive is alone in first place, 0 is tied for it, negative is behind. |
-| `bears.division_rival` | string | That best rival. |
-| `bears.odds` | object | `playoffs`, `divisional_round`, `conference_game`, `super_bowl` (reached it), `champion` (won it). |
-| `banner` | object or null | The celebration banner, worked out every build from the current results, or null unless the Bears' most recent game (regular season or playoffs) was a win. `headline` is the score ("Bears win! Chicago 39, Lions 35."); `lines` holds up to two notes, the first that apply in this order: the next playoff round, the NFC North race (clinched, alone in first or tied for it), a clear move in Super Bowl or playoff odds since just before that week (from a second simulation as of then), a winning streak of three or more, and the record. Missing in older files. The rules are in `cli/src/banner.rs`. |
-| `nfc_north_divisional` | number | The chance all four NFC North teams reach the divisional round (decision 0007). |
+| `team` | string | The team the guide is for: `CHI` in `rooting.json`. Missing in older files, which are the Bears'. |
+| `focus.record` | object | `wins`, `losses`, `ties`. (`focus` was `bears` in older files; the page reads both.) |
+| `focus.division_lead` | number | Games ahead of the best rival in the team's division, by record alone (no tiebreakers; a tie counts half): positive is alone in first place, 0 is tied for it, negative is behind. |
+| `focus.division_rival` | string | That best rival. |
+| `focus.odds` | object | `playoffs`, `divisional_round`, `conference_game`, `super_bowl` (reached it), `champion` (won it). |
+| `banner` | object or null | The celebration banner, worked out every build from the current results, or null unless the team's most recent game (regular season or playoffs) was a win. `headline` is the score ("Bears win! Chicago 39, Lions 35."); `lines` holds up to two notes, the first that apply in this order: the next playoff round, the NFC North race (clinched, alone in first or tied for it), a clear move in Super Bowl or playoff odds since just before that week (from a second simulation as of then), a winning streak of three or more, and the record. Missing in older files. The rules are in `cli/src/banner.rs`. |
+| `nfc_north_divisional` | number | The chance all four NFC North teams reach the divisional round (decision 0007). The page shows it, and the `nfc_north` goal, only for an NFC North team's guide. |
 | `games` | array | The current week's games still to be played, in schedule order. |
 
 Each game has `id`, `gameday`, `away`, `home`, `home_win_probability` and one
@@ -72,7 +77,8 @@ A swing object has:
   "week": 12,
   "simulations": 100000,
   "latest_game": { "id": "2026_12_GB_LA", "gameday": "2026-11-25", "away": "GB", "home": "LA", "away_score": 13, "home_score": 26 },
-  "bears": {
+  "team": "CHI",
+  "focus": {
     "record": { "wins": 8, "losses": 2, "ties": 0 },
     "odds": { "playoffs": 0.907, "divisional_round": 0.580, "conference_game": 0.301, "super_bowl": 0.145, "champion": 0.068 },
     "division_lead": 1.0,
@@ -123,10 +129,15 @@ The site also serves past weeks' guides for the archive
 From `bear_down/`:
 
 ```sh
-cargo run --release -p bear_down_cli -- --out web/public/rooting.json
+cargo run --release -p bear_down_cli -- --out web/public/rooting.json --teams-dir web/public/teams
 ```
+
+`--team <abbr>` writes another team's guide to `--out` instead of the
+Bears', and `--teams-dir <dir>` writes every team but that one to
+`<dir>/<team>.json`, on as many threads as the machine has cores.
 
 It downloads nflverse `games.csv` (decision 0006) unless `--games` gives a
 local path or another URL, and runs 100,000 simulations unless
 `--simulations` says otherwise. Games close to the 0.05-point line get up to
-four times as many. A weekly build takes under a minute in a release build.
+four times as many. A weekly build takes under a minute in a release build
+for one team, and about four minutes for all 32 on four cores.

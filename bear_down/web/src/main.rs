@@ -1,7 +1,8 @@
-//! The bear_down web page: which NFL games a Bears fan should root for this
-//! week. It fetches `/rooting.json` (written by the `cli`) when it loads and
-//! ranks the week's games by their swing on the selected goal (decisions 0002
-//! and 0007).
+//! The bear_down web page: which NFL games a Bears fan, or a fan of any
+//! team they pick, should root for this week. It fetches the team's guide
+//! (`/rooting.json` for the Bears, `/teams/<team>.json` otherwise, written by
+//! the `cli`) and ranks the week's games by their swing on the selected goal
+//! (decisions 0002, 0007 and 0010).
 
 mod data;
 mod feedback;
@@ -33,7 +34,8 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let rooting = use_resource(load);
+    let team = use_signal(initial_team);
+    let rooting = use_resource(move || load(team()));
     let archive = use_resource(load_archive);
     // The past week being shown, or `None` for this week's guide.
     let mut showing = use_signal(|| None::<ArchiveWeek>);
@@ -53,19 +55,22 @@ fn App() -> Element {
         .as_ref()
         .and_then(|r| r.as_ref().ok())
         .and_then(Rooting::archive_week);
+    // The archive holds only the Bears' past guides (decision 0010).
     let weeks = archive
         .read()
         .as_ref()
         .and_then(|index| index.as_ref().ok())
+        .filter(|_| team() == bear_down_core::BEARS)
         .map(|index| index.newest_first(current))
         .unwrap_or_default();
+    let fans = teams::nickname(&team()).to_string();
     let body = match showing() {
         None => match &*rooting.read() {
             None => rsx! { p { class: "status", "Loading this week's games…" } },
             Some(Err(e)) => rsx! {
                 p { class: "status error", "Couldn't load this week's rooting guide. {e}" }
             },
-            Some(Ok(r)) => rsx! { Guide { rooting: r.clone(), archived: false } },
+            Some(Ok(r)) => rsx! { Guide { key: "{r.team}", rooting: r.clone(), archived: false } },
         },
         Some(week) => {
             let label = week.label();
@@ -95,7 +100,8 @@ fn App() -> Element {
         main {
             header {
                 h1 { "bear_down" }
-                p { class: "tagline", "Which NFL games to root for this week, for Bears fans." }
+                p { class: "tagline", "Which NFL games to root for this week, for {fans} fans." }
+                TeamPicker { team, showing }
             }
             {body}
             if !weeks.is_empty() {
@@ -103,6 +109,88 @@ fn App() -> Element {
             }
             footer { class: "appearance", ThemePicker { custom: bears() } }
         }
+    }
+}
+
+/// The team the page opens on: `?team=` if it names one, then the team this
+/// browser picked last, then the Bears.
+fn initial_team() -> String {
+    let search = web_sys::window()
+        .and_then(|window| window.location().search().ok())
+        .unwrap_or_default();
+    teams::from_query(&search)
+        .or_else(|| {
+            local_storage()
+                .and_then(|storage| storage.get_item(teams::STORAGE_KEY).ok().flatten())
+                .and_then(|team| teams::known(&team))
+        })
+        .unwrap_or(bear_down_core::BEARS)
+        .to_string()
+}
+
+/// "Your team": a picker of all 32 teams. Choosing one loads its guide,
+/// remembers it in this browser and puts it in the address, so the link
+/// opens on that team (decision 0010).
+#[component]
+fn TeamPicker(team: Signal<String>, showing: Signal<Option<ArchiveWeek>>) -> Element {
+    let selected = team();
+    rsx! {
+        label { class: "team-picker",
+            "Your team "
+            select {
+                value: "{selected}",
+                onchange: move |event| {
+                    let Some(picked) = teams::known(&event.value()) else { return };
+                    if let Some(storage) = local_storage() {
+                        let _ = storage.set_item(teams::STORAGE_KEY, picked);
+                    }
+                    set_address(picked);
+                    showing.set(None);
+                    team.set(picked.to_string());
+                },
+                for abbr in teams::ALL {
+                    option {
+                        key: "{abbr}",
+                        value: "{abbr}",
+                        selected: selected == abbr,
+                        "{teams::name(abbr)}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Puts `team` in the address bar (`?team=DET`, nothing for the Bears)
+/// without reloading, keeping any other query parameter such as `?arm=`.
+fn set_address(team: &str) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let location = window.location();
+    let path = location.pathname().unwrap_or_else(|_| "/".to_string());
+    let search = location.search().unwrap_or_default();
+    let mut params: Vec<String> = search
+        .trim_start_matches('?')
+        .split('&')
+        .filter(|pair| !pair.is_empty() && !pair.starts_with("team="))
+        .map(str::to_string)
+        .collect();
+    let team_query = teams::query(team);
+    if let Some(pair) = team_query.strip_prefix('?') {
+        params.push(pair.to_string());
+    }
+    let query = if params.is_empty() {
+        String::new()
+    } else {
+        format!("?{}", params.join("&"))
+    };
+    if let Ok(history) = window.history() {
+        let _ = history.replace_state_with_url(
+            &wasm_bindgen::JsValue::NULL,
+            "",
+            Some(&format!("{path}{query}")),
+        );
     }
 }
 
@@ -139,9 +227,9 @@ fn WeekPicker(weeks: Vec<ArchiveWeek>, showing: Signal<Option<ArchiveWeek>>) -> 
     }
 }
 
-/// Fetches and parses `/rooting.json` from the same origin.
-async fn load() -> Result<Rooting, String> {
-    Rooting::parse(&fetch_text("/rooting.json").await?)
+/// Fetches and parses `team`'s guide from the same origin.
+async fn load(team: String) -> Result<Rooting, String> {
+    Rooting::parse(&fetch_text(&teams::guide_path(&team)).await?)
 }
 
 /// Fetches and parses `/archive/index.json`. Until the deploy builds the
@@ -177,16 +265,24 @@ async fn fetch_text(path: &str) -> Result<String, String> {
 
 /// A week's guide. `archived` is a past week from the archive: it has no
 /// banner and no voting, and reports no exposures, since votes on old weeks
-/// would mix into the A/B test's results.
+/// would mix into the A/B test's results. Another team's guide than the
+/// Bears' has no voting or exposures either, for the same reason (decision
+/// 0010), and the NFC North goal only for an NFC North team.
 #[component]
 fn Guide(rooting: Rooting, archived: bool) -> Element {
     let mut goal = use_signal(Goal::default);
-    let goal_now = goal();
+    let nfc_north = rooting.nfc_north_team();
+    let goal_now = match goal() {
+        Goal::NfcNorth if !nfc_north => Goal::default(),
+        goal => goal,
+    };
+    let bears = rooting.team == bear_down_core::BEARS;
+    let nick = teams::nickname(&rooting.team).to_string();
     let arm = use_hook(current_arm);
     // One exposure per arm, week and tab in each visit.
     let season = rooting.season;
     // The week votes and exposures are for; none for a past week.
-    let week_now = rooting.week.filter(|_| !archived);
+    let week_now = rooting.week.filter(|_| !archived && bears);
     use_effect(move || {
         let goal = goal();
         if let Some(week) = week_now.filter(|_| voting_allowed()) {
@@ -196,18 +292,20 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
             }
         }
     });
-    let odds = &rooting.bears.odds;
+    let odds = &rooting.focus.odds;
     let week = match rooting.week {
         Some(w) => format!("Week {w}, {} season", rooting.season),
         None => format!("{} season", rooting.season),
     };
-    let record = rooting.bears.record.display();
+    let record = rooting.focus.record.display();
+    let name = teams::name(&rooting.team).to_string();
+    let mascot = if bears { "🐻" } else { "🏈" };
     let games = rooting.ranked(goal_now);
 
     rsx! {
         if let Some(banner) = rooting.banner.as_ref().filter(|_| !archived) {
             div { class: "banner", role: "status",
-                span { class: "banner-bear", aria_hidden: "true", "🐻" }
+                span { class: "banner-bear", aria_hidden: "true", "{mascot}" }
                 div {
                     p { class: "banner-headline", "{banner.headline}" }
                     for line in &banner.lines {
@@ -218,13 +316,15 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
             }
         }
         section { class: "bears",
-            h2 { "Chicago Bears " span { class: "record", "{record}" } }
+            h2 { "{name} " span { class: "record", "{record}" } }
             p { class: "week", "{week}" }
             dl { class: "odds",
                 Stat { label: "Win the Super Bowl", value: percent(odds.champion) }
                 Stat { label: "Make the playoffs", value: percent(odds.playoffs) }
                 Stat { label: "Reach the divisional round", value: percent(odds.divisional_round) }
-                Stat { label: "All four NFC North teams in the divisional round", value: percent(rooting.nfc_north_divisional) }
+                if nfc_north {
+                    Stat { label: "All four NFC North teams in the divisional round", value: percent(rooting.nfc_north_divisional) }
+                }
             }
         }
 
@@ -234,7 +334,7 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
                     class: if goal_now == Goal::SuperBowl { "active" },
                     aria_pressed: goal_now == Goal::SuperBowl,
                     onclick: move |_| goal.set(Goal::SuperBowl),
-                    "Bears Super Bowl"
+                    "{nick} Super Bowl"
                 }
                 button {
                     class: if goal_now == Goal::Playoffs { "active" },
@@ -242,22 +342,24 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
                     onclick: move |_| goal.set(Goal::Playoffs),
                     "Make the playoffs"
                 }
-                button {
-                    class: if goal_now == Goal::NfcNorth { "active" },
-                    aria_pressed: goal_now == Goal::NfcNorth,
-                    onclick: move |_| goal.set(Goal::NfcNorth),
-                    "NFC North"
+                if nfc_north {
+                    button {
+                        class: if goal_now == Goal::NfcNorth { "active" },
+                        aria_pressed: goal_now == Goal::NfcNorth,
+                        onclick: move |_| goal.set(Goal::NfcNorth),
+                        "NFC North"
+                    }
                 }
             }
             p { class: "explain",
                 match goal_now {
-                    Goal::SuperBowl => "Games ranked by how much they move the Bears' chance of winning the Super Bowl.",
-                    Goal::Playoffs => "Games ranked by how much they move the Bears' chance of making the playoffs.",
-                    Goal::NfcNorth => "Games ranked by how much they move the chance that the Bears, Lions, Packers and Vikings all reach the divisional round.",
+                    Goal::SuperBowl => format!("Games ranked by how much they move the {nick}' chance of winning the Super Bowl."),
+                    Goal::Playoffs => format!("Games ranked by how much they move the {nick}' chance of making the playoffs."),
+                    Goal::NfcNorth => "Games ranked by how much they move the chance that the Bears, Lions, Packers and Vikings all reach the divisional round.".to_string(),
                 }
             }
-            if rooting.bears_eliminated() {
-                p { class: "status", "The Bears have been eliminated from the playoffs, so there is nothing left to root for this season." }
+            if rooting.eliminated() {
+                p { class: "status", "The {nick} have been eliminated from the playoffs, so there is nothing left to root for this season." }
             } else if games.is_empty() {
                 p { class: "status", "No games this week." }
             } else {

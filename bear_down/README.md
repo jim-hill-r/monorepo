@@ -4,6 +4,8 @@
 
 A small static website that tells a Chicago Bears fan which NFL games to root
 for each week to give the Bears the best chance of winning the Super Bowl.
+A fan of any other team can pick theirs and get the same guide for it
+([decision 0010](docs/decisions/0010-any-team.md)).
 
 Every game on the week's slate is ranked by how much its result moves the
 Bears' Super Bowl odds, with the team to root for and the size of the swing
@@ -32,7 +34,8 @@ second in a release build) and gives every team's playoff and Super Bowl
 odds, plus each of this week's games' swing on the Bears' playoff and Super
 Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downloads
 the nflverse schedule, runs the simulation and writes `rooting.json`
-([format](docs/rooting-json.md)).
+([format](docs/rooting-json.md)), and with `--teams-dir` every other
+team's guide as `teams/<team>.json` for the page's team picker.
 `bear_down --week <n> [--season <year>]` rebuilds a past week's guide from
 the results before it, for the [archive](docs/plans/2026-11-archive.md).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
