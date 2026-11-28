@@ -2,8 +2,8 @@
 kind: todo
 priority: backlog
 tags: [agent-generated]
-epic: "User feedback / Phase 7: review toolbar extension"
-order: 70
+epic: "User feedback / Phase 8: review toolbar extension"
+order: 80
 added: 2026-11-28
 ---
 

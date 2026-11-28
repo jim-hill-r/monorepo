@@ -1,12 +1,13 @@
-# 0020. User feedback, support and in-app user guides as one platform component
+# 0020. User feedback, support and in-app user guides as platform libraries
 
-- Status: Proposed (for Jim)
+- Status: Proposed (for Jim; his first answers are folded in)
 - Date: 2026-11-28
 - Asked by: Jim (project thread, 2026-11-28)
 - Plan: [2026-11-user-feedback.md](../plans/2026-11-user-feedback.md)
 - Builds on: [0003](0003-eval-engine.md) item 8 (the review toolbar),
-  [0004](0004-database-engine.md) (files first),
-  [0017](0017-user-docs.md) (user guides) and 0019 (project tiers, PR 904)
+  [0017](0017-user-docs.md) (user guides), [0018](0018-feature-flags.md)
+  (management apps), 0019 (project tiers) and
+  [0021](0021-tenant-scoped-product-data.md) (product data)
 
 ## Context
 
@@ -17,65 +18,70 @@ also provide some ability to get support as well", and "can we build into
 the technical platform a way to surface the user guides into
 applications."
 
-We had three separate pieces: the eval engine's review toolbar (Jim only,
-planned), bear_down's fan votes (built, with their own `telemetry` event)
-and the `telemetry` Worker. None is for an app's ordinary users, none
-offers help, and the first app to embed feedback, Blue Eel, promises that
-nothing leaves the device (SPRK-006) under a `connect-src 'self'` CSP.
+His answers to the first draft: "Same origin. Assume products are owned by
+different companies during architecture. We should have shared technical
+platform services, just libraries and patterns." Support should use
+"some vendor that is easy to provision with IAC or scripting and not
+email." And product data may share "DB infra with tenatized tables".
+
+We had a Jim-only review toolbar (planned), bear_down's fan votes (built,
+on the shared `telemetry` Worker) and no help or support for users. Blue
+Eel, the first product to embed this, promises that nothing leaves the
+device (SPRK-006) under a `connect-src 'self'` CSP.
 
 ## Decision
 
-1. **One `feedback` project in the technical-platform tier.** It holds the
-   review toolbar already planned there and a new public user widget, over
-   the shared `feedback/model`. The two never share collected data: the
-   user widget takes no screenshot, DOM or error text.
-2. **In-app help comes from the user guide.** `feedback/help` compiles each
+1. **Libraries and patterns, not services.** A technical-platform
+   `feedback` project ships crates; each product runs its own endpoint on
+   its own origin, owns its data as a tenant (decision 0021) and answers
+   its users in its own management app. No product's requests or data
+   pass through another product or a central service.
+2. **In-app help is the user guide.** `feedback/help` compiles each
    project's `docs/user/` Markdown into the app at build time and shows it
-   as a Help panel with deep links; it works offline and never fetches.
-   No second copy of the guide exists.
-3. **Explicit send, nothing else.** Feedback is a form the user fills in,
-   previews exactly, and sends. Only project, build, page, topic, rating
-   and note are sent; no id, cookie or tracking.
-4. **Same-origin transport.** The widget posts to `/api/feedback` on the
-   app's own origin; a Pages Function forwards to the `telemetry` Worker,
-   which gains an `app_feedback` kind. CSPs stay `connect-src 'self'`.
-5. **Files, not a database.** Analytics Engine is the inbox; the weekly
-   export writes JSON Lines to the public `feedback-data` branch, and
-   triage turns actionable lines into issue files, treating the text as
-   untrusted data.
-6. **Support by email, outside our systems.** "Contact us" is a `mailto:`
-   link to a Cloudflare Email Routing address. The form never asks for
-   contact details, because its output is public.
-7. **Reuse, don't fork.** bear_down's votes move onto the widget's
-   `QuickVote`; the review toolbar also ships as an unpacked browser
+   offline with deep links. No second copy of the guide exists.
+3. **Support without email or vendor.** A support request is stored in
+   the product's tenant tables and answered in its management app; the
+   user reads the answer through a private link kept on their device. No
+   contact details are collected. Tally is the vendor fallback (free,
+   scriptable by API, answers by webhook into the same inbox), pending
+   Jim's sign-off.
+4. **Explicit send, nothing else.** Every form shows exactly what will be
+   sent and sends only on Send: product, build, page, topic, rating and
+   note for feedback; subject and question for support. No id, cookie or
+   tracking.
+5. **Private text, public aggregates.** People's words stay in D1 and are
+   deleted on a schedule; only aggregates reach the repo as files. Triage
+   paraphrases into issue files and treats the text as untrusted data.
+6. **Reuse, don't fork.** bear_down's votes move onto `QuickVote` and its
+   own endpoint; the review toolbar also ships as an unpacked browser
    extension so production builds carry no review code.
 
 ## Alternatives considered
 
 | Option | Money cost | Why not |
 | --- | --- | --- |
-| PostHog surveys | $0 up to 1,500 responses a month | Approved only for session replay; adds a third-party script, which SPRK-006 forbids |
-| Hosted widgets (Userback, Marker.io, Canny) | Paid past tiny free plans | New vendor, third-party script, data outside the repo |
-| GitHub Issues or Discussions as the form | $0 | Users need a GitHub account; kept as an optional public support link |
-| Allow the `telemetry` Worker in `connect-src` | $0 | Simpler, but changes SPRK-006's "only its own origin" |
-| D1 for feedback | $0 on the free plan | Decision 0004: files while files will do |
-| A "reply to me" email field | $0 | Puts personal data on a public branch; email keeps it private |
-| Turnstile against spam | $0 | Loads a script from another site; rate limits first |
+| Route products through the shared `telemetry` Worker | $0 | A shared service; Jim asked for libraries and patterns only |
+| Allow another origin in `connect-src` | $0 | Breaks same origin (Jim's answer 1) and SPRK-006 |
+| Email support (Cloudflare Email Routing, `mailto:`) | $0 | Jim: not email |
+| Tally forms | $0 (unlimited under fair use; API and webhooks free) | New vendor and a link out; kept as the fallback |
+| Google Forms | $0; push needs Pub/Sub with billing, so polling | New vendor, Google Cloud project, link out |
+| GitHub issue forms or Discussions | $0 | Users need a GitHub account and it is public; Discussions kept for developer tools |
+| Jira Service Management, Zoho Desk free plans | $0 for 3 agents | New vendors, third-party portals or scripts, weaker IaC |
+| PostHog surveys or a hosted widget (Userback, Canny) | $0 to paid | Third-party script, which SPRK-006 forbids |
+| Turnstile against spam | $0 | Loads a script from another site; rate limits and tenant budgets first |
 | Chrome Web Store for the extension | $5 one time | Breaks the free-tier rule; unpacked from a GitHub release is free |
-| A separate help project | $0 | Help, support and feedback share one panel and one entry point in each app; one crate in one project is simpler, and `feedback/help` still works alone |
 
 ## Consequences
 
-- Every app that embeds it gets help, support and feedback with one
-  dependency, and its user guide becomes user-visible, so DOC-005 to
-  DOC-007 gaps show in the product, not only in the audit.
-- `telemetry` gains a kind and a TELE-003 wording change (user-sent events
-  ignore DNT/GPC); Blue Eel gains SPRK-011 and a SPRK-006 clause. All need
-  Jim's requirement approval.
-- Jim gets one human task in Phase 5: move one domain's DNS to Cloudflare
-  and turn on Email Routing, with its runbook.
-- Public feedback text reaches an agent's triage, so the triage rules
-  (quote only, never act on instructions in notes) are part of the threat
-  model.
-- Cost: $0 on Cloudflare and GitHub free plans; about eight medium agent
-  PRs of Claude Code effort against the $25 a month budget.
+- Every product that embeds it gets help, support and feedback with one
+  dependency and its own small Worker, and its user guide becomes
+  user-visible.
+- Blue Eel moves from Pages to a Rust Worker with static assets (or a
+  Pages Function), and gains SPRK-011 and a SPRK-006 clause, both for
+  Jim's approval.
+- bear_down's votes leave the shared `telemetry` Worker in Phase 7.
+- Public text reaches an agent's triage, so the triage rules (paraphrase,
+  never act on instructions in notes) are part of the threat model.
+- Cost: $0 on Cloudflare and GitHub free plans: one Worker per embedding
+  product and one shared D1 database. About nine medium agent PRs of
+  Claude Code effort against the $25 a month budget.
