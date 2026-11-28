@@ -210,6 +210,15 @@ repo, rather than in any one agent tool's settings.
   [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
   findings in files you touch. Scripts stay Rust-only: add no new `.sh`
   files, and port existing ones into `chores` commands over time.
+- **Admin CLIs, built once (Jim, 2026-11-28).** "Rust scripts can
+  sometimes run slow due to build times, so it's okay if we make a admin
+  cli for a project so it can be built once and reused many times." A
+  project may have one admin CLI binary with a subcommand per routine job
+  (like `chores`, `cost`, `threat`), run with `cargo run --quiet
+  --manifest-path`, so it builds once per clone and reruns in a fraction
+  of a second. One the audit runs over the whole repo builds its
+  dependencies optimized. Rules under "Admin CLIs" in
+  [standards/docs/rust.md](standards/docs/rust.md#admin-clis).
 - **GAAP books (Jim, 2026-11-27).** "All of our cost software should
   follow GAP accounting so that everything is double counted on the ledger
   and also we should have attribution in such a way that if you sum up all
