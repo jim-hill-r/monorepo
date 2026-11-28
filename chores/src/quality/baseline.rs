@@ -30,10 +30,7 @@ pub fn parse(text: &str) -> Result<Baseline> {
     let Some(baseline) = table.get("baseline").and_then(toml::Value::as_table) else {
         bail!("no [baseline] table");
     };
-    let updated = baseline
-        .get("updated")
-        .map(ToString::to_string)
-        .unwrap_or_default();
+    let updated = baseline.get("updated").map_or_default(ToString::to_string);
     let mut lints = BTreeMap::new();
     if let Some(table) = baseline.get("lints").and_then(toml::Value::as_table) {
         for (lint, count) in table {

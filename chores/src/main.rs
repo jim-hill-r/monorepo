@@ -196,6 +196,10 @@ enum Command {
         /// With --update, the baseline's date, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long, requires = "update")]
         date: Option<String>,
+        /// With --check, the branch the change merges into: a risen lint
+        /// lists only its findings in files changed since the merge base.
+        #[arg(long, requires = "check")]
+        base: Option<String>,
         /// With --report, print every finding as JSON instead.
         #[arg(long, requires = "report")]
         json: bool,
@@ -412,6 +416,7 @@ fn run() -> Result<ExitCode> {
             project,
             accept_rise,
             date,
+            base,
             json,
         } => {
             if json {
@@ -429,6 +434,7 @@ fn run() -> Result<ExitCode> {
                 mode,
                 accept_rise,
                 date,
+                base,
             };
             if !quality::run(&root, &options)? {
                 return Ok(ExitCode::FAILURE);

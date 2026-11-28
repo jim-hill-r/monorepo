@@ -152,6 +152,34 @@ pub fn line_counts<'a>(
     out
 }
 
+/// Files changed since the merge base with `base`, committed or not, plus
+/// untracked ones, from the repo root.
+pub fn changed_files(root: &Path, base: &str) -> Result<BTreeSet<String>> {
+    let merge_base = git(root, &["merge-base", base, "HEAD"])?;
+    let Some(merge_base) = merge_base.lines().next() else {
+        bail!("no merge base with {base}");
+    };
+    let diff = git(root, &["diff", "--name-only", merge_base.trim()])?;
+    let untracked = git(root, &["ls-files", "--others", "--exclude-standard"])?;
+    Ok(diff
+        .lines()
+        .chain(untracked.lines())
+        .map(str::to_string)
+        .collect())
+}
+
+fn git(root: &Path, args: &[&str]) -> Result<String> {
+    let out = Command::new("git")
+        .args(args)
+        .current_dir(root)
+        .output()
+        .with_context(|| format!("running git {}", args.join(" ")))?;
+    if !out.status.success() {
+        bail!("git {} failed: {}", args.join(" "), tail(&out.stderr));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

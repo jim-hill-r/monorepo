@@ -69,6 +69,7 @@ c user-docs --json
 # finding per Rust file over 800 lines, counted per lint against each
 # project's docs/quality.toml. Generated code (infra/src/tfschema/) is left out.
 c quality --check --project cookbook      # exit 1 when a count rose, naming that lint's findings
+c quality --check --project cookbook --base origin/main   # list only the risen lint's findings in changed files
 c quality --update --project cookbook     # write the baseline; refuses a rise
 c quality --update --project cookbook --accept-rise   # only for a toolchain or profile change
 c quality --report                        # every project with Rust code: totals, worst lints and files

@@ -88,6 +88,9 @@ pub struct Options {
     pub accept_rise: bool,
     /// The baseline's `updated` date; defaults to today (UTC).
     pub date: Option<String>,
+    /// With `--check`, the branch the change merges into: a risen lint
+    /// lists only its findings in files changed since the merge base.
+    pub base: Option<String>,
 }
 
 /// One project measured now, next to its committed baseline.
@@ -119,11 +122,7 @@ impl Measured {
     }
 
     pub fn changes(&self) -> Vec<Change> {
-        let before = self
-            .baseline
-            .as_ref()
-            .map(|b| b.lints.clone())
-            .unwrap_or_default();
+        let before = self.baseline.as_ref().map_or_default(|b| b.lints.clone());
         baseline::compare(&before, &self.counts)
     }
 }
@@ -137,11 +136,15 @@ pub fn run(root: &Path, options: &Options) -> Result<bool> {
         return Ok(measured.iter().all(|m| m.error.is_none()));
     }
     let (profile, tracked, projects) = prepare(root, &options.projects)?;
+    let changed = match &options.base {
+        Some(base) if options.mode == Mode::Check => Some(source::changed_files(root, base)?),
+        _ => None,
+    };
     let mut passed = true;
     for project in &projects {
         let m = measure(root, project, &profile, &tracked)?;
         if options.mode == Mode::Check {
-            let (text, ok) = render_check(&m);
+            let (text, ok) = render_check(&m, changed.as_ref());
             print!("{text}");
             passed &= ok;
         } else {
@@ -247,11 +250,19 @@ fn location(f: &Finding) -> String {
     }
 }
 
-fn render_rises(out: &mut String, measured: &Measured, rises: &[&Change]) {
-    for change in rises {
+/// Prints each risen lint and its findings. Counts can't say which finding
+/// is new, so with `changed` (files changed since the merge base) only the
+/// findings in those files are listed, or all of them when none are there.
+fn render_rises(
+    out: &mut String,
+    measured: &Measured,
+    risen: &[&Change],
+    changed: Option<&BTreeSet<String>>,
+) {
+    for change in risen {
         let _ = writeln!(
             out,
-            "  {} {} -> {} (+{}); its findings, one or more of them new:",
+            "  {} {} -> {} (+{}); the findings, one or more of them new:",
             change.lint,
             change.before,
             change.after,
@@ -262,6 +273,18 @@ fn render_rises(out: &mut String, measured: &Measured, rises: &[&Change]) {
             .iter()
             .filter(|f| f.lint == change.lint)
             .collect();
+        let in_changed: Vec<&Finding> = changed.map_or_default(|files| {
+            of_lint
+                .iter()
+                .copied()
+                .filter(|f| files.contains(&f.file))
+                .collect()
+        });
+        let of_lint = if in_changed.is_empty() {
+            of_lint
+        } else {
+            in_changed
+        };
         for f in of_lint.iter().take(SHOW_FINDINGS) {
             let _ = writeln!(out, "    {}", location(f));
         }
@@ -272,7 +295,10 @@ fn render_rises(out: &mut String, measured: &Measured, rises: &[&Change]) {
 }
 
 /// The `--check` text for one project, and whether it passed.
-pub fn render_check(measured: &Measured) -> (String, bool) {
+pub fn render_check(
+    measured: &Measured,
+    changed_files: Option<&BTreeSet<String>>,
+) -> (String, bool) {
     let project = &measured.project;
     let total = measured.total();
     let Some(base) = &measured.baseline else {
@@ -284,16 +310,16 @@ pub fn render_check(measured: &Measured) -> (String, bool) {
         return (text, true);
     };
     let changes = measured.changes();
-    let rises: Vec<&Change> = changes.iter().filter(|c| c.rose()).collect();
+    let risen: Vec<&Change> = changes.iter().filter(|c| c.rose()).collect();
     let mut out = String::new();
-    if !rises.is_empty() {
+    if !risen.is_empty() {
         let _ = writeln!(
             out,
             "quality: {project}: FAIL, findings rose ({} -> {total}, QUAL-501). Fix the new ones, \
              or waive one with #[expect(lint, reason = \"...\")] (QUAL-504):",
             base.total()
         );
-        render_rises(&mut out, measured, &rises);
+        render_rises(&mut out, measured, &risen, changed_files);
         return (out, false);
     }
     if changes.is_empty() {
@@ -316,13 +342,13 @@ pub fn render_check(measured: &Measured) -> (String, bool) {
 fn update(root: &Path, measured: &Measured, options: &Options) -> Result<bool> {
     let project = &measured.project;
     let changes = measured.changes();
-    let rises: Vec<&Change> = changes.iter().filter(|c| c.rose()).collect();
-    if measured.baseline.is_some() && !rises.is_empty() && !options.accept_rise {
+    let risen: Vec<&Change> = changes.iter().filter(|c| c.rose()).collect();
+    if measured.baseline.is_some() && !risen.is_empty() && !options.accept_rise {
         let mut out = format!(
             "quality: {project}: not written, findings rose (QUAL-501: never raise a baseline). \
              Fix them, or pass --accept-rise for a toolchain or profile change and say why in the PR:\n"
         );
-        render_rises(&mut out, measured, &rises);
+        render_rises(&mut out, measured, &risen, None);
         print!("{out}");
         return Ok(false);
     }
@@ -459,7 +485,7 @@ mod tests {
             ],
             Some(&[("clippy::too_many_lines", 1)]),
         );
-        let (text, ok) = render_check(&m);
+        let (text, ok) = render_check(&m, None);
         assert!(!ok);
         assert!(text.contains("FAIL, findings rose (1 -> 2"), "{text}");
         assert!(
@@ -478,7 +504,7 @@ mod tests {
             vec![at("clippy::a", "cost/src/a.rs", 1)],
             Some(&[("clippy::a", 2)]),
         );
-        let (text, ok) = render_check(&m);
+        let (text, ok) = render_check(&m, None);
         assert!(ok);
         assert!(
             text.contains("2 -> 1 findings; lower the baseline"),
@@ -488,7 +514,7 @@ mod tests {
             vec![at("clippy::a", "cost/src/a.rs", 1)],
             Some(&[("clippy::a", 1)]),
         );
-        let (text, ok) = render_check(&m);
+        let (text, ok) = render_check(&m, None);
         assert!(ok);
         assert!(text.contains("the same as the baseline"), "{text}");
     }
@@ -499,14 +525,17 @@ mod tests {
             vec![at("clippy::b", "cost/src/a.rs", 1)],
             Some(&[("clippy::a", 5)]),
         );
-        let (text, ok) = render_check(&m);
+        let (text, ok) = render_check(&m, None);
         assert!(!ok, "{text}");
         assert!(text.contains("clippy::b 0 -> 1"), "{text}");
     }
 
     #[test]
     fn check_passes_without_a_baseline() {
-        let (text, ok) = render_check(&measured(vec![at("clippy::a", "cost/src/a.rs", 1)], None));
+        let (text, ok) = render_check(
+            &measured(vec![at("clippy::a", "cost/src/a.rs", 1)], None),
+            None,
+        );
         assert!(ok);
         assert!(text.contains("no docs/quality.toml yet"), "{text}");
     }
@@ -514,7 +543,7 @@ mod tests {
     #[test]
     fn long_files_show_their_length() {
         let m = measured(vec![at(FILE_TOO_LONG, "cost/src/a.rs", 900)], Some(&[]));
-        let (text, _) = render_check(&m);
+        let (text, _) = render_check(&m, None);
         assert!(text.contains("cost/src/a.rs (900 lines)"), "{text}");
     }
 
@@ -527,6 +556,7 @@ mod tests {
             mode: Mode::Update,
             accept_rise: false,
             date: Some("2026-11-28".into()),
+            base: None,
         };
         let rose = measured(vec![at("clippy::a", "cost/src/a.rs", 1)], Some(&[]));
         assert!(!update(dir.path(), &rose, &options).unwrap());
@@ -576,5 +606,24 @@ mod tests {
             text.contains("controlled_chaos: not measured: cargo clippy failed"),
             "{text}"
         );
+    }
+
+    #[test]
+    fn with_a_base_a_rise_lists_only_findings_in_changed_files() {
+        let m = measured(
+            vec![
+                at("clippy::a", "cost/src/old.rs", 1),
+                at("clippy::a", "cost/src/new.rs", 2),
+            ],
+            Some(&[("clippy::a", 1)]),
+        );
+        let changed = BTreeSet::from(["cost/src/new.rs".to_string()]);
+        let (text, _) = render_check(&m, Some(&changed));
+        assert!(text.contains("cost/src/new.rs:2:1"), "{text}");
+        assert!(!text.contains("old.rs"), "{text}");
+        // No finding in a changed file: list them all.
+        let elsewhere = BTreeSet::from(["README.md".to_string()]);
+        let (text, _) = render_check(&m, Some(&elsewhere));
+        assert!(text.contains("old.rs") && text.contains("new.rs"), "{text}");
     }
 }
