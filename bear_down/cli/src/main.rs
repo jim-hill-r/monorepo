@@ -651,6 +651,101 @@ mod tests {
         }
     }
 
+    /// The fixture as it stood just before `week` of `year`, playoff weeks
+    /// included.
+    fn as_of_week(year: u16, week: u8) -> Schedule {
+        let full = match Schedule::parse(include_str!("../../core/fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("seasons fixture should parse: {error}"),
+        };
+        match full.as_of(year, week) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("{year} week {week}: {error}"),
+        }
+    }
+
+    /// A golden playoff week (decision 0008's playoff guide): the 2020 wild
+    /// card round. The 8-8 Bears were the No. 7 seed at the Saints.
+    #[test]
+    fn golden_wild_card_round_2020() {
+        let guide = match build(&as_of_week(2020, 18), Some(4_000), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!((guide.season, guide.week), (2020, Some(18)));
+        assert_eq!(guide.round, Some("wild_card"));
+        assert_eq!(guide.games.len(), 6);
+        assert!((guide.bears.odds.playoffs - 1.0).abs() < 1e-12);
+        let game = |away: &str, home: &str| match guide
+            .games
+            .iter()
+            .find(|game| game.away == away && game.home == home)
+        {
+            Some(game) => game,
+            None => panic!("{away} at {home} should be in the wild card round"),
+        };
+        for game in &guide.games {
+            // In already: nothing moves the Bears' playoff odds.
+            assert_eq!(game.playoffs.swing, 0.0, "{}", game.id);
+            assert_eq!(game.playoffs.root_for, None, "{}", game.id);
+        }
+        // Their own game is the whole season: a loss ends it.
+        let own = game("CHI", "NO");
+        assert_eq!(own.champion.root_for.as_deref(), Some("CHI"));
+        assert_eq!(own.champion.tier, "matters");
+        assert_eq!(own.champion.if_home_wins, 0.0);
+        assert!(
+            own.champion.why[0].starts_with("The Bears' own playoff game"),
+            "{:?}",
+            own.champion.why
+        );
+        // Another NFC game decides who the Bears could meet next.
+        let nfc = game("TB", "WAS");
+        assert_ne!(nfc.champion.tier, "none");
+        assert!(
+            nfc.champion
+                .channels
+                .iter()
+                .all(|channel| channel.channel == "bracket"),
+            "{:?}",
+            nfc.champion.channels
+        );
+        // An AFC game only reaches them through the Super Bowl opponent.
+        for channel in &game("IND", "BUF").champion.channels {
+            assert_eq!(channel.channel, "super_bowl_opponent");
+        }
+    }
+
+    /// The 2020 divisional round, after the Bears lost at the Saints:
+    /// nothing is left to root for.
+    #[test]
+    fn a_playoff_round_after_the_bears_are_out() {
+        let guide = match build(&as_of_week(2020, 19), Some(500), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!(guide.round, Some("divisional"));
+        assert_eq!(guide.games.len(), 4);
+        assert_eq!(guide.bears.odds.champion, 0.0);
+        for game in &guide.games {
+            assert_eq!(game.champion.tier, "none", "{}", game.id);
+            assert!(
+                game.champion.why[0].contains("out of the playoffs"),
+                "{:?}",
+                game.champion.why
+            );
+        }
+    }
+
+    #[test]
+    fn the_regular_season_has_no_round() {
+        let guide = match build(&before_week(2020, 17), Some(200), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!(guide.round, None);
+    }
+
     #[test]
     fn a_missing_games_file_is_an_error() {
         assert!(read_games("no/such/games.csv").is_err());

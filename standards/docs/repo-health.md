@@ -63,6 +63,7 @@ table differs from the file, so edit the TOML, never the tables.
 | Infra apply | Push to `main` | a plan guard (IAC-001 to IAC-005) failed, or the plan or apply failed |
 | Infra drift | Weekly | a live setting differs from OpenTofu state, usually a change made by hand |
 | Infra mint | Quarterly, after Jim approves | a rotation run failed, so a minted password or token may be past its rotation date |
+| Temporary resources | Weekly | the weekly cleanup failed, so old previews, deployments or branches pile up toward their free-tier limits |
 
 ### Data
 

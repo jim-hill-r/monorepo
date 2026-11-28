@@ -1,0 +1,3 @@
+[project]
+name = "sparkhill"
+description = "Groups the Sparkhill website and the Blue Eel letter tracing app, with the shared decisions and issues."

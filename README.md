@@ -68,6 +68,7 @@ Whether the OpenTofu stacks apply, match what's live, and rotate their secrets.
 | Infra apply | [![Infra apply](https://github.com/jimhillr/monorepo/actions/workflows/infra-apply.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-apply.yml) | Push to `main` | OpenTofu plan with the plan guards (IAC-001 to IAC-005), then apply (decision 0007) |
 | Infra drift | [![Infra drift](https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml) | Weekly | Refresh-only plan of every stack: red when a live setting differs from state |
 | Infra mint | [![Infra mint](https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml) | Quarterly, after Jim approves | Rotates the minted infra passwords and tokens ([rotation plan](standards/docs/secret-rotation.md)) |
+| Temporary resources | [![All Retire Resources](https://github.com/jimhillr/monorepo/actions/workflows/all-retire-resources.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/all-retire-resources.yml) | Weekly | Deletes Pages previews older than 14 days, old production deployments and branches 7 days after their PR closed ([resources.md](standards/docs/resources.md#temporary-resources)) |
 
 ### Data
 

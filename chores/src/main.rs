@@ -5,12 +5,14 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
 mod badges;
+mod conflict_markers;
 mod gate;
 mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
 mod repo_health;
+mod retire;
 mod shell_scripts;
 mod tiers;
 mod user_docs;
@@ -162,11 +164,36 @@ enum Command {
         #[arg(long)]
         json: Option<PathBuf>,
     },
+    /// Which temporary resources to delete ("Temporary resources" in
+    /// standards/docs/resources.md): Pages previews older than 14 days
+    /// (keeping the newest of each open PR's branch), non-current production
+    /// deployments older than 30 days, and branches 7 days after their PR
+    /// closed. Reads the live list the `all-retire-resources.yml` workflow
+    /// writes, prints the run summary and never deletes anything itself.
+    RetireTemporary {
+        /// The live list as JSON: `default_branch`, `pages` (name,
+        /// canonical, deployments), `branches` and `pulls`.
+        #[arg(long)]
+        live: PathBuf,
+        /// Also write the plan as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
+        /// Today's date, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<String>,
+    },
     /// Check every project's user guide, <project>/docs/user/README.md
     /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
     /// against the baseline in standards/user-docs.toml. Exits 1 on any
     /// error. Run by `mise run //:audit`.
     UserDocs {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Check that no tracked file holds an unresolved merge conflict marker
+    /// (STD-005). Exits 1 on any. Run by `mise run //:audit`.
+    ConflictMarkers {
         /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
@@ -397,6 +424,10 @@ fn run() -> Result<ExitCode> {
                 return Ok(ExitCode::FAILURE);
             }
         }
+        Command::RetireTemporary { live, json, today } => {
+            let plan = retire::run(&live, today.as_deref(), json.as_deref())?;
+            print!("{}", retire::render(&plan));
+        }
         Command::UserDocs { json } => {
             let report = user_docs::check(&root)?;
             if json {
@@ -405,6 +436,17 @@ fn run() -> Result<ExitCode> {
                 print!("{}", user_docs::render(&report));
             }
             if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::ConflictMarkers { json } => {
+            let findings = conflict_markers::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&findings)?);
+            } else {
+                print!("{}", conflict_markers::render(&findings));
+            }
+            if !findings.is_empty() {
                 return Ok(ExitCode::FAILURE);
             }
         }

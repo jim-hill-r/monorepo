@@ -213,6 +213,16 @@ alt = "Infra mint"
 image = "https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml/badge.svg"
 link = "https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml"
 
+[[domain.row]]
+area = "Temporary resources"
+runs = "Weekly"
+checks = "Deletes Pages previews older than 14 days, old production deployments and branches 7 days after their PR closed ([resources.md](standards/docs/resources.md#temporary-resources))"
+red = "the weekly cleanup failed, so old previews, deployments or branches pile up toward their free-tier limits"
+[[domain.row.badge]]
+alt = "All Retire Resources"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/all-retire-resources.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/all-retire-resources.yml"
+
 [[domain]]
 name = "Data"
 summary = "Exports that copy product data back into the repo."
