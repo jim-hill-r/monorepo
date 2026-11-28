@@ -264,3 +264,21 @@ what the threat models say, through `threat live`:
 Requests send the `jimhillr-threat-live` user agent and
 `x-jimhillr-synthetic: 1`, so analytics can leave them out. A token that
 can't list Workers is a warning; the Pages checks still run.
+
+## GitHub security settings
+
+GitHub's own code security is the server-side net behind the checks above:
+push protection rejects a push with a known secret before it reaches any
+branch (our hooks can be skipped, and PR CI runs only after the push),
+secret scanning also reads issues and PR comments, Dependabot alerts fire
+as soon as an advisory is published against a dependency that hasn't
+changed, and private vulnerability reporting lets outsiders report a hole
+without a public issue. All are free on this public repo, and none was on
+by default.
+
+The `github` stack in `infra` holds secret scanning, push protection,
+Dependabot alerts and security updates. Private vulnerability reporting has
+no OpenTofu resource, so Jim set it by hand
+([runbook](runbooks/github-code-security.md)), and the weekly **GitHub
+security settings** job of `all-free-tier-usage.yml` fails if it is ever
+turned off.
