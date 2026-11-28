@@ -21,6 +21,12 @@ pane pages, one group per phase below.
 > [evals.md](../evals.md#continuous-improvement) and the
 > [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
 
+> **Update, 2026-11-28.** Jim agreed with the whole review. The work left
+> is now ordered by the [evals roadmap](../../../evals/docs/roadmap.md),
+> and its issues are in [evals/issues/](../../../evals/issues/) under the
+> epic "Evals roadmap". The phase 6 capture tooling moves to the user
+> feedback component as one tool for every role.
+
 ## Goal
 
 For every project, at any time, answer one question with evidence: **does

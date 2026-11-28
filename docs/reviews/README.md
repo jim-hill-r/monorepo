@@ -4,7 +4,7 @@ Once a week a scheduled agent task, "Weekly deep project review", runs the
 [`deep-project-review`](../../.agents/skills/deep-project-review/SKILL.md)
 skill. Each run picks one project, studies it in depth (purpose and long-term
 goals, progress and what is holding it up, features, user experience,
-architecture, security, performance, quality, operations, and a re-review of
+architecture, where its code lives, its dependencies and vendors, security, performance, quality, operations, and a re-review of
 its tech selection against the [tech radar](../../standards/docs/tech-radar.md))
 and writes a slide deck here as a pull request for Jim's review and feedback.
 
@@ -66,6 +66,12 @@ style: |
 ## Deep review, <YYYY-MM-DD>
 ```
 
+- Every deck, whichever skill or person writes it, has a **Where the code
+  lives** slide (every folder, workflow, script, skill, doc and data branch
+  that holds part of the project) and a **Dependencies and vendors** slide
+  (each direct dependency with its version and use; each vendor with its
+  plan, cost, billing check and whether it is approved), after the
+  architecture slides (Jim, 2026-11-28).
 - One idea per slide; split long tables across slides.
 - Pane reads the scorecard: keep it a `| Area | Rating | Why |` table under
   a `# Scorecard` heading (a continuation slide's heading must also say

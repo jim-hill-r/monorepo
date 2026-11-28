@@ -168,6 +168,41 @@ Access policies. They break silently.
 
 ---
 
+# Where the code lives
+
+Added 2026-11-28 at Jim's request. One project, `evals/`, holds the engine;
+the rest lives next to what it checks, on purpose.
+
+| What | Where |
+| --- | --- |
+| Engine: types and verdict rules; the `evals` command | `evals/model`, `evals/cli`, `evals/verdicts.toml` |
+| Each project's promises and checks | `<project>/docs/requirements.md`, `<project>/evals.toml` |
+| Format and rules | `standards/docs/evals.md`, plan, decision 0003 |
+| CI and deploy wiring | `mise-projects.yml`, `push-main.yml`, `nightly-*.yml`, `standards/scripts/evals.sh` |
+| Store, triage, fire drill | `evals-store.yml`, `evals-triage.yml`, `evals-fire-drill.yml` |
+| Results and verdicts | `evals-results` branch |
+| Hand-made settings | `standards/settings.toml`, `standards/settings-checks.jsonl` |
+| Its to-do list | `evals/issues/` ([roadmap](../../../evals/docs/roadmap.md)) |
+
+---
+
+# Dependencies and vendors
+
+| Dependency | Version | Used for |
+| --- | --- | --- |
+| serde, serde_json, toml | 1, 1, 1 | Reading `evals.toml`, writing results and verdicts |
+| chrono | 0.4 | Result times and freshness (flagged unmaintained: a Threat check issue) |
+| clap, anyhow, thiserror | 4, 1, 2 | Command line and errors |
+| ureq | 3 | The live `http` evals |
+
+| Vendor | Plan | Cost a month | Billing check | Approved |
+| --- | --- | --- | --- | --- |
+| GitHub Actions | Free (public repo) | $0 | Billing API plus a settings check | Yes |
+| Cloudflare Pages | Free (the projects' own sites, about 30 requests a night) | $0 | Billing Read API plus a settings check | Yes |
+| Claude Code | The one paid service | Share of $25 (on-demand `eval-triage` skill) | Settings check | Yes |
+
+---
+
 <!-- _class: lead -->
 
 # Where it stands
@@ -392,3 +427,20 @@ Reply on this PR with your picks, or in the project chat.
 | 2. What comes next | Evals are continuous improvement, not a project: always green, red feeds the issue process, coverage grows per project, with a coverage metric and badge |
 | 3. Pause the in-app toolbar? | No, Jim wants it. It stays as phase 6 |
 | 4. Requirement PRs | Approve as they come (#812 merged) |
+
+---
+
+# Jim's feedback, 2026-11-28
+
+"I agree with everything." What followed:
+
+- The findings are now the [evals roadmap](../../../evals/docs/roadmap.md):
+  trust the green, cover every project, deeper evidence, then chaos and
+  the judge. Its issues are in `evals/issues/` and each project's own
+  `issues/`.
+- Every review deck now has **Where the code lives** and **Dependencies
+  and vendors** slides (the `deep-project-review` skill and
+  `docs/reviews/README.md`).
+- The review toolbar moves to the feedback component as one tool: who is
+  signed in (user, app manager, product owner, engineer) picks the kind of
+  feedback and where it goes. The eval engine only reads the results.

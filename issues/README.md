@@ -36,9 +36,12 @@ They build on the mise workflows from PR #570 (`mise-projects.yml`,
 
 See
 [standards/docs/plans/2026-11-eval-engine.md](../standards/docs/plans/2026-11-eval-engine.md)
-and decision 0003. Work the phases in order. Phases 0 and 1 depend on
-nothing; later phases need the "Feedback on every change" issues. The pane
-pages for it are in [pane/issues/](../pane/issues/).
+and decision 0003. Its issues moved to [evals/issues/](../evals/issues/)
+under the epic "Evals roadmap", in the order of the
+[evals roadmap](../evals/docs/roadmap.md) (2026-11-28). The phase 6 in-app
+feedback issues move to the "User feedback" epic (PR 928), where one
+feedback tool serves every role. The pane pages for it are
+in [pane/issues/](../pane/issues/).
 
 ## Free tiers
 
