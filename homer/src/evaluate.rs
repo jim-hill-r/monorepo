@@ -63,87 +63,128 @@ pub fn parse_bathroom_count(arg: &str) -> std::result::Result<f32, String> {
     })
 }
 
+/// Which side of a preference's limit a value must be on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Bound {
+    AtLeast,
+    AtMost,
+}
+
+impl Bound {
+    fn allows<T: PartialOrd + Copy>(self, value: T, limit: T) -> bool {
+        match self {
+            Bound::AtLeast => value >= limit,
+            Bound::AtMost => value <= limit,
+        }
+    }
+
+    fn phrase(self) -> &'static str {
+        match self {
+            Bound::AtLeast => "need at least",
+            Bound::AtMost => "max is",
+        }
+    }
+}
+
+/// What one criterion says about a property.
+#[derive(Debug, PartialEq, Eq)]
+enum Outcome {
+    /// The preferences don't set this criterion.
+    NotSet,
+    Met,
+    /// Not met, or the value is unknown, with the line to show the buyer.
+    Unmet(String),
+}
+
+/// Check one criterion: `value` against `limit` on the side `bound` names.
+///
+/// Every criterion goes through here, so the count of criteria checked and
+/// the list of unmet ones always come from the same list. `format` writes
+/// both the value and the limit, such as `1,200 sqft` or `$800,000`.
+fn check<T: PartialOrd + Copy>(
+    label: &str,
+    bound: Bound,
+    limit: Option<T>,
+    value: Option<T>,
+    format: fn(T) -> String,
+) -> Outcome {
+    let Some(limit) = limit else {
+        return Outcome::NotSet;
+    };
+    match value {
+        Some(value) if bound.allows(value, limit) => Outcome::Met,
+        Some(value) => Outcome::Unmet(format!(
+            "{label}: {} ({} {})",
+            format(value),
+            bound.phrase(),
+            format(limit)
+        )),
+        None => Outcome::Unmet(format!(
+            "{label}: unknown ({} {})",
+            bound.phrase(),
+            format(limit)
+        )),
+    }
+}
+
 /// Evaluate whether a property meets the given preferences
 pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> PropertyEvaluation {
+    let count = |n: u32| n.to_string();
+    let outcomes = [
+        check(
+            "Bedrooms",
+            Bound::AtLeast,
+            prefs.min_bedrooms,
+            details.bedrooms,
+            count,
+        ),
+        check(
+            "Bedrooms",
+            Bound::AtMost,
+            prefs.max_bedrooms,
+            details.bedrooms,
+            count,
+        ),
+        check(
+            "Bathrooms",
+            Bound::AtLeast,
+            prefs.min_bathrooms,
+            details.bathrooms,
+            |baths| format!("{baths:.1}"),
+        ),
+        check(
+            "Price",
+            Bound::AtMost,
+            prefs.max_price,
+            details.price,
+            format_dollars,
+        ),
+        check(
+            "Square footage",
+            Bound::AtLeast,
+            prefs.min_sqft,
+            details.living_area,
+            |sqft| format!("{sqft} sqft"),
+        ),
+    ];
+
+    let mut criteria_checked = 0;
     let mut unmet_criteria = Vec::new();
-
-    if let Some(min_beds) = prefs.min_bedrooms {
-        match details.bedrooms {
-            Some(beds) if beds >= min_beds => {}
-            Some(beds) => {
-                unmet_criteria.push(format!("Bedrooms: {} (need at least {})", beds, min_beds))
+    for outcome in outcomes {
+        match outcome {
+            Outcome::NotSet => {}
+            Outcome::Met => criteria_checked += 1,
+            Outcome::Unmet(line) => {
+                criteria_checked += 1;
+                unmet_criteria.push(line);
             }
-            None => unmet_criteria.push(format!("Bedrooms: unknown (need at least {})", min_beds)),
         }
     }
-
-    if let Some(max_beds) = prefs.max_bedrooms {
-        match details.bedrooms {
-            Some(beds) if beds <= max_beds => {}
-            Some(beds) => unmet_criteria.push(format!("Bedrooms: {} (max is {})", beds, max_beds)),
-            None => unmet_criteria.push(format!("Bedrooms: unknown (max is {})", max_beds)),
-        }
-    }
-
-    if let Some(min_baths) = prefs.min_bathrooms {
-        match details.bathrooms {
-            Some(baths) if baths >= min_baths => {}
-            Some(baths) => unmet_criteria.push(format!(
-                "Bathrooms: {:.1} (need at least {:.1})",
-                baths, min_baths
-            )),
-            None => unmet_criteria.push(format!(
-                "Bathrooms: unknown (need at least {:.1})",
-                min_baths
-            )),
-        }
-    }
-
-    if let Some(max_price) = prefs.max_price {
-        match details.price {
-            Some(price) if price <= max_price => {}
-            Some(price) => unmet_criteria.push(format!(
-                "Price: {} (max is {})",
-                format_dollars(price),
-                format_dollars(max_price)
-            )),
-            None => unmet_criteria.push(format!(
-                "Price: unknown (max is {})",
-                format_dollars(max_price)
-            )),
-        }
-    }
-
-    if let Some(min_sqft) = prefs.min_sqft {
-        match details.living_area {
-            Some(sqft) if sqft >= min_sqft => {}
-            Some(sqft) => unmet_criteria.push(format!(
-                "Square footage: {} sqft (need at least {} sqft)",
-                sqft, min_sqft
-            )),
-            None => unmet_criteria.push(format!(
-                "Square footage: unknown (need at least {} sqft)",
-                min_sqft
-            )),
-        }
-    }
-
-    let criteria_checked = [
-        prefs.min_bedrooms.is_some(),
-        prefs.max_bedrooms.is_some(),
-        prefs.min_bathrooms.is_some(),
-        prefs.max_price.is_some(),
-        prefs.min_sqft.is_some(),
-    ]
-    .into_iter()
-    .filter(|set| *set)
-    .count();
     let criteria_met = criteria_checked - unmet_criteria.len();
-    let meets_preferences = unmet_criteria.is_empty();
 
     PropertyEvaluation {
         details: details.clone(),
-        meets_preferences,
+        meets_preferences: unmet_criteria.is_empty(),
         unmet_criteria,
         criteria_checked,
         criteria_met,
@@ -153,6 +194,40 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+
+    #[test]
+    fn test_check_not_set_when_no_limit() {
+        let outcome = check("Bedrooms", Bound::AtLeast, None, Some(3), |n: u32| {
+            n.to_string()
+        });
+        assert_eq!(outcome, Outcome::NotSet);
+    }
+
+    #[test]
+    fn test_check_limit_is_inclusive_on_both_sides() {
+        let count = |n: u32| n.to_string();
+        assert_eq!(
+            check("Bedrooms", Bound::AtLeast, Some(3), Some(3), count),
+            Outcome::Met
+        );
+        assert_eq!(
+            check("Bedrooms", Bound::AtMost, Some(3), Some(3), count),
+            Outcome::Met
+        );
+    }
+
+    #[test]
+    fn test_check_unmet_and_unknown_lines() {
+        let count = |n: u32| n.to_string();
+        assert_eq!(
+            check("Bedrooms", Bound::AtMost, Some(3), Some(4), count),
+            Outcome::Unmet("Bedrooms: 4 (max is 3)".to_string())
+        );
+        assert_eq!(
+            check("Bedrooms", Bound::AtLeast, Some(3), None, count),
+            Outcome::Unmet("Bedrooms: unknown (need at least 3)".to_string())
+        );
+    }
 
     pub(crate) fn make_property(
         price: Option<u64>,
