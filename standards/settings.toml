@@ -3,6 +3,9 @@
 # days: the weekly human issues digest writes a due check as a human task,
 # issues/human/settings-check-<id>.md, and his answer is recorded in
 # settings-checks.jsonl.
+#
+# isolation-check: names only (standards/docs/project-isolation.md): this
+# file lists settings, so the isolation check does not count its names as use.
 # Format and process: "Human checks" in standards/docs/evals.md.
 #
 # Never put a secret's value here: only that it exists and what it is for.

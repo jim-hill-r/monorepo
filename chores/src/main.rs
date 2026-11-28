@@ -6,6 +6,7 @@
 
 mod badges;
 mod gate;
+mod isolation;
 mod issues;
 mod new_issue;
 mod next_task;
@@ -166,6 +167,18 @@ enum Command {
     /// against the baseline in standards/user-docs.toml. Exits 1 on any
     /// error. Run by `mise run //:audit`.
     UserDocs {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Check every project's isolation guide, <project>/docs/isolation.md
+    /// (ISO-001 to ISO-005, standards/docs/isolation.md): how it moves out
+    /// and a migration guide for each shared live resource its files use.
+    /// Warnings only unless --strict. Run by `mise run //:audit`.
+    Isolation {
+        /// Exit 1 on any finding.
+        #[arg(long)]
+        strict: bool,
         /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
@@ -372,6 +385,17 @@ fn run() -> Result<ExitCode> {
                 print!("{}", user_docs::render(&report));
             }
             if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Isolation { strict, json } => {
+            let report = isolation::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", isolation::render(&report, strict));
+            }
+            if strict && !report.findings.is_empty() {
                 return Ok(ExitCode::FAILURE);
             }
         }

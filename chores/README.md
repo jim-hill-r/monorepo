@@ -61,6 +61,12 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
 c user-docs --json
+
+# Every project's isolation guide (ISO-001 to ISO-005): how it moves out
+# and a migration guide per shared live resource its files use. Warnings
+# only, so the audit passes; --strict exits 1 on any finding.
+c isolation
+c isolation --strict --json
 ```
 
 `new-human-task` starts the runbook from
@@ -73,6 +79,7 @@ c user-docs --json
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `isolation` | `mise run //:audit` (any skill's hooks) | Someone remembering which projects share the Cloudflare account, Auth0 tenant or telemetry Worker |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command

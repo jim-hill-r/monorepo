@@ -12,6 +12,8 @@
 #            LIN-* are warnings only for now.
 #   DOC-005 to DOC-008  User guides against the baseline in
 #            standards/user-docs.toml (`chores user-docs`, Rust).
+#   ISO-*    Project isolation guides (`chores isolation`, Rust); warnings
+#            only for now.
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
@@ -80,6 +82,14 @@ if command -v cargo >/dev/null 2>&1; then
   cargo run --quiet --manifest-path chores/Cargo.toml -- user-docs || errors=$((errors + 1))
 else
   echo "warning: user docs check skipped: cargo is not installed"
+fi
+
+# ISO-*: each project's isolation guide (standards/docs/project-isolation.md).
+# Warnings only until the "Project isolation" epic is done, then --strict.
+if command -v cargo >/dev/null 2>&1; then
+  cargo run --quiet --manifest-path chores/Cargo.toml -- isolation
+else
+  echo "warning: isolation check skipped: cargo is not installed"
 fi
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.

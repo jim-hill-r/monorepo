@@ -88,3 +88,11 @@ See [decision 0019](../standards/docs/decisions/0019-review-roles.md): who
 may approve what, as a matrix of domains and project tiers in
 `standards/reviewers.toml`. Work the phases in order; phase 1 needs PR 904
 (the `Human review` check) merged first.
+
+## Project isolation
+
+See [decision 0026](../standards/docs/decisions/0026-project-isolation.md)
+and [standards/docs/project-isolation.md](../standards/docs/project-isolation.md).
+One `write-isolation-guide.md` per project, in any order (products first);
+`telemetry/docs/isolation.md` is the example. The last issue,
+`project-isolation-strict-audit.md`, makes the check fail instead of warn.

@@ -223,6 +223,19 @@ repo, rather than in any one agent tool's settings.
   with tenant-scoped tables that one export can move out
   ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md),
   proposed).
+- **Every project is independent (Jim, 2026-11-28).** "Each project is
+  an independent project and should not share live infrastructure and
+  resources as much as possible and whenever something is shared, a
+  migration guide should be devised and included in the project." In
+  theory any project could be sold or moved to another repo and still
+  mostly work. Each project's `docs/isolation.md` says how it moves out
+  and, for every shared live resource it uses (the Cloudflare account,
+  the Auth0 tenant, the telemetry Worker, the PostHog project, the shared
+  D1 databases), why it is shared and a migration guide. A PR that adds
+  sharing updates that guide. `chores isolation` (ISO-001 to ISO-005)
+  checks it from each project's own files
+  ([standards/docs/project-isolation.md](standards/docs/project-isolation.md),
+  [decision 0026](standards/docs/decisions/0026-project-isolation.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
