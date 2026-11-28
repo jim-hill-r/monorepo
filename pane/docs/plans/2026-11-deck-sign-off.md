@@ -133,7 +133,8 @@ PRs of Claude Code effort.
 ## Decisions for Jim
 
 1. Internal tools (pane) sign in with Cloudflare Access and GitHub login;
-   products keep Auth0. Internal people never share a user pool with a
+   products keep Auth0 (Jim chose "Access with GitHub login" on the decision
+   card, 2026-11-28). Internal people never share a user pool with a
    product's users.
 2. Sign-offs are files next to the deck, and each feedback item becomes its
    own issue file in the reviewed project, worked by agents as usual.
