@@ -299,6 +299,17 @@ updates:
       rust-dependencies:
         patterns:
           - "*"
+
+  - package-ecosystem: "cargo"
+    directory: "/pane/cloudflare"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "rust"
