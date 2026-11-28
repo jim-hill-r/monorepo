@@ -41,9 +41,10 @@ Most of the review's quick fixes have landed since 2026-11-25:
 | **Sign-in with no purpose** (`todo!()` in `auth_sdk/src/web.rs`) | Open: given a purpose by the management app, then removed from the public site |
 | Weekly themes and staples (COOK-008) | Open |
 | Rearranging plans (COOK-009) | Open |
-| 2,100-line `web/src/main.rs` | Open: [`split-web-src-main-rs-1.md`](../issues/split-web-src-main-rs-1.md), being worked in its own thread |
+| 2,100-line `web/src/main.rs` | Fixed: split into modules, calendar moved into `core` (#923) |
 | 404 page prints a debug dump; emoji-only labels | Open, backlog |
-| Migration binaries in `recipe_gen`, deprecated `Recipe.id` and `Plan.recipe_days` | Open, backlog |
+| Migration binaries in `recipe_gen` | Being removed (#952) |
+| Deprecated `Recipe.id` and `Plan.recipe_days` | Open, backlog |
 
 ## Product roadmap
 
@@ -147,11 +148,6 @@ management app uses the same theme, so it picks up the redesign for free.
 
 ### Now
 
-- **Split `web/src/main.rs`** into modules and move date and plan logic
-  into `core` ([issue](../issues/split-web-src-main-rs-1.md), in progress in its
-  own thread). The public-site changes above that touch `web/src/main.rs`
-  (themes on the plan page, the tested mark, removing sign-in) wait for it
-  to merge, to avoid conflicts.
 - **One content library for both apps.** `core` and `data_md` already
   hold the model and the Markdown format; the management app uses them as
   they are, so the public site and the management app can never disagree
@@ -172,8 +168,7 @@ management app uses the same theme, so it picks up the redesign for free.
 
 ### Later
 
-- **Retire what is done**: the four migration binaries in `recipe_gen`,
-  and the deprecated `Recipe.id` (`day-N`) and `Plan.recipe_days`, with an
+- **Retire what is done**: the deprecated `Recipe.id` (`day-N`) and `Plan.recipe_days`, with an
   index by UUID instead of a scan.
 - **Small fixes** left from the review: the 404 page's debug dump and the
   emoji-only recipe labels.

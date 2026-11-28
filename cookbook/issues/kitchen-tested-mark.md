@@ -7,4 +7,4 @@ order: 30
 added: 2026-11-28
 ---
 
-Show a small "kitchen-tested" mark on recipe pages and in the sidebar for recipes whose `Status` is `tested` or `book-ready` (from [recipe-book-format](recipe-book-format.md)), and say what it means in the user guide. Waits for [the main.rs split](split-web-src-main-rs-1.md). See the [roadmap](../docs/roadmap.md).
+Show a small "kitchen-tested" mark on recipe pages and in the sidebar for recipes whose `Status` is `tested` or `book-ready` (from [recipe-book-format](recipe-book-format.md)), and say what it means in the user guide. See the [roadmap](../docs/roadmap.md).

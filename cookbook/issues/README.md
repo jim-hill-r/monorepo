@@ -12,9 +12,7 @@ the epics in this order, and the phases of each in order.
 ## Content curation
 
 Make the content model fit a book: a written recipe format with a status
-for every recipe, then weekly themes and staples. Issues that change
-`web/src/main.rs` wait for
-[split-web-src-main-rs-1](split-web-src-main-rs-1.md) to merge.
+for every recipe, then weekly themes and staples.
 
 ## Management app
 
