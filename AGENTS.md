@@ -201,9 +201,12 @@ repo, rather than in any one agent tool's settings.
   pedantic and the complexity limits) may only go down, never up, and gaps
   become issue files through weekly quality triage, the same loop as evals
   ([decision 0015](standards/docs/decisions/0015-code-quality-process.md),
-  [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
-  findings in files you touch. Scripts stay Rust-only: add no new `.sh`
-  files, and port existing ones into `chores` commands over time.
+  [plan](standards/docs/plans/2026-11-code-quality.md)). The rules, each
+  with its enforcer, are the QUAL IDs in
+  [standards/docs/code-quality.md](standards/docs/code-quality.md). Leave
+  no new findings in files you touch (QUAL-503). Scripts stay Rust-only:
+  add no new `.sh` files, and port existing ones into `chores` commands
+  over time (QUAL-404).
 - **GAAP books (Jim, 2026-11-27).** "All of our cost software should
   follow GAP accounting so that everything is double counted on the ledger
   and also we should have attribution in such a way that if you sum up all

@@ -4,6 +4,7 @@ This directory contains development standards and guidelines for the monorepo.
 
 ## Quick Links
 
+- [Code quality](./code-quality.md) - The QUAL rules for design, code, APIs and each language, and the ratchet that keeps them green
 - [Configuration](./configuration.md) - Configuration file standards
 - [Decisions](./decisions/README.md) - Repo-wide decision records
 - [Documentation](./documentation.md) - Documentation standards
