@@ -1,0 +1,7 @@
+# Fixture consumer for the royalty scanner tests: Acme's shop from
+# docs/royalty-toml.md, as a Cargo workspace with path dependencies on the
+# example producers in ../producers. Tests copy it to a temporary directory
+# and make its Cargo.lock there, so no lockfile is committed.
+[workspace]
+resolver = "2"
+members = ["services/api", "services/worker"]

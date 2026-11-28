@@ -7,20 +7,41 @@ A Dioxus web app replicating the functionality of the [blue.eel.education](https
 Blue Eel is a letter/word tracing practice tool designed to help learners develop handwriting skills, with particular support for those with dyslexia or other reading difficulties. This Dioxus/Rust implementation replicates the core application:
 
 - **Home page**: "Blue Eel" title, "Writing made simple!" subtitle, Begin button
+- **Practice menu**: the ☰ button at the top left opens Letter Practice,
+  Word Practice and Capital Practice, as the live app's left menu does
+  (it has no capitals)
+- **Settings panel**: the ⋮ button at the top right opens Student (the
+  learner's name), Sequence (the letters or words to practise) and
+  Technique, as on the live app (`src/settings.rs`,
+  `src/components/settings_panel.rs`). Save keeps them in `localStorage`
+  and starts the open level again with them. The live app's Upload
+  Practice switch, which sends tracings to S3, is left out (SPRK-006)
 - **Letter practice**: Canvas-based letter tracing with animated demonstrations and writing guidelines
 - **Word practice**: Word-level tracing practice
 - **Progress tracking**: Letter sequences matching the original app, with retry and stabilize logic
-- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). "Go" then opens the word level after letters, the capital letter level after words, and the congratulations page after capitals
+- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). A level finished with Tracing starts again with Pattern, then with Freeform (`Technique::next`, as on the live app, whose step from Pattern to Freeform never runs because of a bug); only after Freeform does "Go" open the next level, back with Tracing: the word level after letters, the capital letter level after words, and the congratulations page after capitals
 - **Congratulations page**: Shown when all expressions are mastered
-- **Each learner's progress**: the learner types their name on the home page
-  ("Standard" when blank, as in the live app), and `src/progress.rs` saves
+- **Each learner's progress**: the learner's name is typed as Student in the
+  settings panel ("Standard" when blank, as in the live app), and `src/progress.rs` saves
   each level's progress under it in the browser's `localStorage` after every
   tracing, so a reload carries on where they were and each learner on a
   device has their own. Nothing leaves the device. `?practice=` sessions are
   never saved
 - **Practising a few letters**: `?practice=` with letters or words, such as
   `/letter?practice=b,c`, `/word?practice=hi` or `/capital?practice=T`, practises only those, as one
-  batch, instead of the whole level. Anything without a pattern is ignored
+  batch, instead of the whole level. Anything without a pattern is ignored.
+  The settings panel's Sequence, such as `d, f, fun`, does the same on
+  every visit: single lowercase letters on the letter level, capitals on
+  the capital level and longer entries on the word level. A level with
+  nothing in the sequence has its own groups, and a sequence's progress is
+  saved apart from the whole level's
+- **Techniques**: as on the live app, the settings panel's Technique picker (or
+  `?tech=Tracing`, `?tech=Pattern` or `?tech=Freeform`, which wins) sets how
+  much the demonstration shows (`src/technique.rs`). Tracing, the default,
+  animates every stroke; Pattern shows only each stroke's start and end
+  dots, which stay on the canvas while the learner draws; Freeform shows
+  nothing. The choice is kept in `localStorage`, and moving on to the next
+  technique after a level (see Levels) keeps that one
 
 ## Technical Details
 
@@ -112,7 +133,9 @@ cargo test
 ```
 
 The Playwright tests in `e2e/` drive the app in a browser: Begin, tracing a
-letter right and a scribble ("Try again!"), and "Go" from the letter level to
+letter right and a scribble ("Try again!"), the Pattern and Freeform
+techniques (`e2e/technique.spec.ts`, which reads the canvas's pixels, and
+"Go" from Tracing to Pattern to Freeform), and "Go" from the letter level to
 the word level and on to the congratulations page. They keep each level short
 with `?practice=`, and trace a letter by following the demonstration's own
 path, which the canvas hands out as `window.eelCanvas.demonstrationPath()`.

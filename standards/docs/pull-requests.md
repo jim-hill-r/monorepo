@@ -7,53 +7,83 @@ and every agent thread follow.
 
 ## Pull request descriptions
 
-PR descriptions must be quick to read (Jim, 2026-11-27: "Every PR should
-include a short executive description of what we are doing, why, and any
-engineering tradeoffs. Keep this to 75 words. It should link to details in
-committed docs/plans/issues"). Every PR description, from any agent:
+PR descriptions must be quick to read. Jim, 2026-11-27: "Every PR should
+have these sections: 1) What changed summary (50 words) 2) Why changed
+summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25 words)
+5) Details (anything else agents want to include)", with, above them, "the
+top most section should be 1) Attention (list of strongly enum'ed tags)",
+and "one of the attention tags should definitely be cost changed". This
+replaces the 75-word executive summary.
 
-1. Starts with the attribution lines the agent platform requires (the
+Every PR description, from any agent, has, in this order:
+
+1. The attribution lines the agent platform requires (the
    `claude-projects-attribution` comment and the "Requested by" line), when
    there are any.
-2. Then the **attention badges** line (see [below](#attention-badges)),
-   which tells the reviewer how closely to look.
-3. Then opens with an **executive summary** of at most **75 words**: what the
-   PR does, why, and any engineering tradeoffs. A `## Summary` heading above
-   it is optional.
-4. Links from the summary to the committed details: the plan, decision
-   record, issue file, runbook or doc in the repo that explains the change.
-   Write long explanations there, in the same PR, not in the description.
-5. Keeps anything after the summary short: how it was tested, anything a
-   reviewer should check closely, and screenshots of UI changes
-   ([documentation.md](documentation.md)).
+2. `## Attention`: one bullet per [attention tag](#attention-tags), written
+   by `chores badges`, which tells the reviewer how closely to look.
+3. `## What changed`: at most **50 words** on what the PR changes.
+4. `## Why`: at most **50 words** on why, and any engineering tradeoffs.
+5. `## Cost changes`: under **25 words** on money, free-tier usage or
+   Claude budget the PR moves, or `None.`
+6. `## Risk changes`: under **25 words** on security, threat, requirement
+   or reliability risk the PR moves, or `None.`
+7. `## Details`: anything else, with no limit: the issue it closes, how it
+   was tested (hooks passed, checks that didn't run), what a reviewer
+   should look at closely, screenshots of UI changes
+   ([documentation.md](documentation.md)), and links to the committed plan,
+   decision record, issue file, runbook or doc. Write long explanations
+   there, in the same PR, and link them; don't paste them in.
 
-Link targets don't count toward the 75 words. The
+Then any closing lines the platform asks for. Headings match in any case
+and at any level. Markdown links count as their text, and link targets and
+bare URLs don't count toward the limits. The
 [pull request template](../../.github/pull_request_template.md) has this
-shape. The **PR summary** check (PR-001,
+shape, and `chores pr-body` writes it. The **PR summary** check (PR-001,
 `standards/scripts/pr-summary-check.sh`, run by
-`.github/workflows/pull-request-summary.yml`) warns when the summary is
-missing, longer than 75 words or has no link. It is a warning only, so it
-never blocks a merge; fix the description and the check reruns on the edit.
+`.github/workflows/pull-request-summary.yml`, and `chores pr-body --check`
+with the same rules) warns when a section is missing, empty or still the
+template's placeholder, a summary is over its limit, or the Attention
+section has an unknown tag or not exactly one tag per group. It is a
+warning only, so it never blocks a merge; fix the description and the
+check reruns on the edit.
 
 Dependabot PRs are exempt: their bodies are generated.
 
-### Attention badges
+### Attention tags
 
 Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
 know how much attention I should give. First is if a fundamental
 requirement is changing. Second if anything affecting a threat/risk is
-changing." Every agent PR description has one line right under the
-attribution lines, written by `chores badges` (or `chores pr-body`, which
-calls it) from the PR's diff against `origin/main`:
+changing", and the cost tag above. The Attention section lists exactly one
+tag from each group, from this closed set (`Tag` in `chores/src/badges.rs`;
+the shell check lists the same names). `chores badges` (or `chores
+pr-body`, which calls it) works them out from the PR's diff against
+`origin/main`:
 
 ```markdown
-> **Attention:** 🔴 must requirement changed: `COOK-001` · 🟠 threat/risk files changed: `cookbook/docs/threat.toml`
+## Attention
+
+- 🔴 must-requirement-changed: `COOK-001`
+- 🟠 cost-changed: `cookbook/docs/cost.toml` (the Cost summary check says what moved)
+- 🟢 threat-risk-unchanged
 ```
 
-| Badge | 🟢 | 🟡 / 🟠 | 🔴 |
-| --- | --- | --- | --- |
-| Requirements | No `docs/requirements.md` changed | 🟡 a `should` or `could` requirement, or text outside any requirement, changed | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
-| Threat/risk | No risk file changed | 🟠 a risk file changed | (none: whether a change weakens security is the Security summary's call) |
+| Group | Tag | When |
+| --- | --- | --- |
+| Requirements | 🔴 `must-requirement-changed` | A `must` requirement was added, removed or edited, or became or stopped being a `must` |
+| Requirements | 🟡 `requirement-changed` | A `should` or `could` requirement, or text outside any requirement, changed |
+| Requirements | 🟢 `requirements-unchanged` | No `docs/requirements.md` changed |
+| Cost | 🟠 `cost-changed` | A cost file changed |
+| Cost | 🟢 `cost-unchanged` | No cost file changed |
+| Threat/risk | 🟠 `threat-risk-changed` | A risk file changed |
+| Threat/risk | 🟢 `threat-risk-unchanged` | No risk file changed |
+
+Cost files are the files the [PR cost summary](cost.md) reads: each
+project's `docs/cost.toml`, `standards/radar/limits.toml`,
+`standards/radar/radar.json`, `detectors.toml` and `wrangler` configs. The
+Cost summary job also reads workflow schedules and dependency lines, so its
+`cost` label stays the authority.
 
 Risk files are the security files of the [PR security
 summary](security.md) (each project's `docs/threat.toml`, `_headers` and
@@ -61,12 +91,15 @@ summary](security.md) (each project's `docs/threat.toml`, `_headers` and
 plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
 `infra/src/`, `infra/scripts/`, `standards/settings.toml`,
 `standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
-secret and security check scripts, `SECURITY.md` and `CODEOWNERS`. The
-line is a pointer, not a gate: a requirement change still gets
-`needs-human` ([evals.md](evals.md)), and the Security summary job still
-labels `security` and, when a change weakens anything, `needs-human`. The
-PR-001 check skips the line. When later pushes change what the PR
-touches, rerun `chores badges` and update the line.
+secret and security check scripts, `SECURITY.md` and `CODEOWNERS`.
+
+The tags are pointers, not gates: a requirement change still gets
+`needs-human` ([evals.md](evals.md)), the Cost summary job still labels
+`cost` and `needs-human`, and the Security summary job still labels
+`security` and, when a change weakens anything, `needs-human`. When later
+pushes change what the PR touches, rerun `chores badges` and replace the
+section. A new tag goes in `Tag`, the shell check and this table in the
+same PR.
 
 ## Who owns a PR
 
@@ -97,7 +130,9 @@ thread opened, once all of these hold:
   reviewer has an outstanding "changes requested". The approval can come from
   any reviewer except the PR's author, so an agent PR needs a reviewer other
   than `jimhillr-agt`.
-- Its checks are green (see below).
+- Its checks are green (see below). That includes the **Human review**
+  check: a PR with a red attention tag or a cost change needs a human's
+  approval (see "Human review").
 
 An approval says the reviewer has judged the change safe, so merging needs
 nothing more. The safe-to-approve rules below are what a reviewer, including
@@ -115,6 +150,53 @@ projects it covers. This covers checks that are red on `main` for unrelated
 reasons. A check that passes on `main` and fails on the PR is never green, and a
 PR that touches a project failing on `main` must not make that project worse.
 
+## Human review
+
+Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto
+merged. Cost changes must be reviewed by jim", then "Lets make it needs
+human review". So a PR **needs a human** when
+any of these says it has a red [attention tag](#attention-tags)
+(`must-requirement-changed` today, and any red tag added later) or
+`cost-changed`:
+
+- the tags `chores badges` works out from its diff (the PR can't argue
+  with these),
+- the tags its own `## Attention` section declares, or
+- the `cost` label from PR CI's Cost summary job.
+
+A **human** is any collaborator on the repository (its owner, an org
+member or an invited collaborator; Jim, 2026-11-27: "Any human
+collaborator is fine") except an agent account (login ending in `-agt`,
+such as `jimhillr-agt`), `jimhillr-reviewer` and bots or apps (`[bot]`,
+Copilot). Today that means Jim (`jimhillr`). Reviews from anyone who isn't
+a collaborator never count.
+
+A PR that needs a human:
+
+1. **Fails the `Human review` check** (PR-004,
+   `.github/workflows/pull-request-human-review.yml`, the logic in `chores
+   gate`) until a human collaborator approves its current head commit,
+   with no later "changes requested" from one. The check runs again on every
+   review, so that approval turns it green. A PR a human collaborator opened passes. The check
+   builds `chores` from the base branch, so a PR can't change the rules it
+   is judged by.
+2. **Is labelled `needs-human`** by that check, which never removes it.
+3. **Never has auto-merge on.** The check turns it off, and no agent turns
+   it on. Once a human has approved and every check is green, that human,
+   PR triage or any agent merges it by hand under the merge rule.
+4. **Is never approved by anyone but a human.** `jimhillr-reviewer`
+   refuses it (rules v2), and so do triage and agents.
+
+`Human review` is the one check that waits for a person, so a held PR is
+marked ready for review once every *other* check is green; its red
+`Human review` is the approval it is waiting for, not a failure to fix.
+
+Every other PR passes `Human review` at once. Once the `CI` ruleset in the
+`github` stack of `infra` is applied, `main` requires both `CI result` and
+`Human review`, so GitHub itself won't merge a held PR. Until then, the
+merge rule's "checks are green" is what holds it. A check that ran more
+than once on the head commit counts by its latest run.
+
 ## Auto-merge
 
 GitHub auto-merge is on for this repo (squash only). An agent turns it on for
@@ -125,7 +207,8 @@ these hold:
 
 - The PR meets the `open-pull-request` ready checklist: complete, every check
   finished and green on the head commit, and nothing left for a human to
-  decide. A PR labelled `needs-human` never gets auto-merge.
+  decide. A PR labelled `needs-human` never gets auto-merge, and nor
+  does one with a red or `cost-changed` attention tag (see "Human review").
 - No check is red, not even one also failing on `main`. Auto-merge can't
   apply the "also failing on `main`" exception, so that PR is merged by hand
   under the merge rule instead.
@@ -154,8 +237,8 @@ reviewable PR, but Jim approves the stack once (decision
 
 1. When every PR in the stack is complete and green, the thread retargets
    the **top** PR to `main`. Its diff is now the whole stack.
-2. It edits the top PR's description: the executive summary covers the
-   whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
+2. It edits the top PR's description: the What changed and Why sections
+   cover the whole stack, and a line `Stack: #a, #b, #c` lists every PR in it, lowest
    first, the top one last. Pane's Approve page reads that line.
 3. It moves every other PR in the stack back to draft, with a one-line
    comment naming the top PR, and turns off their auto-merge.
@@ -169,9 +252,9 @@ through the stack to the top branch, which needs a fresh approval like any
 push. PR triage treats the draft step PRs of a stack whose top PR is open
 as part of it, not as orphans.
 
-Jim reviews from pane's **Approve** page (`/approve` on
+Human reviews from pane's **Approve** page (`/approve` on
 <https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
-ones first, with its summary, attention badges and a link to its review
+ones first, with its What changed summary, attention tags and a link to its review
 form.
 
 ## The reviewer account
@@ -197,26 +280,30 @@ judged by.
 1. Opened by `jimhillr-agt`, out of draft, based on `main` (a stack is
    approved as its retargeted top PR).
 2. Every check run on the head commit finished and passed (skipped and
-   neutral count), every commit status is success, and `CI result` and
-   `PR summary` both passed. Nothing pending.
+   neutral count), every commit status is success, and `CI result`, `PR
+   summary` and `Human review` all passed. Nothing pending.
 3. No red or orange attention label: `needs-human`, `credential-change`,
    `security` or `cost`.
-4. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
+4. A `## Attention` section in the description with no red or orange
+   tag: no `must-requirement-changed`, `cost-changed` or
+   `threat-risk-changed` (rules v2, Jim, 2026-11-27).
+5. No protected path: `.github/`, `.agents/`, `.claude/`, `AGENTS.md`,
    `CLAUDE.md`, `SECURITY.md`, gitleaks settings, `lefthook.yml`, the root
    `mise.toml`, `infra/`, `tofu_state/`, `threat/`, `auth_sdk/`,
-   `monorepo/`, `standards/` (its own rules included), and in any project
+   `jimhillr/`, `standards/` (its own rules included), and in any project
    `docs/threat.toml`, `docs/requirements.md`, `docs/cost.toml`,
-   `evals.toml`, `royalty.toml`, `wrangler.toml`, `_headers` and `.env*`.
-5. At most 100 files and 1,500 changed lines.
-6. No outstanding "changes requested", and no approval of its own on this
+   `evals.toml`, `royalty.toml`, `wrangler.toml`, `wrangler.json`,
+   `wrangler.jsonc`, `_headers` and `.env*`.
+6. At most 100 files and 1,500 changed lines.
+7. No outstanding "changes requested", and no approval of its own on this
    head commit yet.
 
 Anything else waits for Jim, who approves it from pane's Approve page.
 
 **What it records.** Each approval is a review on the head commit (so a
 push dismisses it) whose text names the rules version and what passed:
-"jimhillr-reviewer rules v1 (decision 0014): checks green on `<sha>`, no
-red or orange label, no protected path, N files, +a/-d." Each run's summary
+"jimhillr-reviewer rules v2 (decision 0014): checks green on `<sha>`, no
+red or orange label or attention tag, no protected path, N files, +a/-d." Each run's summary
 lists every open agent PR with "approve" or "skip" and the reason.
 
 **Changing the rules.** Edit `standards/scripts/auto-review.sh` (bump
@@ -227,7 +314,7 @@ section in one PR. It touches `standards/`, so only Jim can approve it.
 
 Jim reads every merged PR afterwards, whoever approved it, on pane's
 **Acknowledge** page (`/acknowledge`): newest first, each with its summary
-and attention badges, until he acknowledges it. "Flag for follow-up" opens
+and attention tags, until he acknowledges it. "Flag for follow-up" opens
 GitHub's editor with a `fix` issue file for that PR in its project's
 `issues/`, which the normal agent loop then works.
 
@@ -258,6 +345,11 @@ A PR is safe only if all of these hold:
 - It doesn't bump a pinned dependency listed in `AGENTS.md`.
 - It isn't labelled `credential-change`. Those PRs change what a credential
   can do and need Jim's own approval, whoever opened them (decision 0010).
+- It has no red or `cost-changed` attention tag (in its diff or its
+  description) and no `cost` label. Those need a human's approval (see
+  "Human review"), so triage never approves them or turns on their
+  auto-merge, and merges them only once a human has approved and `Human
+  review` is green.
 
 ### Dependabot PRs
 
@@ -303,8 +395,8 @@ Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
   for review, turn on auto-merge (see "Auto-merge") and flag it.
-- If it's ready for review, green, not `needs-human` and auto-merge is off,
-  turn auto-merge on.
+- If it's ready for review, green, not `needs-human`, has no red or
+  `cost-changed` attention tag and auto-merge is off, turn auto-merge on.
 - If it's an orphaned stack whose steps are all green, collapse it as
   "Stacked pull requests" says, so it needs one approval.
 - Otherwise add `needs-human` and flag it.

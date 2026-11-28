@@ -2,7 +2,21 @@
   "import": [
     {
       "id": "monorepo",
-      "to": "github_repository.monorepo"
+      "to": "github_repository.jimhillr"
+    }
+  ],
+  "moved": [
+    {
+      "from": "github_repository.monorepo",
+      "to": "github_repository.jimhillr"
+    },
+    {
+      "from": "github_repository_vulnerability_alerts.monorepo",
+      "to": "github_repository_vulnerability_alerts.jimhillr"
+    },
+    {
+      "from": "github_repository_dependabot_security_updates.monorepo",
+      "to": "github_repository_dependabot_security_updates.jimhillr"
     }
   ],
   "provider": {
@@ -14,7 +28,7 @@
   },
   "resource": {
     "github_repository": {
-      "monorepo": {
+      "jimhillr": {
         "allow_auto_merge": true,
         "allow_merge_commit": false,
         "allow_rebase_merge": false,
@@ -72,7 +86,7 @@
       }
     },
     "github_repository_dependabot_security_updates": {
-      "monorepo": {
+      "jimhillr": {
         "enabled": true,
         "lifecycle": {
           "create_before_destroy": false,
@@ -143,6 +157,10 @@
                   {
                     "context": "CI result",
                     "integration_id": 15368.0
+                  },
+                  {
+                    "context": "Human review",
+                    "integration_id": 15368.0
                   }
                 ],
                 "strict_required_status_checks_policy": false
@@ -154,7 +172,7 @@
       }
     },
     "github_repository_vulnerability_alerts": {
-      "monorepo": {
+      "jimhillr": {
         "enabled": true,
         "lifecycle": {
           "create_before_destroy": false,

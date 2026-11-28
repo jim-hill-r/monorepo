@@ -15,8 +15,8 @@ inkwell = { version = "0.11.0", features = ["llvm18-1"] }
 # Argument parsing for the `my_lang` command-line binary (src/main.rs)
 clap = { version = "4", features = ["derive"] }
 
+[lints.rust]
 # The standard is "forbid" (LIN-002). my_lang uses "deny" so that the one
 # unsafe block that calls JIT-compiled code, in src/jit.rs, can opt out with
 # #[allow(unsafe_code)] and a SAFETY comment. No other code may use unsafe.
-[lints.rust]
 unsafe_code = "deny"

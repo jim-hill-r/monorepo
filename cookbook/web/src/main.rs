@@ -36,8 +36,10 @@ const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 /// Content Security Policy for the application
 /// - default-src 'none': Block all sources by default
-/// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
-/// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
+/// - script-src 'self' 'wasm-unsafe-eval' POSTHOG_ASSETS: Allow scripts from same origin,
+///   WASM, and PostHog's script host for session replay (public/posthog.js, production only)
+/// - connect-src 'self' AUTH0_DOMAIN POSTHOG_HOSTS: Allow API calls to same origin, Auth0,
+///   and PostHog's ingest and config hosts
 /// - img-src 'self': Allow images from same origin
 /// - style-src 'self': Allow stylesheets from same origin only. No inline styles: the
 ///   design system links its CSS as files and the app sets no `style` attributes
@@ -47,7 +49,11 @@ const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 ///
 /// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
 /// Tests verify that the CSP contains the correct Auth0 domain.
-const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
+/// The one-line privacy note on the home page, for PostHog session replay
+/// (public/posthog.js, decision 0001).
+const PRIVACY_NOTE: &str = "Privacy: visits to this site may be recorded with PostHog to find bugs. What you type is never recorded, and Do Not Track turns recording off.";
+
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://us-assets.i.posthog.com; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com https://us.i.posthog.com https://us-assets.i.posthog.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
     dioxus::launch(App);
@@ -212,6 +218,10 @@ fn format_auth_error(err: &AuthError) -> String {
         AuthError::IdTokenValidationFailed(_) => "Login verification failed".to_string(),
         AuthError::HttpClientError(_) => "Network error. Please check your connection".to_string(),
         AuthError::ConfigError(_) => "Authentication not configured".to_string(),
+        AuthError::AuthorizationDenied(_) => "Sign-in was cancelled".to_string(),
+        AuthError::CallbackMismatch(_) => "Authentication incomplete".to_string(),
+        AuthError::LoopbackError(_) => "Unable to process authentication".to_string(),
+        AuthError::SignInTimedOut(_) => "Sign-in timed out. Please try again".to_string(),
         AuthError::Unknown => "An unexpected error occurred".to_string(),
     }
 }
@@ -579,6 +589,8 @@ fn Home() -> Element {
                     Link { to: Route::Plan { week: current_week }, "View Meal Plans" }
                 }
             }
+
+            p { class: "privacy-note", "{PRIVACY_NOTE}" }
         }
     }
 }
@@ -828,6 +840,42 @@ mod tests {
             pages_header("Strict-Transport-Security"),
             Some("max-age=31536000; includeSubDomains")
         );
+    }
+
+    /// The PostHog loader, served from 'self' (decision 0001).
+    const POSTHOG_JS: &str = include_str!("../public/posthog.js");
+
+    #[test]
+    fn csp_allows_only_the_posthog_hosts_the_loader_uses() {
+        for host in [
+            "https://us.i.posthog.com",
+            "https://us-assets.i.posthog.com",
+        ] {
+            assert!(POSTHOG_JS.contains(host), "posthog.js uses {host}");
+            assert!(
+                CONTENT_SECURITY_POLICY.contains(host),
+                "the CSP allows {host}"
+            );
+        }
+        assert!(!CONTENT_SECURITY_POLICY.contains("*.posthog.com"));
+    }
+
+    #[test]
+    fn posthog_loads_only_on_production_for_real_visitors_with_inputs_masked() {
+        assert!(POSTHOG_JS.contains(r#"PRODUCTION_HOST = "jimhillr-cookbook.pages.dev""#));
+        assert!(POSTHOG_JS.contains("window.location.hostname !== PRODUCTION_HOST"));
+        assert!(POSTHOG_JS.contains("jimhillr-evals"));
+        assert!(POSTHOG_JS.contains("doNotTrack"));
+        assert!(POSTHOG_JS.contains("maskAllInputs: true"));
+        assert!(POSTHOG_JS.contains("recordBody: false"));
+        assert!(POSTHOG_JS.contains(r#"var PROJECT = "phc_"#));
+        assert!(!POSTHOG_JS.contains("\"phx_"), "never a personal API key");
+    }
+
+    #[test]
+    fn index_html_loads_the_posthog_loader_from_self() {
+        let index = include_str!("../index.html");
+        assert!(index.contains(r#"<script src="/posthog.js" defer></script>"#));
     }
 
     #[test]
@@ -2014,6 +2062,14 @@ mod tests {
             (
                 AuthError::ConfigError("config error".to_string()),
                 "Authentication not configured",
+            ),
+            (
+                AuthError::LoopbackError("port taken".to_string()),
+                "Unable to process authentication",
+            ),
+            (
+                AuthError::SignInTimedOut("no callback".to_string()),
+                "Sign-in timed out. Please try again",
             ),
             (AuthError::Unknown, "An unexpected error occurred"),
         ];

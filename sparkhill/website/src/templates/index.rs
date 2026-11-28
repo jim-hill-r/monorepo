@@ -24,6 +24,15 @@ fn section_link<G: Html>(cx: Scope, home: &str, id: &str, label: &'static str) -
     }
 }
 
+/// The footer's copyright line, from 2023 to the year the site was built
+/// (set by `build.rs`).
+fn copyright() -> String {
+    format!(
+        "© 2023–{} Spark Hill. All Rights Reserved.",
+        env!("JIMHILLR_BUILD_YEAR")
+    )
+}
+
 /// The whole home page: nav, the four sections and the footer. It takes the
 /// translated tagline and the locale's home URL so tests can render it
 /// without a translator.
@@ -55,7 +64,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             }
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl prose prose-stone") {
-                    h1(id="what-we-do", class="text-sky-700") { "What we do" }
+                    h2(id="what-we-do", class="section-heading text-sky-700") { "What we do" }
                     p {
                         "We provide a range of services to help individuals improve their reading skills. \
                         These services may include one-on-one tutoring or small group instruction, using \
@@ -75,7 +84,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
                         img(src=".perseus/static/images/Classroom.e9004107.jpg", alt="Classroom")
                     }
                     div(class="xl:w-3/4") {
-                        h1(id="who-we-are", class="text-sky-700") { "Who we are" }
+                        h2(id="who-we-are", class="section-heading text-sky-700") { "Who we are" }
                         p {
                             "Meagan has extensive experience working with struggling readers and readers \
                             who just need a little boost."
@@ -105,7 +114,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             }
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl prose prose-stone") {
-                    h1(id="how-we-do-it", class="text-sky-700") { "How we do it" }
+                    h2(id="how-we-do-it", class="section-heading text-sky-700") { "How we do it" }
                     p {
                         "There are several tests that are commonly used to diagnose dyslexia, including \
                         the Dyslexia Early Screening Test (DEST), the Phonological Awareness Test (PAT), \
@@ -122,7 +131,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             }
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl prose prose-stone text-center pb-10") {
-                    h1(id="testimonials", class="text-sky-700") { "Testimonials" }
+                    h2(id="testimonials", class="section-heading text-sky-700") { "Testimonials" }
                     p { "Read what families say about us on Nextdoor." }
                     a(href=CONTACT_URL, target="_blank", rel="noopener noreferrer", class="not-prose no-underline text-2xl p-2 pt-1 rounded-full text-sky-700 border-2 border-sky-700 hover:border-transparent hover:bg-teal-500") { "Nextdoor" }
                 }
@@ -142,17 +151,33 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
                     a(href="https://blue.eel.education", target="_blank", rel="noopener noreferrer", class="text-sky-50 hover:text-teal-500 pr-4 pl-4") { "Blue Eel" }
                 }
                 div(class="text-sky-100 text-right pb-2 mr-2") {
-                    "© 2023 Spark Hill. All Rights Reserved."
+                    (copyright())
                 }
             }
         }
     }
 }
 
+/// Where the site is served, for the absolute URLs link previews need.
+const SITE_URL: &str = "https://jimhillr-sparkhill.pages.dev";
+
+/// The summary search results and link previews show.
+const DESCRIPTION: &str = "Spark Hill helps struggling readers and readers with dyslexia, \
+with one-on-one tutoring, assessments and support for parents and teachers, online and in \
+Oceanside, CA.";
+
 #[engine_only_fn]
 fn head(cx: Scope) -> View<SsrNode> {
+    let image = format!("{SITE_URL}/.perseus/static/images/Classroom.e9004107.jpg");
+    let url = format!("{SITE_URL}/en-US/");
     view! { cx,
         title { "Spark Hill - Reading Instruction" }
+        meta(name="description", content=DESCRIPTION)
+        meta(property="og:type", content="website")
+        meta(property="og:title", content="Spark Hill - Reading Instruction")
+        meta(property="og:description", content=DESCRIPTION)
+        meta(property="og:url", content=url)
+        meta(property="og:image", content=image)
         link(rel = "icon", type = "image/x-icon", href = ".perseus/static/favicon.ico")
         link(rel = "stylesheet", href = ".perseus/static/css/reset.css")
         link(rel = "stylesheet", href = ".perseus/static/css/theme.css")
@@ -166,7 +191,7 @@ pub fn get_template<G: Html>() -> Template<G> {
 
 #[cfg(test)]
 mod tests {
-    use super::{page, CONTACT_URL};
+    use super::{head, page, CONTACT_URL, SITE_URL};
     use std::collections::HashSet;
     use std::path::Path;
 
@@ -210,6 +235,58 @@ mod tests {
         }
         assert!(html.contains("<header"));
         assert!(html.contains("<footer"));
+    }
+
+    #[test]
+    fn has_one_h1_and_a_h2_per_section() {
+        let html = render();
+        assert_eq!(html.matches("<h1").count(), 1);
+        assert_eq!(html.matches("<h2").count(), 4);
+    }
+
+    #[test]
+    fn every_image_in_static_is_used() {
+        // Unused images would still be exported and deployed.
+        let sources = attr_values(&render(), "src");
+        let dir = Path::new("static/images");
+        let files = std::fs::read_dir(dir).unwrap_or_else(|e| panic!("{dir:?}: {e}"));
+        for file in files.flatten() {
+            let name = file.file_name().to_string_lossy().into_owned();
+            let src = format!(".perseus/static/images/{name}");
+            assert!(sources.contains(&src), "{name} isn't used by the page");
+        }
+    }
+
+    #[test]
+    fn head_has_a_description_and_link_preview() {
+        let html = sycamore::render_to_string(head);
+        for tag in [
+            "name=\"description\"",
+            "property=\"og:title\"",
+            "property=\"og:description\"",
+            "property=\"og:url\"",
+            "property=\"og:image\"",
+        ] {
+            assert!(html.contains(tag), "no {tag} in {html}");
+        }
+        // Link previews need absolute URLs, and the image must exist.
+        let image = attr_values(&html, "content")
+            .into_iter()
+            .find(|c| c.ends_with(".jpg"))
+            .unwrap_or_else(|| panic!("no og:image in {html}"));
+        let file = image
+            .strip_prefix(&format!("{SITE_URL}/.perseus/static/"))
+            .unwrap_or_else(|| panic!("{image} isn't an absolute static URL"));
+        assert!(Path::new("static").join(file).exists(), "{image} missing");
+    }
+
+    #[test]
+    fn copyright_runs_to_the_build_year() {
+        let year: i32 = env!("JIMHILLR_BUILD_YEAR")
+            .parse()
+            .unwrap_or_else(|e| panic!("build year: {e}"));
+        assert!((2026..3000).contains(&year), "{year}");
+        assert!(render().contains(&format!("© 2023–{year} Spark Hill")));
     }
 
     #[test]

@@ -1,5 +1,5 @@
 //! The review queue: which open pull requests are waiting on Jim's approval,
-//! with each one's short summary and attention badges, so he can approve the
+//! with each one's short summary and attention badges (from its labels), so he can approve the
 //! clear ones in a row and stop on the ones that need a decision.
 //!
 //! The rules are in decision 0014
@@ -26,8 +26,8 @@ pub const READY_SEARCH_URL: &str = "https://api.github.com/search/issues?q=repo%
 /// The branch every pull request finally merges into.
 pub const DEFAULT_BRANCH: &str = "main";
 
-/// The most words of a PR summary pane shows (the 75-word rule in
-/// `standards/docs/pull-requests.md`).
+/// The most words of a PR summary pane shows. "What changed" is at most 50
+/// words (`standards/docs/pull-requests.md`); older PRs had 75.
 pub const SUMMARY_WORDS: usize = 75;
 
 /// Labels that mean a person has to decide something: red.
@@ -151,12 +151,28 @@ pub fn attention<'a>(labels: impl IntoIterator<Item = &'a str>) -> Attention {
         .unwrap_or(Attention::Clear)
 }
 
-/// The executive summary at the top of a PR body: the first paragraph of
+/// The text after a `What changed` heading (any level, any case), if any.
+fn what_changed(body: &str) -> Option<&str> {
+    let mut offset = 0;
+    for line in body.split_inclusive('\n') {
+        let t = line.trim();
+        let heading = t.trim_start_matches('#');
+        offset += line.len();
+        if heading.len() < t.len() && heading.trim().eq_ignore_ascii_case("what changed") {
+            return Some(&body[offset..]);
+        }
+    }
+    None
+}
+
+/// The short summary of a PR body: the first paragraph of its `## What
+/// changed` section, or, for older PRs without one, the first paragraph of
 /// prose after the attribution lines, without a `Summary` heading or a bold
-/// `**Summary.**` lead-in, cut to [`SUMMARY_WORDS`] words. Markdown links
+/// `**Summary.**` lead-in. Cut to [`SUMMARY_WORDS`] words. Markdown links
 /// keep only their text. Empty when the body has no prose.
 #[must_use]
 pub fn summary(body: &str) -> String {
+    let body = what_changed(body).unwrap_or(body);
     let mut paragraph: Vec<&str> = Vec::new();
     let mut in_comment = false;
     for line in body.lines() {
@@ -461,6 +477,13 @@ mod tests {
         let body = "<!--\nTemplate notes\n-->\n## Summary\n\nDoes a thing.\n\n## Testing";
         assert_eq!(summary(body), "Does a thing.");
         assert_eq!(summary(""), "");
+    }
+
+    #[test]
+    fn summary_reads_the_what_changed_section() {
+        let body = "_Requested by **Jim**_\n\n## Attention\n\n- 🟢 requirements-unchanged\n\n\
+            ## What changed\n\nSplits PR descriptions into [sections](a.md).\n\n## Why\n\nJim asked.";
+        assert_eq!(summary(body), "Splits PR descriptions into sections.");
     }
 
     #[test]

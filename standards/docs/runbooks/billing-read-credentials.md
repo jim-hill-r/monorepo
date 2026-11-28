@@ -1,7 +1,8 @@
 # Make the billing read credentials
 
 - **Kind:** one-time, then the GitHub token yearly
-- **Status:** open (`issues/human/billing-read-credentials.md`)
+- **Status:** open for the GitHub token (`issues/human/billing-read-credentials.md`).
+  Step 1 (Cloudflare) was done on 2026-11-27, and the PostHog key exists.
 - **Time:** about 10 minutes
 - **Cost:** $0. Fine-grained tokens and Cloudflare tokens are free, and the
   weekly check makes three API calls a week.
@@ -42,7 +43,9 @@ stays on your 30-day [payment method check](payment-method-check.md).
    [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
    (Settings > Developer settings > Personal access tokens > Fine-grained
    tokens > Generate new token), then fill in:
-   - **Token name:** `monorepo-billing-read`
+   - **Token name:** `jimhillr-billing-read` (a token already made under
+     the old name `monorepo-billing-read` keeps working; use the new name
+     when you regenerate it)
    - **Expiration:** 1 year (366 days)
    - **Resource owner:** `jimhillr`
    - **Repository access:** Public repositories (read-only). It needs no

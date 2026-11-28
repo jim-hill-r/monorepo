@@ -5,7 +5,7 @@
 //! and every setting the provider would otherwise default is written out with
 //! today's value. Code security (secret scanning with push protection,
 //! Dependabot alerts and security updates) and a `CI` ruleset that requires
-//! the `CI result` check on `main` are what it adds.
+//! the `CI result` and `Human review` checks on `main` are what it adds.
 //!
 //! Every change here is a credential change (decision 0010), so it applies
 //! only in `infra-credentials`, after Jim approves the run. Plans read with a
@@ -39,11 +39,23 @@ pub const NAME: &str = "github";
 /// The repository's owner, set on the provider.
 pub const OWNER: &str = "jimhillr";
 
-/// The repository this stack manages.
+/// The repository this stack manages. It is the GitHub name, which we
+/// don't change; the resource addresses use [`TF_ID`] instead.
 pub const REPOSITORY: &str = "monorepo";
 
-/// The check PR CI reports for every PR (`pull-request-ci.yml`).
-pub const REQUIRED_CHECK: &str = "CI result";
+/// The name in the repository's resource addresses, such as
+/// `github_repository.jimhillr` (AGENTS.md: name things `jimhillr`).
+pub const TF_ID: &str = "jimhillr";
+
+/// The name those addresses had before, which `moved` blocks map to
+/// [`TF_ID`] so nothing is recreated.
+const OLD_TF_ID: &str = "monorepo";
+
+/// The checks every PR into `main` must pass: `CI result` from PR CI
+/// (`pull-request-ci.yml`), and `Human review` (`pull-request-human-review.yml`,
+/// PR-004), which holds a PR with a red attention tag or a cost change
+/// until a human approves it (Jim, 2026-11-27).
+pub const REQUIRED_CHECKS: [&str; 2] = ["CI result", "Human review"];
 
 /// The GitHub Actions app's ID, so only a check from Actions counts.
 pub const GITHUB_ACTIONS_APP_ID: f64 = 15368.0;
@@ -70,7 +82,7 @@ pub fn synth() -> anyhow::Result<Synth> {
     // Today's settings, as `GET /repos/jimhillr/monorepo` returned them on
     // 2026-11-27, written out so the import changes only code security.
     let repository = BuildRepository {
-        tf_id: REPOSITORY.into(),
+        tf_id: TF_ID.into(),
         name: REPOSITORY.into(),
     }
     .build(&mut stack)
@@ -100,33 +112,50 @@ pub fn synth() -> anyhow::Result<Synth> {
     // IaC never destroys (decision 0007, item 8).
     .set_prevent_destroy(true);
     synth.import(repository.extract_ref(), REPOSITORY);
+    synth.moved(
+        &format!("github_repository.{OLD_TF_ID}"),
+        repository.extract_ref(),
+    );
 
-    BuildRepositoryVulnerabilityAlerts {
-        tf_id: REPOSITORY.into(),
+    let alerts = BuildRepositoryVulnerabilityAlerts {
+        tf_id: TF_ID.into(),
         repository: REPOSITORY.into(),
     }
     .build(&mut stack)
     .set_enabled(true)
     .set_prevent_destroy(true);
+    synth.moved(
+        &format!("github_repository_vulnerability_alerts.{OLD_TF_ID}"),
+        alerts.extract_ref(),
+    );
 
-    BuildRepositoryDependabotSecurityUpdates {
-        tf_id: REPOSITORY.into(),
+    let updates = BuildRepositoryDependabotSecurityUpdates {
+        tf_id: TF_ID.into(),
         enabled: true.into(),
         repository: REPOSITORY.into(),
     }
     .build(&mut stack)
     .set_prevent_destroy(true);
+    synth.moved(
+        &format!("github_repository_dependabot_security_updates.{OLD_TF_ID}"),
+        updates.extract_ref(),
+    );
 
-    let check = BuildRepositoryRuleset_Rules_RequiredStatusChecks_RequiredCheck {
-        context: REQUIRED_CHECK.into(),
-    }
-    .build()
-    .set_integration_id(GITHUB_ACTIONS_APP_ID);
+    let checks: Vec<_> = REQUIRED_CHECKS
+        .iter()
+        .map(|context| {
+            BuildRepositoryRuleset_Rules_RequiredStatusChecks_RequiredCheck {
+                context: (*context).into(),
+            }
+            .build()
+            .set_integration_id(GITHUB_ACTIONS_APP_ID)
+        })
+        .collect();
     let status_checks = BuildRepositoryRuleset_Rules_RequiredStatusChecks {}
         .build()
         // A PR need not be up to date with `main`, only green.
         .set_strict_required_status_checks_policy(false)
-        .set_required_check(vec![check]);
+        .set_required_check(checks);
     let ref_name = BuildRepositoryRuleset_Conditions_RefName {
         exclude: Vec::<PrimField<String>>::new().into(),
         include: vec![PrimField::from("~DEFAULT_BRANCH")].into(),
@@ -168,9 +197,9 @@ mod tests {
         let synth = synth()?;
         assert_eq!(
             synth.json["import"],
-            json!([{ "id": "monorepo", "to": "github_repository.monorepo" }])
+            json!([{ "id": "monorepo", "to": "github_repository.jimhillr" }])
         );
-        let repo = &synth.json["resource"]["github_repository"]["monorepo"];
+        let repo = &synth.json["resource"]["github_repository"]["jimhillr"];
         assert_eq!(repo["name"], "monorepo");
         assert_eq!(repo["visibility"], "public");
         assert_eq!(repo["delete_branch_on_merge"], true);
@@ -185,10 +214,33 @@ mod tests {
     }
 
     #[test]
+    fn the_old_monorepo_addresses_move_to_jimhillr() -> anyhow::Result<()> {
+        let synth = synth()?;
+        assert_eq!(
+            synth.json["moved"],
+            json!([
+                {
+                    "from": "github_repository.monorepo",
+                    "to": "github_repository.jimhillr"
+                },
+                {
+                    "from": "github_repository_vulnerability_alerts.monorepo",
+                    "to": "github_repository_vulnerability_alerts.jimhillr"
+                },
+                {
+                    "from": "github_repository_dependabot_security_updates.monorepo",
+                    "to": "github_repository_dependabot_security_updates.jimhillr"
+                }
+            ])
+        );
+        Ok(())
+    }
+
+    #[test]
     fn secret_scanning_and_push_protection_are_on() -> anyhow::Result<()> {
         let synth = synth()?;
         let security =
-            &synth.json["resource"]["github_repository"]["monorepo"]["security_and_analysis"][0];
+            &synth.json["resource"]["github_repository"]["jimhillr"]["security_and_analysis"][0];
         assert_eq!(security["secret_scanning"][0]["status"], "enabled");
         assert_eq!(
             security["secret_scanning_push_protection"][0]["status"],
@@ -203,17 +255,17 @@ mod tests {
     fn dependabot_alerts_and_security_updates_are_on() -> anyhow::Result<()> {
         let synth = synth()?;
         let resources = &synth.json["resource"];
-        let alerts = &resources["github_repository_vulnerability_alerts"]["monorepo"];
+        let alerts = &resources["github_repository_vulnerability_alerts"]["jimhillr"];
         assert_eq!(alerts["enabled"], true);
         assert_eq!(alerts["repository"], "monorepo");
-        let updates = &resources["github_repository_dependabot_security_updates"]["monorepo"];
+        let updates = &resources["github_repository_dependabot_security_updates"]["jimhillr"];
         assert_eq!(updates["enabled"], true);
         assert_eq!(updates["lifecycle"]["prevent_destroy"], true);
         Ok(())
     }
 
     #[test]
-    fn main_requires_ci_result_from_actions() -> anyhow::Result<()> {
+    fn main_requires_ci_result_and_jim_review_from_actions() -> anyhow::Result<()> {
         let synth = synth()?;
         let ruleset = &synth.json["resource"]["github_repository_ruleset"]["ci"];
         assert_eq!(ruleset["name"], "CI");
@@ -226,7 +278,10 @@ mod tests {
         let checks = &ruleset["rules"][0]["required_status_checks"][0];
         assert_eq!(
             checks["required_check"],
-            json!([{ "context": "CI result", "integration_id": 15368.0 }])
+            json!([
+                { "context": "CI result", "integration_id": 15368.0 },
+                { "context": "Human review", "integration_id": 15368.0 }
+            ])
         );
         assert_eq!(checks["strict_required_status_checks_policy"], false);
         Ok(())

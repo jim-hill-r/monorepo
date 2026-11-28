@@ -46,17 +46,25 @@ pub fn practice_from_query(query: &str) -> Option<Vec<String>> {
         .trim_start_matches('?')
         .split('&')
         .find_map(|pair| pair.strip_prefix("practice="))?;
+    let value = value.replace("%2C", ",").replace("%2c", ",");
+    let expressions = known_expressions(value.split(','));
+    (!expressions.is_empty()).then_some(expressions)
+}
+
+/// The `candidates` the app has patterns for (letters a to z and A to Z
+/// only), trimmed, in order and without repeats.
+pub fn known_expressions<'a>(candidates: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut expressions: Vec<String> = Vec::new();
-    for expr in value.replace("%2C", ",").replace("%2c", ",").split(',') {
-        let expr = expr.trim().to_string();
+    for expr in candidates {
+        let expr = expr.trim();
         let known = !expr.is_empty()
             && expr.chars().all(|c| c.is_ascii_alphabetic())
-            && crate::patterns::patterns_json(&expr).is_some();
-        if known && !expressions.contains(&expr) {
-            expressions.push(expr);
+            && crate::patterns::patterns_json(expr).is_some();
+        if known && !expressions.iter().any(|e| e == expr) {
+            expressions.push(expr.to_string());
         }
     }
-    (!expressions.is_empty()).then_some(expressions)
+    expressions
 }
 
 /// Phase of the practice session for a single expression
@@ -130,12 +138,17 @@ impl AppState {
         self.pending_queue = vec![expressions];
     }
 
-    /// Activate the next batch from the pending queue
+    /// Activate the next batch from the pending queue. An expression can be
+    /// in two groups (`w` is), so one that is already stable leaves the
+    /// stable queue to be practised again, and none is queued twice.
     pub fn activate_next_batch(&mut self) {
         if let Some(batch) = self.pending_queue.first().cloned() {
             self.pending_queue.remove(0);
             for expr in batch {
-                self.active_queue.push(expr);
+                self.stable_queue.retain(|e| e != &expr);
+                if !self.active_queue.contains(&expr) {
+                    self.active_queue.push(expr);
+                }
             }
         }
     }
@@ -382,6 +395,113 @@ mod tests {
         let steps = finish_level(&mut state);
         assert_eq!(steps, STABILIZE_COUNT);
         assert_eq!(state.stable_queue, strings(&["b"]));
+    }
+
+    /// Trace the current expression right first time until `done` holds.
+    fn succeed_until(state: &mut AppState, done: impl Fn(&AppState) -> bool) {
+        let mut steps = 0;
+        while !done(state) {
+            state.record_attempt(true);
+            steps += 1;
+            assert!(steps < 1_000, "never got there");
+        }
+    }
+
+    #[test]
+    fn opening_a_batch_brings_back_the_stable_letters_to_review() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        succeed_until(&mut state, |s| s.pending_queue.len() < 5);
+        // The second group, then all four letters of the first coming back.
+        let mut expected = strings(DEFAULT_LETTER_SEQUENCES[1]);
+        expected.extend(strings(DEFAULT_LETTER_SEQUENCES[0]));
+        let mut queued = state.active_queue.clone();
+        queued.sort();
+        expected.sort();
+        assert_eq!(queued, expected);
+        assert!(state.stable_queue.is_empty());
+    }
+
+    #[test]
+    fn at_most_reintroduce_count_stable_letters_come_back_oldest_first() {
+        let mut state = AppState::new("letter");
+        let stable = strings(&["b", "c", "d", "f", "g", "h", "l", "r", "s", "t"]);
+        state.stable_queue = stable.clone();
+        state.pending_queue = vec![strings(&["a"])];
+        state.activate_expressions();
+        let mut expected = strings(&["a"]);
+        expected.extend_from_slice(&stable[..REINTRODUCE_COUNT]);
+        assert_eq!(state.active_queue, expected);
+        assert_eq!(state.stable_queue, stable[REINTRODUCE_COUNT..]);
+    }
+
+    #[test]
+    fn a_letter_back_for_review_is_stable_again_after_one_good_tracing() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        succeed_until(&mut state, |s| s.pending_queue.len() < 5);
+        succeed_until(&mut state, |s| s.expression.as_deref() == Some("b"));
+        state.record_attempt(true);
+        assert!(!state.active_queue.contains(&"b".to_string()));
+        assert_eq!(state.stable_queue, strings(&["b"]));
+    }
+
+    #[test]
+    fn stable_letters_never_come_back_once_every_batch_is_open() {
+        let mut state = AppState::new("letter");
+        state.practise_only(strings(&["b", "c"]));
+        state.start_practice();
+        succeed_until(&mut state, |s| s.stable_queue.len() == 1);
+        state.activate_expressions();
+        assert_eq!(state.stable_queue.len(), 1);
+    }
+
+    #[test]
+    fn consecutive_fails_counts_letters_missed_in_a_row_until_a_success() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        for _ in 0..2 * RETRY_LIMIT {
+            state.record_attempt(false);
+        }
+        assert_eq!(state.consecutive_fails, 2);
+        state.record_attempt(false);
+        assert_eq!(state.consecutive_fails, 2, "a single miss is not a fail");
+        state.record_attempt(true);
+        assert_eq!(state.consecutive_fails, 0);
+    }
+
+    #[test]
+    fn starting_practice_clears_the_last_session() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        for _ in 0..RETRY_LIMIT {
+            state.record_attempt(false);
+        }
+        state.record_attempt(true);
+        state.start_practice();
+        assert_eq!(state.consecutive_fails, 0);
+        assert!(state.history.is_empty());
+        assert!(state.stable_queue.is_empty());
+    }
+
+    #[test]
+    fn w_is_practised_in_both_its_groups_but_queued_once() {
+        let mut state = AppState::new("letter");
+        state.start_practice();
+        // Open the last group, which repeats `w` from the one before.
+        succeed_until(&mut state, |s| s.pending_queue.is_empty());
+        let w = "w".to_string();
+        let count = |queue: &[String]| queue.iter().filter(|e| **e == w).count();
+        assert_eq!(count(&state.active_queue), 1);
+        assert_eq!(count(&state.stable_queue), 0);
+        finish_level_from_here(&mut state);
+        assert_eq!(count(&state.stable_queue), 1);
+        let letters: usize = DEFAULT_LETTER_SEQUENCES.iter().map(|g| g.len()).sum();
+        assert_eq!(state.stable_queue.len(), letters - 1);
+    }
+
+    fn finish_level_from_here(state: &mut AppState) {
+        succeed_until(state, AppState::is_complete);
     }
 
     #[test]

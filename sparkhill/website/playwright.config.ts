@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
+ * A device with `jimhillr-evals` added to its user agent. Every test run
+ * says it is synthetic, so the PostHog snippet doesn't load and the
+ * telemetry Worker drops its events (standards/docs/evals.md, EVL-005).
+ */
+const synthetic = (device: (typeof devices)[string]) => ({
+  ...device,
+  userAgent: `${device.userAgent} jimhillr-evals`,
+});
+
+/**
  * Playwright smoke tests for the sparkhill website's static export.
  *
  * They load dist/exported (from `mise run release`, the files ../cloudflare
@@ -26,8 +36,8 @@ export default defineConfig({
   },
 
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'phone', use: { ...devices['Pixel 5'] } },
+    { name: 'desktop', use: { ...synthetic(devices['Desktop Chrome']) } },
+    { name: 'phone', use: { ...synthetic(devices['Pixel 5']) } },
   ],
 
   webServer: {

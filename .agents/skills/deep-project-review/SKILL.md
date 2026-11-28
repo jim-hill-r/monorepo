@@ -20,7 +20,7 @@ radar (step 6).
 Unless you were asked to review a specific project:
 
 1. Candidates are the top-level entries (no `/`) in `config_roots` in the root
-   `mise.toml`, except the repo tooling folders `standards` and `monorepo`.
+   `mise.toml`, except the repo tooling folders `standards` and `jimhillr`.
 2. Drop a project that an accepted plan or decision in `standards/docs/` says
    is being removed, and any project with an open review pull request (a PR whose
    branch adds a folder under `docs/reviews/`).
@@ -195,9 +195,10 @@ Deliver with the `open-pull-request` skill, with these differences:
   changed. The `Review decks` check builds
   the deck to HTML and PDF and attaches them to the run.
 - Title: `<project>: deep review <YYYY-MM-DD>`.
-- The description opens with the executive summary (state against goals,
-  top blockers, top recommendations) in at most 75 words, as "Pull request
-  descriptions" in `standards/docs/pull-requests.md` requires, links to the deck file on the branch,
+- The description has the sections "Pull request descriptions" in
+  `standards/docs/pull-requests.md` requires, with What changed and Why
+  giving the state against goals, top blockers and top recommendations in
+  at most 50 words each, links to the deck file on the branch,
   says where to download the HTML and PDF (the `Review decks` run's
   artifacts), and asks Jim for feedback as PR review comments on the deck.
 - Request a review from `jimhillr`, and mark the PR ready for review once the

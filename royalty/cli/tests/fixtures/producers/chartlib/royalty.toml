@@ -1,0 +1,27 @@
+# The voluntary library in "What Acme owes in one month": $5 a seat a
+# month, at most $40 a month for one project.
+schema = 1
+
+[project]
+name = "chartlib"
+description = "Charts."
+
+[[payee]]
+name = "Chartlib maintainers"
+github = "chartlib-example"
+[[payee.method]]
+kind = "github-sponsors"
+account = "chartlib-example"
+
+[terms]
+mode = "report"
+
+[[tier]]
+id = "team"
+when = { environment = ["production"] }
+[[tier.price]]
+unit = "seat"
+cents = 500
+
+[caps.project]
+period_cents = 4000

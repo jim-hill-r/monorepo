@@ -31,7 +31,7 @@ every = "30d"
 id = "claude-scheduled-tasks"
 vendor = "Claude"
 where = "claude.ai > the Monorepo project > Scheduled tasks"
-expect = "PR triage (7:50, 12:50 and 17:50 New York), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
+expect = "PR triage (7:50, 12:50 and 17:50 New York), Credit window check (hourly), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
 why = "PRs stop merging and human tasks stop reaching Jim when a task is paused or failing."
 every = "30d"
 
@@ -225,16 +225,24 @@ every = "365d"
 [[setting]]
 id = "rotate-github-billing-read-token"
 vendor = "GitHub"
-where = "github.com/settings/personal-access-tokens > monorepo-billing-read"
-expect = "The fine-grained token monorepo-billing-read was regenerated within the last 365 days, has only the Plan account permission (read) and public repositories read-only, and the infra environment secret GITHUB_BILLING_READ_TOKEN has the new value (standards/docs/runbooks/billing-read-credentials.md)."
+where = "github.com/settings/personal-access-tokens > jimhillr-billing-read"
+expect = "The fine-grained token jimhillr-billing-read was regenerated within the last 365 days, has only the Plan account permission (read) and public repositories read-only, and the infra environment secret GITHUB_BILLING_READ_TOKEN has the new value (standards/docs/runbooks/billing-read-credentials.md)."
 why = "The weekly Billing check reads GitHub billing usage with it; it expires after a year, and the check then shows GitHub as failed."
 every = "365d"
 
 [[setting]]
+id = "posthog-session-replay-settings"
+vendor = "PostHog"
+where = "PostHog > Settings > Project > Session replay"
+expect = "Record user sessions is on, mask all inputs is on (and mask all text if offered), the project is on the free plan with no card, and the project token matches the phc_ key in cookbook/web/public/posthog.js (standards/docs/runbooks/posthog-sign-up.md)."
+why = "Made by hand at sign-up (2026-11-27); the sites' snippet masks inputs too, but only this check notices if recording or masking is changed in PostHog."
+every = "180d"
+
+[[setting]]
 id = "rotate-posthog-billing-read-key"
 vendor = "PostHog"
-where = "PostHog > Account settings > Personal API keys > monorepo-billing-read"
-expect = "Once PostHog exists: the key monorepo-billing-read has only billing read, was rolled within the last 180 days, and the infra environment secret POSTHOG_BILLING_READ_KEY has the new value (standards/docs/runbooks/posthog-sign-up.md)."
+where = "PostHog > Account settings > Personal API keys > jimhillr-billing-read"
+expect = "Once PostHog exists: the key jimhillr-billing-read has only billing read, was rolled within the last 180 days, and the infra environment secret POSTHOG_BILLING_READ_KEY has the new value (standards/docs/runbooks/posthog-sign-up.md)."
 why = "The weekly Billing check reads PostHog billing with it; billing read covers the whole organization, so it is rolled like the other personal key."
 every = "180d"
 

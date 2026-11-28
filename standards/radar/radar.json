@@ -581,7 +581,7 @@
     "description": "Approved vendor. Hosts the repo and runs all CI, CD, nightly runs and maintenance workflows on standard runners, which are free on this public repo.",
     "exemplars": [
       ".github/workflows",
-      "monorepo/workflow_tests",
+      "jimhillr/workflow_tests",
       "infra/src/stacks/github.rs"
     ],
     "sources": [
@@ -747,8 +747,10 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved exception, free tier, for one job: real-user session replay (and game events) on production sites, with all text input masked. Not integrated in any project yet.",
-    "exemplars": [],
+    "description": "Approved exception, free tier, for one job: real-user session replay (and game events) on production sites, with all text input masked. First used in cookbook (2026-11-27), loaded only on the production host.",
+    "exemplars": [
+      "cookbook/web"
+    ],
     "sources": [
       "standards/docs/decisions/0001-deploy-feedback-loop.md",
       "AGENTS.md"
@@ -783,6 +785,48 @@
       "human": "rapidapi-free-plan",
       "note": "No consumer billing API, and polling the quota header on a schedule would break homer's free-plan rule."
     }
+  },
+  {
+    "name": "Cloudflare Flagship",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Cloudflare's feature flag service, in public beta with pricing after GA not announced, and no workers-rs binding. Decision 0018 builds a small flags Worker on D1 and a management app per project instead, and revisits Flagship at GA.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0018-feature-flags.md"
+    ],
+    "claude": "Cloudflare plugin (flagship skill) and the Cloudflare MCP server.",
+    "budget": 0
+  },
+  {
+    "name": "OpenFeature",
+    "ring": "Assess",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "CNCF standard API for feature flags. Decision 0018 shapes the in-house flags crate after it so a later provider change stays in one crate.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0018-feature-flags.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "flagd, Unleash and GrowthBook",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Open-source feature flag servers considered in decision 0018. Each needs a long-running server and a database with no free host among approved vendors, or a new hosted vendor, so don't start work on them.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0018-feature-flags.md"
+    ],
+    "claude": "",
+    "budget": 0
   },
   {
     "name": "Neon",

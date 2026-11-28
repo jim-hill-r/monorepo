@@ -16,6 +16,10 @@ const TIMEOUT: Duration = Duration::from_secs(30);
 /// in the site's analytics.
 pub const USER_AGENT: &str = "jimhillr-evals/0.1 (synthetic check)";
 
+/// Also sent with every request: the header the `telemetry` Worker and
+/// other non-browser analytics drop (eval engine phase 3).
+pub const SYNTHETIC_HEADER: (&str, &str) = ("x-jimhillr-synthetic", "1");
+
 /// One response, as much of it as the checks need.
 #[derive(Debug, Clone, Default)]
 pub struct Response {
@@ -74,6 +78,7 @@ impl Fetch for Client {
         let request = ureq::http::Request::builder()
             .method(method)
             .uri(url)
+            .header(SYNTHETIC_HEADER.0, SYNTHETIC_HEADER.1)
             .body(())
             .map_err(|e| format!("bad request {method} {url}: {e}"))?;
         let start = Instant::now();
@@ -832,6 +837,53 @@ __wbg_init({module_or_path:"/./assets/web_bg-dxh2.wasm"})"#;
             }
         });
         Ok(base)
+    }
+
+    /// Answers one request with 200 and returns the request's header lines,
+    /// lower-cased, once it has been read.
+    fn capture() -> std::io::Result<(String, std::sync::mpsc::Receiver<Vec<String>>)> {
+        let listener = TcpListener::bind("127.0.0.1:0")?;
+        let base = format!("http://{}", listener.local_addr()?);
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let Ok((mut stream, _)) = listener.accept() else {
+                return;
+            };
+            let mut reader = BufReader::new(match stream.try_clone() {
+                Ok(s) => s,
+                Err(_) => return,
+            });
+            let mut lines = Vec::new();
+            let mut line = String::new();
+            while reader.read_line(&mut line).is_ok_and(|n| n > 2) {
+                lines.push(line.trim_end().to_ascii_lowercase());
+                line.clear();
+            }
+            let _ = stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            let _ = send.send(lines);
+        });
+        Ok((base, receive))
+    }
+
+    #[test]
+    fn the_client_says_it_is_synthetic() -> anyhow::Result<()> {
+        let (base, request) = capture()?;
+        Client::new()
+            .fetch("GET", &format!("{base}/"), true)
+            .map_err(anyhow::Error::msg)?;
+        let lines = request.recv_timeout(Duration::from_secs(10))?;
+        assert!(
+            lines.contains(&"x-jimhillr-synthetic: 1".to_string()),
+            "{lines:?}"
+        );
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.starts_with("user-agent: ") && l.contains("jimhillr-evals")),
+            "{lines:?}"
+        );
+        Ok(())
     }
 
     #[test]

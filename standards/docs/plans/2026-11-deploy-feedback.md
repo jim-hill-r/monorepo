@@ -32,7 +32,7 @@ Inventory of every project with a `mise.toml`, 2026-11-26.
 | HTTP API | luggage (on hold, not deployed) | HTTP smoke test of the OpenAPI routes against `cargo run` | Same test against the deployed URL | Workers Logs, or `tracing` output to the `telemetry` Worker |
 | Library | auth_sdk, cahokia/ui, cookbook/core, profiles/content_provider, luggage crates | Unit tests plus the consumers' CI (`affected-by`) | Nothing to release | Through the apps that use it |
 | Content and docs | cookbook/content and data_md, athenaeum, bogan, psy_ents, royalty, bear_down docs | Markdown and link checks; cookbook content is checked by building and smoke testing the site | Nothing to release | None |
-| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, monorepo/workflow_tests | Existing CI until removed | None | None |
+| Going away with Cast | cast/cli, cast/vscode_ext, the standards CLI, jimhillr/workflow_tests | Existing CI until removed | None | None |
 
 Cloudflare adds the numbers (errors, page performance, deploys) next to those
 recordings.
@@ -97,6 +97,15 @@ their first deploy. How it works is in [../mise.md](../mise.md#deploys).
   cahokia, or sign-in fails on previews.
 
 ## Phase 3a: website smoke UAT
+
+Progress (2026-11-27): cookbook runs its `@smoke` tests against production
+after each deploy, and the cd evals read them, so COOK-005 (accessibility)
+has a production check. The `smoke` task lives in the deploy task file
+(`cloudflare-pages.toml`, through `standards/scripts/evals.sh smoke` and the
+project's `SMOKE_DIR`), not the web task files, since the deploy job runs in
+the deploying project. Still to do: the other web apps, previews, and the
+`uat-reports` site ([evals.md](../evals.md#after-deploy), the open issues in
+`issues/`).
 
 - Tag a handful of existing Playwright tests `@smoke` in each web app: the
   home page loads, main navigation works, one core flow per app, no console

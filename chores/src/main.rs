@@ -5,10 +5,12 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
 mod badges;
+mod gate;
 mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod user_docs;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -54,24 +56,30 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Write a PR description (attribution lines, the executive summary,
-    /// Testing, Review notes, footer) and check it against PR-001. Exits 1,
-    /// printing the warnings, when the summary is missing, over 75 words or
-    /// unlinked. With --check, checks an existing description instead.
+    /// Write a PR description (attribution lines, Attention, What changed,
+    /// Why, Cost changes, Risk changes, Details, footer) and check it
+    /// against PR-001. Exits 1, printing the warnings, when a section is
+    /// missing or empty, an attention tag is unknown, or a summary is over
+    /// its word limit. With --check, checks an existing description instead.
     PrBody {
         /// Check this description file (`-` for stdin) instead of writing one.
-        #[arg(long, conflicts_with_all = ["summary", "testing"])]
+        #[arg(long, conflicts_with_all = ["what", "why", "cost", "risk", "details"])]
         check: Option<PathBuf>,
-        /// The executive summary: what, why, tradeoffs, at most 75 words,
-        /// linking to the committed docs.
+        /// What changed, at most 50 words.
         #[arg(long, required_unless_present = "check")]
-        summary: Option<String>,
-        /// How it was tested.
+        what: Option<String>,
+        /// Why it changed, and any tradeoffs, at most 50 words.
         #[arg(long, required_unless_present = "check")]
-        testing: Option<String>,
-        /// Anything a reviewer should look at closely.
-        #[arg(long)]
-        review_notes: Option<String>,
+        why: Option<String>,
+        /// Cost changes, under 25 words ("None." when nothing changes).
+        #[arg(long, default_value = "None.")]
+        cost: String,
+        /// Risk changes, under 25 words ("None." when nothing changes).
+        #[arg(long, default_value = "None.")]
+        risk: String,
+        /// Anything else: the issue it closes, testing, review notes, links.
+        #[arg(long, required_unless_present = "check")]
+        details: Option<String>,
         /// GitHub login for the claude-projects-attribution comment.
         #[arg(long)]
         login: Option<String>,
@@ -84,10 +92,10 @@ enum Command {
         /// Closing lines, such as the session link the platform asks for.
         #[arg(long)]
         footer: Option<String>,
-        /// The branch the PR merges into, for the attention badges.
+        /// The branch the PR merges into, for the attention tags.
         #[arg(long, default_value = "origin/main")]
         base: String,
-        /// Leave out the attention badges (only when git can't compare
+        /// Leave out the Attention section (only when git can't compare
         /// with the base; say so in the PR).
         #[arg(long)]
         no_badges: bool,
@@ -95,7 +103,7 @@ enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
-    /// Print the attention line for the top of a PR description: whether
+    /// Print the Attention section for the top of a PR description: whether
     /// a requirement changed (red for a must) and whether a threat or risk
     /// file changed, against the merge base with --base.
     Badges {
@@ -103,6 +111,47 @@ enum Command {
         #[arg(long, default_value = "origin/main")]
         base: String,
         /// Print JSON instead of the Markdown line.
+        #[arg(long)]
+        json: bool,
+    },
+    /// The `Human review` check (PR-004): a PR with a red attention tag or a
+    /// cost change, from its diff, its description or the `cost` label,
+    /// passes only once a human (not an `-agt` account, the reviewer account
+    /// or a bot) has approved its head commit.
+    /// Prints "pass: ..." or "block: ..."; exits 1 when it blocks.
+    Gate {
+        /// The branch the PR merges into, for the diff's tags.
+        #[arg(long, default_value = "origin/main")]
+        base: String,
+        /// The PR description, as a file.
+        #[arg(long)]
+        body: Option<PathBuf>,
+        /// The PR's labels, comma separated.
+        #[arg(long, default_value = "", value_delimiter = ',')]
+        labels: Vec<String>,
+        /// The PR author's login.
+        #[arg(long)]
+        author: String,
+        /// The PR author's repo role (`author_association`, such as OWNER
+        /// or COLLABORATOR); only a collaborator's own PR passes.
+        #[arg(long, default_value = "NONE")]
+        author_association: String,
+        /// The PR's head commit.
+        #[arg(long)]
+        head: String,
+        /// The PR's reviews as JSON, from `GET /repos/{repo}/pulls/{n}/reviews`.
+        #[arg(long)]
+        reviews: Option<PathBuf>,
+        /// Also write the verdict as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
+    },
+    /// Check every project's user guide, <project>/docs/user/README.md
+    /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
+    /// against the baseline in standards/user-docs.toml. Exits 1 on any
+    /// error. Run by `mise run //:audit`.
+    UserDocs {
+        /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
     },
@@ -216,9 +265,11 @@ fn run() -> Result<ExitCode> {
         }
         Command::PrBody {
             check,
-            summary,
-            testing,
-            review_notes,
+            what,
+            why,
+            cost,
+            risk,
+            details,
             login,
             requested_by,
             thread_url,
@@ -238,19 +289,21 @@ fn run() -> Result<ExitCode> {
                     } else {
                         Some(badges::render(&badges::for_repo(&root, &base)?))
                     },
-                    summary: summary.unwrap_or_default(),
-                    testing: testing.unwrap_or_default(),
-                    review_notes,
+                    what: what.unwrap_or_default(),
+                    why: why.unwrap_or_default(),
+                    cost,
+                    risk,
+                    details: details.unwrap_or_default(),
                     footer,
                 }),
             };
-            let (words, warnings) = pr_body::check(&body);
+            let (counts, warnings) = pr_body::check(&body);
             if let Some(out) = out {
                 std::fs::write(&out, &body)?;
             }
             if warnings.is_empty() {
                 print!("{body}");
-                eprintln!("PR-001 ok: executive summary is {words} words.");
+                eprintln!("{}", pr_body::ok_line(&counts));
             } else {
                 for w in &warnings {
                     eprintln!("warning[PR-001] {w}");
@@ -264,6 +317,41 @@ fn run() -> Result<ExitCode> {
                 println!("{}", serde_json::to_string_pretty(&attention)?);
             } else {
                 println!("{}", badges::render(&attention));
+            }
+        }
+        Command::Gate {
+            base,
+            body,
+            labels,
+            author,
+            author_association,
+            head,
+            reviews,
+            json,
+        } => {
+            let args = gate::Args {
+                base,
+                body,
+                labels,
+                author,
+                author_association,
+                head,
+                reviews,
+                json,
+            };
+            if !gate::run(&root, &args)? {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::UserDocs { json } => {
+            let report = user_docs::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", user_docs::render(&report));
+            }
+            if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
             }
         }
         Command::NewIssue {

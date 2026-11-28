@@ -23,5 +23,10 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0010](0010-credential-second-approval.md) | A second approval for credential changes: a GitHub environment only Jim can approve | Accepted |
 | [0011](0011-mint-secrets-by-workflow.md) | Mint infra secrets with a workflow, outside OpenTofu | Accepted |
 | [0012](0012-revenue-and-http-402.md) | Revenue: a public financial ledger and GitHub Sponsors first, HTTP 402 (x402) staged | Accepted |
+| [0013](0013-credit-window-scheduler.md) | Start work by the Claude usage window, checked every hour | Accepted |
 | [0014](0014-faster-pr-approvals.md) | Faster PR approvals: an Approve page in pane, one approval per stack, a `jimhillr-reviewer` account for low-risk PRs and post-merge acknowledgement | Accepted |
 | [0015](0015-code-quality-process.md) | A standing code quality process: one standard, a ratchet, triage into issues | Accepted |
+| [0016](0016-holding-and-handling-money.md) | Holding and handling money: a separate free account, accounting books in the repo, a merchant of record for card sales | Accepted |
+| [0017](0017-user-docs.md) | Every project has a user guide, checked by the audit with a shrinking baseline | Accepted |
+| [0018](0018-feature-flags.md) | Feature flags: our own flags Worker on D1, with a management app per project (pane for platform work) where app managers set modes per user without git | Accepted |
+| [0019](0019-review-roles.md) | Review roles: who may approve what, as a matrix of domains (cost, threat, requirements, credentials...) and project tiers, in one file | Accepted |

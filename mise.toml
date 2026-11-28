@@ -36,8 +36,8 @@ config_roots = [
   "evals",
   "homer",
   "infra",
+  "jimhillr",
   "luggage",
-  "monorepo",
   "my_lang",
   "pane",
   "pane/cloudflare",
@@ -97,6 +97,6 @@ dir = "{{config_root}}"
 run = "bash standards/scripts/downloads.sh list"
 
 [tasks."pr-summary"]
-description = "Warn when a PR description (PR_BODY or stdin) lacks a linked executive summary of at most 75 words (PR-001)"
+description = "Warn when a PR description (PR_BODY or stdin) lacks a section, has an unknown attention tag or a summary over its word limit (PR-001)"
 dir = "{{config_root}}"
 run = "bash standards/scripts/pr-summary-check.sh"

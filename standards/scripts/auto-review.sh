@@ -20,13 +20,18 @@
 # Rules version, written into every approval.
 set -euo pipefail
 
-RULES=v1
+RULES=v2
 REVIEWER=jimhillr-reviewer
 AUTHOR=jimhillr-agt
 MAX_LINES=1500
 MAX_FILES=100
 # Labels with a red or orange attention badge (pane_model::queue).
 BLOCK_LABELS='needs-human credential-change security cost'
+# Red and orange attention tags (`chores badges`, "Attention tags" in
+# standards/docs/pull-requests.md). A description that declares one, or has
+# no Attention section, waits for Jim (Jim, 2026-11-27: "no prs with red
+# attention flags get auto merged. Cost changes must be reviewed by jim").
+BLOCK_TAGS='must-requirement-changed cost-changed threat-risk-changed'
 # Paths the reviewer never approves: secrets, credentials and workflows,
 # threat models, requirements and evals, the rules agents follow, decisions,
 # vendors and budgets, security headers and deploy settings, auth.
@@ -44,7 +49,7 @@ BLOCK_PATHS='^\.github/
 ^tofu_state/
 ^threat/
 ^auth_sdk/
-^monorepo/
+^jimhillr/
 ^standards/
 (^|/)docs/threat\.toml$
 (^|/)docs/requirements\.md$
@@ -52,11 +57,13 @@ BLOCK_PATHS='^\.github/
 (^|/)evals\.toml$
 (^|/)royalty\.toml$
 (^|/)wrangler\.toml$
+(^|/)wrangler\.jsonc?$
 (^|/)_headers$
 (^|/)\.env'
 # The checks that must have run and passed, on top of "every check passed".
 REQUIRED_CHECKS='CI result
-PR summary'
+PR summary
+Human review'
 # This workflow's own job, ignored when reading the head's checks.
 SELF_CHECK='Auto review'
 
@@ -84,6 +91,23 @@ decide() {
     fi
   done
 
+  # The tags on the description's Attention section bullets, one per line.
+  local tags tag
+  tags=$(jq -r '.body // ""' "$pr" | tr -d '\r' | awk '
+    /^#+[ \t]/ { h = $0; sub(/^#+[ \t]+/, "", h); on = (tolower(h) ~ /^attention[ \t]*$/); if (on) seen = 1; next }
+    on && /^[ \t]*- / { for (i = 2; i <= NF; i++) if ($i ~ /[A-Za-z0-9]/) { t = $i; sub(/:$/, "", t); gsub(/`/, "", t); print t; break } }
+    END { if (!seen) print "<none>" }')
+  if [ "$tags" = "<none>" ]; then
+    echo "skip: no Attention section in the description"
+    return
+  fi
+  for tag in $BLOCK_TAGS; do
+    if grep -qx -- "$tag" <<<"$tags"; then
+      echo "skip: attention tag $tag needs a human"
+      return
+    fi
+  done
+
   [ "$nfiles" -gt 0 ] || { echo "skip: no changed files listed"; return; }
   [ "$nfiles" -le "$MAX_FILES" ] || { echo "skip: $nfiles files, over $MAX_FILES"; return; }
   [ $((adds + dels)) -le "$MAX_LINES" ] || { echo "skip: $((adds + dels)) changed lines, over $MAX_LINES"; return; }
@@ -93,10 +117,13 @@ decide() {
   [ -z "$blocked" ] || { echo "skip: touches $blocked"; return; }
 
   # Every check run on the head finished and passed (skipped and neutral
-  # count as passed), and every commit status is success.
+  # count as passed), and every commit status is success. A check that ran
+  # more than once (a re-run, or Human review on a later event) counts by its
+  # latest run.
   local bad
   bad=$(jq -r --arg self "$SELF_CHECK" '
-    [(.check_runs[]? | select(.name != $self)
+    .check_runs = ([.check_runs[]?] | group_by(.name) | map(max_by(.started_at // "")))
+    | [(.check_runs[]? | select(.name != $self)
       | select(.status != "completed" or ((.conclusion // "") | IN("success", "skipped", "neutral") | not))
       | "\(.name) is \(.conclusion // .status)"),
      (.statuses[]? | select(.state != "success") | "\(.context) is \(.state)")]
@@ -120,7 +147,7 @@ decide() {
     return
   fi
 
-  echo "approve: $REVIEWER rules $RULES (decision 0014): checks green on ${sha:0:7}, no red or orange label, no protected path, $nfiles files, +$adds/-$dels. Jim reviews it after merge on pane's Acknowledge page."
+  echo "approve: $REVIEWER rules $RULES (decision 0014): checks green on ${sha:0:7}, no red or orange label or attention tag, no protected path, $nfiles files, +$adds/-$dels. Human reviews it after merge on pane's Acknowledge page."
 }
 
 run() {

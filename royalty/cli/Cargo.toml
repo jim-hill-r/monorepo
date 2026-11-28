@@ -1,0 +1,23 @@
+[package]
+name = "royalty_cli"
+description = "The royalty command: checks a royalty.toml and works out what a consumer owes."
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "royalty"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+royalty_model = { path = "../model" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+tempfile = "3"

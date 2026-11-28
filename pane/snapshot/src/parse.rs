@@ -529,6 +529,9 @@ pub fn issue_file(file: &str, project: Option<&str>, contents: &str) -> Option<W
         section,
         epic: field(&fields, "epic").map(str::to_owned),
         tags,
+        added: field(&fields, "added")
+            .and_then(leading_date)
+            .map(str::to_owned),
     })
 }
 
@@ -629,6 +632,8 @@ pub fn code_comments(file: &str, project: Option<&str>, contents: &str) -> Vec<W
                 section: None,
                 epic: None,
                 tags,
+                // repo::build fills a FIX's date in from git blame.
+                added: None,
             });
         }
     }
@@ -782,6 +787,23 @@ pub fn retro(path: &str, project: Option<&str>, contents: &str) -> Retro {
 /// take the plan's starting values; an unknown key is an error.
 pub fn health_thresholds(health_toml: &str) -> Result<pane_model::health::Thresholds, String> {
     toml::from_str(health_toml).map_err(|e| format!("pane/health.toml: {e}"))
+}
+
+/// The 1-based line of every `[[table]]` header in a TOML file, in order,
+/// so each array entry can link to its source line.
+pub fn table_lines(text: &str, table: &str) -> Vec<u32> {
+    let header = format!("[[{table}]]");
+    text.lines()
+        .enumerate()
+        .filter(|(_, line)| {
+            let line = line.trim();
+            line == header
+                || line
+                    .strip_prefix(&header)
+                    .is_some_and(|rest| rest.trim_start().starts_with('#'))
+        })
+        .filter_map(|(i, _)| u32::try_from(i + 1).ok())
+        .collect()
 }
 
 #[cfg(test)]
@@ -1256,6 +1278,17 @@ mod tests {
     }
 
     #[test]
+    fn issue_file_keeps_its_added_date() -> Result<(), String> {
+        let with = "---\nkind: fix\npriority: priority\nadded: 2026-11-20\n---\n\nBroken.\n";
+        let item = issue_file("app/issues/x.md", Some("app"), with).ok_or("no item")?;
+        assert_eq!(item.added.as_deref(), Some("2026-11-20"));
+        let odd = with.replace("2026-11-20", "last week");
+        let item = issue_file("app/issues/x.md", Some("app"), &odd).ok_or("no item")?;
+        assert_eq!(item.added, None);
+        Ok(())
+    }
+
+    #[test]
     fn reads_issue_files_with_sections_and_epics() {
         let items: Vec<_> = [FLAT, EPIC, PHASE, LATER]
             .into_iter()
@@ -1360,5 +1393,13 @@ mod tests {
         assert_eq!(t.build.stale_after_days, 3);
         assert_eq!(t.review, pane_model::health::ReviewThresholds::default());
         Ok(())
+    }
+
+    #[test]
+    fn finds_table_header_lines() {
+        let text = "a = 1\n[[cost]]\nx = 1\n  [[cost]] # second\n[[revenue]]\n[cost]\n[[costs]]\n";
+        assert_eq!(table_lines(text, "cost"), [2, 4]);
+        assert_eq!(table_lines(text, "revenue"), [5]);
+        assert!(table_lines(text, "service").is_empty());
     }
 }
