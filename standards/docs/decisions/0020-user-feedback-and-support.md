@@ -42,9 +42,8 @@ device (SPRK-006) under a `connect-src 'self'` CSP.
 3. **Support without email or vendor.** A support request is stored in
    the product's tenant tables and answered in its management app; the
    user reads the answer through a private link kept on their device. No
-   contact details are collected. Tally is the vendor fallback (free,
-   scriptable by API, answers by webhook into the same inbox), pending
-   Jim's sign-off.
+   contact details are collected. Jim chose this over Tally, Google
+   Forms and the other vendors on 2026-11-28.
 4. **Explicit send, nothing else.** Every form shows exactly what will be
    sent and sends only on Send: product, build, page, topic, rating and
    note for feedback; subject and question for support. No id, cookie or
@@ -63,7 +62,7 @@ device (SPRK-006) under a `connect-src 'self'` CSP.
 | Route products through the shared `telemetry` Worker | $0 | A shared service; Jim asked for libraries and patterns only |
 | Allow another origin in `connect-src` | $0 | Breaks same origin (Jim's answer 1) and SPRK-006 |
 | Email support (Cloudflare Email Routing, `mailto:`) | $0 | Jim: not email |
-| Tally forms | $0 (unlimited under fair use; API and webhooks free) | New vendor and a link out; kept as the fallback |
+| Tally forms | $0 (unlimited under fair use; API and webhooks free) | New vendor and a link out; the best vendor option, not chosen |
 | Google Forms | $0; push needs Pub/Sub with billing, so polling | New vendor, Google Cloud project, link out |
 | GitHub issue forms or Discussions | $0 | Users need a GitHub account and it is public; Discussions kept for developer tools |
 | Jira Service Management, Zoho Desk free plans | $0 for 3 agents | New vendors, third-party portals or scripts, weaker IaC |

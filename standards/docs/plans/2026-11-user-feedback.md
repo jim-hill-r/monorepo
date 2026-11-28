@@ -221,7 +221,7 @@ Ruled out: email (Jim), Freshdesk (its free plan is now time-limited),
 self-hosted osTicket or HESK (they need a PHP server we don't run), and
 anything that loads a script from another site into Blue Eel.
 
-**Recommendation: A for every product**, because it is the only option
+**Chosen (Jim, 2026-11-28): A for every product**, because it is the only option
 that is same-origin, keeps each product's users and data separate, needs
 no new vendor and is defined entirely in code. **B (Tally)** is the best
 vendor option if Jim wants support forms that a non-engineer edits
@@ -387,15 +387,11 @@ Each phase is one PR and one issue file (`epic: User feedback`).
 
 ## Questions for Jim
 
-1. **Support option.** Recommended: A, our own support requests ($0, no
-   vendor, about 2 PRs). Alternatives: B, Tally ($0, a new vendor, about 2
-   PRs, editable without a PR); E, GitHub Discussions as an extra for
-   developer tools ($0, under 1 PR).
-2. **Data rule.** Recommended: one shared D1 with tenant-scoped tables and
+1. **Data rule.** Recommended: one shared D1 with tenant-scoped tables and
    per-tenant budgets (decision 0021; $0, 1 of 10 databases, about 1 PR).
    Alternatives are in that decision: a database per product, Durable
    Objects per tenant, or a hosted Postgres with row-level security.
-3. **Blue Eel's server.** Recommended: move it to a Rust Worker with static
+2. **Blue Eel's server.** Recommended: move it to a Rust Worker with static
    assets ($0, 1 of 25 Workers, part of Phase 6). Alternative: a Pages
    Function with wasm glue ($0, more moving parts).
 
@@ -405,5 +401,7 @@ Each phase is one PR and one issue file (`epic: User feedback`).
   companies and the platform shares only libraries and patterns.
 - 2026-11-28, Jim: support through something set up with IaC or scripts,
   not email; options above.
+- 2026-11-28, Jim (decision card): option A, our own support requests, for
+  every product. Tally and the other vendors are not used.
 - 2026-11-28, Jim: shared database infrastructure with tenant-scoped
   tables is acceptable if moving a tenant out stays easy; decision 0021.
