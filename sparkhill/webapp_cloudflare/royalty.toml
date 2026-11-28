@@ -1,0 +1,3 @@
+[project]
+name = "sparkhill_webapp_cloudflare"
+description = "Deploys the Blue Eel letter tracing web app to Cloudflare Pages."

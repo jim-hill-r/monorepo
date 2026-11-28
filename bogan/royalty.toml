@@ -1,0 +1,3 @@
+[project]
+name = "bogan"
+description = "An online marketplace built around supply-chain transparency, where each listing shows who made the item and each hop it took to the buyer."
