@@ -1,12 +1,11 @@
 # Turn on GitHub code security
 
 - **Kind:** one-time
-- **Status:** open (`issues/human/github-settings-code-security-turn-secret.md`),
-  for private vulnerability reporting only. Since 2026-11-27 the `github`
-  stack in `infra` manages secret scanning, push protection, Dependabot
-  alerts and Dependabot security updates, once
-  [the read-only infra GitHub App](github-app-infra-read.md) exists and
-  Jim approves its run.
+- **Status:** done 2026-11-28 (Jim). Private vulnerability reporting is
+  the only part still set by hand: the `github` stack in `infra` manages
+  secret scanning, push protection, Dependabot alerts and Dependabot
+  security updates, once [the read-only infra GitHub App](github-app-infra-read.md)
+  exists and Jim approves its run. Keep this runbook for a rebuild.
 - **Time:** about 3 minutes
 - **Cost:** $0. All of these are free on a public repo.
 
@@ -49,7 +48,9 @@ None.
 
 The page shows each one as enabled, and the Security tab lists Dependabot
 and Secret scanning. The `github-dependabot` settings check covers the
-Dependabot part every 90 days.
+Dependabot part every 90 days, and the weekly **GitHub security settings**
+job of `all-free-tier-usage.yml` fails if private vulnerability reporting
+is turned off.
 
 ## Undo or rotate
 

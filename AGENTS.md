@@ -54,7 +54,10 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   tags)", one of which is cost changed. This replaces the 75-word
   executive summary. So after any required attribution lines, every PR
   description has `## Attention` (the tags from `chores badges`: one
-  requirements, one cost and one threat/risk tag from a closed set), `##
+  requirements, one cost, one threat/risk and one docs tag from a closed
+  set; Jim, 2026-11-28: "state if it is only docs being updated which
+  includes plans", so a PR whose every file is docs says `docs-only` and goes to the
+  `docs-reviewer`, Jim for now, decision 0019), `##
   What changed` (at most 50 words), `## Why` (at most 50), `## Cost
   changes` and `## Risk changes` (under 25 each, `None.` when nothing
   changes) and `## Details` (testing, review notes, links to committed
