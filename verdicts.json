@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-28T11:30:06.605247971Z",
+  "generated_at": "2026-11-28T11:32:36.814709276Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 13.3,
-    "musts_percent": 37.5,
-    "judged_percent": 16.9,
+    "percent": 12.8,
+    "musts_percent": 35.4,
+    "judged_percent": 15.0,
     "warn_below": 80.0,
     "warning": true
   },
@@ -155,10 +155,10 @@
       "musts_in_production": 2,
       "coverage": {
         "requirements": 8,
-        "met": 1,
-        "percent": 12.5,
-        "musts_met": 1,
-        "musts_percent": 50.0,
+        "met": 0,
+        "percent": 0.0,
+        "musts_met": 0,
+        "musts_percent": 0.0,
         "warning": true
       },
       "requirements": [
@@ -166,7 +166,10 @@
           "requirement": "CAHO-001",
           "title": "A family tree is drawn so anyone can read it",
           "priority": "must",
-          "verdict": "met"
+          "verdict": "at-risk",
+          "reasons": [
+            "family-tree-page has no cd results yet"
+          ]
         },
         {
           "requirement": "CAHO-002",
@@ -183,6 +186,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
+            "sign-in-config has no cd results yet",
             "setting auth0-cahokia-app has never been checked"
           ]
         },
@@ -910,54 +914,58 @@
           "requirement": "SPRK-001",
           "title": "A learner can start practising straight away",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "first-session-judged has no judge results yet",
+            "home-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-002",
           "title": "Every letter is shown being written before the learner tries it",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "app-loads-live failed 3 of its last 7 cd runs",
+            "demonstrations-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-003",
           "title": "A tracing is checked fairly",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "tracing-judged has no judge results yet",
+            "tracing-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-004",
           "title": "Learners move from letters to words to capitals",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "capital-level-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-005",
           "title": "Each learner's progress is kept on their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "home-page-live-for-progress failed 3 of its last 7 cd runs",
+            "progress-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-006",
           "title": "Nothing a learner types or draws leaves their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "connects-only-to-itself-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -966,9 +974,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-28 11:21:47.084067025 UTC",
-            "manifest-live failed in cd at 2026-11-28 11:21:47.084067025 UTC",
-            "no-zoom-live failed in cd at 2026-11-28 11:21:47.084067025 UTC"
+            "home-screen-icon-live failed 3 of its last 7 cd runs",
+            "manifest-live failed 3 of its last 7 cd runs",
+            "no-zoom-live failed 3 of its last 7 cd runs"
           ]
         },
         {
