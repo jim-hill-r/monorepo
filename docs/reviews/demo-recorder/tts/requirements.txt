@@ -1,0 +1,8 @@
+# Kokoro text-to-speech for the demo narration (kokoro_tts.py), on Python 3.10
+# to 3.13 (kokoro-onnx does not support 3.14 yet). Install into a
+# virtual environment: python -m venv .venv && .venv/bin/pip install -r requirements.txt
+kokoro-onnx==0.4.9
+onnxruntime==1.32.0
+numpy==2.5.5
+phonemizer-fork==3.3.2
+espeakng-loader==0.2.4

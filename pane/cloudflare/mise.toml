@@ -25,7 +25,10 @@ run = "mise run release"
 [tasks."ci:check-tools"]
 description = "Fail, naming what is missing, when ci can't run here"
 run = '''
-command -v wrangler >/dev/null && exit 0
-echo "missing wrangler, which tests/e2e.sh needs"
+missing=""
+command -v wrangler >/dev/null || missing="$missing wrangler"
+command -v worker-build >/dev/null || missing="$missing worker-build"
+[ -z "$missing" ] && exit 0
+echo "missing$missing, which tests/e2e.rs needs"
 exit 1
 '''

@@ -193,6 +193,19 @@ commits in total; the last product feature (shopping list) landed on
 
 ---
 
+# Demo: find today's recipe and plan the week
+
+<video controls preload="metadata" width="800" poster="demos/cook-this-week.jpg" src="demos/cook-this-week.mp4"><track default kind="captions" srclang="en" label="English" src="demos/cook-this-week.vtt"></video>
+
+The live app, narrated, with captions (press CC). Added 2026-11-28; script: [demos/cook-this-week.json](demos/cook-this-week.json).
+
+<!--
+The narration is the "say" lines in demos/cook-this-week.json. The video,
+captions and poster are in the review-decks artifact, not in git.
+-->
+
+---
+
 <!-- _class: lead -->
 
 # User experience

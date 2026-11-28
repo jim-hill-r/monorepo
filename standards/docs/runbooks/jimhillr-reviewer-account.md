@@ -58,6 +58,9 @@ current terms when you sign up.
    else.
 5. Leave the Default ruleset as it is: one approval, stale approvals
    dismissed, bypass list empty.
+6. **Email.** As `jimhillr-reviewer`, turn off GitHub email
+   notifications ([github-email-notifications-off.md](github-email-notifications-off.md),
+   steps 1 to 3).
 
 ## Where secrets go
 

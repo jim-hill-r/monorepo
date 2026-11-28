@@ -9,7 +9,8 @@ its tech selection against the [tech radar](../../standards/docs/tech-radar.md))
 and writes a slide deck here as a pull request for Jim's review and feedback.
 
 Each review lives in its own folder, `<YYYY-MM-DD>-<project>/`, with the deck
-in `deck.md` and its screenshots beside it.
+in `deck.md`, its screenshots beside it, and the scripts of its demo videos
+in `demos/`.
 
 ## Reading a deck
 
@@ -19,7 +20,8 @@ in `deck.md` and its screenshots beside it.
   on each pull request that touches this folder (and on demand with
   `workflow_dispatch`). Download them from the run's `review-decks`
   artifact. The HTML version is a full slideshow (arrow keys to move, `f`
-  for full screen).
+  for full screen), and plays the demo videos; turn their captions on and
+  off with the player's CC button. The PDF shows each video's first frame.
 - **Feedback**: leave review comments on the deck's pull request, on the
   lines of the slide you are commenting on.
 - **Sign-off**: once a deck is read, a reviewer signs it off with a verdict
@@ -105,3 +107,16 @@ verdict: changes
   them by hand in this format; `pane_model::signoff` is the reference, and
   pane's snapshot fails on a sign-off it can't read.
 
+## Demo videos
+
+Each deck shows the project's most important features working in the live
+app, as short videos with a voiceover and closed captions
+([decision 0025](../../standards/docs/decisions/0025-review-deck-demo-videos.md)).
+A demo is a script in `<folder>/demos/<name>.json`: the lines to say and the
+clicks to make while saying them. The
+[demo recorder](demo-recorder/README.md) turns it into an MP4, a WebVTT
+caption file and a poster image, with Playwright, a local Kokoro voice and
+ffmpeg, at no cost. The `Review decks` workflow records the demos of the
+decks a pull request changes; the videos are build output like the HTML and
+PDF, and are not committed. The recorder's README has the script format and
+the `<video>` tag for the slide.
