@@ -229,6 +229,19 @@ repo, rather than in any one agent tool's settings.
   requests pass through. Shared database infrastructure is allowed only
   with tenant-scoped tables that one export can move out
   ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md)).
+- **Product promotion path (Jim, 2026-11-28).** "All projects will start
+  out as a subdomain of jimhillr.com with a promotion path to a fully
+  fledged product of its own with its own domain." Every project is served
+  at `<name>.jimhillr.com` (`incubating`); only a `product` tier project
+  moves to its own domain (`promoted`), and only once it meets the
+  promotion gates in every domain of concern (mission, requirements,
+  traction, revenue, cost, stability, quality, security, data and backups,
+  user docs, support, web, operations, name) and Jim approves an executive
+  review deck making the case, on a `needs-human` PR. Agents never approve
+  a promotion and never buy a domain; a gate a product misses becomes an
+  issue file in its project. The gates and the deck are in
+  [standards/docs/product-lifecycle.md](standards/docs/product-lifecycle.md)
+  ([decision 0029](standards/docs/decisions/0029-product-promotion-path.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON

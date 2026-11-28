@@ -76,6 +76,20 @@ style: |
 - Speaker notes, for detail that doesn't fit on the slide, go in an HTML
   comment at the end of the slide.
 
+## Promotion reviews
+
+A promotion review makes the case for moving one product from
+`<name>.jimhillr.com` to a domain of its own, for Jim to approve
+([product lifecycle](../../standards/docs/product-lifecycle.md),
+[decision 0029](../../standards/docs/decisions/0029-product-promotion-path.md)).
+It uses this folder and format, in `<YYYY-MM-DD>-<project>-promotion/`,
+with the deck sections listed under "The promotion review" in the product
+lifecycle. Its key slide is a `| Gate | Domain | Status | Evidence |`
+table under a heading that says Promotion scorecard, one row per gate,
+Status exactly `Met`, `Not met` or `Waiver asked`. Its PR is labelled
+`needs-human` and `cost`, and Jim's approval is the promotion decision.
+It doesn't take a turn in the rotation table above.
+
 ## Demo videos
 
 Each deck shows the project's most important features working in the live
