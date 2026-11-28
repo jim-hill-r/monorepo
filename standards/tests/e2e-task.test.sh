@@ -71,7 +71,8 @@ touch "$work/project/package.json"
 
 # Everything installs: the tests run.
 run_case all-tools 0 "$work/stubs" && expect all-tools "npm test" "$calls" \
-  && expect all-tools "--reporter=list,json" "$calls"
+  && expect all-tools "--reporter=list,json" "$calls" \
+  && refuse all-tools "@network" "$calls"
 
 # A failing test fails the task, in CI or not.
 run_case test-fails 1 "$work/stubs" FAIL_npm=test
@@ -83,14 +84,29 @@ run_case no-dx 0 "$work/stubs-no-dx" \
   && expect no-dx "PR CI runs them" "$out" \
   && refuse no-dx "npm test" "$calls"
 run_case no-browser 0 "$work/stubs" FAIL_npx=playwright \
+  PLAYWRIGHT_CHROMIUM_PATH="$work/no-such-chromium" \
   && expect no-browser "couldn't install Playwright's browsers" "$out" \
   && refuse no-browser "npm test" "$calls"
+# Outside CI, a Chromium already on the machine stands in for Playwright's,
+# for an app whose Playwright config launches it.
+printf '#!/bin/sh\n' >"$work/chromium" && chmod +x "$work/chromium"
+run_case local-chromium-no-opt-in 0 "$work/stubs" FAIL_npx=playwright \
+  PLAYWRIGHT_CHROMIUM_PATH="$work/chromium" \
+  && expect local-chromium-no-opt-in "couldn't install Playwright's browsers" "$out" \
+  && refuse local-chromium-no-opt-in "npm test" "$calls"
+echo "executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH" >"$work/project/playwright.config.ts"
+run_case local-chromium 0 "$work/stubs" FAIL_npx=playwright \
+  PLAYWRIGHT_CHROMIUM_PATH="$work/chromium" \
+  && expect local-chromium "using the Chromium at $work/chromium" "$out" \
+  && expect local-chromium "npm test" "$calls" \
+  && expect local-chromium "--grep-invert @network" "$calls"
 run_case no-npm-packages 0 "$work/stubs" FAIL_npm=ci \
   && expect no-npm-packages "couldn't install the npm packages" "$out"
 
 # In CI the same gaps fail the task.
 run_case no-dx-ci 1 "$work/stubs-no-dx" CI=true
-run_case no-browser-ci 1 "$work/stubs" CI=true FAIL_npx=playwright
+run_case no-browser-ci 1 "$work/stubs" CI=true FAIL_npx=playwright \
+  PLAYWRIGHT_CHROMIUM_PATH="$work/chromium"
 
 if [ "$failures" -gt 0 ]; then
   echo "e2e-task: $failures failure(s)"
