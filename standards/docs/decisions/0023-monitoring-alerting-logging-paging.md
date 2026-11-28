@@ -1,4 +1,4 @@
-# 0022. Monitoring, alerting, logging and paging: Cloudflare for signals and logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone
+# 0023. Monitoring, alerting, logging and paging: Cloudflare for signals and logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone
 
 - Status: Accepted
 - Decided by: Jim (2026-11-28, chose "GitHub Mobile only" on the pager decision card, over PagerDuty Free, Pushover and ntfy.sh; the rest as recommended)

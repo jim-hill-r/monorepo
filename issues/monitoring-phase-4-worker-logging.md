@@ -7,4 +7,4 @@ order: 40
 added: 2026-11-28
 ---
 
-Give every Rust Worker one shared `tracing` setup ([decision 0022](../standards/docs/decisions/0022-monitoring-alerting-logging-paging.md)) that logs one JSON line per request (project, build, route, status, duration) and no personal data, so Workers Logs and Observability can query it for 7 days. Move `telemetry` and `tofu_state` to it.
+Give every Rust Worker one shared `tracing` setup ([decision 0023](../standards/docs/decisions/0023-monitoring-alerting-logging-paging.md)) that logs one JSON line per request (project, build, route, status, duration) and no personal data, so Workers Logs and Observability can query it for 7 days. Move `telemetry` and `tofu_state` to it.
