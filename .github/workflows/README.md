@@ -188,9 +188,12 @@ and `tofu_state_deploy_tests.rs`.
 ## pull-request-review-decks.yml (Review decks)
 
 Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).
-Builds every review deck to HTML and PDF with the Marp CLI through
-`standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
-uploads them as the `review-decks` artifact. See
+First records the narrated demo videos of the decks the pull request changes
+(or of the deck folders in the `demos` input when run by hand) with
+`docs/reviews/demo-recorder`, then builds every review deck to HTML and PDF
+with the Marp CLI through `standards/scripts/review-decks.sh` (also
+`mise run //:review-decks`) and uploads them, videos included, as the
+`review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
 
 ## nightly-coverage.yml

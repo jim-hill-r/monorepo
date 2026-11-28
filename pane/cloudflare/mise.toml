@@ -21,3 +21,14 @@ includes = ["../../standards/tasks/cloudflare-worker-assets.toml"]
 description = "Build the web app whose bundle the Worker serves"
 dir = "{{config_root}}/../web"
 run = "mise run release"
+
+[tasks."ci:check-tools"]
+description = "Fail, naming what is missing, when ci can't run here"
+run = '''
+missing=""
+command -v wrangler >/dev/null || missing="$missing wrangler"
+command -v worker-build >/dev/null || missing="$missing worker-build"
+[ -z "$missing" ] && exit 0
+echo "missing$missing, which tests/e2e.rs needs"
+exit 1
+'''
