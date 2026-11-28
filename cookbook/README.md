@@ -8,6 +8,9 @@ The live site is <https://jimhillr-cookbook.pages.dev>. To learn how to use
 it (find a recipe, follow a week's plan, use the shopping list on a phone),
 read the [user guide](docs/user/README.md).
 
+The content is the product and will become a book; where the project is
+heading is in the [mission](docs/mission.md) and [roadmap](docs/roadmap.md).
+
 ## Development
 
 This workspace contains member crates for different platforms and features:
