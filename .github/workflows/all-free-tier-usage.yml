@@ -53,7 +53,22 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FREE_TIERS_JSON: ${{ runner.temp }}/free-tier-usage.json
         run: bash standards/scripts/free-tiers.sh usage
+
+      # The same table as JSON, for pane's Money page to read from the
+      # latest run (pane/issues, Phase 7 order 340). Kept even when an item
+      # is over its budget, which is when it matters most.
+      - name: Keep the usage as JSON
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: free-tier-usage
+          path: ${{ runner.temp }}/free-tier-usage.json
+          if-no-files-found: ignore
+          # RES-003: the run is weekly, and pane reads the latest run's
+          # file, so it must outlive the 7 days until the next run.
+          retention-days: 8
 
   # Read-only billing credentials prove there is still no payment method,
   # paid plan or charge where the vendor's API can show it
