@@ -44,6 +44,23 @@ The auth SDK implements multiple layers of security for OAuth2/OIDC flows:
 
 The `ProviderConfig` struct supports two configuration modes:
 
+### Auth0 (Recommended for Auth0 tenants)
+Build the config from the tenant domain. `ProviderConfig::auth0` derives the
+issuer (with the trailing slash Auth0 publishes), authorize and token URLs, so
+they can't drift apart:
+```rust
+use auth_sdk::provider::ProviderConfig;
+
+let config = ProviderConfig::auth0(
+    "your-tenant.us.auth0.com", // an https:// prefix or trailing slash is fine too
+    "your_client_id",
+    "https://example.com/",
+)?;
+```
+`auth_sdk::auth0::Auth0Urls::from_domain` gives the URLs on their own, and
+`Auth0Urls::origin()` the `https://<domain>` form a CSP `connect-src` needs.
+A domain with another scheme, a path, a port or a query is a `ConfigError`.
+
 ### OAuth2 Mode
 Explicitly specify authentication endpoints:
 ```rust

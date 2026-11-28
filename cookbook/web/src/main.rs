@@ -7,7 +7,7 @@ mod schedule;
 use dioxus::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
-use auth::{AUTH_URL, AUTH0_DOMAIN, CLIENT_ID, TOKEN_URL};
+use auth::{AUTH0_DOMAIN, CLIENT_ID};
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::provider::ProviderConfig;
 #[cfg(target_arch = "wasm32")]
@@ -36,8 +36,9 @@ const DEFAULT_THEME: &str = "earthy";
 /// - base-uri 'self': Restrict base tag to same origin
 /// - form-action 'self': Restrict form submissions to same origin
 ///
-/// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
-/// Tests verify that the CSP contains the correct Auth0 domain.
+/// Note: The Auth0 origin is hardcoded in the CSP string because it must be a
+/// const. `test_csp_connect_src_matches_auth0_domain` checks it against
+/// `Auth0Urls::origin` for `auth::AUTH0_DOMAIN`.
 const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://us-assets.i.posthog.com https://static.cloudflareinsights.com; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com https://us.i.posthog.com https://us-assets.i.posthog.com https://cloudflareinsights.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
@@ -49,14 +50,11 @@ fn App() -> Element {
     #[cfg(target_arch = "wasm32")]
     {
         let auth = use_resource(|| async move {
-            WebAuthProvider::new(ProviderConfig {
-                client_id: CLIENT_ID.into(),
-                auth_url: AUTH_URL.into(),
-                token_url: TOKEN_URL.into(),
-                redirect_url: fetch_current_location_from_browser().unwrap_or("".into()),
-                issuer_url: Some(AUTH0_DOMAIN.into()),
-            })
-            .await
+            let redirect_url = fetch_current_location_from_browser().unwrap_or_default();
+            match ProviderConfig::auth0(AUTH0_DOMAIN, CLIENT_ID, redirect_url) {
+                Ok(config) => WebAuthProvider::new(config).await,
+                Err(error) => Err(error),
+            }
         });
         use_context_provider(|| auth);
     }
@@ -267,5 +265,38 @@ mod tests {
         assert_eq!(Route::Plan { week: 26 }.to_string(), "/plan/26");
         assert_eq!(Route::Plan { week: 52 }.to_string(), "/plan/52");
         assert_eq!(Route::Plan { week: 53 }.to_string(), "/plan/53");
+    }
+
+    #[test]
+    fn test_auth0_issuer_has_trailing_slash() {
+        // Auth0's OIDC discovery returns its issuer with a trailing slash and
+        // openidconnect compares it exactly; the auth_sdk helper adds it.
+        let urls = auth_sdk::auth0::Auth0Urls::from_domain(auth::AUTH0_DOMAIN).ok();
+        assert_eq!(
+            urls.as_ref().map(|u| u.issuer.as_str()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/")
+        );
+        assert_eq!(
+            urls.as_ref().map(|u| u.token.as_str()),
+            Some("https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token")
+        );
+    }
+
+    #[test]
+    fn test_csp_connect_src_matches_auth0_domain() {
+        let origin = auth_sdk::auth0::Auth0Urls::from_domain(auth::AUTH0_DOMAIN)
+            .map(|urls| urls.origin().to_string())
+            .unwrap_or_default();
+        let connect_src = CONTENT_SECURITY_POLICY
+            .split(';')
+            .map(str::trim)
+            .find_map(|directive| directive.strip_prefix("connect-src "))
+            .unwrap_or_default();
+        assert!(
+            connect_src
+                .split_whitespace()
+                .any(|source| source == origin),
+            "CSP connect-src must allow {origin}: {connect_src}"
+        );
     }
 }

@@ -7,14 +7,12 @@ use auth_sdk::provider::{AuthError, AuthProvider};
 #[cfg(target_arch = "wasm32")]
 use auth_sdk::web::WebAuthProvider;
 
-#[cfg(target_arch = "wasm32")]
-pub const AUTH0_DOMAIN: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
+/// Auth0 tenant. `ProviderConfig::auth0` builds the issuer (with the trailing
+/// slash OIDC discovery needs), authorize and token URLs from it.
+#[cfg(any(target_arch = "wasm32", test))]
+pub const AUTH0_DOMAIN: &str = "dev-jdadpn4pckxevrv5.us.auth0.com";
 #[cfg(target_arch = "wasm32")]
 pub const CLIENT_ID: &str = "savzmZnyHcvewGkQX8aaInwPFonC9k2x";
-#[cfg(target_arch = "wasm32")]
-pub const AUTH_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize";
-#[cfg(target_arch = "wasm32")]
-pub const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 /// Format authentication errors into user-friendly messages
 #[cfg(target_arch = "wasm32")]
@@ -80,18 +78,6 @@ pub fn render_auth_section() -> Element {
 #[cfg(all(test, target_arch = "wasm32"))]
 mod tests {
     use super::*;
-
-    #[cfg(target_arch = "wasm32")]
-    #[test]
-    fn test_auth0_domain_has_trailing_slash() {
-        // Verify AUTH0_DOMAIN includes trailing slash for OIDC discovery
-        // Auth0's OIDC discovery endpoint returns issuer URLs with trailing slashes,
-        // and the openidconnect crate validates exact matches
-        assert!(
-            AUTH0_DOMAIN.ends_with("/"),
-            "AUTH0_DOMAIN must include trailing slash for OIDC discovery"
-        );
-    }
 
     #[cfg(target_arch = "wasm32")]
     #[test]

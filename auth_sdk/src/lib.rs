@@ -1,3 +1,4 @@
+pub mod auth0;
 pub mod flow;
 pub mod provider;
 pub mod redirect;
