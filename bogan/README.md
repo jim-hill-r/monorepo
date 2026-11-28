@@ -19,8 +19,7 @@ transparency to all the tributaries that feed into a big marketplace: we
 value the little guys and want consumers to have a real choice.
 
 Bogan is in early design and has no code yet. The first version is a
-curated catalog that links out to where sellers already sell as the first
-version.
+curated catalog that links out to where sellers already sell.
 
 # Notes
 
