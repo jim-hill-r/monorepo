@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copied from the Dioxus CLI 0.7.3 template (assets/ios/ios.plist.hbs,
+     https://github.com/DioxusLabs/dioxus, MIT or Apache-2.0) with its values
+     filled in, plus CFBundleURLTypes. -->
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Cahokia</string>
+
+	<key>CFBundleExecutable</key>
+	<string>mobile</string>
+
+	<key>CFBundleIdentifier</key>
+	<string>com.jimhillr.cahokia</string>
+
+	<key>CFBundleName</key>
+	<string>Cahokia</string>
+
+	<key>CFBundleVersion</key>
+	<string>0.1.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<!-- Sign-in: Auth0 redirects to com.jimhillr.cahokia://callback, and iOS
+	     opens the app with it (src/auth.rs). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.jimhillr.cahokia.sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.jimhillr.cahokia</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en_US</string>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UISupportsTrueScreenSizeOnMac</key>
+	<true/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+		<string>metal</string>
+	</array>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>2</integer>
+	</array>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>iPhoneOS</string>
+		<string>iPadOS</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
+</plist>
