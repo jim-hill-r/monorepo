@@ -6,7 +6,7 @@
 # <script> whose file names change every build (dx 0.7 uses a script file,
 # so drop it when the web app moves to Dioxus 0.7). It also needs 'unsafe-eval': Dioxus's document::eval, which the practice
 # canvas and the saved progress use (../webapp/src/components/practice.rs,
-# ../webapp/src/pages/home.rs), runs its JavaScript with new Function(). Everything
+# ../webapp/src/components/settings_panel.rs), runs its JavaScript with new Function(). Everything
 # else is same-origin only.
 /*
   Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

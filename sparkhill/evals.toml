@@ -37,7 +37,7 @@ stages = ["judge"]
 kind = "judge"
 rubric = """
 Open the live app on a phone-sized screen as a new visitor. Pass if, with
-nothing but a name typed, Begin then Start shows a letter being drawn and a
+nothing typed, Begin then Start shows a letter being drawn and a
 way to try it, with no sign-in, pop-up or download on the way. Fail on any
 error, blank screen, or a step a young child couldn't follow."""
 
@@ -216,7 +216,7 @@ id = "progress-saved-per-learner"
 requirement = "SPRK-005"
 stages = ["ci"]
 kind = "cargo"
-filter = "progress_is_kept_per_learner_and_level"
+filter = "progress_is_kept_per_learner_level_and_sequence"
 
 [[eval]]
 id = "saved-progress-carries-on"
@@ -237,7 +237,7 @@ id = "reload-carries-on"
 requirement = "SPRK-005"
 stages = ["ci", "cd"]
 kind = "playwright"
-description = "A reload carries on where the learner was; another name starts afresh."
+description = "A reload carries on where the learner was; another name starts afresh; a sequence keeps its own progress."
 
 [[eval]]
 id = "home-page-live-for-progress"
@@ -346,6 +346,20 @@ stages = ["ci"]
 kind = "cargo"
 filter = "practising_only_some_letters_ends_once_they_are_stable"
 
+[[eval]]
+id = "sequence-split-between-levels"
+requirement = "SPRK-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_sequence_is_split_between_the_levels"
+
+[[eval]]
+id = "sequence-in-the-browser"
+requirement = "SPRK-008"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "The settings panel's Sequence practises only its letters, and its words on the word level."
+
 # SPRK-009: A learner can practise with less help
 
 [[eval]]
@@ -361,3 +375,26 @@ requirement = "SPRK-009"
 stages = ["ci", "cd"]
 kind = "playwright"
 description = "Pattern keeps the start dots while drawing; Freeform shows nothing; both pass a letter written right; the choice is remembered."
+
+# SPRK-010: The practice menu and settings panel work like the live app
+
+[[eval]]
+id = "menu-opens-each-level"
+requirement = "SPRK-010"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_menu_opens_each_level"
+
+[[eval]]
+id = "settings-saved-on-device"
+requirement = "SPRK-010"
+stages = ["ci"]
+kind = "cargo"
+filter = "saving_stays_on_the_device_and_quotes_safely"
+
+[[eval]]
+id = "menu-and-settings-in-the-browser"
+requirement = "SPRK-010"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "The menu opens Letter and Word Practice; the settings panel has Student, Sequence and Technique and no upload switch; Save starts the level again."
