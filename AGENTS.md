@@ -207,9 +207,12 @@ repo, rather than in any one agent tool's settings.
   pedantic and the complexity limits) may only go down, never up, and gaps
   become issue files through weekly quality triage, the same loop as evals
   ([decision 0015](standards/docs/decisions/0015-code-quality-process.md),
-  [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
-  findings in files you touch. Scripts stay Rust-only: add no new `.sh`
-  files, and port existing ones into `chores` commands over time.
+  [plan](standards/docs/plans/2026-11-code-quality.md)). The rules, each
+  with its enforcer, are the QUAL IDs in
+  [standards/docs/code-quality.md](standards/docs/code-quality.md). Leave
+  no new findings in files you touch (QUAL-503). Scripts stay Rust-only:
+  add no new `.sh` files, and port existing ones into `chores` commands
+  over time (QUAL-404).
 - **Admin CLIs, built once (Jim, 2026-11-28).** "Rust scripts can
   sometimes run slow due to build times, so it's okay if we make a admin
   cli for a project so it can be built once and reused many times." A

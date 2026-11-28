@@ -11,9 +11,10 @@ the books are under copyright. A copy may be added beside a note when it
 helps, under the rules in [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 The rules themselves live in the standards, not here:
-[standards/docs/rust.md](../../../standards/docs/rust.md) today, and the
-QUAL rules of the code quality process (decision 0015) once they land in
-`standards/docs/code-quality.md`. When a standard and a note disagree, the standard wins.
+[standards/docs/code-quality.md](../../../standards/docs/code-quality.md)
+(the QUAL rules of the code quality process, decision 0015) and
+[standards/docs/rust.md](../../../standards/docs/rust.md). When a standard
+and a note disagree, the standard wins.
 
 ## Sources
 
