@@ -96,7 +96,7 @@ pub struct Feedback {
 /// A reviewer's sign-off on one deck.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignOff {
-    /// The reviewer's public handle, never an email or an Auth0 id.
+    /// The reviewer's public handle, never an email or account id.
     pub reviewer: String,
     /// `YYYY-MM-DD`.
     pub date: String,

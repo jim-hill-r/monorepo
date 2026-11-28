@@ -34,8 +34,9 @@ forms. See "Revenue and cost" in the plan.
 Reviewers sign off on review decks in pane, and each feedback item becomes
 an issue file. The plan is
 [docs/plans/2026-11-deck-sign-off.md](../docs/plans/2026-11-deck-sign-off.md).
-Phase 1 (the format and display) is built. Phase 4 needs the pane Worker and
-the `/api/edits` write path from the review dashboard epic.
+Phase 1 (the format and display) is built. Phase 2 is the review dashboard
+epic's Cloudflare Access issue (order 110). Phase 4 needs the pane Worker and
+the `/api/edits` write path from that epic.
 
 ## Review feedback
 

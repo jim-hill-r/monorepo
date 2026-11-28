@@ -994,7 +994,7 @@ fn SignOffs(signoffs: Vec<SignOff>, commit: String) -> Element {
                 }
             }
             p { class: "muted",
-                "Signing off from pane, with feedback that becomes issue files for agents, comes with sign-in; see the "
+                "Signing off from pane, with feedback that becomes issue files for agents, comes once pane is behind its sign-in; see the "
                 a { href: "{view::github_file_url(&commit, PLAN)}", "deck sign-off plan" }
                 "."
             }

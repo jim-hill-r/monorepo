@@ -16,7 +16,7 @@ Part of the review dashboard epic
 ## What a reviewer does
 
 1. Opens a deck on pane's Review page and reads it as slides.
-2. Signs in to pane (Auth0, through `auth_sdk`).
+2. Signs in to pane (Cloudflare Access, with their GitHub account).
 3. Presses **Sign off**, picks a verdict (**Reviewed** or **Reviewed, needs
    changes**), and adds feedback: one or more items, each with an optional
    slide number.
@@ -60,27 +60,36 @@ snapshot, the browser and the Worker share one tested implementation.
 
 ## Who the reviewer is
 
-- **Sign-in**: pane signs in with Auth0 through `auth_sdk`'s
-  `WebAuthProvider`, like cahokia and cookbook. Reading pane stays open (it
-  shows only what is already public in the repo); only signing off needs a
-  sign-in.
-- **Who may sign off**: an Auth0 API for pane with one permission,
-  `review:decks`, carried by a `deck-reviewer` role (Auth0 role-based access
-  control, on the free plan), the same shape as the flags Worker's
-  `manage:{app}` ([decision 0018](../../../standards/docs/decisions/0018-feature-flags.md)).
-  Jim assigns the role in the Auth0 dashboard, never in git.
-- **What name is recorded**: the repo is public, so no Auth0 `sub` or email
-  goes in it. When Jim assigns the role he also sets the reviewer's public
-  handle (for example `jim`) in their Auth0 `app_metadata`, and an Auth0
-  Action adds it to the access token as a `https://jimhillr-pane/reviewer`
-  claim. The Worker writes that handle and nothing else about the person.
-- **Check on the server**: the Worker's `POST /api/reviews/<folder>/signoff`
-  verifies the access token against Auth0's public keys (issuer, audience,
-  expiry, `review:decks`) and fails closed.
+Internal people (Jim, reviewers, engineers) and product users sign in
+through separate systems, so nobody internal has an account in a product's
+user pool (Jim, 2026-11-28: "The risk is that our end users would be in the
+same auth domain as our internal use cases. That is not my favorite
+idea."). Products keep Auth0; internal tools such as pane use Cloudflare
+Access.
 
-This replaces the plan's earlier "Cloudflare Access, only Jim" for pane's
-write path: Access would guard the site but can't say which of several
-reviewers signed. The `/api/*` routes that only read public data stay open.
+- **Sign-in**: pane's Worker URL sits behind **Cloudflare Access**, with
+  **GitHub** as its login method (Phase 3 of the review dashboard plan,
+  `pane/issues/put-pane-behind-cloudflare-access-allowing.md`, order 110).
+  Access does the whole sign-in, so pane has no sign-in code. Free for up to
+  50 users; Cloudflare and GitHub are approved vendors.
+- **Who may sign off**: the Access policy allows an Access group of internal
+  people that Jim keeps by hand in the Cloudflare dashboard, since their
+  emails can't be in the public repo. Only people in that group reach pane
+  at all.
+- **What name is recorded**: no email goes in the repo. A Worker secret,
+  `PANE_REVIEWERS`, maps each reviewer's Access email to a public handle
+  (for example `jim`), and Jim sets it by hand. The Worker writes that handle
+  and nothing else about the person, and refuses a signed-in person with no
+  handle.
+- **Check on the server**: the Worker's `POST /api/reviews/<folder>/signoff`
+  verifies the `Cf-Access-Jwt-Assertion` token against the Access team's
+  public keys (issuer, the pane application's audience, expiry) and fails
+  closed, so a misconfigured Access policy can't let anyone through.
+
+Considered and not chosen: Auth0 for internal users too (shares a user pool
+with products); a second Auth0 tenant for internal users (the free plan
+allows one tenant per account); our own GitHub OAuth in the Worker (more code
+and a client secret for what Access does free).
 
 ## How the write reaches the repo
 
@@ -97,9 +106,9 @@ above, which the Worker validates.
 | Phase | What | Needs |
 | --- | --- | --- |
 | 1 | **Format and display** (built with this plan): `pane_model::signoff`, the snapshot reads `signoffs/` into each review, and the Reviews and Review pages show who signed off, the verdict, and each feedback item as open or done | Nothing |
-| 2 | **Auth0 for pane** (IaC): the pane client and API with `review:decks`, the `deck-reviewer` role and the reviewer-handle Action in the `infra` auth0 stack. A credential change: Jim's second approval (decision 0010) | Nothing |
-| 3 | **Sign-in and form**: `auth_sdk` sign-in in `pane/web`, the sign-off form on the Review page | 2 |
-| 4 | **Sign-off route**: the Worker route, the token check, and the commit to the `pane-edit` PR | 3, the pane Worker (PR #759), the `/api/edits` write path (order 190) and its token |
+| 2 | **Access for pane**: the review dashboard plan's order 110, with GitHub as the login method and the internal Access group. A credential change (an Access policy): Jim's second approval (decision 0010) | Nothing |
+| 3 | **Sign-off form** on the Review page, validated in the browser with `pane_model::signoff::files` | Nothing (it posts to phase 4's route) |
+| 4 | **Sign-off route**: the Worker route, the Access token check, the reviewer handle, and the commit to the `pane-edit` PR | 2, the pane Worker (PR #759), the `/api/edits` write path (order 190) and its token |
 
 Until phase 4 lands, a reviewer can sign off by committing the sign-off
 and issue files by hand (or asking an agent to), in exactly the format above;
@@ -107,24 +116,26 @@ pane shows them the same way.
 
 ## Cost
 
-$0 a month. Auth0 free plan: reviewers are a handful of the 25,000 monthly
-active users. Workers: a few sign-offs a week against 100,000 requests a day.
-GitHub: one commit per sign-off. No new vendor (Auth0 is an approved
-exception). Building it is about four PRs of Claude Code effort.
+$0 a month. Cloudflare Access free plan: a few internal people of its 50
+users. Workers: a few sign-offs a week against 100,000 requests a day.
+GitHub: one commit per sign-off. No new vendor. Building it is about three
+PRs of Claude Code effort.
 
 ## Risks
 
-- A stolen reviewer session could file junk issues. Contained by the role
-  check, short-lived tokens, the Worker accepting only the two file shapes,
+- A stolen reviewer session could file junk issues. Contained by the Access
+  group, Access's session length, the Worker accepting only the two file shapes,
   and every write going through a PR that the checks and Jim's post-merge
   acknowledgement see.
 - An agent could weaken the token check. Code review on the Worker and the
-  credential-change rule for anything in the auth0 stack.
+  credential-change rule for Access policies.
 
 ## Decisions for Jim
 
-1. Sign-in is Auth0 through `auth_sdk` with a `deck-reviewer` role, instead
-   of Cloudflare Access, for the sign-off write path.
+1. Internal tools (pane) sign in with Cloudflare Access and GitHub login;
+   products keep Auth0. Internal people never share a user pool with a
+   product's users.
 2. Sign-offs are files next to the deck, and each feedback item becomes its
    own issue file in the reviewed project, worked by agents as usual.
-3. The recorded name is a public handle Jim sets in Auth0, never an email.
+3. The recorded name is a public handle from the `PANE_REVIEWERS` Worker
+   secret, never an email.
