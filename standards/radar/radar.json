@@ -473,12 +473,12 @@
     "quadrant": "Tools",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Open-weight voice (kokoro-onnx, Apache 2.0) that narrates the review deck demo videos, run locally with ffmpeg and Playwright's video recording. Brings Python in for that one script only. Decision 0023 (proposed).",
+    "description": "Open-weight voice (kokoro-onnx, Apache 2.0) that narrates the review deck demo videos, run locally with ffmpeg and Playwright's video recording. Brings Python in for that one script only. Decision 0025 (proposed).",
     "exemplars": [
       "docs/reviews"
     ],
     "sources": [
-      "standards/docs/decisions/0023-review-deck-demo-videos.md",
+      "standards/docs/decisions/0025-review-deck-demo-videos.md",
       "https://github.com/thewh1teagle/kokoro-onnx"
     ],
     "claude": "",

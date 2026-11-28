@@ -1,4 +1,4 @@
-# 0023. Narrated demo videos in the review decks, recorded from a script
+# 0025. Narrated demo videos in the review decks, recorded from a script
 
 - Status: Proposed
 - Decided by: Jim (on merging the pull request that adds this record)
