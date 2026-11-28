@@ -16,6 +16,8 @@ and redeployed every week, and Cloudflare serves the result as static files.
 
 The name comes from "Bear Down, Chicago Bears", the team's fight song.
 
+How to use the site is in the [user guide](docs/user/README.md).
+
 ## Status
 
 Early development. `core` parses the nflverse schedule and results
