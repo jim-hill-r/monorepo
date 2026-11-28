@@ -128,6 +128,7 @@ mise's version service. Follow these steps there; each one is safe to repeat.
    | `luggage` | the Swagger UI zip from GitHub, or `SWAGGER_UI_DOWNLOAD_URL` | `luggage/mise.toml` |
    | `infra` | registry.opentofu.org, for `tofu validate` | `infra/mise.toml` |
    | `tofu_state` | `wrangler` and `tofu`, for `tests/e2e.sh` | `tofu_state/mise.toml` |
+| `pane/cloudflare` | `wrangler`, for `tests/e2e.sh` | `pane/cloudflare/mise.toml` |
 
    `cahokia/web` and `cookbook/web` need none: without `dx` their Rust
    checks still run and the Playwright step skips itself (step 5). Add a
