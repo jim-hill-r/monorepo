@@ -12,10 +12,10 @@
     "test": "tsc --noEmit && node --test src/*.test.ts"
   },
   "dependencies": {
-    "playwright": "1.63.0"
+    "playwright": "1.65.1"
   },
   "devDependencies": {
-    "@types/node": "22.19.1",
-    "typescript": "5.9.3"
+    "@types/node": "26.6.7",
+    "typescript": "7.0.2"
   }
 }
