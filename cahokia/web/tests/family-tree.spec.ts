@@ -63,7 +63,7 @@ async function openFamilyTree(page: Page) {
 }
 
 test.describe('Family tree page @req:CAHO-001', () => {
-  test('shows the page heading and the tree drawing', async ({ page }) => {
+  test('shows the page heading and the tree drawing', { tag: '@smoke' }, async ({ page }) => {
     await openFamilyTree(page);
 
     await expect(page.locator('.page-content h2')).toHaveText('Family Tree');
@@ -72,7 +72,7 @@ test.describe('Family tree page @req:CAHO-001', () => {
     await expect(tree).toHaveAttribute('aria-label', 'Family tree');
   });
 
-  test('draws a box for every person in the sample family', async ({ page }) => {
+  test('draws a box for every person in the sample family', { tag: '@smoke' }, async ({ page }) => {
     await openFamilyTree(page);
 
     await expect(page.locator('.family-tree-person')).toHaveCount(SAMPLE_PEOPLE.length);
@@ -84,7 +84,7 @@ test.describe('Family tree page @req:CAHO-001', () => {
     ).toHaveText('1890 – 1962');
   });
 
-  test('draws lines between parents, children and spouses', async ({ page }) => {
+  test('draws lines between parents, children and spouses', { tag: '@smoke' }, async ({ page }) => {
     await openFamilyTree(page);
 
     await expect(page.locator('.family-tree-edge.spouse')).toHaveCount(3);
@@ -245,7 +245,7 @@ test.describe('Family tree page @req:CAHO-001', () => {
     });
   });
 
-  test('is linked from the sidebar', async ({ page }) => {
+  test('is linked from the sidebar', { tag: '@smoke' }, async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
