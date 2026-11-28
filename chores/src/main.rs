@@ -10,6 +10,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod tiers;
 mod user_docs;
 
 use std::path::{Path, PathBuf};
@@ -52,6 +53,18 @@ enum Command {
         /// How many to pick, each from a different project or epic.
         #[arg(long, default_value_t = 1)]
         count: usize,
+        /// Projects (or `epic:<name>`, `repo`) of the threads working now,
+        /// one entry per thread, for the product/platform balance. Comma
+        /// separated or repeated.
+        #[arg(long, value_delimiter = ',')]
+        working: Vec<String>,
+        /// Days of `main` history to count merged PRs by tier (0 for none).
+        #[arg(long, default_value_t = 7)]
+        days: u32,
+        /// Use the plain order, without preferring product issues when
+        /// products are under half of recent work.
+        #[arg(long)]
+        no_balance: bool,
         /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
@@ -114,11 +127,11 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// The `Human review` check (PR-004): a PR with a red attention tag or a
+    /// The `human-review` label (PR-004): a PR with a red attention tag or a
     /// cost change, from its diff, its description or the `cost` label,
     /// passes only once a human (not an `-agt` account, the reviewer account
     /// or a bot) has approved its head commit.
-    /// Prints "pass: ..." or "block: ..."; exits 1 when it blocks.
+    /// Prints "pass: ..." or "hold: ..."; exits 1 while it holds.
     Gate {
         /// The branch the PR merges into, for the diff's tags.
         #[arg(long, default_value = "origin/main")]
@@ -248,6 +261,9 @@ fn run() -> Result<ExitCode> {
             exclude,
             skip,
             count,
+            working,
+            days,
+            no_balance,
             json,
         } => {
             let options = next_task::Options {
@@ -255,6 +271,9 @@ fn run() -> Result<ExitCode> {
                 exclude,
                 skip,
                 count,
+                working,
+                days,
+                no_balance,
             };
             let outcome = next_task::run(&root, &options)?;
             if json {

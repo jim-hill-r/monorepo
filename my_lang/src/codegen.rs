@@ -68,6 +68,9 @@ pub enum CodegenError {
     /// An expression statement that produces no value was found where a value
     /// was required.
     ExpressionWithoutValue,
+    /// A `function` declaration whose body gives no value: it is empty, or
+    /// ends in an assignment, with no `return` anywhere.
+    FunctionWithoutValue(String),
     /// LLVM's instruction builder rejected an instruction.
     Builder(String),
     /// LLVM did not provide a parameter the function was declared with.
@@ -103,6 +106,12 @@ impl std::fmt::Display for CodegenError {
             CodegenError::ExpressionWithoutValue => {
                 write!(f, "expression statement produced no value")
             }
+            CodegenError::FunctionWithoutValue(name) => {
+                write!(
+                    f,
+                    "function '{name}' gives no value: add a 'return' or end its body with an expression"
+                )
+            }
             CodegenError::Builder(message) => {
                 write!(f, "LLVM builder error: {message}")
             }
@@ -111,6 +120,13 @@ impl std::fmt::Display for CodegenError {
             }
         }
     }
+}
+
+/// Whether a body gives a value: it contains a `return`, or its last
+/// statement is an expression.
+fn body_gives_value(body: &[Statement]) -> bool {
+    body.iter().any(|stmt| matches!(stmt, Statement::Return(_)))
+        || matches!(body.last(), Some(Statement::Expression(_)))
 }
 
 /// LLVM-backed code generator for my_lang.
@@ -176,7 +192,10 @@ impl<'ctx> CodeGenerator<'ctx> {
     ) -> Result<FunctionValue<'ctx>, CodegenError> {
         match decl {
             Declaration::Function(f) => {
-                // Pure functions must return a value.
+                // Pure functions must give a value: they cannot be void.
+                if !body_gives_value(&f.body) {
+                    return Err(CodegenError::FunctionWithoutValue(f.name.clone()));
+                }
                 self.compile_function_body(&f.name, &f.parameters, &f.body, true)
             }
             Declaration::Input(i) => {
@@ -248,8 +267,9 @@ impl<'ctx> CodeGenerator<'ctx> {
             }
         }
 
-        // A body with no return and no trailing expression (empty, or ending
-        // in an assignment), and every `input` declaration, returns 0.
+        // An `output` body with no return and no trailing expression (empty,
+        // or ending in an assignment), and every `input` declaration, returns
+        // 0. A `function` body like that is rejected before it gets here.
         if !explicit_return {
             let zero = i64_type.const_int(0, false);
             self.builder.build_return(Some(&zero))?;
@@ -635,11 +655,26 @@ mod tests {
     }
 
     #[test]
-    fn test_function_no_explicit_return() {
-        // A body with no return statement should implicitly return 0.
+    fn test_function_without_value_empty_body_is_an_error() {
+        // A `function` cannot be void: an empty body names the function.
         let program = Program {
             declarations: vec![Declaration::Function(FunctionDecl {
                 name: "noop".to_string(),
+                parameters: vec![],
+                body: vec![],
+            })],
+        };
+        let err = compile_program_to_ir(&program).unwrap_err();
+        assert_eq!(err, CodegenError::FunctionWithoutValue("noop".to_string()));
+        assert!(err.to_string().contains("'noop'"));
+    }
+
+    #[test]
+    fn test_output_with_empty_body_gives_zero() {
+        // `output` declarations may still end without a value.
+        let program = Program {
+            declarations: vec![Declaration::Output(OutputDecl {
+                name: "flush".to_string(),
                 parameters: vec![],
                 body: vec![],
             })],

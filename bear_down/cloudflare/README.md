@@ -12,5 +12,8 @@ Deploys the bear_down site to Cloudflare Pages at
   `CLOUDFLARE_ACCOUNT_ID`.
 
 CI deploys on every push to `main` that touches bear_down, and Nightly CD
-rebuilds it every night so the odds stay fresh. See
+rebuilds it every night so the odds stay fresh: each deploy runs `release`,
+so it downloads the latest results, reruns the simulation (a second, same
+sized one gives the banner's "odds up from" line) and recomputes the
+banner. See
 [decision 0009](../docs/decisions/0009-cloudflare-pages-nightly-cd.md).

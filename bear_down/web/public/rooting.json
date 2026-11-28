@@ -27,6 +27,13 @@
     "division_lead": 1.0,
     "division_rival": "DET"
   },
+  "banner": {
+    "headline": "Bears win! Chicago 39, Lions 35.",
+    "lines": [
+      "Alone in first place in the NFC North, a game ahead of the Lions.",
+      "Super Bowl odds up from 7.8% to 11%."
+    ]
+  },
   "nfc_north_divisional": 0.00044,
   "games": [
     {

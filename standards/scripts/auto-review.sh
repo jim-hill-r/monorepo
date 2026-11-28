@@ -26,7 +26,7 @@ AUTHOR=jimhillr-agt
 MAX_LINES=1500
 MAX_FILES=100
 # Labels with a red or orange attention badge (pane_model::queue).
-BLOCK_LABELS='needs-human credential-change security cost'
+BLOCK_LABELS='needs-human human-review credential-change security cost'
 # Red and orange attention tags (`chores badges`, "Attention tags" in
 # standards/docs/pull-requests.md). A description that declares one, or has
 # no Attention section, waits for Jim (Jim, 2026-11-27: "no prs with red
@@ -62,8 +62,7 @@ BLOCK_PATHS='^\.github/
 (^|/)\.env'
 # The checks that must have run and passed, on top of "every check passed".
 REQUIRED_CHECKS='CI result
-PR summary
-Human review'
+PR summary'
 # This workflow's own job, ignored when reading the head's checks.
 SELF_CHECK='Auto review'
 
@@ -117,9 +116,9 @@ decide() {
   [ -z "$blocked" ] || { echo "skip: touches $blocked"; return; }
 
   # Every check run on the head finished and passed (skipped and neutral
-  # count as passed), and every commit status is success. A check that ran
-  # more than once (a re-run, or Human review on a later event) counts by its
-  # latest run.
+  # count as passed), and every commit status is success. A PR held for a
+  # human is labelled human-review (PR-004), which BLOCK_LABELS refuses. A check that ran more than once (a re-run)
+  # counts by its latest run.
   local bad
   bad=$(jq -r --arg self "$SELF_CHECK" '
     .check_runs = ([.check_runs[]?] | group_by(.name) | map(max_by(.started_at // "")))
@@ -131,7 +130,8 @@ decide() {
   [ -z "$bad" ] || { echo "skip: check $bad"; return; }
   local need
   while IFS= read -r need; do
-    if ! jq -e --arg n "$need" 'any(.check_runs[]?; .name == $n and .conclusion == "success")' "$checks" >/dev/null; then
+    if ! jq -e --arg n "$need" 'any(.check_runs[]?; .name == $n and .conclusion == "success")
+        or any(.statuses[]?; .context == $n and .state == "success")' "$checks" >/dev/null; then
       echo "skip: check $need has not passed"
       return
     fi

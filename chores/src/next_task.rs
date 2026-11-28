@@ -10,7 +10,14 @@
 //! Within a group, issues sort by project, epic, phase, `order` and path, so
 //! an epic's earliest phase and lowest order come first. Human tasks,
 //! `agent-ignore` issues and on-hold projects are never picked.
+//!
+//! Tier balance (Jim, 2026-11-28): when the product share of recent work
+//! (threads working now and PRs merged in the last week, see
+//! [`crate::tiers`]) is under half, each pick takes the first qualifying
+//! product issue in that order instead, if there is one. A soft heuristic:
+//! with no product issue left it falls back to the plain order.
 
+use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
 
@@ -18,6 +25,7 @@ use anyhow::Result;
 use serde::Serialize;
 
 use crate::issues::{self, Issue, ProjectLists};
+use crate::tiers::{self, Balance, Side};
 
 /// What to leave out and how many to pick.
 #[derive(Debug, Default)]
@@ -33,6 +41,13 @@ pub struct Options {
     /// How many to pick. With more than one, each pick is from a different
     /// project (or, in the root folder, a different epic).
     pub count: usize,
+    /// Projects (or `epic:` names, `repo`) of the threads working now, one
+    /// entry per thread, for the tier balance.
+    pub working: Vec<String>,
+    /// Days of `main` history to count merged PRs over (0: none).
+    pub days: u32,
+    /// Turn the tier balance off and use the plain order.
+    pub no_balance: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -41,6 +56,8 @@ pub struct Pick {
     /// Which project or epic this pick takes; pass it to `--exclude` to
     /// keep another thread off it.
     pub key: String,
+    /// Product or platform (decision 0019's tiers).
+    pub side: Side,
     /// Why it was chosen, in words.
     pub reason: String,
     /// The folder's README.md, when it has one.
@@ -60,6 +77,8 @@ pub struct Todo {
 #[derive(Debug, Serialize)]
 pub struct Outcome {
     pub picks: Vec<Pick>,
+    /// The product/platform split before these picks, when balancing.
+    pub balance: Option<Balance>,
     /// Only filled when no issue file qualified.
     pub todos: Vec<Todo>,
 }
@@ -67,7 +86,16 @@ pub struct Outcome {
 pub fn run(root: &Path, options: &Options) -> Result<Outcome> {
     let lists = issues::project_lists(root)?;
     let all = issues::load(root)?;
-    let mut picks = pick(&all, &lists, options);
+    let balance = (options.projects.is_empty() && !options.no_balance).then(|| {
+        let mut b = Balance::default();
+        tiers::count_working(root, &options.working, &mut b);
+        if options.days > 0 {
+            tiers::count_merged(root, options.days, &mut b);
+        }
+        b
+    });
+    let side = |i: &Issue| tiers::side(root, i.project());
+    let mut picks = pick_balanced(&all, &lists, options, balance.clone(), &side);
     for p in &mut picks {
         let readme = format!("{}/README.md", p.issue.folder());
         if let Ok(text) = fs::read_to_string(root.join(&readme)) {
@@ -83,7 +111,11 @@ pub fn run(root: &Path, options: &Options) -> Result<Outcome> {
     } else {
         Vec::new()
     };
-    Ok(Outcome { picks, todos })
+    Ok(Outcome {
+        picks,
+        balance,
+        todos,
+    })
 }
 
 /// The ordering key: (group, rank within the group's project list).
@@ -145,7 +177,13 @@ fn excluded(issue: &Issue, exclude: &[String]) -> bool {
     })
 }
 
+/// The plain order, with no tier balance.
+#[cfg(test)]
 pub fn pick(all: &[Issue], lists: &ProjectLists, options: &Options) -> Vec<Pick> {
+    pick_balanced(all, lists, options, None, &|_| Side::Platform)
+}
+
+fn candidates<'a>(all: &'a [Issue], lists: &ProjectLists, options: &Options) -> Vec<&'a Issue> {
     let mut candidates: Vec<&Issue> = all
         .iter()
         .filter(|i| !i.is_human() && !i.has_tag("agent-ignore"))
@@ -174,20 +212,66 @@ pub fn pick(all: &[Issue], lists: &ProjectLists, options: &Options) -> Vec<Pick>
             i.path.clone(),
         )
     });
+    candidates
+}
+
+/// Picks in the plain order, except that while `balance` says products
+/// are under half, each pick is the first product issue left (if any).
+/// Each pick then counts as a working thread on its side.
+pub fn pick_balanced(
+    all: &[Issue],
+    lists: &ProjectLists,
+    options: &Options,
+    mut balance: Option<Balance>,
+    side: &dyn Fn(&Issue) -> Side,
+) -> Vec<Pick> {
+    let candidates = candidates(all, lists, options);
     let count = options.count.max(1);
     let mut picks: Vec<Pick> = Vec::new();
-    for issue in candidates {
-        if picks.len() == count {
+    while picks.len() < count {
+        let free = |i: &&&Issue| !picks.iter().any(|p| p.key == key(i));
+        let wants_product = balance.as_ref().is_some_and(Balance::wants_product);
+        let preferred = if wants_product {
+            candidates
+                .iter()
+                .filter(free)
+                .find(|i| side(i) == Side::Product)
+        } else {
+            None
+        };
+        let first = candidates.iter().find(free);
+        let Some(issue) = preferred.or(first) else {
             break;
+        };
+        let s = side(issue);
+        let mut why = reason(issue, lists);
+        if let (Some(b), Some(f)) = (&balance, first)
+            && wants_product
+        {
+            let share = b.product_share().unwrap_or(0.0) * 100.0;
+            if s == Side::Platform {
+                why.push_str(" (no product issue left to prefer)");
+            } else if f.path == issue.path {
+                let _ = write!(
+                    why,
+                    "; first in order and a product issue (product at {share:.0}%)"
+                );
+            } else {
+                let _ = write!(
+                    why,
+                    "; product preferred over {} (product at {share:.0}%, under the 50% floor)",
+                    f.path
+                );
+            }
         }
-        let k = key(issue);
-        if picks.iter().any(|p| p.key == k) {
-            continue;
+        if let Some(b) = &mut balance {
+            b.add_working(s);
         }
         picks.push(Pick {
-            reason: reason(issue, lists),
-            key: k,
-            issue: issue.clone(),
+            reason: why,
+            key: key(issue),
+            side: s,
+            issue: (*issue).clone(),
             readme: None,
             epic_notes: None,
         });
@@ -218,7 +302,7 @@ fn scan(
     out: &mut Vec<Todo>,
 ) -> Result<()> {
     let mut entries: Vec<_> = fs::read_dir(dir)?.filter_map(Result::ok).collect();
-    entries.sort_by_key(|e| e.file_name());
+    entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
         if out.len() >= limit {
             return Ok(());
@@ -287,38 +371,46 @@ pub fn render(outcome: &Outcome) -> String {
     if outcome.picks.is_empty() {
         s.push_str("No issue file qualifies. TODO/FIX comments to work instead:\n");
         for t in &outcome.todos {
-            s.push_str(&format!("- {}:{}: {}\n", t.path, t.line, t.text));
+            let _ = writeln!(s, "- {}:{}: {}", t.path, t.line, t.text);
         }
         return s;
     }
+    if let Some(b) = &outcome.balance {
+        let _ = writeln!(s, "Tier balance: {}\n", b.describe());
+    }
     for (n, p) in outcome.picks.iter().enumerate() {
         let i = &p.issue;
-        s.push_str(&format!("{}. {}\n", n + 1, i.path));
-        s.push_str(&format!(
-            "   {} {} | {} | key: {}\n",
+        let _ = writeln!(s, "{}. {}", n + 1, i.path);
+        let _ = writeln!(
+            s,
+            "   {} {} | {} | {} | key: {}",
             i.priority,
             i.kind.to_uppercase(),
+            match p.side {
+                Side::Product => "product",
+                Side::Platform => "platform",
+            },
             p.reason,
             p.key
-        ));
+        );
         if let Some(epic) = &i.epic {
             let order = i.order.map(|o| format!(", order {o}")).unwrap_or_default();
-            s.push_str(&format!("   epic: {epic}{order}\n"));
+            let _ = writeln!(s, "   epic: {epic}{order}");
         }
         if !i.tags.is_empty() {
-            s.push_str(&format!("   tags: {}\n", i.tags.join(", ")));
+            let _ = writeln!(s, "   tags: {}", i.tags.join(", "));
         }
         if let Some(readme) = &p.readme {
-            s.push_str(&format!("   folder notes: {readme}\n"));
+            let _ = writeln!(s, "   folder notes: {readme}");
         }
         s.push('\n');
         for line in i.body.lines() {
-            s.push_str(&format!("   {line}\n"));
+            let _ = writeln!(s, "   {line}");
         }
         if let Some(notes) = &p.epic_notes {
             s.push_str("\n   Epic notes from the folder README:\n");
             for line in notes.lines() {
-                s.push_str(&format!("   > {line}\n"));
+                let _ = writeln!(s, "   > {line}");
             }
         }
         s.push('\n');
@@ -444,6 +536,98 @@ mod tests {
         assert_eq!(paths(&pick(&all(), &lists(), &opts)), vec!["issues/r.md"]);
     }
 
+    fn product_side(i: &Issue) -> Side {
+        match i.project() {
+            Some("cookbook" | "sparkhill" | "homer") => Side::Product,
+            _ => Side::Platform,
+        }
+    }
+
+    #[test]
+    fn prefers_product_while_products_are_under_half() {
+        let opts = Options {
+            count: 4,
+            ..Options::default()
+        };
+        // 1 product thread and 3 platform ones: 25%.
+        let balance = Balance {
+            working_product: 1,
+            working_platform: 3,
+            ..Balance::default()
+        };
+        let picks = pick_balanced(&all(), &lists(), &opts, Some(balance), &product_side);
+        // Products first until the share reaches half (3 of 6), then the
+        // plain order resumes with the root priority issue.
+        assert_eq!(
+            paths(&picks),
+            vec![
+                "sparkhill/webapp/issues/s.md",
+                "cookbook/issues/c.md",
+                "issues/r.md",
+                "homer/issues/h.md",
+            ]
+        );
+        assert!(
+            picks[0]
+                .reason
+                .contains("product preferred over issues/r.md")
+        );
+        assert_eq!(picks[2].side, Side::Platform);
+    }
+
+    #[test]
+    fn plain_order_when_products_are_at_half_or_unknown() {
+        let opts = Options {
+            count: 2,
+            ..Options::default()
+        };
+        let even = Balance {
+            working_product: 2,
+            working_platform: 2,
+            ..Balance::default()
+        };
+        let plain = vec!["issues/r.md", "sparkhill/webapp/issues/s.md"];
+        assert_eq!(
+            paths(&pick_balanced(
+                &all(),
+                &lists(),
+                &opts,
+                Some(even),
+                &product_side
+            )),
+            plain
+        );
+        assert_eq!(
+            paths(&pick_balanced(
+                &all(),
+                &lists(),
+                &opts,
+                Some(Balance::default()),
+                &product_side
+            )),
+            plain
+        );
+    }
+
+    #[test]
+    fn falls_back_to_platform_when_no_product_issue_is_left() {
+        let only_platform = vec![
+            issue("issues/r.md", "priority", ""),
+            issue("pane/issues/p.md", "backlog", ""),
+        ];
+        let behind = Balance {
+            working_platform: 5,
+            ..Balance::default()
+        };
+        let opts = Options {
+            count: 2,
+            ..Options::default()
+        };
+        let picks = pick_balanced(&only_platform, &lists(), &opts, Some(behind), &product_side);
+        assert_eq!(paths(&picks), vec!["issues/r.md", "pane/issues/p.md"]);
+        assert!(picks[0].reason.contains("no product issue left"));
+    }
+
     #[test]
     fn falls_back_to_todo_comments() -> Result<()> {
         let dir = tempfile::tempdir()?;
@@ -490,7 +674,9 @@ mod tests {
         );
         let text = render(&outcome);
         assert!(text.contains("1. issues/x.md"));
-        assert!(text.contains("priority FIX | priority issue in the root issues/ folder"));
+        assert!(
+            text.contains("priority FIX | platform | priority issue in the root issues/ folder")
+        );
         assert!(text.contains("   Make it strict."));
         assert!(text.contains("   > See the plan."));
         Ok(())

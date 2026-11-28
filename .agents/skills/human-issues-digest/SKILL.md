@@ -22,8 +22,10 @@ itself.
 2. Find the tasks added in the last 7 days: those whose `added` date is
    within the week, or
    `git log --since="7 days ago" --diff-filter=A --name-only -- issues/human/`.
-3. List open pull requests labelled `needs-human`. Until PR triage has
-   renamed it, also include PRs still labelled `needs-jim`. For each, note the
+3. List open pull requests labelled `needs-human` or `human-review` (the
+   Human review workflow's hold: waiting only for a human's approval, which
+   merges it). Until PR triage has renamed it, also include PRs still
+   labelled `needs-jim`. For each, note the
    number, title, how many days it has been open, and the reason it needs a
    person (from the latest triage comment or the PR description).
 4. Note any task that has no runbook or no "Why it can't be automated"

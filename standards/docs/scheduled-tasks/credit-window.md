@@ -36,6 +36,12 @@ History:
   the burn rate uses a pair of events 10 to 30 minutes apart, since a run
   can't remember the last one; easing off also skips floor threads.
   Verified the same day.
+- 2026-11-28: the coordinator picks the new threads' issues with
+  `chores next-task --count n --working <projects>`, which prefers product
+  issues while products are under half of recent work (Jim: "at least 50%
+  of all of my claude credits are being used on product work"). Step 5
+  now lists one project per working thread so the coordinator can pass
+  it.
 
 ## Prompt
 
@@ -46,6 +52,6 @@ Credit window check (hourly) for Jim's Claude project on the GitHub repo jimhill
 2. Burn rate r = the rise in u5 per hour between the newest event and the newest event at least 10 minutes older within the same five-hour resetsAt (prefer a pair 10 to 30 minutes apart, so a recent burst of new threads isn't hidden). No usable pair (fresh window): r = 0.04 * W.
 3. Count W = threads in state working (list_threads with state "working", paging with next_cursor; don't count this thread or other "Credit window check" threads).
 4. Rule. STOP if isUsingOverage is true or any status is "rejected" ("allowed_warning", the 90% notice, is not a stop). Projection p = u5 + r * h. Per-thread cost t = r / W, or 0.04 an hour when W is 0. Weekly guard: e = 1 - d/7; if u7 > e + 0.15 and d > 0.5, no burst (floor only). Burst if p < 0.85: n = ceil((0.95 - p) / (t * max(h, 0.5))), at most 8. HOLD if p > 1.0 and h > 1, or if u5 + r * (h - 1) > 1.0 (100% more than an hour before reset): n = 0, and no floor threads either. Otherwise floor: n = max(0, 5 - W).
-5. Act. Only when n > 0, HOLD or STOP, send ONE message_coordinator starting "Credit window check (scheduled task, decision 0013):", naming the action, n, the numbers (u5, h, r, p, u7, d, W) and the projects that already have working threads. Burst or floor: "start n threads with start-a-new-task, one project each, skipping luggage, starcraft, profiles and mise migration files". HOLD: "start no new threads until the reset at <time UTC>". STOP: "overage or a rejected status: start nothing and tell Jim". The coordinator starts the threads. Otherwise send nothing.
+5. Act. Only when n > 0, HOLD or STOP, send ONE message_coordinator starting "Credit window check (scheduled task, decision 0013):", naming the action, n, the numbers (u5, h, r, p, u7, d, W) and the project of each working thread (one entry per thread, from its title; "repo" when it works the root issues/ folder). Burst or floor: "start n threads with start-a-new-task, one project each, skipping luggage, starcraft, profiles and mise migration files; pick them with chores next-task --count n --working <those projects>, which keeps at least half of the work on products (Jim, 2026-11-28)". HOLD: "start no new threads until the reset at <time UTC>". STOP: "overage or a rejected status: start nothing and tell Jim". The coordinator starts the threads. Otherwise send nothing.
 6. Only if usage can't be read (no rate_limit_event, renamed fields, missing tools), or on STOP, post_message one line for Jim saying what failed. Then call set_thread_resolved with resolved true, and end the turn with no_reply_needed.
 ```

@@ -22,6 +22,7 @@ c next-task
 c next-task --project cookbook            # scoped to one project
 c next-task --count 5 --exclude pane,epic:Cost check   # one per project, for new threads
 c next-task --skip cookbook/issues/x.md   # an open PR already has it
+c next-task --count 5 --working cookbook,pane,repo   # prefer products while under half
 c next-task --json
 
 # A PR description in the shape pull-requests.md asks for, checked against
@@ -39,9 +40,10 @@ c pr-body --check body.md                 # check an existing description
 # threat/risk file changes, against the base.
 c badges --base origin/main
 
-# The Human review check (PR-004): exit 1 while a PR with a red attention tag
+# The human-review label (PR-004): exit 1 while a PR with a red attention tag
 # or a cost change (diff, description or `cost` label) lacks a human's approval
-# of its head commit. The Human review workflow runs it; agents rarely need to.
+# of its head commit. The Human review workflow runs it and labels the PR;
+# agents rarely need to.
 c gate --author jimhillr-agt --head <sha> --body body.md --labels cost,docs \
   --reviews reviews.json --json gate.json
 

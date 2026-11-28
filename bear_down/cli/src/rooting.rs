@@ -6,6 +6,7 @@ use bear_down_core::{
 };
 use serde::Serialize;
 
+use crate::banner::Banner;
 use crate::why::{self, Goal};
 
 /// The whole file.
@@ -23,6 +24,9 @@ pub struct Guide {
     pub latest_game: Option<LatestGame>,
     /// The Bears' record and odds.
     pub bears: Bears,
+    /// The celebration banner, worked out from the current results: only
+    /// when the Bears' most recent game was a win, otherwise `None`.
+    pub banner: Option<Banner>,
     /// The chance all four NFC North teams reach the divisional round.
     pub nfc_north_divisional: f64,
     /// The current week's remaining games, in schedule order.
@@ -153,6 +157,7 @@ impl Guide {
         simulation: &Simulation,
         standings: &Standings,
         latest: Option<&Game>,
+        banner: Option<Banner>,
         generated_at: String,
     ) -> Self {
         let focus = simulation.focus;
@@ -168,6 +173,7 @@ impl Guide {
                 division_lead: division_lead(standings, focus).0,
                 division_rival: team(division_lead(standings, focus).1),
             },
+            banner,
             nfc_north_divisional: simulation.nfc_north,
             games: simulation
                 .games

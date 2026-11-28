@@ -1,16 +1,24 @@
 ---
-# PR-004, the `Human review` check (Jim, 2026-11-27: "Lets make sure no prs
+# PR-004, the `human-review` label (Jim, 2026-11-27: "Lets make sure no prs
 # with red attention flags get auto merged. Cost changes must be reviewed by
 # jim", then "Lets make it needs human review"). A PR with a red attention
 # tag (`must-requirement-changed`) or a cost change, from its diff, its
-# description or the `cost` label, fails this check until a human approves
-# its head commit. Only human collaborators count (owner, member or
-# collaborator; Jim: "Any human collaborator is fine"): agent `-agt`
-# accounts, jimhillr-reviewer and bots never do. A PR a human collaborator
-# opened passes. Such a PR is also labelled
-# `needs-human` and has its auto-merge turned off, so neither
-# jimhillr-reviewer nor an agent can approve or merge it. Every other PR
-# passes. Runs again on every review, so a human's approval turns it green.
+# description or the `cost` label, is labelled `human-review` until a human
+# collaborator approves its head commit, and the label comes off then. Only
+# human collaborators count (owner, member or collaborator; Jim: "Any human
+# collaborator is fine"): agent `-agt` accounts, jimhillr-reviewer and bots
+# never do. A PR a human collaborator opened is never labelled.
+#
+# This is not a CI check (Jim, 2026-11-28: the pending status "is
+# preventing claude from marking PRs as ready for review and it shows CI as
+# red which makes it hard for me to happily approve/rubber stamp a PR"). It
+# posts no status and its job is green whenever it ran, so CI shows only
+# real results. The label is what holds the PR: jimhillr-reviewer refuses
+# it (and every protected path, such as cost.toml and requirements.md),
+# agents never approve, so only a human's approval can merge it, and auto-
+# merge stays on so that approval does. On a commit that still carries the
+# `Human review` status an earlier version posted, it posts `success` once
+# so the old pending status stops holding the PR.
 # The rules are under "Human review" in standards/docs/pull-requests.md and
 # the logic is `chores gate` (chores/src/gate.rs), built from the base
 # branch so a PR can't change the rules it is judged by.
@@ -31,13 +39,14 @@ concurrency:
 
 jobs:
   gate:
-    name: Human review
+    name: Human review label
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write         # create the needs-human label the first time
-      pull-requests: write  # label the PR and turn its auto-merge off
+      issues: write         # create the human-review label the first time
+      pull-requests: write  # label and unlabel the PR
+      statuses: write       # clear a Human review status an older version posted
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -75,31 +84,48 @@ jobs:
             --json "$RUNNER_TEMP/gate.json" | tee -a "$GITHUB_STEP_SUMMARY"
           code=${PIPESTATUS[0]}
           set -e
-          [ -f "$RUNNER_TEMP/gate.json" ] || exit "$code"
+          # Exit 1 is a verdict (waiting for a human), not a broken gate.
+          [ -f "$RUNNER_TEMP/gate.json" ] || exit "${code:-1}"
           echo "needs-human=$(jq -r .needs_human "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
           echo "pass=$(jq -r .pass "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
 
-      # Labels the PR needs-human and turns its auto-merge off. Never
-      # removes the label: a person or another check may have set it.
-      - name: Hold for a human
-        if: steps.decide.outputs.needs-human == 'true' && steps.decide.outputs.pass != 'true'
-        # A fork's or Dependabot's token can't label; the check still fails.
+      # Labels a held PR human-review, and takes the label off once a human
+      # approves. Leaves needs-human and auto-merge alone: the human's
+      # approval is what merges a held PR.
+      - name: Label for a human
+        if: steps.decide.outputs.needs-human == 'true'
+        # A fork's or Dependabot's token can't label; the step summary says so,
+        # and jimhillr-reviewer never approves those PRs anyway.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          PASS: ${{ steps.decide.outputs.pass }}
         run: |
-          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
-            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
-          gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=needs-human" >/dev/null
-          echo "Labelled needs-human"
-          if [ "$(gh api "repos/$GH_REPO/pulls/$PR" --jq '.auto_merge != null')" = true ]; then
-            gh pr merge "$PR" --repo "$GH_REPO" --disable-auto
-            echo "Turned auto-merge off"
+          if [ "$PASS" = true ]; then
+            gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/human-review" >/dev/null 2>&1 || true
+            echo "No human-review label (passed)"
+          else
+            gh api "repos/$GH_REPO/labels" -f name=human-review -f color=B60205 \
+              -f description="Waiting for a human's approval: red attention tag or cost change" >/dev/null 2>&1 || true
+            gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=human-review" >/dev/null
+            echo "Labelled human-review"
           fi
 
-      - name: Result
+      # Until 2026-11-28 the gate posted a `Human review` commit status, and
+      # a pending one would keep holding a PR. Overwrite it once; post
+      # nothing on a commit that never had one.
+      - name: Clear the old Human review status
+        continue-on-error: true
         env:
-          PASS: ${{ steps.decide.outputs.pass }}
-        run: test "$PASS" = true
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          old=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/status" --jq '[.statuses[] | select(.context == "Human review")][0].state // ""')
+          if [ -n "$old" ] && [ "$old" != success ]; then
+            gh api "repos/$GH_REPO/statuses/$HEAD_SHA" -f state=success -f context="Human review" \
+              -f description="Retired: the human-review label holds this PR instead" >/dev/null
+            echo "Cleared the old Human review status ($old)"
+          fi
