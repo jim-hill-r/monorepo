@@ -91,14 +91,17 @@ is working.
 | Non-green requirements with an open issue | none filed yet | 100%, filed by triage within a day |
 | Production evals that check content | 9 status-only warnings (EVL-006) | 0, and EVL-006 an error |
 
-## The roadmap
+## Product roadmap
 
-Four phases, worked in order, with each project's own issues worked
+The headings follow decision 0022's roadmap format (Now, Next, Later), with
+the four phases inside them. Four phases, worked in order, with each project's own issues worked
 alongside. "Effort" is Claude Code build effort (S under an hour, M a few
 hours, L a day or more), which counts against the $25 a month budget. Every
 item costs $0 in money.
 
-### Phase 1: Trust the green (now)
+### Now
+
+#### Phase 1: Trust the green
 
 A green light must mean "works in production", and a red one must become
 work. These are `priority` issues.
@@ -115,7 +118,9 @@ work. These are `priority` issues.
 | | [cahokia/web smoke tests](../../issues/smoke-uat-tag-few-playwright-tests.md) (already filed, "Feedback on every change") | S |
 | | [pane's Requirements view](../../pane/issues/requirements-view-page-requirement-verdict-evals.md) (already filed) | M |
 
-### Phase 2: Cover every project (next)
+### Next
+
+#### Phase 2: Cover every project
 
 Every active project states its promises and checks each must in
 production. Requirement PRs need Jim's approval, so these land at his pace.
@@ -133,7 +138,9 @@ production. Requirement PRs need Jim's approval, so these land at his pace.
 royalty's nine musts get production evals as its Phase 1 code ships (its
 `docs/requirements.md` says so), and PANE-013 gets one through triage.
 
-### Phase 3: Deeper evidence
+### Later
+
+#### Phase 3: Deeper evidence
 
 Beyond "the page has the right content": real-user numbers, and people's
 judgment.
@@ -145,7 +152,7 @@ judgment.
 | 20 | [Read Jim's ratings in the verdicts](../issues/read-jims-ratings-in-verdicts.md), with pane's [Rate action](../../pane/issues/rate-met-not-met-not-sure.md) | M |
 | 40 | [Read feedback comments in the verdicts and triage](../issues/read-feedback-comments-in-verdicts.md) (needs the feedback component, below) | M |
 
-### Phase 4: Stress and judgment (later)
+#### Phase 4: Stress and judgment
 
 | Order | Issue | Effort |
 | --- | --- | --- |
@@ -156,6 +163,28 @@ judgment.
 | 50 | [CI-only fault cases](../issues/ci-only-fault-cases.md) | M |
 | 60 | [Agent judge for taste-type promises](../issues/agent-judge.md) | M, then weekly Claude use |
 | 70 | [Process evals (`JIMH-xxx`)](../issues/process-evals.md) | M |
+
+## Technical roadmap
+
+The engine's own health, apart from what it checks.
+
+### Now
+
+- [Replace or justify chrono, flagged unmaintained](../../issues/threat-check-advisories-evals.md) (S).
+- [Write the evals user guide](../issues/write-user-guide.md) (S).
+
+### Next
+
+- Port `standards/scripts/evals.sh` and `evals-check.sh` into `evals`
+  subcommands, under the code quality rule that scripts stay Rust-only
+  ([decision 0015](../../standards/docs/decisions/0015-code-quality-process.md)),
+  as the [code quality epic](../../issues/code-quality-phase-2-port-shell-scripts.md)
+  reaches them (M).
+
+### Later
+
+- Share `evals_model` with pane's Requirements view so both apply the same
+  verdict rules (part of the pane issue above).
 
 ## The feedback toolbar: one tool, chosen by who is signed in
 
@@ -169,7 +198,7 @@ Jim's comment on the deck (2026-11-28):
 **Recommendation: yes.** The eval engine should consume feedback, not
 build the tool that captures it. The
 [user feedback plan](../../standards/docs/plans/2026-11-user-feedback.md)
-(PR 915, decisions 0020 and 0021, proposed) already moves the review
+(PR 915, decisions 0020 and 0021) already moves the review
 toolbar's model into the `feedback` project; this goes one step further and
 makes it one tool with one entry point, where the role decides what the
 form offers and where it goes:
@@ -194,16 +223,16 @@ What this changes and what it keeps:
   product's own data; product owner and engineering feedback goes to the
   repo, which is the product team's own tooling.
 - **The eval engine's part shrinks to reading.** The phase 6 capture
-  issues (`issues/eval-engine-phase-6-*.md`: model, build meta tag, web
-  toolbar, Bevy plugin, cahokia webviews, rollout) move to the "User
-  feedback" epic. Only the verdict side, Phase 3 order 40 above, stays here.
+  issues (model, build meta tag, web toolbar, Bevy plugin, cahokia
+  webviews, rollout) move to the "User feedback" epic, Phase 8 (PR 928).
+  Only the verdict side, Phase 3 order 40 above, stays here.
 - **Cost:** $0 in money. Auth0 roles are on its free plan and the sign-in
   is the one auth_sdk already does. Claude effort is about the same as the
   separate toolbar, since the forms share one model and one widget.
 
-This is a change to PR 915's design, which is still a draft for Jim, so
-the thread that wrote it folds it into decision 0020 and moves the phase 6
-issues there.
+PR 915 (decisions 0020 and 0021) merged on 2026-11-28; PR 928 adds this
+as item 7 of decision 0020, "One Feedback button, four roles", and moves
+the phase 6 issues.
 
 ## How the roadmap stays current
 

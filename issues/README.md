@@ -38,9 +38,9 @@ See
 [standards/docs/plans/2026-11-eval-engine.md](../standards/docs/plans/2026-11-eval-engine.md)
 and decision 0003. Its issues moved to [evals/issues/](../evals/issues/)
 under the epic "Evals roadmap", in the order of the
-[evals roadmap](../evals/docs/roadmap.md) (2026-11-28). Only the phase 6
-in-app feedback issues are still here; they move to the "User feedback"
-epic, where one feedback tool serves every role. The pane pages for it are
+[evals roadmap](../evals/docs/roadmap.md) (2026-11-28). The phase 6 in-app
+feedback issues move to the "User feedback" epic (PR 928), where one
+feedback tool serves every role. The pane pages for it are
 in [pane/issues/](../pane/issues/).
 
 ## Free tiers
