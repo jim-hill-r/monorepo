@@ -141,7 +141,12 @@ For more details on testing, including other test modes and manual setup options
 ```
 web/
 ├── src/
-│   └── main.rs      # Main application entry point with routing
+│   ├── main.rs        # Entry point: routes, stylesheets and the CSP
+│   ├── auth.rs        # Auth0 sign-in button in the header
+│   ├── schedule.rs    # Today's recipe, the sidebar's weeks and shopping lists, from
+│   │                  #   cookbook_core::calendar and the embedded stores
+│   └── components/    # One module per page (home, recipe, plan, not found),
+│                      #   plus the header, sidebar and Markdown renderer
 ├── tests/
 │   ├── routing.spec.ts  # Playwright tests for routes
 │   └── README.md        # Testing documentation

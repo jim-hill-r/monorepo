@@ -24,9 +24,11 @@
 //! - [`Plan`]: Weekly meal plan that references recipes by UUID
 //! - [`PlanReader`]: Trait for reading plans from a data source
 //! - [`PlanWriter`]: Trait for writing plans to a data source
+//! - [`calendar`]: Which recipe falls on which date, from the weekly plans
 //! - [`markdown`]: A small Markdown parser for prose such as the home page intro
 //! - [`shopping`]: Sums a week's ingredients into a shopping list, with staples apart
 
+pub mod calendar;
 pub mod markdown;
 pub mod shopping;
 
