@@ -280,7 +280,7 @@ pub fn attention(changed: &[String], read: impl Fn(&str, bool) -> Option<String>
     out
 }
 
-fn list(items: &[String], max: usize) -> String {
+pub fn list(items: &[String], max: usize) -> String {
     let shown: Vec<String> = items.iter().take(max).map(|i| format!("`{i}`")).collect();
     let more = items.len().saturating_sub(max);
     if more > 0 {

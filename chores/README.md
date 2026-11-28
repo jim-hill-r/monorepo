@@ -39,6 +39,12 @@ c pr-body --check body.md                 # check an existing description
 # threat/risk file changes, against the base.
 c badges --base origin/main
 
+# The Human review check (PR-004): exit 1 while a PR with a red attention tag
+# or a cost change (diff, description or `cost` label) lacks a human's approval
+# of its head commit. The Human review workflow runs it; agents rarely need to.
+c gate --author jimhillr-agt --head <sha> --body body.md --labels cost,docs \
+  --reviews reviews.json --json gate.json
+
 # Issue files that pass the audit the first time.
 c new-issue --folder cookbook --slug fix-week-header --kind fix --priority backlog \
   --text "The week header overlaps on phones; see ..."
@@ -62,6 +68,7 @@ c user-docs --json
 | --- | --- | --- |
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
+| `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 

@@ -27,3 +27,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0015](0015-code-quality-process.md) | A standing code quality process: one standard, a ratchet, triage into issues | Accepted |
 | [0016](0016-holding-and-handling-money.md) | Holding and handling money: a separate free account, accounting books in the repo, a merchant of record for card sales | Accepted |
 | [0017](0017-user-docs.md) | Every project has a user guide, checked by the audit with a shrinking baseline | Accepted |
+| [0019](0019-review-roles.md) | Review roles: who may approve what, as a matrix of domains (cost, threat, requirements, credentials...) and project tiers, in one file | Accepted |
