@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-28T11:49:38.614252784Z",
+  "generated_at": "2026-11-28T11:56:13.992940471Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 14.2,
+    "percent": 14.1,
     "musts_percent": 37.5,
     "judged_percent": 16.9,
     "warn_below": 80.0,
@@ -154,9 +154,9 @@
       "musts": 2,
       "musts_in_production": 2,
       "coverage": {
-        "requirements": 8,
+        "requirements": 9,
         "met": 3,
-        "percent": 37.5,
+        "percent": 33.3,
         "musts_met": 1,
         "musts_percent": 50.0,
         "warning": true
@@ -211,6 +211,15 @@
           "requirement": "CAHO-007",
           "title": "A person can explore the tree around one relative",
           "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-008",
+          "title": "The desktop app signs in through the browser",
+          "priority": "should",
           "verdict": "unknown",
           "reasons": [
             "no production-stage results yet"
@@ -491,7 +500,7 @@
     {
       "project": "homer",
       "musts": 4,
-      "musts_in_production": 4,
+      "musts_in_production": 0,
       "coverage": {
         "requirements": 6,
         "met": 0,
@@ -1079,7 +1088,7 @@
     {
       "project": "tofu_state",
       "musts": 3,
-      "musts_in_production": 2,
+      "musts_in_production": 0,
       "coverage": {
         "requirements": 5,
         "met": 0,
