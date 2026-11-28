@@ -29,6 +29,9 @@ export default defineConfig({
     trace: 'off',
     screenshot: 'off',
     video: 'off',
+    // A sandbox whose Chromium doesn't match this Playwright can point at it
+    // (the e2e task in standards/tasks/dioxus-web.toml sets it).
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined },
   },
   projects: [
     { name: 'chromium', use: { ...synthetic(devices['Desktop Chrome']) } },
