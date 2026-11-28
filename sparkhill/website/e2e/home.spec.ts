@@ -29,6 +29,17 @@ async function openHome(page: Page, path = '/'): Promise<string[]> {
   return problems;
 }
 
+/**
+ * Waits for the section to reach the top of the window, as a link to it
+ * should leave it, not just somewhere on screen. The page scrolls smoothly,
+ * so this polls until it gets there.
+ */
+async function expectAtTop(page: Page, id: string) {
+  const section = page.locator(`#${id}`);
+  await expect(section).toBeInViewport();
+  await expect.poll(async () => Math.abs(Math.round((await section.boundingBox())?.y ?? -1))).toBe(0);
+}
+
 test.describe('home page', () => {
   test('a visitor arriving at / sees the home page with no errors', async ({ page }) => {
     const problems = await openHome(page);
@@ -98,7 +109,7 @@ test.describe('home page', () => {
 
   test('a section link opened directly lands on its section', async ({ page }) => {
     const problems = await openHome(page, '/en-US/#how-we-do-it');
-    await expect(page.locator('#how-we-do-it')).toBeInViewport();
+    await expectAtTop(page, 'how-we-do-it');
     expect(problems).toEqual([]);
   });
 
@@ -126,10 +137,28 @@ test.describe('nav on desktop', () => {
       const problems = await openHome(page);
       await page.locator(`nav a[href$="#${id}"]`).click();
       await expect(page).toHaveURL(new RegExp(`/en-US/#${id}$`));
-      await expect(page.locator(`#${id}`)).toBeInViewport();
+      await expectAtTop(page, id);
       expect(problems).toEqual([]);
     });
   }
+
+  test('a section link keeps the stylesheets it has', async ({ page }) => {
+    // Perseus draws the page again when the address changes. Stylesheets in
+    // the page's own head were removed and loaded again, so the page went
+    // unstyled for a moment; they belong in the shell (`shell` in index.rs).
+    // From /en-US/ itself, so the click stays on the same document.
+    const problems = await openHome(page, '/en-US/');
+    await page.evaluate(() => {
+      for (const link of Array.from(document.querySelectorAll('link[rel=stylesheet]'))) {
+        link.setAttribute('data-kept', '');
+      }
+    });
+    await page.locator('nav a[href$="#who-we-are"]').click();
+    await expectAtTop(page, 'who-we-are');
+    await expect(page.locator('link[rel=stylesheet]')).toHaveCount(3);
+    await expect(page.locator('link[rel=stylesheet][data-kept]')).toHaveCount(3);
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('nav on a phone', () => {

@@ -90,7 +90,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl flex flex-wrap justify-around items-center") {
                     h1(class="text-7xl text-sky-700 text-center font-medium lg:w-1/2") { (tagline) }
-                    img(src=".perseus/static/images/reading.382e285b.svg", alt="Person reading", class="lg:w-1/2")
+                    img(src=".perseus/static/images/reading.382e285b.svg", alt="Person reading", width="649", height="600", class="lg:w-1/2")
                 }
             }
             div(class="w-full bg-white pt-10") {
@@ -112,7 +112,7 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
             div(class="w-full bg-white pt-10") {
                 div(class="container max-w-screen-2xl flex flex-wrap justify-around items-center prose prose-stone") {
                     div(class="p-4 xl:w-1/4") {
-                        img(src=".perseus/static/images/Classroom.e9004107.jpg", alt="Classroom")
+                        img(src=".perseus/static/images/Classroom.e9004107.jpg", alt="Classroom", width="300", height="300")
                     }
                     div(class="xl:w-3/4") {
                         h2(id="who-we-are", class="section-heading text-sky-700") { "Who we are" }
@@ -209,10 +209,37 @@ fn head(cx: Scope) -> View<SsrNode> {
         meta(property="og:description", content=DESCRIPTION)
         meta(property="og:url", content=url)
         meta(property="og:image", content=image)
-        link(rel = "icon", type = "image/x-icon", href = ".perseus/static/favicon.ico")
-        link(rel = "stylesheet", href = ".perseus/static/css/reset.css")
-        link(rel = "stylesheet", href = ".perseus/static/css/theme.css")
-        link(rel = "stylesheet", href = ".perseus/static/css/index.css")
+    }
+}
+
+/// The HTML shell every page is exported into, with the icon and the
+/// stylesheets in its `<head>`.
+///
+/// They live here, not in `head` above, because Perseus swaps a page's own
+/// head for a fresh copy whenever it draws the page again (on load, and
+/// when a section link changes the address). Stylesheets in that head were
+/// removed and loaded again each time, so the page went unstyled for a
+/// moment, came out shorter, and a section link scrolled short of its
+/// section. The shell's head is never swapped.
+pub fn shell(cx: Scope) -> View<SsrNode> {
+    view! { cx,
+        html {
+            head {
+                meta(charset = "UTF-8")
+                meta(name = "viewport", content = "width=device-width, initial-scale=1.0")
+                link(rel = "icon", type = "image/x-icon", href = ".perseus/static/favicon.ico")
+                // The page's font, fetched at once rather than once theme.css
+                // asks for it, so the text rarely reflows after the page has
+                // scrolled to a section.
+                link(rel = "preload", href = ".perseus/static/fonts/Niramit-Regular.ttf", as = "font", type = "font/ttf", crossorigin = "")
+                link(rel = "stylesheet", href = ".perseus/static/css/reset.css")
+                link(rel = "stylesheet", href = ".perseus/static/css/theme.css")
+                link(rel = "stylesheet", href = ".perseus/static/css/index.css")
+            }
+            body {
+                div(id = "root")
+            }
+        }
     }
 }
 
@@ -222,7 +249,7 @@ pub fn get_template<G: Html>() -> Template<G> {
 
 #[cfg(test)]
 mod tests {
-    use super::{head, page, CONTACT_URL, SITE_URL};
+    use super::{head, page, shell, CONTACT_URL, SITE_URL};
     use std::collections::HashSet;
     use std::path::Path;
 
@@ -309,6 +336,28 @@ mod tests {
             .strip_prefix(&format!("{SITE_URL}/.perseus/static/"))
             .unwrap_or_else(|| panic!("{image} isn't an absolute static URL"));
         assert!(Path::new("static").join(file).exists(), "{image} missing");
+    }
+
+    #[test]
+    fn the_shell_loads_the_icon_and_stylesheets() {
+        let html = sycamore::render_to_string(shell);
+        for href in [
+            "favicon.ico",
+            "css/reset.css",
+            "css/theme.css",
+            "css/index.css",
+        ] {
+            let href = format!("href=\".perseus/static/{href}\"");
+            assert!(html.contains(&href), "no {href} in {html}");
+        }
+        assert!(html.contains("id=\"root\""), "{html}");
+    }
+
+    #[test]
+    fn the_page_head_loads_no_stylesheets() {
+        // Perseus swaps the page's head on every redraw; see `shell`.
+        let html = sycamore::render_to_string(head);
+        assert!(!html.contains("<link"), "{html}");
     }
 
     #[test]
@@ -402,6 +451,12 @@ mod tests {
         assert_eq!(images.len(), 2);
         for img in images {
             assert!(img.contains(" alt=\""), "{img} has no alt text");
+            // Its size, so the page keeps its layout while the image loads
+            // and a section link doesn't land short of its section.
+            assert!(
+                img.contains(" width=\"") && img.contains(" height=\""),
+                "{img} has no size"
+            );
         }
         for src in attr_values(&html, "src") {
             let file = src
