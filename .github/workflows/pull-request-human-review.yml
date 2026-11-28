@@ -7,10 +7,10 @@
 # its head commit. Only human collaborators count (owner, member or
 # collaborator; Jim: "Any human collaborator is fine"): agent `-agt`
 # accounts, jimhillr-reviewer and bots never do. A PR a human collaborator
-# opened passes. Such a PR is also labelled
-# `needs-human` and has its auto-merge turned off, so neither
-# jimhillr-reviewer nor an agent can approve or merge it. Every other PR
-# passes. Runs again on every review, so a human's approval turns it green.
+# opened passes. While it waits, such a PR is labelled `human-review`
+# (taken off again on approval); jimhillr-reviewer and agents never approve
+# it, but its auto-merge stays on, so the human's approval merges it (Jim,
+# 2026-11-28: "Yes, merge on my approval"). Every other PR passes. Runs again on every review, so a human's approval turns it green.
 #
 # The verdict is the `Human review` commit status, not this job's result
 # (Jim, 2026-11-28: "I don't think that should block the merge once I
@@ -47,8 +47,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write         # create the needs-human label the first time
-      pull-requests: write  # label the PR and turn its auto-merge off
+      issues: write         # create the human-review label the first time
+      pull-requests: write  # label and unlabel the PR
       statuses: write       # post the Human review commit status
     env:
       STATUS_CONTEXT: Human review
@@ -106,24 +106,27 @@ jobs:
           echo "needs-human=$(jq -r .needs_human "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
           echo "pass=$(jq -r .pass "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
 
-      # Labels the PR needs-human and turns its auto-merge off. Never
-      # removes the label: a person or another check may have set it.
-      - name: Hold for a human
-        if: steps.decide.outputs.needs-human == 'true' && steps.decide.outputs.pass != 'true'
-        # A fork's or Dependabot's token can't label; the check still fails.
+      # Labels a held PR human-review, and takes the label off once a human
+      # approves. Leaves needs-human and auto-merge alone: the human's
+      # approval is what merges a held PR.
+      - name: Label for a human
+        if: steps.decide.outputs.needs-human == 'true'
+        # A fork's or Dependabot's token can't label; the status still holds it.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          PASS: ${{ steps.decide.outputs.pass }}
         run: |
-          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
-            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
-          gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=needs-human" >/dev/null
-          echo "Labelled needs-human"
-          if [ "$(gh api "repos/$GH_REPO/pulls/$PR" --jq '.auto_merge != null')" = true ]; then
-            gh pr merge "$PR" --repo "$GH_REPO" --disable-auto
-            echo "Turned auto-merge off"
+          if [ "$PASS" = true ]; then
+            gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/human-review" >/dev/null 2>&1 || true
+            echo "No human-review label (passed)"
+          else
+            gh api "repos/$GH_REPO/labels" -f name=human-review -f color=B60205 \
+              -f description="Waiting for a human's approval: red attention tag or cost change" >/dev/null 2>&1 || true
+            gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=human-review" >/dev/null
+            echo "Labelled human-review"
           fi
 
       # The verdict. A pending status is the approval it waits for, not a

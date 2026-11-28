@@ -93,6 +93,8 @@ pr false jimhillr-agt '[{"name":"cost"}]' 40
 check "orange label" "pane/web/src/main.rs" "$green" '[]' "skip: labelled cost"
 pr false jimhillr-agt '[{"name":"needs-human"}]' 40
 check "red label" "pane/web/src/main.rs" "$green" '[]' "skip: labelled needs-human"
+pr false jimhillr-agt '[{"name":"human-review"}]' 40
+check "held for a human" "pane/web/src/main.rs" "$green" '[]' "skip: labelled human-review"
 pr true jimhillr-agt '[]' 40
 check "draft" "pane/web/src/main.rs" "$green" '[]' "skip: draft"
 pr false dependabot[bot] '[]' 40

@@ -114,8 +114,9 @@ collaborator (never an `-agt` account, `jimhillr-reviewer`, a bot or a
 non-collaborator) approves its head commit, and at failure while a human
 asks for changes. The verdict is a status, which each run replaces, so an
 approval leaves no stale red check run behind; the job itself, `Human
-review gate`, fails only when the gate breaks. The workflow also labels
-it `needs-human` and turns its auto-merge off. Every other PR passes. It
+review gate`, fails only when the gate breaks. A held PR is labelled
+`human-review` until a human approves; its auto-merge is left on, so that
+approval merges it (Jim, 2026-11-28). Every other PR passes. It
 builds `chores gate` from the base branch, so a PR can't change its own
 rules. The `CI` ruleset in `infra`'s `github` stack requires it on `main`
 beside `CI result`. See "Human review" in

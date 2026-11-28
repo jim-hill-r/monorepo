@@ -100,13 +100,14 @@ Right after marking it ready, turn on GitHub auto-merge with squash
 (`gh api -X PUT repos/jimhillr/monorepo/pulls/<n>/ccr/auto_merge -f merge_method=SQUASH`;
 `gh pr merge --auto` needs GraphQL, which Claude sessions can't use), so the PR lands as soon
 as a reviewer approves it. Skip this when the PR is labelled `needs-human` or
-`cost`, its Attention section has a red tag (`must-requirement-changed`)
-or `cost-changed`, or a check is red, even one also failing on `main`.
-Such a PR needs a human's approval (the `Human review` check, "Human review" in
-`standards/docs/pull-requests.md`): mark it ready once every check is
-green and the `Human review` status is pending, since that commit status
-turns green only when he approves,
-and merge it by hand once he has approved and checks are green. The auto-merge rules are under
+`credential-change`, or a check is red, even one also failing on `main`.
+A PR labelled `cost` or `human-review`, or whose Attention section has a
+red tag (`must-requirement-changed`) or `cost-changed`, needs a human's
+approval (the `Human review` status, "Human review" in
+`standards/docs/pull-requests.md`): mark it ready and turn auto-merge on
+once every other check is green and `Human review` is pending, so his
+approval merges it (Jim, 2026-11-28: "Yes, merge on my approval").
+The auto-merge rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
 your own PR, so it waits for a human's approval either way.
 

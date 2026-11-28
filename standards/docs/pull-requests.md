@@ -182,10 +182,18 @@ A PR that needs a human:
    every review, so that approval turns it green. A PR a human collaborator
    opened passes. The workflow builds `chores` from the base branch, so a
    PR can't change the rules it is judged by.
-2. **Is labelled `needs-human`** by that check, which never removes it.
-3. **Never has auto-merge on.** The check turns it off, and no agent turns
-   it on. Once a human has approved and every check is green, that human,
-   PR triage or any agent merges it by hand under the merge rule.
+2. **Is labelled `human-review`** by that check while it waits, and the
+   check takes the label off again once a human approves. It is not
+   `needs-human`: that label still means a sign-off or manual step beyond
+   the approval, which the gate can't see.
+3. **May merge on the human's approval** (Jim, 2026-11-28: "Yes, merge on
+   my approval"). The check no longer turns auto-merge off, and an agent
+   may turn it on for a held PR under "Auto-merge" below once every other
+   check is green. Only a human's approval can then merge it, because
+   `jimhillr-reviewer` refuses it, agents never approve, and the `main`
+   ruleset dismisses an approval when commits are pushed. Without
+   auto-merge, that human, PR triage or any agent merges it by hand under
+   the merge rule once the human has approved and every check is green.
 4. **Is never approved by anyone but a human.** `jimhillr-reviewer`
    refuses it (rules v2), and so do triage and agents.
 
@@ -223,9 +231,14 @@ these hold:
 
 - The PR meets the `open-pull-request` ready checklist: complete, every check
   finished and green on the head commit, and nothing left for a human to
-  decide. A PR labelled `needs-human` never gets auto-merge, and nor
-  does one with a red or `cost-changed` attention tag (see "Human review").
-- No check is red, not even one also failing on `main`. Auto-merge can't
+  decide. A PR labelled `needs-human` or `credential-change` never gets
+  auto-merge. One held by `Human review` (a red or `cost-changed`
+  attention tag, the `cost` label, the `human-review` label) may, once
+  every other check is green, with `Human review` still pending: the
+  human's approval is then the last step (Jim, 2026-11-28; see "Human
+  review").
+- No check is red, not even one also failing on `main`. (A pending `Human
+  review` status is not red.) Auto-merge can't
   apply the "also failing on `main`" exception, so that PR is merged by hand
   under the merge rule instead.
 

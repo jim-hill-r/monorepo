@@ -20,8 +20,10 @@
 //! while it waits for a human, `success` once one approves, and `failure`
 //! only when a human asked for changes. One status context replaces itself
 //! on every run, so an approval leaves no stale red check behind. The
-//! workflow (`pull-request-human-review.yml`) posts it, and also labels a
-//! held PR `needs-human` and turns its auto-merge off. The rules are under
+//! workflow (`pull-request-human-review.yml`) posts it, and labels a held
+//! PR `human-review` until a human approves. It leaves auto-merge on, so
+//! the approval merges the PR (Jim, 2026-11-28: "Yes, merge on my
+//! approval"). The rules are under
 //! "Human review" in `standards/docs/pull-requests.md`.
 
 use std::path::{Path, PathBuf};
@@ -264,7 +266,7 @@ pub fn decide(input: &Input<'_>) -> Verdict {
             ),
             Humans::Waiting => (
                 State::Pending,
-                format!("wait: needs a human's approval of {head}, and no auto-merge ({why})"),
+                format!("wait: needs a human's approval of {head} ({why})"),
                 format!("Waiting for a human to approve {head} ({})", tags()),
             ),
         }

@@ -26,7 +26,7 @@ AUTHOR=jimhillr-agt
 MAX_LINES=1500
 MAX_FILES=100
 # Labels with a red or orange attention badge (pane_model::queue).
-BLOCK_LABELS='needs-human credential-change security cost'
+BLOCK_LABELS='needs-human human-review credential-change security cost'
 # Red and orange attention tags (`chores badges`, "Attention tags" in
 # standards/docs/pull-requests.md). A description that declares one, or has
 # no Attention section, waits for Jim (Jim, 2026-11-27: "no prs with red
