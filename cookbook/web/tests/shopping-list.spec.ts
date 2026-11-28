@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 /**
  * The plan page's shopping list adds up (COOK-003): each ingredient appears
@@ -10,7 +11,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Shopping list', { tag: '@req:COOK-003' }, () => {
   test('sums repeated ingredients and lists staples apart', async ({ page }) => {
     await page.goto('/plan/48');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
 
     const list = page.locator('.plan-shopping-list');
     const toBuy = list.locator('.shopping-list:not(.shopping-staples) .shopping-item');

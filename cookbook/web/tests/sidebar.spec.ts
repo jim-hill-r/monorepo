@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 /**
  * Tests for the Cookbook sidebar navigation.
@@ -13,7 +14,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Sidebar Navigation', () => {
   test('should display sidebar on home page', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that sidebar exists
     const sidebar = page.locator('#sidebar');
@@ -28,7 +29,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should display sidebar title', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On mobile viewports, sidebar is hidden so title won't be visible
     const sidebar = page.locator('#sidebar');
@@ -47,7 +48,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should display recipe quick links section', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for recipes section in sidebar
     const recipesSection = page.locator('#sidebar .sidebar-section').first();
@@ -67,7 +68,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should display plan quick links section', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for plans section in sidebar
     const plansSection = page.locator('#sidebar .sidebar-section').last();
@@ -84,7 +85,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should navigate to recipe from sidebar link', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On mobile, sidebar is hidden by default, so we need to show it first or skip the click
     if (viewport && viewport.width <= 768) {
@@ -97,7 +98,6 @@ test.describe('Sidebar Navigation', () => {
     // Click on the first recipe link in sidebar
     const recipeLink = page.locator('#sidebar .sidebar-section').first().locator('a').first();
     await recipeLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Should navigate to a recipe page (check URL pattern)
     await expect(page).toHaveURL(/\/recipe\/\d+/);
@@ -110,7 +110,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should navigate to plan from sidebar link', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On mobile, sidebar is hidden by default
     if (viewport && viewport.width <= 768) {
@@ -125,7 +125,6 @@ test.describe('Sidebar Navigation', () => {
     const weekNumber = planText?.match(/Week (\d+)/)?.[1];
     
     await planLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Should navigate to a plan page (check URL pattern)
     await expect(page).toHaveURL(/\/plan\/\d+/);
@@ -137,7 +136,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should display sidebar on recipe pages', async ({ page, viewport }) => {
     await page.goto('/recipe/50');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Verify sidebar exists on recipe page
     const sidebar = page.locator('#sidebar');
@@ -152,7 +151,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should display sidebar on plan pages', async ({ page, viewport }) => {
     await page.goto('/plan/25');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Verify sidebar exists on plan page
     const sidebar = page.locator('#sidebar');
@@ -167,7 +166,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should allow navigation between multiple recipe links', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On mobile, sidebar is hidden and links aren't clickable
     if (viewport && viewport.width <= 768) {
@@ -177,7 +176,7 @@ test.describe('Sidebar Navigation', () => {
     }
     
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Get recipe links from sidebar
     const recipeSection = page.locator('#sidebar .sidebar-section').first();
@@ -186,13 +185,13 @@ test.describe('Sidebar Navigation', () => {
     
     // Click first link
     await firstLink.click();
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/recipe\/\d+/);
     const firstUrl = page.url();
     
     // Click second link from sidebar
     await secondLink.click();
-    await page.waitForLoadState('networkidle');
+    // Both links are recipe URLs, so wait for this one to replace the first.
+    await expect(page).not.toHaveURL(firstUrl);
     await expect(page).toHaveURL(/\/recipe\/\d+/);
     const secondUrl = page.url();
     
@@ -202,7 +201,7 @@ test.describe('Sidebar Navigation', () => {
 
   test('should allow navigation between multiple plan links', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On mobile, sidebar is hidden and links aren't clickable
     if (viewport && viewport.width <= 768) {
@@ -221,7 +220,6 @@ test.describe('Sidebar Navigation', () => {
     
     // Click first link
     await firstLink.click();
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/plan\/\d+/);
     await expect(page.locator('#content h1')).toHaveText(`Meal Plan for Week ${firstWeek}`);
     
@@ -230,7 +228,6 @@ test.describe('Sidebar Navigation', () => {
     const secondWeek = secondLinkText?.match(/Week (\d+)/)?.[1];
     
     await secondLink.click();
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/plan\/\d+/);
     await expect(page.locator('#content h1')).toHaveText(`Meal Plan for Week ${secondWeek}`);
   });

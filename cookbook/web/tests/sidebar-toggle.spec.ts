@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 /**
  * Tests for the Cookbook sidebar toggle functionality.
@@ -19,7 +20,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('should display hamburger button in header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that hamburger button exists in header
     const hamburger = page.locator('#header .hamburger-btn');
@@ -28,7 +29,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('should display sidebar by default on desktop', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that sidebar is visible initially on desktop
     const sidebar = page.locator('#sidebar');
@@ -38,7 +39,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('should hide sidebar when hamburger is clicked', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Sidebar should be visible initially
     const sidebar = page.locator('#sidebar');
@@ -57,7 +58,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('should show sidebar when hamburger is clicked again', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const sidebar = page.locator('#sidebar');
     const hamburger = page.locator('#header .hamburger-btn');
@@ -75,7 +76,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('should adjust content margin when sidebar is hidden', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const content = page.locator('#content');
     const hamburger = page.locator('#header .hamburger-btn');
@@ -100,7 +101,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('should persist sidebar state across navigation', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const sidebar = page.locator('#sidebar');
     const hamburger = page.locator('#header .hamburger-btn');
@@ -119,7 +120,7 @@ test.describe('Sidebar Toggle', () => {
     
     // Navigate to another page using header nav instead since sidebar is hidden
     await page.locator('#header .header-nav a:has-text("Recipes")').click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/recipe\/\d+/);
     
     // Sidebar should still be hidden
     await expect(sidebar).toHaveClass(/hidden/);
@@ -127,7 +128,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('hamburger button should be accessible', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const hamburger = page.locator('#header .hamburger-btn');
     
@@ -140,7 +141,7 @@ test.describe('Sidebar Toggle', () => {
 
   test('hamburger button aria-expanded should toggle', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const hamburger = page.locator('#header .hamburger-btn');
     

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mainNavLink } from './nav';
+import { mainNavLink, pageReady } from './nav';
 
 /**
  * Tests for the Cookbook authentication in header.
@@ -15,23 +15,23 @@ import { mainNavLink } from './nav';
 test.describe('Authentication in Header', () => {
   test('should display login button or loading state in header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const header = page.locator('#header');
     await expect(header).toBeVisible();
     
-    // Check for either login button or loading state (since auth initialization is async)
-    const hasLoginButton = await header.locator('button', { hasText: 'Login' }).isVisible().catch(() => false);
-    const hasLoadingState = await header.locator('div', { hasText: 'Loading authentication' }).isVisible().catch(() => false);
-    const hasError = await header.locator('.error').isVisible().catch(() => false);
-    
-    // At least one should be visible
-    expect(hasLoginButton || hasLoadingState || hasError).toBeTruthy();
+    // Auth starts asynchronously, so wait for the login button, its loading
+    // state or an error, whichever shows.
+    const authState = header
+      .locator('button', { hasText: 'Login' })
+      .or(header.locator('div', { hasText: 'Loading authentication' }))
+      .or(header.locator('.error'));
+    await expect(authState.first()).toBeVisible();
   });
 
   test('should display user-friendly error messages when auth fails', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const header = page.locator('#header');
     await expect(header).toBeVisible();
@@ -103,12 +103,12 @@ test.describe('Authentication in Header', () => {
 
   test('should persist login button during navigation', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Navigate between pages and verify login button is always present in header
     const recipesLink = await mainNavLink(page, 'Recipes');
     await recipesLink.click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/recipe\/\d+/);
     
     let header = page.locator('#header');
     await expect(header).toBeVisible();
@@ -117,7 +117,7 @@ test.describe('Authentication in Header', () => {
     
     const plansLink = await mainNavLink(page, 'Plans');
     await plansLink.click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/plan\/\d+/);
     
     header = page.locator('#header');
     await expect(header).toBeVisible();
@@ -126,7 +126,7 @@ test.describe('Authentication in Header', () => {
     
     const homeLink = await mainNavLink(page, 'Home');
     await homeLink.click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL('/');
     
     header = page.locator('#header');
     await expect(header).toBeVisible();
@@ -136,7 +136,7 @@ test.describe('Authentication in Header', () => {
 
   test('should have proper styling on login button', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Wait for login button to appear in header (it may take time for auth to initialize)
     const loginButton = page.locator('#header button', { hasText: 'Login' });
