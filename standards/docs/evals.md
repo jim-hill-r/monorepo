@@ -277,7 +277,7 @@ deploy). The `cd evals` step first runs `evals.sh smoke`, then
 `evals.sh run` with `EVALS_STAGE=cd`:
 
 1. When the deploying project sets `SMOKE_DIR` in its `mise.toml` `[env]`
-   (cookbook/cloudflare sets `"../web"`), `evals.sh smoke` runs that Playwright
+   (cookbook/cloudflare and cahokia/cloudflare set `"../web"`), `evals.sh smoke` runs that Playwright
    project's `@smoke` tests in desktop Chromium against `DEPLOY_URL`. Its
    `playwright.config.ts` reads `BASE_URL`: when set, it starts no dev
    server and records every test's video, screenshot and trace (its user
@@ -338,8 +338,9 @@ Check content instead, in one of three ways:
   text, so this catches a deploy whose bundle is missing, stale or broken.
 - **A server-rendered page**, with `body_contains` on the page itself.
 
-Neither proves the page renders in a browser: that is a Playwright smoke run
-against production (`issues/smoke-uat-tag-few-playwright-tests.md`).
+Neither proves the page renders in a browser: that is the Playwright smoke
+run against production (step 1 of "After deploy"), which cookbook and
+cahokia have.
 
 ## Human checks
 
