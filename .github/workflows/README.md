@@ -362,3 +362,20 @@ the pinned `skills-ref` reference validator and also checks that
 manually via `workflow_dispatch`.
 
 Tests: `jimhillr/workflow_tests/tests/agent_skills_workflow_tests.rs`.
+
+## all-merge-conflicts.yml (Merge conflicts)
+
+Runs on every push to `main`, every three hours and by hand. It reads each
+open PR (the single-PR call, which works out `mergeable`), and `chores
+merge-conflicts` decides: a PR that conflicts with its base gets the
+`merge-conflict` label, an agent's PR also gets one comment so the thread
+subscribed to it wakes and merges `main`, and the label comes off once the
+PR merges cleanly again. Dependabot's PRs are left alone, since it rebases
+its own. It checks out only `main` and never runs PR code. See "Keep it
+mergeable" in
+[standards/docs/pull-requests.md](../../standards/docs/pull-requests.md#keep-it-mergeable).
+
+### Permissions
+
+`contents: read` for the workflow; the job adds `issues: write` (create the
+label, comment) and `pull-requests: write` (label and unlabel).

@@ -423,8 +423,9 @@ it is mergeable, without waiting for triage.
 
 Otherwise, leave PRs whose thread is still active alone. For an orphaned PR:
 
-- If it conflicts or is behind `main`, convert it to draft, then update the
-  branch from `main`. Mark it ready again once its checks are green.
+- If it conflicts with `main`, convert it to draft, then update the branch
+  from `main`. Mark it ready again once its checks are green. One that is
+  only behind is left alone ("Keep it mergeable").
 - If `main` already contains the change, or a newer PR replaces it, close it
   with a comment saying which.
 - If it's a draft and CI is green and the change looks complete, mark it ready
@@ -460,6 +461,49 @@ auto-merge back on only once its checks are green on the new head commit
 reviewers and triage that the PR is changing under them, so nobody approves
 or merges a head that is about to move. Agents never push to human PRs, so
 this never touches them.
+
+## Keep it mergeable
+
+Jim should never have to point out a merge conflict (Jim, 2026-11-28: he
+kept writing "Conflicts" in threads). The thread that owns a PR keeps it
+mergeable until it merges or closes:
+
+1. **Check every turn.** At the start of every turn, and before asking Jim
+   to approve, the thread reads each of its open PRs
+   (`GET /repos/jimhillr/monorepo/pulls/<n>`) and looks at `mergeable` and
+   `mergeable_state`. `null` means GitHub is still working it out; read it
+   again a few seconds later.
+2. **Fix a conflict at once.** When `mergeable` is `false` (state `dirty`),
+   or the PR gets the `merge-conflict` label or the Merge conflicts
+   workflow's comment, the thread fixes it in that turn: convert to draft
+   and turn off auto-merge ("Working on an existing PR"), `git fetch origin
+   main && git merge origin/main`, resolve, let the hooks pass, push (never
+   rebase or force-push), and mark it ready and turn auto-merge on again
+   once checks are green.
+3. **Ask again after the fix.** The `Default` ruleset dismisses an approval
+   when commits are pushed, so a resolved conflict needs a fresh approval.
+   The thread says so when it asks Jim: what conflicted and that the
+   resolution only kept both sides (or what it changed).
+4. **Don't merge `main` when only behind.** No rule needs a PR to be up to
+   date, and every push costs the approval, so merge `main` only for a
+   conflict, or when a check has to re-run against a newer `main`.
+
+The **Merge conflicts** workflow (`all-merge-conflicts.yml`, `chores
+merge-conflicts`) is the backstop. After every push to `main` and every
+three hours it labels each conflicting open PR `merge-conflict`, comments
+once on an agent's PR (the comment wakes the thread subscribed to the PR),
+and takes the label off when the PR merges cleanly again. Dependabot's PRs
+are left alone; PR triage adopts an orphaned agent PR that still conflicts.
+
+Why approvals were lost: on 2026-11-28, every one of the nine `main`
+merges that dismissed Jim's approvals on PRs 964, 966, 972 and 985 was a
+conflict resolution, not a clean merge, in a handful of files that most
+PRs append to (`chores/src/main.rs`, `chores/README.md`,
+`standards/scripts/audit.sh`). Turning off "dismiss stale approvals" would
+let those resolutions merge unreviewed, and GitHub's merge queue is only
+for organization-owned repositories, so the fix is fewer conflicts: catch
+them early, and make those files less conflict-prone
+(`chores/issues/fewer-merge-conflict-hotspots.md`).
 
 ## Limits
 

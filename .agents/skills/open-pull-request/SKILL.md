@@ -132,6 +132,29 @@ top PR ready. Close the step PRs once it merges. The steps are under
 "Stacked pull requests" in `standards/docs/pull-requests.md` (decision
 0014).
 
+## Keep it mergeable
+
+Jim should never have to tell you a PR conflicts (Jim, 2026-11-28). Until
+your PR merges or closes:
+
+- **Every turn**, and right before you ask Jim to approve, read
+  `mergeable` and `mergeable_state` for each of your open PRs
+  (`GET /repos/jimhillr/monorepo/pulls/<n>`; `null` means GitHub is still
+  working it out, so read it again shortly).
+- **On a conflict** (`mergeable: false`, state `dirty`, the
+  `merge-conflict` label, or the Merge conflicts workflow's comment), fix
+  it in the same turn: back to draft and auto-merge off (below), `git fetch
+  origin main && git merge origin/main`, resolve, hooks pass, push. Never
+  rebase or force-push.
+- **Then ask Jim again.** The push dismissed his approval, so once checks
+  are green, mark it ready, turn auto-merge on and ask him to approve the
+  new head, saying what conflicted and how you resolved it.
+- **Don't merge `main` when the PR is only behind**: nothing requires it,
+  and every push costs the approval.
+
+The steps are under "Keep it mergeable" in
+`standards/docs/pull-requests.md`.
+
 ## Working on a PR that already exists
 
 Before you start any work on an existing PR (a reviewer's changes, a CI fix,

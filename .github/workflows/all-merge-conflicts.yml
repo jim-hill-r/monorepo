@@ -1,0 +1,96 @@
+---
+# Keep open PRs free of merge conflicts ("Keep it mergeable" in
+# standards/docs/pull-requests.md). Jim kept having to tell threads
+# "Conflicts" (2026-11-28), so after every push to main, and every three
+# hours in case GitHub was slow to work out mergeability, this lists the
+# open PRs, labels each one that conflicts with its base `merge-conflict`,
+# comments once on an agent's PR so the thread subscribed to it wakes and
+# merges main, and takes the label off once it merges cleanly again.
+# Dependabot's PRs are left alone: it rebases its own. The rules are
+# `chores merge-conflicts` (chores/src/merge_conflicts.rs), built from main.
+name: Merge conflicts
+
+'on':
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: merge-conflicts
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    name: Label conflicting PRs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write         # create the label, and comment
+      pull-requests: write  # label and unlabel PRs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The admin CLIs' build that main saves (the audit cache in
+      # mise-projects.yml), so chores isn't built from cold every run.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: |
+            evals
+            cost
+            chores
+            threat
+          shared-key: audit
+          save-if: false
+
+      - name: List open PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Only the single-PR call works out `mergeable`; it is null until
+          # GitHub has, so ask again a few times after a push to main.
+          : >"$RUNNER_TEMP/pulls.jsonl"
+          for n in $(gh api "repos/$GH_REPO/pulls?state=open&per_page=100" --paginate --jq '.[].number'); do
+            for try in 1 2 3 4; do
+              pr=$(gh api "repos/$GH_REPO/pulls/$n")
+              [ "$(jq -r .mergeable <<<"$pr")" != null ] && break
+              sleep $((try * 5))
+            done
+            jq -c . <<<"$pr" >>"$RUNNER_TEMP/pulls.jsonl"
+          done
+          jq -s . "$RUNNER_TEMP/pulls.jsonl" >"$RUNNER_TEMP/pulls.json"
+
+      - name: Decide
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/chores/target
+        run: |
+          cargo run --quiet --manifest-path chores/Cargo.toml -- merge-conflicts \
+            --pulls "$RUNNER_TEMP/pulls.json" --json "$RUNNER_TEMP/plan.json" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Label and comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          plan="$RUNNER_TEMP/plan.json"
+          gh api "repos/$GH_REPO/labels" -f name=merge-conflict -f color=FBCA04 \
+            -f description="Conflicts with its base branch; the owning thread merges main" >/dev/null 2>&1 || true
+          for n in $(jq -r '.label[]' "$plan"); do
+            gh api "repos/$GH_REPO/issues/$n/labels" -f "labels[]=merge-conflict" >/dev/null
+          done
+          jq -c '.comment[]' "$plan" | while read -r c; do
+            n=$(jq -r .number <<<"$c")
+            jq -r .body <<<"$c" >"$RUNNER_TEMP/comment.md"
+            gh api "repos/$GH_REPO/issues/$n/comments" -F "body=@$RUNNER_TEMP/comment.md" >/dev/null
+          done
+          for n in $(jq -r '.unlabel[]' "$plan"); do
+            gh api -X DELETE "repos/$GH_REPO/issues/$n/labels/merge-conflict" >/dev/null 2>&1 || true
+          done

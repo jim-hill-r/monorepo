@@ -8,6 +8,7 @@ mod badges;
 mod conflict_markers;
 mod gate;
 mod issues;
+mod merge_conflicts;
 mod new_issue;
 mod next_task;
 mod pr_body;
@@ -217,6 +218,21 @@ enum Command {
         /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
+    },
+    /// Which open PRs conflict with their base, for the
+    /// `all-merge-conflicts.yml` workflow ("Keep it mergeable" in
+    /// standards/docs/pull-requests.md): label new ones `merge-conflict`,
+    /// comment once on an agent's so its thread wakes, and unlabel resolved
+    /// ones. Reads the PRs the workflow lists, prints the run summary and
+    /// never calls GitHub itself.
+    MergeConflicts {
+        /// The open PRs as a JSON array of `GET /repos/{repo}/pulls/{n}`
+        /// objects (that call works out `mergeable`; the list call doesn't).
+        #[arg(long)]
+        pulls: PathBuf,
+        /// Also write the plan as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
     },
     /// The evals check (EVL-*, standards/docs/evals.md): run the evals
     /// project's `evals check` once any project has a docs/requirements.md
@@ -477,6 +493,10 @@ fn run() -> Result<ExitCode> {
             if !findings.is_empty() {
                 return Ok(ExitCode::FAILURE);
             }
+        }
+        Command::MergeConflicts { pulls, json } => {
+            let plan = merge_conflicts::run(&pulls, json.as_deref())?;
+            print!("{}", merge_conflicts::render(&plan));
         }
         Command::EvalsCheck => {
             if let Some(check) = wrapped_checks::evals(&root)? {

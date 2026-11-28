@@ -68,6 +68,11 @@ c retire-temporary --live live.json --json plan.json
 c user-docs
 c user-docs --json
 
+# Which open PRs conflict with their base: label `merge-conflict`, comment
+# once on an agent's, unlabel resolved ones. all-merge-conflicts.yml lists
+# the PRs (GET pulls/{n} each, for `mergeable`) and applies the plan.
+c merge-conflicts --pulls pulls.json --json plan.json
+
 # Unresolved merge conflict markers in any tracked file (STD-005); run by
 # `mise run //:audit`. Exit 1 on any.
 c conflict-markers
