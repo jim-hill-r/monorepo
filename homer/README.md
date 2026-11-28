@@ -93,6 +93,10 @@ quota, go to stderr, so stdout is always just the JSON.
 | `--min-sqft` | Minimum square footage |
 | `--json` | Print the details and evaluation as one JSON object instead of the text report |
 
+homer checks the preferences before it looks the address up: a
+`--min-bedrooms` above `--max-bedrooms` can never match, so homer stops with
+an error naming both flags and spends no RapidAPI request.
+
 ## API Key
 
 Homer uses the Zillow API via [RapidAPI](https://rapidapi.com/apimaker/api/zillow-com1).
