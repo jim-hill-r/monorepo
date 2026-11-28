@@ -36,14 +36,19 @@ table in the plan's "Question 1").
    `## Vision`) **and `docs/roadmap.md`** (`## Product roadmap`,
    `## Technical roadmap`, each with `### Now`, `### Next`, `### Later`).
    Roadmap items link the issue files or epics that do the work.
-3. **`chores product-docs` checks them** (DOC-009 to DOC-012) against the
-   shrinking baseline `standards/product-docs.toml`, and a
-   `write-mission-and-roadmap.md` issue in each active product writes
-   them.
+3. **`chores product-docs` checks them** (DOC-009 to DOC-012). There is
+   no central baseline: a product without passing documents is let off
+   only by a `[pending] product_docs` entry in its own `project.toml`
+   naming its own `write-mission-and-roadmap.md` issue. User guide
+   exemptions move there too, and `standards/user-docs.toml` is deleted.
 4. **Jim owns the mission and vision.** A change to `docs/mission.md` is a
    `requirements` change in the review roles check, so it needs the
    `requirements-reviewer`. Roadmaps are ordinary product changes that
    agents keep current as they close issues.
+5. **Projects stay independent (Jim, 2026-11-28).** "In general when
+   making decisions we want every project to be very independent. No
+   centralized directories." Facts about a project live in that project;
+   a table of all projects is generated, never committed.
 
 ## Options considered for the metadata store
 

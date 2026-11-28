@@ -16,8 +16,15 @@ items are issue files in the root [issues/](../../../issues/) with
 This plan copies the pattern that made user guides required
 ([decision 0017](../decisions/0017-user-docs.md)): fixed file paths with
 fixed `##` sections, a deterministic `chores` check in `mise run //:audit`,
-a baseline that only shrinks, and one issue file per project so the normal
-agent loop writes the documents.
+a ratchet that only lets a project off while its own issue file is open,
+and one issue file per project so the normal agent loop writes the
+documents.
+
+It also follows Jim's rule for every design here (2026-11-28): "In general
+when making decisions we want every project to be very independent. No
+centralized directories." So nothing in this plan adds a shared list of
+projects: each project carries its own metadata, its own exemption and its
+own documents, and a check reads them project by project.
 
 ## Goal
 
@@ -90,6 +97,12 @@ Rules:
   every other check (`user-docs`, the new `product-docs`, the review roles
   check, `next-task`, pane's snapshot, the deep review rotation) asks it
   instead of keeping its own list.
+- **No central list of projects.** The tier list in 0019 and the on-hold
+  list in `issues/README.md` both move into the projects' own files, so
+  adding, pausing or re-tiering a project touches only that project.
+  The one list that stays is `config_roots` in the root `mise.toml`,
+  which mise itself requires; the audit already checks it against the
+  folders.
 - **The on-hold list moves here.** `status = "on-hold"` replaces the bullet
   list in `issues/README.md`, and `next-task` reads it.
 - **Changing a tier is a strict change.** A PR that adds a `project.toml`
@@ -103,9 +116,10 @@ Why one file per project and not one central file: it follows
 [decision 0006](../decisions/0006-one-file-per-issue.md) (parallel PRs that
 each touch a different project never conflict), the file sits with the
 project it describes like `cost.toml` and `threat.toml`, and a new project
-adds its own file instead of editing a shared one. The central table Jim
-may still want to read is generated, not committed: `chores projects`
-prints it, and pane shows it.
+adds its own file instead of editing a shared one, which is Jim's
+"no centralized directories" rule. A table of every project, for reading,
+is generated and never committed: `chores projects` prints it, and pane
+shows it.
 
 ## Question 2: the product documents
 
@@ -146,12 +160,23 @@ every project whose `project.toml` says `tier = "product"`:
 | DOC-009 | `docs/mission.md` or `docs/roadmap.md` is missing |
 | DOC-010 | A required `##` or `###` section is missing or empty (`Later` may be empty) |
 | DOC-011 | A roadmap link points at an issue file or doc that doesn't exist, so closing an issue means updating the roadmap |
-| DOC-012 | The baseline is stale: a listed project passes, its issue file is gone, or it is not a product project |
+| DOC-012 | A project's exemption is stale: it passes, or its issue file is gone |
 
-The baseline `standards/product-docs.toml` lists the product projects
-without passing documents, each with its issue file, or `"on hold"`. It
-only shrinks, exactly like `standards/user-docs.toml`. A new product
-project ships with both files.
+**No central baseline.** A product project without passing documents is
+let off only by its own `docs/project.toml`:
+
+```toml
+[pending]
+product_docs = "issues/write-mission-and-roadmap.md"   # this project's own issue
+```
+
+The entry must name an issue file in that project that exists (DOC-012),
+and it must come out in the PR that makes the project pass. On-hold
+projects (`status = "on-hold"`) are skipped without an entry. A new
+product project ships with both files and no `[pending]` entry. This
+replaces the `standards/user-docs.toml` pattern for this check, and phase 1
+moves the user guide exemptions into the same `[pending]` table
+(`user_docs = "..."`), so `standards/user-docs.toml` goes away too.
 
 ### Who writes and approves them
 
@@ -188,16 +213,19 @@ Each phase is one issue file, one PR.
    `status` (tiers from decision 0019, on hold from `issues/README.md`), the
    `chores projects` module and command, PRJ-001 and PRJ-002 in the audit,
    "Project metadata" in `standards/docs/documentation.md`, and move the
-   on-hold list. Make `chores user-docs` read `status` instead of its own
-   `"on hold"` copies. Update review roles phase 1 to read tiers from here.
+   on-hold list. Move each project's line in `standards/user-docs.toml`
+   into its own `[pending] user_docs` entry and delete that central file. Update review roles phase 1 to read tiers from here.
 2. **Product docs check** ([issue](../../../issues/product-strategy-phase-2-product-docs-check.md)).
-   `chores product-docs` (DOC-009 to DOC-012), the baseline, templates in
+   `chores product-docs` (DOC-009 to DOC-012), each product's
+   `[pending] product_docs` entry, templates in
    `standards/docs/templates/`, "Product docs" in
    `standards/docs/documentation.md`, the AGENTS.md rule, and a
    `write-mission-and-roadmap.md` issue (epic "Product strategy") in each
    active product project.
 3. **Write them** (the per-project issues phase 2 adds). One PR per
-   product, removing its baseline line. Priority order follows the
+   product, removing its own `[pending]` entry. cookbook goes first:
+   PR 925 already wrote `cookbook/docs/roadmap.md` with all four parts,
+   so its follow-up only splits Mission and Vision into `docs/mission.md`. Priority order follows the
    projects Jim has ranked: sparkhill (Blue Eel), cookbook, bear_down,
    cahokia, homer, controlled_chaos, then blueeel, bogan, my_lang,
    psy_ents. luggage, starcraft and profiles stay `"on hold"` with no issue.
