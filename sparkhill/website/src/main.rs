@@ -8,6 +8,7 @@ use perseus::prelude::*;
 #[perseus::main_export]
 pub fn main<G: Html>() -> PerseusApp<G> {
     PerseusApp::new()
+        .index_view(crate::templates::index::shell)
         .template(crate::templates::index::get_template())
         .error_views(crate::error_views::get_error_views())
         // Browsers ask for /favicon.ico on pages with no icon link, such as

@@ -31,3 +31,14 @@ loses it then. `scroll_to_url_section` in `src/templates/index.rs` redoes
 that scroll, and the e2e test "a section link still lands on its section
 when the app replaces the page" checks it. The flake it fixed shows only in
 Chromium's headless shell, the browser CI runs, not in full Chromium.
+
+The same redraw swaps the page's own head (the `head` function) each time
+the address changes, so the icon, the font preload and the stylesheets
+live in the HTML shell instead (`shell` in `src/templates/index.rs`, set
+with `.index_view` in `src/main.rs`), which Perseus never swaps. In the
+page's head they were removed and fetched again on every section link
+click: the page went unstyled for a moment, came out shorter, and the
+scroll stopped short of the section. Images carry their `width` and
+`height` so the page keeps its layout while they load. The e2e tests check
+that a section ends at the top of the window, not just on screen, and "a
+section link keeps the stylesheets it has".

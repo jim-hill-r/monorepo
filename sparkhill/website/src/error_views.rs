@@ -57,8 +57,8 @@ fn body<G: Html>(cx: Scope, msg: &ErrorMessage) -> View<G> {
 }
 
 /// The error views for every page. Each returns a `<head>` with only a
-/// title (loading stylesheets during an error, such as a network one, may
-/// fail too) and the body above.
+/// title and the body above; the stylesheets are in the page shell
+/// (`templates::index::shell`), which every page and error page shares.
 pub fn get_error_views<G: Html>() -> ErrorViews<G> {
     ErrorViews::new(|cx, err, _err_info, _err_pos| {
         let msg = message(&err);
