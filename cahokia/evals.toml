@@ -1,5 +1,8 @@
 # How each requirement in docs/requirements.md is checked.
 # Format: standards/docs/evals.md.
+#
+# A `playwright` eval in stage cd reads the `@smoke` tests that the `smoke`
+# task of cahokia/cloudflare runs against the live site after each deploy.
 
 prefix = "CAHO"
 
@@ -50,7 +53,7 @@ filter = "draws_every_sample_person"
 [[eval]]
 id = "family-tree-page"
 requirement = "CAHO-001"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "Heading, a box per sample person, the lines, and a wide tree kept inside the page."
 
@@ -119,7 +122,7 @@ filter = "test_redirect_url_matches_auth0_callback_urls"
 [[eval]]
 id = "sign-in-config"
 requirement = "CAHO-003"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 description = "Login shows on the home page, never an authentication error, and the redirect is the site root from every page."
 
@@ -149,6 +152,13 @@ kind = "cargo"
 filter = "test_csp_"
 description = "The CSP blocks default sources and allows only Auth0, wasm and fonts."
 
+[[eval]]
+id = "no-csp-violations"
+requirement = "CAHO-004"
+stages = ["ci", "cd"]
+kind = "playwright"
+description = "Every main page loads with nothing blocked by the Content Security Policy; after a deploy, the real policy from _headers."
+
 # CAHO-005: It is easy to move around the site
 
 [[eval]]
@@ -160,7 +170,7 @@ kind = "playwright"
 [[eval]]
 id = "sidebar-links-family-tree"
 requirement = "CAHO-005"
-stages = ["ci"]
+stages = ["ci", "cd"]
 kind = "playwright"
 grep = "is linked from the sidebar"
 
@@ -203,25 +213,69 @@ id = "desktop-sign-in-loopback"
 requirement = "CAHO-008"
 stages = ["ci"]
 kind = "cargo"
-filter = "sign_in_reaches_the_fake_providers_token_exchange"
+filter = "desktop_sign_in_reaches_the_fake_providers_token_exchange"
 
 [[eval]]
 id = "desktop-signing-in-state"
 requirement = "CAHO-008"
 stages = ["ci"]
 kind = "cargo"
-filter = "signing_in_disables_login_and_points_at_the_browser"
+filter = "desktop_signing_in_disables_login_and_points_at_the_browser"
 
 [[eval]]
 id = "desktop-signed-in-name"
 requirement = "CAHO-008"
 stages = ["ci"]
 kind = "cargo"
-filter = "signed_in_shows_the_name_and_sign_out"
+filter = "desktop_signed_in_shows_the_name_and_sign_out"
 
 [[eval]]
 id = "desktop-sign-in-failure-message"
 requirement = "CAHO-008"
 stages = ["ci"]
 kind = "cargo"
-filter = "a_failure_shows_the_message_and_login_again"
+filter = "desktop_a_failure_shows_the_message_and_login_again"
+
+# CAHO-009: The iOS app signs in through the browser
+
+[[eval]]
+id = "mobile-sign-in-custom-scheme"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_sign_in_round_trips_through_the_custom_scheme"
+
+[[eval]]
+id = "mobile-forged-state-refused"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_callback_with_the_wrong_state_is_refused"
+
+[[eval]]
+id = "mobile-info-plist-scheme"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_info_plist_registers_the_scheme"
+
+[[eval]]
+id = "mobile-signing-in-state"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_signing_in_points_at_the_browser_and_can_cancel"
+
+[[eval]]
+id = "mobile-signed-in-name"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_signed_in_shows_the_name_and_sign_out"
+
+[[eval]]
+id = "mobile-android-not-yet"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "android_says_sign_in_is_not_available_yet"

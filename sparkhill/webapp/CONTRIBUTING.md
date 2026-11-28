@@ -11,9 +11,10 @@ cd sparkhill/webapp
 mise install
 ```
 
-This will automatically install:
-- Dioxus CLI (`dx`) version 0.7.2
-- All required dependencies
+This installs the tools pinned in `mise.toml`:
+- Rust stable, with rustfmt, clippy and the `wasm32-unknown-unknown` target
+- Dioxus CLI (`dx`) 0.6.x, matching the app's `dioxus` 0.6
+- Node 24, for the Playwright end-to-end tests in `e2e/`
 
 ### Build
 
@@ -23,19 +24,21 @@ To build the project:
 cargo build
 ```
 
-To run the development server:
+To run the development server with hot reload on <http://localhost:8080>:
 
 ```bash
-dx serve
+mise run dev
 ```
 
 ### Test
 
-To run Rust unit tests:
+To run the Rust unit tests and then the Playwright tests:
 
 ```bash
-cargo test
+mise run test
 ```
+
+Use `cargo test` for only the Rust tests.
 
 To run all CI checks (formatting, linting, build, and tests):
 

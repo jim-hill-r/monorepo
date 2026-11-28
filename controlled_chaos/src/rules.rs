@@ -55,6 +55,10 @@ impl Player {
     /// Happiness gained by the winner of a battle, as defined by the rulebook.
     pub const BATTLE_WIN_HAPPINESS: i32 = 5;
 
+    /// The most cards a player may hold and still draw: the official rules
+    /// say to draw "if you have five or fewer cards".
+    pub const MAX_HAND_TO_DRAW: usize = 5;
+
     /// Creates a new player with an empty hand and the given starting life total.
     ///
     /// Civilians are initialized to [`STARTING_CIVILIANS`] and happiness to
@@ -97,6 +101,14 @@ impl Player {
         self.hand.push(card);
     }
 
+    /// Returns `true` when the player holds few enough cards to draw (at most
+    /// [`MAX_HAND_TO_DRAW`]).
+    ///
+    /// [`MAX_HAND_TO_DRAW`]: Player::MAX_HAND_TO_DRAW
+    pub fn may_draw(&self) -> bool {
+        self.hand.len() <= Self::MAX_HAND_TO_DRAW
+    }
+
     /// Removes and returns the card at `index` from the player's hand.
     ///
     /// Returns `None` if the index is out of bounds.
@@ -119,6 +131,11 @@ pub enum RulesError {
     },
     /// A hand index was provided that does not correspond to any card.
     InvalidCardIndex(usize),
+    /// The active player tried to draw while holding more than
+    /// [`Player::MAX_HAND_TO_DRAW`] cards; the value is the hand size.
+    HandFull(usize),
+    /// The active player tried to skip the draw while still allowed to draw.
+    MustDraw,
 }
 
 impl std::fmt::Display for RulesError {
@@ -130,6 +147,12 @@ impl std::fmt::Display for RulesError {
             RulesError::InvalidCardIndex(i) => {
                 write!(f, "no card at hand index {i}")
             }
+            RulesError::HandFull(n) => write!(
+                f,
+                "a player with {n} cards can't draw (at most {} may)",
+                Player::MAX_HAND_TO_DRAW
+            ),
+            RulesError::MustDraw => write!(f, "the draw can only be skipped with a full hand"),
         }
     }
 }
@@ -197,16 +220,42 @@ impl RulesEngine {
 
     /// Deals `card` to the active player's hand.
     ///
-    /// May only be called during the [`Draw`] phase.
-    /// On success the phase advances to [`Play`].
+    /// May only be called during the [`Draw`] phase, and only while the
+    /// active player [may draw](Player::may_draw); otherwise call
+    /// [`skip_draw`].  On success the phase advances to [`Play`].
     ///
     /// [`Draw`]: TurnPhase::Draw
     /// [`Play`]: TurnPhase::Play
+    /// [`skip_draw`]: RulesEngine::skip_draw
     pub fn draw_card(&mut self, card: Card) -> Result<(), RulesError> {
         self.require_phase(&TurnPhase::Draw)?;
-        self.players[self.active_player].receive_card(card);
+        let player = &mut self.players[self.active_player];
+        if !player.may_draw() {
+            return Err(RulesError::HandFull(player.hand.len()));
+        }
+        player.receive_card(card);
         self.phase = TurnPhase::Play;
         Ok(())
+    }
+
+    /// Ends the [`Draw`] phase without a card, for an active player whose
+    /// hand is too full to draw.  On success the phase advances to [`Play`].
+    ///
+    /// [`Draw`]: TurnPhase::Draw
+    /// [`Play`]: TurnPhase::Play
+    pub fn skip_draw(&mut self) -> Result<(), RulesError> {
+        self.require_phase(&TurnPhase::Draw)?;
+        if self.players[self.active_player].may_draw() {
+            return Err(RulesError::MustDraw);
+        }
+        self.phase = TurnPhase::Play;
+        Ok(())
+    }
+
+    /// Returns `true` when the active player must draw this Draw phase, and
+    /// `false` when their hand is too full and the draw is skipped.
+    pub fn active_player_may_draw(&self) -> bool {
+        self.players[self.active_player].may_draw()
     }
 
     /// Active player plays the card at `hand_index`.
@@ -519,6 +568,68 @@ mod tests {
                 expected: TurnPhase::Draw,
                 actual: TurnPhase::Play,
             }
+        );
+    }
+
+    fn engine_with_hand_of(cards: usize) -> RulesEngine {
+        let mut engine = make_engine();
+        for _ in 0..cards {
+            engine.players[0].receive_card(two());
+        }
+        engine
+    }
+
+    #[test]
+    fn a_player_with_five_cards_may_draw() {
+        let mut engine = engine_with_hand_of(Player::MAX_HAND_TO_DRAW);
+        assert!(engine.active_player_may_draw());
+        engine.draw_card(ace()).expect("five cards may draw");
+        assert_eq!(engine.players[0].hand.len(), 6);
+        assert_eq!(engine.phase, TurnPhase::Play);
+    }
+
+    #[test]
+    fn a_player_with_six_cards_may_not_draw() {
+        let mut engine = engine_with_hand_of(Player::MAX_HAND_TO_DRAW + 1);
+        assert!(!engine.active_player_may_draw());
+        assert_eq!(engine.draw_card(ace()), Err(RulesError::HandFull(6)));
+        assert_eq!(engine.players[0].hand.len(), 6, "no card is added");
+        assert_eq!(engine.phase, TurnPhase::Draw, "the phase stays");
+    }
+
+    #[test]
+    fn skip_draw_with_a_full_hand_moves_to_play() {
+        let mut engine = engine_with_hand_of(Player::MAX_HAND_TO_DRAW + 1);
+        engine.skip_draw().expect("a full hand skips the draw");
+        assert_eq!(engine.phase, TurnPhase::Play);
+        assert_eq!(engine.players[0].hand.len(), 6);
+    }
+
+    #[test]
+    fn skip_draw_is_refused_while_the_player_may_draw() {
+        let mut engine = engine_with_hand_of(Player::MAX_HAND_TO_DRAW);
+        assert_eq!(engine.skip_draw(), Err(RulesError::MustDraw));
+        assert_eq!(engine.phase, TurnPhase::Draw);
+    }
+
+    #[test]
+    fn skip_draw_fails_in_wrong_phase() {
+        let mut engine = engine_with_hand_of(Player::MAX_HAND_TO_DRAW + 1);
+        engine.skip_draw().unwrap();
+        assert_eq!(
+            engine.skip_draw(),
+            Err(RulesError::WrongPhase {
+                expected: TurnPhase::Draw,
+                actual: TurnPhase::Play,
+            })
+        );
+    }
+
+    #[test]
+    fn hand_full_error_names_the_hand_size_and_the_limit() {
+        assert_eq!(
+            RulesError::HandFull(6).to_string(),
+            "a player with 6 cards can't draw (at most 5 may)"
         );
     }
 

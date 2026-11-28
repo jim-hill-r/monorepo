@@ -249,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn signing_in_disables_login_and_points_at_the_browser() {
+    fn desktop_signing_in_disables_login_and_points_at_the_browser() {
         let html = render(AuthView::SigningIn);
         assert!(html.contains("disabled"), "{html}");
         assert!(html.contains("Signing in…"), "{html}");
@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn signed_in_shows_the_name_and_sign_out() {
+    fn desktop_signed_in_shows_the_name_and_sign_out() {
         let html = render(AuthView::SignedIn {
             name: "Ada Hill".to_string(),
         });
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn a_failure_shows_the_message_and_login_again() {
+    fn desktop_a_failure_shows_the_message_and_login_again() {
         let html = render(AuthView::Failed {
             message: "Sign-in timed out. Try again.".to_string(),
         });
@@ -357,7 +357,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn sign_in_reaches_the_fake_providers_token_exchange() {
+    async fn desktop_sign_in_reaches_the_fake_providers_token_exchange() {
         let issuer = fake_provider(r#"{"access_token":"at","token_type":"Bearer"}"#).await;
         let result = sign_in(
             Some("native-client"),
