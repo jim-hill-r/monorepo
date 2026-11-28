@@ -72,6 +72,18 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   whenever it moves the PR back to draft. Agents still never approve their
   own PRs, so the PR merges when a reviewer (normally Jim) approves it.
   Details are under "Auto-merge" in `standards/docs/pull-requests.md`.
+- **Human review for red flags and cost (Jim, 2026-11-27).** "Lets make sure
+  no prs with red attention flags get auto merged. Cost changes must be
+  reviewed by jim", then "Lets make it needs human review". A PR with a red attention tag
+  (`must-requirement-changed`) or `cost-changed`, in its diff or its
+  description, or the `cost` label, fails the `Human review` check (PR-004,
+  `chores gate`) until a human collaborator approves its head commit
+  (Jim: "Any human collaborator is fine"); agent accounts (`-agt`),
+  `jimhillr-reviewer`, bots and non-collaborators never count. That check labels
+  it `needs-human` and turns its auto-merge off. Agents and
+  `jimhillr-reviewer` never approve it or turn its auto-merge on; once a
+  human approves and checks are green, any agent may merge it. Details are under
+  "Human review" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the
@@ -309,7 +321,8 @@ repo, rather than in any one agent tool's settings.
 - **Credit window (Jim, 2026-11-27).** "Kick off work as our credit
   window begins to close to maximize our use of the 5 hr credits. Have
   that process run all the time." The hourly "Credit window check"
-  scheduled task wakes a standing credit window thread, which reads the
+  scheduled task (Jim, 2026-11-28: a scheduled task, not a standing
+  thread) starts a short run each hour that reads the
   five-hour and seven-day usage from the sessions' rate-limit events and
   asks the coordinating agent to start extra threads when the five-hour window would otherwise end under 85%
   used, aiming at 95% without running the seven-day window out early.

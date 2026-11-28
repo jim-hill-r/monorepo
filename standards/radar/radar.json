@@ -787,6 +787,48 @@
     }
   },
   {
+    "name": "Cloudflare Flagship",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Cloudflare's feature flag service, in public beta with pricing after GA not announced, and no workers-rs binding. Decision 0018 builds a small flags Worker on D1 and a management app per project instead, and revisits Flagship at GA.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0018-feature-flags.md"
+    ],
+    "claude": "Cloudflare plugin (flagship skill) and the Cloudflare MCP server.",
+    "budget": 0
+  },
+  {
+    "name": "OpenFeature",
+    "ring": "Assess",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "CNCF standard API for feature flags. Decision 0018 shapes the in-house flags crate after it so a later provider change stays in one crate.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0018-feature-flags.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "flagd, Unleash and GrowthBook",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Open-source feature flag servers considered in decision 0018. Each needs a long-running server and a database with no free host among approved vendors, or a new hosted vendor, so don't start work on them.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0018-feature-flags.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Neon",
     "ring": "Assess",
     "quadrant": "Platforms",

@@ -1,9 +1,11 @@
 use crate::Route;
+use crate::SettingsSaved;
 use crate::canvas_js::CANVAS_JS;
 use crate::patterns::demonstration_js;
 use crate::progress;
+use crate::settings::{self, Settings};
 use crate::state::{AppState, PracticePhase, next_level, practice_from_query};
-use crate::technique::{Technique, get_technique_js};
+use crate::technique::Technique;
 use crate::tracing_check;
 use dioxus::document::eval;
 use dioxus::prelude::*;
@@ -17,9 +19,9 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
     let mut phase = use_signal(|| PracticePhase::Start);
     let mut feedback = use_signal(|| "Have fun!".to_string());
     let mut canvas_initialized = use_signal(|| false);
-    // Whose progress this is, or `None` while practising `?practice=` only,
-    // which is never saved.
-    let mut learner = use_signal(|| None::<String>);
+    // Where this session's progress is saved, or `None` while practising
+    // `?practice=` only, which is never saved.
+    let mut progress_key = use_signal(|| None::<String>);
     // The level is fixed for the page, so a signal lets each handler read it.
     let level_name = use_signal(|| level.clone());
     // How the demonstration shows each letter, chosen on Start.
@@ -33,40 +35,86 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         }
     });
 
+    // Saving the settings panel starts the level again, with the new
+    // learner, sequence and technique, as on the live app.
+    let saved = use_context::<SettingsSaved>().0;
+    let mut seen = use_signal(|| *saved.peek());
+    use_effect(move || {
+        let now = saved();
+        if now != *seen.peek() {
+            seen.set(now);
+            eval("window.eelCanvas && window.eelCanvas.clear();");
+            state.set(AppState::new(&level_name.peek()));
+            phase.set(PracticePhase::Start);
+            feedback.set("Have fun!".to_string());
+        }
+    });
+
     let is_complete = state.read().is_complete() && *phase.read() != PracticePhase::Start;
 
-    let on_start = move |_| async move {
+    // Start the level: with the query's or saved technique, carrying on
+    // from saved progress (`again: None`), or afresh with `again`'s
+    // technique once the level has been finished with the one before.
+    let begin = move |again: Option<Technique>| async move {
         // `?practice=b,c` practises only those letters or words.
         let query = eval("return window.location.search;")
             .join::<String>()
             .await
             .unwrap_or_default();
-        let saved_technique = eval(&get_technique_js())
-            .join::<String>()
-            .await
-            .unwrap_or_default();
-        technique.set(Technique::choose(&query, &saved_technique));
+        let chosen = Settings::parse(
+            &eval(&settings::load_js())
+                .join::<String>()
+                .await
+                .unwrap_or_default(),
+        );
+        match again {
+            Some(next) => {
+                eval(&next.save_js());
+                technique.set(next);
+            }
+            None => technique.set(Technique::choose(&query, chosen.technique.as_str())),
+        }
+        let level = level_name.read().clone();
         if let Some(expressions) = practice_from_query(&query) {
-            learner.set(None);
+            progress_key.set(None);
+            state.set(AppState::new(&level));
             state.write().practise_only(expressions);
             state.write().start_practice();
         } else {
-            // Carry on from the learner's saved progress, if any.
-            let loaded = eval(&progress::load_js(&level_name.read()))
-                .join::<String>()
-                .await
-                .unwrap_or_default();
-            let (name, saved) = progress::parse_loaded(&loaded);
-            learner.set(Some(name));
-            match saved {
+            // The settings' sequence, or else the whole level; carry on from
+            // the learner's saved progress in it, if any.
+            let sequence = settings::sequence_for_level(&chosen.sequence, &level);
+            let key =
+                progress::progress_key(&settings::learner(&chosen), &level, sequence.as_deref());
+            let saved = if again.is_some() {
+                String::new()
+            } else {
+                eval(&progress::load_js(&key))
+                    .join::<String>()
+                    .await
+                    .unwrap_or_default()
+            };
+            progress_key.set(Some(key.clone()));
+            match progress::restore(&saved) {
                 Some(saved) => state.set(saved),
-                None => state.write().start_practice(),
+                None => {
+                    let mut fresh = AppState::new(&level);
+                    if let Some(expressions) = sequence {
+                        fresh.practise_only(expressions);
+                    }
+                    fresh.start_practice();
+                    if let Some(js) = progress::save_js(&key, &fresh) {
+                        eval(&js);
+                    }
+                    state.set(fresh);
+                }
             }
         }
         let expr = state.read().expression.clone();
         if let Some(ref letter) = expr {
             // Animate the letter demonstration from the bundled patterns
             let letter = letter.clone();
+            feedback.set("Have fun!".to_string());
             phase.set(PracticePhase::Watching);
             eval(&format!(
                 "window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{ window._eelAnimDone = true; }}); {}",
@@ -74,6 +122,8 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             ));
         }
     };
+
+    let on_start = move |_| begin(None);
 
     let on_ready = move |_| {
         // User indicates they're ready to try - enable recording
@@ -107,8 +157,8 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 .is_some_and(|h| h.attempts > 0);
         let next_expr = state_write.expression.clone();
         let is_done = state_write.is_complete();
-        if let Some(name) = learner.read().as_deref()
-            && let Some(js) = progress::save_js(name, &level_name.read(), &state_write)
+        if let Some(key) = progress_key.read().as_deref()
+            && let Some(js) = progress::save_js(key, &state_write)
         {
             eval(&js);
         }
@@ -140,10 +190,17 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         }
     };
 
-    let on_go = move |_| {
-        // After letters come words; after words, the congratulations page.
+    let on_go = move |_| async move {
+        // A level finished with Tracing starts again with Pattern, then
+        // Freeform; after Freeform "Go" opens the next level, with Tracing.
         eval("window.eelCanvas.clear();");
-        navigator().push(next_route(&level));
+        match technique().next() {
+            Some(next) => begin(Some(next)).await,
+            None => {
+                eval(&Technique::Tracing.save_js());
+                navigator().push(next_route(&level_name.peek()));
+            }
+        }
     };
 
     rsx! {

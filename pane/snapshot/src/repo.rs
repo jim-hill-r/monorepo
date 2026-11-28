@@ -247,3 +247,21 @@ fn read_if_exists(path: &Path) -> Result<Option<String>, String> {
 fn read_optional(path: &Path) -> String {
     fs::read_to_string(path).unwrap_or_default()
 }
+
+/// The audit findings in `file` (the saved output of `mise run //:audit`),
+/// each given its project from the snapshot's config roots. `None`, with a
+/// warning, when the audit didn't finish (no closing `audit: ...` line), so
+/// pane shows Standards as not run rather than clean. A file that can't be
+/// read fails the snapshot.
+pub fn audit(file: &Path, snapshot: &Snapshot) -> Result<Option<pane_model::audit::Audit>, String> {
+    let output = read(file)?;
+    let roots: Vec<String> = snapshot.projects.iter().map(|p| p.path.clone()).collect();
+    let audit = pane_model::audit::parse(&output, &roots);
+    if audit.is_none() {
+        eprintln!(
+            "pane_snapshot: {} has no closing `audit:` line; Standards stays grey",
+            file.display()
+        );
+    }
+    Ok(audit)
+}

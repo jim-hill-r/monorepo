@@ -15,10 +15,14 @@ What works today:
 - **Desktop and mobile (native)**: `native::NativeAuthClient`, the platform-free
   half of RFC 8252 sign-in. `begin_login()` gives the authorize URL to open in
   the system browser, and `complete_login()` finishes from the callback URL
-  (a loopback `http://127.0.0.1:<port>/callback` or a custom URL scheme). The
-  app opens the browser and receives the callback itself for now; a loopback
-  listener for desktop and app wiring follow
-  ([plan](docs/plans/2026-11-native-sign-in.md)).
+  (a loopback `http://127.0.0.1:<port>/callback` or a custom URL scheme).
+- **Desktop**: `native::loopback::sign_in` does the whole sign-in. It binds
+  `127.0.0.1` on the first free port of `LoopbackConfig::ports` (default
+  53682 to 53685, each an Allowed Callback URL on the Auth0 native app,
+  since Auth0 has no wildcard ports), opens the system browser, waits for
+  one `GET /callback` (five minutes by default) and finishes the sign-in.
+  Mobile apps receive the callback through a custom URL scheme themselves
+  for now ([plan](docs/plans/2026-11-native-sign-in.md)).
 
 Both share `flow`, which holds every security check (PKCE, `state`, a required
 ID token and its nonce), so it is tested natively with `cargo test`. The

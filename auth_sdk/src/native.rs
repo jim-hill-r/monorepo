@@ -3,10 +3,10 @@
 //! callback back through a redirect URI it owns.
 //!
 //! This module is the platform-free half: start a sign-in, then finish it
-//! from the callback URL. How the URL is opened and how the callback comes
-//! back (a loopback listener on desktop, a custom URL scheme on mobile) is
-//! the app's or a later module's job; see
-//! `docs/plans/2026-11-native-sign-in.md`.
+//! from the callback URL. On desktop, [`loopback`] does the rest: it opens
+//! the system browser and receives the callback on `127.0.0.1`. On mobile
+//! the callback comes back through a custom URL scheme, which is the app's
+//! job for now; see `docs/plans/2026-11-native-sign-in.md`.
 //!
 //! ```no_run
 //! # async fn example() -> Result<(), auth_sdk::provider::AuthError> {
@@ -30,6 +30,9 @@
 //! # Ok(())
 //! # }
 //! ```
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod loopback;
 
 use crate::flow::{self, OidcClient};
 pub use crate::flow::{PendingLogin, SignedIn, parse_callback};
@@ -119,7 +122,7 @@ mod tests {
 
     /// A fake OIDC provider on 127.0.0.1: discovery, an empty key set, and
     /// a token endpoint that answers with `token_body`.
-    async fn fake_provider(token_status: u16, token_body: &'static str) -> String {
+    pub(crate) async fn fake_provider(token_status: u16, token_body: &'static str) -> String {
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .unwrap_or_else(|e| panic!("{e}"));
@@ -163,7 +166,7 @@ mod tests {
         issuer
     }
 
-    fn config(issuer: String) -> ProviderConfig {
+    pub(crate) fn config(issuer: String) -> ProviderConfig {
         ProviderConfig {
             client_id: "native-client".to_string(),
             auth_url: String::new(),

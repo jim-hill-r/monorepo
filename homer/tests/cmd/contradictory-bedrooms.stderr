@@ -1,0 +1,1 @@
+Error: No property can meet these preferences: --min-bedrooms 4 is more than --max-bedrooms 2. Lower --min-bedrooms or raise --max-bedrooms.

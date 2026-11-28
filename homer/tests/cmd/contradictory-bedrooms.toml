@@ -1,0 +1,8 @@
+# Common error: --min-bedrooms above --max-bedrooms can never match, so homer
+# stops before contacting RapidAPI. The base URL points at a closed port, so a
+# request would fail with a connection error instead of this message.
+bin.name = "homer"
+args = ["--address", "123 Main St, Seattle, WA 98101", "--api-key", "test-key", "--base-url", "http://127.0.0.1:9", "--quota-file", "quota.json", "--min-bedrooms", "4", "--max-bedrooms", "2"]
+env.remove = ["RAPIDAPI_KEY", "HOMER_QUOTA_FILE", "RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+fs.sandbox = true
+status.code = 1

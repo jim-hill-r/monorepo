@@ -1,15 +1,22 @@
 //! The practice technique: how much of a letter the demonstration shows.
 //!
 //! The live app (blue.eel.education) has three, picked under Technique in
-//! its settings or with a `?tech=` query:
+//! its settings panel (`settings.rs`) or with a `?tech=` query:
 //!
 //! - **Tracing** animates every stroke, start dot to end dot.
 //! - **Pattern** shows only each stroke's start (green) and end (orange)
 //!   dots, which stay on the canvas while the learner draws between them.
 //! - **Freeform** shows nothing: the learner writes the letter from memory.
 //!
-//! The choice is kept in this browser's `localStorage`, like the learner's
-//! name (`progress.rs`). Nothing leaves the device.
+//! The choice is kept in this browser's `localStorage` under `TECHNIQUE_KEY`,
+//! with the other settings. Nothing leaves the device.
+//!
+//! As on the live app (`completedTechnique` in BlueSteel's store), a level
+//! finished with Tracing starts again with Pattern. The live app means to
+//! go on to Freeform next but never does (it reads an undefined
+//! `this.level`); here Pattern goes on to Freeform, and only a level
+//! finished with Freeform opens the next level, back with Tracing
+//! (`Technique::next`, SPRK-004).
 
 /// How the demonstration shows the letter, and what stays on the canvas
 /// while the learner draws.
@@ -62,6 +69,26 @@ impl Technique {
             .unwrap_or_default()
     }
 
+    /// The technique a level is practised with again once it is finished
+    /// with this one, or `None` after Freeform, when the next level opens.
+    pub fn next(self) -> Option<Technique> {
+        match self {
+            Technique::Tracing => Some(Technique::Pattern),
+            Technique::Pattern => Some(Technique::Freeform),
+            Technique::Freeform => None,
+        }
+    }
+
+    /// JavaScript that keeps this technique as the learner's choice, so the
+    /// settings panel and a reload show it.
+    pub fn save_js(self) -> String {
+        format!(
+            "try {{ localStorage.setItem({}, {}); }} catch (e) {{}}",
+            crate::progress::js_string(TECHNIQUE_KEY),
+            crate::progress::js_string(self.as_str())
+        )
+    }
+
     /// JavaScript that sets the canvas up for the learner's drawing: a clean
     /// canvas, with the stroke dots put back for Pattern.
     pub fn drawing_canvas_js(self) -> &'static str {
@@ -70,22 +97,6 @@ impl Technique {
             Technique::Tracing | Technique::Freeform => "window.eelCanvas.clear();",
         }
     }
-}
-
-/// JavaScript that returns the saved technique's name, or "" when there is
-/// none or storage is blocked.
-pub fn get_technique_js() -> String {
-    format!(
-        "try {{ return localStorage.getItem('{TECHNIQUE_KEY}') || ''; }} catch (e) {{ return ''; }}"
-    )
-}
-
-/// JavaScript that saves `technique` as the one to practise with.
-pub fn set_technique_js(technique: Technique) -> String {
-    format!(
-        "try {{ localStorage.setItem('{TECHNIQUE_KEY}', '{}'); }} catch (e) {{}}",
-        technique.as_str()
-    )
 }
 
 #[cfg(test)]
@@ -134,17 +145,23 @@ mod tests {
     }
 
     #[test]
+    fn a_finished_level_goes_tracing_then_pattern_then_freeform() {
+        assert_eq!(Technique::Tracing.next(), Some(Technique::Pattern));
+        assert_eq!(Technique::Pattern.next(), Some(Technique::Freeform));
+        assert_eq!(Technique::Freeform.next(), None);
+    }
+
+    #[test]
+    fn saving_a_technique_keeps_it_under_its_key() {
+        let js = Technique::Pattern.save_js();
+        assert!(js.contains(r#"localStorage.setItem("blueeel.technique", "Pattern")"#));
+        assert!(js.starts_with("try {"), "blocked storage must not throw");
+    }
+
+    #[test]
     fn only_pattern_keeps_the_dots_while_drawing() {
         assert!(Technique::Pattern.drawing_canvas_js().contains("showMarks"));
         assert!(Technique::Tracing.drawing_canvas_js().contains("clear"));
         assert!(Technique::Freeform.drawing_canvas_js().contains("clear"));
-    }
-
-    #[test]
-    fn the_saved_technique_stays_on_the_device() {
-        let js = set_technique_js(Technique::Pattern);
-        assert!(js.contains("localStorage.setItem('blueeel.technique', 'Pattern')"));
-        assert!(!js.contains("fetch"));
-        assert!(get_technique_js().contains("localStorage.getItem('blueeel.technique')"));
     }
 }

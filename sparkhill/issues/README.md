@@ -12,8 +12,9 @@ learner's progress, the live letter shapes, capitals) are done. Since
 2026-11-27 the sandbox network allows blue.eel.education, so agents can
 open the live app in Playwright to compare. Doing so found two more gaps:
 the Pattern and Freeform techniques (phase 5) and the practice menu and
-settings panel (phase 6). The techniques themselves are done (#901);
-moving a learner from Tracing to Pattern after a level is still open. The
+settings panel (phase 6). The techniques (#901), the menu and settings
+panel, and moving a learner from Tracing to Pattern to Freeform after
+each level are done. The
 live app's source is the public repo jimhillr/BlueSteel (Quasar/Vue, in
 `frontend/src/client`). The live app has no capitals level, and its
 Upload Practice switch sends tracings to S3, which SPRK-006 rules out, so
@@ -23,5 +24,8 @@ lists and work them by `order`. The web app's
 `@smoke` Playwright tests run against the deploy after every push to `main`
 and feed the `cd` evals in `../evals.toml`. They test our app, not the live
 one: run against blue.eel.education on 2026-11-27, 1 of 10 passed (Begin
-opens the letter level), because the live app asks for the learner's name
-in its settings panel rather than on the home page.
+opens the letter level), because the live app asked for the learner's
+name in its settings panel and the app then asked on the home page. The
+app now has the same settings panel, Student, Sequence and Technique,
+though the live app's Sequence is a code for a few hard-coded learners'
+lists, where ours takes the letters and words themselves.

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { saveSettings } from './settings-panel';
 
 /**
  * The practice techniques (src/technique.rs), as on the live app: Tracing
@@ -50,9 +51,9 @@ async function traceAndCheck(page: Page, path: Point[]): Promise<void> {
   await page.getByRole('button', { name: '✓' }).click();
 }
 
-test('Pattern picked on the home page keeps the start dots while the learner draws @smoke @req:SPRK-009', async ({ page }) => {
+test('Pattern picked in the settings keeps the start dots while the learner draws @smoke @req:SPRK-009', async ({ page }) => {
   await page.goto('/');
-  await page.getByLabel('Technique').selectOption('Pattern');
+  await saveSettings(page, { technique: 'Pattern' });
   await page.getByRole('link', { name: 'Begin' }).click();
   await expect(page).toHaveURL(/\/letter$/);
   await start(page);
@@ -89,9 +90,53 @@ test('Freeform shows no demonstration and still passes a letter written right @r
 
 test('Tracing is the default and the chosen technique is remembered @req:SPRK-009', async ({ page }) => {
   await page.goto('/');
-  const picker = page.getByLabel('Technique');
-  await expect(picker).toHaveValue('Tracing');
-  await picker.selectOption('Freeform');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Technique')).toHaveValue('Tracing');
+  await page.keyboard.press('Escape');
+  await saveSettings(page, { technique: 'Freeform' });
   await page.reload();
+  await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByLabel('Technique')).toHaveValue('Freeform');
+});
+
+/** Traces the letter on show along its demonstration, `times` times, until the level ends. */
+async function finishWith(page: Page, technique: string, times: number): Promise<void> {
+  expect(await page.evaluate(() => (window as any).eelCanvas.technique())).toBe(technique);
+  for (let i = 0; i < times; i++) {
+    await page.getByRole('button', { name: "I'm Ready to Try" }).click();
+    await traceAndCheck(page, await demonstration(page));
+  }
+  await expect(page.getByText('You are ready for the next level!')).toBeVisible();
+}
+
+test('"Go" after a level done with Tracing starts it again with Pattern, then Freeform, then opens the next level @smoke @req:SPRK-004 @req:SPRK-009', async ({ page }) => {
+  // Traced right first time 3 times (STABILIZE_COUNT), b is stable.
+  await page.goto('/letter?practice=b');
+  await start(page);
+  await finishWith(page, 'Tracing', 3);
+
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/letter\?/);
+  await expect(page.locator('main b')).toHaveText('b');
+  await finishWith(page, 'Pattern', 3);
+
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/letter\?/);
+  await expect(page.locator('main b')).toHaveText('b');
+  await finishWith(page, 'Freeform', 3);
+
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/word$/);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Technique')).toHaveValue('Tracing');
+});
+
+test('the technique a level moved on to is kept, so the settings panel shows it @req:SPRK-009', async ({ page }) => {
+  await page.goto('/letter?practice=b');
+  await start(page);
+  await finishWith(page, 'Tracing', 3);
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page.getByRole('button', { name: "I'm Ready to Try" })).toBeVisible();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Technique')).toHaveValue('Pattern');
 });
