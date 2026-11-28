@@ -7,7 +7,8 @@ leaves only the judgment to the model. Why and what comes next is in the
 [baked skills plan](../standards/docs/plans/2026-11-baked-skills.md).
 
 It reads and writes only files in the working tree. It never uses the
-network and never calls GitHub: agents do that with their own GitHub tools.
+network and never calls GitHub: agents do that with their own GitHub tools,
+and workflows list what they need into a file first.
 
 ## Commands
 
@@ -63,6 +64,12 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 c reviewers
 c reviewers --json
 
+# Which temporary resources to delete (Pages previews over 14 days, old
+# production deployments, branches 7 days after their PR closed), from the
+# live list all-retire-resources.yml writes. Prints the run summary; never
+# deletes anything itself.
+c retire-temporary --live live.json --json plan.json
+
 # Every project's user guide (DOC-005 to DOC-008) against the baseline in
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
@@ -89,6 +96,7 @@ c threat-check --projects cookbook,pane
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's requirement or cost changes have the right reviewer's approval |
 | `reviewers` | `mise run //:audit` (any skill's hooks) | Reading decision 0019 to tell whether an edit to `standards/reviewers.toml` is allowed |
+| `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |

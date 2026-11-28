@@ -72,7 +72,8 @@ Contains GitHub Actions workflows, including:
 - `nightly-ci.yml` - Runs `mise run ci` in every project each night
 - `nightly-cd.yml` - Runs `mise run ci` then `mise run deploy` in every deploying project each night
 - `mise-projects.yml` - The reusable workflow the three above call
-- `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default)
+- `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default; also called by all-retire-resources.yml)
+- `all-retire-resources.yml` - Weekly: deletes old Pages deployments and branches of closed PRs
 - `all-codeql.yml` - CodeQL code scanning
 
 See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` for details.
