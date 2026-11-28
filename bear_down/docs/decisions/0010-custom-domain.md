@@ -1,6 +1,6 @@
 # 0010. Custom domain for the site
 
-- Status: Proposed (waiting on Jim)
+- Status: Superseded by repo decision [0028](../../../standards/docs/decisions/0028-jimhillr-com.md)
 - Date: 2026-11-28
 - Follows: the "custom domain later" consequence of [0009](0009-cloudflare-pages-nightly-cd.md)
 
@@ -45,8 +45,13 @@ football site, option B keeps the site as it is at no cost.
 
 ## Decision
 
-To be filled in once Jim answers. Until then the site stays on
-`jimhillr-bear-down.pages.dev`.
+Jim (2026-11-28) answered for every site at once: "I have a jimhillr.com
+domain where all these pages apps will eventually need to land." So this
+is option A on a domain Jim owns, decided repo-wide in
+[0028](../../../standards/docs/decisions/0028-jimhillr-com.md): the site
+moves to `bear-down.jimhillr.com`
+(`bear_down/issues/jimhillr-com-phase-4-move-to-subdomain.md`). Until
+then it stays on `jimhillr-bear-down.pages.dev`.
 
 ## Consequences
 
@@ -54,5 +59,5 @@ To be filled in once Jim answers. Until then the site stays on
   Pages project, adds a human task with a runbook for the `CNAME` record,
   and moves the deploy URL, threat surface, user guide and evals to the new
   address. `pages.dev` keeps working.
-- With B, `bear_down/issues/pick-custom-domain-replace-pages-dev.md` is
-  deleted and this record is marked Accepted with no domain.
+- The custom domain issue is replaced by the jimhillr.com epic's phase 4
+  issue for bear_down.
