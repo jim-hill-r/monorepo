@@ -1,7 +1,7 @@
-# 0023. Monitoring, alerting, logging and paging: Cloudflare for signals and logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone
+# 0023. Observability as one project and review domain: Cloudflare for signals and logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone
 
 - Status: Accepted
-- Decided by: Jim (2026-11-28, chose "GitHub Mobile only" on the pager decision card, over PagerDuty Free, Pushover and ntfy.sh; the rest as recommended)
+- Decided by: Jim (2026-11-28, chose "GitHub Mobile only" on the pager decision card, over PagerDuty Free, Pushover and ntfy.sh; the rest as recommended; on 2026-11-28 made observability one project and review domain)
 - Date: 2026-11-28
 - Asked by: Jim
 - Builds on: [0001](0001-deploy-feedback-loop.md) (Cloudflare is the
@@ -9,7 +9,9 @@
   [0003](0003-eval-engine.md) (production evals),
   [0007](0007-infrastructure-as-code.md) (IaC),
   [0010](0010-credential-second-approval.md) and
-  [0011](0011-mint-secrets-by-workflow.md) (credentials)
+  [0011](0011-mint-secrets-by-workflow.md) (credentials),
+  [0019](0019-review-roles.md) (review roles, which this record extends
+  with an `observability` domain)
 
 ## Context
 
@@ -17,6 +19,13 @@ Jim (2026-11-28):
 
 > We need to do tech selection on monitoring, alerting, logging and paging
 > solutions. Lets look for many options and decide on the best one.
+
+and, once the choices were made:
+
+> All of these decisions can be lumped into a single domain called
+> observability. We can make observability a first class citizen in our
+> dev platform and have a reviewer for it and have all this work exist
+> within an observability project.
 
 The ask also said paging must reach Jim's phone, setup should be IaC or
 scripts, and cost is weighed against the free tiers.
@@ -129,7 +138,7 @@ Free-plan facts were read from each vendor's pricing or docs pages on
 
 ## Decision
 
-Bundle G, in four parts.
+Bundle G, in four parts, owned by one project and one review domain (below).
 
 1. **Logging stays on Cloudflare.** Workers log structured JSON through
    `tracing` (one line per request with `project`, `build`, route, status
@@ -138,9 +147,9 @@ Bundle G, in four parts.
    errors to `telemetry`. Anything worth keeping past a week becomes an
    issue file or a committed export, as 0001 already says. No log shipping
    to another vendor.
-2. **Monitoring is a `watchdog` project:** a Rust Worker on one Cron
-   Trigger that runs every 5 minutes. It reads its checks from
-   `watchdog/checks.toml`, which an audit check keeps in step with every
+2. **Monitoring is the watchdog,** a Rust Worker in the `observability`
+   project on one Cron Trigger that runs every 5 minutes. It reads its
+   checks from `observability/checks.toml`, which an audit check keeps in step with every
    project's production `DEPLOY_URL` and the Workers in
    `standards/resources.toml`, so a new site can't ship unwatched. Each
    check is an HTTP request with an expected status and, where an eval
@@ -187,6 +196,37 @@ Bundle G, in four parts.
      for that, an alert that stays open for an hour gets one more comment
      that mentions Jim again, and then no more until it changes.
 
+### Observability is a project and a review domain
+
+Jim: "make observability a first class citizen in our dev platform and
+have a reviewer for it."
+
+- **The `observability` project** holds all of this work: the watchdog
+  Worker, its checks and alert rules, the alerts App manifest, the shared
+  Worker logging setup, the runbooks' code side, its user guide and its
+  issue files (epic "Observability"). It starts as a docs project with the
+  phase issues and becomes a Rust Worker project in phase 1. It is in the
+  `software-development-platform` tier of decision 0019, with `pane`,
+  `evals` and `infra`, because it guards how we run software, so its
+  changes get strict review.
+- **`telemetry` moves into it later.** The events Worker of decision 0001
+  is observability too. Moving its folder to `observability/telemetry`
+  keeps the Worker's name and URL, so nothing is retired; it is a backlog
+  issue rather than part of this change, so the move gets its own review.
+- **A new review domain, `observability`,** joins the domain table of
+  decision 0019, with one role, `observability-reviewer`, held by Jim over
+  the whole repo for now (like every other domain role). A PR touches it
+  when it changes:
+  - anything in `observability/` (checks, alert rules, urgency, who is
+    paged) or in `telemetry/`;
+  - a Worker's `[observability]` settings in a `wrangler.toml`, or the
+    shared logging setup;
+  - a project's production `DEPLOY_URL`, which changes what is watched.
+  The trigger is by path, so `chores gate` can detect it without
+  judgment. Removing or loosening a check is the change this role exists
+  to catch: a quiet monitor looks the same as a healthy site.
+- The matrix row is the same as the others today: Jim in every tier.
+
 ### Setup by IaC and scripts
 
 - The watchdog deploys like `telemetry` (`mise run deploy`,
@@ -223,7 +263,7 @@ Bundle G, in four parts.
 
 ## Phases
 
-1. **Watchdog Worker** with HTTP checks, `checks.toml`, the audit check
+1. **Watchdog Worker** in `observability/` with HTTP checks, `checks.toml`, the audit check
    against `DEPLOY_URL`s, results in Analytics Engine, alerts to the log
    only. Find out whether Cloudflare Monitors are on the Free plan.
 2. **Paging:** Jim's human task to create the `jimhillr-alerts` App and
@@ -275,6 +315,9 @@ the $25 a month budget.
   Pushover in Assess as the pagers to revisit, and Grafana Cloud, Better
   Stack, UptimeRobot, Healthchecks.io, Opsgenie and the self-hosted
   monitors in Hold.
+- Observability has one home, `observability/`, and one reviewer role,
+  `observability-reviewer`. The review roles build (decision 0019's
+  phases) adds the domain and the project's tier.
 - GitHub issues come back for one job, incident alerts, which the
   watchdog opens and closes; work is still tracked in issue files.
 - New secrets (the alerts App key and the webhook secret) get rows in

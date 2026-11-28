@@ -39,6 +39,7 @@ config_roots = [
   "jimhillr",
   "luggage",
   "my_lang",
+  "observability",
   "pane",
   "pane/cloudflare",
   "pane/model",

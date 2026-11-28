@@ -32,4 +32,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0019](0019-review-roles.md) | Review roles: who may approve what, as a matrix of domains (cost, threat, requirements, credentials...) and project tiers, in one file | Accepted |
 | [0020](0020-user-feedback-and-support.md) | User feedback, support and in-app user guides as platform libraries: each product its own endpoint, data and inbox | Accepted |
 | [0021](0021-tenant-scoped-product-data.md) | Product runtime data in one shared D1 database, in tenant-scoped tables with per-tenant budgets and a one-command move out | Accepted |
-| [0023](0023-monitoring-alerting-logging-paging.md) | Monitoring, alerting, logging and paging: Cloudflare logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone (0022 is taken by an open PR) | Accepted |
+| [0023](0023-observability.md) | Observability as one project and review domain: Cloudflare logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone (0022 is taken by an open PR) | Accepted |
