@@ -1,16 +1,15 @@
 # pane: threat model. Format and rules: standards/docs/security.md
 reviewed = "2026-11-27"
-summary = "Jim's dashboard of the repo, a static Pages site built from files already public in the repo. Phase 3 adds writes and puts it behind Cloudflare Access (pane/docs/plans)."
+summary = "Jim's dashboard of the repo, a Worker (jimhillr-pane) serving static assets built from files already public in the repo. Phase 3 adds writes and puts it behind Cloudflare Access (pane/docs/plans)."
 
 [[surface]]
 name = "site"
-kind = "pages"
-url = "https://jimhillr-pane.pages.dev"
+kind = "worker"
+url = "https://jimhillr-pane.jim-hill-r.workers.dev"
 access = "public"
 data = "public"
-previews = "public"
 headers = "pane/web/public/_headers"
-notes = "Everything it shows is already public in the repo, so public is right today. Before phase 3 adds the PR-opening token this must become cloudflare-access, previews included."
+notes = "Everything it shows is already public in the repo, so public is right today. Before phase 3 adds the PR-opening token this must become cloudflare-access. The Worker sets preview_urls = false, so it has no preview URLs; only /api/* runs code (just /api/health so far)."
 
 # Every Pages deploy (push-main.yml, nightly-cd.yml through mise-projects.yml).
 [[secret]]
