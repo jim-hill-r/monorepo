@@ -67,7 +67,10 @@ Zillow API, never the live one.
 - Why: Jim runs homer now and then and shouldn't have to read code to see
   what went wrong.
 - Accept: a missing API key or an invalid option (such as a negative or
-  `NaN` `--min-bathrooms`) exits with status 2 and says what to fix; an
+  `NaN` `--min-bathrooms`) exits with status 2 and says what to fix;
+  preferences no property can meet (`--min-bedrooms` above
+  `--max-bedrooms`) exit with status 1, name both flags and make no
+  RapidAPI request; an
   error status from RapidAPI shows the status and the start of the body,
   whitespace collapsed and cut to about 300 characters; a reply that isn't
   JSON is an error, not a crash.

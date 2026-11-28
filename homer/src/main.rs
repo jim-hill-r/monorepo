@@ -69,6 +69,23 @@ pub struct HomePreferences {
     pub min_sqft: Option<u32>,
 }
 
+impl HomePreferences {
+    /// Fail when no property could meet these preferences, such as
+    /// `--min-bedrooms` above `--max-bedrooms`, so homer stops before it
+    /// spends a RapidAPI free-quota request on a lookup that can only fail.
+    pub fn validate(&self) -> Result<()> {
+        if let (Some(min), Some(max)) = (self.min_bedrooms, self.max_bedrooms)
+            && min > max
+        {
+            anyhow::bail!(
+                "No property can meet these preferences: --min-bedrooms {min} is more than \
+                 --max-bedrooms {max}. Lower --min-bedrooms or raise --max-bedrooms."
+            );
+        }
+        Ok(())
+    }
+}
+
 /// Property details returned by the Zillow API
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
 pub struct PropertyDetails {
@@ -525,6 +542,7 @@ fn main() -> Result<()> {
         max_price: args.max_price,
         min_sqft: args.min_sqft,
     };
+    prefs.validate()?;
 
     let quota_file = args.quota_file.or_else(quota::default_quota_file).context(
         "No place to keep the RapidAPI quota: set --quota-file, HOMER_QUOTA_FILE or HOME",
@@ -857,6 +875,43 @@ mod tests {
         };
         let eval = evaluate_property(&details, &prefs);
         assert!(eval.meets_preferences);
+    }
+
+    #[test]
+    fn test_validate_rejects_min_bedrooms_above_max() {
+        let prefs = HomePreferences {
+            min_bedrooms: Some(4),
+            max_bedrooms: Some(2),
+            ..Default::default()
+        };
+        let message = prefs.validate().expect_err("4 > 2 must fail").to_string();
+        assert!(message.contains("--min-bedrooms 4"), "{message}");
+        assert!(message.contains("--max-bedrooms 2"), "{message}");
+    }
+
+    #[test]
+    fn test_validate_accepts_equal_bedroom_bounds() {
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_bedrooms: Some(3),
+            ..Default::default()
+        };
+        assert!(prefs.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_accepts_one_sided_or_no_bounds() {
+        assert!(HomePreferences::default().validate().is_ok());
+        let only_min = HomePreferences {
+            min_bedrooms: Some(9),
+            ..Default::default()
+        };
+        assert!(only_min.validate().is_ok());
+        let only_max = HomePreferences {
+            max_bedrooms: Some(0),
+            ..Default::default()
+        };
+        assert!(only_max.validate().is_ok());
     }
 
     #[test]
