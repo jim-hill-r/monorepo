@@ -1,13 +1,14 @@
 ---
 # PR-004, the `human-review` label (Jim, 2026-11-27: "Lets make sure no prs
 # with red attention flags get auto merged. Cost changes must be reviewed by
-# jim", then "Lets make it needs human review"). A PR with a red attention
-# tag (`must-requirement-changed`) or a cost change, from its diff, its
-# description or the `cost` label, is labelled `human-review` until a human
-# collaborator approves its head commit, and the label comes off then. Only
-# human collaborators count (owner, member or collaborator; Jim: "Any human
-# collaborator is fine"): agent `-agt` accounts, jimhillr-reviewer and bots
-# never do. A PR a human collaborator opened is never labelled.
+# jim", then "Lets make it needs human review"). Since review roles phase 1
+# (decision 0019), who may approve comes from standards/reviewers.toml, read
+# from the base branch: a PR that changes a requirement or a cost, from its
+# diff, its description or the `cost` label, is labelled `human-review`
+# until a requirements-reviewer or cost-reviewer (today Jim) approves its
+# head commit, and the label comes off then. Agent `-agt` accounts,
+# jimhillr-reviewer and bots never hold a role. A PR a role holder opened is
+# never labelled.
 #
 # This is not a CI check (Jim, 2026-11-28: the pending status "is
 # preventing claude from marking PRs as ready for review and it shows CI as
@@ -108,7 +109,7 @@ jobs:
             echo "No human-review label (passed)"
           else
             gh api "repos/$GH_REPO/labels" -f name=human-review -f color=B60205 \
-              -f description="Waiting for a human's approval: red attention tag or cost change" >/dev/null 2>&1 || true
+              -f description="Waiting for a review role's approval: requirement or cost change" >/dev/null 2>&1 || true
             gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=human-review" >/dev/null
             echo "Labelled human-review"
           fi

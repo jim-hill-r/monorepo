@@ -146,6 +146,10 @@ pub struct Attention {
     pub must: Vec<String>,
     /// IDs of other changed requirements.
     pub other: Vec<String>,
+    /// The requirements files whose requirements (or text) changed, so the
+    /// review roles check knows which project each change is in.
+    #[serde(default)]
+    pub requirement_files: Vec<String>,
     /// Changed files that affect a threat or risk.
     pub risk: Vec<String>,
     /// Changed files that set what the repo uses or costs.
@@ -319,6 +323,9 @@ pub fn attention(changed: &[String], read: impl Fn(&str, bool) -> Option<String>
                 // Prose outside any requirement, such as the intro.
                 out.other
                     .push(format!("{path} (text outside requirements)"));
+            }
+            if before != after {
+                out.requirement_files.push(path.clone());
             }
             out.must.extend(must);
             out.other.extend(other);

@@ -12,6 +12,10 @@
 #            LIN-* are warnings only for now.
 #   DOC-005 to DOC-008  User guides against the baseline in
 #            standards/user-docs.toml (`chores user-docs`, Rust).
+#   REV-001, REV-002  Review roles policy, standards/reviewers.toml
+#            (`chores reviewers`, Rust, decision 0019): no broken fixed rule
+#            or unknown role, scope or member, and every top-level folder
+#            in exactly one tier.
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
@@ -80,6 +84,13 @@ if command -v cargo >/dev/null 2>&1; then
   cargo run --quiet --manifest-path chores/Cargo.toml -- user-docs || errors=$((errors + 1))
 else
   echo "warning: user docs check skipped: cargo is not installed"
+fi
+
+# REV-001, REV-002: who may approve what (decision 0019).
+if command -v cargo >/dev/null 2>&1; then
+  cargo run --quiet --manifest-path chores/Cargo.toml -- reviewers || errors=$((errors + 1))
+else
+  echo "warning: review roles check skipped: cargo is not installed"
 fi
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.

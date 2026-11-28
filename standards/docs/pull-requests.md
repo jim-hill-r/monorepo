@@ -171,33 +171,49 @@ PR that touches a project failing on `main` must not make that project worse.
 
 Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto
 merged. Cost changes must be reviewed by jim", then "Lets make it needs
-human review". So a PR **needs a human** when
-any of these says it has a red [attention tag](#attention-tags)
-(`must-requirement-changed` today, and any red tag added later) or
-`cost-changed`:
+human review". Who may give that review is now written in one file,
+`standards/reviewers.toml` ([decision 0019](decisions/0019-review-roles.md),
+phase 1): a change has a **domain** (what kind of thing changed) and lands
+in a **place** (the top-level folder of each changed file, or the root
+files). Each domain has one role, held by its members over a scope (the
+whole repo, a tier or one project). Phase 1 checks two domains:
 
-- the tags `chores badges` works out from its diff (the PR can't argue
-  with these),
-- the tags its own `## Attention` section declares, or
-- the `cost` label from PR CI's Cost summary job.
+| Domain | Role (today) | A PR touches it when |
+| --- | --- | --- |
+| `requirements` | `requirements-reviewer` (Jim) | Any requirement in a `docs/requirements.md` changes, `must` or not, or its description declares `must-requirement-changed` or `requirement-changed` |
+| `cost` | `cost-reviewer` (Jim) | A cost file changes, its description declares `cost-changed`, or PR CI's Cost summary job labels it `cost` |
 
-A **human** is any collaborator on the repository (its owner, an org
-member or an invited collaborator; Jim, 2026-11-27: "Any human
-collaborator is fine") except an agent account (login ending in `-agt`,
-such as `jimhillr-agt`), `jimhillr-reviewer` and bots or apps (`[bot]`,
-Copilot). Today that means Jim (`jimhillr`). Reviews from anyone who isn't
-a collaborator never count.
+The diff (`chores badges`, which the PR can't argue with) says where each
+change lands. A declared tag or the `cost` label with no matching change
+in the diff counts for the whole repo, which only a grant over the repo
+covers. The other domains (threat, quality, credentials, docs and the
+per-tier `change` roles) are in the file already and join the check in
+phase 2.
+
+A PR **needs a human** when it touches any of these cells. A cell passes
+once someone holding its role over a scope that covers the place has
+approved the PR's head commit (or opened the PR), and no holder has asked
+for changes since; one approval counts for every role its author holds, so
+today one approval from Jim covers every cell. Rules the file can't change
+are in code: agent accounts (`-agt`, such as `jimhillr-agt`),
+`jimhillr-reviewer` and bots or apps (`[bot]`, Copilot) never hold a role;
+only collaborators' reviews count; and the repo owner holds every role, so
+a missing or broken file leaves the owner, not nobody. `chores reviewers`
+checks the file in the audit: REV-001 fails a broken fixed rule or an
+unknown role, scope, member or protection, and REV-002 a top-level folder
+in no tier or in two.
 
 A PR that needs a human:
 
 1. **Is labelled `human-review`** (PR-004,
    `.github/workflows/pull-request-human-review.yml`, the logic in `chores
-   gate`) until a human collaborator approves its current head commit,
-   with no later "changes requested" from one; the label comes off then.
-   The workflow runs again on every push, edit, label change and review.
-   A PR a human collaborator opened is never labelled. The workflow builds
-   `chores` from the base branch, so a PR can't change the rules it is
-   judged by. `human-review` is not `needs-human`: that label still means
+   gate`) until every cell it touches has its role's approval of the
+   current head commit, with no later "changes requested" from a holder;
+   the label comes off then. The workflow runs again on every push, edit,
+   label change and review. A PR a role holder opened is never labelled.
+   The workflow builds `chores` from the base branch and reads
+   `standards/reviewers.toml` from it, so a PR can't change the rules it
+   is judged by or grant itself an approver. `human-review` is not `needs-human`: that label still means
    a sign-off or manual step beyond the approval.
 2. **Is never approved by anyone but a human.** `jimhillr-reviewer`
    refuses the label, red and orange attention tags and every protected
