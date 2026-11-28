@@ -215,6 +215,14 @@ why = "jimhillr-reviewer's approvals merge agent PRs without Jim; more access, o
 every = "90d"
 
 [[setting]]
+id = "github-email-notifications-off"
+vendor = "GitHub"
+where = "github.com/settings/notifications and github.com/settings/emails, signed in as each of jimhillr, jimhillr-agt and jimhillr-reviewer"
+expect = "No Email box is ticked under Watching, Participating, Actions or Dependabot alerts, the Dependabot email digest is off, and Email preferences is set to only account related emails, on all three accounts; web and GitHub Mobile notifications are still on (standards/docs/runbooks/github-email-notifications-off.md)."
+why = "Agent PRs, reviews and Actions runs send a flood of GitHub email that Jim asked to stop (2026-11-28); GitHub sometimes adds new email types turned on."
+every = "180d"
+
+[[setting]]
 id = "rotate-reviewer-token"
 vendor = "GitHub"
 where = "github.com/settings/personal-access-tokens (signed in as jimhillr-reviewer) > jimhillr-reviewer-approve"

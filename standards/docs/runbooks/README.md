@@ -43,6 +43,7 @@ run book in the task."
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
 | [List the Squarespace domains](squarespace-domains.md) | one-time, then every 90 days | `list-squarespace-domains.md` |
 | [Get a free EIN and open a separate free account for project money](open-project-bank-account-and-ein.md) | one-time | `open-project-bank-account-and-ein.md` |
+| [Turn off GitHub email notifications on the three jimhillr accounts](github-email-notifications-off.md) | one-time per account, checked every 180 days | `github-email-notifications-off.md` |
 
 The Infra Mint workflow (`.github/workflows/infra-mint.yml`, decision 0011)
 makes every other infra secret from the bootstrap credentials and the GitHub App below: the state
