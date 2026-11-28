@@ -36,7 +36,6 @@ run book in the task."
 | --- | --- | --- |
 | [Create the read-only infra GitHub App](github-app-infra-read.md) | one-time | `github-app-infra-read.md` |
 | [Set up the jimhillr-reviewer account](jimhillr-reviewer-account.md) | one-time, token yearly | `jimhillr-reviewer-account.md` |
-| [Turn on GitHub code security](github-code-security.md) | one-time (private vulnerability reporting only; the `github` stack does the rest) | `github-settings-code-security-turn-secret.md` |
 | [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
 | [Make the billing read credentials](billing-read-credentials.md) | one-time, then yearly | `billing-read-credentials.md` |
@@ -72,6 +71,7 @@ and apply tokens, the Auth0 read and apply apps and the Android release key.
 | [Set up the infra environments and bootstrap credentials](infra-credentials-environment.md) | `infra` and `infra-credentials`, the Auth0 and Cloudflare bootstrap credentials, and the first Infra Mint run (done 2026-11-27) |
 | [Create the infra GitHub App](github-app-infra.md) | The private app Infra Mint writes secrets with (done 2026-11-27) |
 | [Sign up for PostHog](posthog-sign-up.md) | The PostHog Cloud project (US, free plan), session replay settings, and the `POSTHOG_PERSONAL_API_KEY` and `POSTHOG_BILLING_READ_KEY` secrets (done 2026-11-27) |
+| [Turn on GitHub code security](github-code-security.md) | Private vulnerability reporting by hand; the `github` stack does the rest (done 2026-11-28) |
 
 ### Replaced by the Infra Mint workflow (keep for reference)
 
