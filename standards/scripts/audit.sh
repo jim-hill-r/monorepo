@@ -6,6 +6,8 @@
 #            standards/tasks/<type>.toml, and that file exists.
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
+#   STD-005  No tracked file holds an unresolved merge conflict marker
+#            (`chores conflict-markers`, Rust).
 #   NAM-001  Project directory names are snake_case.
 #   NAM-002, NAM-004, DOC-*, LIN-*  Package names, README.md and
 #            CONTRIBUTING.md, Cargo lints (project-check.sh); DOC-* and
@@ -76,10 +78,12 @@ done
 bash standards/scripts/project-check.sh || errors=$((errors + 1))
 
 # DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
+# STD-005: no unresolved merge conflict markers in tracked files.
 if command -v cargo >/dev/null 2>&1; then
   cargo run --quiet --manifest-path chores/Cargo.toml -- user-docs || errors=$((errors + 1))
+  cargo run --quiet --manifest-path chores/Cargo.toml -- conflict-markers || errors=$((errors + 1))
 else
-  echo "warning: user docs check skipped: cargo is not installed"
+  echo "warning: user docs and conflict marker checks skipped: cargo is not installed"
 fi
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.

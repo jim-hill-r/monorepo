@@ -60,6 +60,10 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
 c user-docs --json
+
+# Unresolved merge conflict markers in any tracked file (STD-005); run by
+# `mise run //:audit`. Exit 1 on any.
+c conflict-markers
 ```
 
 `new-human-task` starts the runbook from
@@ -72,6 +76,7 @@ c user-docs --json
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command
