@@ -345,6 +345,15 @@ repo, rather than in any one agent tool's settings.
   rule is [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md),
   the prompt is in
   [standards/docs/scheduled-tasks/credit-window.md](standards/docs/scheduled-tasks/credit-window.md).
+- **Product share (Jim, 2026-11-28).** "I'd like to ensure that at least
+  50% of all of my claude credits are being used on product work, not to
+  let the platform work overwhelm it." A soft heuristic: when new threads
+  start, `chores next-task --working <one project per working thread>`
+  prefers product issues while products (decision 0019's `product` tier)
+  are under half of the working threads and last week's merged PRs. Pass
+  `--working` whenever you pick for new threads. Details are under
+  "Product share" in
+  [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md).
 - **Starting new work.** Apart from the credit window check above, there
   is no scheduled job for new work. Whenever no agent PRs or agent tasks
   are in flight, the coordinating agent starts a new

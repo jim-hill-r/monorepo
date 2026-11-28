@@ -271,7 +271,7 @@ push. PR triage treats the draft step PRs of a stack whose top PR is open
 as part of it, not as orphans.
 
 Human reviews from pane's **Approve** page (`/approve` on
-<https://jimhillr-pane.pages.dev>): every green PR waiting on review, clear
+<https://jimhillr-pane.jim-hill-r.workers.dev>): every green PR waiting on review, clear
 ones first, with its What changed summary, attention tags and a link to its review
 form.
 

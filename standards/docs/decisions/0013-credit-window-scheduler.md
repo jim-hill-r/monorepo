@@ -83,8 +83,10 @@ Each run:
    per thread where possible, skip on-hold projects and mise migration
    files; no cap on open threads, Jim 2026-11-27: "Lets remove the 30
    caps in an effort to keep credit window maximized. I will catch up
-   eventually"). Otherwise it sends nothing, so hourly runs don't flood
-   anyone.
+   eventually"). It picks the issues with `chores next-task --count n
+   --working <the working threads' projects>`, which keeps at least half
+   of the work on products (Jim, 2026-11-28, see "Product share" below).
+   Otherwise it sends nothing, so hourly runs don't flood anyone.
 4. Resolves its own thread, so no thread stays open for the process. It
    posts to Jim only when usage can't be read or on a stop.
 
@@ -150,3 +152,36 @@ unused points.
   the run falls back to the 5-thread floor and tells Jim once.
 - The scheduled task is a setting made by hand, listed with the others in
   `standards/settings.toml` (`claude-scheduled-tasks`).
+
+## Product share (2026-11-28)
+
+Jim, 2026-11-28: "I'd like to ensure that at least 50% of all of my claude
+credits are being used on product work, not to let the platform work
+overwhelm it. Try to include some changes into the start a task which
+chooses tasks for this very soft heuristic. The goals being equal effort on
+platform stuff and product stuff."
+
+Credits aren't readable per thread, so `chores next-task` estimates the
+split from two signals, each read by tier (decision 0019; the
+`software-development-platform` and `technical-platform` tiers count as
+platform, root `issues/` work too):
+
+- the threads working now, which the coordinator passes as `--working`,
+  one project per thread, and
+- the commits on `main` in the last seven days (`--days`, one squash
+  merge per PR), each on the side most of its files are in.
+
+The product share is the mean of the two shares. While it is under 50%,
+each pick is the first qualifying product issue in the usual order
+instead of the first issue, and each pick counts as a new product or
+platform thread, so a burst of eight picks evens out rather than going
+all one way. At 50% or more, or when nothing can be counted, the usual
+order applies. It is soft on purpose: priority order still decides within
+each side, `--project` picks skip it, and with no product issue left a
+platform issue is picked. `--no-balance` turns it off.
+
+A project's tier is read from its own `docs/project.toml` (`tier`), which
+[decision 0022](0022-project-metadata-and-product-docs.md) proposes; until
+those files exist, `chores` falls back to 0019's table, and phase 1 of the
+product strategy epic deletes that copy (Jim, 2026-11-28: "we want every
+project to be very independent. No centralized directories").

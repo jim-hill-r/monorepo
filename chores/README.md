@@ -22,6 +22,7 @@ c next-task
 c next-task --project cookbook            # scoped to one project
 c next-task --count 5 --exclude pane,epic:Cost check   # one per project, for new threads
 c next-task --skip cookbook/issues/x.md   # an open PR already has it
+c next-task --count 5 --working cookbook,pane,repo   # prefer products while under half
 c next-task --json
 
 # A PR description in the shape pull-requests.md asks for, checked against
