@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T18:07:06.372505583Z",
+  "generated_at": "2026-11-28T18:28:50.895590035Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -268,7 +268,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "live-game-wasm failed 6 of its last 7 cd runs",
+            "live-game-wasm failed 5 of its last 7 cd runs",
             "no-panics-in-production has no observe results yet"
           ]
         },
@@ -734,7 +734,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-28 12:44:27.964829646 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-28 18:26:48.677396993 UTC"
           ]
         },
         {
@@ -914,54 +914,58 @@
           "requirement": "SPRK-001",
           "title": "A learner can start practising straight away",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "first-session-judged has no judge results yet",
+            "home-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-002",
           "title": "Every letter is shown being written before the learner tries it",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "app-loads-live failed 3 of its last 7 cd runs",
+            "demonstrations-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-003",
           "title": "A tracing is checked fairly",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "tracing-judged has no judge results yet",
+            "tracing-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-004",
           "title": "Learners move from letters to words to capitals",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "capital-level-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-005",
           "title": "Each learner's progress is kept on their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "home-page-live-for-progress failed 3 of its last 7 cd runs",
+            "progress-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-006",
           "title": "Nothing a learner types or draws leaves their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "connects-only-to-itself-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -970,9 +974,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-28 12:43:15.649240726 UTC",
-            "manifest-live failed in cd at 2026-11-28 12:43:15.649240726 UTC",
-            "no-zoom-live failed in cd at 2026-11-28 12:43:15.649240726 UTC"
+            "home-screen-icon-live failed 3 of its last 7 cd runs",
+            "manifest-live failed 3 of its last 7 cd runs",
+            "no-zoom-live failed 3 of its last 7 cd runs"
           ]
         },
         {
