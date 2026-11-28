@@ -68,6 +68,10 @@ c retire-temporary --live live.json --json plan.json
 c user-docs
 c user-docs --json
 
+# Unresolved merge conflict markers in any tracked file (STD-005); run by
+# `mise run //:audit`. Exit 1 on any.
+c conflict-markers
+
 # QUAL-404: fail on a tracked .sh file not in standards/shell-scripts.toml
 # (scripts stay Rust-only; the list only shrinks), or a stale line there.
 c shell-scripts
@@ -90,6 +94,7 @@ c threat-check --projects cookbook,pane
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 

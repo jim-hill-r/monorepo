@@ -1,0 +1,3 @@
+[project]
+name = "athenaeum"
+description = "The knowledge base for engineers working in this repo: notes, references and patterns that explain our coding stance."

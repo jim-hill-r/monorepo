@@ -206,6 +206,36 @@ stages = ["ci"]
 kind = "playwright"
 description = "Drag to pan, zoom with buttons, wheel, pinch and Fit, and pick a focus person by click or from the list."
 
+# CAHO-008: The desktop app signs in through the browser
+
+[[eval]]
+id = "desktop-sign-in-loopback"
+requirement = "CAHO-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "desktop_sign_in_reaches_the_fake_providers_token_exchange"
+
+[[eval]]
+id = "desktop-signing-in-state"
+requirement = "CAHO-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "desktop_signing_in_disables_login_and_points_at_the_browser"
+
+[[eval]]
+id = "desktop-signed-in-name"
+requirement = "CAHO-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "desktop_signed_in_shows_the_name_and_sign_out"
+
+[[eval]]
+id = "desktop-sign-in-failure-message"
+requirement = "CAHO-008"
+stages = ["ci"]
+kind = "cargo"
+filter = "desktop_a_failure_shows_the_message_and_login_again"
+
 # CAHO-009: The iOS app signs in through the browser
 
 [[eval]]

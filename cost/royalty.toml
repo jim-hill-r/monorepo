@@ -1,0 +1,3 @@
+[project]
+name = "cost"
+description = "The cost check, which holds each project's cost analysis to the budgets in the tech radar and the free-tier limits."
