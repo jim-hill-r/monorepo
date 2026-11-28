@@ -103,10 +103,10 @@ as a reviewer approves it. Skip this when the PR is labelled `needs-human` or
 `credential-change`, or a check is red, even one also failing on `main`.
 A PR labelled `cost` or `human-review`, or whose Attention section has a
 red tag (`must-requirement-changed`) or `cost-changed`, needs a human's
-approval (the `Human review` status, "Human review" in
-`standards/docs/pull-requests.md`): mark it ready and turn auto-merge on
-once every other check is green and `Human review` is pending, so his
-approval merges it (Jim, 2026-11-28: "Yes, merge on my approval").
+approval ("Human review" in `standards/docs/pull-requests.md`). That is
+not a check to wait for: mark it ready and turn auto-merge on once its
+checks are green, like any other PR, so his approval merges it (Jim,
+2026-11-28: "Yes, merge on my approval").
 The auto-merge rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
 your own PR, so it waits for a human's approval either way.
