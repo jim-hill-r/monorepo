@@ -63,6 +63,12 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 # deletes anything itself.
 c retire-temporary --live live.json --json plan.json
 
+# Which approved [[retired]] entries in standards/resources.toml are due and
+# pass every guard (not claimed on main, replacement claimed, no production
+# deploy in 7 days, no open human task naming them). Prints the run summary;
+# never deletes anything itself.
+c retire-approved --live live.json --claims claims.tsv --json approved.json
+
 # Every project's user guide (DOC-005 to DOC-008) against the baseline in
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
@@ -100,6 +106,7 @@ c sweep --live live.json --claims claims.tsv --json report.json
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
+| `retire-approved` | none (the `All Retire Resources` workflow) | A person deleting each retired Pages project in the dashboard by following a runbook |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `sweep` | none (`resources.sh sweep` in All Free Tier Usage) | Sorting a live inventory against the claims by hand, or a longer embedded script |
 | `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |

@@ -12,9 +12,18 @@ name: All Retire Resources
 # digest asks Jim. The rules are `chores retire-temporary`
 # (chores/src/retire.rs); this workflow only lists and deletes.
 #
+# Also deletes approved resources ("Safe deletion order" in
+# standards/docs/resources.md): `[[retired]]` entries in
+# standards/resources.toml past their delete_after date. Jim approving the
+# PR that added an entry is the approval. Only Pages projects today (the
+# deploy token has Pages Write); `chores retire-approved`
+# (chores/src/retire_approved.rs) holds an entry that is still claimed on
+# main, had a production deploy in the last 7 days or is still named by an
+# open human task, and never deletes anything only because it is unclaimed.
+#
 # Weekly an hour after the sweep in all-free-tier-usage.yml, for real. A
-# manual run is a dry run unless dry_run is set to false.
-# Phase 3 of the resource cleanup plan adds [[retired]] entries here.
+# manual run is a dry run unless dry_run is set to false, and approved
+# resources are deleted only from the default branch.
 on:
   schedule:
     # Mondays at 4 PM UTC (8 AM Pacific), after the 3 PM sweep.
@@ -70,6 +79,7 @@ jobs:
             | jq -s . >"$out/pulls.json"
 
           echo '[]' >"$out/pages.json"
+          pages_listed=false
           if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
             echo "::warning::No Cloudflare secrets: Pages deployments are not checked"
           else
@@ -89,11 +99,12 @@ jobs:
               jq -s --argjson p "$project" '$p + {deployments: .}' "$out/deployments.jsonl" >"$out/project.json"
               jq --slurpfile p "$out/project.json" '. + $p' "$out/pages.json" >"$out/pages.next" && mv "$out/pages.next" "$out/pages.json"
             done <"$out/projects.jsonl"
+            pages_listed=true
           fi
 
-          jq -n --arg default_branch "$DEFAULT_BRANCH" \
+          jq -n --arg default_branch "$DEFAULT_BRANCH" --argjson pages_listed "$pages_listed" \
             --slurpfile branches "$out/branches.json" --slurpfile pulls "$out/pulls.json" --slurpfile pages "$out/pages.json" \
-            '{default_branch: $default_branch, branches: $branches[0], pulls: $pulls[0], pages: $pages[0]}' >"$out/live.json"
+            '{default_branch: $default_branch, pages_listed: $pages_listed, branches: $branches[0], pulls: $pulls[0], pages: $pages[0]}' >"$out/live.json"
 
       - name: Plan
         id: plan
@@ -139,6 +150,57 @@ jobs:
           verb=$([ "$DRY_RUN" = "true" ] && echo "Would delete" || echo "Deleted")
           {
             echo "### Pages deployments"
+            echo "- $verb: $deleted"
+            echo "- Failed: $failed"
+          } >>"$GITHUB_STEP_SUMMARY"
+          [ "$failed" -eq 0 ]
+
+      - name: Plan approved deletions
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/retire"
+          bash standards/scripts/resources.sh claims >"$out/claims.tsv"
+          cargo run --quiet --manifest-path chores/Cargo.toml -- --root "$GITHUB_WORKSPACE" \
+            retire-approved --live "$out/live.json" --claims "$out/claims.tsv" \
+            --json "$out/approved.json" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Step 3 of the safe order: delete the Pages project, which removes
+      # every deployment and preview alias with it. Never the Worker of the
+      # same name (a different API path). The next sweep confirms it is gone
+      # and the digest sets `deleted`.
+      - name: Delete approved Pages projects
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DRY_RUN: ${{ steps.plan.outputs.dry-run }}
+          ON_DEFAULT: ${{ github.ref_name == github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          plan="$RUNNER_TEMP/retire/approved.json"
+          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID:-}/pages/projects"
+          if [ "$ON_DEFAULT" != "true" ] && [ "$DRY_RUN" != "true" ]; then
+            echo "::warning::Approved resources are deleted only from the default branch; this run only reports"
+            DRY_RUN=true
+          fi
+          deleted=0; failed=0
+          while IFS=$'\t' read -r kind name; do
+            [ "$kind" = "pages" ] || continue
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Would delete: Pages project $name"
+              deleted=$((deleted + 1)); continue
+            fi
+            if curl -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/$name" >/dev/null \
+                && [ "$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/$name")" = "404" ]; then
+              echo "Deleted: Pages project $name"
+              deleted=$((deleted + 1))
+            else
+              echo "::error::Failed to delete Pages project $name"
+              failed=$((failed + 1))
+            fi
+          done < <(jq -r '.delete[] | [.kind, .name] | @tsv' "$plan")
+          verb=$([ "$DRY_RUN" = "true" ] && echo "Would delete" || echo "Deleted")
+          {
+            echo "### Approved Pages projects"
             echo "- $verb: $deleted"
             echo "- Failed: $failed"
           } >>"$GITHUB_STEP_SUMMARY"
