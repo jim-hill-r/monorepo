@@ -286,12 +286,44 @@ Deletes remote branches without needing a local clone. Run it manually from the 
 - `branches`: branch names separated by spaces or newlines.
 - `dry_run`: defaults to `true`, which only reports what would be deleted. Set it to `false` to delete.
 
-The workflow never deletes the default branch and skips any branch that is the head of an open pull request. Branches that no longer exist are reported as not found. The run summary lists how many branches were deleted, skipped, missing, or failed.
+The workflow never deletes the default branch or `evals-results`, and skips any branch that is the head of an open pull request. Branches that no longer exist are reported as not found. The run summary lists how many branches were deleted, skipped, missing, or failed.
+
+`all-retire-resources.yml` calls it (`workflow_call`, same inputs) with the branches it retires, so both use the same guards.
 
 ### Permissions
 
 - `contents: write` - To delete branch refs
 - `pull-requests: read` - To find branches with open pull requests
+
+## all-retire-resources.yml
+
+Deletes temporary resources every Monday at 4 PM UTC, an hour after the
+resource sweep, following "Temporary resources" in
+[standards/docs/resources.md](../../standards/docs/resources.md#temporary-resources):
+
+- Pages preview deployments older than 14 days, except the newest one of each
+  branch with an open PR.
+- Pages production deployments older than 30 days, never the current one.
+- Branches whose newest PR closed more than 7 days ago, through
+  `all-delete-branches.yml`.
+
+Branches with no PR are only counted: the sweep lists them and the weekly
+digest asks Jim. The rules are `chores retire-temporary`
+(`chores/src/retire.rs`); the workflow lists what is live with `gh api` and
+the Cloudflare API, and deletes what the plan names. A scheduled run deletes;
+a manual run (Actions tab) is a dry run unless `dry_run` is set to `false`.
+Without the Cloudflare secrets it warns and checks branches only. It uses the
+existing `CLOUDFLARE_API_TOKEN` (Pages edit, which deploys already need) and
+costs a few Actions minutes a week.
+
+### Permissions
+
+- `contents: read` - Check out `chores`
+- `pull-requests: read` - List PRs to match branches and previews
+- `contents: write` (branches job only) - Passed to `all-delete-branches.yml`
+
+Tests: `jimhillr/workflow_tests/tests/retire_resources_workflow_tests.rs`
+and the unit tests in `chores/src/retire.rs`.
 
 ## pull-request-closed-cleanup.yml
 

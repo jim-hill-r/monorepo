@@ -7,7 +7,8 @@ leaves only the judgment to the model. Why and what comes next is in the
 [baked skills plan](../standards/docs/plans/2026-11-baked-skills.md).
 
 It reads and writes only files in the working tree. It never uses the
-network and never calls GitHub: agents do that with their own GitHub tools.
+network and never calls GitHub: agents do that with their own GitHub tools,
+and workflows list what they need into a file first.
 
 ## Commands
 
@@ -56,6 +57,12 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 ```
 
 ```bash
+# Which temporary resources to delete (Pages previews over 14 days, old
+# production deployments, branches 7 days after their PR closed), from the
+# live list all-retire-resources.yml writes. Prints the run summary; never
+# deletes anything itself.
+c retire-temporary --live live.json --json plan.json
+
 # Every project's user guide (DOC-005 to DOC-008) against the baseline in
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
@@ -71,6 +78,7 @@ c user-docs --json
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
+| `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
