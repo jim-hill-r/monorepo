@@ -75,6 +75,14 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   review again only once its checks are green and it meets the
   `open-pull-request` checklist. This applies to every PR an agent works on,
   including in PR triage.
+- **Keep PRs mergeable (Jim, 2026-11-28).** Jim should never have to
+  point out a conflict. Every turn, and before asking Jim to approve, a
+  thread reads `mergeable` on each of its open PRs; on a conflict (or the
+  `merge-conflict` label or comment from the Merge conflicts workflow) it
+  goes back to draft, merges `origin/main`, resolves, pushes and asks Jim
+  again for the new head, since the push dismisses his approval. It never
+  merges `main` into a PR that is only behind. Steps under "Keep it
+  mergeable" in `standards/docs/pull-requests.md`.
 - **Auto-merge on ready (Jim, 2026-11-26).** When an agent marks its PR
   ready for review (checklist met, checks green, nothing for a human to
   decide), it turns on GitHub auto-merge with squash, and turns it off
