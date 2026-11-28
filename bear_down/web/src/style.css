@@ -67,3 +67,15 @@ footer.appearance { margin-top: 24px; }
   background: var(--ds-color-surface); border: var(--ds-border-width) solid var(--ds-color-border); border-radius: var(--ds-radius-sm);
 }
 .privacy { font-size: 0.8rem; }
+.archived {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  margin-bottom: 16px; padding: 12px 16px; font-size: 0.9rem;
+  border: var(--ds-border-width) dashed var(--ds-color-border); border-radius: var(--ds-radius-md);
+}
+.archived p { margin: 0; flex: 1 1 280px; }
+.back, .past-weeks select {
+  border: var(--ds-border-width) solid var(--ds-color-border); border-radius: var(--ds-radius-pill); padding: 6px 14px;
+  background: var(--ds-color-surface); color: var(--ds-color-text); font: inherit; cursor: pointer;
+}
+.past-weeks h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.past-weeks label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ds-color-text-muted); }
