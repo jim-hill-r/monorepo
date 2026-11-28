@@ -5,6 +5,9 @@
 A CLI tool for looking up and evaluating house details from Zillow. Provide an address to get
 property details, or provide filtering criteria to score how well a property matches your preferences.
 
+New to homer? The [user guide](docs/user/README.md) walks through installing it,
+setting up a free RapidAPI key, and fixing common problems.
+
 ## Usage
 
 ### Look up a property
