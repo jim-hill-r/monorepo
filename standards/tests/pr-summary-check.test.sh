@@ -32,9 +32,10 @@ _Requested by **Jim** · [project thread](https://claude.ai/code/project/x)_
 
 - 🔴 must-requirement-changed: `COOK-001`
 - 🟢 cost-unchanged
-- 🟠 threat-risk-changed: `cookbook/docs/threat.toml` (the Security summary check says whether it weakens anything)'
+- 🟠 threat-risk-changed: `cookbook/docs/threat.toml` (the Security summary check says whether it weakens anything)
+- 🟢 docs-changed: `cookbook/docs/requirements.md` alongside other files'
 
-att=$'## attention\n- 🟢 requirements-unchanged\n- `cost-unchanged`\n- threat-risk-unchanged: none\n'
+att=$'## attention\n- 🟢 requirements-unchanged\n- `cost-unchanged`\n- threat-risk-unchanged: none\n- 🔵 docs-only: `a.md`\n'
 
 words() { printf 'word %.0s' $(seq 1 "$1"); }
 
@@ -94,6 +95,9 @@ check "missing cost tag" "$(body "$good_what" "$good_why" "None." "None." "x" | 
 
 check "two requirements tags" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/^- 🟢 cost-unchanged$/- 🟢 cost-unchanged\n- 🟢 requirements-unchanged/')" \
   "\"## Attention\" section has 2 requirements tags"
+
+check "two docs tags" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/^- 🟢 docs-changed: .*$/- 🔵 docs-only\n- 🟢 docs-unchanged/')" \
+  "\"## Attention\" section has 2 docs tags"
 
 check "missing Attention" "$(body "$good_what" "$good_why" "None." "None." "x" | sed 's/^## Attention$/## Badges/')" \
   "no \"## Attention\" section"

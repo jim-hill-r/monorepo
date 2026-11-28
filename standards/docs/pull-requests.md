@@ -55,8 +55,11 @@ Dependabot PRs are exempt: their bodies are generated.
 Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
 know how much attention I should give. First is if a fundamental
 requirement is changing. Second if anything affecting a threat/risk is
-changing", and the cost tag above. The Attention section lists exactly one
-tag from each group, from this closed set (`Tag` in `chores/src/badges.rs`;
+changing", and the cost tag above. Jim, 2026-11-28: "Let's add a domain
+for our attention section in PRs. 'docs' and add a docs-reviewer. i want
+the attention section to state if it is only docs being updated which
+includes plans." The Attention section lists exactly one tag from each
+group, from this closed set (`Tag` in `chores/src/badges.rs`;
 the shell check lists the same names). `chores badges` (or `chores
 pr-body`, which calls it) works them out from the PR's diff against
 `origin/main`:
@@ -67,6 +70,7 @@ pr-body`, which calls it) works them out from the PR's diff against
 - 🔴 must-requirement-changed: `COOK-001`
 - 🟠 cost-changed: `cookbook/docs/cost.toml` (the Cost summary check says what moved)
 - 🟢 threat-risk-unchanged
+- 🟢 docs-changed: `cookbook/docs/requirements.md` alongside other files
 ```
 
 | Group | Tag | When |
@@ -78,6 +82,9 @@ pr-body`, which calls it) works them out from the PR's diff against
 | Cost | 🟢 `cost-unchanged` | No cost file changed |
 | Threat/risk | 🟠 `threat-risk-changed` | A risk file changed |
 | Threat/risk | 🟢 `threat-risk-unchanged` | No risk file changed |
+| Docs | 🔵 `docs-only` | Every changed file is docs. The `docs-reviewer` reviews it (decision 0019) |
+| Docs | 🟢 `docs-changed` | Docs changed alongside other files |
+| Docs | 🟢 `docs-unchanged` | No docs changed |
 
 Cost files are the files the [PR cost summary](cost.md) reads: each
 project's `docs/cost.toml`, `standards/radar/limits.toml`,
@@ -92,6 +99,15 @@ plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
 `infra/src/`, `infra/scripts/`, `standards/settings.toml`,
 `standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
 secret and security check scripts, `SECURITY.md` and `CODEOWNERS`.
+
+Docs files are Markdown anywhere (`.md`, `.markdown`, `.mdx`): plans,
+decisions, retros, user guides, READMEs, review decks, issue files, skills
+and `AGENTS.md`, plus images (`.png`, `.jpg`, `.gif`, `.svg`, `.webp`) in
+a `docs/` folder. `is_docs_file` in `chores/src/badges.rs` decides it from
+each path alone, so every project is covered without a list to keep. A
+docs file can also be a requirements, cost or risk file (a
+`docs/requirements.md`, `standards/docs/security.md`), and then its own
+group says so too: `docs-only` never hides a red or orange tag.
 
 The tags are pointers, not gates: a requirement change still gets
 `needs-human` ([evals.md](evals.md)), the Cost summary job still labels
