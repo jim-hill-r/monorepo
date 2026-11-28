@@ -4,7 +4,7 @@
 # dependency audits where a lockfile changed (deps-check.sh, SEC-003/SEC-004,
 # warnings only), zizmor where a workflow changed (workflows-check.sh,
 # SEC-005, warnings only), then `mise run ci` in every affected project.
-# The audit's threat check (threat-check.sh) also gets the affected
+# The audit's threat check (`chores threat-check`) also gets the affected
 # projects, through COST_PROJECTS.
 #
 #   hooks.sh pre-commit   projects touched by the staged and unstaged changes;
