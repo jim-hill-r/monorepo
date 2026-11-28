@@ -13,7 +13,7 @@ are in the [cost check plan](../standards/docs/plans/2026-11-cost-check.md).
 
 | Crate | Job |
 | --- | --- |
-| `model` (`cost_model`) | Serde types for `docs/cost.toml`, `limits.toml`, `detectors.toml` and the radar's vendor blips; the rules (COST-001 to COST-010), the detectors, the PR summary and the renewals list as pure functions. No I/O, so pane and the eval engine can use the same rules and money maths. |
+| `model` (`cost_model`) | Serde types for `docs/cost.toml`, `limits.toml`, `detectors.toml` and the radar's vendor blips; the rules (COST-001 to COST-010), the detectors, the PR summary, the renewals list, and the financial ledger and runway ([money.md](../standards/docs/money.md)) as pure functions. No I/O, so pane and the eval engine can use the same rules and money maths. |
 | `cli` (`cost_cli`) | The `cost` binary. It reads files through git (tracked files only), and at a commit through one `git cat-file --batch`. |
 
 ## Commands
@@ -37,6 +37,11 @@ cargo run -p cost_cli -- renewals --within 60
 # The PR cost summary against a base branch, as Markdown; --json also
 # writes the labels (`cost`, `needs-human`) and reasons for PR CI.
 cargo run -p cost_cli -- summary --base origin/main --json cost.json
+
+# The financial ledger: this month's statement and the runway, into
+# target/money/ (needs full git history). See standards/docs/money.md.
+cargo run -p cost_cli -- money
+cargo run -p cost_cli -- money --month 2026-11 --out standards/money
 
 # Rewrite the limit tables in standards/docs/free-tiers.md from limits.toml,
 # or (--check) fail when they are out of date.

@@ -1,0 +1,3 @@
+[project]
+name = "telemetry"
+description = "A small Rust Cloudflare Worker that checks, rate-limits and stores telemetry events in Analytics Engine."

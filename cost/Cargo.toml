@@ -21,3 +21,9 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "1"
+
+# An admin CLI the audit runs on every commit and push: build its
+# dependencies optimized, once, so each run takes seconds, not ~20 s.
+# Admin CLIs in standards/docs/rust.md.
+[profile.dev.package."*"]
+opt-level = 3

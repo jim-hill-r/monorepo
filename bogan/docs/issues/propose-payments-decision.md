@@ -15,5 +15,7 @@ the vendor rule in `AGENTS.md`. Compare the options (for example no
 payments at first and link out to sellers, a payment processor with
 marketplace payouts, or a custom currency), each with its money cost, fees,
 free-tier limits, legal and compliance load, and the Claude Code effort to
-build it. Label the PR `needs-human`. Depends on the product brief
-(`write-product-brief.md`).
+build it. Label the PR `needs-human`. The
+[product brief](../plans/2026-11-product-brief.md) proposes a first
+version with no payments (a catalog that links out), so this decision is
+needed only before Bogan takes orders itself (its phase 4).

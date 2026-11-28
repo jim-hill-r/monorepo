@@ -1,5 +1,5 @@
 //! The project signals pane can light from the snapshot alone: **Review**,
-//! **Retros**, **Open issues** and **Standards**.
+//! **Retros**, **Open issues**, **Standards** and **Requirements**.
 //!
 //! These functions turn the snapshot's dates and lists into the ages and
 //! counts that the rules in [`crate::health`] take, then apply those rules
@@ -8,10 +8,12 @@
 //! only on the snapshot, never on a clock. The signals that need live
 //! GitHub data (Build, Deploy and UAT, Pull requests) come later; see
 //! `pane/docs/issues/`. Standards reads the audit findings the snapshot was
-//! built with ([`Snapshot::audit`]).
+//! built with ([`Snapshot::audit`]), and Requirements the eval verdicts
+//! ([`Snapshot::requirements`]).
 
 use crate::audit::Finding;
-use crate::health::{self, Fix, ReviewStatus};
+use crate::health::{self, Fix, MustVerdicts, ReviewStatus};
+use crate::requirements::Verdict;
 use crate::{HumanIssue, Link, ProjectStatus, REPO_URL, Signal, Snapshot, WorkItem, WorkKind};
 
 /// Days in one review: the deep project review runs once a week.
@@ -25,6 +27,7 @@ pub fn project_signals(snapshot: &Snapshot, project: &str) -> Vec<Signal> {
         retros(snapshot, project),
         open_issues(snapshot, project),
         standards(snapshot, project),
+        requirements(snapshot, project),
     ]
 }
 
@@ -152,6 +155,51 @@ pub fn standards(snapshot: &Snapshot, project: &str) -> Signal {
     signal
 }
 
+/// **Requirements**: the worst verdict of the top-level project's `must`
+/// requirements (the eval engine judges `cookbook`, not `cookbook/web`),
+/// with its requirement coverage. Grey when the snapshot has no eval
+/// results. Each must that isn't met is evidence, linking its latest
+/// failing run, or its project's `docs/requirements.md`.
+pub fn requirements(snapshot: &Snapshot, project: &str) -> Signal {
+    let top = top_level(project);
+    let Some(all) = &snapshot.requirements else {
+        return health::requirements(None);
+    };
+    let reqs = all
+        .project(top)
+        .map(|p| p.requirements.as_slice())
+        .unwrap_or_default();
+    let musts = || reqs.iter().filter(|r| r.is_must());
+    let with = |v: Verdict| count(musts().filter(|r| r.verdict == v));
+    let mut signal = health::requirements(Some(MustVerdicts {
+        musts: count(musts()),
+        met: with(Verdict::Met),
+        at_risk: with(Verdict::AtRisk),
+        not_met: with(Verdict::NotMet),
+        requirements: count(reqs.iter()),
+        requirements_met: count(reqs.iter().filter(|r| r.verdict == Verdict::Met)),
+    }));
+    let doc = format!("{top}/docs/requirements.md");
+    let mut flagged: Vec<_> = musts()
+        .filter(|r| matches!(r.verdict, Verdict::NotMet | Verdict::AtRisk))
+        .collect();
+    flagged.sort_by_key(|r| std::cmp::Reverse(r.verdict.health()));
+    signal.evidence.extend(flagged.into_iter().map(|r| {
+        let label = format!("{} {}: {}", r.id, r.verdict.label(), r.title);
+        let failing = r
+            .evals
+            .iter()
+            .filter_map(|e| e.latest())
+            .filter(|run| run.status != crate::requirements::RunStatus::Pass)
+            .find_map(|run| run.evidence.clone());
+        match failing {
+            Some(url) => Link { label, url },
+            None => file_link(label, &doc, None),
+        }
+    }));
+    signal
+}
+
 /// One full review rotation in days: a week for each top-level project
 /// that isn't on hold, and never less than a week.
 pub fn rotation_days(snapshot: &Snapshot) -> u32 {
@@ -232,6 +280,9 @@ fn count<T>(items: impl Iterator<Item = T>) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::requirements::{
+        Coverage, EvalRun, EvalRuns, ProjectRequirements, Requirement, Requirements, RunStatus,
+    };
     use crate::{Health, Project, Retro, RetroAction, Review, ScorecardRow, WorkSource};
 
     fn snapshot() -> Snapshot {
@@ -558,15 +609,118 @@ mod tests {
     }
 
     #[test]
-    fn project_signals_are_the_four_snapshot_signals_in_order() {
+    fn project_signals_are_the_five_snapshot_signals_in_order() {
         let mut s = snapshot();
         s.work_items.push(fix("pane", Some("2026-11-01")));
         let signals = project_signals(&s, "pane");
         let names: Vec<&str> = signals.iter().map(|s| s.name.as_str()).collect();
-        assert_eq!(names, ["Review", "Retros", "Open issues", "Standards"]);
+        assert_eq!(
+            names,
+            [
+                "Review",
+                "Retros",
+                "Open issues",
+                "Standards",
+                "Requirements"
+            ]
+        );
         let rollup = health::roll_up(&signals);
         assert_eq!(rollup.health, Health::Red);
-        assert_eq!(rollup.coverage(), "1 of 4 signals");
+        assert_eq!(rollup.coverage(), "1 of 5 signals");
+    }
+
+    fn requirement(id: &str, priority: &str, verdict: Verdict, runs: &[RunStatus]) -> Requirement {
+        Requirement {
+            id: id.into(),
+            title: format!("{id} title"),
+            priority: priority.into(),
+            verdict,
+            reasons: vec![],
+            evals: vec![EvalRuns {
+                eval: "live".into(),
+                stage: "cd".into(),
+                runs: runs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &status)| EvalRun {
+                        status,
+                        at: format!("2026-11-2{i}T00:00:00Z"),
+                        commit: "abc".into(),
+                        evidence: Some(format!("https://example.com/{id}/{i}")),
+                        note: None,
+                    })
+                    .collect(),
+            }],
+        }
+    }
+
+    fn with_requirements(reqs: Vec<Requirement>) -> Snapshot {
+        let mut s = snapshot();
+        s.requirements = Some(Requirements {
+            generated_at: "2026-11-27T04:00:00Z".into(),
+            projects: vec![ProjectRequirements {
+                project: "pane".into(),
+                musts: 0,
+                musts_in_production: 0,
+                coverage: Coverage::default(),
+                requirements: reqs,
+            }],
+        });
+        s
+    }
+
+    #[test]
+    fn requirements_is_grey_without_eval_results() {
+        let signal = requirements(&snapshot(), "pane");
+        assert_eq!(signal.health, Health::Grey);
+        assert_eq!(signal.reason, "No eval results");
+    }
+
+    #[test]
+    fn requirements_takes_the_worst_must_of_the_top_level_project() {
+        let s = with_requirements(vec![
+            requirement("PANE-001", "must", Verdict::Met, &[RunStatus::Pass]),
+            requirement("PANE-002", "must", Verdict::AtRisk, &[RunStatus::Pass]),
+            requirement(
+                "PANE-003",
+                "must",
+                Verdict::NotMet,
+                &[RunStatus::Fail, RunStatus::Pass],
+            ),
+            requirement("PANE-004", "should", Verdict::NotMet, &[RunStatus::Fail]),
+        ]);
+        let signal = requirements(&s, "pane/web");
+        assert_eq!(signal.health, Health::Red);
+        assert_eq!(
+            signal.reason,
+            "1 must(s) not met; 1 of 3 musts and 1 of 4 requirements met"
+        );
+        let evidence: Vec<(&str, &str)> = signal
+            .evidence
+            .iter()
+            .map(|l| (l.label.as_str(), l.url.as_str()))
+            .collect();
+        assert_eq!(
+            evidence,
+            [
+                (
+                    "PANE-003 Not met: PANE-003 title",
+                    "https://example.com/PANE-003/0"
+                ),
+                (
+                    "PANE-002 At risk: PANE-002 title",
+                    "https://github.com/jimhillr/monorepo/blob/main/pane/docs/requirements.md"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn requirements_of_an_unlisted_project_says_so() {
+        let s = with_requirements(vec![]);
+        assert_eq!(requirements(&s, "cookbook").reason, "No requirements");
+        let met = with_requirements(vec![requirement("PANE-001", "must", Verdict::Met, &[])]);
+        assert_eq!(requirements(&met, "pane").health, Health::Green);
     }
 
     #[test]

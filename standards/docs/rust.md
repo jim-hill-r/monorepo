@@ -104,6 +104,40 @@ unsafe_code = "forbid"
 workspace = true
 ```
 
+## Admin CLIs
+
+Routine work goes into Rust, not shell (decision 0015), and Rust is slow
+only the first time (Jim, 2026-11-28: "it's okay if we make a admin cli for
+a project so it can be built once and reused many times"). So:
+
+- **One admin CLI per project.** A project whose routine work needs
+  scripts gets one binary with a subcommand per job (`chores` for the repo,
+  `cost`, `threat`, `evals` and so on), not a script or a binary per job.
+  Every subcommand shares one build.
+- **Built once, reused.** Call it with `cargo run --quiet --manifest-path
+  <project>/Cargo.toml [-p <package>] -- <command>`. Cargo builds it into the
+  project's own `target/` the first time (10 to 40 seconds in a cloud
+  sandbox) and afterwards only checks that nothing changed (about 0.1
+  seconds). PR CI keeps the build in `Swatinem/rust-cache`, saved from
+  `main`. Never commit or download a prebuilt binary: the audit must run the
+  branch's own code.
+- **Optimized dependencies when it reads the whole repo.** A debug build of
+  `regex`, `serde` and `toml` runs 5 to 10 times slower than an optimized
+  one. An admin CLI the audit or hooks run, and that takes more than about a
+  second in a debug build, sets this in its workspace `Cargo.toml`:
+
+  ```toml
+  [profile.dev.package."*"]
+  opt-level = 3
+  ```
+
+  Dependencies are then built optimized once (a slower first build) while
+  the project's own code stays a fast debug build. In November 2026 this
+  took `cost check` and `threat check` from about 20 seconds each to 2 to 3,
+  and `mise run //:audit` from about 60 seconds to 10, on every commit and
+  push. Use it instead of `--release`, which would build everything a second
+  time next to the debug build CI already makes.
+
 ## Enforcement
 
 `mise run //:audit` checks LIN-001 and LIN-002 for every tracked Cargo.toml with a `[package]` (`standards/scripts/project-check.sh`), as errors that fail the audit. Packages in an on hold project (the `# On Hold Projects` list in `standards/docs/issues/README.md`) are exempt until it comes off hold. A stricter clippy level (`deny`, `forbid`) passes LIN-001. `unsafe_code = "deny"` passes LIN-002 only when a comment on the line directly above it says why the package needs its one `#[allow(unsafe_code)]` item, such as a platform entry point.

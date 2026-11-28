@@ -7,8 +7,9 @@
 #            no royalty.toml.
 #   RTOML-*  A finding `royalty check` reports for a project's royalty.toml.
 #
-# Warnings only for now: errors from `royalty check` are printed as
-# warnings and the script always exits 0. Called by `mise run //:audit`.
+# Errors: every project has a valid royalty.toml, so any ROY-001 or
+# RTOML-* error fails the script (exit 1). Warnings `royalty check` reports
+# are printed and don't fail it. Called by `mise run //:audit`.
 # The binary is built once into royalty/target, so later runs are quick.
 # Without cargo it prints a warning and exits 0; PR CI checks it.
 # Run from anywhere in the repo.
@@ -17,7 +18,8 @@ set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 findings=0
-warn() { echo "warning[$1] $2"; findings=$((findings + 1)); }
+errors=0
+fail() { echo "error[$1] $2"; findings=$((findings + 1)); errors=$((errors + 1)); }
 
 projects=$(git ls-files -- '*/mise.toml' | xargs -r -n1 dirname | sort -u)
 
@@ -26,7 +28,7 @@ for d in $projects; do
   if [ -f "$d/royalty.toml" ]; then
     files+=("$d/royalty.toml")
   else
-    warn ROY-001 "$d has no royalty.toml; add one with a [project] name and description (standards/docs/configuration.md)"
+    fail ROY-001 "$d has no royalty.toml; add one with a [project] name and description (standards/docs/configuration.md)"
   fi
 done
 
@@ -44,7 +46,7 @@ for f in "${files[@]}"; do
   # Only finding lines; "royalty check: ..." summary lines are dropped.
   while IFS= read -r line; do
     case "$line" in
-      error\[*) echo "warning[${line#error[}"; findings=$((findings + 1)) ;;
+      error\[*) echo "$line"; findings=$((findings + 1)); errors=$((errors + 1)) ;;
       warning\[*) echo "$line"; findings=$((findings + 1)) ;;
     esac
   done < <("$royalty" check "$f" 2>&1)
@@ -53,6 +55,6 @@ done
 if [ "$findings" -eq 0 ]; then
   echo "royalty check: ok (${#files[@]} royalty.toml files)"
 else
-  echo "royalty check: $findings finding(s) in ${#files[@]} royalty.toml files"
+  echo "royalty check: $findings finding(s), $errors error(s), in ${#files[@]} royalty.toml files"
 fi
-exit 0
+[ "$errors" -eq 0 ]

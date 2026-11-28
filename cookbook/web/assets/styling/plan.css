@@ -31,7 +31,7 @@
     font-size: 1.8rem;
     margin-bottom: var(--ds-space-4);
     color: var(--ds-color-text);
-    border-bottom: 2px solid var(--ds-color-accent);
+    border-bottom: var(--ds-border-width) solid var(--ds-color-border);
     padding-bottom: var(--ds-space-2);
 }
 
@@ -85,14 +85,13 @@
     background-color: var(--ds-color-surface);
     border-radius: var(--ds-radius-sm);
     border: var(--ds-border-width) solid var(--ds-color-border);
-    transition: background-color var(--ds-motion-slow), transform var(--ds-motion-fast);
+    transition: background-color var(--ds-motion-slow);
     position: relative;
     z-index: auto;
 }
 
 .plan-recipes .recipe-item:hover {
     background-color: var(--ds-color-surface-raised);
-    transform: translateX(5px);
 }
 
 .plan-recipes .recipe-item a {
@@ -144,10 +143,6 @@
 
     .plan-recipes .recipe-item {
         margin-bottom: var(--ds-space-4);
-    }
-
-    .plan-recipes .recipe-item:hover {
-        transform: none;
     }
 
     .back-link {

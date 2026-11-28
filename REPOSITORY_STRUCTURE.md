@@ -43,12 +43,8 @@ Contains the repository's standards and conventions in `standards/docs/` (Rust, 
 ### `/athenaeum/`
 Contains learning resources (algorithms, system design, language notes, etc.).
 
-<<<<<<< HEAD
 ### `/docs/reviews/`
 Deep project review decks, one folder per review, written weekly by the `deep-project-review` skill. The top-level `docs/` folder holds only these reviews: standards live in `standards/docs/`, and project-specific docs live inside each project (for example `cast/core/docs/`).
-=======
-There is no top-level `docs/` folder. The root `README.md` is a regular file, and project-specific docs live inside each project (for example `cookbook/README.md`).
->>>>>>> origin/main
 
 ### Project Directories
 All projects live in the root directory. Each project may have:
@@ -63,7 +59,8 @@ Contains GitHub Actions workflows, including:
 - `nightly-ci.yml` - Runs `mise run ci` in every project each night
 - `nightly-cd.yml` - Runs `mise run ci` then `mise run deploy` in every deploying project each night
 - `mise-projects.yml` - The reusable workflow the three above call
-- `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default)
+- `all-delete-branches.yml` - Deletes branches (manual trigger, dry run by default; also called by all-retire-resources.yml)
+- `all-retire-resources.yml` - Weekly: deletes old Pages deployments and branches of closed PRs
 - `all-codeql.yml` - CodeQL code scanning
 
 See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` for details.

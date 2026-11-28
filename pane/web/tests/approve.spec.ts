@@ -53,9 +53,30 @@ test('the approve page lists green PRs with summaries, badges and approve links 
   await expect(approve.nth(1)).toHaveAttribute('data-attention', 'look');
   await expect(approve.nth(1).locator('.badge', { hasText: 'cost' })).toBeVisible();
 
+  await expect(approve.locator('.badge.human-review')).toHaveCount(0);
+
   await expect(page.getByTestId('queue-decide').locator('li')).toHaveCount(1);
   await expect(page.getByTestId('queue-stacks')).toContainText('2 pull requests on main');
   await expect(page.getByText('1 drafts not shown')).toBeVisible();
+});
+
+test('a human-review PR waits in the approve group with its own badge @req:PANE-011', async ({ page }) => {
+  const held = [pull(7, 'red', 'main', ['human-review']), pull(8, 'plain', 'main', [])];
+  await page.route('https://api.github.com/**', (route) =>
+    route.fulfill({
+      json: route.request().url().includes('/search/')
+        ? { total_count: 2, items: [7, 8].map((number) => ({ number })) }
+        : held,
+    }),
+  );
+  await page.goto('/approve');
+
+  const approve = page.getByTestId('queue-approve').locator('li');
+  await expect(approve).toHaveCount(2);
+  await expect(approve.first()).toContainText('PR 8');
+  await expect(approve.nth(1)).toHaveAttribute('data-attention', 'look');
+  await expect(approve.nth(1).locator('.badge.human-review')).toHaveText('human-review');
+  await expect(page.getByTestId('queue-decide')).toHaveCount(0);
 });
 
 test('the approve page says when GitHub refuses @req:PANE-011', async ({ page }) => {

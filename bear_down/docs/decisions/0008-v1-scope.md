@@ -21,3 +21,7 @@ the regular season left.
 - Playoff-week guides and a weekly archive are backlog items in `ISSUES.md` (now `issues/`).
 - The simulator still simulates the playoffs, because Super Bowl odds depend
   on them.
+- 2026-11-28: the playoff guide is built. In a playoff week the simulator
+  measures each of the round's games, the page names the round and drops
+  the goals already decided ([rooting.json](../rooting-json.md), `round`
+  and the `bracket` channel).

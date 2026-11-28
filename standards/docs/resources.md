@@ -110,7 +110,11 @@ deletes by following a runbook, such as
 ## Temporary resources
 
 These are rebuilt from git, so automation deletes them without asking and
-lists what it deleted in the run summary:
+lists what it deleted in the run summary. The weekly
+`all-retire-resources.yml` workflow deletes Pages deployments and closed
+PRs' branches (rules in `chores retire-temporary`, branches through
+`all-delete-branches.yml`); run it by hand from the Actions tab for a dry
+run:
 
 | Resource | Rule |
 | --- | --- |
