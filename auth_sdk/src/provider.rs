@@ -25,6 +25,14 @@ pub enum AuthError {
     HttpClientError(String),
     #[error("configuration error: {0}")]
     ConfigError(String),
+    #[error("sign-in was refused: {0}")]
+    AuthorizationDenied(String),
+    #[error("callback URL mismatch: {0}")]
+    CallbackMismatch(String),
+    #[error("loopback listener error: {0}")]
+    LoopbackError(String),
+    #[error("sign-in timed out: {0}")]
+    SignInTimedOut(String),
     #[error("unknown error")]
     Unknown,
 }
@@ -226,6 +234,18 @@ mod tests {
     }
 
     #[test]
+    fn test_auth_error_authorization_denied_shows_the_reason() {
+        let error = AuthError::AuthorizationDenied("access_denied".to_string());
+        assert_eq!(error.to_string(), "sign-in was refused: access_denied");
+    }
+
+    #[test]
+    fn test_auth_error_callback_mismatch() {
+        let error = AuthError::CallbackMismatch("expected x".to_string());
+        assert_eq!(error.to_string(), "callback URL mismatch: expected x");
+    }
+
+    #[test]
     fn test_all_auth_errors_are_cloneable() {
         let errors = vec![
             AuthError::ParseError,
@@ -238,6 +258,10 @@ mod tests {
             AuthError::OidcDiscoveryFailed("test".to_string()),
             AuthError::IdTokenValidationFailed("test".to_string()),
             AuthError::HttpClientError("test".to_string()),
+            AuthError::AuthorizationDenied("test".to_string()),
+            AuthError::CallbackMismatch("test".to_string()),
+            AuthError::LoopbackError("test".to_string()),
+            AuthError::SignInTimedOut("test".to_string()),
             AuthError::Unknown,
         ];
         for error in errors {

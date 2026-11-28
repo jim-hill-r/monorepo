@@ -17,8 +17,19 @@ openidconnect = { version = "4.0.1", features = ["reqwest"] }
 serde = "1.0.228"
 serde_json = "1.0.149"
 
+# The desktop loopback listener (`native::loopback`): not on mobile, where the
+# callback comes back through a custom URL scheme instead.
+[target.'cfg(not(any(target_arch = "wasm32", target_os = "android", target_os = "ios")))'.dependencies]
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "time"] }
+# `hardened` refuses to open anything but http and https URLs.
+webbrowser = { version = "1.2.7", features = ["hardened"] }
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
+
+# The native tests run a fake OpenID provider on 127.0.0.1.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt", "net", "io-util"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3.77", features = [

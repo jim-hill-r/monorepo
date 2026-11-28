@@ -46,17 +46,25 @@ pub fn practice_from_query(query: &str) -> Option<Vec<String>> {
         .trim_start_matches('?')
         .split('&')
         .find_map(|pair| pair.strip_prefix("practice="))?;
+    let value = value.replace("%2C", ",").replace("%2c", ",");
+    let expressions = known_expressions(value.split(','));
+    (!expressions.is_empty()).then_some(expressions)
+}
+
+/// The `candidates` the app has patterns for (letters a to z and A to Z
+/// only), trimmed, in order and without repeats.
+pub fn known_expressions<'a>(candidates: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut expressions: Vec<String> = Vec::new();
-    for expr in value.replace("%2C", ",").replace("%2c", ",").split(',') {
-        let expr = expr.trim().to_string();
+    for expr in candidates {
+        let expr = expr.trim();
         let known = !expr.is_empty()
             && expr.chars().all(|c| c.is_ascii_alphabetic())
-            && crate::patterns::patterns_json(&expr).is_some();
-        if known && !expressions.contains(&expr) {
-            expressions.push(expr);
+            && crate::patterns::patterns_json(expr).is_some();
+        if known && !expressions.iter().any(|e| e == expr) {
+            expressions.push(expr.to_string());
         }
     }
-    (!expressions.is_empty()).then_some(expressions)
+    expressions
 }
 
 /// Phase of the practice session for a single expression

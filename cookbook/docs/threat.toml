@@ -44,7 +44,11 @@ surface = "site"
 id = "COOK-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into the page (XSS) steals the Auth0 session."
+<<<<<<< HEAD
+mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts only from self and PostHog's script host us-assets.i.posthog.com, no inline script), frame-ancestors 'none', and Dioxus escaping rendered text."
+=======
 mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts and stylesheets only from self, no inline styles), frame-ancestors 'none', and Dioxus escaping rendered text."
+>>>>>>> origin/main
 surface = "site"
 
 [[threat]]
@@ -52,3 +56,10 @@ id = "COOK-T3"
 stride = "spoofing"
 what = "An attacker's site receives a sign-in code by posing as cookbook."
 mitigation = "PKCE, state and nonce checks in auth_sdk, and Auth0 callbacks limited to our own Pages hosts and localhost."
+
+[[threat]]
+id = "COOK-T4"
+stride = "information-disclosure"
+what = "Session replay (PostHog, decision 0001) records something a visitor typed, or a sign-in code from the address bar."
+mitigation = "public/posthog.js loads only on the production host and not for Do Not Track, Global Privacy Control or automation; it masks every input, records no request headers or bodies, drops code and state from captured URLs, and the home page has a privacy note. The phc_ project key is public and ingest-only; no PostHog secret is in the site."
+surface = "site"

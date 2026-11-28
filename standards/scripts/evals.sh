@@ -19,6 +19,22 @@
 #       failed.
 #       At stage ci, a top-level project whose evals.toml has a `cost` eval
 #       also runs `cost check --evals-results`, which appends those results.
+#   evals.sh smoke
+#       From a deploying project's directory (cookbook/cloudflare): runs the
+#       `@smoke` tests of the Playwright project named by SMOKE_DIR in its
+#       mise.toml [env] (relative to it, such as "../web") against
+#       $DEPLOY_URL, before `run` with EVALS_STAGE=cd. That project's
+#       playwright.config.ts must read BASE_URL: when set, run against it
+#       with no dev server. SMOKE_PROJECT picks the Playwright project
+#       (default chromium); only Chromium is installed, so it must be a
+#       Chromium one, which keeps the run to a minute or two (PR CI already
+#       ran every browser). Writes the JSON report to
+#       target/evals-reports/cd/playwright.json and each test's video,
+#       screenshot and trace to target/evals-reports/cd/test-results/.
+#       Exits 0 with a note when there is no SMOKE_DIR, 2 when DEPLOY_URL
+#       or SMOKE_DIR's package.json is missing, else with Playwright's
+#       status. Outside CI (CI unset), a tool that can't be installed, such
+#       as Playwright's browser in a cloud sandbox, skips with a note.
 #   evals.sh publish
 #       Writes the job summary for $EVALS_RESULTS ($GITHUB_STEP_SUMMARY, or
 #       standard output). Does nothing when the file doesn't exist.
@@ -97,6 +113,37 @@ case "${1:-}" in
         || echo "warning: cost check couldn't write $top's cost eval results"
     fi
     exit "$status"
+    ;;
+  smoke)
+    out="$reports_dir/cd"
+    if [ -z "${SMOKE_DIR:-}" ]; then
+      echo "smoke: no smoke tests yet (set SMOKE_DIR in this project's mise.toml [env])"
+      exit 0
+    fi
+    if [ -z "${DEPLOY_URL:-}" ]; then
+      echo "smoke: DEPLOY_URL is not set" >&2
+      exit 2
+    fi
+    if [ ! -f "$SMOKE_DIR/package.json" ]; then
+      echo "smoke: SMOKE_DIR $SMOKE_DIR has no package.json" >&2
+      exit 2
+    fi
+    skip() {
+      echo "smoke: $1" >&2
+      if [ -n "${CI:-}" ]; then exit 1; fi
+      echo "smoke: smoke tests not run here; the deploy job runs them" >&2
+      exit 0
+    }
+    mkdir -p "$out"
+    rm -rf "$out/playwright.json" "$out/test-results"
+    cd "$SMOKE_DIR" || exit 2
+    npm ci || skip "couldn't install the npm packages"
+    npx playwright install --with-deps chromium || skip "couldn't install Playwright's Chromium"
+    project=${SMOKE_PROJECT:-chromium}
+    echo "smoke: running the @smoke tests in $SMOKE_DIR ($project) against $DEPLOY_URL"
+    BASE_URL="$DEPLOY_URL" PLAYWRIGHT_JSON_OUTPUT_FILE="$out/playwright.json" \
+      npx playwright test --grep @smoke --project "$project" \
+      --output "$out/test-results" --reporter=list,json
     ;;
   publish)
     if [ ! -f "$results" ]; then
@@ -250,7 +297,7 @@ EOF2
     echo "evals: pushed the triage commit to $branch for PR triage to open"
     ;;
   *)
-    echo "usage: evals.sh report <name> <command...> | run | publish | store <results...> | verdicts | triage [--dry-run]" >&2
+    echo "usage: evals.sh report <name> <command...> | run | smoke | publish | store <results...> | verdicts | triage [--dry-run]" >&2
     exit 2
     ;;
 esac

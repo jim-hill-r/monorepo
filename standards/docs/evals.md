@@ -273,9 +273,21 @@ from a project directory.
 Stage `cd` runs in the same job, right after `mise run deploy` publishes a
 project that has a `DEPLOY_URL` (pushes to `main`, Nightly CD and manual
 redeploys; never pull requests, and not when `deploy-check.sh` skipped the
-deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
+deploy). The `cd evals` step first runs `evals.sh smoke`, then
+`evals.sh run` with `EVALS_STAGE=cd`:
 
-1. Each `http` eval of the top-level project makes its request against the
+1. When the deploying project sets `SMOKE_DIR` in its `mise.toml` `[env]`
+   (cookbook/cloudflare sets `"../web"`), `evals.sh smoke` runs that Playwright
+   project's `@smoke` tests in desktop Chromium against `DEPLOY_URL`. Its
+   `playwright.config.ts` reads `BASE_URL`: when set, it starts no dev
+   server and records every test's video, screenshot and trace (its user
+   agent says `jimhillr-evals`, as in every Playwright run). The JSON report goes to
+   `target/evals-reports/cd/playwright.json` in the deploying project, and
+   everything is kept as the 7-day `smoke-<project>` artifact. A failing
+   smoke test only warns in this step; the evals below decide the job.
+   Tag a test `@smoke` alongside its `@req:<ID>`, and give its `playwright`
+   eval the `cd` stage.
+2. Each `http` eval of the top-level project makes its request against the
    live site, `path` joined to `DEPLOY_URL`. Redirects are followed unless
    the eval expects a 3xx `status`. A miss is tried again, up to 3 times 5
    seconds apart, since a fresh deploy can take a moment to reach every
@@ -287,21 +299,24 @@ deploy). The `cd evals` step runs `evals.sh run` with `EVALS_STAGE=cd`:
    browser's user agent through the `synthetic()` helper in each
    `playwright.config.ts` (EVL-005); a browser can't add the header to a
    beacon, so the user agent is what marks it.
-2. Report kinds (`cargo`, `trycmd`, `playwright`) read only
-   `target/evals-reports/cd/`, where a `smoke` task run against production
+3. Report kinds (`cargo`, `trycmd`, `playwright`) read only
+   `target/evals-reports/cd/`, where the smoke run against production
    writes its report, never the `ci` task's reports.
-3. A failed eval of a `must` requirement fails the job (`evals run
+4. A failed eval of a `must` requirement fails the job (`evals run
    --fail-on-must`), so a broken deploy shows red on main. The site is
    already live by then: roll back by running **Push Main CI/CD** by hand
    with the project and a good ref ([mise.md](mise.md)). An `error`, or a
    bug in the engine (exit status 2), only warns.
-4. The results go in the job summary and a 14-day
+5. The results go in the job summary and a 14-day
    `evals-results-cd-<project>` artifact, and `store-evals` commits them to
    the `evals-results` branch with the `ci` ones (Nightly CD stores only its
    `cd` results, since Nightly CI stores that night's `ci` ones).
 
 Run the same checks by hand from a deploying project's directory:
+`mise run smoke`, then
 `EVALS_STAGE=cd DEPLOY_URL=https://jimhillr-cookbook.pages.dev bash ../../standards/scripts/evals.sh run`.
+Outside CI, `evals.sh smoke` skips with a note when it can't install Playwright's
+browser (a cloud sandbox), and cloud sandboxes can't reach `*.pages.dev`.
 
 ### Checking a live page
 

@@ -1,12 +1,7 @@
-use openidconnect::{
-    AuthorizationCode, ClientId, CsrfToken, EndpointMaybeSet, EndpointNotSet, EndpointSet,
-    IssuerUrl, Nonce, OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
-    TokenResponse,
-    core::{CoreAuthenticationFlow, CoreClient, CoreIdTokenClaims, CoreProviderMetadata},
-    reqwest,
-};
+use openidconnect::core::CoreIdTokenClaims;
 use web_sys::UrlSearchParams;
 
+use crate::flow::{self, OidcClient, PendingLogin};
 use crate::provider::{
     AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, CsrfTokenWrapper, NonceWrapper,
     PkceVerifierWrapper, ProviderConfig,
@@ -15,43 +10,24 @@ use crate::redirect::{safe_return_path, strip_authorization_response};
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
-// Type alias for the CoreClient with OIDC discovery endpoints configured
-// Type parameters represent endpoint availability states:
-// 1. AuthUrl: EndpointSet (authorization endpoint always set via discovery)
-// 2. DeviceAuthUrl: EndpointNotSet (device authorization not used)
-// 3. IntrospectionUrl: EndpointNotSet (token introspection not used)
-// 4. RevocationUrl: EndpointNotSet (token revocation not used)
-// 5. TokenUrl: EndpointSet (token endpoint explicitly set for exchange_code)
-// 6. UserInfoUrl: EndpointMaybeSet (userinfo endpoint optional in OIDC)
-type OidcClient = CoreClient<
-    EndpointSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointSet,
-    EndpointMaybeSet,
->;
-
 #[derive(Clone)]
 pub struct WebAuthProvider {
     client: OidcClient,
-    _provider_metadata: Option<CoreProviderMetadata>,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
     return_to: Option<String>,
 }
 
 impl WebAuthProvider {
+    /// Discover the provider and, when this page load is a sign-in callback,
+    /// finish that sign-in.
+    ///
+    /// # Errors
+    ///
+    /// Any error of OIDC discovery, or of finishing the sign-in when the page
+    /// URL carries an authorization response.
     pub async fn new(config: ProviderConfig) -> Result<WebAuthProvider, AuthError> {
-        // OIDC discovery is required in openidconnect v4+
-        let issuer_url = config.issuer_url.clone().ok_or_else(|| {
-            tracing::error!("issuer_url is required for OIDC discovery");
-            AuthError::ConfigError("issuer_url is required".to_string())
-        })?;
-
-        tracing::info!("Using OIDC discovery with issuer: {}", issuer_url);
-        let (client, provider_metadata) =
-            Self::create_client_from_discovery(issuer_url, &config).await?;
+        let client = flow::discover(&config).await?;
 
         let (access_token, id_token_claims, return_to) =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
@@ -72,7 +48,6 @@ impl WebAuthProvider {
 
         Ok(WebAuthProvider {
             client,
-            _provider_metadata: provider_metadata,
             access_token,
             id_token_claims,
             return_to,
@@ -84,61 +59,9 @@ impl WebAuthProvider {
     /// `Some` only on the page load that completed a sign-in redirect. The
     /// redirect URI is always the site root, so the app navigates here to
     /// put the user back where they started.
+    #[must_use]
     pub fn return_to(&self) -> Option<&str> {
         self.return_to.as_deref()
-    }
-
-    /// Create a CoreClient using OIDC discovery
-    async fn create_client_from_discovery(
-        issuer_url: String,
-        config: &ProviderConfig,
-    ) -> Result<(OidcClient, Option<CoreProviderMetadata>), AuthError> {
-        tracing::debug!(
-            "Fetching OIDC discovery document from: {}/.well-known/openid-configuration",
-            issuer_url
-        );
-
-        let issuer = IssuerUrl::new(issuer_url).map_err(|_| AuthError::ParseError)?;
-
-        // Create HTTP client for discovery
-        let http_client = reqwest::Client::new();
-
-        // Fetch provider metadata from discovery document
-        let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http_client)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to fetch OIDC discovery document: {}", e);
-                AuthError::OidcDiscoveryFailed(e.to_string())
-            })?;
-
-        tracing::debug!("Successfully fetched OIDC discovery document");
-
-        // Extract the token endpoint from provider metadata - it's required for token exchange
-        let token_endpoint = provider_metadata
-            .token_endpoint()
-            .ok_or_else(|| {
-                AuthError::OidcDiscoveryFailed(
-                    "Provider metadata missing required token_endpoint".to_string(),
-                )
-            })?
-            .clone();
-
-        // Create client from discovered metadata
-        let client = CoreClient::from_provider_metadata(
-            provider_metadata.clone(),
-            ClientId::new(config.client_id.clone()),
-            None, // No client secret for public clients (PKCE is used instead)
-        )
-        // Set redirect URI for the OAuth2 flow
-        .set_redirect_uri(
-            RedirectUrl::new(config.redirect_url.clone()).map_err(|_| AuthError::ParseError)?,
-        )
-        // Explicitly set token endpoint to upgrade type state from EndpointMaybeSet to EndpointSet
-        // This is required for methods like exchange_code() to be available
-        .set_token_uri(token_endpoint);
-
-        tracing::info!("OIDC client created successfully from discovery");
-        Ok((client, Some(provider_metadata)))
     }
 }
 
@@ -158,38 +81,14 @@ impl AuthProvider for WebAuthProvider {
     fn login(&self) -> Result<(), AuthError> {
         tracing::info!("Initiating OIDC login flow with nonce validation");
 
-        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-        tracing::debug!("Generated PKCE challenge and verifier for login");
-
-        // Generate the full authorization URL with nonce for OIDC.
-        let (auth_url, csrf_token, nonce) = self
-            .client
-            .authorize_url(
-                CoreAuthenticationFlow::AuthorizationCode,
-                CsrfToken::new_random,
-                Nonce::new_random,
-            )
-            // Set the desired scopes.
-            // Note: "openid" scope is required for OIDC and to get ID token with user claims.
-            // "profile" and "email" scopes request additional standard claims.
-            .add_scope(Scope::new("openid".to_string()))
-            .add_scope(Scope::new("profile".to_string()))
-            .add_scope(Scope::new("email".to_string()))
-            .add_scope(Scope::new("read".to_string()))
-            .add_scope(Scope::new("write".to_string()))
-            // Offline access results in refresh token being provided
-            .add_scope(Scope::new("offline_access".to_string()))
-            // Set the PKCE code challenge.
-            .set_pkce_challenge(pkce_challenge)
-            .url();
-
-        tracing::debug!("Generated CSRF token and nonce for login");
+        let (auth_url, pending) = flow::begin(&self.client);
+        tracing::debug!("Generated PKCE verifier, CSRF token and nonce for login");
 
         store_app_state_in_browser(&AppState {
             return_to: fetch_current_path_from_browser(),
-            csrf_token: Some(CsrfTokenWrapper::new(csrf_token.secret().to_string())),
-            pkce_verifier: Some(PkceVerifierWrapper::new(pkce_verifier.secret().to_string())),
-            nonce: Some(NonceWrapper::new(nonce.secret().to_string())),
+            csrf_token: Some(CsrfTokenWrapper::new(pending.csrf_token)),
+            pkce_verifier: Some(PkceVerifierWrapper::new(pending.pkce_verifier)),
+            nonce: Some(NonceWrapper::new(pending.nonce)),
         })?;
 
         tracing::debug!("Stored authentication state with nonce in browser session storage");
@@ -202,23 +101,7 @@ impl AuthProvider for WebAuthProvider {
     }
 
     fn user(&self) -> Option<crate::provider::User> {
-        // Extract user information from ID token claims
-        self.id_token_claims.as_ref().map(|claims| {
-            tracing::debug!("Extracting user information from ID token claims");
-
-            crate::provider::User {
-                sub: claims.subject().to_string(),
-                name: claims
-                    .name()
-                    .and_then(|n| n.get(None).map(|localized| localized.to_string())),
-                email: claims.email().map(|e| e.to_string()),
-                email_verified: claims.email_verified(),
-                picture: claims
-                    .picture()
-                    .and_then(|p| p.get(None).map(|localized| localized.to_string())),
-                preferred_username: claims.preferred_username().map(|u| u.to_string()),
-            }
-        })
+        self.id_token_claims.as_ref().map(flow::user_from_claims)
     }
 
     fn access_token(&self) -> Option<crate::provider::AccessToken> {
@@ -226,6 +109,7 @@ impl AuthProvider for WebAuthProvider {
     }
 }
 
+#[must_use]
 pub fn fetch_current_location_from_browser() -> Option<String> {
     if let Some(window) = web_sys::window() {
         return window.location().href().ok();
@@ -236,6 +120,7 @@ pub fn fetch_current_location_from_browser() -> Option<String> {
 ///
 /// Pass it to [`crate::redirect::redirect_url_for_origin`] for a stable
 /// `redirect_url`.
+#[must_use]
 pub fn fetch_origin_from_browser() -> Option<String> {
     web_sys::window()?.location().origin().ok()
 }
@@ -279,7 +164,7 @@ fn remove_app_state_from_browser() {
     }
 }
 
-fn fetch_code_and_state_from_browser() -> Result<(AuthorizationCode, CsrfTokenState), AuthError> {
+fn fetch_code_and_state_from_browser() -> Result<(String, CsrfTokenState), AuthError> {
     let window = web_sys::window()
         .ok_or_else(|| AuthError::BrowserApiError("window object not available".to_string()))?;
     let search = window
@@ -294,7 +179,7 @@ fn fetch_code_and_state_from_browser() -> Result<(AuthorizationCode, CsrfTokenSt
     let state = params
         .get("state")
         .ok_or_else(|| AuthError::MissingUrlParameter("state".to_string()))?;
-    Ok((AuthorizationCode::new(code), CsrfTokenState::new(state)))
+    Ok((code, CsrfTokenState::new(state)))
 }
 
 fn redirect_browser(url: &str) -> Result<(), AuthError> {
@@ -314,7 +199,7 @@ fn store_app_state_in_browser(app_state: &AppState) -> Result<(), AuthError> {
         .map_err(|_| AuthError::BrowserApiError("failed to access session storage".to_string()))?
         .ok_or_else(|| AuthError::BrowserApiError("session storage not available".to_string()))?;
     let json = serde_json::to_string(app_state).map_err(|e| {
-        AuthError::SerializationError(format!("failed to serialize app state: {}", e))
+        AuthError::SerializationError(format!("failed to serialize app state: {e}"))
     })?;
     storage
         .set_item(DEFAULT_APP_STATE_STORAGE_KEY, &json)
@@ -339,7 +224,7 @@ fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
         })?;
     match item {
         Some(json) => serde_json::from_str(&json).map_err(|e| {
-            AuthError::SerializationError(format!("failed to deserialize app state: {}", e))
+            AuthError::SerializationError(format!("failed to deserialize app state: {e}"))
         }),
         _ => Err(AuthError::MissingStateData(
             "app state not found in session storage".to_string(),
@@ -349,114 +234,41 @@ fn fetch_app_state_from_browser() -> Result<AppState, AuthError> {
 
 async fn handle_redirect(
     client: &OidcClient,
-    authorization_code: AuthorizationCode,
+    authorization_code: String,
     state: CsrfTokenState,
 ) -> Result<(AccessToken, Option<CoreIdTokenClaims>), AuthError> {
     tracing::info!("Processing OIDC redirect callback");
 
     let app_state = fetch_app_state_from_browser()?;
-    tracing::debug!("Retrieved authentication state from browser session storage");
-
-    let csrf_token_wrapper = app_state
-        .csrf_token
-        .ok_or_else(|| AuthError::MissingStateData("csrf_token".to_string()))?;
-    let pkce_verifier_wrapper = app_state
-        .pkce_verifier
-        .ok_or_else(|| AuthError::MissingStateData("pkce_verifier".to_string()))?;
-    let nonce_wrapper = app_state
-        .nonce
-        .ok_or_else(|| AuthError::MissingStateData("nonce".to_string()))?;
-
-    // Security validations:
-    // 1. CSRF token validation (state parameter) - protects against CSRF attacks
-    // 2. PKCE verification - protects against authorization code interception
-    // 3. Nonce validation - protects against replay attacks (validated below)
-    // 4. No redirect following in HTTP client - prevents SSRF attacks
-    if state.0 != csrf_token_wrapper.0 {
-        tracing::warn!("CSRF token validation failed - potential CSRF attack detected");
-        return Err(AuthError::CsrfValidationFailed);
-    }
-
-    tracing::debug!("CSRF token validation successful");
-
-    // Following redirects opens the client up to SSRF vulnerabilities.
-    // OAuth2 RFC 6749 requires that token endpoints MUST NOT redirect.
-    // This policy prevents SSRF attacks where a malicious authorization server
-    // could redirect the client to internal resources.
-    //
-    // Note: On wasm32, reqwest uses the browser's fetch API which has built-in
-    // redirect handling and doesn't support custom redirect policies. The browser's
-    // same-origin policy provides some protection, but developers should ensure
-    // their OAuth2 server endpoints follow the RFC 6749 requirement of not redirecting.
-    #[cfg(not(target_arch = "wasm32"))]
-    let http_client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .map_err(|e| {
-            AuthError::HttpClientError(format!("failed to configure HTTP client: {}", e))
-        })?;
-
-    #[cfg(target_arch = "wasm32")]
-    let http_client = reqwest::Client::new();
-
-    // Convert wrapper type back to oauth2 type for token exchange
-    let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_wrapper.0);
-    tracing::debug!("Prepared PKCE verifier for token exchange");
-
-    // Now you can exchange it for an access token and ID token.
-    tracing::debug!("Initiating token exchange with authorization server");
-    let token_result = client
-        .exchange_code(authorization_code)
-        // Set the PKCE code verifier.
-        .set_pkce_verifier(pkce_verifier)
-        .request_async(&http_client)
-        .await
-        .map_err(|e| {
-            tracing::error!("Token exchange failed: {}", e);
-            AuthError::TokenExchangeError(e.to_string())
-        })?;
-
-    tracing::info!("Token exchange successful - access token and ID token obtained");
-
-    // Validate the ID token with nonce verification and extract claims
-    let id_token_claims = if let Some(id_token) = token_result.id_token() {
-        tracing::debug!("Validating ID token with nonce");
-
-        // Convert wrapper back to openidconnect Nonce type
-        let nonce = Nonce::new(nonce_wrapper.0);
-
-        // Create ID token verifier and validate the token
-        let id_token_verifier = client.id_token_verifier();
-        let claims = id_token.claims(&id_token_verifier, &nonce).map_err(|e| {
-            tracing::error!("ID token validation failed: {}", e);
-            AuthError::IdTokenValidationFailed(e.to_string())
-        })?;
-
-        tracing::info!("ID token validation successful - nonce verified, claims extracted");
-        Some(claims.clone())
-    } else {
-        tracing::warn!("No ID token returned by server - nonce validation skipped");
-        None
+    let pending = PendingLogin {
+        csrf_token: app_state
+            .csrf_token
+            .ok_or_else(|| AuthError::MissingStateData("csrf_token".to_string()))?
+            .0,
+        pkce_verifier: app_state
+            .pkce_verifier
+            .ok_or_else(|| AuthError::MissingStateData("pkce_verifier".to_string()))?
+            .0,
+        nonce: app_state
+            .nonce
+            .ok_or_else(|| AuthError::MissingStateData("nonce".to_string()))?
+            .0,
     };
 
-    // Return both the access token and the ID token claims
-    Ok((
-        AccessToken::new(token_result.access_token().clone().into_secret()),
-        id_token_claims,
-    ))
+    // flow::finish checks the state, sends the PKCE verifier, requires an
+    // ID token and validates its nonce.
+    let signed_in = flow::finish(client, &authorization_code, &state.0, pending).await?;
+    Ok((signed_in.access_token, Some(signed_in.claims)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Note: Testing create_client_from_discovery requires mocking HTTP requests,
-    // which is complex in wasm32 environment. The discovery functionality will be
-    // tested through integration tests or manual testing with a real OIDC provider.
-    // For unit tests, we verify that:
-    // 1. Invalid issuer URLs are rejected with ParseError
+    // The flow itself is tested natively in `flow` and `native`; this only
+    // checks that the web provider rejects a config with no issuer.
     #[tokio::test]
-    async fn test_create_client_from_discovery_with_invalid_issuer_url() {
+    async fn new_needs_an_issuer_url() {
         let config = ProviderConfig {
             client_id: "test_client_id".to_string(),
             auth_url: "https://example.com/authorize".to_string(),
@@ -464,38 +276,9 @@ mod tests {
             redirect_url: "https://example.com/callback".to_string(),
             issuer_url: None,
         };
-
-        let result =
-            WebAuthProvider::create_client_from_discovery("not a valid url".to_string(), &config)
-                .await;
-
-        assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AuthError::ParseError));
-    }
-
-    #[test]
-    fn test_nonce_can_be_created() {
-        // Test that we can create a Nonce for OIDC flows
-        let nonce = Nonce::new_random();
-        assert!(!nonce.secret().is_empty());
-    }
-
-    #[test]
-    fn test_nonce_wrapper_conversion() {
-        // Test that we can convert between Nonce and NonceWrapper
-        let nonce = Nonce::new("test_nonce_value".to_string());
-        let wrapper = NonceWrapper::new(nonce.secret().to_string());
-        assert_eq!(wrapper.0, "test_nonce_value");
-
-        // And convert back
-        let nonce_from_wrapper = Nonce::new(wrapper.0);
-        assert_eq!(nonce_from_wrapper.secret(), "test_nonce_value");
-    }
-
-    #[test]
-    fn test_core_authentication_flow_available() {
-        // Test that CoreAuthenticationFlow is available for use in authorize_url
-        // This is a compile-time check that the type is imported correctly
-        let _flow = CoreAuthenticationFlow::AuthorizationCode;
+        assert!(matches!(
+            WebAuthProvider::new(config).await,
+            Err(AuthError::ConfigError(_))
+        ));
     }
 }

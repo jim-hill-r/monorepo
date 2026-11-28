@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  *   npm test
  */
 
-test.describe('Cookbook Web Application', () => {
+test.describe('Cookbook Web Application', { tag: '@smoke' }, () => {
   test('should load the home page', async ({ page }) => {
     // Navigate to the home page
     await page.goto('/');
@@ -45,7 +45,7 @@ test.describe('Cookbook Web Application', () => {
   });
 });
 
-test.describe('Recipe Routes', { tag: '@req:COOK-001' }, () => {
+test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
   test('should load recipe for day 1', async ({ page }) => {
     await page.goto('/recipe/1');
     await page.waitForLoadState('networkidle');
@@ -131,7 +131,7 @@ test.describe('Recipe Routes', { tag: '@req:COOK-001' }, () => {
   });
 });
 
-test.describe('Plan Routes', { tag: '@req:COOK-002' }, () => {
+test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
   test('should load plan for week 1', async ({ page }) => {
     await page.goto('/plan/1');
     await page.waitForLoadState('networkidle');

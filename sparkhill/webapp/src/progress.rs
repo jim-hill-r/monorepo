@@ -1,8 +1,9 @@
 //! Each learner's progress, kept in the browser's `localStorage`.
 //!
 //! The live app keeps practice per learner name, with `Standard` when no name
-//! is given. Here a learner types their name on the home page, and each level's
-//! `AppState` is saved under that name after every tracing, so a reload, or a
+//! is given. Here the learner's name is typed under Student in the settings
+//! panel (`settings.rs`), and each level's `AppState` is saved under that
+//! name after every tracing, so a reload, or a
 //! second learner on the same device, carries on where they were. Nothing
 //! leaves the device.
 
@@ -28,84 +29,49 @@ pub fn learner_name(typed: &str) -> String {
     }
 }
 
-/// `localStorage` key for `learner`'s progress in `level`.
-pub fn progress_key(learner: &str, level: &str) -> String {
-    format!("blueeel.progress.{level}.{learner}")
+/// `localStorage` key for `learner`'s progress in `level`. Practising a
+/// sequence from the settings panel keeps its own progress, apart from the
+/// whole level's, so changing the sequence never mixes the two up.
+pub fn progress_key(learner: &str, level: &str, sequence: Option<&[String]>) -> String {
+    match sequence {
+        Some(expressions) => format!(
+            "blueeel.progress.{level}.{learner}#{}",
+            expressions.join(",")
+        ),
+        None => format!("blueeel.progress.{level}.{learner}"),
+    }
 }
 
 /// `value` as a JavaScript string literal.
-fn js_string(value: &str) -> String {
+pub fn js_string(value: &str) -> String {
     serde_json::to_string(value).unwrap_or_else(|_| "\"\"".to_string())
 }
 
-/// JavaScript that returns `{"learner": ..., "saved": ...}` as JSON: the
-/// current learner and their saved progress in `level` (or null). Storage
-/// can be blocked (private windows), so it falls back to the default learner.
-pub fn load_js(level: &str) -> String {
+/// JavaScript that returns the progress saved under `key`, or "" when there
+/// is none or storage is blocked (private windows).
+pub fn load_js(key: &str) -> String {
     format!(
-        r#"let learner = {default}, saved = null;
-try {{
-  learner = localStorage.getItem({learner_key}) || {default};
-  saved = localStorage.getItem('blueeel.progress.' + {level} + '.' + learner);
-}} catch (e) {{}}
-return JSON.stringify({{ learner, saved }});"#,
-        default = js_string(DEFAULT_LEARNER),
-        learner_key = js_string(LEARNER_KEY),
-        level = js_string(level),
+        "try {{ return localStorage.getItem({}) || ''; }} catch (e) {{ return ''; }}",
+        js_string(key)
     )
 }
 
-/// JavaScript that saves `state` as `learner`'s progress in `level`.
-pub fn save_js(learner: &str, level: &str, state: &AppState) -> Option<String> {
+/// JavaScript that saves `state` under `key`.
+pub fn save_js(key: &str, state: &AppState) -> Option<String> {
     let json = serde_json::to_string(state).ok()?;
     Some(format!(
         "try {{ localStorage.setItem({}, {}); }} catch (e) {{}}",
-        js_string(&progress_key(learner, level)),
+        js_string(key),
         js_string(&json)
     ))
 }
 
-/// JavaScript that makes `typed` the current learner (the default learner
-/// when it is blank).
-pub fn set_learner_js(typed: &str) -> String {
-    if typed.trim().is_empty() {
-        return format!(
-            "try {{ localStorage.removeItem({}); }} catch (e) {{}}",
-            js_string(LEARNER_KEY)
-        );
-    }
-    format!(
-        "try {{ localStorage.setItem({}, {}); }} catch (e) {{}}",
-        js_string(LEARNER_KEY),
-        js_string(&learner_name(typed))
-    )
-}
-
-/// JavaScript that returns the learner's name as typed last time, or "".
-pub fn get_learner_js() -> String {
-    format!(
-        "try {{ return localStorage.getItem({}) || ''; }} catch (e) {{ return ''; }}",
-        js_string(LEARNER_KEY)
-    )
-}
-
-/// What `load_js` returned: the learner, and their saved progress if it can
-/// be carried on (it parses and the level isn't finished).
-pub fn parse_loaded(loaded: &str) -> (String, Option<AppState>) {
-    #[derive(serde::Deserialize)]
-    struct Loaded {
-        learner: Option<String>,
-        saved: Option<String>,
-    }
-    let Ok(loaded) = serde_json::from_str::<Loaded>(loaded) else {
-        return (DEFAULT_LEARNER.to_string(), None);
-    };
-    let learner = learner_name(loaded.learner.as_deref().unwrap_or(""));
-    let state = loaded
-        .saved
-        .and_then(|json| serde_json::from_str::<AppState>(&json).ok())
-        .filter(|state| state.expression.is_some() && !state.is_complete());
-    (learner, state)
+/// The saved progress `load_js` returned, if it can be carried on (it
+/// parses and the level isn't finished).
+pub fn restore(saved: &str) -> Option<AppState> {
+    serde_json::from_str::<AppState>(saved)
+        .ok()
+        .filter(|state| state.expression.is_some() && !state.is_complete())
 }
 
 #[cfg(test)]
@@ -120,14 +86,25 @@ mod tests {
     }
 
     #[test]
-    fn progress_is_kept_per_learner_and_level() {
-        assert_ne!(progress_key("Ada", "letter"), progress_key("Bo", "letter"));
-        assert_ne!(progress_key("Ada", "letter"), progress_key("Ada", "word"));
-    }
-
-    fn loaded(learner: &str, state: &AppState) -> String {
-        let saved = serde_json::to_string(state).expect("state serializes");
-        serde_json::json!({ "learner": learner, "saved": saved }).to_string()
+    fn progress_is_kept_per_learner_level_and_sequence() {
+        assert_ne!(
+            progress_key("Ada", "letter", None),
+            progress_key("Bo", "letter", None)
+        );
+        assert_ne!(
+            progress_key("Ada", "letter", None),
+            progress_key("Ada", "word", None)
+        );
+        let bc = ["b".to_string(), "c".to_string()];
+        assert_eq!(
+            progress_key("Ada", "letter", Some(&bc)),
+            "blueeel.progress.letter.Ada#b,c"
+        );
+        assert_eq!(
+            progress_key("Ada", "letter", None),
+            "blueeel.progress.letter.Ada",
+            "the whole level's key is unchanged, so saved progress carries on"
+        );
     }
 
     #[test]
@@ -136,9 +113,8 @@ mod tests {
         state.start_practice();
         state.record_attempt(true);
         state.record_attempt(false);
-        let (learner, restored) = parse_loaded(&loaded("Ada", &state));
-        assert_eq!(learner, "Ada");
-        let restored = restored.expect("progress restored");
+        let saved = serde_json::to_string(&state).expect("state serializes");
+        let restored = restore(&saved).expect("progress restored");
         assert_eq!(restored.expression, state.expression);
         assert_eq!(restored.active_queue, state.active_queue);
         assert_eq!(restored.history["b"].single_attempt_successes, 1);
@@ -152,22 +128,20 @@ mod tests {
         while !done.is_complete() {
             done.record_attempt(true);
         }
-        assert!(parse_loaded(&loaded("Ada", &done)).1.is_none());
-        assert!(
-            parse_loaded(r#"{"learner":"Ada","saved":"not json"}"#)
-                .1
-                .is_none()
-        );
-        assert!(parse_loaded(r#"{"learner":null,"saved":null}"#).1.is_none());
-        assert_eq!(parse_loaded("garbage").0, DEFAULT_LEARNER);
+        let saved = serde_json::to_string(&done).expect("state serializes");
+        assert!(restore(&saved).is_none());
+        assert!(restore("not json").is_none());
+        assert!(restore("").is_none());
+        let unstarted = serde_json::to_string(&AppState::new("letter")).expect("serializes");
+        assert!(restore(&unstarted).is_none());
     }
 
     #[test]
-    fn names_are_quoted_safely_in_javascript() {
-        let js = set_learner_js("a'); alert(1); ('");
-        assert!(js.contains(r#""a'); alert(1); ('""#));
+    fn keys_are_quoted_safely_in_javascript() {
         let state = AppState::new("letter");
-        let js = save_js("x\"y", "letter", &state).expect("saves");
+        let js = save_js(&progress_key("x\"y", "letter", None), &state).expect("saves");
         assert!(js.contains(r#""blueeel.progress.letter.x\"y""#));
+        assert!(load_js("a'b").contains(r#"getItem("a'b")"#));
+        assert!(!js.contains("fetch"));
     }
 }

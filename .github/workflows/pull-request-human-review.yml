@@ -1,0 +1,105 @@
+---
+# PR-004, the `Human review` check (Jim, 2026-11-27: "Lets make sure no prs
+# with red attention flags get auto merged. Cost changes must be reviewed by
+# jim", then "Lets make it needs human review"). A PR with a red attention
+# tag (`must-requirement-changed`) or a cost change, from its diff, its
+# description or the `cost` label, fails this check until a human approves
+# its head commit. Only human collaborators count (owner, member or
+# collaborator; Jim: "Any human collaborator is fine"): agent `-agt`
+# accounts, jimhillr-reviewer and bots never do. A PR a human collaborator
+# opened passes. Such a PR is also labelled
+# `needs-human` and has its auto-merge turned off, so neither
+# jimhillr-reviewer nor an agent can approve or merge it. Every other PR
+# passes. Runs again on every review, so a human's approval turns it green.
+# The rules are under "Human review" in standards/docs/pull-requests.md and
+# the logic is `chores gate` (chores/src/gate.rs), built from the base
+# branch so a PR can't change the rules it is judged by.
+name: Human review
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pull-request-human-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Human review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write         # create the needs-human label the first time
+      pull-requests: write  # label the PR and turn its auto-merge off
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Decide
+        id: decide
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # The rules come from the base branch. Only until chores gate
+          # first reaches it (the PR that adds it) is the PR's own copy used.
+          git worktree add --detach "$RUNNER_TEMP/base" "origin/$BASE_REF" >/dev/null
+          chores="$RUNNER_TEMP/base/chores"
+          if [ ! -f "$chores/src/gate.rs" ]; then
+            echo "origin/$BASE_REF has no chores gate yet; using this PR's." | tee -a "$GITHUB_STEP_SUMMARY"
+            chores=chores
+          fi
+          # Read fresh from the API: labels set by other jobs, the current
+          # description and every review.
+          gh api "repos/$GH_REPO/pulls/$PR" --jq '.body // ""' >"$RUNNER_TEMP/body.md"
+          labels=$(gh api "repos/$GH_REPO/issues/$PR/labels" --paginate --jq '.[].name' | paste -sd, -)
+          gh api "repos/$GH_REPO/pulls/$PR/reviews" --paginate --jq '.[]' | jq -s . >"$RUNNER_TEMP/reviews.json"
+          set +e
+          cargo run --quiet --manifest-path "$chores/Cargo.toml" -- --root "$GITHUB_WORKSPACE" \
+            gate --base "origin/$BASE_REF" --body "$RUNNER_TEMP/body.md" --labels "$labels" \
+            --author "$AUTHOR" --author-association "$AUTHOR_ASSOCIATION" --head "$HEAD_SHA" --reviews "$RUNNER_TEMP/reviews.json" \
+            --json "$RUNNER_TEMP/gate.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          code=${PIPESTATUS[0]}
+          set -e
+          [ -f "$RUNNER_TEMP/gate.json" ] || exit "$code"
+          echo "needs-human=$(jq -r .needs_human "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
+          echo "pass=$(jq -r .pass "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
+
+      # Labels the PR needs-human and turns its auto-merge off. Never
+      # removes the label: a person or another check may have set it.
+      - name: Hold for a human
+        if: steps.decide.outputs.needs-human == 'true' && steps.decide.outputs.pass != 'true'
+        # A fork's or Dependabot's token can't label; the check still fails.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api "repos/$GH_REPO/labels" -f name=needs-human -f color=D93F0B \
+            -f description="Needs a person (Jim's sign-off, a manual step)" >/dev/null 2>&1 || true
+          gh api "repos/$GH_REPO/issues/$PR/labels" -f "labels[]=needs-human" >/dev/null
+          echo "Labelled needs-human"
+          if [ "$(gh api "repos/$GH_REPO/pulls/$PR" --jq '.auto_merge != null')" = true ]; then
+            gh pr merge "$PR" --repo "$GH_REPO" --disable-auto
+            echo "Turned auto-merge off"
+          fi
+
+      - name: Result
+        env:
+          PASS: ${{ steps.decide.outputs.pass }}
+        run: test "$PASS" = true

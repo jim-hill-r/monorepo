@@ -6,9 +6,11 @@
 //! with the snapshot's own [`Snapshot::thresholds`]. Ages are whole days
 //! from a date to the day the snapshot was taken, so the result depends
 //! only on the snapshot, never on a clock. The signals that need live
-//! GitHub data (Build, Deploy and UAT, Pull requests) and the audit
-//! findings for Standards come later; see `pane/issues/`.
+//! GitHub data (Build, Deploy and UAT, Pull requests) come later; see
+//! `pane/issues/`. Standards reads the audit findings the snapshot was
+//! built with ([`Snapshot::audit`]).
 
+use crate::audit::Finding;
 use crate::health::{self, Fix, ReviewStatus};
 use crate::{HumanIssue, Link, ProjectStatus, REPO_URL, Signal, Snapshot, WorkItem, WorkKind};
 
@@ -113,10 +115,12 @@ pub fn open_issues(snapshot: &Snapshot, project: &str) -> Signal {
     signal
 }
 
-/// **Standards**: open `code-review` findings are the project's
-/// agent-generated `TODO`s outside any epic (epics are planned phases, not
-/// findings). The audit isn't in the snapshot yet, so this stays grey
-/// until it is.
+/// **Standards**: the project's own audit errors (findings in
+/// [`Snapshot::audit`] owned by exactly this config root), then its open
+/// `code-review` findings, which are its agent-generated `TODO`s outside any
+/// epic (epics are planned phases, not findings). Grey ("Audit not run")
+/// when the snapshot was built without the audit. Each error is evidence,
+/// linking its file, or the project's folder.
 pub fn standards(snapshot: &Snapshot, project: &str) -> Signal {
     let findings = count(snapshot.work_items.iter().filter(|w| {
         w.kind == WorkKind::Todo
@@ -124,7 +128,24 @@ pub fn standards(snapshot: &Snapshot, project: &str) -> Signal {
             && w.epic.is_none()
             && w.tags.iter().any(|t| t == "agent-generated")
     }));
-    health::standards(None, findings, &snapshot.thresholds.standards)
+    let errors: Option<Vec<&Finding>> =
+        snapshot.audit.as_ref().map(|a| a.errors(project).collect());
+    let mut signal = health::standards(
+        errors.as_ref().map(|e| count(e.iter())),
+        findings,
+        &snapshot.thresholds.standards,
+    );
+    signal.evidence.extend(errors.iter().flatten().map(|f| {
+        let label = format!("error[{}] {}", f.code, f.message);
+        match &f.file {
+            Some(file) => file_link(label, file, None),
+            None => Link {
+                label,
+                url: format!("{REPO_URL}/tree/main/{project}"),
+            },
+        }
+    }));
+    signal
 }
 
 /// One full review rotation in days: a week for each top-level project
@@ -458,6 +479,66 @@ mod tests {
         let signal = standards(&s, "pane");
         assert_eq!(signal.health, Health::Grey);
         assert_eq!(signal.reason, "Audit not run");
+    }
+
+    fn audited(output: &str) -> Snapshot {
+        let mut s = snapshot();
+        let roots: Vec<String> = s.projects.iter().map(|p| p.path.clone()).collect();
+        s.audit = crate::audit::parse(output, &roots);
+        s
+    }
+
+    #[test]
+    fn standards_is_red_with_the_projects_own_audit_errors() {
+        let s = audited(
+            "error[STD-002] pane/web/mise.toml must include exactly one task file\n\
+             error[NAM-002] pane/web: package name 'web' must be 'pane_web'\n\
+             error[SEC-002] .gitignore does not ignore .env\n\
+             warning[DOC-001] pane has no README.md\n\
+             audit: 3 error(s)\n",
+        );
+        let web = standards(&s, "pane/web");
+        assert_eq!(web.health, Health::Red);
+        assert_eq!(web.reason, "2 audit error(s)");
+        let urls: Vec<&str> = web.evidence.iter().map(|l| l.url.as_str()).collect();
+        assert_eq!(
+            urls,
+            [
+                "https://github.com/jimhillr/monorepo/blob/main/pane/web/mise.toml",
+                "https://github.com/jimhillr/monorepo/tree/main/pane/web",
+            ]
+        );
+        assert!(
+            web.evidence[0]
+                .label
+                .starts_with("error[STD-002] pane/web/mise.toml")
+        );
+
+        // pane itself has only a warning, and the repo-wide error is no
+        // project's.
+        let pane = standards(&s, "pane");
+        assert_eq!(pane.health, Health::Green);
+        assert_eq!(pane.reason, "Audit clean");
+        assert!(pane.evidence.is_empty());
+    }
+
+    #[test]
+    fn standards_is_amber_with_a_clean_audit_and_many_review_findings() {
+        let mut s = audited("audit: ok\n");
+        assert_eq!(standards(&s, "pane").health, Health::Green);
+        let amber = s.thresholds.standards.amber_review_findings;
+        for _ in 0..amber {
+            s.work_items.push(todo("pane", None, &["agent-generated"]));
+        }
+        let signal = standards(&s, "pane");
+        assert_eq!(signal.health, Health::Amber);
+        assert_eq!(signal.reason, format!("{amber} open code-review findings"));
+    }
+
+    #[test]
+    fn standards_stays_grey_when_the_audit_did_not_finish() {
+        let s = audited("error[STD-001] pane has no mise.toml\n");
+        assert_eq!(standards(&s, "pane").health, Health::Grey);
     }
 
     #[test]

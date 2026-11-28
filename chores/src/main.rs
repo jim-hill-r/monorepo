@@ -5,10 +5,12 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
 mod badges;
+mod gate;
 mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod user_docs;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -109,6 +111,47 @@ enum Command {
         #[arg(long, default_value = "origin/main")]
         base: String,
         /// Print JSON instead of the Markdown line.
+        #[arg(long)]
+        json: bool,
+    },
+    /// The `Human review` check (PR-004): a PR with a red attention tag or a
+    /// cost change, from its diff, its description or the `cost` label,
+    /// passes only once a human (not an `-agt` account, the reviewer account
+    /// or a bot) has approved its head commit.
+    /// Prints "pass: ..." or "block: ..."; exits 1 when it blocks.
+    Gate {
+        /// The branch the PR merges into, for the diff's tags.
+        #[arg(long, default_value = "origin/main")]
+        base: String,
+        /// The PR description, as a file.
+        #[arg(long)]
+        body: Option<PathBuf>,
+        /// The PR's labels, comma separated.
+        #[arg(long, default_value = "", value_delimiter = ',')]
+        labels: Vec<String>,
+        /// The PR author's login.
+        #[arg(long)]
+        author: String,
+        /// The PR author's repo role (`author_association`, such as OWNER
+        /// or COLLABORATOR); only a collaborator's own PR passes.
+        #[arg(long, default_value = "NONE")]
+        author_association: String,
+        /// The PR's head commit.
+        #[arg(long)]
+        head: String,
+        /// The PR's reviews as JSON, from `GET /repos/{repo}/pulls/{n}/reviews`.
+        #[arg(long)]
+        reviews: Option<PathBuf>,
+        /// Also write the verdict as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
+    },
+    /// Check every project's user guide, <project>/docs/user/README.md
+    /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
+    /// against the baseline in standards/user-docs.toml. Exits 1 on any
+    /// error. Run by `mise run //:audit`.
+    UserDocs {
+        /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
     },
@@ -274,6 +317,41 @@ fn run() -> Result<ExitCode> {
                 println!("{}", serde_json::to_string_pretty(&attention)?);
             } else {
                 println!("{}", badges::render(&attention));
+            }
+        }
+        Command::Gate {
+            base,
+            body,
+            labels,
+            author,
+            author_association,
+            head,
+            reviews,
+            json,
+        } => {
+            let args = gate::Args {
+                base,
+                body,
+                labels,
+                author,
+                author_association,
+                head,
+                reviews,
+                json,
+            };
+            if !gate::run(&root, &args)? {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::UserDocs { json } => {
+            let report = user_docs::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", user_docs::render(&report));
+            }
+            if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
             }
         }
         Command::NewIssue {
