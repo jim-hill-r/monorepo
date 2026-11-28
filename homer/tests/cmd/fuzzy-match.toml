@@ -1,0 +1,6 @@
+# Zillow matched a different house than the address typed: the report shows
+# the matched address first and the typed one beside it, so it isn't mistaken
+# for the right house.
+bin.name = "homer"
+args = ["--address", "123 Main, Seattle, WA", "--api-key", "test-key", "--quota-file", "quota.json"]
+fs.sandbox = true

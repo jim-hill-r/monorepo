@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use surrealdb::{
-    RecordId, Surreal,
+    Surreal,
     engine::{
         local::{Db, Mem},
         remote::ws::{Client, Ws},
@@ -14,10 +14,10 @@ use crate::{
     error::LuggageError,
 };
 
-#[allow(dead_code)] // TODO: Figure out how to write create without an unused id field
-#[derive(Debug, Deserialize)]
-struct Record {
-    id: RecordId,
+/// The record a cube is stored as: its definition names the table and its id
+/// is the record key.
+fn record_of(header: &CubeHeader) -> (String, surrealdb::types::Uuid) {
+    (header.definition.to_string(), header.id.into())
 }
 
 #[derive(Clone)]
@@ -38,7 +38,11 @@ impl SurrealDbClosetProvider<Client> {
     ) -> Result<Self, LuggageError> {
         let db = Surreal::new::<Ws>(url).await?;
 
-        db.signin(Root { username, password }).await?;
+        db.signin(Root {
+            username: username.to_owned(),
+            password: password.to_owned(),
+        })
+        .await?;
 
         db.use_ns(namespace).use_db(database).await?;
 
@@ -62,10 +66,10 @@ where
     where
         T: Serialize + Send + 'static,
     {
-        let created: Option<Record> = self
+        let created: Option<serde_json::Value> = self
             .db
-            .create((cube.header.definition, cube.header.id))
-            .content(cube.content)
+            .create(record_of(&cube.header))
+            .content(serde_json::to_value(cube.content)?)
             .await?;
         match created {
             Some(_) => Ok(cube.header),
@@ -82,11 +86,9 @@ where
     where
         T: for<'a> Deserialize<'a> + Send,
     {
-        let saved_content: Option<T> = self.db.select((header.definition, header.id)).await?;
-        Ok(Cube {
-            header,
-            content: saved_content,
-        })
+        let saved: Option<serde_json::Value> = self.db.select(record_of(&header)).await?;
+        let content = saved.map(serde_json::from_value).transpose()?;
+        Ok(Cube { header, content })
     }
 }
 
@@ -98,10 +100,10 @@ where
     where
         T: Serialize + Send + 'static,
     {
-        let updated: Option<Record> = self
+        let updated: Option<serde_json::Value> = self
             .db
-            .update((cube.header.definition, cube.header.id))
-            .content(cube.content)
+            .update(record_of(&cube.header))
+            .content(serde_json::to_value(cube.content)?)
             .await?;
         match updated {
             Some(_) => Ok(cube.header),
@@ -115,7 +117,7 @@ where
     C: surrealdb::Connection,
 {
     async fn delete(&self, header: CubeHeader) -> Result<(), LuggageError> {
-        let _deleted: Option<Record> = self.db.delete((header.definition, header.id)).await?;
+        let _deleted: Option<serde_json::Value> = self.db.delete(record_of(&header)).await?;
         Ok(())
     }
 }

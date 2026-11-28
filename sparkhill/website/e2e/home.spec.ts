@@ -101,6 +101,21 @@ test.describe('home page', () => {
     await expect(page.locator('#how-we-do-it')).toBeInViewport();
     expect(problems).toEqual([]);
   });
+
+  test('a section link still lands on its section when the app replaces the page', async ({ page }) => {
+    // Perseus renders new nodes over the exported page, and a browser that
+    // hadn't scrolled to the exported section by then never did (about one
+    // load in three in headless Chromium). Taking the id off the exported
+    // section makes that case certain: only the app's own page has it.
+    await page.route('**/en-US/', async (route) => {
+      const response = await route.fetch();
+      const body = (await response.text()).replace(/id="?how-we-do-it"?/, '');
+      await route.fulfill({ response, body });
+    });
+    const problems = await openHome(page, '/en-US/#how-we-do-it');
+    await expect(page.locator('#how-we-do-it')).toBeInViewport();
+    expect(problems).toEqual([]);
+  });
 });
 
 test.describe('nav on desktop', () => {

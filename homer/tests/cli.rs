@@ -22,6 +22,13 @@ fn cli_transcripts() {
         .with_header("content-type", "application/json")
         .with_body(
             r#"{
+                "zpid": 48749425,
+                "address": {
+                    "streetAddress": "123 Main St",
+                    "city": "Seattle",
+                    "state": "WA",
+                    "zipcode": "98101"
+                },
                 "price": 750000,
                 "bedrooms": 3,
                 "bathrooms": 2.5,
@@ -29,6 +36,30 @@ fn cli_transcripts() {
                 "yearBuilt": 1998,
                 "homeType": "SINGLE_FAMILY",
                 "hdpUrl": "/homedetails/123-Main-St-Seattle-WA-98101/1_zpid/"
+            }"#,
+        )
+        .create();
+    // Zillow matches loosely: this address finds a different house.
+    let _fuzzy = server
+        .mock("GET", "/property")
+        .match_query(mockito::Matcher::UrlEncoded(
+            "address".into(),
+            "123 Main, Seattle, WA".into(),
+        ))
+        .match_header("x-rapidapi-key", "test-key")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            r#"{
+                "zpid": 48749999,
+                "address": {
+                    "streetAddress": "1230 Main St",
+                    "city": "Seattle",
+                    "state": "WA",
+                    "zipcode": "98102"
+                },
+                "price": 615000,
+                "bedrooms": 2
             }"#,
         )
         .create();

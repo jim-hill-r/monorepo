@@ -88,6 +88,13 @@ c evals-check
 c threat-check --projects cookbook,pane
 ```
 
+```bash
+# The weekly resource sweep's classifier: what `resources.sh sweep` listed
+# as live, sorted against the claims and standards/resources.toml. Exit 1 on
+# an orphan, an overdue keep or a retired resource still live.
+c sweep --live live.json --claims claims.tsv --json report.json
+```
+
 `new-human-task` starts the runbook from
 `standards/docs/runbooks/TEMPLATE.md` (title and status filled in) unless
 `--runbook` names one that exists; the agent still writes its sections.
@@ -100,6 +107,7 @@ c threat-check --projects cookbook,pane
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `repo-health` | `mise run //:audit` (any skill's hooks) | Editing the README's badge table by hand and pane showing different checks |
+| `sweep` | none (`resources.sh sweep` in All Free Tier Usage) | Sorting a live inventory against the claims by hand, or a longer embedded script |
 | `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |

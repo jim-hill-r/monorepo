@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 /**
  * Tests for home page navigation UI elements.
@@ -17,7 +18,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
   test('should have a recipes navigation card', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Look for a link or button that navigates to recipes
     // Using a flexible selector that works with different UI implementations
@@ -30,7 +31,7 @@ test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
 
   test('should have a plans navigation card', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Look for a link or button that navigates to plans
     const plansLink = page.locator('#content').locator('a[href="/plan/1"], button:has-text("Plans"), .plan-card a, .navigation-card a:has-text("Plan")').first();
@@ -56,13 +57,12 @@ test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
 
   test('should navigate to plans when clicking the plans card', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Find and click the plans card link - "View Meal Plans"
     const plansLink = page.locator('.plan-card a:has-text("View Meal Plans")');
     // Use force:true for mobile viewports where elements may overlap
     await plansLink.click({ force: true });
-    await page.waitForLoadState('networkidle');
     
     // Verify we navigated to a plan page
     await expect(page).toHaveURL(/\/plan\/\d+/);
@@ -70,7 +70,7 @@ test.describe('Home Page Navigation UI', { tag: '@req:COOK-006' }, () => {
 
   test('should have descriptive text for navigation cards', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that there's helpful text describing what recipes are
     const pageContent = await page.textContent('body');
