@@ -19,7 +19,7 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
 - **Letter practice**: Canvas-based letter tracing with animated demonstrations and writing guidelines
 - **Word practice**: Word-level tracing practice
 - **Progress tracking**: Letter sequences matching the original app, with retry and stabilize logic
-- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). "Go" then opens the word level after letters, the capital letter level after words, and the congratulations page after capitals
+- **Levels**: a level ends once every batch is open and every expression in it is stable (traced right first time `STABILIZE_COUNT` times). A level finished with Tracing starts again with Pattern, then with Freeform (`Technique::next`, as on the live app, whose step from Pattern to Freeform never runs because of a bug); only after Freeform does "Go" open the next level, back with Tracing: the word level after letters, the capital letter level after words, and the congratulations page after capitals
 - **Congratulations page**: Shown when all expressions are mastered
 - **Each learner's progress**: the learner's name is typed as Student in the
   settings panel ("Standard" when blank, as in the live app), and `src/progress.rs` saves
@@ -40,9 +40,8 @@ Blue Eel is a letter/word tracing practice tool designed to help learners develo
   much the demonstration shows (`src/technique.rs`). Tracing, the default,
   animates every stroke; Pattern shows only each stroke's start and end
   dots, which stay on the canvas while the learner draws; Freeform shows
-  nothing. The choice is kept in `localStorage`. The live app also moves a
-  learner from Tracing to Pattern when a level is done; that isn't copied
-  yet
+  nothing. The choice is kept in `localStorage`, and moving on to the next
+  technique after a level (see Levels) keeps that one
 
 ## Technical Details
 
@@ -135,7 +134,8 @@ cargo test
 
 The Playwright tests in `e2e/` drive the app in a browser: Begin, tracing a
 letter right and a scribble ("Try again!"), the Pattern and Freeform
-techniques (`e2e/technique.spec.ts`, which reads the canvas's pixels), and "Go" from the letter level to
+techniques (`e2e/technique.spec.ts`, which reads the canvas's pixels, and
+"Go" from Tracing to Pattern to Freeform), and "Go" from the letter level to
 the word level and on to the congratulations page. They keep each level short
 with `?practice=`, and trace a letter by following the demonstration's own
 path, which the canvas hands out as `window.eelCanvas.demonstrationPath()`.

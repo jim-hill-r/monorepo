@@ -98,3 +98,45 @@ test('Tracing is the default and the chosen technique is remembered @req:SPRK-00
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByLabel('Technique')).toHaveValue('Freeform');
 });
+
+/** Traces the letter on show along its demonstration, `times` times, until the level ends. */
+async function finishWith(page: Page, technique: string, times: number): Promise<void> {
+  expect(await page.evaluate(() => (window as any).eelCanvas.technique())).toBe(technique);
+  for (let i = 0; i < times; i++) {
+    await page.getByRole('button', { name: "I'm Ready to Try" }).click();
+    await traceAndCheck(page, await demonstration(page));
+  }
+  await expect(page.getByText('You are ready for the next level!')).toBeVisible();
+}
+
+test('"Go" after a level done with Tracing starts it again with Pattern, then Freeform, then opens the next level @smoke @req:SPRK-004 @req:SPRK-009', async ({ page }) => {
+  // Traced right first time 3 times (STABILIZE_COUNT), b is stable.
+  await page.goto('/letter?practice=b');
+  await start(page);
+  await finishWith(page, 'Tracing', 3);
+
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/letter\?/);
+  await expect(page.locator('main b')).toHaveText('b');
+  await finishWith(page, 'Pattern', 3);
+
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/letter\?/);
+  await expect(page.locator('main b')).toHaveText('b');
+  await finishWith(page, 'Freeform', 3);
+
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page).toHaveURL(/\/word$/);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Technique')).toHaveValue('Tracing');
+});
+
+test('the technique a level moved on to is kept, so the settings panel shows it @req:SPRK-009', async ({ page }) => {
+  await page.goto('/letter?practice=b');
+  await start(page);
+  await finishWith(page, 'Tracing', 3);
+  await page.getByRole('button', { name: 'Go' }).click();
+  await expect(page.getByRole('button', { name: "I'm Ready to Try" })).toBeVisible();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Technique')).toHaveValue('Pattern');
+});

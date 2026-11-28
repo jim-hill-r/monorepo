@@ -5,7 +5,9 @@ import { expect, test, type Page } from '@playwright/test';
  * with the mouse, "Try again!", and "Go" from letters to words to capitals to
  * the congratulations page. `?practice=` keeps each level to a few letters or
  * words (src/state.rs), and a letter is traced right by following the
- * demonstration's own path (`eelCanvas.demonstrationPath()`).
+ * demonstration's own path (`eelCanvas.demonstrationPath()`). The "Go" tests
+ * practise with `&tech=Freeform`, the last technique, so "Go" opens the next
+ * level; technique.spec.ts covers Tracing, then Pattern, then Freeform.
  */
 
 /** Times a letter must be traced right first time to be stable (STABILIZE_COUNT). */
@@ -105,7 +107,7 @@ test('a scribble says "Try again!" until the retry limit, then moves on @smoke @
 });
 
 test('"Go" after the letter level opens the word level @smoke @req:SPRK-004', async ({ page }) => {
-  await page.goto('/letter?practice=b');
+  await page.goto('/letter?practice=b&tech=Freeform');
   await start(page);
   await finishLevel(page, STABILIZE_COUNT);
   await page.getByRole('button', { name: 'Go' }).click();
@@ -114,7 +116,7 @@ test('"Go" after the letter level opens the word level @smoke @req:SPRK-004', as
 });
 
 test('"Go" after the word level opens the capital letter level @smoke @req:SPRK-004', async ({ page }) => {
-  await page.goto('/word?practice=hi');
+  await page.goto('/word?practice=hi&tech=Freeform');
   await start(page);
   await expectTry(page, 'hi');
   await finishLevel(page, STABILIZE_COUNT);
@@ -130,7 +132,7 @@ test('the capital level starts with L @req:SPRK-004', async ({ page }) => {
 });
 
 test('"Go" after the capital level opens the congratulations page @smoke @req:SPRK-004', async ({ page }) => {
-  await page.goto('/capital?practice=T');
+  await page.goto('/capital?practice=T&tech=Freeform');
   await start(page);
   await expectTry(page, 'T');
   await finishLevel(page, STABILIZE_COUNT);

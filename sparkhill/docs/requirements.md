@@ -61,8 +61,10 @@ load it since 2026-11-27; the gaps that turned up are in
   only move on once they have them.
 - Accept: letters come in Blue Eel's groups, starting b, c, d, f; a new
   group opens only once the open letters are traced right first time 3
-  times each; misses alone never end a level; when a level ends, "Go"
-  opens the next one: letters, then words, then capitals, then the
+  times each; misses alone never end a level; when a level ends with
+  Tracing, "Go" starts it again with Pattern, and after Pattern with
+  Freeform (SPRK-009); when it ends with Freeform, "Go" opens the next
+  one, back with Tracing: letters, then words, then capitals, then the
   congratulations page, whose "Start Over" goes home.
 
 ## SPRK-005: Each learner's progress is kept on their device
