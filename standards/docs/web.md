@@ -18,6 +18,8 @@ and names its **enforcer**:
 - **Review**: the PR reviewer and the `code-review` rubric.
 
 Until a check lands (see [Rollout](#rollout)), review enforces its rule.
+Performance after the page has loaded (timed flows, Workers under load,
+production latency) is in [performance.md](performance.md).
 Accessibility, which agents depend on too, stays in [testing.md](testing.md)
 (axe in Playwright) and is asserted by Lighthouse here (WEB-204).
 
