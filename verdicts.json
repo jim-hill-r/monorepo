@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T02:01:37.369962081Z",
+  "generated_at": "2026-11-28T02:17:50.668595819Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -721,7 +721,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-28 02:00:33.916398461 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-28 02:08:37.634042617 UTC"
           ]
         },
         {
