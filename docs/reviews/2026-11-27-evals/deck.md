@@ -84,7 +84,7 @@ The eval process makes intent **written, numbered and checked**, the same
 way in every project.
 
 Approved 2026-11-26: the
-[plan](../../../standards/docs/plans/2026-11-eval-engine.md) and
+[plan](../../../evals/docs/plans/2026-11-eval-engine.md) and
 [decision 0003](../../../standards/docs/decisions/0003-eval-engine.md).
 
 ---
@@ -367,7 +367,7 @@ Reply on this PR with your picks, or in the project chat.
 
 # Appendix: method and evidence
 
-- Read: the [plan](../../../standards/docs/plans/2026-11-eval-engine.md),
+- Read: the [plan](../../../evals/docs/plans/2026-11-eval-engine.md),
   [decision 0003](../../../standards/docs/decisions/0003-eval-engine.md),
   [evals.md](../../../standards/docs/evals.md),
   [evals/README.md](../../../evals/README.md), the four projects'

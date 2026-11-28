@@ -5,7 +5,7 @@ Each project's own security design is its threat model,
 [`docs/threat.toml`](#threat-models), checked by `threat check`. Why each
 rule exists, and the later phases (drift detection, the PR security summary,
 the weekly live check), are in the
-[threat check plan](./plans/2026-11-threat-check.md). How to report a
+[threat check plan](../../threat/docs/plans/2026-11-threat-check.md). How to report a
 vulnerability is in the root [SECURITY.md](../../SECURITY.md).
 
 ## Rules

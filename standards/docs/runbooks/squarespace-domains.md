@@ -13,7 +13,7 @@ Squarespace domains are the one real money the repo pays outside Claude
 Code, and none of it is recorded yet. Once listed, each domain becomes a
 yearly `[[cost]]` in a `docs/cost.toml` ([cost.md](../cost.md)), so the
 monthly total is complete, and the digest warns before each renewal
-([cost tracking plan](../plans/2026-11-cost-tracking.md), phase 4).
+([cost tracking plan](../../../cost/docs/plans/2026-11-cost-tracking.md), phase 4).
 
 ## Why a person
 

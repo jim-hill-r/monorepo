@@ -1,7 +1,7 @@
 # Plan: replace Cast with mise
 
 Started 2026-11-26. Rules and decisions that come out of this plan are kept in
-[../mise.md](../mise.md).
+[../mise.md](../../../standards/docs/mise.md).
 
 Cast is removed in four PRs, and every project gets its own `mise.toml` that
 includes a shared task file for its type, so `mise run ci` means the same thing

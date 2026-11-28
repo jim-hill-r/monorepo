@@ -1,7 +1,7 @@
 //! Types, parsers and verdict rules for the eval engine.
 //!
 //! The formats are defined in `standards/docs/evals.md` and the verdict rules
-//! in `standards/docs/plans/2026-11-eval-engine.md`. This crate does no I/O:
+//! in `evals/docs/plans/2026-11-eval-engine.md`. This crate does no I/O:
 //! callers read the files and pass their text in, so pane can run the same
 //! rules on the same data.
 

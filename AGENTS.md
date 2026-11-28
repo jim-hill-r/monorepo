@@ -96,9 +96,15 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   merge on my approval"). Details are under
   "Human review" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
-  hosted docs. Write them as Markdown next to what they are about (a project's
-  own folder, or `standards/docs/` for repo-wide work) and commit them with the
-  related PR.
+  hosted docs. Write them as Markdown in the project they are about, and
+  commit them with the related PR: `<project>/docs/plans/`,
+  `<project>/docs/decisions/` and `<project>/docs/retros/` (Jim,
+  2026-11-28: "Are plans all being put in docs/decisions directory in each
+  project. I saw a lot of plans in standards..."). Only work no single
+  project owns goes in `standards/docs/`, and a plan there must be listed
+  with its reason in `standards/plans.toml`. The audit fails a plan
+  anywhere else (`chores plans-check`, DOC-009 and DOC-010; "Plans" in
+  `standards/docs/documentation.md`).
 
 ## Project rules and notes
 
@@ -361,7 +367,7 @@ repo, rather than in any one agent tool's settings.
   resets, and PR triage reports it to Jim. Running threads finish their
   current step. This overrides "keep threads working". The tracking
   process is in
-  [standards/docs/plans/2026-11-cost-tracking.md](standards/docs/plans/2026-11-cost-tracking.md).
+  [cost/docs/plans/2026-11-cost-tracking.md](cost/docs/plans/2026-11-cost-tracking.md).
 - **Never idle without saying why (Jim, 2026-11-26).** Before an agent's
   thread goes quiet, it posts a short message saying what it is waiting on
   (a hook or CI run, a review, an answer) and roughly when it expects to
@@ -427,7 +433,7 @@ and the PR must say which checks didn't run.
   <command>`; the commands are in [chores/README.md](chores/README.md).
   When you notice routine work a script could do, add a command there
   rather than repeating it by hand
-  ([baked skills plan](standards/docs/plans/2026-11-baked-skills.md)).
+  ([baked skills plan](chores/docs/plans/2026-11-baked-skills.md)).
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.

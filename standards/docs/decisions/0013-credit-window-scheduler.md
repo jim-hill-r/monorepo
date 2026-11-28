@@ -2,7 +2,7 @@
 
 - Status: Accepted (Jim asked for it, 2026-11-27)
 - Date: 2026-11-27
-- Related: [cost tracking plan](../plans/2026-11-cost-tracking.md),
+- Related: [cost tracking plan](../../../cost/docs/plans/2026-11-cost-tracking.md),
   [scheduled task prompt](../scheduled-tasks/credit-window.md)
 
 ## Context

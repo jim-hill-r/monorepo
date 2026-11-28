@@ -77,7 +77,7 @@ tenant-scoped tables.
 
 | Piece | Where it is planned or built | Who uses it | What happens to it |
 | --- | --- | --- | --- |
-| Review toolbar: Vercel-like pins on a page, Jim only, sent to pane | [Eval engine plan](2026-11-eval-engine.md), Phase 6; decision 0003 item 8 | Jim and reviewers | Becomes the staff modes of the same Feedback button users see ([One feedback tool, four roles](#one-feedback-tool-four-roles)), built in Phase 8 with its own browser extension. Its eval engine issues moved to this epic (Jim, 2026-11-28). |
+| Review toolbar: Vercel-like pins on a page, Jim only, sent to pane | [Eval engine plan](../../../evals/docs/plans/2026-11-eval-engine.md), Phase 6; decision 0003 item 8 | Jim and reviewers | Becomes the staff modes of the same Feedback button users see ([One feedback tool, four roles](#one-feedback-tool-four-roles)), built in Phase 8 with its own browser extension. Its eval engine issues moved to this epic (Jim, 2026-11-28). |
 | Fan votes on each game, with an A/B test | [bear_down fan feedback plan](../../../bear_down/docs/plans/2026-11-fan-feedback.md), `bear_down/web/src/feedback.rs` | Public fans | The buttons become the shared `QuickVote` component, and the votes move to bear_down's own endpoint and tenant tables (Phase 7). |
 | The `telemetry` Worker | [telemetry/](../../../telemetry/README.md) | Every app | Not used for user feedback or support: it is a shared service, which the rule above rules out for product data. Its validation and scrubbing code moves into `feedback/model` so products reuse it as a library. Whether telemetry itself becomes a library is a separate question for later. |
 

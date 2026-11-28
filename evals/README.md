@@ -10,7 +10,7 @@ Requirements live in `<project>/docs/requirements.md` and their evals in
 `<project>/evals.toml`; the formats are in
 [standards/docs/evals.md](../standards/docs/evals.md). The design and the
 phases are in the
-[eval engine plan](../standards/docs/plans/2026-11-eval-engine.md) and
+[eval engine plan](docs/plans/2026-11-eval-engine.md) and
 [decision 0003](../standards/docs/decisions/0003-eval-engine.md).
 
 ## Crates

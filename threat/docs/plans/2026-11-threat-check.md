@@ -14,7 +14,7 @@ check`, one group per phase, and the GitHub settings only Jim can switch are
 in [issues/human/](../../../issues/human/).
 
 This plan is the security twin of the
-[cost check](2026-11-cost-check.md): the same shape (a structured file per
+[cost check](../../../cost/docs/plans/2026-11-cost-check.md): the same shape (a structured file per
 project, a fast Rust check in the hooks and PR CI, affected projects only,
 warnings first), and it shares the cost check's detectors so a project's
 files are read once.
@@ -100,7 +100,7 @@ Notes:
   cloud sandbox can reach, so agents get the full check. gitleaks is a Go
   binary from GitHub releases, which the sandbox can't download today; there
   the hook warns that SEC-001 didn't run (the existing fallback in
-  [git-hooks.md](../git-hooks.md)), PR CI runs it, and GitHub push
+  [git-hooks.md](../../../standards/docs/git-hooks.md)), PR CI runs it, and GitHub push
   protection blocks known provider tokens at push time regardless. Each tool
   is pinned to an exact version in the root `mise.toml`.
 
@@ -315,7 +315,7 @@ SEC tools, in the `evals-check.sh` shape.
 
 Status: the `threat` project and `threat check` (THR-001 to THR-003, THR-005
 to THR-009) are built and run from `//:audit` as warnings (2026-11-27). The
-format and rules are in [security.md](../security.md#threat-models). Every
+format and rules are in [security.md](../../../standards/docs/security.md#threat-models). Every
 project except the on-hold luggage, starcraft and profiles has a
 `docs/threat.toml` (2026-11-27). The gaps they found are FIX issues: five
 sites without security headers (THR-007), and the Android keystore secret
@@ -336,7 +336,7 @@ left in the credential-holding infra workflows are a fix issue for a
 `credential-change` PR (2026-11-27). `threat summary --base` and PR CI's
 **Security summary** job set the `security` and `needs-human` labels; the
 hooks pass the affected projects to the threat check through the audit
-(2026-11-27). The rules are in [security.md](../security.md#pr-security-summary).
+(2026-11-27). The rules are in [security.md](../../../standards/docs/security.md#pr-security-summary).
 
 Status (2026-11-27): THR-004 is built on the shared detectors (each
 detector in `detectors.toml` has an optional `threat` field; threat-only
@@ -345,7 +345,7 @@ with `covers`), and the weekly live check is the `threat-live` job of
 `all-free-tier-usage.yml` (`threat live` and `threat-live.sh`). The live
 check fails its run and leaves issue files for PR triage to commit, because
 CI never pushes to `main` (SEC-007). Both are documented in
-[security.md](../security.md#drift)..
+[security.md](../../../standards/docs/security.md#drift)..
 
 - THR-004 through the shared detectors (after cost check phase 2 adds them).
 - SEC-005 (zizmor) as warnings, and pin third-party actions to commits.

@@ -4,7 +4,7 @@ Deterministic commands for routine agent work, so agents spend tokens only
 on novel work (Jim, 2026-11-27). Each command applies rules already written
 in `standards/docs/` and is called from a skill in `.agents/skills/`, which
 leaves only the judgment to the model. Why and what comes next is in the
-[baked skills plan](../standards/docs/plans/2026-11-baked-skills.md).
+[baked skills plan](docs/plans/2026-11-baked-skills.md).
 
 It reads and writes only files in the working tree. It never uses the
 network and never calls GitHub: agents do that with their own GitHub tools,
@@ -68,6 +68,11 @@ c retire-temporary --live live.json --json plan.json
 c user-docs
 c user-docs --json
 
+# DOC-009, DOC-010: fail on a plan outside a project's docs/plans/, or a
+# standards plan not listed in standards/plans.toml; run by `mise run //:audit`.
+c plans-check
+c plans-check --json
+
 # Unresolved merge conflict markers in any tracked file (STD-005); run by
 # `mise run //:audit`. Exit 1 on any.
 c conflict-markers
@@ -101,6 +106,7 @@ c sweep --live live.json --claims claims.tsv --json report.json
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `plans-check` | `mise run //:audit` (any skill's hooks) | A reviewer noticing a plan in `standards/` that belongs to one project |
 | `sweep` | none (`resources.sh sweep` in All Free Tier Usage) | Sorting a live inventory against the claims by hand, or a longer embedded script |
 | `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |

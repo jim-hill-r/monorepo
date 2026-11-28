@@ -61,6 +61,31 @@ Open the site on a phone or computer...
 If a recipe page is blank, ... Report a problem with the feedback button.
 ```
 
+## Plans
+
+A plan says what a piece of work will do and in what order, before it is
+done. Pane reads plans to show them next to each project's decisions and
+retros.
+
+- **Where:** a project's plans in `<project>/docs/plans/`, where
+  `<project>` is a top-level project folder (one with a `mise.toml`), never
+  a sub-crate's folder. Plans no single project owns (a process for every
+  project, a change across every app) go in `standards/docs/plans/`, and
+  each one is listed in `standards/plans.toml` with why it is repo-wide.
+  When a plan is about a platform project such as `cost`, `evals` or
+  `chores`, it goes in that project, even if every project uses it.
+- **Name:** one file per plan, `YYYY-MM-<topic>.md`, dated the month it is
+  started, such as `2026-11-eval-engine.md`.
+- **Check:** `chores plans-check` (run by `mise run //:audit`) fails a plan
+  outside a project's `docs/plans/` (DOC-009), and a plan in
+  `standards/docs/plans/` that `standards/plans.toml` doesn't list, or a
+  listed one that is gone (DOC-010). A plan is a Markdown file in a
+  `plans` folder or one whose first heading starts `# Plan:`. Test
+  fixtures and athenaeum's third-party copies are not checked.
+- **Moving one:** `git mv` it, then fix the links to it in the same PR.
+  When a project that owns a repo-wide plan comes along, the plan moves
+  there and leaves `standards/plans.toml`.
+
 ## Retros
 
 A retro looks back on a piece of work (a project phase, an incident, a

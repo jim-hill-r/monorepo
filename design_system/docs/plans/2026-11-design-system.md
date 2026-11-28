@@ -357,7 +357,7 @@ on-accent = "#1f1812"
 | Playwright specs | Read `dist/tokens.json` to know which combinations exist | Set the attributes before each page load |
 
 Using `design_system` as a relative path dependency follows the existing rule
-for shared code (`auth_sdk`, [mise.md](../mise.md)). Each consuming project
+for shared code (`auth_sdk`, [mise.md](../../../standards/docs/mise.md)). Each consuming project
 adds `# affected-by: design_system` to its `mise.toml`, so `affected.sh`
 reruns its CI whenever the tokens change.
 
@@ -479,7 +479,7 @@ support, then fewest vendors):
 | Option | Cost | Claude support | Verdict |
 | --- | --- | --- | --- |
 | **CSS custom properties generated from TOML by our own Rust** | $0, no new tool | Claude knows CSS custom properties, WCAG maths, TOML and serde very well; the rust-analyzer plugin covers the code | **Chosen.** Fits every stack, adds nothing to install. |
-| Style Dictionary (Amazon, Node) | $0 | Well known to Claude | Not chosen: adds a Node build step to every app, and Node is allowed only for e2e tests ([typescript.md](../typescript.md)). Our DTCG JSON export keeps the door open. |
+| Style Dictionary (Amazon, Node) | $0 | Well known to Claude | Not chosen: adds a Node build step to every app, and Node is allowed only for e2e tests ([typescript.md](../../../standards/docs/typescript.md)). Our DTCG JSON export keeps the door open. |
 | Tailwind CSS | $0 | Very well known to Claude | Not chosen: needs Node or its standalone binary in every app's build, and utility classes would tie markup to one theme engine. Its theming also ends up as custom properties. |
 | Open Props, Pico CSS or another ready-made CSS kit | $0 | Known to Claude | Not chosen: they give one look, not five themes and an accessible mode, and we would still write the themes. Worth borrowing ideas from. |
 | A Rust CSS-in-code crate (for example `stylist`) | $0 | Little | Not chosen: tied to particular frameworks and versions, and doesn't help Perseus or Bevy. |

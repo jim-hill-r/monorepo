@@ -14,6 +14,7 @@
 #            LIN-* are warnings only for now.
 #   DOC-005 to DOC-008  User guides against the baseline in
 #            standards/user-docs.toml (`chores user-docs`, Rust).
+#   DOC-009  Plans outside a project's docs/plans/ (`chores plans-check`, Rust).
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (`chores evals-check`); warnings only for now.
@@ -83,6 +84,8 @@ chores=(cargo run --quiet --manifest-path chores/Cargo.toml --)
 if command -v cargo >/dev/null 2>&1; then
   # DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
   "${chores[@]}" user-docs || errors=$((errors + 1))
+  # DOC-009: plans live in a project's docs/plans/ (standards/docs/documentation.md#plans).
+  "${chores[@]}" plans-check || errors=$((errors + 1))
   # STD-005: no unresolved merge conflict markers in tracked files.
   "${chores[@]}" conflict-markers || errors=$((errors + 1))
   # QUAL-404: no new shell scripts (standards/shell-scripts.toml).

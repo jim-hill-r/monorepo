@@ -7,7 +7,7 @@ a source before using its ideas, so every theme is built the same way.
 The rules live in the design system, not here: the token model and the
 contrast pairs in [design_system/](../../../design_system/README.md), and the
 plan in
-[standards/docs/plans/2026-11-design-system.md](../../../standards/docs/plans/2026-11-design-system.md).
+[design_system/docs/plans/2026-11-design-system.md](../../../design_system/docs/plans/2026-11-design-system.md).
 CI proves contrast; these notes are about the part CI can't check, whether
 a theme is pleasant to look at. When a note and the design system disagree,
 the design system wins.

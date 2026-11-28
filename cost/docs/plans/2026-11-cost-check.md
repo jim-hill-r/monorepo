@@ -23,8 +23,8 @@ people and tools can read it.
   which services it uses, on which plan, what it expects to use against each
   free limit, and what it costs a month (normally $0).
 - A **check** proves the analysis is within the budgets and rules we already
-  have (the [tech radar](../tech-radar.md) budgets, the
-  [free-tier rules](../free-tiers.md), the vendor rule in
+  have (the [tech radar](../../../standards/docs/tech-radar.md) budgets, the
+  [free-tier rules](../../../standards/docs/free-tiers.md), the vendor rule in
   [AGENTS.md](../../../AGENTS.md)).
 - The check also proves the analysis is **true to the code**: if a project's
   files show it uses a service (a `d1_databases` binding, a PostHog snippet,
@@ -39,8 +39,8 @@ people and tools can read it.
 
 | Piece | State on 2026-11-26 |
 | --- | --- |
-| Budgets | One per blip in [`standards/radar/radar.json`](../../radar/radar.json): $0 for everything except Claude Code ($25 a month). |
-| Free limits | Prose tables in [free-tiers.md](../free-tiers.md); a few numbers hard-coded in `free-tiers.sh`. |
+| Budgets | One per blip in [`standards/radar/radar.json`](../../../standards/radar/radar.json): $0 for everything except Claude Code ($25 a month). |
+| Free limits | Prose tables in [free-tiers.md](../../../standards/docs/free-tiers.md); a few numbers hard-coded in `free-tiers.sh`. |
 | Static guards | `free-tiers.sh check` (FT-001 to FT-005) in every `//:audit`: standard runners only, no RapidAPI key in workflows, Pages, Workers and Cron Trigger counts within budget, no paid-only wrangler settings. Repo-wide, not per project. |
 | Live usage | `free-tiers.sh usage`, weekly in `all-free-tier-usage.yml`. |
 | Per-project cost data | None. pane's plan proposes a `<project>/finance.toml` (revenue and project-only costs), not built yet. |
@@ -106,7 +106,7 @@ file" always means "not analysed yet", never "free".
 
 ### Free limits as data
 
-The limits and our budgets in [free-tiers.md](../free-tiers.md) move into
+The limits and our budgets in [free-tiers.md](../../../standards/docs/free-tiers.md) move into
 **`standards/radar/limits.toml`**, one entry per limit, keyed by the radar
 blip it belongs to:
 
@@ -214,7 +214,7 @@ The same split as PR #627 and #642:
   `target/` (as `evals-check.sh` does today), so a hook pays for the build
   only on the first run in a clone or after the cost crates change. If
   `cargo` is missing, the hook prints a warning and PR CI checks it, the
-  existing sandbox fallback in [git-hooks.md](../git-hooks.md).
+  existing sandbox fallback in [git-hooks.md](../../../standards/docs/git-hooks.md).
 - **Not in the hook:** anything that needs the network or credentials (live
   usage, billing). That stays in the weekly `free-tiers.sh usage` run.
 

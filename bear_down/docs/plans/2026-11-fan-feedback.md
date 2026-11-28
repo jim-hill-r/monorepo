@@ -5,7 +5,7 @@
 - Requirements: BEAR-005 (the 0.05-point line), new BEAR-010 below
 - Builds on: [the deploy-feedback plan](../../../standards/docs/plans/2026-11-deploy-feedback.md)
   (UAT, the `telemetry` Worker, PostHog) and
-  [the eval engine plan](../../../standards/docs/plans/2026-11-eval-engine.md)
+  [the eval engine plan](../../../evals/docs/plans/2026-11-eval-engine.md)
   (evals, synthetic traffic tagging)
 
 ## Why

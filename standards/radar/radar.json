@@ -331,7 +331,7 @@
     ],
     "sources": [
       "standards/docs/mise.md",
-      "standards/docs/plans/2026-11-cast-to-mise.md"
+      "jimhillr/docs/plans/2026-11-cast-to-mise.md"
     ],
     "claude": "",
     "budget": 0
@@ -365,7 +365,7 @@
     ],
     "sources": [
       "standards/docs/security.md",
-      "standards/docs/plans/2026-11-threat-check.md"
+      "threat/docs/plans/2026-11-threat-check.md"
     ],
     "claude": "",
     "budget": 0
@@ -599,7 +599,7 @@
     "description": "The old monorepo CLI, replaced by mise and removed. Don't restore it or its project templates.",
     "exemplars": [],
     "sources": [
-      "standards/docs/plans/2026-11-cast-to-mise.md",
+      "jimhillr/docs/plans/2026-11-cast-to-mise.md",
       "AGENTS.md"
     ],
     "claude": "",
@@ -1139,7 +1139,7 @@
       "pane/web"
     ],
     "sources": [
-      "standards/docs/plans/2026-11-design-system.md",
+      "design_system/docs/plans/2026-11-design-system.md",
       "https://github.com/jimhillr/monorepo/pull/657",
       "design_system/README.md"
     ],

@@ -22,7 +22,7 @@ in [issues/human/](../../../issues/human/). Part 6 (onboarding every live
 resource to infrastructure as code) was added after approval and is
 **proposed** until Jim approves the PR that adds it.
 
-This plan builds on the [threat check](2026-11-threat-check.md) rather than
+This plan builds on the [threat check](../../../threat/docs/plans/2026-11-threat-check.md) rather than
 duplicating it. The threat check's phase 3 already plans a weekly live check
 that flags Pages projects and Workers no `threat.toml` claims. This plan
 widens that one check to every kind of resource we create, adds a way to

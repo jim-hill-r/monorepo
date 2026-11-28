@@ -3,7 +3,7 @@
 - Status: Accepted
 - Decided by: Jim (approved PR #612, 2026-11-26)
 - Date: 2026-11-26
-- Plan: [../plans/2026-11-eval-engine.md](../plans/2026-11-eval-engine.md)
+- Plan: [../plans/2026-11-eval-engine.md](../../../evals/docs/plans/2026-11-eval-engine.md)
 
 ## Context
 

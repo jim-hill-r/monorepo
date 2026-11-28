@@ -1,6 +1,6 @@
 //! `chores`: deterministic commands for routine agent work, so agents spend
 //! tokens only on novel work. See `chores/README.md` and the plan in
-//! `standards/docs/plans/2026-11-baked-skills.md`.
+//! `chores/docs/plans/2026-11-baked-skills.md`.
 
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
@@ -10,6 +10,7 @@ mod gate;
 mod issues;
 mod new_issue;
 mod next_task;
+mod plans;
 mod pr_body;
 mod retire;
 mod shell_scripts;
@@ -181,6 +182,14 @@ enum Command {
         /// Today's date, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long)]
         today: Option<String>,
+    },
+    /// Check that every plan is in a top-level project's docs/plans/
+    /// (DOC-009, "Plans" in standards/docs/documentation.md). Exits 1 on
+    /// any error. Run by `mise run //:audit`.
+    PlansCheck {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
     },
     /// Check every project's user guide, <project>/docs/user/README.md
     /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
@@ -438,6 +447,17 @@ fn run() -> Result<ExitCode> {
         Command::RetireTemporary { live, json, today } => {
             let plan = retire::run(&live, today.as_deref(), json.as_deref())?;
             print!("{}", retire::render(&plan));
+        }
+        Command::PlansCheck { json } => {
+            let findings = plans::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&findings)?);
+            } else {
+                print!("{}", plans::render(&findings));
+            }
+            if !findings.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
         }
         Command::UserDocs { json } => {
             let report = user_docs::check(&root)?;

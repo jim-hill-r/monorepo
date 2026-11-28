@@ -4,7 +4,7 @@
 # instead of this one, so copy this file's contents into it first.
 #
 # SEC-003 is a warning until phase 4 of the threat check plan
-# (standards/docs/plans/2026-11-threat-check.md).
+# (threat/docs/plans/2026-11-threat-check.md).
 
 [graph]
 all-features = false

@@ -6,7 +6,7 @@ The threat check: it holds each project's threat model
 (`<project>/docs/threat.toml`) to the security rules in
 [standards/docs/security.md](../standards/docs/security.md), so a PR that
 could weaken security is caught before it merges. The design and phases are
-in the [threat check plan](../standards/docs/plans/2026-11-threat-check.md).
+in the [threat check plan](docs/plans/2026-11-threat-check.md).
 
 ## Crates
 

@@ -7,9 +7,9 @@ and `cookbook/cloudflare`). It says which outside services the project
 uses, on which plan, how much of each free limit it expects to use, and any
 money that is the project's own. `cost check` holds it to the budgets in the
 [tech radar](tech-radar.md) and [free-tiers.md](free-tiers.md). The design
-is in the [cost check plan](plans/2026-11-cost-check.md); how actual
+is in the [cost check plan](../../cost/docs/plans/2026-11-cost-check.md); how actual
 usage, money and overrun risk are tracked across every vendor is in the
-[cost tracking plan](plans/2026-11-cost-tracking.md).
+[cost tracking plan](../../cost/docs/plans/2026-11-cost-tracking.md).
 
 A project that uses no outside service (a library, a CLI that runs locally)
 still has the file, with `reviewed`, `summary` and nothing else, so "no
