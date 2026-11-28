@@ -19,7 +19,7 @@ The drill is now repeatable: the **evals fire drill** workflow
 | CI break: week 48's first recipe uses 3 tablespoons of olive oil instead of 2 | `test_get_week_shopping_list_adds_up` fails, its evals fail | 63 passed, 1 failed; `shopping-list-built` (COOK-002) and `shopping-list-sums` (COOK-003) both `fail` |
 | Verdicts after the CI break | COOK-002 and COOK-003 amber | COOK-002 `at-risk`. **COOK-003 stayed `unknown`** (fixed, see below) |
 | CI break revert | green again | 64 passed, COOK-002 back to `met` |
-| CI break: remove recipe 200's `day-200` tag | `day-files-exist` (COOK-001) fails | The build script stops the build first. **No eval result at all** with `--partial`, `error` without it (issue filed) |
+| CI break: remove recipe 200's `day-200` tag | `day-files-exist` (COOK-001) fails | The build script stops the build first. **No eval result at all** with `--partial`, `error` without it (fixed later, see below) |
 | CD break: `recipe-page-live` looks for a string that isn't on the page | result `fail` | `fail`: "body doesn't contain ..." |
 | Verdict after the CD failure | COOK-001 red | `not-met` |
 | Triage | a `kind: fix` issue for COOK-001 | Not live on the day. `evals-triage.yml` landed later the same day, and the drill now checks a dry run of it plans the issue |
@@ -39,8 +39,10 @@ met).
    `ci_failure_without_production_results_is_at_risk_not_unknown` in
    `evals/model/src/verdict.rs`).
 2. **A build failure leaves no eval result.** The PR check fails, so nothing
-   ships, but the verdicts can't see it.
-   [evals/issues/build-failure-leaves-no-result.md](../issues/build-failure-leaves-no-result.md).
+   ships, but the verdicts can't see it. Fixed 2026-11-28: `evals run` now
+   gives each `cargo` and `trycmd` eval with no matching test a `fail`
+   ("build failed: <first error line>"), with `--partial` too. Rerunning
+   the break in `cookbook/data_md` gave all 6 of its `cargo` evals `fail`.
 3. **Triage was the missing link.** Red verdicts reached `verdicts.json`,
    but nothing filed the `FIX`. The daily `evals-triage.yml` now does, and
    `evals drill` checks that a dry run of triage picks the requirement up.

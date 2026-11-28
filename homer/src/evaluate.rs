@@ -162,6 +162,8 @@ pub(crate) mod tests {
     ) -> PropertyDetails {
         PropertyDetails {
             address: "123 Main St".to_string(),
+            matched_address: None,
+            zpid: None,
             price,
             bedrooms,
             bathrooms,
@@ -177,6 +179,8 @@ pub(crate) mod tests {
     fn test_evaluate_keeps_every_detail_field() {
         let details = PropertyDetails {
             address: "9 Elm St".to_string(),
+            matched_address: Some("9 Elm St, Austin, TX 78701".to_string()),
+            zpid: Some(42),
             price: Some(500_000),
             bedrooms: Some(2),
             bathrooms: Some(1.5),

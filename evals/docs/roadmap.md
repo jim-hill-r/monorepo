@@ -69,7 +69,7 @@ What the deck's recommendations led to:
 | 1 | Playwright smoke tests against production; content checks | Partly done: cookbook (PR 861) and Blue Eel run smoke tests after deploy, and `body_contains`, `asset_contains` and the EVL-006 warning landed (PR 835). bear_down, pane and cahokia don't run theirs yet, and EVL-006 is still a warning |
 | 2 | Requirements for Blue Eel, then controlled_chaos and the CLIs | Done for Blue Eel (sparkhill), controlled_chaos, homer, my_lang, design_system, telemetry, royalty and tofu_state. 10 projects still have none |
 | 3 | Triage on a free workflow | Done: `evals triage` and the daily `evals-triage.yml` (PRs 841, 842). It hasn't filed anything yet |
-| 4 | One fire drill | Done: [retro](fire-drill-2026-11-27.md) and the repeatable `evals-fire-drill.yml`. Two of its findings are still open (below) |
+| 4 | One fire drill | Done: [retro](fire-drill-2026-11-27.md) and the repeatable `evals-fire-drill.yml`. One of its findings is still open (below); the build-failure one was fixed in PR 951 |
 | 5 | Read-only Requirements page in pane | Not started (`pane/issues/requirements-view-page-requirement-verdict-evals.md`) |
 | 6 | "Every must has a production check" as an error | Not yet: 13 musts have none (EVL-004) |
 | 7 | Pause the in-app toolbar | Jim said no. It moves to the feedback component instead (below) |
@@ -109,7 +109,6 @@ work. These are `priority` issues.
 | Order | Issue | Effort |
 | --- | --- | --- |
 | 10 | [Count musts with production results, not evals](../issues/count-musts-with-production-results.md) | S |
-| 20 | [A build failure leaves no eval result](../issues/build-failure-leaves-no-result.md) | S |
 | 30 | [EVL-006 should accept header checks](../issues/evl-006-counts-header-checks.md) | S |
 | 40 | [Make EVL-006 an error](../issues/evl-006-an-error.md) | S |
 | 50 | [Review the first triage runs](../issues/review-the-first-triage-runs.md) | S |

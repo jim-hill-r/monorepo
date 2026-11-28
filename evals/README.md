@@ -87,6 +87,12 @@ short note. In GitHub Actions the commit, run id and run link come from the
 sub-project's CI job, such as `cookbook/web`): an eval with no matching test
 then gets no result instead of `skip` or `error`.
 
+A saved `cargo test` output whose build failed before any test ran
+(`error: could not compile` or `failed to run custom build command`, and no
+`test result:` line) fails every `cargo` and `trycmd` eval with no matching
+test, with the note "build failed: <first error line>", in `--partial` mode
+too, so a broken build shows in the verdicts.
+
 In CI the shared `ci` and `evals` tasks call these for you through
 `standards/scripts/evals.sh`; see "In CI" in
 [standards/docs/evals.md](../standards/docs/evals.md#in-ci). Pushes to

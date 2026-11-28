@@ -1,23 +1,11 @@
 # cookbook_recipe_gen
 
-A command-line tool for generating 365 unique recipe markdown files for the Cookbook application, and migrating existing recipes to include UUIDs.
+A command-line tool for generating 365 unique recipe markdown files for the Cookbook application.
 
 ## Tools
 
 ### recipe-gen
 Generates recipe markdown files with content.
-
-### uuid-migration
-Adds UUID frontmatter to existing recipe markdown files.
-
-### filename-migration
-Renames recipe files from day-based naming (day-X.md) to UUID-based naming ({uuid}.md).
-
-### plan-uuid-migration
-Updates plan files to reference recipe UUIDs instead of day numbers.
-
-### migration-validator
-Validates that the UUID migration completed successfully by checking that all recipe and plan files are properly migrated.
 
 ## Overview
 
@@ -31,7 +19,6 @@ This tool automatically generates recipe markdown files in the correct format fo
 - **Proper markdown formatting**: All recipes follow the cookbook's markdown format specification
 - **Intelligent tagging**: Automatically adds tags based on category, cuisine, cooking time, and dietary attributes
 - **Validation**: Verifies all 365 day files exist after generation
-- **UUID Migration**: Adds UUID frontmatter to existing recipe files to support the UUID-based architecture
 
 ## Usage
 
@@ -49,131 +36,6 @@ The tool will:
 3. Shuffle recipes for variety across days
 4. Write each recipe to a markdown file (day-1.md through day-365.md)
 5. Verify all files were created successfully
-
-### Migrating Recipes to Include UUIDs
-
-From the `cookbook/recipe_gen` directory:
-
-```bash
-cargo run --bin uuid-migration
-```
-
-The UUID migration tool will:
-1. Scan the content directory for all day-*.md files
-2. Check each file for existing UUID frontmatter
-3. Generate a new UUID for files without one
-4. Add the UUID field to the recipe markdown frontmatter
-5. Report statistics on the migration
-
-**Note**: The migration tool is idempotent - running it multiple times will not create duplicate UUIDs or modify files that already have UUIDs.
-
-### Renaming Recipe Files to UUID-Based Names
-
-After all recipes have UUIDs in their frontmatter, you can rename the files to use UUIDs:
-
-```bash
-cargo run --bin filename-migration
-```
-
-The filename migration tool will:
-1. Scan the content directory for all day-*.md files
-2. Extract the UUID from each file's frontmatter
-3. Show a preview of which files will be renamed
-4. Ask for confirmation before proceeding
-5. Rename each file from `day-X.md` to `{uuid}.md`
-6. Report statistics on the migration
-
-**Important**: 
-- The `uuid-migration` tool must be run FIRST to ensure all files have UUID frontmatter
-- This operation cannot be easily undone - make sure you have a backup!
-- After running this tool, you'll need to update build.rs and other code that references day-based filenames
-
-### Updating Plan Files to Use UUIDs
-
-After recipes have UUIDs, you can update plan files to reference UUIDs instead of day numbers:
-
-```bash
-cargo run --bin plan-uuid-migration
-```
-
-The plan UUID migration tool will:
-1. Scan the content directory for all week-*.md files
-2. Read the day numbers from each plan's `Days:` line
-3. Look up the corresponding recipe UUIDs
-4. Add a `Recipe UUIDs:` line to each plan file
-5. Report statistics on the migration
-
-**Benefits**:
-- Plans reference recipes by UUID instead of day number
-- Recipes can be rearranged without breaking plans
-- Backward compatible - both `Days:` and `Recipe UUIDs:` lines are kept
-- Parser tries UUID-based format first, falls back to day-based format
-
-**Note**: This tool requires that all recipes have UUID frontmatter (run `uuid-migration` first).
-
-### Validating the Migration
-
-After completing all migration steps, you can validate that everything was successful:
-
-```bash
-cargo run --bin migration-validator
-```
-
-The migration validation tool will:
-1. Check that all recipe files have valid UUID frontmatter
-2. Verify that all recipe files are named with their UUID (no day-*.md files remaining)
-3. Verify that all plan files have Recipe UUIDs field
-4. Check that all recipe UUIDs in plan files reference existing recipe files
-5. Detect any orphaned day-*.md files or invalid UUIDs
-6. Generate a detailed validation report
-
-**Example output** (successful migration):
-```
-Migration Validation Report
-===========================
-
-Recipe Files:
-  Total files found: 365
-  Files with UUID: 365
-  Files with UUID-based names: 365
-
-Plan Files:
-  Total files found: 53
-  Files with Recipe UUIDs: 53
-
-✓ Migration validation PASSED
-  All recipe and plan files are properly migrated.
-```
-
-**Example output** (incomplete migration):
-```
-Migration Validation Report
-===========================
-
-Recipe Files:
-  Total files found: 365
-  Files with UUID: 365
-  Files with UUID-based names: 0
-
-  ⚠ 365 files still have day-based names:
-    - day-1
-    - day-2
-    ...
-
-Plan Files:
-  Total files found: 53
-  Files with Recipe UUIDs: 0
-
-  ⚠ 53 files missing Recipe UUIDs:
-    - week-1
-    - week-2
-    ...
-
-✗ Migration validation FAILED
-  Some files require attention.
-```
-
-The validator will exit with code 0 if validation passes, or code 1 if validation fails. This makes it suitable for use in CI/CD pipelines or automated testing.
 
 ## Recipe Format
 

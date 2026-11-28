@@ -703,6 +703,7 @@ dependencies = [
  "serde_json",
  "sycamore",
  "tokio",
+ "web-sys",
 ]
 
 [[package]]
