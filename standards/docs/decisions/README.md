@@ -30,3 +30,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0017](0017-user-docs.md) | Every project has a user guide, checked by the audit with a shrinking baseline | Accepted |
 | [0018](0018-feature-flags.md) | Feature flags: our own flags Worker on D1, with a management app per project (pane for platform work) where app managers set modes per user without git | Accepted |
 | [0019](0019-review-roles.md) | Review roles: who may approve what, as a matrix of domains (cost, threat, requirements, credentials...) and project tiers, in one file | Accepted |
+| [0021](0021-review-deck-demo-videos.md) | Narrated, captioned demo videos in the review decks, recorded from a script with Playwright, Kokoro and ffmpeg | Proposed |
