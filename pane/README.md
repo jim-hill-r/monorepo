@@ -9,6 +9,9 @@ glass". Pane only reads the repo and proposes changes as pull requests, so
 the repo stays the source of truth. The plan is
 [docs/plans/2026-11-review-dashboard.md](docs/plans/2026-11-review-dashboard.md)
 and the requirements are in [docs/requirements.md](docs/requirements.md).
+Where it goes next, toward one simple dashboard of actions and domain
+scorecards with drill-down, is in [docs/roadmap.md](docs/roadmap.md), with
+the mission and vision in [docs/mission.md](docs/mission.md).
 
 ## Layout
 

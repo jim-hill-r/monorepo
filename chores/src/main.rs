@@ -11,6 +11,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod repo_health;
 mod retire;
 mod shell_scripts;
 mod sweep;
@@ -232,6 +233,15 @@ enum Command {
         /// Arguments for `threat check`.
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
+    },
+    /// HLT-001: check that the "Repo health" tables in README.md and
+    /// standards/docs/repo-health.md match standards/repo-health.toml, the
+    /// one source pane reads too. Exits 1 when one differs. Run by
+    /// `mise run //:audit`.
+    RepoHealth {
+        /// Rewrite the tables instead of checking them.
+        #[arg(long)]
+        write: bool,
     },
     /// QUAL-404: fail on a tracked .sh file not listed in
     /// standards/shell-scripts.toml, or a listed one that is gone. Scripts
@@ -488,6 +498,24 @@ fn run() -> Result<ExitCode> {
             let cost = std::env::var("COST_PROJECTS").ok();
             let check = wrapped_checks::threat(&args, threat.as_deref(), cost.as_deref());
             run_wrapped(&root, &check);
+        }
+        Command::RepoHealth { write } => {
+            if write {
+                for file in repo_health::write(&root)? {
+                    println!("repo-health: wrote {file}");
+                }
+            } else {
+                let stale = repo_health::check(&root)?;
+                for file in &stale {
+                    println!(
+                        "error[HLT-001] {file}: its Repo health table differs from {}; run `chores repo-health --write`",
+                        repo_health::SOURCE
+                    );
+                }
+                if !stale.is_empty() {
+                    return Ok(ExitCode::FAILURE);
+                }
+            }
         }
         Command::ShellScripts { json } => {
             let report = shell_scripts::check(&root)?;

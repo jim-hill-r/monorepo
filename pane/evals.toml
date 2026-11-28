@@ -375,3 +375,19 @@ requirement = "PANE-013"
 stages = ["ci"]
 kind = "cargo"
 filter = "attribution_gaps_name_every_mismatch"
+
+# PANE-014: Pane's repo health matches the README badges
+
+[[eval]]
+id = "repo-health-source"
+requirement = "PANE-014"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_real_repo_health_file_parses"
+
+[[eval]]
+id = "repo-health-pages"
+requirement = "PANE-014"
+stages = ["ci"]
+kind = "playwright"
+description = "Today's Repo health summary and the Health page show the snapshot's badges by domain, with drill-down links."

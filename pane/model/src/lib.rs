@@ -57,6 +57,11 @@ pub struct Snapshot {
     /// them (the Requirements light is then grey).
     #[serde(default)]
     pub requirements: Option<requirements::Requirements>,
+    /// The repo health badges from `standards/repo-health.toml`, the same
+    /// file the README's Repo health tables are written from. Empty when
+    /// the checkout has no such file.
+    #[serde(default)]
+    pub repo_health: repo_health::RepoHealth,
 }
 
 impl Snapshot {
@@ -77,6 +82,7 @@ impl Snapshot {
             thresholds: health::Thresholds::default(),
             audit: None,
             requirements: None,
+            repo_health: repo_health::RepoHealth::default(),
         }
     }
 
@@ -356,6 +362,7 @@ pub mod acks;
 pub mod costs;
 pub mod money;
 pub mod queue;
+pub mod repo_health;
 pub mod requirements;
 
 pub mod audit;

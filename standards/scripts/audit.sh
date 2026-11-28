@@ -20,6 +20,9 @@
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
 #   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh).
 #   THR-*    Each project's docs/threat.toml (`chores threat-check`); warnings only for now.
+#   HLT-001  The Repo health tables in README.md and
+#            standards/docs/repo-health.md match standards/repo-health.toml
+#            (`chores repo-health`), the one source pane reads too.
 #   QUAL-404 No new tracked .sh files: the ones left to port are listed in
 #            standards/shell-scripts.toml (`chores shell-scripts`).
 #   RES-*    Resources (resources.sh check, standards/docs/resources.md):
@@ -83,6 +86,8 @@ chores=(cargo run --quiet --manifest-path chores/Cargo.toml --)
 if command -v cargo >/dev/null 2>&1; then
   # DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
   "${chores[@]}" user-docs || errors=$((errors + 1))
+  # HLT-001: the README badges and pane read one source.
+  "${chores[@]}" repo-health || errors=$((errors + 1))
   # STD-005: no unresolved merge conflict markers in tracked files.
   "${chores[@]}" conflict-markers || errors=$((errors + 1))
   # QUAL-404: no new shell scripts (standards/shell-scripts.toml).

@@ -68,6 +68,11 @@ c retire-temporary --live live.json --json plan.json
 c user-docs
 c user-docs --json
 
+# HLT-001: the README's and repo-health.md's Repo health tables must match
+# standards/repo-health.toml, which pane reads too; --write rewrites them.
+c repo-health
+c repo-health --write
+
 # Unresolved merge conflict markers in any tracked file (STD-005); run by
 # `mise run //:audit`. Exit 1 on any.
 c conflict-markers
@@ -101,6 +106,7 @@ c sweep --live live.json --claims claims.tsv --json report.json
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `repo-health` | `mise run //:audit` (any skill's hooks) | Editing the README's badge table by hand and pane showing different checks |
 | `sweep` | none (`resources.sh sweep` in All Free Tier Usage) | Sorting a live inventory against the claims by hand, or a longer embedded script |
 | `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |

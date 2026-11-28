@@ -134,3 +134,17 @@ later phases and have no evals until they are built.
   (share of merged PRs, with repo-wide PRs and months with no PRs charged
   to `standards`), so nothing is left unattributed; each project's net is
   its revenue less its costs.
+
+## PANE-014: Pane's repo health matches the README badges
+
+- Priority: should
+- Why: Jim, 2026-11-28: "The badges on the readme have somewhat different
+  information than pane. A top level pane summary should have the same
+  information as those badges and allow a drill down."
+- Accept: Today opens with a Repo health summary that shows every badge
+  in the README's Repo health tables, grouped into the same domains, as
+  GitHub's live badge images; both are read from
+  `standards/repo-health.toml`, so a check added to one is in the other.
+  A domain opens the Health page, which shows each check's badges with
+  links to its runs, when it runs, what it checks, what red means and the
+  pane page with the detail behind it.

@@ -1,7 +1,8 @@
 //! The README's "Repo health" table has a badge for every workflow that runs
 //! on `main` by itself (a push to `main` or a schedule), so a new check can't
 //! go red without anyone seeing it. PR triage reads the same list
-//! (standards/docs/repo-health.md).
+//! (standards/docs/repo-health.md). The table is written from
+//! standards/repo-health.toml, which pane reads too.
 
 use std::fs;
 use workflow_tests::*;
@@ -60,7 +61,7 @@ fn test_readme_has_a_health_badge_for_every_main_workflow() {
             format!("https://github.com/jimhillr/monorepo/actions/workflows/{file}/badge.svg");
         assert!(
             health.contains(&badge),
-            "README.md's Repo health table should have a badge for {file} ({badge})"
+            "README.md's Repo health table should have a badge for {file} ({badge}): add it to standards/repo-health.toml and run `chores repo-health --write`"
         );
     }
 }

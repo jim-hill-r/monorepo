@@ -1,5 +1,14 @@
 # Notes on pane's issues
 
+## Simple dashboard
+
+Pane becomes one simple dashboard: a list of every action waiting on Jim
+and one scorecard per domain, with drill-down into projects (Jim,
+2026-11-28). The why and the order are in
+[docs/roadmap.md](../docs/roadmap.md). Phase 1, the Repo health summary
+read from `standards/repo-health.toml`, is done. Work the phases in order;
+it reuses the Review dashboard epic's signals rather than adding pages.
+
 ## Review dashboard epic
 
 Pane becomes one place for Jim to review the monorepo: deliverables and

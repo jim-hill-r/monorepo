@@ -10,6 +10,7 @@ mod acknowledge;
 mod approve;
 mod markdown;
 mod money;
+mod repo_health;
 mod requirements;
 mod view;
 mod visits;
@@ -254,6 +255,7 @@ fn TodayBody(snapshot: Snapshot) -> Element {
     });
     let commit = s.commit.clone();
     rsx! {
+        repo_health::Summary { snapshot: s.clone() }
         ul { class: "stats",
             li {
                 Link { to: Route::Projects {},
@@ -629,11 +631,8 @@ fn ProjectPage(path: Vec<String>) -> Element {
 #[component]
 fn Health() -> Element {
     rsx! {
-        Planned {
-            title: "Health",
-            phase: 4,
-            what: "A red, amber or green light for every project and shared system, with the evidence behind each.",
-        }
+        h1 { "Health" }
+        WithSnapshot { body: move |s: Snapshot| rsx! { repo_health::Detail { snapshot: s } } }
     }
 }
 

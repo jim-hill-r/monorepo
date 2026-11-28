@@ -13,21 +13,65 @@ task check them and try to fix them"). This page is the policy it follows.
 
 ## The badges
 
-| Area | Workflow | Runs | Red means |
-| --- | --- | --- | --- |
-| Main CI/CD | `push-main.yml` | every push to `main` | `mise run //:audit` failed (standards, issue files, human-task runbooks ISS-004, cost check, eval check, security rules), or CI, evals or a deploy failed in a project the push changed |
-| Nightly CI | `nightly-ci.yml` | daily | the audit, CI or evals failed in some project, often after a toolchain or dependency release |
-| Nightly CD | `nightly-cd.yml` | daily | a site's CI or deploy failed, often an expired secret |
-| Nightly downloads | `nightly-downloads.yml` | daily | a game's macOS or Android build or publish failed |
-| Code coverage | `nightly-coverage.yml`, plus the `coverage-results` badge | daily | a project's tests failed under cargo-llvm-cov, or results weren't stored. A project under 80% (COV-001) is a warning: add tests, in a fix PR like any other |
-| Eval coverage | the `evals-results` badge, written by `evals-store.yml` (called by `push-main.yml` and `nightly-ci.yml`) | each push to `main`, daily | not a pass or fail: yellow or red means a project, or the repo on average, has under 80% of its `must` requirements met on production evidence ([evals.md](evals.md#eval-coverage)). Each gap is a `TODO` or `FIX` issue in the project, worked like any other |
-| Threats: CodeQL | `all-codeql.yml` | push to `main`, weekly (Rust) | the scan itself failed; alerts show in the Security tab, not on the badge |
-| Threats: advisories | `all-dependency-audit.yml` | daily | the audit itself failed. Advisories are warnings for now, so read the log even when it is green |
-| Threats: Dependabot | Dependabot Updates (dynamic) | Dependabot's schedule | Dependabot couldn't update a manifest |
-| Secrets and free tiers | `all-free-tier-usage.yml` | weekly | gitleaks found a secret in history, a service reached its free-tier budget, or the live threat check found a deployment that doesn't match its threat model |
-| Infra apply | `infra-apply.yml` | push to `main` | a plan guard (IAC-001 to IAC-005) failed, or the plan or apply failed |
-| Infra drift | `infra-drift.yml` | weekly | a live setting differs from OpenTofu state, usually a change made by hand |
-| tofu_state | `tofu-state-deploy.yml` | push to `main` | the state Worker didn't deploy |
+The badges, what each runs and what red means are listed once, in
+[standards/repo-health.toml](../repo-health.toml), grouped into domains.
+`chores repo-health --write` writes this table and the README's from it, and
+pane's Repo health summary (Today and the Health page) reads it too, so the
+README and pane never disagree. `mise run //:audit` fails (HLT-001) when a
+table differs from the file, so edit the TOML, never the tables.
+
+<!-- repo-health:start -->
+
+### Build and deploy
+
+| Area | Runs | Red means |
+| --- | --- | --- |
+| Main CI/CD | Every push to `main` | `mise run //:audit` failed (standards, issue files, human-task runbooks ISS-004, cost check, eval check, security rules), or CI, evals or a deploy failed in a project the push changed |
+| Nightly CI | Daily | the audit, CI or evals failed in some project, often after a toolchain or dependency release |
+| Nightly CD | Daily | a site's CI or deploy failed, often an expired secret |
+| Nightly downloads | Daily | a game's macOS or Android build or publish failed |
+| tofu_state | Push to `main` | the state Worker didn't deploy |
+| Pane redeploy | After each eval run on `main` | pane wasn't redeployed after an eval run, so its Requirements section shows older results |
+
+### Quality
+
+| Area | Runs | Red means |
+| --- | --- | --- |
+| Code coverage | Daily | a project's tests failed under cargo-llvm-cov, or results weren't stored. A project under 80% (COV-001) is a warning: add tests, in a fix PR like any other |
+| Eval coverage | Each push to `main` and nightly | not a pass or fail: yellow or red means a project, or the repo on average, has under 80% of its `must` requirements met on production evidence ([evals.md](evals.md#eval-coverage)). Each gap is a `TODO` or `FIX` issue in the project, worked like any other |
+| Eval triage | Daily | triage couldn't file the issues for requirements that aren't green |
+
+### Threats
+
+| Area | Runs | Red means |
+| --- | --- | --- |
+| Threats: CodeQL | Push to `main`, weekly | the scan itself failed; alerts show in the Security tab, not on the badge |
+| Threats: advisories | Daily | the audit itself failed. Advisories are warnings for now, so read the log even when it is green |
+| Threats: Dependabot | Dependabot's schedule | Dependabot couldn't update a manifest |
+| Secrets and free tiers | Weekly | gitleaks found a secret in history, a service reached its free-tier budget, or the live threat check found a deployment that doesn't match its threat model |
+
+### Review
+
+| Area | Runs | Red means |
+| --- | --- | --- |
+| PR approvals | Every 15 minutes | the auto-review run failed, so green agent PRs its rules allow aren't being approved |
+
+### Infrastructure
+
+| Area | Runs | Red means |
+| --- | --- | --- |
+| Infra apply | Push to `main` | a plan guard (IAC-001 to IAC-005) failed, or the plan or apply failed |
+| Infra drift | Weekly | a live setting differs from OpenTofu state, usually a change made by hand |
+| Infra mint | Quarterly, after Jim approves | a rotation run failed, so a minted password or token may be past its rotation date |
+| Temporary resources | Weekly | the weekly cleanup failed, so old previews, deployments or branches pile up toward their free-tier limits |
+
+### Data
+
+| Area | Runs | Red means |
+| --- | --- | --- |
+| Fan feedback export | Weekly | the weekly export from Analytics Engine to the `feedback-data` branch failed |
+
+<!-- repo-health:end -->
 
 `jimhillr/workflow_tests/tests/readme_badges_tests.rs` fails when a workflow
 that runs on `main` has no badge in the table, so a new check gets its badge
@@ -45,7 +89,8 @@ opens at most one fix PR per run (see "Limits" below).
 Each triage run, after the PR paths in
 [pull-requests.md](pull-requests.md#pr-triage):
 
-1. For each workflow in the table, read its latest finished run on `main`:
+1. For each workflow badge in `standards/repo-health.toml` (its `link` ends
+   in the workflow file), read its latest finished run on `main`:
    `gh api "repos/jimhillr/monorepo/actions/workflows/<file>/runs?branch=main&status=completed&per_page=1"`
    (for Dependabot, the workflow path is
    `dynamic/dependabot/dependabot-updates`; list workflows with

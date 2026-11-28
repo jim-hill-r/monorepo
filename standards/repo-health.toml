@@ -1,0 +1,239 @@
+# The repo health badges: one row per workflow that runs on `main` by
+# itself, grouped into domains. This file is the one source for the "Repo
+# health" tables in the root README.md and standards/docs/repo-health.md
+# (written by `chores repo-health --write`, checked by `mise run //:audit`
+# as HLT-001) and for pane's Repo health summary on Today and the Health
+# page, so the README and pane always show the same badges.
+#
+# Each row: `area` (its name), `runs` (when), `checks` (what it checks,
+# Markdown, for the README), `red` (what a red badge means, Markdown, for
+# repo-health.md), an optional `pane` route that drills into the detail in
+# pane, and one or more badges (`alt`, `image`, `link`). Links in Markdown
+# are relative to the repo root.
+
+[[domain]]
+name = "Build and deploy"
+summary = "Whether `main` builds, passes its evals and deploys, now and every night."
+
+[[domain.row]]
+area = "Main CI/CD"
+runs = "Every push to `main`"
+checks = "Repo audit (`mise run //:audit`: standards, issue files, human-task runbooks, cost check, eval check, security rules, threat check), then CI, evals and deploy for each changed project"
+red = "`mise run //:audit` failed (standards, issue files, human-task runbooks ISS-004, cost check, eval check, security rules), or CI, evals or a deploy failed in a project the push changed"
+pane = "/projects"
+[[domain.row.badge]]
+alt = "Main CI/CD"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/push-main.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/push-main.yml"
+
+[[domain.row]]
+area = "Nightly CI"
+runs = "Daily"
+checks = "Audit, CI and evals in every project, so toolchain and dependency drift shows within a day"
+red = "the audit, CI or evals failed in some project, often after a toolchain or dependency release"
+[[domain.row.badge]]
+alt = "Nightly CI"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-ci.yml"
+
+[[domain.row]]
+area = "Nightly CD"
+runs = "Daily"
+checks = "CI and deploy of every site, so expired secrets and broken deploys show"
+red = "a site's CI or deploy failed, often an expired secret"
+pane = "/deliverables"
+[[domain.row.badge]]
+alt = "Nightly CD"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-cd.yml"
+
+[[domain.row]]
+area = "Nightly downloads"
+runs = "Daily"
+checks = "macOS and Android builds of the games"
+red = "a game's macOS or Android build or publish failed"
+pane = "/deliverables"
+[[domain.row.badge]]
+alt = "Nightly downloads"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-downloads.yml/badge.svg?branch=main"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-downloads.yml?query=branch%3Amain"
+
+[[domain.row]]
+area = "tofu_state"
+runs = "Push to `main`"
+checks = "Deploy of the OpenTofu state Worker (decision 0009)"
+red = "the state Worker didn't deploy"
+[[domain.row.badge]]
+alt = "tofu_state deploy"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/tofu-state-deploy.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/tofu-state-deploy.yml"
+
+[[domain.row]]
+area = "Pane redeploy"
+runs = "After each eval run on `main`"
+checks = "Redeploys pane so its Requirements section shows the eval results just stored"
+red = "pane wasn't redeployed after an eval run, so its Requirements section shows older results"
+[[domain.row.badge]]
+alt = "Pane redeploy"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/pane-redeploy.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/pane-redeploy.yml"
+
+[[domain]]
+name = "Quality"
+summary = "How much of the code is tested and how many requirements are met in production."
+
+[[domain.row]]
+area = "Code coverage"
+runs = "Daily"
+checks = "Line coverage of every Rust project with cargo-llvm-cov, total over all projects (COV-001: under 80% is a warning for now)"
+red = "a project's tests failed under cargo-llvm-cov, or results weren't stored. A project under 80% (COV-001) is a warning: add tests, in a fix PR like any other"
+[[domain.row.badge]]
+alt = "Coverage"
+image = "https://raw.githubusercontent.com/jimhillr/monorepo/coverage-results/badge.svg"
+link = "https://github.com/jimhillr/monorepo/tree/coverage-results"
+[[domain.row.badge]]
+alt = "Nightly coverage"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-coverage.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/nightly-coverage.yml"
+
+[[domain.row]]
+area = "Eval coverage"
+runs = "Each push to `main` and nightly"
+checks = "Share of every project's requirements met on production evidence, mean over all projects (a project with no requirements counts as 0%), with `must` requirements shown separately. Under 80% of musts met is a warning ([evals.md](standards/docs/evals.md#eval-coverage))"
+red = "not a pass or fail: yellow or red means a project, or the repo on average, has under 80% of its `must` requirements met on production evidence ([evals.md](standards/docs/evals.md#eval-coverage)). Each gap is a `TODO` or `FIX` issue in the project, worked like any other"
+pane = "/projects"
+[[domain.row.badge]]
+alt = "Eval coverage"
+image = "https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badge.svg"
+link = "https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json"
+
+[[domain.row]]
+area = "Eval triage"
+runs = "Daily"
+checks = "Files a `FIX` or `TODO` issue for each requirement that is not green and has no open issue, on the `evals-triage` branch for PR triage to open ([evals.md](standards/docs/evals.md#triage))"
+red = "triage couldn't file the issues for requirements that aren't green"
+pane = "/work"
+[[domain.row.badge]]
+alt = "Evals triage"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/evals-triage.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/evals-triage.yml"
+
+[[domain]]
+name = "Threats"
+summary = "Code scanning, dependency advisories, leaked secrets and free-tier limits."
+
+[[domain.row]]
+area = "Threats: CodeQL"
+runs = "Push to `main`, weekly"
+checks = "CodeQL for JavaScript/TypeScript and Actions, plus the weekly Rust scan (decision 0008)"
+red = "the scan itself failed; alerts show in the Security tab, not on the badge"
+[[domain.row.badge]]
+alt = "CodeQL"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/all-codeql.yml/badge.svg?branch=main"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/all-codeql.yml?query=branch%3Amain"
+
+[[domain.row]]
+area = "Threats: advisories"
+runs = "Daily"
+checks = "cargo-deny and `npm audit` over every lockfile (SEC-003, SEC-004). Warnings only for now, so read the log for advisories"
+red = "the audit itself failed. Advisories are warnings for now, so read the log even when it is green"
+[[domain.row.badge]]
+alt = "Dependency audit"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/all-dependency-audit.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/all-dependency-audit.yml"
+
+[[domain.row]]
+area = "Threats: Dependabot"
+runs = "Dependabot's schedule"
+checks = "Dependabot's update runs (a red run means a manifest it can't update)"
+red = "Dependabot couldn't update a manifest"
+[[domain.row.badge]]
+alt = "Dependabot"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/dynamic/dependabot/dependabot-updates/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/dynamic/dependabot/dependabot-updates"
+
+[[domain.row]]
+area = "Secrets and free tiers"
+runs = "Weekly"
+checks = "gitleaks over the full git history (SEC-001), usage against every free-tier limit, and the live threat check"
+red = "gitleaks found a secret in history, a service reached its free-tier budget, or the live threat check found a deployment that doesn't match its threat model"
+pane = "/money"
+[[domain.row.badge]]
+alt = "Free tier usage"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/all-free-tier-usage.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/all-free-tier-usage.yml"
+
+[[domain]]
+name = "Review"
+summary = "Whether agent pull requests are being reviewed and merged."
+
+[[domain.row]]
+area = "PR approvals"
+runs = "Every 15 minutes"
+checks = "`jimhillr-reviewer` approves the green agent PRs its rules allow (PR-003, decision 0014)"
+red = "the auto-review run failed, so green agent PRs its rules allow aren't being approved"
+pane = "/approve"
+[[domain.row.badge]]
+alt = "All Auto Review"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/all-auto-review.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/all-auto-review.yml"
+
+[[domain]]
+name = "Infrastructure"
+summary = "Whether the OpenTofu stacks apply, match what's live, and rotate their secrets."
+
+[[domain.row]]
+area = "Infra apply"
+runs = "Push to `main`"
+checks = "OpenTofu plan with the plan guards (IAC-001 to IAC-005), then apply (decision 0007)"
+red = "a plan guard (IAC-001 to IAC-005) failed, or the plan or apply failed"
+[[domain.row.badge]]
+alt = "Infra apply"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/infra-apply.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/infra-apply.yml"
+
+[[domain.row]]
+area = "Infra drift"
+runs = "Weekly"
+checks = "Refresh-only plan of every stack: red when a live setting differs from state"
+red = "a live setting differs from OpenTofu state, usually a change made by hand"
+[[domain.row.badge]]
+alt = "Infra drift"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml"
+
+[[domain.row]]
+area = "Infra mint"
+runs = "Quarterly, after Jim approves"
+checks = "Rotates the minted infra passwords and tokens ([rotation plan](standards/docs/secret-rotation.md))"
+red = "a rotation run failed, so a minted password or token may be past its rotation date"
+pane = "/human-issues"
+[[domain.row.badge]]
+alt = "Infra mint"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml"
+
+[[domain.row]]
+area = "Temporary resources"
+runs = "Weekly"
+checks = "Deletes Pages previews older than 14 days, old production deployments and branches 7 days after their PR closed ([resources.md](standards/docs/resources.md#temporary-resources))"
+red = "the weekly cleanup failed, so old previews, deployments or branches pile up toward their free-tier limits"
+[[domain.row.badge]]
+alt = "All Retire Resources"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/all-retire-resources.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/all-retire-resources.yml"
+
+[[domain]]
+name = "Data"
+summary = "Exports that copy product data back into the repo."
+
+[[domain.row]]
+area = "Fan feedback export"
+runs = "Weekly"
+checks = "bear_down's fan votes and A/B exposures from Analytics Engine to the [`feedback-data`](https://github.com/jimhillr/monorepo/tree/feedback-data) branch, with a summary per arm"
+red = "the weekly export from Analytics Engine to the `feedback-data` branch failed"
+[[domain.row.badge]]
+alt = "Telemetry feedback export"
+image = "https://github.com/jimhillr/monorepo/actions/workflows/telemetry-feedback-export.yml/badge.svg"
+link = "https://github.com/jimhillr/monorepo/actions/workflows/telemetry-feedback-export.yml"
+
