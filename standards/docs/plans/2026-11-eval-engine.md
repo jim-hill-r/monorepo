@@ -738,7 +738,10 @@ Needs pane phases 3 to 5 (Worker, Health page, `pane-edit` writes).
 
 Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
-- `feedback/model`, and pane's `/feedback/sign-in` token page and
+- `feedback/model` (built as phase 1 of the
+  [user feedback plan](2026-11-user-feedback.md), which also adds the public
+  user widget, in-app help and a browser extension for this toolbar), and
+  pane's `/feedback/sign-in` token page and
   `/api/feedback` routes writing `feedback.jsonl` lines and screenshots
   through `pane-edit` PRs.
 - `feedback/toolbar` (wasm), and the `jimhillr-build` meta tag, in cookbook
