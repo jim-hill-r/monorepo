@@ -275,6 +275,9 @@ pub struct Review {
     pub pr: Option<String>,
     #[serde(default)]
     pub scorecard: Vec<ScorecardRow>,
+    /// Who has signed the deck off, oldest first (`signoffs/` beside it).
+    #[serde(default)]
+    pub signoffs: Vec<signoff::SignOff>,
 }
 
 impl Review {
@@ -357,6 +360,7 @@ pub mod costs;
 pub mod money;
 pub mod queue;
 pub mod requirements;
+pub mod signoff;
 
 pub mod audit;
 
@@ -428,6 +432,18 @@ mod tests {
                 area: "Tests".into(),
                 rating: "Good".into(),
                 why: "Covered.".into(),
+            }],
+            signoffs: vec![signoff::SignOff {
+                reviewer: "jim".into(),
+                date: "2026-11-28".into(),
+                verdict: signoff::Verdict::Changes,
+                path: "docs/reviews/2026-11-24-pane/signoffs/2026-11-28-jim.md".into(),
+                feedback: vec![signoff::Feedback {
+                    slide: Some(2),
+                    text: "Add a retro.".into(),
+                    issue: Some("pane/issues/review-2026-11-24-pane-jim-1.md".into()),
+                    open: true,
+                }],
             }],
         });
         s.retros.push(Retro {

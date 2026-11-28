@@ -8,6 +8,7 @@ use cost_model::{COST_FILE, CostFile, LimitsFile, Month, Radar};
 use pane_model::costs::{
     Costs, ProjectCosts, build_costs, build_history, months_ending, shared_cents,
 };
+use pane_model::signoff::{self, SignOff};
 use pane_model::{DeliverableKind, Project, Snapshot, WorkKind, WorkSource};
 
 use crate::{blame, merged, parse};
@@ -106,12 +107,42 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
     for review in &mut snapshot.reviews {
         // A deck that isn't there yet (its PR not merged) has no scorecard.
         review.scorecard = parse::scorecard(&read_optional(&root.join(&review.path)));
+        review.signoffs = signoffs(root, review.folder())?;
     }
     snapshot
         .deliverables
         .extend(snapshot.reviews.iter().map(parse::review_deliverable));
     snapshot.costs = costs(root, &roots, taken_at)?;
     Ok(snapshot)
+}
+
+/// The sign-offs in `docs/reviews/<folder>/signoffs/`, oldest first, each
+/// feedback item open while its issue file is still there. A sign-off that
+/// doesn't parse fails the snapshot, so a bad one is caught in CI rather
+/// than shown as unreviewed.
+pub fn signoffs(root: &Path, folder: &str) -> Result<Vec<SignOff>, String> {
+    let dir = root
+        .join(parse::REVIEWS_DIR)
+        .join(folder)
+        .join(signoff::SIGNOFFS_DIR);
+    if !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut found = Vec::new();
+    for entry in fs::read_dir(&dir).map_err(|e| format!("{}: {e}", dir.display()))? {
+        let file = entry.map_err(|e| format!("{}: {e}", dir.display()))?.path();
+        let rel = relative(root, &file)?;
+        if signoff::signoff_folder(&rel).is_none() {
+            continue;
+        }
+        let mut s = signoff::parse(&rel, &read(&file)?)?;
+        for item in &mut s.feedback {
+            item.open = item.issue.as_ref().is_some_and(|i| root.join(i).is_file());
+        }
+        found.push(s);
+    }
+    found.sort_by(|a, b| a.path.cmp(&b.path));
+    Ok(found)
 }
 
 /// Every project's `docs/cost.toml` with the radar's budgets and the free

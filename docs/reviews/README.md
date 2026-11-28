@@ -24,6 +24,10 @@ in `demos/`.
   off with the player's CC button. The PDF shows each video's first frame.
 - **Feedback**: leave review comments on the deck's pull request, on the
   lines of the slide you are commenting on.
+- **Sign-off**: once a deck is read, a reviewer signs it off with a verdict
+  and feedback. Each feedback item becomes an issue file in the reviewed
+  project's `issues/`, so agents work it like any other issue. See
+  [Sign-offs](#sign-offs) below.
 
 ## Rotation
 
@@ -76,6 +80,33 @@ style: |
   Mermaid).
 - Speaker notes, for detail that doesn't fit on the slide, go in an HTML
   comment at the end of the slide.
+
+## Sign-offs
+
+A sign-off records that a reviewer read a deck, what they concluded, and
+their feedback ([plan](../../pane/docs/plans/2026-11-deck-sign-off.md)). It
+is a file beside the deck, `<folder>/signoffs/<YYYY-MM-DD>-<reviewer>.md`,
+and pane's Reviews and Review pages show it.
+
+```markdown
+---
+reviewer: jim
+date: 2026-11-28
+verdict: changes
+---
+
+- Slide 4: Say which free tier is nearest its limit. ([issue](../../../cookbook/issues/review-2026-11-25-cookbook-jim-1.md))
+```
+
+- `reviewer` is a public handle (lowercase letters, digits and hyphens),
+  never an email. `verdict` is `reviewed` or `changes`.
+- Each feedback item links the issue file it was filed as,
+  `<project>/issues/review-<folder>-<reviewer>-<n>.md` (epic `Review
+  feedback`). Deleting that issue file when the work is done shows the item
+  as done in pane; the sign-off itself stays.
+- Pane will write both files for a signed-in reviewer. Until then, commit
+  them by hand in this format; `pane_model::signoff` is the reference, and
+  pane's snapshot fails on a sign-off it can't read.
 
 ## Demo videos
 

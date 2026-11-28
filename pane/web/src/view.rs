@@ -3,7 +3,7 @@
 
 use pane_model::{
     Deliverable, DeliverableKind, HumanIssue, Project, ProjectStatus, REPO_URL, Review,
-    ScorecardRow, Snapshot, WorkItem, WorkKind, WorkSource,
+    ScorecardRow, Snapshot, WorkItem, WorkKind, WorkSource, signoff::Verdict,
 };
 
 /// Seconds since the Unix epoch for an RFC 3339 UTC time
@@ -404,6 +404,32 @@ pub fn pr_label(url: &str) -> String {
     }
 }
 
+/// Who has signed a deck off, for the Reviews table: `Not yet`, or the
+/// latest sign-off such as `jim, needs changes, 2026-11-28 (1 of 2 open)`,
+/// with `+1 more` when others signed too.
+pub fn signoff_summary(review: &Review) -> String {
+    let Some(last) = review.signoffs.iter().max_by(|a, b| a.date.cmp(&b.date)) else {
+        return "Not yet".to_owned();
+    };
+    let mut out = last.reviewer.clone();
+    if last.verdict == Verdict::Changes {
+        out.push_str(", needs changes");
+    }
+    out.push_str(&format!(", {}", last.date));
+    if !last.feedback.is_empty() {
+        out.push_str(&format!(
+            " ({} of {} open)",
+            last.open_items(),
+            last.feedback.len()
+        ));
+    }
+    let others = review.signoffs.len() - 1;
+    if others > 0 {
+        out.push_str(&format!(" +{others} more"));
+    }
+    out
+}
+
 /// Whether `item_project` is `path` or one of its sub-projects
 /// (`pane/web` is in `pane`).
 pub fn in_project(item_project: Option<&str>, path: &str) -> bool {
@@ -480,6 +506,39 @@ pub fn latest_docs<'a>(snapshot: &'a Snapshot, path: &str) -> Vec<(&'static str,
 
 #[cfg(test)]
 mod tests {
+    use pane_model::signoff::{Feedback, SignOff};
+
+    #[test]
+    fn signoff_summary_names_the_latest_reviewer() {
+        let mut r = review("app", "2026-11-25", None);
+        assert_eq!(signoff_summary(&r), "Not yet");
+        let item = |open| Feedback {
+            slide: None,
+            text: "x".into(),
+            issue: Some("app/issues/x.md".into()),
+            open,
+        };
+        r.signoffs.push(SignOff {
+            reviewer: "ann".into(),
+            date: "2026-11-26".into(),
+            verdict: Verdict::Reviewed,
+            path: "docs/reviews/2026-11-25-app/signoffs/2026-11-26-ann.md".into(),
+            feedback: vec![],
+        });
+        assert_eq!(signoff_summary(&r), "ann, 2026-11-26");
+        r.signoffs.push(SignOff {
+            reviewer: "jim".into(),
+            date: "2026-11-28".into(),
+            verdict: Verdict::Changes,
+            path: "docs/reviews/2026-11-25-app/signoffs/2026-11-28-jim.md".into(),
+            feedback: vec![item(true), item(false)],
+        });
+        assert_eq!(
+            signoff_summary(&r),
+            "jim, needs changes, 2026-11-28 (1 of 2 open) +1 more"
+        );
+    }
+
     use super::*;
 
     fn project(path: &str, status: ProjectStatus) -> Project {
@@ -827,6 +886,7 @@ mod tests {
             path: format!("docs/reviews/{date}-{project}/deck.md"),
             pr: pr.map(str::to_owned),
             scorecard: vec![],
+            signoffs: vec![],
         }
     }
 

@@ -276,6 +276,45 @@ fn reads_the_review_rotation() -> TestResult {
         "a deck that isn't in the repo has no scorecard"
     );
 
+    assert!(s.reviews[0].signoffs.is_empty(), "no signoffs/ folder yet");
+
+    // A sign-off with two feedback items, one of which an agent has done
+    // (its issue file deleted).
+    let signoffs = repo_dir.0.join("docs/reviews/2026-11-25-app/signoffs");
+    fs::create_dir_all(&signoffs)?;
+    fs::write(
+        signoffs.join("2026-11-28-jim.md"),
+        "---\nreviewer: jim\ndate: 2026-11-28\nverdict: changes\n---\n\n\
+         - Slide 2: Name the goal. ([issue](../../../app/issues/review-2026-11-25-app-jim-1.md))\n\
+         - Add a retro. ([issue](../../../app/issues/review-2026-11-25-app-jim-2.md))\n",
+    )?;
+    fs::write(signoffs.join("README.md"), "Not a sign-off.\n")?;
+    fs::write(
+        repo_dir.0.join("app/issues/review-2026-11-25-app-jim-1.md"),
+        "---\nkind: todo\npriority: priority\nepic: Review feedback\nadded: 2026-11-28\n---\n\nName the goal.\n",
+    )?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
+    let signoff = &s.reviews[0].signoffs[..];
+    assert_eq!(signoff.len(), 1);
+    assert_eq!(signoff[0].reviewer, "jim");
+    let open: Vec<_> = signoff[0]
+        .feedback
+        .iter()
+        .map(|f| (f.slide, f.open))
+        .collect();
+    assert_eq!(open, [(Some(2), true), (None, false)]);
+
+    fs::write(
+        signoffs.join("2026-11-29-ann.md"),
+        "---\nreviewer: ann\n---\n",
+    )?;
+    let err = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z").err();
+    assert!(
+        err.is_some_and(|e| e.contains("2026-11-29-ann.md")),
+        "a bad sign-off fails the snapshot"
+    );
+    fs::remove_dir_all(&signoffs)?;
+
     fs::remove_file(repo_dir.0.join("docs/reviews/README.md"))?;
     let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
     assert!(s.reviews.is_empty(), "no rotation table, no reviews");
