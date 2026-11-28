@@ -7,7 +7,9 @@ and `cookbook/cloudflare`). It says which outside services the project
 uses, on which plan, how much of each free limit it expects to use, and any
 money that is the project's own. `cost check` holds it to the budgets in the
 [tech radar](tech-radar.md) and [free-tiers.md](free-tiers.md). The design
-is in the [cost check plan](plans/2026-11-cost-check.md).
+is in the [cost check plan](plans/2026-11-cost-check.md); how actual
+usage, money and overrun risk are tracked across every vendor is in the
+[cost tracking plan](plans/2026-11-cost-tracking.md).
 
 A project that uses no outside service (a library, a CLI that runs locally)
 still has the file, with `reviewed`, `summary` and nothing else, so "no
@@ -48,6 +50,7 @@ vendor = "Squarespace"            # a vendor blip in radar.json
 cents = 1200
 every = "year"                    # "month", "year" or "once"
 since = "2026-12"                 # first month it is paid, YYYY-MM
+renews = "2027-12-01"             # next charge, YYYY-MM-DD; required for "year"
 decision = "standards/docs/decisions/0006-cookbook-domain.md"  # required when cents > 0
 
 [[revenue]]
@@ -64,6 +67,7 @@ source = "None yet"
 | `[[service]].plan` | `free`. `paid` only for a blip whose radar budget is above $0 (today only Claude Code). |
 | `[[service]].usage` | Expected use at the project's normal level, keyed by `key` in [limits.toml](../radar/limits.toml). Leave out what you can't estimate; a guess with a note beats nothing. |
 | `[[cost]]` | `name`, `vendor` (a vendor blip), `cents`, `every`, `since`, and `decision` when `cents > 0`. |
+| `[[cost]].renews` | `YYYY-MM-DD`, the next charge. Required when `every = "year"`, optional for `month`, not allowed for `once`. Move it on a year (or month) after each renewal; `cost renewals --within 60` lists the ones coming up. |
 | `[[revenue]]` | `month`, `cents`, `source`. |
 
 Unknown fields are errors, so a typo can't hide a cost.
@@ -81,6 +85,36 @@ Shared free resources are counted where they are used: two projects that
 each deploy a Pages site each list `pages_projects = 1`. A resource two
 projects share (the one Auth0 tenant) is not listed as usage by either.
 
+## Accounting rules
+
+Jim, 2026-11-27: "All of our cost software should follow GAP accounting so
+that everything is double counted on the ledger and also we should have
+attribution in such a way that if you sum up all service costs/revenue it
+equals total revenue/costs." So every piece of cost, money or ledger code
+here follows these rules ([decision 0016](decisions/0016-holding-and-handling-money.md)):
+
+1. **Double entry.** Every money movement is an entry whose postings sum
+   to zero: each amount leaves one account and enters another (`income:`,
+   `expense:`, `asset:`, `liability:`, `equity:`). An entry that doesn't
+   balance is an error, never rounded away.
+2. **Accrual and matching**, as GAAP asks: a cost is booked in the months
+   it serves (a yearly cost spread over twelve months, a once cost in its
+   month), revenue in the month it is earned, whatever day the cash moved.
+   The bank reconciliation shows the cash side.
+3. **Full attribution.** Every cent of revenue and cost belongs to exactly
+   one project, and the projects sum, to the cent, to the totals. A shared
+   cost is split by a stated rule (today: share of merged PRs, with
+   repo-wide PRs and months with none charged to `standards`); leftover
+   cents go by largest remainder, so there is no unattributed remainder.
+4. **Whole cents** (integers), so nothing is lost to floating point.
+5. **Consistency and disclosure.** A changed rule is a decision record,
+   and every number links to its source.
+
+The checks: pane's `attribution_gaps` (PANE-013) proves the per-project
+money adds up to the month's totals; the double-entry balance check comes
+with the financial ledger
+([issue](../../cost/issues/ledger-double-entry-balance-check.md)).
+
 ## The check
 
 `cost check` (the [`cost`](../../cost/README.md) project) runs from
@@ -91,7 +125,7 @@ hook and CI run sees it. Until phase 3 of the plan every finding is a
 | Code | Fires when |
 | --- | --- |
 | COST-001 | A project has no `docs/cost.toml`. |
-| COST-002 | The file doesn't parse, or has an unknown field, plan, `every` or usage key. |
+| COST-002 | The file doesn't parse, or has an unknown field, plan, `every` or usage key, or a yearly `[[cost]]` has no `renews` (or a one-off one has). |
 | COST-003 | A `[[service]]` or `[[cost]]` names a blip that isn't a vendor in `radar.json`, or one in Assess or Hold. |
 | COST-004 | `plan` isn't `free` for a blip whose budget is $0, or a `[[cost]]` with `cents > 0` has no `decision` pointing at an existing, accepted decision record. |
 | COST-005 | Expected usage is over our budget for a limit (or the free limit, where we have no budget). Limits with `scope = "account"` are summed across every project. |
@@ -99,11 +133,18 @@ hook and CI run sees it. Until phase 3 of the plan every finding is a
 | COST-007 | **Drift:** the project's files use a service its `[[service]]` list doesn't name, or more of a counted limit (Pages projects, Workers, Cron Triggers, D1 databases) than its `[service.usage]` expects. See "Detectors" below. |
 | COST-008 | `reviewed` is more than 180 days old. A warning even after phase 3. |
 | COST-009 | An `https://` (or `wss://`) host in the project's source or config that no detector or allow entry knows. A warning even after phase 3, until the allowlist settles. |
+| COST-010 | A `[[cost]]`'s `renews` date has passed: the file wasn't updated after the renewal. Check what was charged and set the next date. A warning even after phase 3. |
 
-The per-project rules (COST-001 to COST-004 and COST-007 to COST-009) run
+The per-project rules (COST-001 to COST-004 and COST-007 to COST-010) run
 only for the affected projects in the git hooks and PR CI: `hooks.sh` and
 the PR's audit step pass the list in `COST_PROJECTS`. The account-wide rules
 read every project's file every time, which takes milliseconds.
+
+A requirement can depend on this check through an eval of kind `cost` in
+the project's `evals.toml`: in stage `ci`, `cost check --evals-results`
+writes its result in the eval engine's format, failing on COST-001 to
+COST-007 in the project's own files. See
+[Cost evals](evals.md#cost-evals).
 
 ### Detectors
 
@@ -125,6 +166,12 @@ through a series of small PRs. Comment lines don't count.
 | a `rapidapi.com` host, a `RAPIDAPI_` name or an `X-RapidAPI-` header | RapidAPI (Zillow data) |
 | a workflow named `<project>.yml` or `<project>-*.yml` with a `schedule:` | GitHub Actions minutes |
 | any other `https://` host | COST-009 |
+
+A detector can also carry a `threat` field saying what a match means for
+the project's threat model; the threat check reads the same matches for
+THR-004 ([security.md](security.md#threat-models)). A detector with a
+`threat` but no `blip` (a deploy URL, `wrangler secret put`, raw HTML, CORS
+open to every origin) matters only to the threat check and costs nothing.
 
 Links a person follows (an HTML or rsx `href`, a Markdown link) are not
 services, so they never raise COST-009. When a host costs nothing (a docs

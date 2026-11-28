@@ -26,7 +26,10 @@ number, and update this page in the same PR when one moves.
    mistakes and for Jim's own use of the same accounts.
 4. **Create resources only through a guard.** Anything automation creates on
    demand (today: Cloudflare Pages projects) goes through
-   `standards/scripts/free-tiers.sh`, which counts what exists first.
+   `standards/scripts/free-tiers.sh`, which counts what exists first. A
+   resource that is renamed or removed is retired in
+   `standards/resources.toml` in the same PR, so the old one doesn't keep
+   using budget; see [Resources](resources.md).
 5. **Prefer services that hard-stop.** On a free plan with no payment method,
    every service below stops or throttles rather than billing. Keep it that
    way: a new service whose free plan bills overage automatically (for
@@ -112,7 +115,7 @@ itself.
 | Monthly active users (`auth0_mau`) | 25,000 users | - | per account | Free tenants are not upgraded automatically | [auth0.com](https://auth0.com/pricing) |
 | Tenants (`auth0_tenants`) | 1 tenants | - | per account | Creation fails | [auth0.com](https://auth0.com/pricing) |
 | Custom domains (`auth0_custom_domains`) | 1 domains | 0 domains (adding one asks for a card, so don't) | per account | Needs a card | [auth0.com](https://auth0.com/pricing) |
-| Machine-to-machine tokens (`auth0_m2m_tokens_per_month`) | 1,000 tokens a month | 0 tokens a month (CI uses mocks, never real tokens) | per account | Token requests fail | [auth0.com](https://auth0.com/pricing) |
+| Machine-to-machine tokens (`auth0_m2m_tokens_per_month`) | 1,000 tokens a month | 60 tokens a month (Jim, 2026-11-27: $0 in money. Infra plans, applies, drift and Infra Mint runs; CI uses mocks) | per account | Token requests fail | [auth0.com](https://auth0.com/pricing) |
 
 #### RapidAPI (Zillow data)
 
@@ -181,12 +184,14 @@ its plan or adds usage-based billing.
 ## Guards
 
 All guards live in [`standards/scripts/free-tiers.sh`](../scripts/free-tiers.sh)
-and are tested in `monorepo/workflow_tests/tests/free_tier_tests.rs`.
+and are tested in `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
 
 | Guard | When it runs | What it does |
 | --- | --- | --- |
 | `free-tiers.sh check` | Every CI run, as part of `mise run //:audit` | FT-001 only standard runners; FT-002 no workflow uses the RapidAPI key; FT-003 Pages projects and Workers in the repo within budget; FT-004 Cron Triggers within budget; FT-005 no paid-only wrangler settings; FT-006 Pages projects named `jimhillr-<project>` |
 | `free-tiers.sh pages-project` | Before every Cloudflare Pages deploy (`mise run deploy` in a `cloudflare` project) | Creates the Pages project named in `wrangler.toml` only if it is missing, the account is under the Pages budget and the name has the `jimhillr-` prefix; otherwise stops the deploy |
+| `free-tiers.sh worker` | Before every Cloudflare Worker deploy (`mise run deploy` in a project using `standards/tasks/cloudflare-worker.toml`, such as `telemetry`) | Passes if the Worker named in `wrangler.toml` exists or one more stays within the Workers budget; otherwise stops the deploy before `wrangler deploy` can create it |
+| `billing-check.sh all` | Weekly, from the **Billing check** job of [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), in the `infra` environment | With read-only billing credentials, fails on a payment method or paid subscription on Cloudflare, any GitHub charge this month, or an active PostHog subscription or charge. See [Billing checks](#billing-checks) |
 | `free-tiers.sh usage` | Weekly, from [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), and (planned) first in the nightly run before it deploys | Reads live counts (Pages projects, Workers, Actions cache and artifacts), writes a table to the run summary, and fails when any reaches its warning level |
 
 `free-tiers.sh` reads its free limits and budgets (`pages_projects`,
@@ -200,19 +205,58 @@ raised past the free limit; the script clamps them.
 
 1. Don't raise the budget to make it pass. Find what used the room: an
    unused Pages project, an old Worker, a cache that grew.
-2. Remove what is unused through a workflow or a PR, never by hand.
+2. Remove what is unused through a workflow or a PR, never by hand: retire
+   it in `standards/resources.toml` ([Resources](resources.md)).
 3. If the budget really is too small, propose a new one in a PR that
    updates `standards/radar/limits.toml`, and label it `needs-human`.
 
+## Billing checks
+
+Jim, 2026-11-27: "I feel like we could create some credentials with
+readonly that would let our processes audit things like this", and "the
+billing check should check every vendor in the tech radar". Every vendor
+blip in [`radar.json`](../radar/radar.json) has a `billing` entry saying how
+it is checked, and `radar.sh check` fails an Adopt or Trial vendor with no
+check (RAD-007). The table is in the
+[tech radar](tech-radar.md#billing-checks), and each weekly run's summary
+lists every vendor. Where a vendor's API shows billing, a read-only credential checks it weekly
+([`billing-check.sh`](../scripts/billing-check.sh), the **Billing check**
+job of All Free Tier Usage). Each credential can read billing but never add
+a card, change a plan or spend, and each is a secret of the `infra`
+environment, which only `main` can use, so no PR branch ever gets one. The
+script prints only counts, plan names and amounts, never card, address or
+billing-portal details. A credential that isn't made yet is a warning, and
+the run summary shows that vendor as "not checked".
+
+| Vendor | What the check proves | Credential | Made by |
+| --- | --- | --- | --- |
+| Cloudflare | No payment method (`GET /accounts/{id}/payment-methods`), and no subscription with a price or on a paid rate plan such as Workers Paid or R2 paid (`GET /accounts/{id}/subscriptions`) | `CLOUDFLARE_BILLING_READ_TOKEN`, `jimhillr-billing-read`, Billing Read only | Infra Mint |
+| GitHub | This month's billing usage nets to $0 (`GET /users/{user}/settings/billing/usage`) | `GITHUB_BILLING_READ_TOKEN`, a fine-grained token with only the Plan account permission (read) | Jim, yearly ([runbook](runbooks/billing-read-credentials.md)) |
+| PostHog | No active subscription and $0 this period (`GET /api/billing/`). Adding a card is what starts a PostHog subscription | `POSTHOG_BILLING_READ_KEY`, a personal API key with only `billing:read` | Jim, at sign-up ([runbook](runbooks/posthog-sign-up.md)) |
+
+What no API shows stays on Jim's 30-day check
+([issues/human/check-there-still-no-payment-method.md](../../issues/human/check-there-still-no-payment-method.md)):
+
+| Vendor | Why it can't be checked by API |
+| --- | --- |
+| GitHub card and Actions budget | No API shows a personal account's payment method, and the Budgets API is for organizations and enterprises only. |
+| Auth0 | The Management API has no plan, subscription or payment endpoint; plans are only on the dashboard. |
+| RapidAPI | No consumer billing API. The Zillow responses' quota headers show the plan, but polling them on a schedule would break homer's free-plan-only rule. |
+| Claude | claude.ai subscription billing has no API. |
+| Squarespace | No public API for account billing. Jim pays for several domains there (2026-11-27), so it isn't $0: the check is that only those domain renewals are billed, with nothing new. Bringing the domains into the cost framework is `issues/cost-tracking-phase-4-domains-as-costs.md`. |
+| Assess and Hold vendors (Neon, Supabase, Turso, Pulumi and the rest) | We have no account, so nothing can bill. One that moves into Trial or Adopt gets a check first (RAD-007). |
+
 ## Things only Jim can check
 
-Agents can't see billing pages. Jim checks these; open checks are
+Agents can't see these billing pages. Jim checks them; open checks are
 files in the root [issues/human/](../../issues/human/):
 
-- No payment method on the Cloudflare, PostHog, Auth0 or RapidAPI accounts,
-  and GitHub's Actions budget is $0 with "stop usage" on.
-- The Cloudflare account is on Workers Free, not Workers Paid.
+- No payment method on the Auth0 or RapidAPI accounts, only the known
+  domain renewals billed on Squarespace, no card on GitHub,
+  and GitHub's Actions budget is $0 with "stop usage" on. Cloudflare and
+  PostHog only until the Billing check shows them checked.
 - The `CLOUDFLARE_API_TOKEN` secret has no Billing permission. For the
   usage check it needs Pages read (it already has Pages edit) and Workers
-  Scripts read.
+  Scripts read. Infra Mint makes it as `jimhillr-deploy` with Workers
+  Scripts write, which the `telemetry` and `tofu_state` deploys need.
 - The RapidAPI Zillow plan is the free one, and its monthly quota.

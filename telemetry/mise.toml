@@ -1,0 +1,14 @@
+# telemetry: cloudflare-worker project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
+node = "24"
+"npm:wrangler" = "4"
+
+[env]
+# Production URL. CI shows it on the GitHub deployment and in the job summary.
+DEPLOY_URL = "https://jimhillr-telemetry.jim-hill-r.workers.dev"
+
+[task_config]
+includes = ["../standards/tasks/cloudflare-worker.toml"]

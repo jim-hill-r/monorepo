@@ -1,0 +1,10 @@
+[application]
+# Copied into the bundle's /assets/ as they are: the manifest and icons.
+asset_dir = "public"
+
+[web.app]
+# Page title, as on the live app (blue.eel.education).
+title = "Blue Eel"
+
+[web.server]
+port = 8080

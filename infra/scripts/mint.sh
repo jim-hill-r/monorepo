@@ -49,6 +49,7 @@ declare -A WHERE=(
   [CLOUDFLARE_API_TOKEN]=repo
   [CLOUDFLARE_INFRA_READ_TOKEN]=repo
   [CLOUDFLARE_INFRA_APPLY_TOKEN]=infra
+  [CLOUDFLARE_BILLING_READ_TOKEN]=infra
   [AUTH0_INFRA_READ_DOMAIN]=repo
   [AUTH0_INFRA_READ_CLIENT_ID]=repo
   [AUTH0_INFRA_READ_CLIENT_SECRET]=repo
@@ -68,12 +69,16 @@ declare -A WHERE=(
 CF_DEPLOY_PERMS=("Pages Write" "Workers Scripts Write" "D1 Write" "Account Analytics Read")
 CF_READ_PERMS=("Account Settings Read")
 CF_APPLY_PERMS=("Account Settings Write")
+# The weekly billing check (standards/scripts/billing-check.sh): reads
+# payment methods and subscriptions, and can't add a card or change a plan
+# (that is Billing Edit). In `infra`, so PR branches never get it.
+CF_BILLING_PERMS=("Billing Read")
 
 # What MINT_ROTATE=auto remakes. Never the state passphrase (it encrypts
 # state), the Android keystore (a new one can't update the installed app)
 # or TOFU_STATE_ORIGIN (not a secret).
 ROTATE_AUTO="TOFU_STATE_READ_PASSWORD TOFU_STATE_WRITE_PASSWORD CLOUDFLARE_API_TOKEN \
-CLOUDFLARE_INFRA_READ_TOKEN CLOUDFLARE_INFRA_APPLY_TOKEN AUTH0_INFRA_READ_CLIENT_SECRET AUTH0_INFRA_APPLY_CLIENT_SECRET"
+CLOUDFLARE_INFRA_READ_TOKEN CLOUDFLARE_INFRA_APPLY_TOKEN CLOUDFLARE_BILLING_READ_TOKEN AUTH0_INFRA_READ_CLIENT_SECRET AUTH0_INFRA_APPLY_CLIENT_SECRET"
 
 # Minted Cloudflare tokens expire this many days after each mint, so a missed
 # rotation fails closed; the quarterly rotation renews them well before.
@@ -93,7 +98,7 @@ ready() {
   done
   if [ -n "$missing" ]; then
     echo "mint.sh: the bootstrap credentials are not set up yet; missing:$missing"
-    echo "  (issues/human/infra-credentials-environment.md and github-app-infra-credentials.md)"
+    echo "  (standards/docs/runbooks/infra-credentials-environment.md and github-app-infra.md)"
     return 3
   fi
 }
@@ -222,6 +227,7 @@ mint_cloudflare() {
   cf_token CLOUDFLARE_API_TOKEN jimhillr-deploy "${CF_DEPLOY_PERMS[@]}"
   cf_token CLOUDFLARE_INFRA_READ_TOKEN jimhillr-infra-read "${CF_READ_PERMS[@]}"
   cf_token CLOUDFLARE_INFRA_APPLY_TOKEN jimhillr-infra-apply "${CF_APPLY_PERMS[@]}"
+  cf_token CLOUDFLARE_BILLING_READ_TOKEN jimhillr-billing-read "${CF_BILLING_PERMS[@]}"
 }
 
 mint_origin() {

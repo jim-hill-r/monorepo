@@ -4,3 +4,5 @@ playwright-report
 test-results
 node_modules
 dist/
+# The root .gitignore ignores public/; this one holds the Pages _headers file.
+!/public/

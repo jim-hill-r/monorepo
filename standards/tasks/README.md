@@ -20,6 +20,7 @@ file from here, so every project answers the same commands:
 | `perseus-web.toml` | Perseus / Sycamore sites |
 | `bevy-game.toml` | Bevy games |
 | `cloudflare-pages.toml` | Cloudflare Pages deploy projects |
+| `cloudflare-worker.toml` | Rust Cloudflare Workers (workers-rs) |
 | `cloudflare-worker-assets.toml` | Rust Workers that serve a web app as static assets and run only for `/api/*` |
 | `docs.toml` | Docs-only projects |
 

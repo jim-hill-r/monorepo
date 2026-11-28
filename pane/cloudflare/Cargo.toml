@@ -1,5 +1,5 @@
 [package]
-name = "pane_worker"
+name = "pane_cloudflare"
 description = "pane's Cloudflare Worker: serves the Dioxus build as static assets and runs only for /api/*"
 version = "0.1.0"
 edition = "2024"

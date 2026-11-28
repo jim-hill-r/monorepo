@@ -325,7 +325,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pane_worker"
+name = "pane_cloudflare"
 version = "0.1.0"
 dependencies = [
  "toml",

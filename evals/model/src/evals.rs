@@ -84,6 +84,15 @@ pub enum Kind {
         header: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         body_contains: Option<String>,
+        /// Text one of the page's own scripts, stylesheets or wasm modules
+        /// must contain. Every same-origin asset the page names must also
+        /// answer 200. It checks what a client-rendered app shipped, since
+        /// its HTML is the same shell on every path.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        asset_contains: Option<String>,
+        /// The slowest acceptable response, in milliseconds.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        max_ms: Option<u64>,
     },
     /// A threshold on observability data over a window.
     Metric {
@@ -106,6 +115,10 @@ pub enum Kind {
     /// Jim checks a setting made by hand; `setting` is an `id` in
     /// `standards/settings.toml`.
     HumanCheck { setting: String },
+    /// The project's cost analysis holds: `cost check` finds nothing that
+    /// can fail in its `docs/cost.toml` (stage `ci`), and its actual usage
+    /// stays within what that file expects (stage `observe`).
+    Cost {},
 }
 
 impl Kind {
@@ -120,6 +133,7 @@ impl Kind {
             Kind::Fault { .. } => "fault",
             Kind::Judge { .. } => "judge",
             Kind::HumanCheck { .. } => "human-check",
+            Kind::Cost {} => "cost",
         }
     }
 
@@ -130,11 +144,21 @@ impl Kind {
             "playwright" => &["grep"],
             "trycmd" => &["glob"],
             "script" => &["script", "check"],
-            "http" => &["url", "path", "method", "status", "header", "body_contains"],
+            "http" => &[
+                "url",
+                "path",
+                "method",
+                "status",
+                "header",
+                "body_contains",
+                "asset_contains",
+                "max_ms",
+            ],
             "metric" => &["source", "metric", "min", "max", "window"],
             "fault" => &["fault", "grep"],
             "judge" => &["rubric"],
             "human-check" => &["setting"],
+            "cost" => &[],
             _ => return None,
         })
     }
@@ -261,7 +285,7 @@ fn check_keys(table: &toml::Table) -> Vec<ParseError> {
             .unwrap_or_default();
         let Some(kind_fields) = Kind::fields(kind) else {
             errors.push(ParseError::whole_file(format!(
-                "eval `{name}`: unknown kind `{kind}`; expected cargo, playwright, trycmd, script, http, metric, fault, judge or human-check"
+                "eval `{name}`: unknown kind `{kind}`; expected cargo, playwright, trycmd, script, http, metric, fault, judge, human-check or cost"
             )));
             continue;
         };
@@ -314,6 +338,14 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
     if eval.stages.contains(&Stage::Judge) != matches!(eval.kind, Kind::Judge { .. }) {
         problems.push("a judge eval runs in the judge stage only, and only judge evals do".into());
     }
+    if matches!(eval.kind, Kind::Cost {})
+        && eval
+            .stages
+            .iter()
+            .any(|s| !matches!(s, Stage::Ci | Stage::Observe))
+    {
+        problems.push("a cost eval runs in the ci and observe stages only".into());
+    }
 
     match &eval.kind {
         Kind::Script { script, check } => {
@@ -325,6 +357,9 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
             path,
             method,
             status,
+            header,
+            asset_contains,
+            max_ms,
             ..
         } => {
             match (url, path) {
@@ -349,6 +384,19 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
                 && !(100..=599).contains(status)
             {
                 problems.push(format!("status {status} is not an HTTP status"));
+            }
+            if let Some(header) = header
+                && !header
+                    .split_once(':')
+                    .is_some_and(|(name, _)| !name.trim().is_empty())
+            {
+                problems.push(format!("header `{header}` must be \"name: value\""));
+            }
+            if *max_ms == Some(0) {
+                problems.push("max_ms must be more than 0".into());
+            }
+            if asset_contains.as_deref() == Some("") {
+                problems.push("asset_contains must not be empty".into());
             }
         }
         Kind::Metric {
@@ -387,7 +435,7 @@ fn check_eval(eval: &Eval, prefix: &str) -> Vec<String> {
                 ));
             }
         }
-        Kind::Cargo { .. } | Kind::Playwright { .. } | Kind::Trycmd { .. } => {}
+        Kind::Cargo { .. } | Kind::Playwright { .. } | Kind::Trycmd { .. } | Kind::Cost {} => {}
     }
     problems
 }
@@ -647,6 +695,30 @@ body_contains = "Cookbook"
     }
 
     #[test]
+    fn checks_cost_evals() {
+        let file = match parse_evals(&one_eval("stages = [\"ci\", \"observe\"]\nkind = \"cost\"")) {
+            Ok(file) => file,
+            Err(e) => panic!("{e:?}"),
+        };
+        assert_eq!(file.evals[0].kind, Kind::Cost {});
+        assert_eq!(file.evals[0].kind.name(), "cost");
+        assert!(file.evals[0].runs_in_production());
+        assert_eq!(file.evals[0].test_selector(), None);
+
+        for stages in ["\"cd\"", "\"ci\", \"chaos\""] {
+            assert_eq!(
+                errors(&one_eval(&format!("stages = [{stages}]\nkind = \"cost\""))),
+                vec!["eval `e`: a cost eval runs in the ci and observe stages only"],
+                "{stages}"
+            );
+        }
+        assert_eq!(
+            errors(&one_eval("stages = [\"ci\"]\nkind = \"cost\"\nmax = 0")),
+            vec!["eval `e`: `max` is not a field of a cost eval"]
+        );
+    }
+
+    #[test]
     fn checks_http_evals() {
         let cases = [
             ("", "needs url or path"),
@@ -655,6 +727,9 @@ body_contains = "Cookbook"
             ("path = \"about\"", "path must start with /"),
             ("path = \"/\"\nmethod = \"get\"", "uppercase"),
             ("path = \"/\"\nstatus = 999", "not an HTTP status"),
+            ("path = \"/\"\nheader = \"text/html\"", "\"name: value\""),
+            ("path = \"/\"\nmax_ms = 0", "max_ms must be more than 0"),
+            ("path = \"/\"\nasset_contains = \"\"", "must not be empty"),
         ];
         for (fields, expected) in cases {
             let found = errors(&one_eval(&format!(

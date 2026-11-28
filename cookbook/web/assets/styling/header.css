@@ -4,13 +4,6 @@
   --header-height: 60px;
 }
 
-/* Mobile responsive variables */
-@media (max-width: 768px) {
-  :root {
-    --header-height: 90px;
-  }
-}
-
 html {
   margin: 0;
   padding: 0;
@@ -178,14 +171,12 @@ body {
   font-size: var(--ds-text-sm);
 }
 
-/* Mobile responsive design */
+/* Mobile responsive design: the header stays one row, and its links move
+ * into the sidebar (.sidebar-nav in sidebar.css). */
 @media (max-width: 768px) {
   #header {
     padding: var(--ds-space-2) var(--ds-space-4);
-    height: auto;
-    min-height: var(--header-height);
-    max-height: none;
-    flex-wrap: wrap;
+    gap: var(--ds-space-3);
   }
 
   .header-left {
@@ -197,16 +188,7 @@ body {
   }
 
   .header-nav {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    gap: var(--ds-space-2);
-    margin-top: var(--ds-space-2);
-  }
-
-  .header-nav a {
-    padding: var(--ds-space-1) var(--ds-space-3);
-    font-size: var(--ds-text-sm);
+    display: none;
   }
 
   .header-auth {

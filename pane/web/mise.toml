@@ -37,9 +37,17 @@ description = "Build the repo snapshot and review decks into public/, then the r
 # writes public/data/snapshot.json, which dx copies into the bundle as
 # /data/snapshot.json; the reviews task adds the decks under public/reviews/.
 # public/ is gitignored, so neither is ever committed (standards/docs/mise.md:
-# no committed build artifacts).
+# no committed build artifacts). The Money page splits shared costs by the
+# PRs merged each month, read from git, so a shallow CI checkout fetches
+# its history first; without it the page says the split is unavailable.
+# The repo audit runs next and its output goes to target/audit.txt for the
+# Standards light. A failing audit is data for pane, not a failed release,
+# so its exit code is ignored; the snapshot treats output without the
+# closing `audit:` line as not run.
 run = [
-  "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json",
+  "if [ \"$(git rev-parse --is-shallow-repository)\" = true ]; then git fetch --quiet --unshallow origin || echo 'pane: no git history; shared costs are not split'; fi",
+  "mkdir -p target && bash \"$(git rev-parse --show-toplevel)/standards/scripts/audit.sh\" > target/audit.txt 2>&1 || true",
+  "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json --audit target/audit.txt",
   "mise run reviews",
   "dx bundle --platform web --release --out-dir dist --package $DX_PACKAGE",
 ]

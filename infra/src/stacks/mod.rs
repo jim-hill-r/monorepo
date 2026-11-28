@@ -5,6 +5,7 @@
 
 pub mod auth0;
 pub mod cloudflare;
+pub mod github;
 
 use crate::constructs::{Auth0App, WebApp};
 use crate::synth::Synth;
@@ -33,13 +34,20 @@ pub fn web_apps() -> Vec<WebApp> {
         // workers.dev (pane/cloudflare), where Web Analytics can't be
         // auto-installed, and it sits behind Cloudflare Access for one person.
         WebApp::new("sparkhill").web_analytics(),
+        // Blue Eel. Web Analytics isn't on yet; that adds a Cloudflare
+        // resource, so it waits for its own PR.
+        WebApp::new("sparkhill_webapp"),
     ]
 }
 
 /// Every stack, synthesized.
 pub fn all() -> anyhow::Result<Vec<Synth>> {
     let apps = web_apps();
-    Ok(vec![auth0::synth(&apps)?, cloudflare::synth(&apps)?])
+    Ok(vec![
+        auth0::synth(&apps)?,
+        cloudflare::synth(&apps)?,
+        github::synth()?,
+    ])
 }
 
 #[cfg(test)]

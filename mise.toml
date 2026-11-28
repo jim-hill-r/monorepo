@@ -15,6 +15,7 @@ experimental = true
 [monorepo]
 config_roots = [
   "athenaeum",
+  "athenaeum/learning/computer_science/algorithms/neet_code_150",
   "auth_sdk",
   "bear_down",
   "bear_down/cloudflare",
@@ -24,6 +25,7 @@ config_roots = [
   "cahokia",
   "cahokia/cloudflare",
   "cahokia/web",
+  "chores",
   "controlled_chaos",
   "cookbook",
   "cookbook/cloudflare",
@@ -34,8 +36,8 @@ config_roots = [
   "evals",
   "homer",
   "infra",
+  "jimhillr",
   "luggage",
-  "monorepo",
   "my_lang",
   "pane",
   "pane/cloudflare",
@@ -50,9 +52,12 @@ config_roots = [
   "sparkhill",
   "sparkhill/cloudflare",
   "sparkhill/webapp",
+  "sparkhill/webapp_cloudflare",
   "sparkhill/website",
   "standards",
   "starcraft",
+  "telemetry",
+  "threat",
   "tofu_state",
 ]
 
@@ -90,3 +95,8 @@ run = "bash standards/scripts/setup-hooks.sh"
 description = "List the projects that publish nightly downloads to a GitHub Release (JSON array)"
 dir = "{{config_root}}"
 run = "bash standards/scripts/downloads.sh list"
+
+[tasks."pr-summary"]
+description = "Warn when a PR description (PR_BODY or stdin) lacks a section, has an unknown attention tag or a summary over its word limit (PR-001)"
+dir = "{{config_root}}"
+run = "bash standards/scripts/pr-summary-check.sh"

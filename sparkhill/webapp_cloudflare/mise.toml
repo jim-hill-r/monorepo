@@ -1,0 +1,26 @@
+# sparkhill/webapp_cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# Run with: mise run <task>
+# affected-by: ../webapp
+
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+node = "24"
+"npm:wrangler" = "4"
+
+[env]
+# Production URL. CI shows it on the GitHub deployment and in the job summary.
+DEPLOY_URL = "https://jimhillr-sparkhill-webapp.pages.dev"
+# The deploy job runs this Playwright project's @smoke tests against
+# DEPLOY_URL (standards/scripts/evals.sh smoke).
+SMOKE_DIR = "../webapp"
+
+[task_config]
+includes = ["../../standards/tasks/cloudflare-pages.toml"]
+
+[tasks.release]
+description = "Build the web app this project deploys, with its security headers"
+dir = "{{config_root}}/../webapp"
+run = [
+  "mise run release",
+  "cp \"{{config_root}}/_headers\" dist/public/_headers",
+]

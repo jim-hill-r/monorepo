@@ -1,6 +1,6 @@
 # controlled_chaos: cost analysis. Format and rules: standards/docs/cost.md
 reviewed = "2026-11-26"
-summary = "Bevy card game with a web build on Cloudflare Pages and nightly desktop downloads on a GitHub Release. $0 a month."
+summary = "Bevy card game with a web build on Cloudflare Pages and nightly desktop downloads on a GitHub Release. $0 a month. The web build's gameplay events go to the `telemetry` Worker, whose usage is counted in telemetry/docs/cost.toml."
 
 [[service]]
 blip = "Cloudflare Pages"

@@ -1,5 +1,7 @@
 # controlled_chaos
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/controlled_chaos.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A digital tabletop card game built with [Bevy](https://bevyengine.org/), featuring turn-based card game mechanics and deck-building gameplay.
 
 ## Overview
@@ -48,11 +50,45 @@ The start screen has two settings:
 
 - **Colours: Dark / Light** switches the colour scheme. Dark is the default.
 - **Accessible: Off / On** turns on accessible mode: WCAG AAA contrast,
-  text one step larger, and the design system's accessible palette.
+  text one step larger, and the design system's accessible palette. It
+  starts on when nothing is saved yet and the browser asks for more
+  contrast (`prefers-contrast: more`). Bevy doesn't expose that setting on
+  desktop or Android, so there it starts off.
 
-The choice lasts until the game closes. `src/theme.rs` holds it
-(`GameTheme`) and has the tests that check every button and text colour
-against its background in all four combinations.
+The game remembers the choice between launches, in a few lines of TOML
+kept on the player's device, never on a server:
+
+| Platform | Where |
+| --- | --- |
+| Web | the browser's `localStorage`, key `controlled_chaos.settings` |
+| macOS | `~/Library/Application Support/controlled_chaos/settings.toml` |
+| Linux | `$XDG_CONFIG_HOME/controlled_chaos/settings.toml` (or `~/.config/...`) |
+| Windows | `%APPDATA%\controlled_chaos\settings.toml` |
+| Android | `settings.toml` in the app's internal data directory |
+
+Delete the file (or clear the site's data) to go back to the defaults. A
+setting the game can't read keeps its default, so a damaged file never
+stops the game from starting.
+
+`src/theme.rs` holds the choice (`GameTheme`) and has the tests that check
+every button and text colour against its background in all four
+combinations. `src/settings.rs` loads and saves it.
+
+## Gameplay events
+
+The web build reports a few gameplay events to the repo's
+[`telemetry` Worker](../telemetry/README.md), so we can see whether people
+play and where the game breaks: `session_start` when the game loads,
+`game_start` when Start Game is pressed, `round` every fifth round,
+`game_over` with the last round, `quit` with the round reached when the
+page is closed, and an `error` event with the message when the game
+panics. They go out with `navigator.sendBeacon`, tagged with the commit
+the build came from.
+
+Nothing identifies the player: no ids, cookies or storage. The Worker
+drops events from browsers that send Do Not Track or Global Privacy
+Control, and never stores IP addresses. The desktop and Android builds
+send nothing. `src/telemetry.rs` has the events and their tests.
 
 ## Development
 
@@ -63,6 +99,44 @@ cargo run --features bevy/dynamic_linking
 # Run tests
 cargo test
 ```
+
+### Scripted runs
+
+`mise run smoke` plays [`smoke/smoke.script`](smoke/smoke.script) (one
+round against the CPU, from the start screen) in the debug build under a
+virtual display, with no one at the keyboard. It saves a screenshot at each
+named step and a video of the run (`smoke.mp4`, when `ffmpeg` is
+installed) in `target/smoke/`, and fails when a check in the script fails
+or the game panics. It needs `xvfb-run` (Linux); play another script with
+`bash smoke/run.sh <file>`.
+
+A scripted run is the same every time: each frame lasts exactly 1/60 s, the
+deck is shuffled with the script's `seed`, and the player's saved display
+settings are neither read nor changed. To run a script in a real window:
+
+```bash
+cargo run -- --script smoke/smoke.script --screenshots target/smoke
+```
+
+A script has one step per line, `<frame> <command> [argument]`:
+
+| Command | What it does |
+| --- | --- |
+| `seed <n>` | Shuffles the deck with seed `n` (first line only; default 0) |
+| `start` | Presses Start Game |
+| `advance` | Presses **Space**: draws a card, or ends the turn |
+| `pick <1-8>` | Presses that digit: attacks or defends with that card |
+| `screenshot <name>` | Saves the window as `<name>.png` |
+| `expect state splash\|in-game` | Fails the run unless the game is on that screen |
+| `expect phase draw\|play\|battle\|end` | Fails the run unless it is that phase |
+| `expect round <n>` | Fails the run unless it is round `n` (one per turn) |
+| `exit` | Ends the script (optional after the last step) |
+
+The game exits with 0 when every check passes, 1 when one fails or a
+screenshot can't be saved, 2 for a bad command line or script, and 101 on a
+panic. `src/script.rs` runs the script and its tests play `smoke.script`
+headless on every `cargo test`, so a rule change that breaks the smoke run
+fails CI.
 
 ### Screenshots of the web build on phone-sized screens
 

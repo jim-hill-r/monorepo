@@ -1,0 +1,16 @@
+# Cloudflare Pages response headers (https://developers.cloudflare.com/pages/configuration/headers/).
+# release (mise.toml) copies it into ../webapp/dist/public, the Pages build
+# output. It can't live in ../webapp/public: dx 0.6 copies that folder to
+# /assets/, where Pages doesn't read it.
+# script-src needs 'unsafe-inline': dx 0.6 starts the app with an inline
+# <script> whose file names change every build (dx 0.7 uses a script file,
+# so drop it when the web app moves to Dioxus 0.7). It also needs 'unsafe-eval': Dioxus's document::eval, which the practice
+# canvas and the saved progress use (../webapp/src/components/practice.rs,
+# ../webapp/src/components/settings_panel.rs), runs its JavaScript with new Function(). Everything
+# else is same-origin only.
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

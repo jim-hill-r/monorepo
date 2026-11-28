@@ -1,2 +1,3 @@
-# The sample rooting.json is committed; the root .gitignore ignores public/ elsewhere.
-!/public/
+node_modules/
+test-results/
+playwright-report/

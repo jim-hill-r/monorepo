@@ -1,5 +1,7 @@
 # infra
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/infra.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 Infrastructure as code for the monorepo: the settings we used to click
 through vendor dashboards (Auth0 applications first, then GitHub and
 Cloudflare) written as Rust, in the style of the AWS CDK. It is named for
@@ -26,6 +28,7 @@ How it works:
 | --- | --- | --- |
 | `auth0` | The cookbook and cahokia Auth0 applications: callback, web origin and logout URLs for production, Pages previews (`https://*.<pages project>.pages.dev`) and localhost, and the Single Page Application type | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` from the environment |
 | `cloudflare` | Web Analytics on each production Pages site (`cloudflare_web_analytics_site`, beacon auto-installed); wrangler still creates and deploys the Pages projects | `CLOUDFLARE_API_TOKEN` and `TF_VAR_cloudflare_account_id` from the environment |
+| `github` | This repository (imported, with every setting written out), secret scanning and push protection, Dependabot alerts and security updates, and a `CI` ruleset that requires `CI result` and `Human review` from GitHub Actions on `main`. Never the `Default` ruleset (provider 6.13.0 can't express its unattributed-changes rule, so an update would drop it), any bypass list or the `infra-credentials` environment | `GITHUB_TOKEN` from the environment: a token minted per run from the read-only infra GitHub App for plans, and from the infra GitHub App for applies |
 
 Every resource that already exists is brought in with an `import` block, and
 every resource has `prevent_destroy`: IaC never deletes anything (decision
@@ -66,8 +69,17 @@ counts as a credential until it is added there.
 
 ## Workflows
 
+The `github` stack has no everyday apply tier: GitHub can't separate its
+settings from rulesets and secrets, so every change it makes is a
+credential change (decision 0010) and applies only in `infra-credentials`.
+Its plans mint a token from the read-only infra GitHub App
+(`GH_INFRA_READ_APP_ID` variable, `GH_INFRA_READ_APP_KEY` repository
+secret, [runbook](../standards/docs/runbooks/github-app-infra-read.md)),
+and its apply mints one from the infra GitHub App, whose key is only in
+`infra-credentials`.
+
 `scripts/tofu.sh` does the work; the workflows only pass it secrets
-(tested by `tests/tofu_sh.test.sh` and `monorepo/workflow_tests`).
+(tested by `tests/tofu_sh.test.sh` and `jimhillr/workflow_tests`).
 
 | Workflow | When | State password | Vendor credentials | Environment |
 | --- | --- | --- | --- | --- |
@@ -105,6 +117,7 @@ never written to git, state or a file, and no one sees it (Jim, 2026-11-27).
 | `TOFU_STATE_ORIGIN` | repository variable | the account's workers.dev subdomain |
 | `CLOUDFLARE_API_TOKEN` (`jimhillr-deploy`: Pages, Workers Scripts, D1 Write, Account Analytics Read) | repository secret | Cloudflare account-owned token |
 | `CLOUDFLARE_INFRA_READ_TOKEN` / `_APPLY_TOKEN` | repository / `infra` | Cloudflare account-owned tokens |
+| `CLOUDFLARE_BILLING_READ_TOKEN` (`jimhillr-billing-read`: Billing Read) | `infra` | Cloudflare account-owned token, for the weekly billing check |
 | `AUTH0_INFRA_READ_*` / `AUTH0_INFRA_APPLY_*` | repository / `infra` | Auth0 Machine to Machine apps `infra-read` and `infra-apply` |
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository secrets | `keytool`, in the job |
 
@@ -112,11 +125,27 @@ It makes only what is missing, so it is safe to re-run; the `rotate` input
 names secrets to remake, and `auto` remakes the quarterly set. A scheduled
 run does that on the 1st of January, April, July and October, after Jim
 approves it, and minted Cloudflare tokens expire 180 days after each mint
-([rotation plan](../standards/docs/secret-rotation.md)). The state passphrase is never rotated this way,
-since it encrypts state. When the passwords or the deploy token change, it
+([rotation plan](../standards/docs/secret-rotation.md)). The state passphrase is not rotated this way
+yet; see [Rotating the state passphrase](#rotating-the-state-passphrase). When the passwords or the deploy token change, it
 queues **Deploy tofu_state**. A person makes only the bootstrap credentials:
-`issues/human/infra-credentials-environment.md`. Tested by
+`standards/docs/runbooks/infra-credentials-environment.md`. Tested by
 `tests/mint_sh.test.sh`.
+
+## Rotating the state passphrase
+
+OpenTofu keeps each key's PBKDF2 salt in the state under the key
+provider's name, so a new passphrase needs a new name. The passphrase
+therefore has generations: `TOFU_STATE_KEY_GEN` (default 1) names the
+current one. Generation 1 is the `state` key in the committed stacks; from
+generation 2 on, `scripts/tofu.sh` passes `infra encryption <gen>` in
+`TF_ENCRYPTION`, which encrypts under `gen_<n>` and falls back to the
+previous generation's key with `TOFU_STATE_PASSPHRASE_OLD`. A no-op apply
+doesn't rewrite state, so `tofu.sh rekey <stack>` re-encrypts it (`state
+pull | state push`, never touching disk) and skips a stack already on the
+current key. `opentofu_rotates_the_passphrase` in `src/synth.rs` runs two
+rotations with real OpenTofu. Wiring this into Infra Mint and the
+workflows is `issues/iac-rotate-state-passphrase.md`; until then the
+passphrase is rotated only after a leak, by hand.
 
 ## Changing a setting
 

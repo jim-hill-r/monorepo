@@ -1,7 +1,9 @@
 use crate::Route;
 use dioxus::prelude::*;
 
-/// Home page - matches blue.eel.education's opening screen
+/// Home page - matches blue.eel.education's opening screen. The learner's
+/// name, the sequence and the technique are in the settings panel
+/// (`components/settings_panel.rs`), as on the live app.
 #[component]
 pub fn Home() -> Element {
     rsx! {

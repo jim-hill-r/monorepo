@@ -47,7 +47,7 @@ which writes `build/worker/`). Both outputs are gitignored.
 `mise run ci` runs the format check, clippy natively and for wasm, the wasm
 build, `cargo test` (the routes, and `tests/integration_tests.rs`, which
 checks `wrangler.toml` stays a free-plan Worker with static assets) and
-[`tests/e2e.sh`](tests/e2e.sh). The end-to-end test builds the Worker, serves
+[`tests/e2e.rs`](tests/e2e.rs). The end-to-end test builds the Worker, serves
 it with `wrangler dev` over a stand-in assets folder, and checks that pages,
 data and client-side routes come from the assets and only `/api/*` reaches
 the Worker.

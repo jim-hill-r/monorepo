@@ -32,6 +32,8 @@ requirement = "PANE-001"
 stages = ["cd"]
 kind = "http"
 path = "/"
+asset_contains = "Human issues"
+description = "The app shell loads, and the bundle it ships has the Today page's Human issues list."
 
 # PANE-002: Pane shows the repo as it is on main
 
@@ -173,8 +175,48 @@ stages = ["ci"]
 kind = "playwright"
 description = "Not yet checked at phone width: no test sets a 375 px viewport."
 
-# PANE-007, PANE-009 and PANE-010 have no evals yet: they come with the
-# review dashboard plan's phases 3 to 7.
+# PANE-007 and PANE-009 have no evals yet: they come with the review
+# dashboard plan's phases 3 to 5.
+
+# PANE-010: Each project's revenue and cost is shown by month (phase 7).
+
+[[eval]]
+id = "cost-files-in-snapshot"
+requirement = "PANE-010"
+stages = ["ci"]
+kind = "cargo"
+filter = "reads_cost_files_budgets_and_limits"
+
+[[eval]]
+id = "shared-costs-split-by-month"
+requirement = "PANE-010"
+stages = ["ci"]
+kind = "cargo"
+filter = "history_splits_each_month_by_its_merged_prs"
+
+[[eval]]
+id = "money-links-to-source-lines"
+requirement = "PANE-010"
+stages = ["ci"]
+kind = "cargo"
+filter = "numbers_link_to_their_source_lines"
+
+[[eval]]
+id = "money-page"
+requirement = "PANE-010"
+stages = ["ci"]
+kind = "playwright"
+description = "The Money page lists this month, 12 months of net and the budgets; a Project page shows its money."
+
+[[eval]]
+id = "money-page-live"
+requirement = "PANE-010"
+stages = ["cd"]
+kind = "http"
+path = "/money"
+asset_contains = "Net, last 12 months"
+description = "The bundle pane ships has the Money page."
+
 
 # PANE-008: Executive reviews are read in pane (phase 2).
 
@@ -220,6 +262,17 @@ requirement = "PANE-008"
 stages = ["cd"]
 kind = "http"
 path = "/reviews"
+asset_contains = "The project that has gone longest without a review goes next."
+description = "The app shell loads, and the bundle it ships has the Reviews page."
+
+[[eval]]
+id = "snapshot-reviews-live"
+requirement = "PANE-008"
+stages = ["cd"]
+kind = "http"
+description = "The live snapshot lists the review rotation the Reviews page reads."
+path = "/data/snapshot.json"
+body_contains = "\"path\": \"docs/reviews/2026-11-25-cookbook/deck.md\""
 
 [[eval]]
 id = "review-deck-html-live"
@@ -238,3 +291,87 @@ kind = "http"
 description = "pane's release builds each review deck to a PDF under /reviews/<folder>/."
 path = "/reviews/2026-11-25-cookbook/deck.pdf"
 header = "content-type: application/pdf"
+body_contains = "%PDF"
+
+# PANE-011: Jim can approve the waiting pull requests in a row
+
+[[eval]]
+id = "queue-build"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "builds_the_queue_from_pulls_and_the_ready_search"
+
+[[eval]]
+id = "queue-summary"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "summary_skips_attribution_and_keeps_link_text"
+
+[[eval]]
+id = "queue-stacks"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "stacked_prs_group_into_one_stack"
+
+[[eval]]
+id = "approve-page"
+requirement = "PANE-011"
+stages = ["ci"]
+kind = "playwright"
+description = "The Approve page lists green PRs with summaries, badges, approve links and stacks, and says when GitHub refuses."
+
+[[eval]]
+id = "approve-page-live"
+requirement = "PANE-011"
+stages = ["cd"]
+kind = "http"
+path = "/approve"
+
+# PANE-012: Jim reviews every merged pull request after the fact
+
+[[eval]]
+id = "acks-unacknowledged"
+requirement = "PANE-012"
+stages = ["ci"]
+kind = "cargo"
+filter = "lists_unacknowledged_merged_prs_newest_first"
+
+[[eval]]
+id = "acks-flag"
+requirement = "PANE-012"
+stages = ["ci"]
+kind = "cargo"
+filter = "flag_links_a_prefilled_issue_file_in_the_project"
+
+[[eval]]
+id = "acknowledge-page"
+requirement = "PANE-012"
+stages = ["ci"]
+kind = "playwright"
+description = "Merged PRs are listed, acknowledged (kept across reloads) and flagged with a prefilled issue file."
+
+[[eval]]
+id = "acknowledge-page-live"
+requirement = "PANE-012"
+stages = ["cd"]
+kind = "http"
+path = "/acknowledge"
+
+# PANE-013: Project money adds up to the totals (decision 0016).
+
+[[eval]]
+id = "money-attribution-adds-up"
+requirement = "PANE-013"
+stages = ["ci"]
+kind = "cargo"
+filter = "project_money_adds_up_to_the_month_totals"
+
+[[eval]]
+id = "money-attribution-gaps"
+requirement = "PANE-013"
+stages = ["ci"]
+kind = "cargo"
+filter = "attribution_gaps_name_every_mismatch"

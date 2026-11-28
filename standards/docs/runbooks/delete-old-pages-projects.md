@@ -23,7 +23,7 @@ Agents also have no Cloudflare write token for it.
 ## Before you start
 
 - The new sites are live: `jimhillr-cahokia.pages.dev`,
-  `jimhillr-pane.pages.dev`, `jimhillr-controlled-chaos.pages.dev`.
+  pane's Worker (below), `jimhillr-controlled-chaos.pages.dev`.
 - No Auth0 application lists a URL on the old domain. For
   `cahokia-web.pages.dev` that means the `auth0` stack has been applied
   once (it sets Cahokia's URLs to exactly the `jimhillr-cahokia` ones), or
@@ -53,10 +53,12 @@ right one.
    `https://jimhillr-pane.jim-hill-r.workers.dev/api/health`. Stop unless
    the first shows pane and the second shows `{"status":"ok"}`.
 2. dash.cloudflare.com > Workers & Pages. Open the `jimhillr-pane` entry
-   marked **Pages** (its URL is `jimhillr-pane.pages.dev`), not the Worker.
+   marked **Pages** (its URL ends in `.pages.dev`; the full address is in
+   `standards/resources.toml`), not the Worker.
    Settings > Delete project, and type its name to confirm.
 3. Verify: the Worker `jimhillr-pane` is still listed and its URL still
-   loads; `jimhillr-pane.pages.dev` no longer does.
+   loads; the Pages address no longer does. Then set `deleted` on its
+   `[[retired]]` entry in `standards/resources.toml`.
 
 ## Where secrets go
 

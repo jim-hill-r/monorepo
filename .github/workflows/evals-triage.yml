@@ -1,0 +1,58 @@
+---
+# Each day, after Nightly CI and Nightly CD have stored their eval results:
+# file the work the verdicts call for. For every requirement that is not
+# met, at risk, or a `must` with no production evidence, and that no open
+# issue file names, `evals triage` writes a FIX or TODO issue file
+# (standards/docs/evals.md, "Triage"). When there are any, they are
+# committed and force-pushed to the evals-triage branch, and PR triage opens
+# the pull request from it, so its CI runs as usual. On a quiet day nothing
+# is pushed and no Claude session runs: it costs a minute of Actions on a
+# public repo, which is free.
+#
+# The only job with contents: write; its only pushes are to evals-triage
+# (SEC-007), never main. The steps are in standards/scripts/evals.sh.
+name: Evals Triage
+
+'on':
+  schedule:
+    # 4:30 AM Pacific Time (12:30 UTC), after Nightly CI (10:00) and
+    # Nightly CD (10:30) have stored their results.
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only list what it would file
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-triage
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: evals
+          key: evals-audit
+          save-if: false
+
+      - name: File issues for requirements that are not green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          # shellcheck disable=SC2086 # DRY_RUN is empty or one flag
+          bash standards/scripts/evals.sh triage $DRY_RUN

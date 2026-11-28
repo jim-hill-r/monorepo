@@ -1,0 +1,26 @@
+# Response headers for pane's static files (Cloudflare Pages, and Workers
+# static assets once pane is a Worker; both read this file:
+# https://developers.cloudflare.com/workers/static-assets/headers/).
+# dx bundle copies public/ into dist/public. The rest of public/ is built by
+# release and gitignored; this file is committed with `git add -f`.
+#
+# script-src needs 'unsafe-eval': Dioxus's document::eval and
+# document::Title (src/main.rs) run their JavaScript with new Function().
+# img-src allows any https image, since project docs rendered from Markdown
+# show badges and pictures from other hosts. Pane frames its own review
+# decks, so frames are same-origin only rather than none. connect-src allows
+# api.github.com for the Approve page, which reads public pull request data
+# without a token (decision 0014).
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com https://api.github.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# The review decks are Marp HTML (standards/scripts/review-decks.sh): inline
+# scripts and styles, and emoji images from jsDelivr. Replace the app's CSP
+# rather than add a second one, which browsers would also enforce.
+/reviews/*
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: https://cdn.jsdelivr.net; font-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'

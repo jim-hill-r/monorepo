@@ -61,22 +61,25 @@ jobs:
       projects: ${{ steps.urls.outputs.projects || steps.affected.outputs.projects }}
       deploy_urls: ${{ steps.urls.outputs.deploy_urls }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
           ref: ${{ inputs.ref }}
 
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
           install: false
 
-      # The audit builds the evals CLI (`evals check`) and the cost CLI
-      # (`cost check`). Cache those builds, saved from main only.
-      - uses: Swatinem/rust-cache@v2
+      # The audit builds the evals CLI (`evals check`), the cost CLI
+      # (`cost check`) and chores (`chores user-docs`). Cache those builds,
+      # saved from main only.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: |
             evals
             cost
+            chores
           key: audit
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -162,16 +165,17 @@ jobs:
       run:
         working-directory: ${{ matrix.project }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ inputs.ref }}
 
-      - uses: jdx/mise-action@v5
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
           working_directory: ${{ matrix.project }}
 
       # evals/ is cached too: `mise run evals` builds the evals CLI there.
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: |
             ${{ matrix.project }}
@@ -202,14 +206,15 @@ jobs:
 
       - name: Upload eval results
         if: ${{ !cancelled() && steps.evals.outputs.artifact }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.evals.outputs.artifact }}
           path: ${{ runner.temp }}/evals-results.jsonl
-          retention-days: 14
+          retention-days: 7  # read by evals-store.yml in the same run (RES-003)
           if-no-files-found: ignore
 
       - name: mise run deploy
+        id: deploy
         if: inputs.deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -249,3 +254,58 @@ jobs:
             [ -z "$version" ] || echo "| This deployment | $version |"
             echo "| Commit | \`$(git rev-parse HEAD)\` |"
           } >> "$GITHUB_STEP_SUMMARY"
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+
+      # Stage cd: right after a deploy, run the project's `@smoke`
+      # Playwright tests against the live site (`evals.sh smoke`;
+      # nothing when it sets no SMOKE_DIR), check the live site (the `http`
+      # evals, joined to DEPLOY_URL) and add the table to the job summary
+      # (standards/docs/evals.md). A failed eval of a `must` requirement
+      # fails the job, so a broken deploy shows red on main; the site is
+      # already live, so roll back by running Push Main CI/CD by hand with
+      # the project and a good ref (standards/docs/mise.md).
+      # Exit status 2 is a bug in the engine, which warns and never fails.
+      - name: cd evals
+        id: cd-evals
+        if: ${{ !cancelled() && steps.deploy.outputs.deployed == 'true' }}
+        env:
+          EVALS_STAGE: cd
+          EVALS_RESULTS: ${{ runner.temp }}/cd/evals-results.jsonl
+          DEPLOY_URL: ${{ fromJSON(needs.plan.outputs.deploy_urls)[matrix.project] }}
+          PROJECT: ${{ matrix.project }}
+        run: |
+          echo "artifact=evals-results-cd-${PROJECT//\//-}" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/cd"
+          # mise exec loads SMOKE_DIR from the [env] of the project's mise.toml.
+          # A failing smoke test only warns here: the evals below turn it
+          # into a failed requirement, which fails the job when it's a must.
+          mise exec -- bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" smoke \
+            || echo "::warning::smoke tests failed; see the log and the smoke-${PROJECT//\/-} artifact"
+          status=0
+          bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" run || status=$?
+          bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" publish || true
+          if [ "$status" -eq 2 ]; then
+            echo "::warning::evals run failed (exit 2); see the log"
+            exit 0
+          fi
+          exit "$status"
+
+      - name: Upload cd eval results
+        if: ${{ !cancelled() && steps.cd-evals.outputs.artifact }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.cd-evals.outputs.artifact }}
+          path: ${{ runner.temp }}/cd/evals-results.jsonl
+          retention-days: 7  # read by evals-store.yml in the same run (RES-003)
+          if-no-files-found: ignore
+
+      # The smoke run's JSON report, and each test's video, screenshot and
+      # trace (open a trace at https://trace.playwright.dev).
+      - name: Upload smoke report
+        if: ${{ !cancelled() && steps.cd-evals.outputs.artifact }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-${{ steps.cd-evals.outputs.slug }}
+          path: ${{ matrix.project }}/target/evals-reports/cd/
+          retention-days: 7  # evidence for the deploy just made (RES-003)
+          if-no-files-found: ignore

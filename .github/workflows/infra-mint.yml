@@ -1,6 +1,6 @@
 # Mint the infra tokens and passwords into GitHub secrets (Jim, 2026-11-27).
 # A person makes only the bootstrap credentials in `infra-credentials`
-# (issues/human/infra-credentials-environment.md); this workflow makes
+# (standards/docs/runbooks/infra-credentials-environment.md); this workflow makes
 # everything else, so no one makes or sees those values, and none is ever in
 # git or OpenTofu state. Run it by hand; it runs in `infra-credentials`, so
 # it waits for Jim's approval every time (decision 0010).
@@ -52,7 +52,16 @@ jobs:
     outputs:
       deploy: ${{ steps.mint.outputs.deploy }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Decision 0010: never mint unless this environment really waited for
+      # Jim. GitHub runs the job anyway when no reviewer is saved.
+      - name: Stop unless infra-credentials needs an approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash infra/scripts/env-gate.sh infra-credentials
 
       - name: Stop when the setup isn't done
         env:
@@ -60,13 +69,13 @@ jobs:
           APP_KEY: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}
         run: |
           if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
-            echo "::error::the infra GitHub App isn't set up (issues/human/github-app-infra-credentials.md)"
+            echo "::error::the infra GitHub App isn't set up (standards/docs/runbooks/github-app-infra.md)"
             exit 1
           fi
 
       - name: GitHub App token
         id: app
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           app-id: ${{ vars.GH_INFRA_CREDENTIALS_APP_ID }}
           private-key: ${{ secrets.GH_INFRA_CREDENTIALS_APP_KEY }}

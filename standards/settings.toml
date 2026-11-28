@@ -31,7 +31,7 @@ every = "30d"
 id = "claude-scheduled-tasks"
 vendor = "Claude"
 where = "claude.ai > the Monorepo project > Scheduled tasks"
-expect = "PR triage (7:50, 12:50 and 17:50 New York), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
+expect = "PR triage (7:50, 12:50 and 17:50 New York), Credit window check (hourly), Weekly human issues digest (Mondays) and Weekly deep project review are on, and each ran in the last week."
 why = "PRs stop merging and human tasks stop reaching Jim when a task is paused or failing."
 every = "30d"
 
@@ -93,6 +93,14 @@ expect = "The CLOUDFLARE_ACCOUNT_ID repo secret exists."
 why = "Every Cloudflare Pages deploy uses it."
 every = "90d"
 
+[[setting]]
+id = "github-secret-android-keystore"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Secrets and variables > Actions"
+expect = "The ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD repo secrets exist, and no copy of the keystore is in the repo or anywhere public."
+why = "nightly-downloads.yml signs controlled_chaos's Android APK with them; a lost key means testers must reinstall, a leaked one lets anyone sign over our app."
+every = "180d"
+
 # Cloudflare.
 
 [[setting]]
@@ -106,16 +114,24 @@ every = "90d"
 [[setting]]
 id = "cloudflare-billing"
 vendor = "Cloudflare"
-where = "dash.cloudflare.com > Manage Account > Billing"
-expect = "The account is on the Free plan with no payment method and no paid add-on (Workers Paid, R2 paid, Images)."
-why = "Every service stays on its free plan (standards/docs/free-tiers.md)."
-every = "30d"
+where = "jimhillr/monorepo > Actions > All Free Tier Usage > the latest run's summary (dash.cloudflare.com > Manage Account > Billing if it says not checked)"
+expect = "The Billing check shows Cloudflare with no payment method and only free subscriptions; if it says not checked, the billing page shows the Free plan, no payment method and no paid add-on (Workers Paid, R2 paid, Images)."
+why = "Every service stays on its free plan (standards/docs/free-tiers.md). The weekly Billing check proves it once CLOUDFLARE_BILLING_READ_TOKEN is minted, so this is a yearly backstop."
+every = "365d"
+
+[[setting]]
+id = "cloudflare-analytics-engine"
+vendor = "Cloudflare"
+where = "dash.cloudflare.com > Workers & Pages > Analytics Engine"
+expect = "Analytics Engine is enabled, on the Free plan (turned on by Jim 2026-11-27)."
+why = "The telemetry Worker's deploy fails without it; Cloudflare has no API to turn it on (standards/docs/runbooks/cloudflare-account.md, step 5)."
+every = "90d"
 
 [[setting]]
 id = "cloudflare-infra-token-scopes"
 vendor = "Cloudflare"
 where = "dash.cloudflare.com > Manage Account > Account API Tokens, and jimhillr/monorepo > Settings > Secrets and variables > Actions"
-expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Settings Read (which Web Analytics uses); jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Settings Write. Both are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
+expect = "jimhillr-infra-read (CLOUDFLARE_INFRA_READ_TOKEN, a repository secret) has only Account Settings Read (which Web Analytics uses); jimhillr-infra-apply (CLOUDFLARE_INFRA_APPLY_TOKEN, only in the infra environment) has only Account Settings Write; jimhillr-billing-read (CLOUDFLARE_BILLING_READ_TOKEN, only in the infra environment) has only Billing Read, never Billing Edit. All three are minted by the Infra Mint workflow, limited to this account, and have no API Tokens permission."
 why = "PR plans must not be able to change anything, and OpenTofu must never be able to mint or change tokens, so no secret ever reaches state (AGENTS.md, IAC-002)."
 every = "90d"
 
@@ -179,6 +195,57 @@ expect = "The Zillow API subscription is on the free plan, with no payment metho
 why = "homer may use RapidAPI only on its free plan; it must never cost money (AGENTS.md)."
 every = "30d"
 
+[[setting]]
+id = "squarespace-billing"
+vendor = "Squarespace"
+where = "account.squarespace.com > Billing"
+expect = "Squarespace bills only the domain renewals you already pay for (Jim, 2026-11-27: several domains), with no new domain, paid plan or add-on since the last check, and each renewal's date and price match what the cost framework records once it tracks them."
+why = "Squarespace is an approved vendor with no billing API, so only you can check it. Its domains are real money outside the free-tier rule, and bringing them into the cost framework (docs/cost.toml and the radar budget) is issues/cost-tracking-phase-4-domains-as-costs.md (plan: standards/docs/plans/2026-11-cost-tracking.md, Phase 4). See standards/docs/free-tiers.md#billing-checks."
+every = "90d"
+
+# Read-only billing credentials for the weekly Billing check
+# (standards/docs/free-tiers.md#billing-checks).
+
+[[setting]]
+id = "github-reviewer-account"
+vendor = "GitHub"
+where = "jimhillr/monorepo > Settings > Collaborators and teams, and > Environments > reviewer"
+expect = "jimhillr-reviewer has the Write role (not Maintain or Admin) and two-factor sign-in on; the reviewer environment deploys from main only, has no other secrets than REVIEWER_TOKEN, and the Default ruleset still asks for one approval (standards/docs/runbooks/jimhillr-reviewer-account.md)."
+why = "jimhillr-reviewer's approvals merge agent PRs without Jim; more access, or the token usable from a PR branch, would let a PR approve itself (decision 0014)."
+every = "90d"
+
+[[setting]]
+id = "rotate-reviewer-token"
+vendor = "GitHub"
+where = "github.com/settings/personal-access-tokens (signed in as jimhillr-reviewer) > jimhillr-reviewer-approve"
+expect = "The fine-grained token jimhillr-reviewer-approve was regenerated within the last 365 days, is limited to jimhillr/monorepo with Pull requests read and write and Contents, Checks and Commit statuses read only, and the reviewer environment secret REVIEWER_TOKEN has the new value."
+why = "All Auto Review approves with it; when it expires, every agent PR waits for Jim again."
+every = "365d"
+
+[[setting]]
+id = "rotate-github-billing-read-token"
+vendor = "GitHub"
+where = "github.com/settings/personal-access-tokens > jimhillr-billing-read"
+expect = "The fine-grained token jimhillr-billing-read was regenerated within the last 365 days, has only the Plan account permission (read) and public repositories read-only, and the infra environment secret GITHUB_BILLING_READ_TOKEN has the new value (standards/docs/runbooks/billing-read-credentials.md)."
+why = "The weekly Billing check reads GitHub billing usage with it; it expires after a year, and the check then shows GitHub as failed."
+every = "365d"
+
+[[setting]]
+id = "posthog-session-replay-settings"
+vendor = "PostHog"
+where = "PostHog > Settings > Project > Session replay"
+expect = "Record user sessions is on, mask all inputs is on (and mask all text if offered), the project is on the free plan with no card, and the project token matches the phc_ key in cookbook/web/public/posthog.js (standards/docs/runbooks/posthog-sign-up.md)."
+why = "Made by hand at sign-up (2026-11-27); the sites' snippet masks inputs too, but only this check notices if recording or masking is changed in PostHog."
+every = "180d"
+
+[[setting]]
+id = "rotate-posthog-billing-read-key"
+vendor = "PostHog"
+where = "PostHog > Account settings > Personal API keys > jimhillr-billing-read"
+expect = "Once PostHog exists: the key jimhillr-billing-read has only billing read, was rolled within the last 180 days, and the infra environment secret POSTHOG_BILLING_READ_KEY has the new value (standards/docs/runbooks/posthog-sign-up.md)."
+why = "The weekly Billing check reads PostHog billing with it; billing read covers the whole organization, so it is rolled like the other personal key."
+every = "180d"
+
 # Second approval for credential changes (decision 0010).
 
 [[setting]]
@@ -192,9 +259,17 @@ every = "90d"
 [[setting]]
 id = "github-app-infra"
 vendor = "GitHub"
-where = "github.com/settings/apps > the infra app (issues/human/github-app-infra-credentials.md)"
+where = "github.com/settings/apps > the infra app (standards/docs/runbooks/github-app-infra.md)"
 expect = "The infra GitHub App is private to jimhillr and installed only on jimhillr/monorepo. Its only permissions are Secrets, Environments, Variables and Administration (read and write) and Metadata (read). Its private key is only the infra-credentials secret GH_INFRA_CREDENTIALS_APP_KEY."
 why = "It can write every infra secret, so a wider install or extra permission would reach past the second approval (decision 0010)."
+every = "90d"
+
+[[setting]]
+id = "github-app-infra-read"
+vendor = "GitHub"
+where = "github.com/settings/apps > the read-only infra app (standards/docs/runbooks/github-app-infra-read.md)"
+expect = "The read-only infra GitHub App is private to jimhillr and installed only on jimhillr/monorepo. Its only permissions are Administration (read) and Metadata (read), with no write permission. Its private key is only the repository secret GH_INFRA_READ_APP_KEY."
+why = "Every PR's code can reach its key, so a write permission would let any PR change repo settings without the second approval (decision 0010)."
 every = "90d"
 
 [[setting]]
@@ -231,6 +306,14 @@ where = "github.com/settings/apps > the infra app > Private keys"
 expect = "The app has exactly one private key, made within the last 180 days and stored as GH_INFRA_CREDENTIALS_APP_KEY in infra-credentials (standards/docs/runbooks/github-app-infra.md, Undo or rotate)."
 why = "It can write every infra secret; a key that never changes stays useful to anyone who ever copied it."
 every = "180d"
+
+[[setting]]
+id = "rotate-github-app-infra-read-key"
+vendor = "GitHub"
+where = "github.com/settings/apps > the read-only infra app > Private keys"
+expect = "The app has exactly one private key, made within the last 365 days and stored as the repository secret GH_INFRA_READ_APP_KEY (standards/docs/runbooks/github-app-infra-read.md, Undo or rotate)."
+why = "It reads repo settings for every infra plan; a key that never changes stays useful to anyone who ever copied it."
+every = "365d"
 
 [[setting]]
 id = "rotate-auth0-infra-credentials"

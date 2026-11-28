@@ -43,6 +43,23 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
   review) until its checks are green and it is out of draft.
+- **PR description sections (Jim, 2026-11-27).** "Every PR should have
+  these sections: 1) What changed summary (50 words) 2) Why changed
+  summary (50 words) 3) Cost changes (<25 words) 4) Risk changes (<25
+  words) 5) Details (anything else agents want to include)." Above them,
+  "the top most section should be 1) Attention (list of strongly enum'ed
+  tags)", one of which is cost changed. This replaces the 75-word
+  executive summary. So after any required attribution lines, every PR
+  description has `## Attention` (the tags from `chores badges`: one
+  requirements, one cost and one threat/risk tag from a closed set), `##
+  What changed` (at most 50 words), `## Why` (at most 50), `## Cost
+  changes` and `## Risk changes` (under 25 each, `None.` when nothing
+  changes) and `## Details` (testing, review notes, links to committed
+  plans, decisions and issues). Write it with `chores pr-body`. The format
+  and tags are under "Pull request descriptions" in
+  `standards/docs/pull-requests.md` and in
+  `.github/pull_request_template.md`; the PR summary check (PR-001) warns
+  on a missing section, an unknown tag or a summary over its limit.
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for
@@ -55,6 +72,18 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   whenever it moves the PR back to draft. Agents still never approve their
   own PRs, so the PR merges when a reviewer (normally Jim) approves it.
   Details are under "Auto-merge" in `standards/docs/pull-requests.md`.
+- **Human review for red flags and cost (Jim, 2026-11-27).** "Lets make sure
+  no prs with red attention flags get auto merged. Cost changes must be
+  reviewed by jim", then "Lets make it needs human review". A PR with a red attention tag
+  (`must-requirement-changed`) or `cost-changed`, in its diff or its
+  description, or the `cost` label, fails the `Human review` check (PR-004,
+  `chores gate`) until a human collaborator approves its head commit
+  (Jim: "Any human collaborator is fine"); agent accounts (`-agt`),
+  `jimhillr-reviewer`, bots and non-collaborators never count. That check labels
+  it `needs-human` and turns its auto-merge off. Agents and
+  `jimhillr-reviewer` never approve it or turn its auto-merge on; once a
+  human approves and checks are green, any agent may merge it. Details are under
+  "Human review" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the
@@ -107,7 +136,11 @@ repo, rather than in any one agent tool's settings.
     lists every approved, evaluated and held technology and vendor, with its
     exemplar projects. A PR that approves, rejects or drops one, or adds the
     first project to use one, updates `standards/radar/radar.json` in the
-    same PR.
+    same PR. Every vendor there says how its billing is checked (Jim,
+    2026-11-27: "the billing check should check every vendor in the tech
+    radar"): a read-only API check in `standards/scripts/billing-check.sh`
+    where the vendor allows it, otherwise a settings check for Jim; the
+    radar check fails an approved vendor with neither (RAD-007).
 - **Free tiers only (Jim, 2026-11-26).** Every service is used on its free
   plan, except Claude Code (budget $25 a month). Each technology's monthly
   budget is in the tech radar; only Jim sets or raises one. Never turn on a paid plan, add a payment method or raise a spending
@@ -145,6 +178,37 @@ repo, rather than in any one agent tool's settings.
   Agents never approve a `credential-change` PR, never put a
   credential-capable token anywhere but that environment, and never ask
   for admin rights for `jimhillr-agt` or the Claude GitHub App.
+- **Evals are continuous improvement (Jim, 2026-11-27).** "The eval
+  process is a continuous improvement process and should not be considered
+  a one off project. The evals should always be green and a system of
+  feedback to our todo process should be the way in which individual
+  projects improve their eval coverage." So every requirement's verdict
+  should be green; any requirement that is not met, at risk or unknown
+  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  normal agent loop works it. Each project grows its own eval coverage
+  through those issues: requirements for anything it ships, evals that
+  check real content in production, and an eval coverage figure and badge
+  per project. Agents working on a project add or fix evals as part of the
+  work, not as a separate phase. Details are under "Continuous
+  improvement" in [standards/docs/evals.md](standards/docs/evals.md).
+- **Code quality ratchet (Jim, 2026-11-27).** "We also need a process for
+  ensuring maintainable code base." Each project's quality findings (clippy
+  pedantic and the complexity limits) may only go down, never up, and gaps
+  become issue files through weekly quality triage, the same loop as evals
+  ([decision 0015](standards/docs/decisions/0015-code-quality-process.md),
+  [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
+  findings in files you touch. Scripts stay Rust-only: add no new `.sh`
+  files, and port existing ones into `chores` commands over time.
+- **GAAP books (Jim, 2026-11-27).** "All of our cost software should
+  follow GAP accounting so that everything is double counted on the ledger
+  and also we should have attribution in such a way that if you sum up all
+  service costs/revenue it equals total revenue/costs." Cost, money and
+  ledger code is double-entry (every entry's postings sum to zero), books
+  costs in the months they serve, and attributes every cent to exactly one
+  project by a stated rule, so the projects sum to the totals with no
+  remainder. The rules are under "Accounting rules" in
+  [standards/docs/cost.md](standards/docs/cost.md)
+  ([decision 0016](standards/docs/decisions/0016-holding-and-handling-money.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -156,16 +220,56 @@ repo, rather than in any one agent tool's settings.
   `rusqlite` and its `bundled` feature. A hosted database is a last resort,
   for data a deployed service must write at runtime; which one, and when, is
   decided in [decision 0004](standards/docs/decisions/0004-database-engine.md).
+- **User docs in every project (Jim, 2026-11-27).** "All projects should
+  have user docs for supporting our end users." Every top-level project
+  has a user guide at `<project>/docs/user/README.md` with `## Who it's
+  for`, `## Getting started`, `## How to ...` and `## Getting help`
+  sections ("User docs" in
+  [standards/docs/documentation.md](standards/docs/documentation.md#user-docs),
+  [decision 0017](standards/docs/decisions/0017-user-docs.md)). The audit
+  (`chores user-docs`, DOC-005 to DOC-008) fails a project without one
+  unless it is in the shrinking baseline `standards/user-docs.toml`. A PR
+  that changes what users see or do updates the guide, and a new project
+  ships with one.
+- **Third-party content in athenaeum (Jim, 2026-11-27).** "Including
+  copywrited content is fine as long as we reference the original owner
+  properly and never sell or expose it as a part of our product." Copies of
+  others' work may live in `athenaeum`, which is for agents and people to
+  understand our coding stance, with the owner named and the original
+  linked beside them; never ship them in a product. Details are in
+  [athenaeum/CONTRIBUTING.md](athenaeum/CONTRIBUTING.md).
+- **Code quality references in athenaeum (Jim, 2026-11-27).** "We can use
+  athenaeum project as a store for important documents/blog posts/patterns
+  we discover so we can reference them as we write software." Before
+  leaning on a design or code quality idea, read its note in
+  [athenaeum/resources/code_quality/](athenaeum/resources/code_quality/README.md),
+  and when a source changes how we write code here, add a note for it
+  there. The standards still hold the rules; the notes explain them.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit
   enforces it (FT-006); details in
   [standards/docs/naming.md](standards/docs/naming.md#cloudflare-pages-projects).
+- **Name things `jimhillr`, not `monorepo` (Jim, 2026-11-27).** "Lets
+  not use the nomenclature monorepo anywhere in our implementations. Use
+  jimhillr instead." New identifiers (headers, user agents, meta tags,
+  token and key labels, resource names, crates, folders) use `jimhillr`,
+  such as `x-jimhillr-synthetic` and the `jimhillr-evals` user agent. The
+  only exceptions are names we don't own: the GitHub repository
+  `jimhillr/monorepo` itself and mise's `monorepo_root` setting and
+  `[monorepo]` table. The repo-tooling project that was `monorepo/` is now
+  `jimhillr/`. Prose may still call the repository a monorepo.
 - **Labels.** A PR that needs a person (Jim's sign-off, a manual step, an
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
   changes what the repo uses or costs, and `needs-human` when it adds a
   vendor or money or raises a budget (standards/docs/cost.md).
+- **Retire what you rename (Jim, 2026-11-26).** Renaming or removing a
+  resource (a Pages project, Worker, binding, URL, release) retires the old
+  one in `standards/resources.toml` in the same PR, with Jim's approval
+  (`needs-human`). Nothing is deleted just because it is unclaimed; the
+  rules and the safe deletion order are in
+  [standards/docs/resources.md](standards/docs/resources.md).
 - **No project templates.** The old `example/` templates are intentionally
   gone and must not be restored. Create new projects by hand.
 - **Merge rule.** Any agent may squash-merge any PR, including one its own
@@ -176,6 +280,16 @@ repo, rather than in any one agent tool's settings.
   for reasons the PR didn't cause. A pending check is never green. Agents
   still never approve their own PRs. Details are in
   `standards/docs/pull-requests.md`.
+- **The reviewer account (Jim, 2026-11-27).** "A third GitHub account to
+  do approvals so we can be explicit about what is being auto-approved and
+  establish a process for that approver." `jimhillr-reviewer` approves
+  only the green, unlabelled, low-risk agent PRs its written rules allow
+  (the `All Auto Review` workflow, "The reviewer account" in
+  `standards/docs/pull-requests.md`, decision 0014); Jim approves the
+  rest, and reads every merged PR afterwards on pane's Acknowledge page.
+  Agents never hold or ask for its token, never remove a red or orange
+  label to get a PR approved, and never split a change to dodge its
+  protected paths or size limit.
 - **PR lifecycle.** Every PR, from any author, is driven to closure (merged
   or closed). The policy is in `standards/docs/pull-requests.md`. A scheduled
   agent task, "PR triage", runs three times a day as `jimhillr-agt` on
@@ -191,14 +305,35 @@ repo, rather than in any one agent tool's settings.
   as major) release notes with no breaking change that CI wouldn't catch
   (Jim, 2026-11-26). It reads this file for extra pins, so list
   any new pins here.
+- **Pause on Claude overage (Jim, 2026-11-27).** When any agent session
+  reports overage usage (`rate_limit_info.isUsingOverage` from the session
+  API), the coordinating agent starts no new threads until the usage
+  resets, and PR triage reports it to Jim. Running threads finish their
+  current step. This overrides "keep threads working". The tracking
+  process is in
+  [standards/docs/plans/2026-11-cost-tracking.md](standards/docs/plans/2026-11-cost-tracking.md).
 - **Never idle without saying why (Jim, 2026-11-26).** Before an agent's
   thread goes quiet, it posts a short message saying what it is waiting on
   (a hook or CI run, a review, an answer) and roughly when it expects to
   continue. A thread with nothing running is either resolved as done or
   asks Jim a question that says why it can't close, so it shows as waiting
   on him. A checklist update alone doesn't count.
-- **Starting new work.** There is no scheduled job for new work. Whenever no
-  agent PRs or agent tasks are in flight, the coordinating agent starts a new
+- **Credit window (Jim, 2026-11-27).** "Kick off work as our credit
+  window begins to close to maximize our use of the 5 hr credits. Have
+  that process run all the time." The hourly "Credit window check"
+  scheduled task (Jim, 2026-11-28: a scheduled task, not a standing
+  thread) starts a short run each hour that reads the
+  five-hour and seven-day usage from the sessions' rate-limit events and
+  asks the coordinating agent to start extra threads when the five-hour window would otherwise end under 85%
+  used, aiming at 95% without running the seven-day window out early.
+  Keeping at least 5 threads working is its floor, and the overage pause
+  still wins. The
+  rule is [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md),
+  the prompt is in
+  [standards/docs/scheduled-tasks/credit-window.md](standards/docs/scheduled-tasks/credit-window.md).
+- **Starting new work.** Apart from the credit window check above, there
+  is no scheduled job for new work. Whenever no agent PRs or agent tasks
+  are in flight, the coordinating agent starts a new
   task by running the `start-a-new-task` skill.
 - **CI on `main` may be red.** Judge a PR by whether the projects it changes
   pass, not by the overall status.
@@ -228,6 +363,12 @@ and the PR must say which checks didn't run.
 - List the project's tasks: `mise tasks`
 - List the open issues: `mise run //:issues` (`-- --human` for human tasks)
 - Check the repo standards: `mise run //:audit`
+- Routine agent work (pick the next issue, write a PR description, write
+  an issue file): `cargo run --quiet --manifest-path chores/Cargo.toml --
+  <command>`; the commands are in [chores/README.md](chores/README.md).
+  When you notice routine work a script could do, add a command there
+  rather than repeating it by hand
+  ([baked skills plan](standards/docs/plans/2026-11-baked-skills.md)).
 
 Skills refer to this section instead of naming commands directly, so when the
 task runner changes, only this section needs updating.
@@ -247,6 +388,8 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 | `code-review` | Review one project against the standards and record five TODOs. |
 | `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
+| `write-issue` | Write an issue file or a human task with its runbook through the `chores` command. |
+| `eval-triage` | On demand, for the eval calls the daily triage workflow can't make: rollback advice for a deploy that failed its evals, and an eval Jim disputes. |
 | `deep-project-review` | Review the next project in the rotation in depth and deliver a Marp slide deck in `docs/reviews/` for Jim. Run weekly by the "Weekly deep project review" scheduled task. |
 
 New skills go in `.agents/skills/<name>/SKILL.md` and must follow the

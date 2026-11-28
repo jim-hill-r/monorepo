@@ -1,11 +1,12 @@
 # sparkhill: cost analysis. Format and rules: standards/docs/cost.md
 reviewed = "2026-11-27"
-summary = "The Perseus website is a static export on Cloudflare Pages; the Dioxus web app is not deployed yet and calls no outside service (its letter patterns are bundled). $0 a month."
-notes = "No server, Worker or database: the website is static files (docs/decisions/0001-static-site-on-cloudflare-pages.md)."
+summary = "The Perseus website and the Blue Eel Dioxus web app are static sites on Cloudflare Pages; the web app calls no outside service (its letter patterns are bundled). $0 a month."
+notes = "No server, Worker or database: both sites are static files (docs/decisions/0001-static-site-on-cloudflare-pages.md)."
 
 [[service]]
 blip = "Cloudflare Pages"
 plan = "free"
-why = "Hosts the website (Pages project `jimhillr-sparkhill`), deployed by direct upload with `wrangler pages deploy`, so it uses no Pages builds."
+why = "Hosts the website (Pages project `jimhillr-sparkhill`) and the Blue Eel web app (`jimhillr-sparkhill-webapp`), each deployed by direct upload with `wrangler pages deploy`, so they use no Pages builds."
 [service.usage]
-pages_projects = 1
+pages_projects = 2
+

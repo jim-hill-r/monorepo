@@ -1,0 +1,3 @@
+# threat: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-27"
+summary = "Rust CLI that checks each project's docs/threat.toml; reads only repo files. $0 a month."

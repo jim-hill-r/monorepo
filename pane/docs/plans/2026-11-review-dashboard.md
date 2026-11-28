@@ -155,6 +155,8 @@ Phone-first layout (Jim often reviews from his phone), one column under
 | Page | Shows | Phase |
 | --- | --- | --- |
 | **Today** (home) | What needs Jim: human issues oldest first, `needs-human` PRs, ready-for-review PRs, review decks added since his last visit, and every red light. A count on each. | 1, then 3 and 4 add to it |
+| **Approve** | Every green PR waiting on Jim's review, clear ones first, with its summary, attention badges and a link to its review form; stacks as one entry. Read from GitHub's public API in the browser, no token ([decision 0014](../../../standards/docs/decisions/0014-faster-pr-approvals.md)). | Built 2026-11-27, ahead of Phase 3 |
+| **Acknowledge** | Every merged PR, newest first, until Jim acknowledges it after the fact, with a "Flag for follow-up" link to a prefilled issue file. Acknowledgements are per browser until Phase 5's write path. ([decision 0014](../../../standards/docs/decisions/0014-faster-pr-approvals.md)) | Built 2026-11-27, ahead of Phase 3 |
 | **Health** | The traffic-light grid: one row per project and per system, one column per signal. Click a cell or row to drill down. | 4 |
 | **Project** (drill-down) | One project: what it is (README summary, type, on hold or priority), its deliverables and downloads, each health signal with the evidence and links, its open TODOs and FIXes, open PRs, latest review and retro, and an "Add a TODO" button. | 1, grows each phase |
 | **Deliverables** | Every deliverable by type: live sites (production and PR previews), releases with download links, review decks (HTML and PDF), UAT reports, plans, decisions, retros. | 1 to 3 |
@@ -302,6 +304,11 @@ vendor = "Squarespace"     # must be a blip in radar.json
 Every number has a source line, because pane shows it as evidence the same
 way the health lights do.
 
+Update 2026-11-27: revenue and project-only costs live in each project's
+`docs/cost.toml` ([standards/docs/cost.md](../../../standards/docs/cost.md)),
+which replaces `finance.toml` with the same fields. The rules below are the
+`money` module in [`pane/model`](../../model/README.md#money).
+
 ### Splitting shared costs
 
 A fixed cost such as Claude Code isn't any one project's. Pane splits each
@@ -379,9 +386,9 @@ PR #585 is merged.
 - `pane/health.toml` with the thresholds above, and the health rules in
   `pane/model`, unit tested signal by signal.
 - The Health page and the drill-down sections on project and system pages.
-- The `audit.sh` findings per project in the snapshot (the audit runs in
-  pane's release and its output is parsed, or the audit gains a
-  machine-readable output).
+- The `audit.sh` findings per project in the snapshot: the audit runs in
+  pane's release and `pane_model::audit` parses its output (done, order
+  152).
 - Signal history: the Worker keeps the last 14 daily health results in KV
   (one write a day, far below the free 1,000).
 

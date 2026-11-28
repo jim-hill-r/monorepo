@@ -3,7 +3,8 @@
 //! Every colour on screen comes from `design_system_palette`, so the game
 //! matches the other apps and gets the design system's contrast checks. The
 //! player picks light or dark and turns accessible mode on or off on the
-//! splash screen; [`GameTheme`] holds that choice.
+//! splash screen; [`GameTheme`] holds that choice, and `settings` saves it
+//! between launches.
 
 use bevy::prelude::*;
 use design_system_palette::{GAMEY, Rgba, Scheme, Tokens};

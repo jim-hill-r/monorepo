@@ -163,6 +163,7 @@ dependencies = [
  "bear_down_core",
  "design_system_dioxus",
  "dioxus",
+ "js-sys",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -565,6 +566,7 @@ dependencies = [
  "dioxus",
  "serde",
  "serde_json",
+ "web-sys",
 ]
 
 [[package]]

@@ -6,10 +6,16 @@ use pane_model::{
     Deliverable, DeliverableKind, HumanIssue, Review, ScorecardRow, Snapshot, WorkItem, WorkKind,
 };
 
+mod acknowledge;
+mod approve;
 mod markdown;
+mod money;
 mod view;
 mod visits;
 
+use acknowledge::Acknowledge;
+use approve::Approve;
+use money::Money;
 use view::{Bucket, WorkFilter};
 use visits::Visits;
 
@@ -85,10 +91,16 @@ mod route {
         #[layout(Shell)]
         #[route("/")]
         Today {},
+        #[route("/approve")]
+        Approve {},
+        #[route("/acknowledge")]
+        Acknowledge {},
         #[route("/health")]
         Health {},
         #[route("/projects")]
         Projects {},
+        #[route("/money")]
+        Money {},
         #[route("/projects/:..path")]
         ProjectPage { path: Vec<String> },
         #[route("/deliverables")]
@@ -113,11 +125,14 @@ mod route {
 use route::Route;
 
 /// The nav entries, in order.
-fn nav() -> [(Route, &'static str); 8] {
+fn nav() -> [(Route, &'static str); 11] {
     [
         (Route::Today {}, "Today"),
+        (Route::Approve {}, "Approve"),
+        (Route::Acknowledge {}, "Acknowledge"),
         (Route::Health {}, "Health"),
         (Route::Projects {}, "Projects"),
+        (Route::Money {}, "Money"),
         (Route::Deliverables {}, "Deliverables"),
         (Route::Reviews {}, "Reviews"),
         (Route::HumanIssues {}, "Human issues"),
@@ -601,6 +616,7 @@ fn ProjectPage(path: Vec<String>) -> Element {
                             }
                         }
                     }
+                    money::ProjectMoneySection { snapshot: s.clone(), path: p.path.clone() }
                     p { class: "muted", "Health and open PRs for each project come in Phases 3 and 4." }
                 }
             },

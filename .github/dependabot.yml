@@ -132,6 +132,48 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
+    directory: "/royalty"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
+    directory: "/chores"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
+    directory: "/threat"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
     directory: "/homer"
     schedule:
       interval: "weekly"
@@ -157,6 +199,21 @@ updates:
           - "*"
     labels:
       - "dependencies"
+      - "rust"
+
+  - package-ecosystem: "cargo"
+    directory: "/telemetry"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "rust"
 
   - package-ecosystem: "cargo"
     directory: "/infra"
@@ -191,7 +248,7 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
-    directory: "/monorepo"
+    directory: "/jimhillr"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -205,7 +262,7 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
-    directory: "/monorepo/workflow_tests"
+    directory: "/jimhillr/workflow_tests"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -336,6 +393,20 @@ updates:
       - "javascript"
 
   - package-ecosystem: "npm"
+    directory: "/bear_down/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      javascript-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  - package-ecosystem: "npm"
     directory: "/cookbook/web"
     schedule:
       interval: "weekly"
@@ -351,6 +422,20 @@ updates:
 
   - package-ecosystem: "npm"
     directory: "/sparkhill/webapp"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      javascript-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  - package-ecosystem: "npm"
+    directory: "/sparkhill/website"
     schedule:
       interval: "weekly"
       day: "monday"

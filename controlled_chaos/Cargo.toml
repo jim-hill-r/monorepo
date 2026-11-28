@@ -57,6 +57,11 @@ orientation = "landscape"
 getrandom = { version = "0.2", features = ["js"] }
 getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 uuid = { version = "1", features = ["js"] }
+# localStorage for the saved display settings, the prefers-contrast query,
+# and sendBeacon for the gameplay events (src/telemetry.rs).
+web-sys = { version = "0.3", features = ["Window", "Storage", "MediaQueryList", "Navigator", "EventTarget"] }
+# The pagehide handler that sends the `quit` event.
+wasm-bindgen = "0.2"
 
 # The web build: Cloudflare Pages serves files up to 25 MiB, so optimise for
 # size. Used by `mise run release:web`.

@@ -10,7 +10,9 @@
 //! ```
 //!
 //! `Stylesheets` puts the tokens, the base sheet, the self-hosted fonts and
-//! the theme script in the page head, so no app copies a file. For no flash
+//! the theme script in the page head, so no app copies a file. In the
+//! browser it links them as CSS files rather than inlining a `<style>`, so
+//! an app's Content Security Policy needs no `style-src 'unsafe-inline'`. For no flash
 //! of the wrong theme on first paint, also inline [`head_script`] in the
 //! app's `index.html` (see the README).
 
@@ -33,27 +35,144 @@ pub const STANDARD_THEMES: [(&str, &str); 5] = [
     ("gamey", "Gamey (8-bit)"),
 ];
 
-const ATKINSON_400: Asset = asset!("/fonts/atkinson-hyperlegible-latin-400-normal.woff2");
-const ATKINSON_400_ITALIC: Asset = asset!("/fonts/atkinson-hyperlegible-latin-400-italic.woff2");
-const ATKINSON_700: Asset = asset!("/fonts/atkinson-hyperlegible-latin-700-normal.woff2");
-const PRESS_START: Asset = asset!("/fonts/press-start-2p-latin-400-normal.woff2");
+/// The self-hosted fonts (both SIL Open Font License): Atkinson Hyperlegible
+/// for accessible mode and Press Start 2P for gamey headings, as
+/// `(family, file, weight, style)`. Browsers fetch a file only when a page
+/// uses that face.
+const FONTS: [(&str, &str, u16, &str); 4] = [
+    (
+        "Atkinson Hyperlegible",
+        "atkinson-hyperlegible-latin-400-normal.woff2",
+        400,
+        "normal",
+    ),
+    (
+        "Atkinson Hyperlegible",
+        "atkinson-hyperlegible-latin-400-italic.woff2",
+        400,
+        "italic",
+    ),
+    (
+        "Atkinson Hyperlegible",
+        "atkinson-hyperlegible-latin-700-normal.woff2",
+        700,
+        "normal",
+    ),
+    (
+        "Press Start 2P",
+        "press-start-2p-latin-400-normal.woff2",
+        400,
+        "normal",
+    ),
+];
 
-/// `@font-face` rules for the two self-hosted fonts (both SIL Open Font
-/// License): Atkinson Hyperlegible for accessible mode and Press Start 2P for
-/// gamey headings. Browsers fetch a file only when a page uses that face.
+/// The `@font-face` rules for [`FONTS`], with `url` giving each file's URL.
+fn faces(url: impl Fn(&str) -> String) -> String {
+    FONTS
+        .iter()
+        .map(|(family, file, weight, style)| {
+            format!(
+                "@font-face {{\n  font-family: '{family}';\n  src: url(\"{}\") format(\"woff2\");\n  font-weight: {weight};\n  font-style: {style};\n  font-display: swap;\n}}\n",
+                url(file)
+            )
+        })
+        .collect()
+}
+
+/// The `@font-face` rules for the self-hosted fonts, pointing at each font's
+/// own asset, for inlining in a `<style>`.
 pub fn font_faces() -> String {
-    let face = |family: &str, url: &Asset, weight: u16, style: &str| {
-        format!(
-            "@font-face {{\n  font-family: '{family}';\n  src: url(\"{url}\") format(\"woff2\");\n  font-weight: {weight};\n  font-style: {style};\n  font-display: swap;\n}}\n"
-        )
-    };
-    [
-        face("Atkinson Hyperlegible", &ATKINSON_400, 400, "normal"),
-        face("Atkinson Hyperlegible", &ATKINSON_400_ITALIC, 400, "italic"),
-        face("Atkinson Hyperlegible", &ATKINSON_700, 700, "normal"),
-        face("Press Start 2P", &PRESS_START, 400, "normal"),
-    ]
-    .concat()
+    const ATKINSON_400: Asset =
+        asset!("/assets/design-system-fonts/atkinson-hyperlegible-latin-400-normal.woff2");
+    const ATKINSON_400_ITALIC: Asset =
+        asset!("/assets/design-system-fonts/atkinson-hyperlegible-latin-400-italic.woff2");
+    const ATKINSON_700: Asset =
+        asset!("/assets/design-system-fonts/atkinson-hyperlegible-latin-700-normal.woff2");
+    const PRESS_START: Asset =
+        asset!("/assets/design-system-fonts/press-start-2p-latin-400-normal.woff2");
+    faces(|file| {
+        let asset = match file {
+            "atkinson-hyperlegible-latin-400-normal.woff2" => ATKINSON_400,
+            "atkinson-hyperlegible-latin-400-italic.woff2" => ATKINSON_400_ITALIC,
+            "atkinson-hyperlegible-latin-700-normal.woff2" => ATKINSON_700,
+            _ => PRESS_START,
+        };
+        asset.to_string()
+    })
+}
+
+/// How [`Stylesheets`] puts the CSS in the page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Delivery {
+    /// One `<style>` element with everything in it. Desktop, mobile and the
+    /// server-side render use this.
+    Inline,
+    /// `<link rel="stylesheet">` to CSS files, and no `<style>` element
+    /// (unless the app passes `app_css`), so the page works under a Content
+    /// Security Policy without `style-src 'unsafe-inline'`. The default in
+    /// the browser (wasm).
+    Files,
+}
+
+impl Delivery {
+    /// The default for this target: [`Delivery::Files`] in the browser,
+    /// [`Delivery::Inline`] everywhere else.
+    pub const fn for_target() -> Self {
+        if cfg!(target_arch = "wasm32") {
+            Delivery::Files
+        } else {
+            Delivery::Inline
+        }
+    }
+}
+
+/// One element [`Stylesheets`] puts in the head, in order.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Sheet {
+    /// A `<style>` element with this CSS.
+    Style(String),
+    /// A `<link rel="stylesheet">` to this URL.
+    Link(String),
+}
+
+/// The head elements for `delivery`: the font faces, the tokens, the app's
+/// theme (a file, then any inline CSS) and the base sheet, in that order.
+fn sheets(
+    delivery: Delivery,
+    app_css: Option<String>,
+    app_stylesheet: Option<String>,
+) -> Vec<Sheet> {
+    match delivery {
+        Delivery::Inline => {
+            let mut out = Vec::new();
+            let mut css = format!("{}\n{TOKENS_CSS}\n", font_faces());
+            match app_stylesheet {
+                // A file the app links: keep it between the tokens and the
+                // base sheet by splitting the style in two.
+                Some(href) => {
+                    out.push(Sheet::Style(css));
+                    out.push(Sheet::Link(href));
+                    css = format!("{}\n{BASE_CSS}", app_css.unwrap_or_default());
+                }
+                None => css.push_str(&format!("{}\n{BASE_CSS}", app_css.unwrap_or_default())),
+            }
+            out.push(Sheet::Style(css));
+            out
+        }
+        Delivery::Files => {
+            const FONTS_DIR: Asset = asset!("/assets/design-system-fonts", AssetOptions::folder());
+            const TOKENS: Asset = asset!("/assets/tokens.css");
+            const BASE: Asset = asset!("/assets/base.css");
+            let mut out = vec![
+                Sheet::Link(format!("{FONTS_DIR}/fonts.css")),
+                Sheet::Link(TOKENS.to_string()),
+            ];
+            out.extend(app_stylesheet.map(Sheet::Link));
+            out.extend(app_css.filter(|c| !c.is_empty()).map(Sheet::Style));
+            out.push(Sheet::Link(BASE.to_string()));
+            out
+        }
+    }
 }
 
 /// The script to inline in `<head>`: records the app's default theme and
@@ -84,27 +203,38 @@ fn offered(custom: &Option<(String, String)>, offer_standard: bool) -> Vec<(Stri
 /// Put the design system in the page head.
 ///
 /// - `default_theme`: the theme before the user picks one.
-/// - `app_css`: the app's generated `design/theme.css`, if it has a custom
-///   theme (pass `include_str!("../design/theme.css")`).
+/// - `app_stylesheet`: the URL of the app's generated `design/theme.css`,
+///   if it has a custom theme, as an `asset!` the app serves. Linked as a
+///   file, so it needs no `style-src 'unsafe-inline'`.
+/// - `app_css`: the same CSS as a string instead
+///   (`include_str!("../design/theme.css")`). Always inlined in a `<style>`,
+///   so an app with a strict style policy uses `app_stylesheet`.
 /// - `custom` and `offer_standard`: as for [`ThemePicker`], so a saved
 ///   theme the app no longer offers falls back to the default.
+/// - `delivery`: inline `<style>` or linked files; see [`Delivery`]. The
+///   default, [`Delivery::for_target`], links files in the browser.
 #[component]
 pub fn Stylesheets(
     default_theme: String,
     #[props(default)] app_css: Option<String>,
+    #[props(default, into)] app_stylesheet: Option<String>,
     #[props(default)] custom: Option<(String, String)>,
     #[props(default = true)] offer_standard: bool,
+    #[props(default = Delivery::for_target())] delivery: Delivery,
 ) -> Element {
     let themes: Vec<String> = offered(&custom, offer_standard)
         .into_iter()
         .map(|(n, _)| n)
         .collect();
     let names: Vec<&str> = themes.iter().map(String::as_str).collect();
-    let css = format!(
-        "{}\n{TOKENS_CSS}\n{}\n{BASE_CSS}",
-        font_faces(),
-        app_css.unwrap_or_default()
-    );
+    let head = rsx! {
+        for sheet in sheets(delivery, app_css, app_stylesheet) {
+            match sheet {
+                Sheet::Style(css) => rsx! { document::Style { {css} } },
+                Sheet::Link(href) => rsx! { document::Stylesheet { href } },
+            }
+        }
+    };
     #[cfg(target_arch = "wasm32")]
     {
         // In the browser, apply the saved choice from Rust instead of an
@@ -112,15 +242,13 @@ pub fn Stylesheets(
         // inline scripts and `eval` (cookbook, cahokia) still switch theme.
         let joined = names.join(" ");
         use_hook(move || web::init(&default_theme, &joined));
-        rsx! {
-            document::Style { {css} }
-        }
+        head
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
         let script = head_script(&default_theme, &names);
         rsx! {
-            document::Style { {css} }
+            {head}
             document::Script { {script} }
         }
     }
@@ -424,6 +552,55 @@ mod tests {
         // Unreadable storage is no choice.
         assert_eq!(Saved::parse(Some("not json")), Saved::default());
         assert_eq!(Saved::parse(None), Saved::default());
+    }
+
+    #[test]
+    fn fonts_css_matches_the_fonts() {
+        let file = include_str!("../assets/design-system-fonts/fonts.css");
+        assert!(file.ends_with(&faces(|f| f.to_string())));
+        for (_, name, _, _) in FONTS {
+            assert!(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("assets/design-system-fonts")
+                    .join(name)
+                    .exists()
+            );
+        }
+    }
+
+    #[test]
+    fn asset_copies_match_dist() {
+        assert_eq!(include_str!("../assets/tokens.css"), TOKENS_CSS);
+        assert_eq!(include_str!("../assets/base.css"), BASE_CSS);
+    }
+
+    #[test]
+    fn inline_is_one_style_as_before() {
+        let sheets = sheets(Delivery::Inline, Some("/* app */".into()), None);
+        assert_eq!(
+            sheets,
+            vec![Sheet::Style(format!(
+                "{}\n{TOKENS_CSS}\n/* app */\n{BASE_CSS}",
+                font_faces()
+            ))]
+        );
+        assert_eq!(Delivery::for_target(), Delivery::Inline);
+    }
+
+    #[test]
+    fn files_emit_no_style_element() {
+        let sheets = sheets(Delivery::Files, None, Some("/assets/theme.css".into()));
+        assert_eq!(sheets.len(), 4);
+        assert!(sheets.iter().all(|s| matches!(s, Sheet::Link(_))));
+        let Sheet::Link(fonts) = &sheets[0] else {
+            unreachable!()
+        };
+        assert!(fonts.ends_with("design-system-fonts/fonts.css"));
+        // The app's theme sits between the tokens and the base sheet.
+        assert_eq!(sheets[2], Sheet::Link("/assets/theme.css".into()));
+        // `app_css` is a string, so it can only be inlined.
+        let with_css = super::sheets(Delivery::Files, Some("/* app */".into()), None);
+        assert_eq!(with_css[2], Sheet::Style("/* app */".into()));
     }
 
     #[test]

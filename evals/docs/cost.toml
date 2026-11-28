@@ -1,3 +1,17 @@
 # evals: cost analysis. Format and rules: standards/docs/cost.md
-reviewed = "2026-11-26"
-summary = "Rust CLI that checks requirements and evals; reads only repo files. $0 a month."
+reviewed = "2026-11-27"
+summary = "Rust CLI that checks requirements and evals in GitHub Actions. $0 a month."
+notes = """
+Its http evals (stage cd) make a few GET requests to each project's own \
+Cloudflare Pages site right after a deploy: about 30 a night across every \
+project, and at most 3 tries each. Static asset requests are free and \
+unlimited; a route served by Pages Functions counts against that project's \
+own Workers requests, which its cost.toml already covers. The fire drill \
+workflow, run by hand, adds a few more GET requests and a few minutes of \
+free Actions time per run."""
+
+[[service]]
+blip = "GitHub (Actions, Dependabot, CodeQL)"
+plan = "free"
+why = "Runs its checks in CI, stores results on the evals-results branch, and runs the daily evals-triage.yml, which pushes triage issue files to the evals-triage branch."
+notes = "About a minute of Actions a day for triage, free and unlimited on this public repo. It starts no Claude session: PR triage, which runs anyway, opens its pull request only on a day it filed issues."

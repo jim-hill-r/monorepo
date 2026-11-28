@@ -11,11 +11,11 @@ To see the list, run `mise run //:issues` (it is generated, never
 committed).
 
 # Priority Projects
+- sparkhill (Blue Eel first: Jim, 2026-11-27)
 - cookbook
 - homer
 - controlled_chaos
 - royalty
-- sparkhill
 - pane
 
 # On Hold Projects
@@ -71,3 +71,10 @@ upstream (Jim, 2026-11-26).
 See [standards/docs/plans/2026-11-resource-cleanup.md](../standards/docs/plans/2026-11-resource-cleanup.md)
 (approved by Jim, 2026-11-26; Part 6 and phase 5, onboarding every live
 resource to IaC, added in PR #674). One group per phase.
+
+## Review roles
+
+See [decision 0019](../standards/docs/decisions/0019-review-roles.md): who
+may approve what, as a matrix of domains and project tiers in
+`standards/reviewers.toml`. Work the phases in order; phase 1 needs PR 904
+(the `Human review` check) merged first.

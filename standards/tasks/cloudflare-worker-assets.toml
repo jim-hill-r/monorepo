@@ -12,8 +12,8 @@
 # cfg(target_arch = "wasm32"). deploy needs CLOUDFLARE_API_TOKEN (with
 # Workers Scripts Write) and CLOUDFLARE_ACCOUNT_ID, and creates the Worker
 # only while the account stays inside its Workers budget
-# (standards/docs/free-tiers.md). ci also runs tests/e2e.sh when the
-# project has one (pane/cloudflare's serves the Worker with wrangler dev).
+# (standards/docs/free-tiers.md). ci also runs the ignored tests/e2e.rs when
+# the project has one (pane/cloudflare's serves the Worker with wrangler dev).
 # Needs in [tools]: rust with the wasm32-unknown-unknown target, node,
 # "npm:wrangler", "cargo:worker-build".
 
@@ -45,8 +45,8 @@ run = [
   "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
   "cargo build --target wasm32-unknown-unknown",
   "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
-  # A project's tests/e2e.sh builds the Worker and checks it under wrangler dev.
-  "[ ! -f tests/e2e.sh ] || bash tests/e2e.sh",
+  # A project's tests/e2e.rs (an ignored test) builds the Worker and checks it under wrangler dev.
+  "[ ! -f tests/e2e.rs ] || cargo test --test e2e -- --ignored",
 ]
 
 [fix]

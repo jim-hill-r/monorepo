@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use rand::SeedableRng;
+use rand::rngs::SmallRng;
 
 use crate::ai::{AiOpponent, choose_attack_card, choose_defense_card};
 use crate::card::Card;
@@ -71,6 +73,12 @@ pub struct ActionDeckResource(pub Deck);
 #[derive(Resource)]
 pub struct AttackerCardResource(pub Card);
 
+/// Seeds the action deck's shuffle, so a game deals the same cards every
+/// time. Scripted runs ([`crate::script`]) insert it; without it each game
+/// shuffles at random.
+#[derive(Resource, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ShuffleSeed(pub u64);
+
 /// Marks the root of the game UI so it can be cleaned up on exit.
 #[derive(Component, Debug)]
 pub struct GameUiRoot;
@@ -125,7 +133,7 @@ pub const STARTING_HAND_SIZE: usize = 3;
 /// battle phase.  A value of `0` ensures it always loses.
 const EMPTY_HAND_CARD: &str = "Empty Hand";
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, seed: Option<Res<ShuffleSeed>>) {
     let library = CardLibrary::default_library();
     info!(
         "Card library contains {} cards: {}",
@@ -142,7 +150,10 @@ fn setup(mut commands: Commands) {
             return;
         }
     };
-    action_deck.shuffle();
+    match seed {
+        Some(seed) => action_deck.shuffle_with(&mut SmallRng::seed_from_u64(seed.0)),
+        None => action_deck.shuffle(),
+    }
 
     info!(
         "Action deck initialized with {} cards.",
@@ -863,10 +874,29 @@ fn update_pvp_ui(
     let is_ai_present = ai.is_some();
     let deck_remaining = deck_res.as_ref().map(|d| d.0.remaining()).unwrap_or(0);
 
-    // Determine which player's hand to display.
-    let (hand_player_idx, hand_label) = match engine.phase {
+    if let Ok(mut text) = hand_query.get_single_mut() {
+        text.sections[0].value = hand_text(engine, is_ai_present);
+    }
+
+    if let Ok(mut text) = instr_query.get_single_mut() {
+        text.sections[0].value = instructions_text(
+            engine,
+            deck_remaining,
+            attacker_res.as_ref().map(|r| &r.0),
+            is_ai_present,
+        );
+    }
+}
+
+/// Returns the label shown above the hand of cards.
+///
+/// During [`TurnPhase::Battle`] the defender's hand is shown so they can pick
+/// a card to defend with; in every other phase it is the active player's. The
+/// cards themselves are buttons (see `update_action_buttons`). When
+/// `hide_ai_hand` is set (single-player mode), player two's hand is hidden.
+fn hand_text(engine: &RulesEngine, hide_ai_hand: bool) -> String {
+    let (idx, label) = match engine.phase {
         TurnPhase::Battle => {
-            // Show the defender's hand so they can pick a card to defend with.
             let def_idx = engine.inactive_player();
             (
                 def_idx,
@@ -874,111 +904,104 @@ fn update_pvp_ui(
             )
         }
         _ => {
-            // All other phases show the active player's hand.
             let idx = engine.active_player;
             (idx, format!("{}'s hand:", engine.players[idx].name))
         }
     };
 
-    // The cards themselves are buttons (see update_action_buttons). In
-    // single-player mode the AI's hand is hidden.
-    let hand = &engine.players[hand_player_idx].hand;
-    let hand_text = if is_ai_present && hand_player_idx == 1 {
-        format!("{hand_label} (hidden)")
-    } else if hand.is_empty() {
-        format!("{hand_label} (empty)")
+    if hide_ai_hand && idx == 1 {
+        format!("{label} (hidden)")
+    } else if engine.players[idx].hand.is_empty() {
+        format!("{label} (empty)")
     } else {
-        hand_label
-    };
+        label
+    }
+}
 
-    if let Ok(mut text) = hand_query.get_single_mut() {
-        text.sections[0].value = hand_text;
+/// Returns the instruction line for the current game state: the game-over
+/// result, "CPU is taking its turn..." while the AI acts, or what the human
+/// player should do in this phase.
+fn instructions_text(
+    engine: &RulesEngine,
+    deck_remaining: usize,
+    attacker: Option<&Card>,
+    ai_present: bool,
+) -> String {
+    if engine.is_game_over() {
+        return game_over_text(engine);
     }
 
-    // Determine whether the AI is currently acting.
-    let ai_is_acting = is_ai_present
-        && !engine.is_game_over()
+    let ai_is_acting = ai_present
         && match engine.phase {
             TurnPhase::Battle => engine.inactive_player() == 1,
             _ => engine.active_player == 1,
         };
+    if ai_is_acting {
+        return "CPU is taking its turn...".to_string();
+    }
 
-    // Build the instruction string based on current phase.
-    let instructions = if engine.is_game_over() {
-        match engine.winner() {
-            Some(idx) => {
-                let loser_idx = 1 - idx;
-                if engine.deck_exhausted {
-                    // Deck ran out — winner has higher happiness.
-                    format!(
-                        "GAME OVER - {} wins! (Happiness: {} vs {})",
-                        engine.players[idx].name,
-                        engine.players[idx].happiness,
-                        engine.players[loser_idx].happiness,
-                    )
-                } else {
-                    // Immediate defeat — loser lost all life or civilians.
-                    let reason = if engine.players[loser_idx].life == 0 {
-                        "ran out of life"
-                    } else {
-                        "lost all civilians"
-                    };
-                    format!(
-                        "GAME OVER - {} wins! ({} {})",
-                        engine.players[idx].name, engine.players[loser_idx].name, reason,
-                    )
-                }
-            }
-            None => "GAME OVER - It's a draw!".to_string(),
-        }
-    } else if ai_is_acting {
-        "CPU is taking its turn...".to_string()
-    } else {
-        match engine.phase {
-            TurnPhase::Draw => format!(
-                "{}: Tap Draw card or press SPACE  ({} cards in deck)",
-                engine.players[engine.active_player].name, deck_remaining
-            ),
-            TurnPhase::Play => {
-                let hand_len = engine.players[engine.active_player].hand.len();
+    let active = &engine.players[engine.active_player];
+    match engine.phase {
+        TurnPhase::Draw => format!(
+            "{}: Tap Draw card or press SPACE  ({} cards in deck)",
+            active.name, deck_remaining
+        ),
+        TurnPhase::Play => format!(
+            "{}: Tap a card or press 1-{} to play it",
+            active.name,
+            active.hand.len()
+        ),
+        TurnPhase::Battle => {
+            let defender = &engine.players[engine.inactive_player()];
+            let attacker_info = attacker
+                .map(|c| format!("{} ({})", c.name, c.value))
+                .unwrap_or_default();
+            if defender.hand.is_empty() {
                 format!(
-                    "{}: Tap a card or press 1-{} to play it",
-                    engine.players[engine.active_player].name, hand_len
+                    "{} attacks with {}. {} has no cards - attacker wins!",
+                    active.name, attacker_info, defender.name
+                )
+            } else {
+                format!(
+                    "{} attacks with {}.  {}: Tap a card or press 1-{} to defend",
+                    active.name,
+                    attacker_info,
+                    defender.name,
+                    defender.hand.len()
                 )
             }
-            TurnPhase::Battle => {
-                let def_idx = engine.inactive_player();
-                let def_hand_len = engine.players[def_idx].hand.len();
-                let attacker_info = attacker_res
-                    .as_ref()
-                    .map(|r| format!("{} ({})", r.0.name, r.0.value))
-                    .unwrap_or_default();
-                if def_hand_len == 0 {
-                    format!(
-                        "{} attacks with {}. {} has no cards - attacker wins!",
-                        engine.players[engine.active_player].name,
-                        attacker_info,
-                        engine.players[def_idx].name
-                    )
-                } else {
-                    format!(
-                        "{} attacks with {}.  {}: Tap a card or press 1-{} to defend",
-                        engine.players[engine.active_player].name,
-                        attacker_info,
-                        engine.players[def_idx].name,
-                        def_hand_len
-                    )
-                }
-            }
-            TurnPhase::End => format!(
-                "Turn over.  Tap End turn or press SPACE to pass to {}",
-                engine.players[engine.inactive_player()].name
-            ),
         }
-    };
+        TurnPhase::End => format!(
+            "Turn over.  Tap End turn or press SPACE to pass to {}",
+            engine.players[engine.inactive_player()].name
+        ),
+    }
+}
 
-    if let Ok(mut text) = instr_query.get_single_mut() {
-        text.sections[0].value = instructions;
+/// Returns the game-over message: the winner and why, or a draw.
+fn game_over_text(engine: &RulesEngine) -> String {
+    let Some(idx) = engine.winner() else {
+        return "GAME OVER - It's a draw!".to_string();
+    };
+    let winner = &engine.players[idx];
+    let loser = &engine.players[1 - idx];
+    if loser.is_alive() && engine.deck_exhausted {
+        // Deck ran out: the winner has the higher happiness.
+        format!(
+            "GAME OVER - {} wins! (Happiness: {} vs {})",
+            winner.name, winner.happiness, loser.happiness,
+        )
+    } else {
+        // Immediate defeat: the loser lost all life or civilians.
+        let reason = if loser.life == 0 {
+            "ran out of life"
+        } else {
+            "lost all civilians"
+        };
+        format!(
+            "GAME OVER - {} wins! ({} {})",
+            winner.name, loser.name, reason
+        )
     }
 }
 
@@ -1260,6 +1283,30 @@ mod tests {
             app.world().get_resource::<AiOpponent>().is_some(),
             "setup should insert AiOpponent resource"
         );
+    }
+
+    fn dealt_hands(seed: Option<u64>) -> Vec<Vec<String>> {
+        let mut app = make_test_app();
+        if let Some(seed) = seed {
+            app.insert_resource(ShuffleSeed(seed));
+        }
+        app.world_mut().run_system_once(setup);
+        let engine = &app.world().resource::<RulesEngineResource>().0;
+        engine
+            .players
+            .iter()
+            .map(|p| p.hand.iter().map(|c| c.name.clone()).collect())
+            .collect()
+    }
+
+    #[test]
+    fn setup_with_a_seed_deals_the_same_hands_every_time() {
+        assert_eq!(dealt_hands(Some(7)), dealt_hands(Some(7)));
+    }
+
+    #[test]
+    fn setup_with_different_seeds_deals_different_hands() {
+        assert_ne!(dealt_hands(Some(7)), dealt_hands(Some(8)));
     }
 
     #[test]
@@ -1606,5 +1653,176 @@ mod tests {
         assert_eq!(engine.phase, TurnPhase::Battle);
         let attacker = app.world().get_resource::<AttackerCardResource>();
         assert_eq!(attacker.map(|a| a.0.name.as_str()), Some("Ace"));
+    }
+
+    // ── hand_text / instructions_text ─────────────────────────────────────────
+
+    #[test]
+    fn hand_text_shows_active_players_hand_in_draw_phase() {
+        let engine = make_engine_with_hands();
+        assert_eq!(hand_text(&engine, false), "Alice's hand:");
+    }
+
+    #[test]
+    fn hand_text_shows_defenders_hand_in_battle_phase() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        engine.play_card(0).unwrap();
+        assert_eq!(hand_text(&engine, false), "Bob's hand (defending):");
+    }
+
+    #[test]
+    fn hand_text_hides_ai_hand() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        engine.play_card(0).unwrap();
+        assert_eq!(hand_text(&engine, true), "Bob's hand (defending): (hidden)");
+    }
+
+    #[test]
+    fn hand_text_does_not_hide_human_hand_when_ai_present() {
+        let engine = make_engine_with_hands();
+        assert_eq!(hand_text(&engine, true), "Alice's hand:");
+    }
+
+    #[test]
+    fn hand_text_marks_empty_hand() {
+        let engine = RulesEngine::new(Player::new("Alice", 20), Player::new("Bob", 20));
+        assert_eq!(hand_text(&engine, false), "Alice's hand: (empty)");
+    }
+
+    #[test]
+    fn instructions_deck_exhausted_with_winner() {
+        let mut engine = make_engine_with_hands();
+        engine.players[0].happiness = 60;
+        engine.players[1].happiness = 40;
+        engine.signal_deck_exhausted();
+        assert_eq!(
+            instructions_text(&engine, 0, None, false),
+            "GAME OVER - Alice wins! (Happiness: 60 vs 40)"
+        );
+    }
+
+    #[test]
+    fn instructions_deck_exhausted_with_draw() {
+        let mut engine = make_engine_with_hands();
+        engine.signal_deck_exhausted();
+        assert_eq!(
+            instructions_text(&engine, 0, None, false),
+            "GAME OVER - It's a draw!"
+        );
+    }
+
+    #[test]
+    fn instructions_life_reaching_zero() {
+        let mut engine = make_engine_with_hands();
+        engine.players[0].life = 0;
+        assert_eq!(
+            instructions_text(&engine, 5, None, false),
+            "GAME OVER - Bob wins! (Alice ran out of life)"
+        );
+    }
+
+    #[test]
+    fn instructions_civilians_reaching_zero() {
+        let mut engine = make_engine_with_hands();
+        engine.players[1].civilians = 0;
+        assert_eq!(
+            instructions_text(&engine, 5, None, false),
+            "GAME OVER - Alice wins! (Bob lost all civilians)"
+        );
+    }
+
+    #[test]
+    fn instructions_defeat_reason_wins_over_deck_exhaustion() {
+        let mut engine = make_engine_with_hands();
+        engine.players[1].life = 0;
+        engine.players[1].happiness = 90;
+        engine.signal_deck_exhausted();
+        assert_eq!(
+            instructions_text(&engine, 0, None, false),
+            "GAME OVER - Alice wins! (Bob ran out of life)"
+        );
+    }
+
+    #[test]
+    fn instructions_game_over_takes_precedence_over_cpu_turn() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        engine.play_card(0).unwrap();
+        engine.players[0].life = 0;
+        assert_eq!(
+            instructions_text(&engine, 5, None, true),
+            "GAME OVER - Bob wins! (Alice ran out of life)"
+        );
+    }
+
+    #[test]
+    fn instructions_cpu_taking_its_turn_when_ai_active() {
+        let mut engine = make_engine_with_hands();
+        engine.active_player = 1;
+        assert_eq!(
+            instructions_text(&engine, 5, None, true),
+            "CPU is taking its turn..."
+        );
+    }
+
+    #[test]
+    fn instructions_cpu_taking_its_turn_when_ai_defends() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        let attacker = engine.play_card(0).unwrap();
+        assert_eq!(
+            instructions_text(&engine, 5, Some(&attacker), true),
+            "CPU is taking its turn..."
+        );
+    }
+
+    #[test]
+    fn instructions_draw_phase() {
+        let engine = make_engine_with_hands();
+        assert_eq!(
+            instructions_text(&engine, 7, None, true),
+            "Alice: Tap Draw card or press SPACE  (7 cards in deck)"
+        );
+    }
+
+    #[test]
+    fn instructions_play_phase() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        assert_eq!(
+            instructions_text(&engine, 6, None, false),
+            "Alice: Tap a card or press 1-3 to play it"
+        );
+    }
+
+    #[test]
+    fn instructions_battle_phase_human_defender() {
+        let mut engine = make_engine_with_hands();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        let attacker = engine.play_card(0).unwrap();
+        assert_eq!(
+            instructions_text(&engine, 6, Some(&attacker), false),
+            format!(
+                "Alice attacks with {} ({}).  Bob: Tap a card or press 1-2 to defend",
+                attacker.name, attacker.value
+            )
+        );
+    }
+
+    #[test]
+    fn instructions_battle_phase_defender_without_cards() {
+        let mut engine = make_engine_with_hands();
+        engine.players[1].hand.clear();
+        engine.draw_card(Card::new("Ten", 10)).unwrap();
+        let attacker = engine.play_card(0).unwrap();
+        assert_eq!(
+            instructions_text(&engine, 6, Some(&attacker), false),
+            format!(
+                "Alice attacks with {} ({}). Bob has no cards - attacker wins!",
+                attacker.name, attacker.value
+            )
+        );
     }
 }

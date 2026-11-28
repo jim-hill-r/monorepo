@@ -36,17 +36,24 @@ const TOKEN_URL: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/oauth/token";
 
 /// Content Security Policy for the application
 /// - default-src 'none': Block all sources by default
-/// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
-/// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
+/// - script-src 'self' 'wasm-unsafe-eval' POSTHOG_ASSETS: Allow scripts from same origin,
+///   WASM, and PostHog's script host for session replay (public/posthog.js, production only)
+/// - connect-src 'self' AUTH0_DOMAIN POSTHOG_HOSTS: Allow API calls to same origin, Auth0,
+///   and PostHog's ingest and config hosts
 /// - img-src 'self': Allow images from same origin
-/// - style-src 'self' 'unsafe-inline': Allow styles from same origin and inline styles (required by Dioxus)
+/// - style-src 'self': Allow stylesheets from same origin only. No inline styles: the
+///   design system links its CSS as files and the app sets no `style` attributes
 /// - font-src 'self': Allow fonts from same origin (required for self-hosted web fonts)
 /// - base-uri 'self': Restrict base tag to same origin
 /// - form-action 'self': Restrict form submissions to same origin
 ///
 /// Note: The Auth0 domain is hardcoded in the CSP string to match AUTH0_DOMAIN constant.
 /// Tests verify that the CSP contains the correct Auth0 domain.
-const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
+/// The one-line privacy note on the home page, for PostHog session replay
+/// (public/posthog.js, decision 0001).
+const PRIVACY_NOTE: &str = "Privacy: visits to this site may be recorded with PostHog to find bugs. What you type is never recorded, and Do Not Track turns recording off.";
+
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://us-assets.i.posthog.com; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com https://us.i.posthog.com https://us-assets.i.posthog.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
     dioxus::launch(App);
@@ -95,12 +102,13 @@ fn App() -> Element {
     use_context_provider(|| sidebar_visible);
 
     rsx! {
-        // Include this CSP in server response headers for defense in depth redundancy
+        // Cloudflare Pages also sends this CSP, plus frame-ancestors, as a real
+        // header from public/_headers; tests keep the two in step.
         // CSP Analysis: Modern Dioxus (v0.7.x) compiles to WebAssembly and doesn't require
         // unsafe-eval or unsafe-inline for scripts. WASM modules and proper event binding
         // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
         // directive is needed for WebAssembly instantiation in some browsers.
-        // Style unsafe-inline is kept for any inline styling that may be needed.
+        // Styles are same-origin files only, with no 'unsafe-inline'.
         // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
         if cfg!(target_arch = "wasm32") {
             document::Meta {
@@ -170,8 +178,11 @@ fn Header() -> Element {
                 }
                 h1 { class: "header-title", "Cookbook" }
             }
+            // Below 768 px these links move into the sidebar (see Sidebar),
+            // so the header stays on one row.
             nav {
                 class: "header-nav",
+                "aria-label": "Main",
                 Link { to: Route::Home {}, "Home" }
                 Link { to: Route::Recipe { day: today }, "Recipes" }
                 Link { to: Route::Plan { week: current_week }, "Plans" }
@@ -207,6 +218,10 @@ fn format_auth_error(err: &AuthError) -> String {
         AuthError::IdTokenValidationFailed(_) => "Login verification failed".to_string(),
         AuthError::HttpClientError(_) => "Network error. Please check your connection".to_string(),
         AuthError::ConfigError(_) => "Authentication not configured".to_string(),
+        AuthError::AuthorizationDenied(_) => "Sign-in was cancelled".to_string(),
+        AuthError::CallbackMismatch(_) => "Authentication incomplete".to_string(),
+        AuthError::LoopbackError(_) => "Unable to process authentication".to_string(),
+        AuthError::SignInTimedOut(_) => "Sign-in timed out. Please try again".to_string(),
         AuthError::Unknown => "An unexpected error occurred".to_string(),
     }
 }
@@ -259,6 +274,14 @@ fn recipe_day_for_date(date: NaiveDate) -> u32 {
 }
 
 /// Get today's recipe day (1-365) in local time
+/// The recipe days before and after `day`, wrapping round the year: day 1
+/// follows day 365, as the recipes repeat every year.
+fn adjacent_recipe_days(day: u32) -> (u32, u32) {
+    let previous = if day <= 1 { 365 } else { day - 1 };
+    let next = if day >= 365 { 1 } else { day + 1 };
+    (previous, next)
+}
+
 fn get_current_day_of_year() -> u32 {
     recipe_day_for_date(Local::now().date_naive())
 }
@@ -457,11 +480,22 @@ fn Sidebar() -> Element {
     let sidebar_visible = use_context::<Signal<bool>>();
     let recipe_days = get_sidebar_recipe_days();
     let plan_weeks = get_sidebar_plan_weeks();
+    let today = get_current_day_of_year();
+    let current_week = get_current_week_of_year();
 
     rsx! {
         aside {
             id: "sidebar",
             class: if !sidebar_visible() { "hidden" } else { "" },
+            // The header's links, shown here only below 768 px, where the
+            // header hides them to stay on one row.
+            nav {
+                class: "sidebar-nav",
+                "aria-label": "Main",
+                Link { to: Route::Home {}, "Home" }
+                Link { to: Route::Recipe { day: today }, "Recipes" }
+                Link { to: Route::Plan { week: current_week }, "Plans" }
+            }
             h2 { "Quick Navigation" }
 
             div {
@@ -555,6 +589,8 @@ fn Home() -> Element {
                     Link { to: Route::Plan { week: current_week }, "View Meal Plans" }
                 }
             }
+
+            p { class: "privacy-note", "{PRIVACY_NOTE}" }
         }
     }
 }
@@ -572,6 +608,7 @@ fn Recipe(day: u32) -> Element {
         }
     } else {
         let store = EmbeddedRecipeStore::global();
+        let (previous_day, next_day) = adjacent_recipe_days(day);
 
         // Use get_by_id with legacy day-based ID format
         match store.get_by_id(&format!("day-{}", day)) {
@@ -631,6 +668,13 @@ fn Recipe(day: u32) -> Element {
                                     span { class: "tag", "{tag}" }
                                 }
                             }
+                        }
+
+                        nav {
+                            class: "recipe-day-nav",
+                            "aria-label": "Other days",
+                            Link { to: Route::Recipe { day: previous_day }, rel: "prev", "← Previous day" }
+                            Link { to: Route::Recipe { day: next_day }, rel: "next", "Next day →" }
                         }
 
                         Link { to: Route::Home {}, class: "back-link", "← Back to Home" }
@@ -754,6 +798,90 @@ fn PageNotFound(route: Vec<String>) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The Pages `_headers` file, served as real HTTP headers by Cloudflare.
+    const PAGES_HEADERS: &str = include_str!("../public/_headers");
+
+    /// The value of `name` in the `/*` rule of `_headers`.
+    fn pages_header(name: &str) -> Option<&'static str> {
+        let prefix = format!("{name}:");
+        PAGES_HEADERS
+            .lines()
+            .skip_while(|line| line.trim() != "/*")
+            .skip(1)
+            .take_while(|line| line.starts_with(char::is_whitespace))
+            .find_map(|line| line.trim().strip_prefix(prefix.as_str()))
+            .map(str::trim)
+    }
+
+    #[test]
+    fn pages_headers_csp_is_the_meta_csp_plus_frame_ancestors() {
+        assert_eq!(
+            pages_header("Content-Security-Policy"),
+            Some(format!("{CONTENT_SECURITY_POLICY}; frame-ancestors 'none'").as_str())
+        );
+    }
+
+    #[test]
+    fn csp_allows_no_inline_styles() {
+        let style_src = CONTENT_SECURITY_POLICY
+            .split(';')
+            .map(str::trim)
+            .find(|directive| directive.starts_with("style-src"));
+        assert_eq!(style_src, Some("style-src 'self'"));
+    }
+
+    #[test]
+    fn pages_headers_send_the_security_headers() {
+        assert_eq!(pages_header("Referrer-Policy"), Some("no-referrer"));
+        assert_eq!(pages_header("X-Content-Type-Options"), Some("nosniff"));
+        assert_eq!(pages_header("X-Frame-Options"), Some("DENY"));
+        assert_eq!(
+            pages_header("Strict-Transport-Security"),
+            Some("max-age=31536000; includeSubDomains")
+        );
+    }
+
+    /// The PostHog loader, served from 'self' (decision 0001).
+    const POSTHOG_JS: &str = include_str!("../public/posthog.js");
+
+    #[test]
+    fn csp_allows_only_the_posthog_hosts_the_loader_uses() {
+        for host in [
+            "https://us.i.posthog.com",
+            "https://us-assets.i.posthog.com",
+        ] {
+            assert!(POSTHOG_JS.contains(host), "posthog.js uses {host}");
+            assert!(
+                CONTENT_SECURITY_POLICY.contains(host),
+                "the CSP allows {host}"
+            );
+        }
+        assert!(!CONTENT_SECURITY_POLICY.contains("*.posthog.com"));
+    }
+
+    #[test]
+    fn posthog_loads_only_on_production_for_real_visitors_with_inputs_masked() {
+        assert!(POSTHOG_JS.contains(r#"PRODUCTION_HOST = "jimhillr-cookbook.pages.dev""#));
+        assert!(POSTHOG_JS.contains("window.location.hostname !== PRODUCTION_HOST"));
+        assert!(POSTHOG_JS.contains("jimhillr-evals"));
+        assert!(POSTHOG_JS.contains("doNotTrack"));
+        assert!(POSTHOG_JS.contains("maskAllInputs: true"));
+        assert!(POSTHOG_JS.contains("recordBody: false"));
+        assert!(POSTHOG_JS.contains(r#"var PROJECT = "phc_"#));
+        assert!(!POSTHOG_JS.contains("\"phx_"), "never a personal API key");
+    }
+
+    #[test]
+    fn index_html_loads_the_posthog_loader_from_self() {
+        let index = include_str!("../index.html");
+        assert!(index.contains(r#"<script src="/posthog.js" defer></script>"#));
+    }
+
+    #[test]
+    fn pages_header_ignores_headers_outside_the_catch_all_rule() {
+        assert_eq!(pages_header("Not-A-Header"), None);
+    }
 
     #[test]
     fn test_recipe_valid_day_in_range() {
@@ -1078,6 +1206,29 @@ mod tests {
             day,
             MAX_DAY_OF_YEAR
         );
+    }
+
+    #[test]
+    fn test_adjacent_recipe_days_in_the_middle_of_the_year() {
+        assert_eq!(adjacent_recipe_days(10), (9, 11));
+    }
+
+    #[test]
+    fn test_adjacent_recipe_days_wrap_round_the_year() {
+        assert_eq!(adjacent_recipe_days(1), (365, 2));
+        assert_eq!(adjacent_recipe_days(365), (364, 1));
+    }
+
+    #[test]
+    fn test_adjacent_recipe_days_are_always_valid_recipe_days() {
+        for day in 1..=365 {
+            let (previous, next) = adjacent_recipe_days(day);
+            assert!(
+                (1..=365).contains(&previous),
+                "previous of {day} is {previous}"
+            );
+            assert!((1..=365).contains(&next), "next of {day} is {next}");
+        }
     }
 
     #[test]
@@ -1911,6 +2062,14 @@ mod tests {
             (
                 AuthError::ConfigError("config error".to_string()),
                 "Authentication not configured",
+            ),
+            (
+                AuthError::LoopbackError("port taken".to_string()),
+                "Unable to process authentication",
+            ),
+            (
+                AuthError::SignInTimedOut("no callback".to_string()),
+                "Sign-in timed out. Please try again",
             ),
             (AuthError::Unknown, "An unexpected error occurred"),
         ];

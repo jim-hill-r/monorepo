@@ -1,0 +1,389 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+
+prefix = "CHAOS"
+
+# CHAOS-001: Anyone can play a game in a browser with nothing to install
+
+[[eval]]
+id = "smoke-script-plays-a-round"
+requirement = "CHAOS-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "the_smoke_script_passes"
+description = "smoke/smoke.script plays a round against the CPU from the start screen, headless."
+
+[[eval]]
+id = "start-screen-has-start-game"
+requirement = "CHAOS-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "spawn_splash_creates_start_button"
+
+[[eval]]
+id = "game-is-against-the-cpu"
+requirement = "CHAOS-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "setup_names_player_two_cpu"
+
+[[eval]]
+id = "live-page"
+requirement = "CHAOS-001"
+stages = ["cd"]
+kind = "http"
+path = "/"
+body_contains = "<title>Controlled Chaos</title>"
+max_ms = 3000
+
+[[eval]]
+id = "live-start-up-script"
+requirement = "CHAOS-001"
+stages = ["cd"]
+kind = "http"
+path = "/boot.js"
+body_contains = "The game failed to start"
+description = "The start-up script that loads the game and shows an error instead of a blank page."
+
+[[eval]]
+id = "live-game-wasm"
+requirement = "CHAOS-001"
+stages = ["cd"]
+kind = "http"
+path = "/game_bg.wasm"
+method = "HEAD"
+header = "content-type: application/wasm"
+
+[[eval]]
+id = "no-panics-in-production"
+requirement = "CHAOS-001"
+stages = ["observe"]
+kind = "metric"
+source = "analytics-engine"
+metric = "controlled_chaos_error_events"
+max = 0
+window = "7d"
+description = "No `error` (panic) event from the web build in the past week."
+
+# CHAOS-002: Every game follows the official rules
+
+[[eval]]
+id = "turn-phases-in-order"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "end_turn_"
+
+[[eval]]
+id = "draw-then-play"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "draw_card_"
+
+[[eval]]
+id = "play-then-battle"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "play_card_"
+
+[[eval]]
+id = "battle-life-and-happiness"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "battle_"
+
+[[eval]]
+id = "happiness-stays-0-to-100"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "player_adjust_happiness_"
+
+[[eval]]
+id = "no-life-or-civilians-loses"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "player_is_not_alive_"
+
+[[eval]]
+id = "life-at-zero-loses"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "player_two_wins_when_player_one_life_hits_zero"
+
+[[eval]]
+id = "deck-exhausted-happiest-wins"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "deck_exhausted_"
+
+[[eval]]
+id = "civilians-beat-deck-exhaustion"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "no_civilians_takes_priority_over_deck_exhaustion"
+
+[[eval]]
+id = "full-two-round-game"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "full_two_round_game"
+
+[[eval]]
+id = "same-seed-same-game"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "setup_with_a_seed_deals_the_same_hands_every_time"
+
+# CHAOS-003: The game can be played by touch, mouse or keyboard
+
+[[eval]]
+id = "taps-and-clicks-act"
+requirement = "CHAOS-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "handle_player_actions_applies_a_tap"
+
+[[eval]]
+id = "a-button-per-card"
+requirement = "CHAOS-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "spawn_game_ui_creates_a_button_per_hand_slot_and_one_advance_button"
+
+[[eval]]
+id = "touch-targets-48px"
+requirement = "CHAOS-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "touch_targets_are_at_least_48px"
+
+[[eval]]
+id = "keyboard-controls"
+requirement = "CHAOS-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "keyboard_actions_"
+
+[[eval]]
+id = "pressed-buttons-act"
+requirement = "CHAOS-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "pressed_button_sends_its_action"
+
+[[eval]]
+id = "screen-says-what-to-do"
+requirement = "CHAOS-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "instructions_"
+
+# CHAOS-004: Everything on screen is easy to read, in any colour setting
+
+[[eval]]
+id = "text-readable-on-background"
+requirement = "CHAOS-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "screen_text_is_readable_on_its_background"
+
+[[eval]]
+id = "button-labels-readable"
+requirement = "CHAOS-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "button_labels_are_readable_in_every_live_state"
+
+[[eval]]
+id = "accessible-text-larger"
+requirement = "CHAOS-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "accessible_mode_scales_text_up_and_standard_keeps_it"
+
+[[eval]]
+id = "category-colours-distinct"
+requirement = "CHAOS-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "category_colours_stand_out_from_the_card_body"
+
+[[eval]]
+id = "every-category-coloured"
+requirement = "CHAOS-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_category_has_its_own_colour_in_every_mode"
+
+[[eval]]
+id = "settings-buttons-switch"
+requirement = "CHAOS-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "pressing_the_"
+
+# CHAOS-005: The game remembers display settings between launches
+
+[[eval]]
+id = "settings-round-trip"
+requirement = "CHAOS-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "every_choice_survives_a_round_trip"
+
+[[eval]]
+id = "saved-for-next-launch"
+requirement = "CHAOS-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "saves_a_change_for_the_next_launch"
+
+[[eval]]
+id = "starts-with-saved-settings"
+requirement = "CHAOS-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "starts_with_the_saved_settings"
+
+[[eval]]
+id = "damaged-settings-keep-defaults"
+requirement = "CHAOS-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "missing_and_unknown_settings_keep_the_base"
+
+[[eval]]
+id = "unwritable-settings-dont-stop-game"
+requirement = "CHAOS-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "an_unwritable_store_doesnt_stop_the_game"
+
+# CHAOS-006: We can see whether people play, without identifying anyone
+
+[[eval]]
+id = "session-and-game-start-events"
+requirement = "CHAOS-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_session_sends_session_start_then_game_start"
+
+[[eval]]
+id = "game-over-event-once"
+requirement = "CHAOS-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "game_over_is_sent_once_with_the_round"
+
+[[eval]]
+id = "panic-error-event"
+requirement = "CHAOS-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_panic_is_an_error_event_with_the_message_escaped"
+
+[[eval]]
+id = "events-tagged-with-build"
+requirement = "CHAOS-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "build_id_keeps_twelve_characters_of_a_commit"
+
+[[eval]]
+id = "live-telemetry-takes-events"
+requirement = "CHAOS-006"
+stages = ["cd"]
+kind = "http"
+url = "https://jimhillr-telemetry.jim-hill-r.workers.dev/event"
+method = "OPTIONS"
+status = 204
+description = "The telemetry Worker the game reports to is up and answers the browser's CORS check."
+
+# CHAOS-007: The CPU opponent plays sensibly
+
+[[eval]]
+id = "cpu-attacks-with-highest"
+requirement = "CHAOS-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "choose_attack_card_"
+
+[[eval]]
+id = "cpu-defends-with-lowest-winner"
+requirement = "CHAOS-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "choose_defense_card_"
+
+[[eval]]
+id = "cpu-hand-hidden"
+requirement = "CHAOS-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "hand_text_hides_ai_hand"
+
+# CHAOS-008: Desktop and Android builds can be downloaded
+
+[[eval]]
+id = "nightly-macos-download"
+requirement = "CHAOS-008"
+stages = ["cd"]
+kind = "http"
+url = "https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-macos.zip"
+method = "HEAD"
+status = 302
+description = "The nightly release has the macOS zip (GitHub redirects to the file; a missing asset is a 404)."
+
+[[eval]]
+id = "nightly-android-download"
+requirement = "CHAOS-008"
+stages = ["cd"]
+kind = "http"
+url = "https://github.com/jimhillr/monorepo/releases/download/controlled_chaos-nightly/controlled_chaos-android.apk"
+method = "HEAD"
+status = 302
+description = "The nightly release has the Android APK (GitHub redirects to the file; a missing asset is a 404)."
+
+# CHAOS-009: The web build is safe to open
+
+[[eval]]
+id = "live-csp-forbids-framing"
+requirement = "CHAOS-009"
+stages = ["cd"]
+kind = "http"
+path = "/"
+header = "content-security-policy: frame-ancestors 'none'"
+
+[[eval]]
+id = "live-csp-own-scripts-only"
+requirement = "CHAOS-009"
+stages = ["cd"]
+kind = "http"
+path = "/"
+header = "content-security-policy: script-src 'self' 'wasm-unsafe-eval'"
+
+[[eval]]
+id = "live-nosniff"
+requirement = "CHAOS-009"
+stages = ["cd"]
+kind = "http"
+path = "/"
+header = "x-content-type-options: nosniff"
+
+[[eval]]
+id = "live-hsts"
+requirement = "CHAOS-009"
+stages = ["cd"]
+kind = "http"
+path = "/"
+header = "strict-transport-security: max-age="

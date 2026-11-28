@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isPhone, mainNavLink } from './nav';
 
 /**
  * Tests for the Cookbook header navigation bar.
@@ -11,7 +12,7 @@ import { test, expect } from '@playwright/test';
  *   npm test
  */
 
-test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
+test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
   test('should display header on home page', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -34,23 +35,18 @@ test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
 
   test('should display navigation links in header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    // Check for navigation links
+
+    // Phones show these links in the sidebar instead (mobile-header.spec.ts).
     const nav = page.locator('#header .header-nav');
-    await expect(nav).toBeVisible();
-    
-    // Check for Home link
-    const homeLink = nav.locator('a:has-text("Home")');
-    await expect(homeLink).toBeVisible();
-    
-    // Check for Recipes link
-    const recipesLink = nav.locator('a:has-text("Recipes")');
-    await expect(recipesLink).toBeVisible();
-    
-    // Check for Plans link
-    const plansLink = nav.locator('a:has-text("Plans")');
-    await expect(plansLink).toBeVisible();
+    if (isPhone(page)) {
+      await expect(nav).toBeHidden();
+    } else {
+      await expect(nav).toBeVisible();
+    }
+
+    for (const name of ['Home', 'Recipes', 'Plans']) {
+      await expect(await mainNavLink(page, name)).toBeVisible();
+    }
   });
 
   test('should navigate to home from header', async ({ page }) => {
@@ -59,7 +55,7 @@ test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
     await page.waitForLoadState('networkidle');
     
     // Click Home link in header
-    const homeLink = page.locator('#header .header-nav a:has-text("Home")');
+    const homeLink = await mainNavLink(page, 'Home');
     await homeLink.click();
     await page.waitForLoadState('networkidle');
     
@@ -75,7 +71,7 @@ test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
     await page.waitForLoadState('networkidle');
     
     // Click Recipes link in header
-    const recipesLink = page.locator('#header .header-nav a:has-text("Recipes")');
+    const recipesLink = await mainNavLink(page, 'Recipes');
     await recipesLink.click();
     await page.waitForLoadState('networkidle');
     
@@ -90,9 +86,8 @@ test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
     await page.waitForLoadState('networkidle');
     
     // Click Plans link in header
-    const plansLink = page.locator('#header .header-nav a:has-text("Plans")');
-    // Use force:true for mobile viewports where elements may overlap
-    await plansLink.click({ force: true });
+    const plansLink = await mainNavLink(page, 'Plans');
+    await plansLink.click();
     await page.waitForLoadState('networkidle');
     
     // Verify we're on a plan page (check URL pattern)
@@ -131,23 +126,21 @@ test.describe('Header Navigation', { tag: '@req:COOK-006' }, () => {
     await page.waitForLoadState('networkidle');
     
     // Navigate between pages and verify header is always present
-    const recipesLink = page.locator('#header .header-nav a:has-text("Recipes")');
-    // Use force:true for mobile viewports where elements may overlap
-    await recipesLink.click({ force: true });
+    const recipesLink = await mainNavLink(page, 'Recipes');
+    await recipesLink.click();
     await page.waitForLoadState('networkidle');
     
     let header = page.locator('#header');
     await expect(header).toBeVisible();
     
-    const plansLink = page.locator('#header .header-nav a:has-text("Plans")');
-    // Use force:true for mobile viewports where elements may overlap
-    await plansLink.click({ force: true });
+    const plansLink = await mainNavLink(page, 'Plans');
+    await plansLink.click();
     await page.waitForLoadState('networkidle');
     
     header = page.locator('#header');
     await expect(header).toBeVisible();
     
-    const homeLink = page.locator('#header .header-nav a:has-text("Home")');
+    const homeLink = await mainNavLink(page, 'Home');
     await homeLink.click();
     await page.waitForLoadState('networkidle');
     
