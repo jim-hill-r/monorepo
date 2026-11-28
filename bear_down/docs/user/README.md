@@ -19,8 +19,11 @@ so the odds include the latest scores.
 2. The top of the page shows the Bears' record, the week and season, and
    their odds of winning the Super Bowl, making the playoffs, reaching the
    divisional round, and all four NFC North teams reaching the divisional
-   round. When the Bears lead or share the lead in the NFC North, a banner
-   above says so (and "Bears win!" with the score after a win).
+   round. When the Bears' most recent game was a win, a banner above
+   celebrates it with the score and a line or two about where things stand
+   now, such as their place in the NFC North, how much the win moved their
+   Super Bowl odds, a winning streak or the next playoff round. It is
+   rebuilt every night, and disappears after a loss.
 3. Below that is this week's list of games, the most important first.
 
 ## How to read this week's rooting list
