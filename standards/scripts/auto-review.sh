@@ -62,8 +62,7 @@ BLOCK_PATHS='^\.github/
 (^|/)\.env'
 # The checks that must have run and passed, on top of "every check passed".
 REQUIRED_CHECKS='CI result
-PR summary
-Human review'
+PR summary'
 # This workflow's own job, ignored when reading the head's checks.
 SELF_CHECK='Auto review'
 
@@ -117,8 +116,8 @@ decide() {
   [ -z "$blocked" ] || { echo "skip: touches $blocked"; return; }
 
   # Every check run on the head finished and passed (skipped and neutral
-  # count as passed), and every commit status is success, so a pending
-  # Human review status holds it. A check that ran more than once (a re-run)
+  # count as passed), and every commit status is success. A PR held for a
+  # human is labelled human-review (PR-004), which BLOCK_LABELS refuses. A check that ran more than once (a re-run)
   # counts by its latest run.
   local bad
   bad=$(jq -r --arg self "$SELF_CHECK" '
@@ -131,7 +130,6 @@ decide() {
   [ -z "$bad" ] || { echo "skip: check $bad"; return; }
   local need
   while IFS= read -r need; do
-    # Human review is a commit status (PR-004); the others are check runs.
     if ! jq -e --arg n "$need" 'any(.check_runs[]?; .name == $n and .conclusion == "success")
         or any(.statuses[]?; .context == $n and .state == "success")' "$checks" >/dev/null; then
       echo "skip: check $need has not passed"
