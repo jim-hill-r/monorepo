@@ -61,6 +61,13 @@ jobs:
           echo "Recording demos for: ${demos:-none}"
           echo "list=$demos" >> "$GITHUB_OUTPUT"
 
+      # kokoro-onnx supports Python 3.10 to 3.13 only.
+      - name: Setup Python
+        if: steps.demos.outputs.list != ''
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+
       - name: Set up the demo recorder
         if: steps.demos.outputs.list != ''
         working-directory: docs/reviews/demo-recorder
@@ -68,7 +75,7 @@ jobs:
           command -v ffmpeg > /dev/null || { sudo apt-get update -q && sudo apt-get install -y -q ffmpeg; }
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
-          python3 -m venv .venv
+          python -m venv .venv
           .venv/bin/pip install --quiet -r tts/requirements.txt
 
       - name: Build decks
