@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-28T11:37:10.084196205Z",
+  "generated_at": "2026-11-28T11:38:56.351112511Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 12.8,
-    "musts_percent": 35.4,
-    "judged_percent": 15.0,
+    "percent": 14.2,
+    "musts_percent": 37.5,
+    "judged_percent": 16.9,
     "warn_below": 80.0,
     "warning": true
   },
@@ -155,10 +155,10 @@
       "musts_in_production": 2,
       "coverage": {
         "requirements": 8,
-        "met": 0,
-        "percent": 0.0,
-        "musts_met": 0,
-        "musts_percent": 0.0,
+        "met": 3,
+        "percent": 37.5,
+        "musts_met": 1,
+        "musts_percent": 50.0,
         "warning": true
       },
       "requirements": [
@@ -166,10 +166,7 @@
           "requirement": "CAHO-001",
           "title": "A family tree is drawn so anyone can read it",
           "priority": "must",
-          "verdict": "at-risk",
-          "reasons": [
-            "family-tree-page has no cd results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "CAHO-002",
@@ -186,7 +183,6 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "sign-in-config has no cd results yet",
             "setting auth0-cahokia-app has never been checked"
           ]
         },
@@ -194,19 +190,13 @@
           "requirement": "CAHO-004",
           "title": "The site loads only what it needs",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "CAHO-005",
           "title": "It is easy to move around the site",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "CAHO-006",
