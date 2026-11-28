@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T02:17:50.668595819Z",
+  "generated_at": "2026-11-28T02:33:29.969033846Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -256,7 +256,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "live-game-wasm failed in cd at 2026-11-28 01:07:48.943246734 UTC"
+            "live-game-wasm failed in cd at 2026-11-28 02:32:33.658310396 UTC"
           ]
         },
         {
@@ -721,7 +721,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-28 02:08:37.634042617 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-28 02:15:51.507642078 UTC"
           ]
         },
         {
@@ -904,7 +904,7 @@
           "verdict": "at-risk",
           "reasons": [
             "first-session-judged has no judge results yet",
-            "home-page-live failed 3 of its last 7 cd runs"
+            "home-page-live failed 2 of its last 7 cd runs"
           ]
         },
         {
@@ -913,7 +913,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "app-loads-live failed 3 of its last 7 cd runs",
+            "app-loads-live failed 2 of its last 7 cd runs",
             "demonstrations-judged has no judge results yet"
           ]
         },
@@ -924,7 +924,7 @@
           "verdict": "at-risk",
           "reasons": [
             "tracing-judged has no judge results yet",
-            "tracing-page-live failed 3 of its last 7 cd runs"
+            "tracing-page-live failed 2 of its last 7 cd runs"
           ]
         },
         {
@@ -933,7 +933,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "capital-level-live failed 3 of its last 7 cd runs"
+            "capital-level-live failed 2 of its last 7 cd runs"
           ]
         },
         {
@@ -942,7 +942,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "home-page-live-for-progress failed 3 of its last 7 cd runs",
+            "home-page-live-for-progress failed 2 of its last 7 cd runs",
             "progress-judged has no judge results yet"
           ]
         },
@@ -952,7 +952,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "connects-only-to-itself-live failed 3 of its last 7 cd runs"
+            "connects-only-to-itself-live failed 2 of its last 7 cd runs"
           ]
         },
         {
@@ -961,9 +961,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed 3 of its last 7 cd runs",
-            "manifest-live failed 3 of its last 7 cd runs",
-            "no-zoom-live failed 3 of its last 7 cd runs"
+            "home-screen-icon-live failed 2 of its last 7 cd runs",
+            "manifest-live failed 2 of its last 7 cd runs",
+            "no-zoom-live failed 2 of its last 7 cd runs"
           ]
         },
         {
