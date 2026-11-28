@@ -229,6 +229,17 @@ repo, rather than in any one agent tool's settings.
   requests pass through. Shared database infrastructure is allowed only
   with tenant-scoped tables that one export can move out
   ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md)).
+- **Backups and disaster recovery (Jim, 2026-11-28).** "We need to make
+  a plan for this and create a project for it." Everything that holds
+  state is listed with a recovery tier, RPO and RTO in
+  [backups/docs/inventory.md](backups/docs/inventory.md), and the
+  `backups` project keeps copies outside the vendor that holds each one,
+  with drills that prove a restore works
+  ([decision 0030](standards/docs/decisions/0030-backups-and-disaster-recovery.md)).
+  A PR that adds a stateful resource (a D1 database, a KV namespace, a
+  data branch, a vendor that keeps user data) adds its inventory row, and
+  any export of data that isn't already public is encrypted before it
+  leaves the runner, because the repo and its artifacts are public.
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON

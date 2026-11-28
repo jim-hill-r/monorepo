@@ -44,6 +44,7 @@ row here before a project's first `docs/requirements.md`.
 | --- | --- |
 | athenaeum | `ATHN` |
 | auth_sdk | `AUTH` |
+| backups | `BACK` |
 | bear_down | `BEAR` |
 | blueeel | `BEEL` |
 | bogan | `BOGN` |

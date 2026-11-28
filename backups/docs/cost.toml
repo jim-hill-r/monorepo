@@ -1,0 +1,3 @@
+# backups: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-28"
+summary = "Docs and issue files only so far; nothing deployed. $0 a month. Phase 1 adds a nightly GitHub Actions job and one Workers KV namespace, both well inside the free tiers (decision 0030)."

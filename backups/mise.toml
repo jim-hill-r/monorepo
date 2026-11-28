@@ -1,0 +1,6 @@
+# backups: docs project for now; phase 1 adds the backup workflow and its
+# chores command (decision 0030). Standard tasks: ci, fix, build, test, dev,
+# release, deploy.
+
+[task_config]
+includes = ["../standards/tasks/docs.toml"]
