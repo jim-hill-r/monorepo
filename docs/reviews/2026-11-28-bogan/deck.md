@@ -390,3 +390,16 @@ Please answer as review comments on this deck's pull request.
   `standards/radar/limits.toml` (`pages_projects`, budget 25).
 - No app to run, so no screenshots, demos or performance measurements.
 - No product code changed in this review.
+
+---
+
+# Jim's answers, 2026-11-28
+
+| Question | Answer |
+| --- | --- |
+| 1. Promote phase 1 to priority? | Yes. Both phase 1 issue files are now `priority` (this PR) |
+| 2. Start seller invites now? | No. Invites stay in phase 3 |
+| 3. Contact link instead of waiting for the support library? | No. Reports and the seller form wait for decision 0020 phase 5 |
+| 4. Keep the name Bogan? | Bogan is a codename. The product will be **Bristlecone Market**, part of a larger Bristlecone project still to be introduced |
+
+The name risk on the Risks slide is closed: "Bogan" stays internal.

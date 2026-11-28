@@ -177,3 +177,11 @@ Read `bogan/` in full, PR #968's brief and Jim's answers, the eight issue
 files, decisions 0004, 0016, 0018 to 0021, the tech radar and limits, the
 `evals-results` verdicts, and `git log -- bogan`. There is no app to run,
 so there are no screenshots and no demo videos; the deck says so.
+
+## Jim's answers, 2026-11-28
+
+1. Yes: both phase 1 issue files are now `priority`.
+2. No: seller invites stay in phase 3.
+3. No: reports and the seller form wait for the support library.
+4. Bogan is a codename; the product will be Bristlecone Market, part of a
+   larger Bristlecone project still to be introduced. The README says so.
