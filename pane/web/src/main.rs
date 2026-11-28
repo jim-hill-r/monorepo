@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use pane_model::{
     Deliverable, DeliverableKind, HumanIssue, Review, ScorecardRow, Snapshot, WorkItem, WorkKind,
+    signoff::SignOff,
 };
 
 mod acknowledge;
@@ -730,6 +731,7 @@ fn Reviews() -> Element {
                                     th { scope: "col", "Project" }
                                     th { scope: "col", "Deck" }
                                     th { scope: "col", "Scorecard" }
+                                    th { scope: "col", "Signed off" }
                                     th { scope: "col", "Comments" }
                                 }
                             }
@@ -764,6 +766,13 @@ fn ReviewRow(review: Review) -> Element {
             }
             td {
                 ScorecardSummary { rows: review.scorecard.clone() }
+            }
+            td { "data-testid": "review-signed-off",
+                if review.signoffs.is_empty() {
+                    span { class: "muted", "Not yet" }
+                } else {
+                    "{view::signoff_summary(&review)}"
+                }
             }
             td {
                 if let Some(pr) = &review.pr {
@@ -935,11 +944,66 @@ fn ReviewPage(folder: String) -> Element {
                         "Leave comments on the pull request, on the lines of the slide."
                     }
                     Scorecard { rows: review.scorecard.clone() }
+                    SignOffs { signoffs: review.signoffs.clone(), commit: s.commit.clone() }
                 }
             },
         }
     }
 }
+
+/// Who has signed the deck off, with each verdict and feedback item, and
+/// whether an agent has done the item yet (its issue file deleted).
+#[component]
+fn SignOffs(signoffs: Vec<SignOff>, commit: String) -> Element {
+    rsx! {
+        section { class: "group", "data-testid": "review-signoffs",
+            h2 { "Sign-offs" }
+            if signoffs.is_empty() {
+                p { class: "muted", "Nobody has signed this deck off yet." }
+            }
+            for s in signoffs {
+                div { key: "{s.path}", class: "signoff",
+                    p {
+                        strong { "{s.reviewer}" }
+                        " · {s.verdict.label()} · {s.date} · "
+                        a { href: "{view::github_file_url(&commit, &s.path)}", "sign-off file" }
+                    }
+                    if !s.feedback.is_empty() {
+                        ul { class: "feedback",
+                            for (i , f) in s.feedback.iter().enumerate() {
+                                li { key: "{i}",
+                                    if let Some(n) = f.slide {
+                                        "Slide {n}: "
+                                    }
+                                    "{f.text} "
+                                    match (&f.issue, f.open) {
+                                        (Some(issue), true) => rsx! {
+                                            a { class: "badge", href: "{view::github_file_url(&commit, issue)}", "Open issue" }
+                                        },
+                                        (Some(_), false) => rsx! {
+                                            span { class: "badge rating-good", "Done" }
+                                        },
+                                        (None, _) => rsx! {
+                                            span { class: "badge muted", "Not filed" }
+                                        },
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            p { class: "muted",
+                "Signing off from pane, with feedback that becomes issue files for agents, comes with sign-in; see the "
+                a { href: "{view::github_file_url(&commit, PLAN)}", "deck sign-off plan" }
+                "."
+            }
+        }
+    }
+}
+
+/// The deck sign-off plan.
+const PLAN: &str = "pane/docs/plans/2026-11-deck-sign-off.md";
 
 #[component]
 fn HumanIssues() -> Element {

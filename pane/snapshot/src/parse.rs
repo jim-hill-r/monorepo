@@ -176,6 +176,7 @@ pub fn reviews(readme: &str) -> Vec<Review> {
             path: format!("{REVIEWS_DIR}/{deck}"),
             pr,
             scorecard: Vec::new(),
+            signoffs: Vec::new(),
         });
     }
     // Newest first, keeping the table's order within a day.
@@ -931,6 +932,7 @@ mod tests {
             path: "docs/reviews/2026-11-25-app/deck.md".into(),
             pr: None,
             scorecard: vec![],
+            signoffs: vec![],
         };
         let d = review_deliverable(&r);
         assert_eq!(d.kind, DeliverableKind::ReviewDeck);

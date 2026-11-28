@@ -291,6 +291,7 @@ mod tests {
             date: date.into(),
             path: format!("docs/reviews/{date}-{project}/deck.md"),
             pr: None,
+            signoffs: vec![],
             scorecard: ratings
                 .iter()
                 .map(|r| ScorecardRow {
