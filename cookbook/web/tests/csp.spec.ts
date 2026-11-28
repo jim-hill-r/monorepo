@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { pageReady } from './nav';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -63,7 +64,7 @@ test.describe('Content Security Policy', () => {
     test(`${path} loads with no CSP violations`, async ({ page }) => {
       const violations = await watchViolations(page);
       await page.goto(path);
-      await page.waitForLoadState('networkidle');
+      await pageReady(page);
       await expect(page.locator('#header')).toBeVisible();
       expect(violations).toEqual([]);
     });

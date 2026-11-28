@@ -125,4 +125,13 @@ The test suite covers:
 
 When adding new features or routes, please add corresponding tests following the existing patterns in the `routing.spec.ts`, `header-navigation.spec.ts`, and `auth-navbar.spec.ts` files.
 
+Wait for what the test needs, never for `waitForLoadState('networkidle')`:
+Playwright discourages it, and the Auth0 discovery request can keep the
+network busy past the test timeout on CI. After `page.goto` or
+`page.reload`, call `pageReady(page)` from `nav.ts`, which waits for the
+page's `#content h1`, its stylesheets and its colour transitions. After a click
+that navigates, assert the new URL with `await expect(page).toHaveURL(...)`,
+which waits for it. Then use web-first assertions (`await
+expect(locator).toBeVisible()` and the like), which retry until they pass.
+
 For more information on Playwright, see the [official documentation](https://playwright.dev/).

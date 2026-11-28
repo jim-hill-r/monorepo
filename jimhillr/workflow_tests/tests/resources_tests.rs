@@ -345,3 +345,40 @@ fn test_wired_into_the_audit_hooks_and_pr_ci() {
     assert!(ci.contains("resources.sh new-entries"));
     assert!(ci.contains("needs-human"));
 }
+
+#[test]
+fn test_sweep_without_tokens_lists_nothing_and_passes() {
+    let dir = repo(&[
+        ("site/wrangler.toml", SITE),
+        (
+            "standards/resources.toml",
+            &retired("jimhillr-gone", "https://jimhillr-gone.pages.dev", ""),
+        ),
+    ]);
+    let out_dir = dir.join("out");
+    let out = Command::new("bash")
+        .arg(script())
+        .arg("sweep")
+        .env("RESOURCES_ROOT", &dir)
+        .env("RESOURCES_OUT", &out_dir)
+        .env_remove("CLOUDFLARE_API_TOKEN")
+        .env_remove("CLOUDFLARE_ACCOUNT_ID")
+        .env_remove("GH_TOKEN")
+        .env_remove("GITHUB_STEP_SUMMARY")
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_INDEX_FILE")
+        .current_dir(&dir)
+        .output()
+        .expect("run resources.sh sweep");
+    let all = text(&out);
+    assert!(out.status.success(), "{all}");
+    assert!(all.contains("pages not listed"), "{all}");
+    assert!(all.contains("branch not listed"), "{all}");
+    // Nothing looked at Pages, so the retired project is not called gone.
+    assert!(!all.contains("jimhillr-gone"), "{all}");
+    let claims = fs::read_to_string(out_dir.join("claims.tsv")).expect("claims.tsv");
+    assert_eq!(claims, "pages\tjimhillr-old\n");
+    let live = fs::read_to_string(out_dir.join("live.json")).expect("live.json");
+    assert!(live.contains("\"resources\": []"), "{live}");
+    assert!(out_dir.join("report.json").is_file());
+}

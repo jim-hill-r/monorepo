@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 /**
  * Tests for the Cookbook web application routing.
@@ -16,8 +17,8 @@ test.describe('Cookbook Web Application', { tag: '@smoke' }, () => {
     // Navigate to the home page
     await page.goto('/');
     
-    // Wait for the page to be fully loaded
-    await page.waitForLoadState('networkidle');
+    // Wait for the page to render
+    await pageReady(page);
     
     // Check that the home page loaded with the home title
     await expect(page).toHaveURL('/');
@@ -29,7 +30,7 @@ test.describe('Cookbook Web Application', { tag: '@smoke' }, () => {
   
   test('should have welcome text on home page', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for intro description in the content area
     await expect(page.locator('.intro-description')).toBeVisible();
@@ -37,7 +38,7 @@ test.describe('Cookbook Web Application', { tag: '@smoke' }, () => {
 
   test('should have navigation information on home page', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for navigation cards with Daily Recipes and Weekly Plans
     await expect(page.locator('#content h2').first()).toContainText('Daily Recipes');
@@ -48,7 +49,7 @@ test.describe('Cookbook Web Application', { tag: '@smoke' }, () => {
 test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
   test('should load recipe for day 1', async ({ page }) => {
     await page.goto('/recipe/1');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the recipe page loaded with actual recipe content
     const contentH1 = page.locator('#content h1');
@@ -61,7 +62,7 @@ test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
 
   test('recipe description leaves out the metadata lines', async ({ page }) => {
     await page.goto('/recipe/1');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
 
     const description = page.locator('.recipe-description');
     await expect(description).toBeVisible();
@@ -73,7 +74,7 @@ test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
 
   test('should load recipe for day 100', async ({ page }) => {
     await page.goto('/recipe/100');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the recipe page loaded with actual recipe content
     const contentH1 = page.locator('#content h1');
@@ -86,7 +87,7 @@ test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
 
   test('should load recipe for day 365', async ({ page }) => {
     await page.goto('/recipe/365');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the recipe page loaded with actual recipe content
     const contentH1 = page.locator('#content h1');
@@ -99,7 +100,7 @@ test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
 
   test('should have back to home link on recipe page', async ({ page }) => {
     await page.goto('/recipe/50');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for back to home link
     const backLink = page.locator('a:has-text("Back to Home")');
@@ -108,7 +109,6 @@ test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
     // Click the link and verify navigation
     // Use force:true for mobile viewports where elements may overlap
     await backLink.click({ force: true });
-    await page.waitForLoadState('networkidle');
     // Check we're on home page by looking for the home page specific content
     await expect(page).toHaveURL('/');
     await expect(page.locator('.home-container h1')).toHaveText("The Engineer's 365 Cookbook");
@@ -134,7 +134,7 @@ test.describe('Recipe Routes', { tag: ['@req:COOK-001', '@smoke'] }, () => {
 test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
   test('should load plan for week 1', async ({ page }) => {
     await page.goto('/plan/1');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the plan page loaded
     const contentH1 = page.locator('#content h1');
@@ -145,7 +145,7 @@ test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
 
   test('should load plan for week 26', async ({ page }) => {
     await page.goto('/plan/26');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the plan page loaded
     const contentH1 = page.locator('#content h1');
@@ -156,7 +156,7 @@ test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
 
   test('should load plan for week 52', async ({ page }) => {
     await page.goto('/plan/52');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the plan page loaded
     const contentH1 = page.locator('#content h1');
@@ -167,7 +167,7 @@ test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
 
   test('should have back to home link on plan page', async ({ page }) => {
     await page.goto('/plan/12');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for back to home link
     const backLink = page.locator('a:has-text("Back to Home")');
@@ -176,7 +176,6 @@ test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
     // Click the link and verify navigation
     // Use force:true for mobile viewports where elements may overlap
     await backLink.click({ force: true });
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL('/');
     await expect(page.locator('.home-container h1')).toHaveText("The Engineer's 365 Cookbook");
   });
@@ -198,7 +197,7 @@ test.describe('Plan Routes', { tag: ['@req:COOK-002', '@smoke'] }, () => {
 test.describe('404 Page', () => {
   test('should show 404 page for invalid routes', async ({ page }) => {
     await page.goto('/invalid-route');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for 404 page
     const contentH1 = page.locator('#content h1');
@@ -208,7 +207,7 @@ test.describe('404 Page', () => {
 
   test('should have back to home link on 404 page', async ({ page }) => {
     await page.goto('/non-existent');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for back to home link
     const backLink = page.locator('a:has-text("Back to Home")');
@@ -216,7 +215,6 @@ test.describe('404 Page', () => {
     
     // Click the link and verify navigation
     await backLink.click();
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL('/');
     await expect(page.locator('.home-container h1')).toHaveText("The Engineer's 365 Cookbook");
   });
@@ -225,7 +223,7 @@ test.describe('404 Page', () => {
 test.describe('Input Validation', () => {
   test('should show error for day 0', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/0');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for invalid day error
     const contentH1 = page.locator('#content h1');
@@ -236,7 +234,7 @@ test.describe('Input Validation', () => {
 
   test('should show error for day 366', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/366');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for invalid day error
     const contentH1 = page.locator('#content h1');
@@ -247,7 +245,7 @@ test.describe('Input Validation', () => {
 
   test('should show error for day 999', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/999');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for invalid day error
     const contentH1 = page.locator('#content h1');
@@ -257,7 +255,7 @@ test.describe('Input Validation', () => {
 
   test('should show error for week 0', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/0');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for invalid week error
     const contentH1 = page.locator('#content h1');
@@ -268,7 +266,7 @@ test.describe('Input Validation', () => {
 
   test('should show error for week 54', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/54');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for invalid week error
     const contentH1 = page.locator('#content h1');
@@ -279,7 +277,7 @@ test.describe('Input Validation', () => {
 
   test('should show error for week 100', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/100');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for invalid week error
     const contentH1 = page.locator('#content h1');
@@ -289,7 +287,7 @@ test.describe('Input Validation', () => {
 
   test('should have back to home link on invalid day page', { tag: '@req:COOK-001' }, async ({ page }) => {
     await page.goto('/recipe/500');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for back to home link
     const backLink = page.locator('a', { hasText: 'Back to Home' });
@@ -297,14 +295,13 @@ test.describe('Input Validation', () => {
     
     // Click the link and verify navigation
     await backLink.click();
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL('/');
     await expect(page.locator('#content h1')).toHaveText("The Engineer's 365 Cookbook");
   });
 
   test('should have back to home link on invalid week page', { tag: '@req:COOK-002' }, async ({ page }) => {
     await page.goto('/plan/75');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for back to home link
     const backLink = page.locator('a', { hasText: 'Back to Home' });
@@ -312,7 +309,6 @@ test.describe('Input Validation', () => {
     
     // Click the link and verify navigation
     await backLink.click();
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL('/');
     await expect(page.locator('#content h1')).toHaveText("The Engineer's 365 Cookbook");
   });

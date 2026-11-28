@@ -54,7 +54,7 @@
     font-size: 1.8rem;
     margin-bottom: var(--ds-space-4);
     color: var(--ds-color-text);
-    border-bottom: 2px solid var(--ds-color-accent);
+    border-bottom: var(--ds-border-width) solid var(--ds-color-border);
     padding-bottom: var(--ds-space-2);
 }
 
@@ -77,9 +77,10 @@
 .tag {
     display: inline-block;
     padding: var(--ds-space-1) var(--ds-space-3);
-    background-color: var(--ds-color-accent);
-    color: var(--ds-color-on-accent);
-    border-radius: var(--ds-radius-sm);
+    background-color: var(--ds-color-surface);
+    color: var(--ds-color-text-muted);
+    border: var(--ds-border-width) solid var(--ds-color-border);
+    border-radius: var(--ds-radius-pill);
     font-size: var(--ds-text-sm);
 }
 
@@ -105,8 +106,8 @@
 
 .recipe-day-nav a:hover,
 .recipe-day-nav a:focus-visible {
-    background-color: var(--ds-color-accent);
-    color: var(--ds-color-on-accent);
+    background-color: var(--ds-color-surface-raised);
+    color: var(--ds-color-accent);
     border-color: var(--ds-color-accent);
 }
 

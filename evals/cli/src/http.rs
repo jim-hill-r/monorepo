@@ -96,12 +96,19 @@ impl Fetch for Client {
                 )
             })
             .collect();
-        let body = response
-            .body_mut()
-            .with_config()
-            .limit(MAX_BODY)
-            .read_to_vec()
-            .map_err(|e| format!("{method} {url}: reading the body: {e}"))?;
+        // A HEAD reply never has a body (RFC 9110, 9.3.2), even when its
+        // headers describe a compressed one, and decoding nothing as gzip
+        // fails, so don't read one.
+        let body = if method.eq_ignore_ascii_case("HEAD") {
+            Vec::new()
+        } else {
+            response
+                .body_mut()
+                .with_config()
+                .limit(MAX_BODY)
+                .read_to_vec()
+                .map_err(|e| format!("{method} {url}: reading the body: {e}"))?
+        };
         let elapsed_ms = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
         Ok(Response {
             status,
@@ -897,6 +904,28 @@ __wbg_init({module_or_path:"/./assets/web_bg-dxh2.wasm"})"#;
         assert_eq!(response.status, 404);
         assert_eq!(response.body, b"nope");
         assert!(response.headers.contains(&("x-evals".into(), "yes".into())));
+        Ok(())
+    }
+
+    /// A HEAD reply has no body, even when its headers describe a
+    /// compressed one. Cloudflare Pages answers `HEAD /game_bg.wasm` like
+    /// this, and reading the empty body as gzip failed every run of
+    /// controlled_chaos's `live-game-wasm` eval.
+    #[test]
+    fn the_client_reads_no_body_from_a_head_reply() -> anyhow::Result<()> {
+        let base = serve(vec![
+            "HTTP/1.1 200 OK\r\nContent-Type: application/wasm\r\nContent-Encoding: gzip\r\nContent-Length: 1234\r\nConnection: close\r\n\r\n",
+        ])?;
+        let response = Client::new()
+            .fetch("HEAD", &format!("{base}/game_bg.wasm"), true)
+            .map_err(anyhow::Error::msg)?;
+        assert_eq!(response.status, 200);
+        assert!(response.body.is_empty());
+        assert!(
+            response
+                .headers
+                .contains(&("content-type".into(), "application/wasm".into()))
+        );
         Ok(())
     }
 

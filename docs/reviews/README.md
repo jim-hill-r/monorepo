@@ -37,6 +37,7 @@ reads. One row per review, newest first.
 
 | Date | Project | Deck | PR |
 | --- | --- | --- | --- |
+| 2026-11-28 | bogan | [deck](2026-11-28-bogan/deck.md) | [#992](https://github.com/jimhillr/monorepo/pull/992) |
 | 2026-11-27 | evals | [deck](2026-11-27-evals/deck.md) | [#815](https://github.com/jimhillr/monorepo/pull/815) |
 | 2026-11-25 | cookbook | [deck](2026-11-25-cookbook/deck.md) | [#585](https://github.com/jimhillr/monorepo/pull/585) |
 

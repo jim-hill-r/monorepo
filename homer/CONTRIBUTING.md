@@ -1,5 +1,15 @@
 # Contributing to homer
 
+## Code layout
+
+`src/main.rs` only reads the command line. The work lives in the library
+(`src/lib.rs`), and each module keeps its unit tests beside its code:
+
+- `zillow.rs`: the RapidAPI client and `parse_property_details`.
+- `evaluate.rs`: `HomePreferences` and `evaluate_property`.
+- `report.rs`: the text report and `--json` output.
+- `quota.rs`: the guard that keeps homer inside the RapidAPI free plan.
+
 ## Getting Started
 
 ### Install Toolchain

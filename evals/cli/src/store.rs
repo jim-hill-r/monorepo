@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Utc};
 use evals_model::{
-    EvalResult, HumanChecks, Priority, Stage, Thresholds, Verdict, parse_evals, parse_requirements,
+    EvalResult, HumanChecks, Priority, Thresholds, Verdict, parse_evals, parse_requirements,
     requirement_order, verdict,
 };
 use serde::{Deserialize, Serialize};
@@ -123,7 +123,8 @@ pub struct ProjectVerdicts {
     pub project: String,
     /// Active `must` requirements.
     pub musts: usize,
-    /// Active `must` requirements with an eval in a production stage.
+    /// Active `must` requirements with at least one stored result from a
+    /// production stage, not just an eval planned for one.
     pub musts_in_production: usize,
     /// The project's eval coverage (`coverage.rs`).
     pub coverage: Coverage,
@@ -224,12 +225,15 @@ pub fn compute(
             .filter(|r| r.is_active() && r.priority == Priority::Must)
             .map(|r| r.id.as_str())
             .collect();
+        // A must counts once production has actually checked it: an eval
+        // planned for `cd` that never runs (no smoke step yet) is not
+        // coverage (fire drill, 2026-11-27, finding 5).
         let musts_in_production = musts
             .iter()
             .filter(|id| {
-                evals.iter().any(|e| {
-                    e.requirement == **id && e.stages.iter().any(|s: &Stage| s.is_production())
-                })
+                project_results
+                    .iter()
+                    .any(|r| r.requirement == **id && r.stage.is_production())
             })
             .count();
         projects.push(ProjectVerdicts {
@@ -469,6 +473,22 @@ every = "30d"
             "not json",
         )?;
         assert!(read_results(dir.path())?.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn a_must_with_only_ci_results_is_not_evaluated_in_production() -> Result<()> {
+        let root = repo()?;
+        // COOK-001's `layout` eval runs in `ci` and `cd`, but `cd` never ran.
+        let results = parse_results(&line("layout", "ci", "pass", "2026-12-10T08:00:00Z"))?;
+        let file = compute(root.path(), &results, None, now())?;
+        let project = &file.projects[0];
+        assert_eq!((project.musts, project.musts_in_production), (1, 0));
+        assert!(
+            render(&file).contains("(0 of 1 musts evaluated in production;"),
+            "{}",
+            render(&file)
+        );
         Ok(())
     }
 

@@ -490,12 +490,12 @@ fn reads_health_thresholds_into_the_snapshot() -> TestResult {
 
 #[test]
 fn the_real_health_toml_lights_real_projects() -> TestResult {
-    // The real repo: every project gets its four snapshot signals.
+    // The real repo: every project gets its five snapshot signals.
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let s = repo::build(&root, "abc1234", "2026-11-27T12:00:00Z")?;
     for project in &s.projects {
         let signals = pane_model::signals::project_signals(&s, &project.path);
-        assert_eq!(signals.len(), 4, "{}", project.path);
+        assert_eq!(signals.len(), 5, "{}", project.path);
     }
     Ok(())
 }

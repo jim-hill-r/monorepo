@@ -52,6 +52,11 @@ pub struct Snapshot {
     /// snapshot was built without them (the Standards light is then grey).
     #[serde(default)]
     pub audit: Option<audit::Audit>,
+    /// The eval engine's requirement verdicts and eval runs from the
+    /// `evals-results` branch, or `None` when the snapshot was built without
+    /// them (the Requirements light is then grey).
+    #[serde(default)]
+    pub requirements: Option<requirements::Requirements>,
 }
 
 impl Snapshot {
@@ -71,6 +76,7 @@ impl Snapshot {
             costs: costs::Costs::default(),
             thresholds: health::Thresholds::default(),
             audit: None,
+            requirements: None,
         }
     }
 
@@ -353,6 +359,7 @@ pub mod acks;
 pub mod costs;
 pub mod money;
 pub mod queue;
+pub mod requirements;
 pub mod signoff;
 
 pub mod audit;

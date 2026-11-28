@@ -11,6 +11,8 @@ holds no code, only the shared decisions and issues.
 | [`webapp/`](webapp/README.md) | Blue Eel, a Dioxus app for letter and word tracing practice. |
 | [`webapp_cloudflare/`](webapp_cloudflare/README.md) | Deploys Blue Eel to <https://jimhillr-sparkhill-webapp.pages.dev>. |
 
-Decisions are in [docs/decisions](docs/decisions/README.md) and open work
-in [issues/](issues/). How to build and test each project is in
+How to use Blue Eel and the website is in the
+[user guide](docs/user/README.md). Decisions are in
+[docs/decisions](docs/decisions/README.md) and open work in
+[issues/](issues/). How to build and test each project is in
 [CONTRIBUTING.md](CONTRIBUTING.md).

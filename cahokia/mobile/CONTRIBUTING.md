@@ -38,9 +38,17 @@ cd mobile
 dx serve --platform android   # or: --platform ios
 ```
 
+Run `dx` from `mobile/`: it reads `ios_info_plist` in `Dioxus.toml`
+relative to where it runs, and uses `ios/Info.plist` as it is, without
+merging. Keep that file's executable name (`mobile`) and its
+`CFBundleURLTypes` entry, which sign-in needs. To sign in from a dev
+build, set `CAHOKIA_NATIVE_CLIENT_ID` to the native Auth0 application's
+public client ID when building.
+
 ### Test
 
-To run its tests (route parsing and server-side renders of each view):
+To run its tests (route parsing, server-side renders of each view, and
+sign-in against a fake provider):
 
 ```bash
 cargo test -p mobile

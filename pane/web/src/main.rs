@@ -11,6 +11,7 @@ mod acknowledge;
 mod approve;
 mod markdown;
 mod money;
+mod requirements;
 mod view;
 mod visits;
 
@@ -617,6 +618,7 @@ fn ProjectPage(path: Vec<String>) -> Element {
                             }
                         }
                     }
+                    requirements::ProjectRequirementsSection { snapshot: s.clone(), path: p.path.clone() }
                     money::ProjectMoneySection { snapshot: s.clone(), path: p.path.clone() }
                     p { class: "muted", "Health and open PRs for each project come in Phases 3 and 4." }
                 }

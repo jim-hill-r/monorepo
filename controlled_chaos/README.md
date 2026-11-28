@@ -4,6 +4,9 @@
 
 A digital tabletop card game built with [Bevy](https://bevyengine.org/), featuring turn-based card game mechanics and deck-building gameplay.
 
+**Players:** the [player guide](docs/user/README.md) covers installing the
+game, playing a turn and getting help.
+
 ## Overview
 
 Controlled Chaos is a digital tabletop card game where players build decks and compete against each other. The game uses Bevy's ECS architecture to manage game state, cards, and player interactions.

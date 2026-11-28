@@ -34,3 +34,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0021](0021-tenant-scoped-product-data.md) | Product runtime data in one shared D1 database, in tenant-scoped tables with per-tenant budgets and a one-command move out | Accepted |
 | [0024](0024-internal-sign-in.md) | Internal sign-in: Cloudflare Access with GitHub login for internal tools, Auth0 only for products; staff feedback through the extension | Accepted |
 | [0025](0025-review-deck-demo-videos.md) | Narrated, captioned demo videos in the review decks, recorded from a script with Playwright, Kokoro and ffmpeg | Proposed |
+| [0028](0028-web-checks.md) | Check SEO, agent readiness and web performance with Lighthouse CI on the runner's Chrome, a Rust site check and real-user Core Web Vitals | Proposed |

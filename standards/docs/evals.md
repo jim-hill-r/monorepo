@@ -158,7 +158,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `playwright` | Playwright JSON reporter results | `grep` (optional, defaults to `@req:<ID>`) | `@req:COOK-001` in the test title, alongside tags such as `@smoke` |
 | `trycmd` | CLI transcript tests, from the `Testing <case> ... ok` lines trycmd prints inside the saved `cargo test` output | `glob` (optional, defaults to `tests/cmd/<ID>-*.toml`; `*` matches within one path segment) | Case file named `tests/cmd/COOK-001-<what>.toml` |
 | `script` | A Bevy scripted run | `script`, `check` | A named check in the script file |
-| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains`, `asset_contains` (see [Checking a live page](#checking-a-live-page)) and `max_ms` (the slowest acceptable response, body included) | Declared inline |
+| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`; a `HEAD` reply's body is never read, so pair it with `status` or `header`, not `body_contains`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains`, `asset_contains` (see [Checking a live page](#checking-a-live-page)) and `max_ms` (the slowest acceptable response, body included) | Declared inline |
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
@@ -212,7 +212,7 @@ kind = "cost"
 `evals check` (the `evals` project, `cargo run -p evals_cli -- check` in
 `evals/`) checks every top-level project with an `evals.toml` or
 `docs/requirements.md`. `mise run //:audit` runs it through
-`standards/scripts/evals-check.sh` once any project has one of those files
+`chores evals-check` once any project has one of those files
 (so it builds nothing before then), and so do the git hooks and PR CI.
 Until Phase 4 of the plan the findings are warnings and never fail the
 audit (`--strict` makes the command itself fail); then EVL-004 becomes an
@@ -254,7 +254,9 @@ to `main` and nightly CI), through the shared tasks and
    `$EVALS_RESULTS`. A project with no `evals.toml` collects nothing. A
    sub-project's job (`cookbook/web`), or a top-level project that has
    sub-projects, passes `--partial`, so it reports only the evals its own
-   tests cover; each part's job reports its share.
+   tests cover; each part's job reports its share. A build that fails
+   before its tests run fails the `cargo` and `trycmd` evals it hid
+   ("build failed: ..."), partial or not.
 3. The workflow then writes the job summary table (`evals.sh publish`) and
    uploads the results file as a 14-day `evals-results-<project>` artifact.
 4. On pushes to `main` and nightly CI (never pull requests, whose results
@@ -277,7 +279,7 @@ deploy). The `cd evals` step first runs `evals.sh smoke`, then
 `evals.sh run` with `EVALS_STAGE=cd`:
 
 1. When the deploying project sets `SMOKE_DIR` in its `mise.toml` `[env]`
-   (cookbook/cloudflare sets `"../web"`), `evals.sh smoke` runs that Playwright
+   (cookbook/cloudflare and cahokia/cloudflare set `"../web"`), `evals.sh smoke` runs that Playwright
    project's `@smoke` tests in desktop Chromium against `DEPLOY_URL`. Its
    `playwright.config.ts` reads `BASE_URL`: when set, it starts no dev
    server and records every test's video, screenshot and trace (its user
@@ -338,8 +340,9 @@ Check content instead, in one of three ways:
   text, so this catches a deploy whose bundle is missing, stale or broken.
 - **A server-rendered page**, with `body_contains` on the page itself.
 
-Neither proves the page renders in a browser: that is a Playwright smoke run
-against production (`issues/smoke-uat-tag-few-playwright-tests.md`).
+Neither proves the page renders in a browser: that is the Playwright smoke
+run against production (step 1 of "After deploy"), which cookbook and
+cahokia have.
 
 ## Human checks
 
@@ -467,7 +470,8 @@ rules are in the plan's
 [Verdicts](./plans/2026-11-eval-engine.md#verdicts) sections, plus the
 human-check rules above. `verdicts.json` lists each project's requirements
 with their verdict and reasons, how many active `must` requirements it
-has and how many have an eval in a production stage, and its [eval
+has and how many have a stored result from a production stage (an eval
+planned for `cd` that has never run doesn't count), and its [eval
 coverage](#eval-coverage); the file's top-level `coverage` is the repo's.
 
 To see the current verdicts, run
