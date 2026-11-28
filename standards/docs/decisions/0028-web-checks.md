@@ -100,6 +100,12 @@ Use **A, B and H together**, each for what it does best:
    decision 0001 planned. It informs; it doesn't block a PR. A site that stays
    analytics-free relies on the lab checks alone.
 
+Crawlers (Jim, 2026-11-28, "Agents yes, training no"): public sites let
+search engines and the agents that fetch a page for a person read
+everything, and block crawlers that collect training data, so the
+cookbook's text stays out of training sets but can still be found and
+cited (web.md WEB-206).
+
 Rejected: C needs a new vendor and can't test a PR; D and E duplicate A
 with more weight; F and G don't work on `*.pages.dev`, and G isn't free.
 WebMCP (the `webmcp-*` audits) is too new to require; it stays on the

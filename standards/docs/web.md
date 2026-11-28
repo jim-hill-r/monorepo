@@ -167,7 +167,8 @@ work. Sources: [llmstxt.org](https://llmstxt.org/), Lighthouse's
   doesn't parse, an unknown `@type`, or a type missing the properties
   Google requires for it. Check a new type once by hand in Google's Rich
   Results Test, since Lighthouse's `structured-data` audit is manual.
-- **WEB-206: state the AI crawler stance in `robots.txt`.** Public sites
+- **WEB-206: state the AI crawler stance in `robots.txt`.** Jim chose,
+  2026-11-28: "Agents yes, training no". Public sites
   allow search engines and the agents that fetch a page because a person
   asked (`ChatGPT-User`, `Claude-User`, `Perplexity-User`), and block
   crawlers that collect training data (`GPTBot`, `ClaudeBot`, `CCBot`,
