@@ -1,6 +1,6 @@
 # 0010. Custom domain for the site
 
-- Status: Superseded by repo decision [0028](../../../standards/docs/decisions/0028-jimhillr-com.md)
+- Status: Superseded by repo decision [0031](../../../standards/docs/decisions/0031-jimhillr-com.md)
 - Date: 2026-11-28
 - Follows: the "custom domain later" consequence of [0009](0009-cloudflare-pages-nightly-cd.md)
 
@@ -48,7 +48,7 @@ football site, option B keeps the site as it is at no cost.
 Jim (2026-11-28) answered for every site at once: "I have a jimhillr.com
 domain where all these pages apps will eventually need to land." So this
 is option A on a domain Jim owns, decided repo-wide in
-[0028](../../../standards/docs/decisions/0028-jimhillr-com.md): the site
+[0031](../../../standards/docs/decisions/0031-jimhillr-com.md): the site
 moves to `bear-down.jimhillr.com`
 (`bear_down/issues/jimhillr-com-phase-4-move-to-subdomain.md`). Until
 then it stays on `jimhillr-bear-down.pages.dev`.

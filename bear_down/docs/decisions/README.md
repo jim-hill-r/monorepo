@@ -17,4 +17,4 @@ The initial set was agreed with Jim on 2026-11-25 while planning the project.
 | [0007](0007-nfc-north-divisional-mode.md) | Opt-in NFC North divisional-round mode | Accepted |
 | [0008](0008-v1-scope.md) | v1 covers the rest of the 2026 regular season | Accepted |
 | [0009](0009-cloudflare-pages-nightly-cd.md) | Cloudflare Pages through the repo's deploy, rebuilt nightly | Accepted |
-| [0010](0010-custom-domain.md) | Custom domain for the site | Superseded by repo decision 0028 |
+| [0010](0010-custom-domain.md) | Custom domain for the site | Superseded by repo decision 0031 |

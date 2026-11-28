@@ -6,7 +6,7 @@ runbook: standards/docs/runbooks/move-jimhillr-com-dns-to-cloudflare.md
 
 ## Requirement
 
-Add jimhillr.com to the Cloudflare account on the Free plan, check the imported records against the domain check's list (email records above all), and change the nameservers at the registrar (Squarespace or AWS) to Cloudflare's. Unblocks phase 3 and every site's move to <name>.jimhillr.com (plan standards/docs/plans/2026-11-jimhillr-com.md, decision 0028). Do it only after Jim accepts 0028 and phase 1's check has run.
+Add jimhillr.com to the Cloudflare account on the Free plan, check the imported records against the domain check's list (email records above all), and change the nameservers at the registrar (Squarespace or AWS) to Cloudflare's. Unblocks phase 3 and every site's move to <name>.jimhillr.com (plan standards/docs/plans/2026-11-jimhillr-com.md, decision 0031). Do it only after Jim accepts 0031 and phase 1's check has run.
 
 ## Why it can't be automated
 

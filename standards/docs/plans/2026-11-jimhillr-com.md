@@ -7,17 +7,18 @@ Started 2026-11-28 from Jim's request:
 > might be in aws.
 
 Status: **proposed**. The decision is
-[0028](../decisions/0028-jimhillr-com.md); the work items are issue files
+[0031](../decisions/0031-jimhillr-com.md); the work items are issue files
 in the root [issues/](../../../issues/) with `epic: jimhillr.com`, one
 group per phase, and the one step only Jim can take is in
 [issues/human/](../../../issues/human/). Agents leave the epic alone
-(`agent-ignore`) until Jim accepts 0028.
+(`agent-ignore`) until Jim accepts 0031.
 
 Jim then added (2026-11-28): "All projects will start out as a subdomain
 of jimhillr.com with a promotion path to a fully fledged product of its own
 with its own domain." This plan covers the subdomain hosting side; the
-promotion path and its criteria are a separate piece of product lifecycle
-work.
+promotion path and its criteria are in the product lifecycle standard
+(decision 0029, `standards/docs/product-lifecycle.md`, its "Promoting"
+section).
 
 ## Goal
 
@@ -158,7 +159,7 @@ cookbook and cahokia last because of sign-in.
 
 ## Questions for Jim
 
-1. Accept decision 0028 (free Cloudflare zone, one subdomain per site)?
+1. Accept decision 0031 (free Cloudflare zone, one subdomain per site)?
    Recommended: yes.
 2. Keep the apex `jimhillr.com` and `www` as they are for now?
    Recommended: yes; decide later what lives there.

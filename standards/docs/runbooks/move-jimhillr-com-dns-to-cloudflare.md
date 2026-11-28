@@ -10,7 +10,7 @@
 ## What it's for
 
 Every site moves to `<name>.jimhillr.com`
-([decision 0028](../decisions/0028-jimhillr-com.md),
+([decision 0031](../decisions/0031-jimhillr-com.md),
 [plan](../plans/2026-11-jimhillr-com.md)). Pages custom domains, Worker
 custom domains and DNS as code in `infra` all need the domain's zone on
 Cloudflare. Without it, phases 3 to 5 stay blocked.
@@ -23,7 +23,7 @@ agents never hold a credential that can move a domain (AWS or Cloudflare).
 
 ## Before you start
 
-- Decision 0028 is accepted.
+- Decision 0031 is accepted.
 - The weekly domain check (`all-domains.yml`, plan phase 1) has run at
   least once. Its summary says where the domain is registered, which
   nameservers answer for it, and its `MX`, `TXT` and `CAA` records. Keep

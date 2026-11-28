@@ -1,4 +1,4 @@
-# 0028. Every web app lands on a jimhillr.com subdomain, with DNS on a free Cloudflare zone
+# 0031. Every web app lands on a jimhillr.com subdomain, with DNS on a free Cloudflare zone
 
 - Status: Proposed (waiting on Jim)
 - Date: 2026-11-28
