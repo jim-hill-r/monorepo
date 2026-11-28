@@ -231,6 +231,16 @@ repo, rather than in any one agent tool's settings.
   remainder. The rules are under "Accounting rules" in
   [standards/docs/cost.md](standards/docs/cost.md)
   ([decision 0016](standards/docs/decisions/0016-holding-and-handling-money.md)).
+- **Actual money only, Jim paid back (Jim, 2026-11-28).** "Until we get
+  the actual financial accounts everything will be paid by me so we should
+  have some accounting of that so I can get paid back eventually. Also, 1%
+  of all revenue should be paid to me as salary with a ceiling of 1
+  million dollars per year. 1% for the planet as well. ... A budget is not
+  actual spend. Our accounting should only count actual spend." The
+  financial ledger books only actual spend and revenue, never a budget or
+  estimate; what Jim pays is owed back to him; 1% of revenue accrues as
+  his salary (capped at $1,000,000 a year) and 1% to 1% for the Planet
+  ([money.md](standards/docs/money.md)).
 - **Products are separate companies (Jim, 2026-11-28).** "Assume
   products are owned by different companies during architecture. We
   should have shared technical platform services, just libraries and
@@ -276,6 +286,15 @@ repo, rather than in any one agent tool's settings.
   [athenaeum/resources/code_quality/](athenaeum/resources/code_quality/README.md),
   and when a source changes how we write code here, add a note for it
   there. The standards still hold the rules; the notes explain them.
+- **Websites are found, readable by agents and fast (Jim, 2026-11-28).**
+  "We should add some standards around seo, agent optimization, and
+  website performance." Every site we deploy follows
+  [standards/docs/web.md](standards/docs/web.md) (WEB-1xx search, WEB-2xx
+  agents such as `llms.txt`, JSON-LD and content in the HTML, WEB-3xx Core
+  Web Vitals and budgets), checked by Lighthouse CI and `chores site-check`
+  ([decision 0028](standards/docs/decisions/0028-web-checks.md)). A PR
+  that adds or changes a site's pages keeps it within its rules and its
+  baseline in `standards/web.toml`.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit

@@ -44,12 +44,8 @@ Contains the repository's standards and conventions in `standards/docs/` (Rust, 
 ### `/athenaeum/`
 Contains learning resources (algorithms, system design, language notes, etc.).
 
-<<<<<<< HEAD
 ### `/docs/reviews/`
 Deep project review decks, one folder per review, written weekly by the `deep-project-review` skill. The top-level `docs/` folder holds only these reviews: standards live in `standards/docs/`, and project-specific docs live inside each project (for example `cast/core/docs/`).
-=======
-There is no top-level `docs/` folder. The root `README.md` is a regular file, and project-specific docs live inside each project (for example `cookbook/README.md`).
->>>>>>> origin/main
 
 ### Project Directories
 All projects live in the root directory. Each project may have:

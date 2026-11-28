@@ -11,6 +11,7 @@ dioxus = { workspace = true, features = ["router"] }
 ui = { workspace = true }
 design_system_dioxus = { workspace = true }
 auth_sdk = { workspace = true }
+tracing = { workspace = true }
 
 [features]
 default = ["desktop"]
@@ -18,3 +19,4 @@ desktop = ["dioxus/desktop"]
 
 [dev-dependencies]
 dioxus-ssr = "0.7.3"
+tokio = { version = "1", features = ["macros", "rt", "net", "io-util"] }

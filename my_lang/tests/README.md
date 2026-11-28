@@ -25,6 +25,12 @@ Tests are currently organized as:
   runs them, so it needs a system C compiler (`cc`)
 - `cli_tests.rs`: the `my_lang` binary's `build` and `run` commands on real
   source files (also needs `cc`)
+- `cli_transcripts.rs`: transcripts of the `my_lang` binary in `cmd/`, one
+  `LANG-00n-<what>.toml` case per check, with its program in
+  `<case>.in/` and its expected output in `<case>.stdout` and
+  `<case>.stderr`. These are the `trycmd` evals in `../evals.toml`. After an
+  intended output change, run `TRYCMD=overwrite cargo test --test
+  cli_transcripts`.
 
 ## Writing Tests
 
