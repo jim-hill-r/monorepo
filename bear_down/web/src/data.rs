@@ -10,6 +10,11 @@ pub struct Rooting {
     pub generated_at: String,
     pub season: u16,
     pub week: Option<u8>,
+    /// The playoff round this week is (`wild_card`, `divisional`,
+    /// `conference` or `super_bowl`); missing in the regular season and in
+    /// older files.
+    #[serde(default)]
+    pub round: Option<String>,
     pub simulations: u32,
     pub latest_game: Option<LatestGame>,
     pub bears: Bears,
@@ -200,9 +205,38 @@ impl Rooting {
         games
     }
 
-    /// True when the Bears can no longer make the playoffs.
+    /// True when the Bears can no longer make the playoffs, or, in the
+    /// playoffs, have been knocked out.
     pub fn bears_eliminated(&self) -> bool {
-        self.bears.odds.playoffs <= 0.0
+        self.bears.odds.playoffs <= 0.0 || (self.round.is_some() && self.bears.odds.champion <= 0.0)
+    }
+
+    /// The heading under the Bears' record: "Wild card round, 2026 season"
+    /// in the playoffs, "Week 13, 2026 season" before them.
+    pub fn when(&self) -> String {
+        let round = match self.round.as_deref() {
+            Some("wild_card") => Some("Wild card round"),
+            Some("divisional") => Some("Divisional round"),
+            Some("conference") => Some("Conference championships"),
+            Some("super_bowl") => Some("Super Bowl"),
+            _ => None,
+        };
+        match (round, self.week) {
+            (Some(round), _) => format!("{round}, {} season", self.season),
+            (None, Some(week)) => format!("Week {week}, {} season", self.season),
+            (None, None) => format!("{} season", self.season),
+        }
+    }
+
+    /// The goals worth a tab this week. In the playoffs the Bears are in or
+    /// out already, so "Make the playoffs" goes, and after the wild card
+    /// round the NFC North goal is decided too.
+    pub fn goals(&self) -> Vec<Goal> {
+        match self.round.as_deref() {
+            None => vec![Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth],
+            Some("wild_card") => vec![Goal::SuperBowl, Goal::NfcNorth],
+            Some(_) => vec![Goal::SuperBowl],
+        }
     }
 }
 
@@ -466,5 +500,34 @@ mod tests {
         assert!(!r.bears_eliminated());
         r.bears.odds.playoffs = 0.0;
         assert!(r.bears_eliminated());
+    }
+
+    const WILD_CARD: &str = include_str!("../tests/fixtures/rooting-wild-card.json");
+
+    #[test]
+    fn a_playoff_round_names_itself_and_drops_decided_goals() {
+        let r = Rooting::parse(WILD_CARD).expect("wild card fixture parses");
+        assert_eq!(r.round.as_deref(), Some("wild_card"));
+        assert_eq!(r.when(), "Wild card round, 2020 season");
+        assert_eq!(r.goals(), vec![Goal::SuperBowl, Goal::NfcNorth]);
+        assert!(!r.bears_eliminated());
+        let mut later = r.clone();
+        later.round = Some("divisional".to_string());
+        assert_eq!(later.when(), "Divisional round, 2020 season");
+        assert_eq!(later.goals(), vec![Goal::SuperBowl]);
+        // Knocked out: in the playoffs, but no Super Bowl chance left.
+        later.bears.odds.champion = 0.0;
+        assert!(later.bears_eliminated());
+    }
+
+    #[test]
+    fn the_regular_season_keeps_every_goal() {
+        let r = Rooting::parse(SAMPLE).expect("sample parses");
+        assert_eq!(r.round, None);
+        assert!(r.when().starts_with("Week "));
+        assert_eq!(
+            r.goals(),
+            vec![Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth]
+        );
     }
 }

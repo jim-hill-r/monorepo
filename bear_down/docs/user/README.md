@@ -74,6 +74,18 @@ Above the list are three buttons. The one that's highlighted is in use:
 The line under the buttons says which goal the list is using. Your choice
 resets to Bears Super Bowl when you reload the page.
 
+## How to use it in the playoffs
+
+Once the regular season ends, the page shows the playoff round ("Wild card
+round, 2026 season") instead of the week, and lists that round's games as
+soon as their matchups are set. If the Bears are in, their own game is
+usually the one that matters most; the other NFC games decide who they could
+face next, and the AFC games who they could meet in the Super Bowl.
+**Make the playoffs** disappears, since the Bears are in or out already,
+and **NFC North** goes after the wild card round, once that goal is decided.
+When the Bears are knocked out, the page says there is nothing left to root
+for.
+
 ## How to vote on a verdict
 
 Under each game is "Does this verdict look right?" with three buttons:
