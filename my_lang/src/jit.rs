@@ -287,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn test_jit_function_without_value_is_an_error() {
+    fn test_function_without_value_in_jit_is_an_error() {
         let context = Context::create();
         let err = JitRunner::new(&context, "function store() { x = 10 }")
             .err()
