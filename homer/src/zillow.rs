@@ -17,7 +17,13 @@ use crate::quota::{self, QuotaState};
 /// Property details returned by the Zillow API
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
 pub struct PropertyDetails {
+    /// The address as the user typed it.
     pub address: String,
+    /// The address of the property Zillow matched, which can differ from
+    /// `address` when Zillow matches loosely.
+    pub matched_address: Option<String>,
+    /// Zillow's property id.
+    pub zpid: Option<u64>,
     pub price: Option<u64>,
     pub bedrooms: Option<u32>,
     pub bathrooms: Option<f32>,
@@ -224,6 +230,49 @@ fn ensure_property_found(raw: &serde_json::Value, address: &str) -> Result<()> {
     anyhow::bail!("Zillow found no property for \"{address}\".{reason}")
 }
 
+/// The address Zillow matched, from its `address` object
+/// (`streetAddress`, `city`, `state`, `zipcode`), as
+/// "street, city, state zipcode". Missing or blank parts are left out.
+fn matched_address(raw: &serde_json::Value) -> Option<String> {
+    let part = |key: &str| {
+        raw.get("address")
+            .and_then(|a| a.get(key))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    };
+    let state_zip = [part("state"), part("zipcode")]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join(" ");
+    let parts: Vec<&str> = [part("streetAddress"), part("city")]
+        .into_iter()
+        .flatten()
+        .chain((!state_zip.is_empty()).then_some(state_zip.as_str()))
+        .collect();
+    (!parts.is_empty()).then(|| parts.join(", "))
+}
+
+/// Zillow's property id, sent as a number or a string of digits.
+fn zpid(raw: &serde_json::Value) -> Option<u64> {
+    let value = raw.get("zpid")?;
+    json_whole_number(value).or_else(|| value.as_str()?.trim().parse().ok())
+}
+
+/// Whether two addresses are the same once case, spacing and punctuation
+/// are ignored, so "123 main st." matches "123 Main St".
+#[must_use]
+pub fn same_address(a: &str, b: &str) -> bool {
+    let key = |s: &str| {
+        s.chars()
+            .filter(char::is_ascii_alphanumeric)
+            .map(|c| c.to_ascii_lowercase())
+            .collect::<String>()
+    };
+    key(a) == key(b)
+}
+
 /// Parse property details from the raw Zillow API JSON response.
 ///
 /// Fails when the response holds no property (see [`ensure_property_found`]).
@@ -263,6 +312,8 @@ pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<
 
     Ok(PropertyDetails {
         address: address.to_string(),
+        matched_address: matched_address(raw),
+        zpid: zpid(raw),
         price,
         bedrooms,
         bathrooms,
@@ -275,7 +326,7 @@ pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use serde_json::json;
 
@@ -382,6 +433,58 @@ mod tests {
         assert_eq!(details.address, "789 Oak Ave");
         assert!(details.price.is_none());
         assert!(details.bedrooms.is_none());
+    }
+
+    pub(crate) fn zillow_address(street: &str) -> serde_json::Value {
+        json!({
+            "zpid": 2077,
+            "bedrooms": 3,
+            "address": {
+                "streetAddress": street,
+                "city": "Seattle",
+                "state": "WA",
+                "zipcode": "98101"
+            }
+        })
+    }
+
+    #[test]
+    fn test_parse_property_details_reads_matched_address_and_zpid() {
+        let typed = "123 Main St, Seattle, WA 98101";
+        let details = parse_property_details(&zillow_address("123 Main St"), typed).expect("found");
+        assert_eq!(details.address, typed);
+        assert_eq!(
+            details.matched_address.as_deref(),
+            Some("123 Main St, Seattle, WA 98101")
+        );
+        assert_eq!(details.zpid, Some(2077));
+    }
+
+    #[test]
+    fn test_parse_property_details_zpid_as_string() {
+        let details = parse_property_details(&json!({ "zpid": "2077" }), "a").expect("found");
+        assert_eq!(details.zpid, Some(2077));
+    }
+
+    #[test]
+    fn test_parse_property_details_partial_or_missing_address_object() {
+        let no_object = parse_property_details(&json!({ "bedrooms": 2 }), "a").expect("found");
+        assert_eq!(no_object.matched_address, None);
+        assert_eq!(no_object.zpid, None);
+
+        let street_only = json!({ "bedrooms": 2, "address": { "streetAddress": "5 Pine Rd" } });
+        let details = parse_property_details(&street_only, "a").expect("found");
+        assert_eq!(details.matched_address.as_deref(), Some("5 Pine Rd"));
+
+        let blank = json!({ "bedrooms": 2, "address": { "streetAddress": " ", "city": "" } });
+        let details = parse_property_details(&blank, "a").expect("found");
+        assert_eq!(details.matched_address, None);
+    }
+
+    #[test]
+    fn test_same_address_ignores_case_spacing_and_punctuation() {
+        assert!(same_address("123 Main St., Seattle", "123 main st seattle"));
+        assert!(!same_address("123 Main St", "1230 Main St"));
     }
 
     #[test]

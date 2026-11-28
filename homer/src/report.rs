@@ -4,6 +4,7 @@
 use anyhow::{Context, Result};
 
 use crate::evaluate::PropertyEvaluation;
+use crate::zillow::same_address;
 
 /// Format a whole-dollar amount with thousands separators, such as `$750,000`.
 pub fn format_dollars(amount: u64) -> String {
@@ -22,7 +23,20 @@ pub fn format_dollars(amount: u64) -> String {
 /// Format property details for display
 pub fn format_property(evaluation: &PropertyEvaluation) -> String {
     let details = &evaluation.details;
-    let mut lines = vec![format!("Address:    {}", details.address)];
+    let mut lines = match &details.matched_address {
+        Some(matched) if !same_address(matched, &details.address) => vec![
+            format!("Address:    {matched}"),
+            format!(
+                "Searched:   {} (Zillow matched a different address)",
+                details.address
+            ),
+        ],
+        Some(matched) => vec![format!("Address:    {matched}")],
+        None => vec![format!("Address:    {}", details.address)],
+    };
+    if let Some(zpid) = details.zpid {
+        lines.push(format!("ZPID:       {zpid}"));
+    }
 
     if let Some(home_type) = &details.home_type {
         lines.push(format!("Type:       {}", home_type));
@@ -83,7 +97,53 @@ mod tests {
     use super::*;
     use crate::evaluate::tests::make_property;
     use crate::evaluate::{HomePreferences, evaluate_property};
+    use crate::zillow::parse_property_details;
+    use crate::zillow::tests::zillow_address;
     use serde_json::json;
+
+    #[test]
+    fn test_format_property_same_match_shows_no_searched_line() {
+        let details = parse_property_details(
+            &zillow_address("123 Main St"),
+            "123 main st,  seattle, wa 98101",
+        )
+        .expect("found");
+        let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
+        assert!(
+            output.starts_with("Address:    123 Main St, Seattle, WA 98101\nZPID:       2077\n"),
+            "{output}"
+        );
+        assert!(!output.contains("Searched:"), "{output}");
+    }
+
+    #[test]
+    fn test_format_property_different_match_shows_typed_address() {
+        let typed = "123 Main St, Seattle, WA 98101";
+        let details =
+            parse_property_details(&zillow_address("1230 Main St"), typed).expect("found");
+        let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
+        assert!(
+            output.starts_with("Address:    1230 Main St, Seattle, WA 98101\n"),
+            "{output}"
+        );
+        assert!(
+            output.contains(&format!(
+                "Searched:   {typed} (Zillow matched a different address)"
+            )),
+            "{output}"
+        );
+    }
+
+    #[test]
+    fn test_format_property_without_match_shows_typed_address() {
+        let details = make_property(None, None, None, None);
+        let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
+        assert!(output.starts_with("Address:    123 Main St\n"), "{output}");
+        assert!(
+            !output.contains("Searched:") && !output.contains("ZPID:"),
+            "{output}"
+        );
+    }
 
     #[test]
     fn test_format_property_shows_match_score() {
@@ -115,6 +175,8 @@ mod tests {
             json!({
                 "details": {
                     "address": "123 Main St",
+                    "matched_address": null,
+                    "zpid": null,
                     "price": 900_000,
                     "bedrooms": 3,
                     "bathrooms": 2.5,
