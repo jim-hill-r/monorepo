@@ -15,6 +15,5 @@ the vendor rule in `AGENTS.md`. Compare the options (for example no
 payments at first and link out to sellers, a payment processor with
 marketplace payouts, or a custom currency), each with its money cost, fees,
 free-tier limits, legal and compliance load, and the Claude Code effort to
-build it. Label the PR `needs-human`. Depends on Jim approving the
-[product brief](../docs/plans/2026-11-product-brief.md), which leaves
-payments out of the first version.
+build it. Label the PR `needs-human`. Depends on the product brief
+(`write-product-brief.md`).
