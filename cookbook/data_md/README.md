@@ -15,7 +15,8 @@ This library provides `MarkdownRecipeStore`, which implements the `RecipeReader`
 
 ## Markdown Format
 
-Recipe markdown files follow this structure:
+The full recipe and plan format, with what each field means for the book, is in
+[docs/content-format.md](../docs/content-format.md). Recipe markdown files follow this structure:
 
 ```markdown
 # Recipe Title
@@ -24,10 +25,17 @@ Optional description text goes here.
 
 UUID: 550e8400-e29b-41d4-a716-446655440000
 ID: day-1
+Status: draft
 Prep Time: 10 minutes
 Cook Time: 20 minutes
 Servings: 4
+Yield: 12 pancakes
+Source: Grandma Hill
 Tags: tag1, tag2, tag3
+
+## Equipment
+
+- griddle
 
 ## Ingredients
 
@@ -48,10 +56,14 @@ Tags: tag1, tag2, tag3
 
 ### Optional Fields
 - **ID**: `ID: <legacy-id>`, the recipe's legacy ID. Without it the ID is the file name without `.md`, which for `{uuid}.md` files is the UUID. `MarkdownRecipeStore` writes this line whenever the ID differs from the UUID, so an ID such as `day-1` survives a save and reload.
-- **Description**: Text between title and first section heading, leaving out the `UUID:`, `ID:`, `Prep Time:`, `Cook Time:`, `Servings:` and `Tags:` lines
+- **Status**: `Status: placeholder`, `draft`, `tested` or `book-ready`. Without the line a recipe is a `draft`; any other value fails the file, so it is not loaded. Every file in `content/` states one.
+- **Description**: Text between title and first section heading, leaving out the `UUID:`, `ID:`, `Status:`, `Prep Time:`, `Cook Time:`, `Servings:`, `Yield:`, `Source:` and `Tags:` lines
 - **Prep Time**: `Prep Time: X minutes` format
 - **Cook Time**: `Cook Time: X minutes` format
 - **Servings**: `Servings: X` format
+- **Yield**: `Yield: <text>`, what the recipe makes, such as `24 cookies`
+- **Source**: `Source: <text>`, who or where the recipe came from, credited in the book
+- **Equipment**: List items under `## Equipment` section
 - **Tags**: `Tags: tag1, tag2, tag3` format (comma-separated)
 - **Ingredients**: List items under `## Ingredients` section
 - **Instructions**: Numbered list under `## Instructions` section

@@ -85,3 +85,12 @@ they are.
 - Why: Plans should follow what Jim wants to cook, not a fixed year.
 - Accept: Jim can move a recipe to another day or week, and links to the
   recipe still work afterwards.
+
+## COOK-010: Every recipe says how close it is to the book
+
+- Priority: should
+- Why: The content is the product and will become a book (Jim,
+  2026-11-28), so progress toward it must be a count anyone can take.
+- Accept: every recipe file states one of `placeholder`, `draft`, `tested`
+  or `book-ready`, as written in [content-format.md](content-format.md),
+  and an unknown or missing status fails CI.

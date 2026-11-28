@@ -116,6 +116,68 @@ pub trait RecipeWriter {
     fn save(&mut self, recipe: Recipe) -> RecipeResult<()>;
 }
 
+/// How far a recipe is on its way into the book, from a generated placeholder to book-ready.
+///
+/// The format and what each status means are in `docs/content-format.md`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+pub enum RecipeStatus {
+    /// Generated filler that holds a day's place until a real recipe replaces it.
+    Placeholder,
+    /// A real recipe written down but not yet cooked from this text.
+    #[default]
+    Draft,
+    /// Cooked by a curator from this text, and it worked.
+    Tested,
+    /// Tested, edited and attributed, ready to print.
+    BookReady,
+}
+
+impl RecipeStatus {
+    /// Every status, in order from placeholder to book-ready.
+    pub const ALL: [RecipeStatus; 4] = [
+        RecipeStatus::Placeholder,
+        RecipeStatus::Draft,
+        RecipeStatus::Tested,
+        RecipeStatus::BookReady,
+    ];
+
+    /// The status as it is written in a recipe file, such as `book-ready`.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            RecipeStatus::Placeholder => "placeholder",
+            RecipeStatus::Draft => "draft",
+            RecipeStatus::Tested => "tested",
+            RecipeStatus::BookReady => "book-ready",
+        }
+    }
+}
+
+impl fmt::Display for RecipeStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for RecipeStatus {
+    type Err = RecipeError;
+
+    /// Parses a status as written in a recipe file, ignoring case and surrounding space.
+    ///
+    /// Fails with [`RecipeError::InvalidData`] for anything but the four known statuses.
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let value = value.trim();
+        Self::ALL
+            .into_iter()
+            .find(|status| status.as_str().eq_ignore_ascii_case(value))
+            .ok_or_else(|| {
+                RecipeError::InvalidData(format!(
+                    "Unknown status '{}': use placeholder, draft, tested or book-ready",
+                    value
+                ))
+            })
+    }
+}
+
 /// Represents a recipe with all its associated information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Recipe {
@@ -139,6 +201,14 @@ pub struct Recipe {
     pub servings: Option<u32>,
     /// Tags for categorization (e.g., "vegetarian", "dessert", "quick")
     pub tags: Vec<String>,
+    /// How far the recipe is on its way into the book
+    pub status: RecipeStatus,
+    /// What the recipe makes, in words (e.g., "24 cookies", "one 9-inch loaf")
+    pub yields: Option<String>,
+    /// Who or where the recipe came from, credited in the book
+    pub source: Option<String>,
+    /// Tools the recipe needs beyond a basic kitchen (e.g., "stand mixer")
+    pub equipment: Vec<String>,
 }
 
 impl Recipe {
@@ -155,6 +225,10 @@ impl Recipe {
             cook_time_minutes: None,
             servings: None,
             tags: Vec::new(),
+            status: RecipeStatus::default(),
+            yields: None,
+            source: None,
+            equipment: Vec::new(),
         }
     }
 
@@ -171,6 +245,10 @@ impl Recipe {
             cook_time_minutes: None,
             servings: None,
             tags: Vec::new(),
+            status: RecipeStatus::default(),
+            yields: None,
+            source: None,
+            equipment: Vec::new(),
         }
     }
 
@@ -204,6 +282,42 @@ mod tests {
         assert_eq!(recipe.ingredients.len(), 0);
         assert_eq!(recipe.instructions.len(), 0);
         assert_eq!(recipe.tags.len(), 0);
+        assert_eq!(recipe.status, RecipeStatus::Draft);
+        assert_eq!(recipe.yields, None);
+        assert_eq!(recipe.source, None);
+        assert!(recipe.equipment.is_empty());
+    }
+
+    #[test]
+    fn test_recipe_status_round_trips_through_text() {
+        for status in RecipeStatus::ALL {
+            assert_eq!(status.as_str().parse::<RecipeStatus>(), Ok(status));
+            assert_eq!(status.to_string(), status.as_str());
+        }
+        assert_eq!(
+            "  Book-Ready ".parse::<RecipeStatus>(),
+            Ok(RecipeStatus::BookReady)
+        );
+    }
+
+    #[test]
+    fn test_recipe_status_rejects_unknown_values() {
+        for value in ["", "done", "book ready", "bookready", "tested!"] {
+            assert!(
+                matches!(
+                    value.parse::<RecipeStatus>(),
+                    Err(RecipeError::InvalidData(_))
+                ),
+                "{value:?} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn test_recipe_status_orders_from_placeholder_to_book_ready() {
+        assert!(RecipeStatus::Placeholder < RecipeStatus::Draft);
+        assert!(RecipeStatus::Draft < RecipeStatus::Tested);
+        assert!(RecipeStatus::Tested < RecipeStatus::BookReady);
     }
 
     #[test]

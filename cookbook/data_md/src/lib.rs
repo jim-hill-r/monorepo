@@ -228,6 +228,7 @@ impl MarkdownRecipeStore {
         if recipe.id != recipe.uuid.to_string() {
             content.push_str(&format!("ID: {}\n", recipe.id));
         }
+        content.push_str(&format!("Status: {}\n", recipe.status));
         content.push('\n');
 
         // Write description
@@ -245,10 +246,25 @@ impl MarkdownRecipeStore {
         if let Some(servings) = recipe.servings {
             content.push_str(&format!("Servings: {}\n", servings));
         }
+        if let Some(yields) = &recipe.yields {
+            content.push_str(&format!("Yield: {}\n", yields));
+        }
+        if let Some(source) = &recipe.source {
+            content.push_str(&format!("Source: {}\n", source));
+        }
         if !recipe.tags.is_empty() {
             content.push_str(&format!("Tags: {}\n", recipe.tags.join(", ")));
         }
         content.push('\n');
+
+        // Write equipment
+        if !recipe.equipment.is_empty() {
+            content.push_str("## Equipment\n\n");
+            for item in &recipe.equipment {
+                content.push_str(&format!("- {}\n", item));
+            }
+            content.push('\n');
+        }
 
         // Write ingredients
         if !recipe.ingredients.is_empty() {
@@ -1226,6 +1242,75 @@ Tags: test
         assert!(RecipeReader::exists(&store, "day-1"));
         assert!(RecipeReader::exists(&store, &recipe.uuid.to_string()));
         assert!(!RecipeReader::exists(&store, &Uuid::new_v4().to_string()));
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_book_fields_round_trip() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let mut recipe = Recipe::new("day-2".to_string(), "Sourdough".to_string());
+        recipe.description = Some("A slow loaf.".to_string());
+        recipe.servings = Some(8);
+        recipe.status = cookbook_core::RecipeStatus::BookReady;
+        recipe.yields = Some("one 9-inch loaf".to_string());
+        recipe.source = Some("Grandma Hill, 1972".to_string());
+        recipe.equipment = vec!["Dutch oven".to_string(), "bench scraper".to_string()];
+        recipe.ingredients = vec!["500 g flour".to_string()];
+        recipe.instructions = vec!["Bake.".to_string()];
+        RecipeWriter::create(&mut store, recipe.clone()).unwrap();
+
+        let written = fs::read_to_string(temp_dir.join(format!("{}.md", recipe.uuid))).unwrap();
+        assert!(written.contains("Status: book-ready\n"));
+        assert!(written.contains("Yield: one 9-inch loaf\n"));
+        assert!(written.contains("Source: Grandma Hill, 1972\n"));
+        assert!(written.contains("## Equipment\n\n- Dutch oven\n- bench scraper\n"));
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        assert!(store.load_errors().is_empty());
+        assert_eq!(store.get_by_id("day-2").unwrap(), recipe);
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_every_status_round_trips() {
+        let temp_dir = create_temp_dir();
+        let mut store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+
+        let recipes: Vec<Recipe> = cookbook_core::RecipeStatus::ALL
+            .into_iter()
+            .enumerate()
+            .map(|(i, status)| {
+                let mut recipe = Recipe::new(format!("day-{}", i + 1), format!("Recipe {i}"));
+                recipe.status = status;
+                recipe
+            })
+            .collect();
+        for recipe in &recipes {
+            RecipeWriter::create(&mut store, recipe.clone()).unwrap();
+        }
+
+        let store = MarkdownRecipeStore::new(&temp_dir).unwrap();
+        for recipe in &recipes {
+            assert_eq!(&store.get_by_uuid(&recipe.uuid).unwrap(), recipe);
+        }
+
+        cleanup_temp_dir(&temp_dir);
+    }
+
+    #[test]
+    fn test_load_fails_for_unknown_status() {
+        let temp_dir = create_temp_dir();
+        fs::write(
+            temp_dir.join("bad-status.md"),
+            format!("# Soup\n\nUUID: {}\nStatus: finished\n", Uuid::new_v4()),
+        )
+        .unwrap();
+
+        assert_load_fails(&temp_dir, &["bad-status.md"]);
 
         cleanup_temp_dir(&temp_dir);
     }

@@ -107,3 +107,30 @@ fn test_every_week_plan_parses_with_seven_recipes() {
         }
     }
 }
+
+/// Every recipe file states its status, so progress toward the book is counted from what the
+/// files say rather than from the parser's default (`docs/content-format.md`).
+#[test]
+fn test_every_recipe_file_states_a_known_status() {
+    let mut missing = Vec::new();
+    for entry in std::fs::read_dir("../content").expect("Should read content directory") {
+        let path = entry.expect("Should read entry").path();
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        if !name.ends_with(".md") || name.starts_with("week-") || name == "intro.md" {
+            continue;
+        }
+        let content = std::fs::read_to_string(&path).expect("Should read recipe");
+        match content.lines().find_map(|l| l.strip_prefix("Status:")) {
+            Some(value) => {
+                value
+                    .parse::<cookbook_core::RecipeStatus>()
+                    .unwrap_or_else(|e| panic!("{name}: {e}"));
+            }
+            None => missing.push(name.to_string()),
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "Recipes without a Status line: {missing:?}"
+    );
+}

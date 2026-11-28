@@ -37,7 +37,7 @@ Most of the review's quick fixes have landed since 2026-11-25:
 | Today's recipe disagreed with the plan | Fixed (#919) |
 | User guide | Added (#917) |
 | Sign-in code left in the URL | Fixed in `auth_sdk` |
-| **All 365 recipes are generated placeholders** | Open: the content epic below |
+| **All 365 recipes are generated placeholders** | Marked `Status: placeholder` ([content format](content-format.md)); replacing them is the content epic below |
 | **Sign-in with no purpose** (`todo!()` in `auth_sdk/src/web.rs`) | Open: given a purpose by the management app, then removed from the public site |
 | Weekly themes and staples (COOK-008) | Open |
 | Rearranging plans (COOK-009) | Open |
@@ -54,7 +54,7 @@ Curation foundations (epic "Content curation").
 
 Make the content model fit a book before building the tools that edit it.
 
-1. **A recipe format for the book** ([issue](../issues/recipe-book-format.md)): a written spec,
+1. **A recipe format for the book** ([format](content-format.md)): a written spec,
    `docs/content-format.md`, and new fields on every recipe: a `Status`
    (`placeholder`, `draft`, `tested`, `book-ready`), `Yield`, `Source`
    (who it came from, for attribution in the book) and `Equipment`. Every
@@ -152,7 +152,7 @@ management app uses the same theme, so it picks up the redesign for free.
   hold the model and the Markdown format; the management app uses them as
   they are, so the public site and the management app can never disagree
   on what a recipe is. `data_md` gains a writer that round-trips every new
-  field ([issue](../issues/recipe-book-format.md)).
+  field ([format](content-format.md)).
 
 ### Next
 

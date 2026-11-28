@@ -9,10 +9,16 @@
 //!
 //! UUID: 550e8400-e29b-41d4-a716-446655440000
 //! ID: day-1
+//! Status: draft
 //! Prep Time: 10 minutes
 //! Cook Time: 20 minutes
 //! Servings: 4
+//! Yield: 12 pancakes
+//! Source: Grandma Hill
 //! Tags: quick, vegetarian
+//!
+//! ## Equipment
+//! - griddle
 //!
 //! ## Ingredients
 //! - item
@@ -22,20 +28,25 @@
 //! ```
 //!
 //! The `UUID:` line is required. The `ID:` line is optional and holds the recipe's legacy ID
-//! when it differs from the UUID; without it the caller's fallback ID is used.
+//! when it differs from the UUID; without it the caller's fallback ID is used. A missing
+//! `Status:` line means `draft`; an unknown status fails the recipe. The full format is in
+//! `docs/content-format.md`.
 //!
 //! Plan files carry a `Recipe UUIDs: a, b, c, d, e, f, g` line.
 
-use cookbook_core::{Plan, PlanError, PlanResult, Recipe, RecipeError, RecipeResult};
+use cookbook_core::{Plan, PlanError, PlanResult, Recipe, RecipeError, RecipeResult, RecipeStatus};
 use uuid::Uuid;
 
 /// Lines above `## Ingredients` that hold a field rather than description text.
-const FIELD_PREFIXES: [&str; 6] = [
+const FIELD_PREFIXES: [&str; 9] = [
     "UUID:",
     "ID:",
+    "Status:",
     "Prep Time:",
     "Cook Time:",
     "Servings:",
+    "Yield:",
+    "Source:",
     "Tags:",
 ];
 
@@ -45,7 +56,8 @@ const FIELD_PREFIXES: [&str; 6] = [
 /// `fallback_title` is used when the content has no `# ` heading.
 ///
 /// Fails with [`RecipeError::InvalidData`] when the `UUID:` line is missing or invalid, so a
-/// recipe never gets a different UUID each time it is loaded.
+/// recipe never gets a different UUID each time it is loaded, or when the `Status:` line names
+/// an unknown status.
 pub(crate) fn recipe(
     content: &str,
     fallback_id: String,
@@ -56,12 +68,16 @@ pub(crate) fn recipe(
     let title = title(content).unwrap_or(fallback_title);
 
     let mut recipe = Recipe::new_with_uuid(id, uuid, title);
+    recipe.status = status(content)?;
     recipe.description = description(content);
     recipe.ingredients = list_section(content, "## Ingredients");
     recipe.instructions = list_section(content, "## Instructions");
     recipe.prep_time_minutes = number_field(content, "Prep Time:");
     recipe.cook_time_minutes = number_field(content, "Cook Time:");
     recipe.servings = number_field(content, "Servings:");
+    recipe.yields = text_field(content, "Yield:");
+    recipe.source = text_field(content, "Source:");
+    recipe.equipment = list_section(content, "## Equipment");
     recipe.tags = tags(content);
     Ok(recipe)
 }
@@ -186,6 +202,14 @@ fn text_field(content: &str, field: &str) -> Option<String> {
     (!value.is_empty()).then(|| value.to_string())
 }
 
+/// The value of the first `Status:` line, or [`RecipeStatus::Draft`] when there is none.
+fn status(content: &str) -> RecipeResult<RecipeStatus> {
+    content
+        .lines()
+        .find_map(|line| line.strip_prefix("Status:"))
+        .map_or(Ok(RecipeStatus::Draft), str::parse)
+}
+
 /// The value of the first `UUID:` line.
 fn uuid(content: &str) -> RecipeResult<Uuid> {
     let value = text_field(content, "UUID:")
@@ -226,10 +250,17 @@ Fluffy pancakes.
 Good for breakfast.
 
 UUID: 550e8400-e29b-41d4-a716-446655440001
+Status: tested
 Prep Time: 10 minutes
 Cook Time: 15
 Servings: 4 people
+Yield: 12 pancakes
+Source: Grandma Hill
 Tags: breakfast, , sweet
+
+## Equipment
+- griddle
+- whisk
 
 ## Ingredients
 - 2 cups flour
@@ -262,6 +293,34 @@ Not a list item
         assert_eq!(recipe.cook_time_minutes, Some(15));
         assert_eq!(recipe.servings, Some(4));
         assert_eq!(recipe.tags, vec!["breakfast", "sweet"]);
+        assert_eq!(recipe.status, RecipeStatus::Tested);
+        assert_eq!(recipe.yields.as_deref(), Some("12 pancakes"));
+        assert_eq!(recipe.source.as_deref(), Some("Grandma Hill"));
+        assert_eq!(recipe.equipment, vec!["griddle", "whisk"]);
+    }
+
+    #[test]
+    fn recipe_rejects_unknown_status() {
+        let content = format!("# Soup\n\nUUID: {}\nStatus: finished\n", UUID_A);
+        assert!(matches!(
+            recipe(&content, "x".to_string(), "X".to_string()),
+            Err(RecipeError::InvalidData(message)) if message.contains("finished")
+        ));
+    }
+
+    #[test]
+    fn recipe_rejects_empty_status() {
+        let content = format!("# Soup\n\nUUID: {}\nStatus:\n", UUID_A);
+        assert!(recipe(&content, "x".to_string(), "X".to_string()).is_err());
+    }
+
+    #[test]
+    fn recipe_parses_every_status() {
+        for status in RecipeStatus::ALL {
+            let content = format!("# Soup\n\nUUID: {}\nStatus: {}\n", UUID_A, status);
+            let parsed = recipe(&content, "x".to_string(), "X".to_string()).unwrap();
+            assert_eq!(parsed.status, status);
+        }
     }
 
     #[test]
@@ -282,6 +341,10 @@ Not a list item
         assert_eq!(recipe.cook_time_minutes, None);
         assert_eq!(recipe.servings, None);
         assert!(recipe.tags.is_empty());
+        assert_eq!(recipe.status, RecipeStatus::Draft);
+        assert_eq!(recipe.yields, None);
+        assert_eq!(recipe.source, None);
+        assert!(recipe.equipment.is_empty());
     }
 
     #[test]
@@ -336,7 +399,7 @@ Not a list item
     #[test]
     fn description_skips_field_lines_in_any_order() {
         let content = format!(
-            "# T\n\nUUID: {}\n\nFirst.\n\nPrep Time: 1\nSecond.\nTags: a\n\n## Ingredients\n",
+            "# T\n\nUUID: {}\n\nFirst.\n\nPrep Time: 1\nStatus: draft\nSecond.\nYield: 2\nSource: Me\nTags: a\n\n## Ingredients\n",
             UUID_A
         );
         assert_eq!(description(&content).as_deref(), Some("First. Second."));

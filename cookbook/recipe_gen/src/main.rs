@@ -1,4 +1,4 @@
-use cookbook_core::{Recipe, RecipeReader, RecipeWriter};
+use cookbook_core::{Recipe, RecipeReader, RecipeStatus, RecipeWriter};
 use cookbook_data_md::MarkdownRecipeStore;
 use rand::Rng;
 use rand::seq::SliceRandom;
@@ -127,6 +127,8 @@ impl RecipeTemplate {
     fn to_recipe(&self, day: u32) -> Recipe {
         let id = format!("day-{}", day);
         let mut recipe = Recipe::new(id, self.title.clone());
+        // Generated filler holds a day's place until a curator writes a real recipe.
+        recipe.status = RecipeStatus::Placeholder;
         recipe.description = Some(self.description.clone());
         recipe.prep_time_minutes = Some(self.prep_time);
         recipe.cook_time_minutes = Some(self.cook_time);
@@ -1085,6 +1087,7 @@ mod tests {
         assert_eq!(recipe.cook_time_minutes, Some(15));
         assert!(recipe.tags.contains(&"breakfast".to_string()));
         assert!(recipe.tags.contains(&"american".to_string()));
+        assert_eq!(recipe.status, RecipeStatus::Placeholder);
     }
 
     #[test]

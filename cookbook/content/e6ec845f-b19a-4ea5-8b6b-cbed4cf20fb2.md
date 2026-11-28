@@ -1,6 +1,7 @@
 # Margherita Pizza
 
 UUID: e6ec845f-b19a-4ea5-8b6b-cbed4cf20fb2
+Status: placeholder
 
 
 Simple pizza with tomato, mozzarella, and basil

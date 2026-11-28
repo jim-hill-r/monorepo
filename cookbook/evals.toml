@@ -131,3 +131,13 @@ the ten span several meal types and cuisines. Fail on repeated titles,
 template phrasing, or steps that don't use the listed ingredients."""
 
 # COOK-008 and COOK-009 have no evals until the features exist.
+
+# COOK-010: Every recipe says how close it is to the book
+
+[[eval]]
+id = "recipe-status-stated"
+requirement = "COOK-010"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_every_recipe_file_states_a_known_status"
+description = "Every recipe file in content/ has a known Status line."
