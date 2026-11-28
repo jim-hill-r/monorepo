@@ -36,6 +36,8 @@ Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downlo
 the nflverse schedule, runs the simulation and writes `rooting.json`
 ([format](docs/rooting-json.md)), and with `--teams-dir` every other
 team's guide as `teams/<team>.json` for the page's team picker.
+In a playoff week it measures that round's games instead, on the team's
+Super Bowl odds and, in the wild card round, the NFC North goal.
 `bear_down --week <n> [--season <year>]` rebuilds a past week's guide from
 the results before it, for the [archive](docs/plans/2026-11-archive.md).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and

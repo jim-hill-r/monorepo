@@ -30,12 +30,28 @@
 #       with BASE, one `section<TAB>kind<TAB>name` per line. PR CI labels a
 #       PR `needs-human` when there are any.
 #
+#   resources.sh sweep
+#       The weekly read-only sweep (the `resource-sweep` job of All Free
+#       Tier Usage). Lists what is live into $RESOURCES_OUT/live.json:
+#       Pages projects (with their deployment counts), Workers and their
+#       Cron Triggers, D1, KV, Queues and DNS records with the read-only
+#       Cloudflare token (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID), and
+#       branches, releases and Actions caches with GH_TOKEN (GITHUB_REPOSITORY
+#       names the repo). A kind a token can't read is listed as unlisted, a
+#       warning, not a failure. Then `chores sweep` sorts each resource into
+#       claimed, kept, retired, temporary or orphan and writes report.md
+#       (also to the run summary) and report.json. Exit 1 on an orphan, a
+#       keep past its review date or a retired resource still live after
+#       delete_after. It never changes anything.
+#
 # RESOURCES_ROOT runs the checks in another repo (the tests use fixtures).
 set -euo pipefail
 
 die() { echo "resources: $*" >&2; exit 1; }
 
 root=${RESOURCES_ROOT:-$(git rev-parse --show-toplevel)}
+# The sweep's classifier, next to this script, so fixture repos use it too.
+chores="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/chores/Cargo.toml"
 cd "$root"
 
 # The Python half: tomllib reads the TOML files, so nothing is parsed with
@@ -271,7 +287,168 @@ retention() {
   return "$errors"
 }
 
+# ---- sweep ----
+
+sweep() {
+  local out=${RESOURCES_OUT:-$(mktemp -d)}
+  local summary=${GITHUB_STEP_SUMMARY:-/dev/null}
+  local cf_api=${CF_API:-https://api.cloudflare.com/client/v4}
+  local repo=${GITHUB_REPOSITORY:-jimhillr/monorepo}
+  mkdir -p "$out"
+  local res="$out/resources.jsonl" unl="$out/unlisted.jsonl"
+  : >"$res"
+  : >"$unl"
+
+  # add KIND NAME [DETAIL [PR [UPDATED]]]: one live resource.
+  add() {
+    jq -nc --arg k "$1" --arg n "$2" --arg d "${3:-}" --arg p "${4:-}" --arg u "${5:-}" \
+      '{kind: $k, name: $n} + (if $d == "" then {} else {detail: $d} end)
+       + (if $p == "" then {} else {pr: $p} end) + (if $u == "" then {} else {updated: $u} end)' >>"$res"
+  }
+  unlisted() { jq -nc --arg k "$1" --arg w "$2" '{kind: $k, why: $w}' >>"$unl"; echo "::warning::resource sweep: $1 not listed: $2"; }
+
+  # cf PATH: a successful Cloudflare API response body, or status 1. The
+  # token goes through stdin so it is never on a command line.
+  cf() {
+    local body
+    body=$(printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_API_TOKEN" |
+      curl -fsS -K - -A jimhillr-resource-sweep "$cf_api/$1" 2>/dev/null) || return 1
+    jq -e '.success == true' >/dev/null <<<"$body" || return 1
+    printf '%s\n' "$body"
+  }
+  local acct="accounts/${CLOUDFLARE_ACCOUNT_ID:-}"
+
+  if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+    local k
+    for k in pages worker cron d1 kv queue dns; do unlisted "$k" "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID isn't set"; done
+  else
+    local body page name count id ok
+    # Pages projects, 10 a page (the API's most).
+    page=1 ok=1
+    while :; do
+      body=$(cf "$acct/pages/projects?per_page=10&page=$page") || { ok=0; break; }
+      while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        count=$(cf "$acct/pages/projects/$name/deployments?per_page=1" | jq -r '.result_info.total_count // empty' 2>/dev/null || true)
+        add pages "$name" "${count:+$count deployments}"
+      done < <(jq -r '.result[].name' <<<"$body")
+      [ "$(jq '.result | length' <<<"$body")" -ge 10 ] || break
+      page=$((page + 1))
+      [ "$page" -le 20 ] || break
+    done
+    [ "$ok" = 1 ] || unlisted pages "the token can't list Pages projects"
+    # Workers and their Cron Triggers.
+    if body=$(cf "$acct/workers/scripts"); then
+      while IFS= read -r id; do
+        [ -n "$id" ] || continue
+        add worker "$id"
+        if sched=$(cf "$acct/workers/scripts/$id/schedules"); then
+          while IFS= read -r c; do [ -n "$c" ] && add cron "$id/$c"; done < <(jq -r '.result.schedules[]?.cron' <<<"$sched")
+        fi
+      done < <(jq -r '.result[].id' <<<"$body")
+    else
+      unlisted worker "the token can't list Workers (needs Workers Scripts: Read)"
+      unlisted cron "the token can't list Workers (needs Workers Scripts: Read)"
+    fi
+    if body=$(cf "$acct/d1/database?per_page=100"); then
+      while IFS= read -r name; do [ -n "$name" ] && add d1 "$name"; done < <(jq -r '.result[].name' <<<"$body")
+    else
+      unlisted d1 "the token can't list D1 databases (needs D1: Read)"
+    fi
+    if body=$(cf "$acct/storage/kv/namespaces?per_page=100"); then
+      while IFS= read -r name; do [ -n "$name" ] && add kv "$name"; done < <(jq -r '.result[].title' <<<"$body")
+    else
+      unlisted kv "the token can't list KV namespaces (needs Workers KV Storage: Read)"
+    fi
+    if body=$(cf "$acct/queues"); then
+      while IFS= read -r name; do [ -n "$name" ] && add queue "$name"; done < <(jq -r '.result[]?.queue_name' <<<"$body")
+    else
+      unlisted queue "the token can't list Queues (needs Queues: Read)"
+    fi
+    # DNS records, one row per name, once a zone exists.
+    if body=$(cf "zones?account.id=$CLOUDFLARE_ACCOUNT_ID&per_page=50"); then
+      while IFS=$'\t' read -r id zone; do
+        [ -n "$id" ] || continue
+        if recs=$(cf "zones/$id/dns_records?per_page=500"); then
+          while IFS=$'\t' read -r name types; do
+            [ -n "$name" ] && add dns "$name" "$types in $zone"
+          done < <(jq -r '.result | group_by(.name)[] | [.[0].name, ([.[].type] | unique | join(", "))] | @tsv' <<<"$recs")
+        else
+          unlisted dns "the token can't read DNS records of $zone (needs DNS: Read)"
+        fi
+      done < <(jq -r '.result[] | [.id, .name] | @tsv' <<<"$body")
+    else
+      unlisted dns "the token can't list zones (needs Zone: Read)"
+    fi
+  fi
+
+  if [ -z "${GH_TOKEN:-}" ] || ! command -v gh >/dev/null; then
+    local k
+    for k in branch release cache; do unlisted "$k" "GH_TOKEN isn't set"; done
+  else
+    local open_prs open_heads closed_heads branches b pr updated
+    if open_prs=$(gh api --paginate "repos/$repo/pulls?state=open&per_page=100" \
+          --jq ".[] | [.number, (if .head.repo.full_name == \"$repo\" then .head.ref else \"\" end)] | @tsv") &&
+       closed_heads=$(gh api --paginate "repos/$repo/pulls?state=closed&per_page=100" \
+          --jq ".[] | select(.head.repo.full_name == \"$repo\") | .head.ref") &&
+       branches=$(gh api --paginate "repos/$repo/branches?per_page=100" --jq '.[].name'); then
+      open_heads=$(cut -f2 <<<"$open_prs" | sed '/^$/d')
+      while IFS= read -r b; do
+        [ -n "$b" ] || continue
+        updated=""
+        if grep -qxF -- "$b" <<<"$open_heads"; then pr=open
+        elif grep -qxF -- "$b" <<<"$closed_heads"; then pr=closed
+        else
+          pr=none
+          [ "$b" = main ] || updated=$(gh api "repos/$repo/branches/$(jq -rn --arg b "$b" '$b | @uri')" \
+            --jq '.commit.commit.committer.date' 2>/dev/null | cut -c1-10 || true)
+        fi
+        add branch "$b" "" "$pr" "$updated"
+      done <<<"$branches"
+      # Actions caches, one row per ref: claimed while its branch or PR is.
+      if caches=$(gh api --paginate "repos/$repo/actions/caches?per_page=100" \
+            --jq '.actions_caches[] | [.ref, .size_in_bytes] | @tsv'); then
+        while IFS=$'\t' read -r ref n bytes; do
+          [ -n "$ref" ] || continue
+          case "$ref" in
+            refs/heads/main) pr=main ;;
+            refs/heads/*) grep -qxF -- "${ref#refs/heads/}" <<<"$branches" && pr=open || pr=closed ;;
+            refs/pull/*) num=${ref#refs/pull/}; num=${num%%/*}
+              cut -f1 <<<"$open_prs" | grep -qxF -- "$num" && pr=open || pr=closed ;;
+            *) pr=closed ;;
+          esac
+          add cache "$ref" "$n caches, $((bytes / 1048576)) MB" "$pr"
+        done < <(awk -F'\t' 'NF { n[$1]++; s[$1] += $2 } END { for (r in n) printf "%s\t%d\t%d\n", r, n[r], s[r] }' <<<"$caches" | sort)
+      else
+        unlisted cache "GH_TOKEN can't list Actions caches (needs actions: read)"
+      fi
+    else
+      unlisted branch "GH_TOKEN can't list branches or pull requests"
+    fi
+    if rel=$(gh api --paginate "repos/$repo/releases?per_page=100" --jq '.[].tag_name'); then
+      while IFS= read -r name; do [ -n "$name" ] && add release "$name"; done <<<"$rel"
+    else
+      unlisted release "GH_TOKEN can't list releases"
+    fi
+  fi
+
+  jq -s --slurpfile u "$unl" '{unlisted: $u, resources: .}' "$res" >"$out/live.json"
+  py claims "" >"$out/claims.tsv"
+  local status=0
+  cargo run --quiet --manifest-path "$chores" -- --root "$root" sweep \
+    --live "$out/live.json" --claims "$out/claims.tsv" --json "$out/report.json" >"$out/report.md" || status=$?
+  cat "$out/report.md"
+  cat "$out/report.md" >>"$summary"
+  case $status in
+    0) ;;
+    1) echo "::error::resource sweep: orphans, overdue keeps or failed deletions; see the run summary (standards/docs/resources.md)" ;;
+    *) echo "::error::resource sweep failed (exit $status)" ;;
+  esac
+  return "$status"
+}
+
 case "${1:-}" in
+  sweep) sweep ;;
   check)
     status=0
     py check "${RESOURCES_BASE:-${AFFECTED_BASE:-}}" || status=1
@@ -280,5 +457,5 @@ case "${1:-}" in
     ;;
   claims) py claims "${2:-}" ;;
   new-entries) py new-entries "${2:?usage: resources.sh new-entries BASE}" ;;
-  *) die "usage: resources.sh check | claims [REF] | new-entries BASE" ;;
+  *) die "usage: resources.sh check | claims [REF] | new-entries BASE | sweep" ;;
 esac

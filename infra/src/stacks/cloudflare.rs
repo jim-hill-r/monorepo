@@ -2,7 +2,9 @@
 //!
 //! Wrangler still creates the Pages projects and deploys their content
 //! (`free-tiers.sh pages-project` guards how many). This stack starts with
-//! Web Analytics on each production site. The account ID comes from the
+//! Web Analytics on each production site. Its beacon isn't auto-installed
+//! (Cloudflare allows that only on proxied zone hostnames), so each app adds
+//! the beacon script itself. The account ID comes from the
 //! `cloudflare_account_id` variable (`TF_VAR_cloudflare_account_id`, from the
 //! `CLOUDFLARE_ACCOUNT_ID` secret) and the token from `CLOUDFLARE_API_TOKEN`,
 //! never from this code.
@@ -31,9 +33,11 @@ pub fn synth(apps: &[WebApp]) -> anyhow::Result<Synth> {
         }
         .build(&mut stack)
         .set_host(app.production_host())
-        // Cloudflare injects the beacon into every page it serves, so the
-        // apps need no snippet.
-        .set_auto_install(true)
+        // Off: Cloudflare injects the beacon itself only on hostnames
+        // proxied through a zone in the account, and refuses
+        // `auto_install` (`autoInstallInvalid`) for a bare `*.pages.dev`
+        // host. Each app loads the beacon with its site token instead.
+        .set_auto_install(false)
         // IaC never destroys (decision 0007, item 8).
         .set_prevent_destroy(true);
     }
@@ -55,7 +59,9 @@ mod tests {
         let sites = &synth.json["resource"]["cloudflare_web_analytics_site"];
         assert_eq!(sites["cookbook"]["host"], "jimhillr-cookbook.pages.dev");
         assert_eq!(sites["bear_down"]["host"], "jimhillr-bear-down.pages.dev");
-        assert_eq!(sites["cookbook"]["auto_install"], true);
+        // Cloudflare refuses auto_install for a `*.pages.dev` host.
+        assert_eq!(sites["cookbook"]["auto_install"], false);
+        assert_eq!(sites["bear_down"]["auto_install"], false);
         assert_eq!(
             sites["cookbook"]["account_id"],
             "${var.cloudflare_account_id}"

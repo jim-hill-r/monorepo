@@ -73,6 +73,17 @@ the current earthy palette.
 - Accept: the tree can be panned and zoomed, and picking a person
   highlights their ancestors and descendants.
 
+## CAHO-008: The desktop app signs in through the browser
+
+- Priority: should
+- Why: A family's own tree will be private on desktop too, and a native
+  app must never ask for a password itself (RFC 8252).
+- Accept: Login opens the system browser at Auth0 and waits on a loopback
+  port; while it waits the button is disabled and says to finish in the
+  browser; afterwards the navbar shows the user's name (never their Auth0
+  ID) and a Sign out button, or a short message and Login again when
+  sign-in failed; the session lives only in memory.
+
 ## CAHO-009: The iOS app signs in through the browser
 
 - Priority: should

@@ -10,6 +10,11 @@ pub struct Rooting {
     pub generated_at: String,
     pub season: u16,
     pub week: Option<u8>,
+    /// The playoff round this week is (`wild_card`, `divisional`,
+    /// `conference` or `super_bowl`); missing in the regular season and in
+    /// older files.
+    #[serde(default)]
+    pub round: Option<String>,
     pub simulations: u32,
     pub latest_game: Option<LatestGame>,
     /// The team the guide is for (decision 0010). Missing in older files,
@@ -211,15 +216,49 @@ impl Rooting {
         games
     }
 
-    /// True when the guide's team can no longer make the playoffs.
+    /// True when the guide's team can no longer make the playoffs, or, in
+    /// the playoffs, has been knocked out.
     pub fn eliminated(&self) -> bool {
-        self.focus.odds.playoffs <= 0.0
+        self.focus.odds.playoffs <= 0.0 || (self.round.is_some() && self.focus.odds.champion <= 0.0)
     }
 
     /// Whether the guide's team plays in the NFC North, so the NFC North
     /// goal (decision 0007) is offered.
     pub fn nfc_north_team(&self) -> bool {
         bear_down_core::is_nfc_north(&self.team)
+    }
+
+    /// The heading under the team's record: "Wild card round, 2026 season"
+    /// in the playoffs, "Week 13, 2026 season" before them.
+    pub fn when(&self) -> String {
+        let round = match self.round.as_deref() {
+            Some("wild_card") => Some("Wild card round"),
+            Some("divisional") => Some("Divisional round"),
+            Some("conference") => Some("Conference championships"),
+            Some("super_bowl") => Some("Super Bowl"),
+            _ => None,
+        };
+        match (round, self.week) {
+            (Some(round), _) => format!("{round}, {} season", self.season),
+            (None, Some(week)) => format!("Week {week}, {} season", self.season),
+            (None, None) => format!("{} season", self.season),
+        }
+    }
+
+    /// The goals worth a tab this week. In the playoffs the team is in or
+    /// out already, so "Make the playoffs" goes, and after the wild card
+    /// round the NFC North goal is decided too. The NFC North goal is only
+    /// for an NFC North team's guide (decision 0010).
+    pub fn goals(&self) -> Vec<Goal> {
+        let mut goals = match self.round.as_deref() {
+            None => vec![Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth],
+            Some("wild_card") => vec![Goal::SuperBowl, Goal::NfcNorth],
+            Some(_) => vec![Goal::SuperBowl],
+        };
+        if !self.nfc_north_team() {
+            goals.retain(|goal| *goal != Goal::NfcNorth);
+        }
+        goals
     }
 }
 
@@ -587,6 +626,36 @@ mod tests {
         let chiefs = Rooting::parse(&json.to_string());
         assert_eq!(chiefs.map(|r| r.nfc_north_team()), Ok(false));
     }
+
+    const WILD_CARD: &str = include_str!("../tests/fixtures/rooting-wild-card.json");
+
+    #[test]
+    fn a_playoff_round_names_itself_and_drops_decided_goals() {
+        let r = Rooting::parse(WILD_CARD).expect("wild card fixture parses");
+        assert_eq!(r.round.as_deref(), Some("wild_card"));
+        assert_eq!(r.when(), "Wild card round, 2020 season");
+        assert_eq!(r.goals(), vec![Goal::SuperBowl, Goal::NfcNorth]);
+        assert!(!r.eliminated());
+        let mut later = r.clone();
+        later.round = Some("divisional".to_string());
+        assert_eq!(later.when(), "Divisional round, 2020 season");
+        assert_eq!(later.goals(), vec![Goal::SuperBowl]);
+        // Knocked out: in the playoffs, but no Super Bowl chance left.
+        later.focus.odds.champion = 0.0;
+        assert!(later.eliminated());
+    }
+
+    #[test]
+    fn the_regular_season_keeps_every_goal() {
+        let r = Rooting::parse(SAMPLE).expect("sample parses");
+        assert_eq!(r.round, None);
+        assert!(r.when().starts_with("Week "));
+        assert_eq!(
+            r.goals(),
+            vec![Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth]
+        );
+    }
+
     #[test]
     fn archive_weeks_are_offered_newest_first_without_the_current_one() {
         let index = match ArchiveIndex::parse(

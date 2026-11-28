@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 // Tolerance values for sub-pixel rendering and browser differences
 const PIXEL_TOLERANCE = 1;
@@ -14,7 +15,7 @@ const SCROLLBAR_TOLERANCE = 5;
 test.describe('Sidebar and Header Alignment', () => {
   test('sidebar should touch header with no gap', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Get header element
     const header = page.locator('#header');
@@ -51,7 +52,7 @@ test.describe('Sidebar and Header Alignment', () => {
   
   test('sidebar height should extend to bottom of viewport', async ({ page, viewport }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Get sidebar element
     const sidebar = page.locator('#sidebar');
@@ -81,7 +82,7 @@ test.describe('Sidebar and Header Alignment', () => {
   
   test('CSS custom property should be used for header height', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that the CSS custom property is defined
     const headerHeightVar = await page.evaluate(() => {
@@ -96,7 +97,7 @@ test.describe('Sidebar and Header Alignment', () => {
   
   test('header should have consistent height', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Get header element
     const header = page.locator('#header');

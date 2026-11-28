@@ -293,10 +293,8 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
         }
     });
     let odds = &rooting.focus.odds;
-    let week = match rooting.week {
-        Some(w) => format!("Week {w}, {} season", rooting.season),
-        None => format!("{} season", rooting.season),
-    };
+    let week = rooting.when();
+    let goals = rooting.goals();
     let record = rooting.focus.record.display();
     let name = teams::name(&rooting.team).to_string();
     let mascot = if bears { "🐻" } else { "🏈" };
@@ -336,13 +334,15 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
                     onclick: move |_| goal.set(Goal::SuperBowl),
                     "{nick} Super Bowl"
                 }
-                button {
-                    class: if goal_now == Goal::Playoffs { "active" },
-                    aria_pressed: goal_now == Goal::Playoffs,
-                    onclick: move |_| goal.set(Goal::Playoffs),
-                    "Make the playoffs"
+                if goals.contains(&Goal::Playoffs) {
+                    button {
+                        class: if goal_now == Goal::Playoffs { "active" },
+                        aria_pressed: goal_now == Goal::Playoffs,
+                        onclick: move |_| goal.set(Goal::Playoffs),
+                        "Make the playoffs"
+                    }
                 }
-                if nfc_north {
+                if goals.contains(&Goal::NfcNorth) {
                     button {
                         class: if goal_now == Goal::NfcNorth { "active" },
                         aria_pressed: goal_now == Goal::NfcNorth,

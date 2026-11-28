@@ -207,6 +207,10 @@ fn channel_line(focus: Team, impact: &GameImpact, channel: &ChannelImpact, goal:
         Channel::WildCard => "Wild card".to_string(),
         Channel::Seed => "Seeding".to_string(),
         Channel::PlayoffPath => format!("{ours} playoff field (who else gets in, and where)"),
+        Channel::Bracket => format!(
+            "{ours} bracket (who advances, and who {} could face)",
+            the(focus)
+        ),
         Channel::SuperBowlOpponent => format!("Super Bowl opponent (who wins the {theirs})"),
         Channel::Chance => "Chance".to_string(),
     };
@@ -233,6 +237,12 @@ fn channel_line(focus: Team, impact: &GameImpact, channel: &ChannelImpact, goal:
 
 /// Why a game with every link closed can't matter.
 fn closed(focus: Team, impact: &GameImpact, standings: &Standings) -> String {
+    if impact.relevance.postseason {
+        return format!(
+            "{} are out of the playoffs, so no result this round can change their odds.",
+            capitalize(&the(focus))
+        );
+    }
     if !impact.relevance.focus_alive {
         return format!(
             "{} can no longer make the playoffs, so no result this week can change their odds.",
@@ -259,13 +269,18 @@ fn links(focus: Team, impact: &GameImpact, record: &dyn Fn(Team) -> String) -> S
         parts.push(format!("{} play in it", the(focus)));
     }
     let race = format!("are still in the {} race", focus.conference());
+    let playoffs = format!("are still in the {} playoffs", focus.conference());
     for team in [impact.away, impact.home] {
         if team == focus {
             continue;
         }
         let has = |wanted: &dyn Fn(&Link) -> bool| impact.relevance.links.iter().any(wanted);
         let status = if has(&|link| *link == Link::Race(team)) {
-            race.as_str()
+            if impact.relevance.postseason {
+                playoffs.as_str()
+            } else {
+                race.as_str()
+            }
         } else if has(&|link| *link == Link::SuperBowlRace(team)) {
             "could still be the Super Bowl opponent"
         } else {
@@ -325,6 +340,9 @@ fn rivalry(
         impact.home
     };
     let record = |team: Team| format_record(standings.record(team));
+    if impact.relevance.postseason {
+        return Some(playoff_rivalry(focus, root, other));
+    }
     if root == focus || other == focus {
         let opponent = if root == focus { other } else { root };
         let tail = if opponent.division() == division {
@@ -365,6 +383,35 @@ fn rivalry(
         ))
     } else {
         None
+    }
+}
+
+/// [`rivalry`] for a playoff game: the focus team's own game keeps it
+/// alive, a game in its conference decides who it could meet, one in the
+/// other conference who it could meet in the Super Bowl.
+fn playoff_rivalry(focus: Team, root: Team, other: Team) -> String {
+    if root == focus || other == focus {
+        let opponent = if root == focus { other } else { root };
+        return format!(
+            "{} own playoff game: a win over the {} keeps their season going.",
+            capitalize(&possessive(focus)),
+            nickname(opponent)
+        );
+    }
+    let conference = root.conference();
+    let article = capitalize(a_or_an(&conference.to_string()));
+    if conference == focus.conference() {
+        format!(
+            "{article} {conference} playoff game: the winner stays in {} bracket, and {} leaves them a better path.",
+            possessive(focus),
+            a_win(root)
+        )
+    } else {
+        format!(
+            "{article} {conference} playoff game: the winner could be {} Super Bowl opponent, and {} leaves them a better one on average.",
+            possessive(focus),
+            a_win(root)
+        )
     }
 }
 

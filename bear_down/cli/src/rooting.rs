@@ -2,7 +2,8 @@
 //! `docs/rooting-json.md`; change both together.
 
 use bear_down_core::{
-    Cause, Channel, Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds,
+    Cause, Channel, Game, GameImpact, GameType, Record, Simulation, Standings, Swing, Team,
+    TeamOdds,
 };
 use serde::Serialize;
 
@@ -16,8 +17,12 @@ pub struct Guide {
     pub generated_at: String,
     /// The season simulated.
     pub season: u16,
-    /// The current week, or `None` once the regular season is over.
+    /// The current week (the first with a game left), or `None` once the
+    /// season is over.
     pub week: Option<u8>,
+    /// The playoff round the current week is: `wild_card`, `divisional`,
+    /// `conference` or `super_bowl`. `None` in the regular season.
+    pub round: Option<&'static str>,
     /// How many seasons were simulated.
     pub simulations: u32,
     /// The most recent game with a final score, to show how fresh the data is.
@@ -137,7 +142,7 @@ pub struct SwingEntry {
 /// One channel's share of a swing.
 #[derive(Debug, Serialize)]
 pub struct ChannelEntry {
-    /// `division_title`, `wild_card`, `seed`, `playoff_path` or
+    /// `division_title`, `wild_card`, `seed`, `playoff_path`, `bracket` or
     /// `super_bowl_opponent`.
     pub channel: &'static str,
     /// For the seeding channels, what decided it: `record`, `coin flip` or a
@@ -168,6 +173,7 @@ impl Guide {
             generated_at,
             season: simulation.season,
             week: simulation.week,
+            round: simulation.round.and_then(round_name),
             simulations: simulation.simulations,
             latest_game: latest.and_then(LatestGame::new),
             team: team(focus),
@@ -260,6 +266,17 @@ impl GameEntry {
     }
 }
 
+/// A playoff round's name in `rooting.json`; `None` for the regular season.
+fn round_name(round: GameType) -> Option<&'static str> {
+    match round {
+        GameType::Regular => None,
+        GameType::WildCard => Some("wild_card"),
+        GameType::Divisional => Some("divisional"),
+        GameType::Conference => Some("conference"),
+        GameType::SuperBowl => Some("super_bowl"),
+    }
+}
+
 fn team(team: Team) -> String {
     team.abbr().to_string()
 }
@@ -270,6 +287,7 @@ fn channel_name(channel: Channel) -> &'static str {
         Channel::WildCard => "wild_card",
         Channel::Seed => "seed",
         Channel::PlayoffPath => "playoff_path",
+        Channel::Bracket => "bracket",
         Channel::SuperBowlOpponent => "super_bowl_opponent",
         Channel::Chance => "chance",
     }

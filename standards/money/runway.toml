@@ -1,0 +1,11 @@
+# The financial ledger's settings (decision 0012, revenue phase 1).
+# `cost money` reads this; the format is in standards/docs/money.md.
+# Only Jim changes these, in a PR.
+
+# The first month on the ledger.
+start = "2026-11"
+# Money in the project's bank account at the start of `start`, in whole
+# cents. $0: the separate account from decision 0016 isn't open yet.
+opening_cents = 0
+# Status is `low` under this many months of runway.
+low_months = 3

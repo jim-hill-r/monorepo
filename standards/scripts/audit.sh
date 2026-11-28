@@ -6,6 +6,8 @@
 #            standards/tasks/<type>.toml, and that file exists.
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
+#   STD-005  No tracked file holds an unresolved merge conflict marker
+#            (`chores conflict-markers`, Rust).
 #   NAM-001  Project directory names are snake_case.
 #   NAM-002, NAM-004, DOC-*, LIN-*  Package names, README.md and
 #            CONTRIBUTING.md, Cargo lints (project-check.sh); DOC-* and
@@ -16,7 +18,7 @@
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (`chores evals-check`); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
-#   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh); warnings only for now.
+#   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh).
 #   THR-*    Each project's docs/threat.toml (`chores threat-check`); warnings only for now.
 #   QUAL-404 No new tracked .sh files: the ones left to port are listed in
 #            standards/shell-scripts.toml (`chores shell-scripts`).
@@ -81,19 +83,21 @@ chores=(cargo run --quiet --manifest-path chores/Cargo.toml --)
 if command -v cargo >/dev/null 2>&1; then
   # DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
   "${chores[@]}" user-docs || errors=$((errors + 1))
+  # STD-005: no unresolved merge conflict markers in tracked files.
+  "${chores[@]}" conflict-markers || errors=$((errors + 1))
   # QUAL-404: no new shell scripts (standards/shell-scripts.toml).
   "${chores[@]}" shell-scripts || errors=$((errors + 1))
   # EVL-*: requirements and evals. Warnings only; never fails the audit.
   "${chores[@]}" evals-check || true
 else
-  echo "warning: user docs, shell script, evals and threat checks skipped: cargo is not installed"
+  echo "warning: user docs, conflict marker, shell script, evals and threat checks skipped: cargo is not installed"
 fi
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.
 bash standards/scripts/cost-check.sh
 
-# ROY-001, RTOML-*: every project's royalty.toml. Warnings only.
-bash standards/scripts/royalty-check.sh
+# ROY-001, RTOML-*: every project's royalty.toml.
+bash standards/scripts/royalty-check.sh || errors=$((errors + 1))
 
 # THR-*: per-project threat models against the security rules. Warnings
 # only; COST_PROJECTS (or THREAT_PROJECTS) picks the affected projects.
