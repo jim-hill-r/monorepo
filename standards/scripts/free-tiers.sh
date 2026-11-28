@@ -268,7 +268,7 @@ d1_database() {
 # --------------------------------------------------------------- usage ----
 
 usage_check() {
-  local rows=() over=0 value status
+  local rows=() items=() over=0 value status
 
   row() {  # name, used, warn-at, limit, note
     status=ok
@@ -279,6 +279,10 @@ usage_check() {
       over=$((over + 1))
     fi
     rows+=("| $1 | $2 | $3 | $4 | $status | $5 |")
+    items+=("$(jq -nc --arg item "$1" --arg used "$2" --argjson warn "$3" \
+      --arg limit "$4" --arg status "$status" --arg note "$5" \
+      '{item: $item, used: ($used | tonumber? // null), warn_at: $warn,
+        limit: $limit, status: ($status | ascii_downcase), note: $note}')")
   }
 
   if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
@@ -326,6 +330,14 @@ usage_check() {
     echo
     echo "Limits and what to do when one is reached: standards/docs/free-tiers.md"
   } | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
+
+  # The same rows as JSON, for pane's Money page (pane/issues: order 340).
+  # The workflow uploads this file as the run's `free-tier-usage` artifact.
+  if [ -n "${FREE_TIERS_JSON:-}" ]; then
+    printf '%s\n' "${items[@]}" | jq -s \
+      --arg taken_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson over "$over" \
+      '{version: 1, taken_at: $taken_at, over: $over, items: .}' >"$FREE_TIERS_JSON"
+  fi
 
   if [ "$over" -gt 0 ]; then
     echo "::error::$over item(s) at or over their free tier warning level. See standards/docs/free-tiers.md"

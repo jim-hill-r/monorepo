@@ -13,12 +13,31 @@ includes = ["../../standards/tasks/dioxus-web.toml"]
 [env]
 DX_PACKAGE = "pane_web"  # app inside a Cargo workspace; see standards/tasks/dioxus-web.toml
 
+[tasks.eval-results]
+description = "Copy the evals-results branch's verdicts.json and results/ into target/evals-results/"
+# pane_snapshot --evals reads them for each Project page's Requirements
+# section and the Requirements light (pane/snapshot/README.md). The branch is
+# data, never checked out: git archive copies its two paths. Without network
+# or the branch the folder stays empty, the snapshot says so and the light is
+# grey, so dev and release never fail on it.
+run = """
+root="$(git rev-parse --show-toplevel)"
+rm -rf target/evals-results && mkdir -p target/evals-results
+if git -C "$root" fetch --quiet origin +evals-results:refs/remotes/origin/evals-results; then
+  git -C "$root" archive refs/remotes/origin/evals-results verdicts.json results | tar -x -C target/evals-results
+else
+  echo 'pane: no evals-results branch; Requirements is grey'
+fi
+"""
+
 [tasks.dev]
 description = "Build the repo snapshot into public/data/, then serve with hot reload"
 # The pages need /data/snapshot.json, so dev (and the Playwright tests, which
-# start the app with `mise run dev`) builds it first, as release does.
+# start the app with `mise run dev`) builds it first, as release does, with
+# the eval results when the branch can be fetched.
 run = [
-  "cargo run --quiet --package pane_snapshot -- --out public/data/snapshot.json",
+  "mise run eval-results || true",
+  "cargo run --quiet --package pane_snapshot -- --out public/data/snapshot.json --evals target/evals-results",
   "dx serve --platform web --port 8080 --package $DX_PACKAGE",
 ]
 
@@ -43,11 +62,13 @@ description = "Build the repo snapshot and review decks into public/, then the r
 # The repo audit runs next and its output goes to target/audit.txt for the
 # Standards light. A failing audit is data for pane, not a failed release,
 # so its exit code is ignored; the snapshot treats output without the
-# closing `audit:` line as not run.
+# closing `audit:` line as not run. The eval results come from the
+# evals-results branch (the eval-results task), for the Requirements section.
 run = [
   "if [ \"$(git rev-parse --is-shallow-repository)\" = true ]; then git fetch --quiet --unshallow origin || echo 'pane: no git history; shared costs are not split'; fi",
   "mkdir -p target && bash \"$(git rev-parse --show-toplevel)/standards/scripts/audit.sh\" > target/audit.txt 2>&1 || true",
-  "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json --audit target/audit.txt",
+  "mise run eval-results || true",
+  "cargo run --quiet --release --package pane_snapshot -- --out public/data/snapshot.json --audit target/audit.txt --evals target/evals-results",
   "mise run reviews",
   "dx bundle --platform web --release --out-dir dist --package $DX_PACKAGE",
 ]

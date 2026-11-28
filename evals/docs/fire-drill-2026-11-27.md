@@ -52,8 +52,11 @@ met).
 5. **COOK-005 (accessibility, a must) is always `unknown`.** Its `cd`
    Playwright eval never runs, because no smoke step runs after deploy yet
    (`issues/nightly-uat-smoke-step-after-deploy.md`), yet the coverage line
-   says "3 of 3 musts evaluated in production". The coverage metric issue
-   should count musts with production results, not musts with evals.
+   said "3 of 3 musts evaluated in production". Fixed in a follow-up PR:
+   the count is now musts with a stored production result, not musts with
+   a production eval, so COOK-005 stops counting until the smoke step runs
+   (test `a_must_with_only_ci_results_is_not_evaluated_in_production` in
+   `evals/cli/src/store.rs`).
 
 ## Next drill
 
