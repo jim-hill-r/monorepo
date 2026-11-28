@@ -4,6 +4,9 @@ What the rooting guide must do for a Bears fan, in the format of
 [standards/docs/evals.md](../../standards/docs/evals.md). Written
 2026-11-26 from Jim's feedback on the first live version. How we get there is
 in [plans/2026-11-robust-recommendations.md](plans/2026-11-robust-recommendations.md).
+Since [decision 0010](decisions/0010-any-team.md) a fan can pick any team,
+and BEAR-001 to BEAR-008 hold for that team's guide: read "the Bears" as
+the team picked.
 
 The hard part, and the reason the app exists: most games touch the Bears
 through more than one channel, and the channels often pull opposite ways.
@@ -107,3 +110,15 @@ net is, including when the net is close to zero.
 - Accept: every game in every tab has a Yes / No / Confusing vote with an
   optional note, votes reach the repo weekly as files, and the summary
   shows each A/B arm's results.
+
+## BEAR-011: A fan can pick any team
+
+- Priority: should
+- Why: Jim, 2026-11-28: "We should also make it so that you can pick any
+  team in the bear_down app and get recommendations"
+  ([decision 0010](decisions/0010-any-team.md)).
+- Accept: the page offers all 32 teams; picking one shows that team's
+  guide, built nightly like the Bears', with BEAR-001 to BEAR-008 holding
+  for it and every explanation naming that team, never the Bears unless
+  they play in the game. The choice is kept in the link and in the
+  browser.

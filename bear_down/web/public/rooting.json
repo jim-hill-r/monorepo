@@ -11,7 +11,8 @@
     "away_score": 39,
     "home_score": 35
   },
-  "bears": {
+  "team": "CHI",
+  "focus": {
     "record": {
       "wins": 9,
       "losses": 2,

@@ -1,13 +1,14 @@
 //! The celebration banner at the top of the page. The nightly build works it
 //! out from the current results, so the page shows only what this file
-//! wrote: a banner right after a Bears win, and nothing otherwise.
+//! wrote: a banner right after a win by the guide's team (the Bears, or the
+//! team a fan picked), and nothing otherwise.
 //!
 //! The headline is the score of that win. The lines under it are the most
 //! notable facts of the moment, picked from a fixed list in priority order
-//! (the playoff round they reached, the NFC North race, how much their odds
+//! (the playoff round they reached, the division race, how much their odds
 //! moved, a winning streak and their record), at most [`MAX_LINES`] of them.
 
-use bear_down_core::{Game, GameType, Season, Standings, Team, TeamOdds};
+use bear_down_core::{Conference, Game, GameType, Season, Standings, Team, TeamOdds};
 use serde::Serialize;
 
 use crate::why::nickname;
@@ -38,7 +39,7 @@ pub struct Context<'a> {
     pub season: &'a Season<'a>,
     /// The season's standings now.
     pub standings: &'a Standings,
-    /// The team the page is for (the Bears).
+    /// The team the page is for (the Bears, or the team a fan picked).
     pub focus: Team,
     /// Its odds now.
     pub odds: TeamOdds,
@@ -72,13 +73,17 @@ pub fn banner(context: &Context<'_>) -> Option<Banner> {
         .opponent(us)
         .and_then(Team::from_abbr)
         .map_or("opponent", nickname);
+    let city = city(context.focus);
     let headline = if game.game_type == GameType::SuperBowl {
-        format!("Super Bowl champions! Chicago {ours}, {opponent} {theirs}.")
+        format!("Super Bowl champions! {city} {ours}, {opponent} {theirs}.")
     } else {
-        format!("Bears win! Chicago {ours}, {opponent} {theirs}.")
+        format!(
+            "{} win! {city} {ours}, {opponent} {theirs}.",
+            nickname(context.focus)
+        )
     };
     let lines = [
-        playoff_line(game.game_type),
+        playoff_line(game.game_type, context.focus.conference()),
         division_line(context, game),
         odds_line(context, game),
         streak_line(context),
@@ -91,13 +96,13 @@ pub fn banner(context: &Context<'_>) -> Option<Banner> {
     Some(Banner { headline, lines })
 }
 
-/// Where a playoff win sends them.
-fn playoff_line(game_type: GameType) -> Option<String> {
+/// Where a playoff win in `conference` sends them.
+fn playoff_line(game_type: GameType, conference: Conference) -> Option<String> {
     let next = match game_type {
         GameType::Regular | GameType::SuperBowl => return None,
-        GameType::WildCard => "the divisional round",
-        GameType::Divisional => "the NFC Championship",
-        GameType::Conference => "the Super Bowl",
+        GameType::WildCard => "the divisional round".to_string(),
+        GameType::Divisional => format!("the {conference} Championship"),
+        GameType::Conference => "the Super Bowl".to_string(),
     };
     Some(format!("On to {next}."))
 }
@@ -108,7 +113,8 @@ fn division_line(context: &Context<'_>, game: &Game) -> Option<String> {
         return None;
     }
     let focus = context.focus;
-    let division = focus.division().teams();
+    let name = focus.division();
+    let division = name.teams();
     let margin = |team: Team| {
         let record = context.standings.record(team);
         f64::from(record.wins) - f64::from(record.losses)
@@ -127,7 +133,7 @@ fn division_line(context: &Context<'_>, game: &Game) -> Option<String> {
         .iter()
         .all(|&rival| margin(focus) - 2.0 * left(focus) > margin(rival) + 2.0 * left(rival))
     {
-        return Some("NFC North champions.".to_string());
+        return Some(format!("{name} champions."));
     }
     let rival = rivals
         .into_iter()
@@ -136,7 +142,7 @@ fn division_line(context: &Context<'_>, game: &Game) -> Option<String> {
     if lead < 0.0 {
         None
     } else if lead == 0.0 {
-        Some("Tied for first place in the NFC North.".to_string())
+        Some(format!("Tied for first place in the {name}."))
     } else {
         let games = if lead == 1.0 {
             "a game".to_string()
@@ -144,7 +150,7 @@ fn division_line(context: &Context<'_>, game: &Game) -> Option<String> {
             format!("{lead} games")
         };
         Some(format!(
-            "Alone in first place in the NFC North, {games} ahead of the {}.",
+            "Alone in first place in the {name}, {games} ahead of the {}.",
             nickname(rival)
         ))
     }
@@ -200,6 +206,43 @@ fn record_line(context: &Context<'_>, game: &Game) -> Option<String> {
     } else {
         format!("Now {}-{}-{}.", record.wins, record.losses, record.ties)
     })
+}
+
+/// Where the team plays, as a scoreline names it: "Chicago", "Green Bay".
+fn city(team: Team) -> &'static str {
+    match team.abbr() {
+        "ARI" => "Arizona",
+        "ATL" => "Atlanta",
+        "BAL" => "Baltimore",
+        "BUF" => "Buffalo",
+        "CAR" => "Carolina",
+        "CHI" => "Chicago",
+        "CIN" => "Cincinnati",
+        "CLE" => "Cleveland",
+        "DAL" => "Dallas",
+        "DEN" => "Denver",
+        "DET" => "Detroit",
+        "GB" => "Green Bay",
+        "HOU" => "Houston",
+        "IND" => "Indianapolis",
+        "JAX" => "Jacksonville",
+        "KC" => "Kansas City",
+        "LA" | "LAR" | "LAC" => "Los Angeles",
+        "LV" => "Las Vegas",
+        "MIA" => "Miami",
+        "MIN" => "Minnesota",
+        "NE" => "New England",
+        "NO" => "New Orleans",
+        "NYG" | "NYJ" => "New York",
+        "PHI" => "Philadelphia",
+        "PIT" => "Pittsburgh",
+        "SEA" => "Seattle",
+        "SF" => "San Francisco",
+        "TB" => "Tampa Bay",
+        "TEN" => "Tennessee",
+        "WAS" => "Washington",
+        _ => nickname(team),
+    }
 }
 
 /// "Three", "Four", ... up to "Ten", then digits.
@@ -259,6 +302,14 @@ mod tests {
         rows: &[(u8, &str, &str, &str, &str, &str)],
         before: Option<TeamOdds>,
     ) -> Option<Banner> {
+        banner_for_team(rows, before, Team::BEARS)
+    }
+
+    fn banner_for_team(
+        rows: &[(u8, &str, &str, &str, &str, &str)],
+        before: Option<TeamOdds>,
+        focus: Team,
+    ) -> Option<Banner> {
         let schedule = schedule(rows);
         let Some(season) = schedule.latest_season() else {
             panic!("test schedule has a season");
@@ -270,7 +321,7 @@ mod tests {
         banner(&Context {
             season: &season,
             standings: &standings,
-            focus: Team::BEARS,
+            focus,
             odds: odds(0.11, 0.97),
             odds_before: before,
         })
@@ -358,5 +409,40 @@ mod tests {
             banner_for(&rows, None).map(|b| b.headline),
             Some("Super Bowl champions! Chicago 31, Bills 20.".to_string())
         );
+    }
+
+    #[test]
+    fn any_team_gets_its_own_banner() {
+        let Some(chiefs) = Team::from_abbr("KC") else {
+            panic!("KC is a team");
+        };
+        let rows = [
+            (1, "REG", "KC", "LV", "27", "20"),
+            (2, "REG", "DEN", "LAC", "10", "13"),
+            (3, "REG", "LV", "KC", "", ""),
+        ];
+        assert_eq!(
+            banner_for_team(&rows, None, chiefs),
+            Some(Banner {
+                headline: "Chiefs win! Kansas City 27, Raiders 20.".to_string(),
+                lines: vec![
+                    "Tied for first place in the AFC West.".to_string(),
+                    "Now 1-0.".to_string(),
+                ],
+            })
+        );
+        assert_eq!(banner_for_team(&rows, None, Team::BEARS), None);
+        let rows = [(20, "DIV", "BUF", "KC", "20", "23")];
+        assert_eq!(
+            banner_for_team(&rows, None, chiefs).map(|b| b.lines),
+            Some(vec!["On to the AFC Championship.".to_string()])
+        );
+    }
+
+    #[test]
+    fn every_team_has_a_city() {
+        for team in Team::all() {
+            assert_ne!(city(team), nickname(team), "{team}");
+        }
     }
 }
