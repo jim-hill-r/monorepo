@@ -267,7 +267,7 @@ test('the reviews page lists the rotation and opens a deck as slides @smoke @req
   await page.goto('/reviews');
 
   const rotation = page.getByTestId('reviews-rotation');
-  await expect(rotation.getByRole('columnheader')).toHaveText(['Date', 'Project', 'Deck', 'Scorecard', 'Comments']);
+  await expect(rotation.getByRole('columnheader')).toHaveText(['Date', 'Project', 'Deck', 'Scorecard', 'Signed off', 'Comments']);
   const row = rotation.locator('tbody tr').first();
   await expect(row.locator('td').first()).toHaveText(/^\d{4}-\d{2}-\d{2}$/);
   await expect(row.getByRole('link', { name: 'PDF' })).toHaveAttribute(
@@ -279,12 +279,16 @@ test('the reviews page lists the rotation and opens a deck as slides @smoke @req
   // snapshot's every_real_deck_has_a_scorecard test checks it).
   await expect(row.getByTestId('scorecard-summary')).toHaveText(/^\d+ (Good|Fair|Poor)( · \d+ (Good|Fair|Poor))*$/);
 
+  // Who signed the deck off: "Not yet", or the latest reviewer and date.
+  await expect(row.getByTestId('review-signed-off')).toHaveText(/^(Not yet|[a-z0-9-]+(, needs changes)?, \d{4}-\d{2}-\d{2}.*)$/);
+
   await row.getByRole('link', { name: 'Slides' }).click();
   await expect(page).toHaveURL(/\/review\/[^/]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/ deep review$/);
   const scorecard = page.getByTestId('review-scorecard');
   await expect(scorecard.getByRole('columnheader')).toHaveText(['Area', 'Rating', 'Why']);
   await expect(scorecard.locator('tbody tr').first().locator('td').first()).toHaveText(/^(Good|Fair|Poor)$/);
+  await expect(page.getByTestId('review-signoffs').getByRole('heading', { level: 2 })).toHaveText('Sign-offs');
   const deck = page.getByTestId('deck');
   await expect(deck).toHaveAttribute('src', /^\/reviews\/[^/]+\/deck\.html$/);
   await expect(page.frameLocator('[data-testid="deck"]').locator('section').first()).toBeVisible();
