@@ -65,7 +65,8 @@ what = "Kiln-dried white oak boards"
 who = "Hollow Creek Sawmill"
 where = "Brown County, Indiana, US"
 evidence = "documented"     # declared | documented | verified
-proof = ["mill-invoice-2026-10.pdf"]  # redacted copies, committed beside the listing
+proof = "Mill invoice, October 2026"  # what was seen; the file itself is never committed
+checked = { by = "jim", on = "2026-12-02" }
 
 [[hop]]
 stage = "making"
@@ -73,7 +74,6 @@ what = "Cut, glued, planed and shaped"
 who = "Ridge Woodshop (Sam Ridge)"
 where = "Bloomington, Indiana, US"
 evidence = "verified"
-proof = ["workshop-video.md"]
 verified = { by = "curator", on = "2026-12-03", note = "Video call of the workshop and a board in progress" }
 
 [[hop]]
@@ -90,7 +90,7 @@ shows them plainly beside each hop:
 | Level | Means | Who sets it |
 | --- | --- | --- |
 | `declared` | The seller says so. | The seller. |
-| `documented` | The seller attached proof (an invoice, a certificate, a photo of a label or a batch), with personal and price details redacted. | The seller; the curator checks the proof matches the claim. |
+| `documented` | The seller showed the curator proof (an invoice, a certificate, a photo of a label or a batch), and the curator checked it matches the claim. The listing records what was seen and who checked it, never the file. | The curator, from what the seller sent. |
 | `verified` | A curator checked it directly (a video call of the workshop, a visit, a call to the supplier), and records who, when and how. | The curator only. |
 
 From the hops Bogan derives a listing's **transparency summary**: how many
@@ -156,7 +156,7 @@ What a buyer sees:
 - **Browse.** Listings by category and by region, filterable by evidence
   ("making hop verified").
 - **Listing.** Photos, price, the seller, the chain drawn as a short
-  timeline with each hop's evidence level and proof, the transparency
+  timeline with each hop's evidence level and what backs it, the transparency
   summary, the "Buy from the seller" link and "Report this listing".
 - **Seller.** Who they are, where they work, how they were verified, and
   their listings.
@@ -180,7 +180,7 @@ files, so it needs no server and no database:
 
 | Part | What it is | Notes |
 | --- | --- | --- |
-| `bogan/listings/` | One TOML file per listing and one per seller, with their photos and redacted proof files | Files before databases (AGENTS.md). Photos resized to at most 1600 px and about 300 KB by the build. |
+| `bogan/listings/` | One TOML file per listing and one per seller, with their photos (proof files are never committed) | Files before databases (AGENTS.md). Photos resized to at most 1600 px and about 300 KB by the build. |
 | `bogan/core` | Rust crate: the listing schema, validation (the two chain rules), the transparency summary, the duplicate photo check | Unit tests per rule; `chores`-style checks in CI. |
 | `bogan/web` | Dioxus static site rendered at build time | Same stack as bear_down and cookbook; the design system's tokens; Playwright tests. |
 | `bogan/cloudflare` | Pages deploy | Pages project `jimhillr-bogan`, created through `free-tiers.sh` (FT-006 naming). |
@@ -201,7 +201,11 @@ cahokia.
   weekly or on-merge deploy is one direct upload, no Pages builds; 50
   listings with three photos each is about 200 files of the 20,000 per
   site. No Worker or D1 until phase 3.
-- **Files before databases.** Listings, sellers, photos and proof are
+- **Repo size** is the first real growth limit. 300 photos at about
+  150 KB each is around 45 MB, which is fine, but past roughly 1,000
+  listings the photos need their own store. R2 is on hold in the tech
+  radar, so that needs a decision record first; it is in phase 4.
+- **Files before databases.** Listings, sellers and photos are
   committed files; the git history is the audit trail of every claim and
   every curation call.
 - **Separate company.** Bogan serves from its own origin, owns its listing
@@ -209,11 +213,15 @@ cahokia.
   libraries (design system, feedback and support, auth_sdk).
 - **Personal data.** Seller and maker names and towns are published on
   purpose, so the application asks for consent to publish each one, and
-  proof files are committed only after names of private people, prices
-  and account numbers are redacted. A seller can ask for removal, which
-  removes the files; they stay in git history, so proof must be redacted
-  before it is ever committed. The threat model gets this surface in
-  phase 1.
+  proof never enters the repo. The repo is public and git history keeps
+  everything, so an invoice or certificate committed here, or a redaction
+  mistake in one, would be published for good. The curator looks at proof
+  where the seller sent it, and the listing records only what was seen and
+  who checked it on which date. A private store for proof is a later
+  decision, if curators other than Jim need to see it. A seller can ask
+  for removal, which deletes their files from `main` (their names stay in
+  git history, which the application says). The threat model gets this
+  surface in phase 1.
 - **Honest claims.** Bogan shows the evidence level of every claim and
   says plainly that a `declared` hop is the seller's word. It never adds
   its own "ethical" or "local" label beyond what the chain shows.
@@ -247,7 +255,9 @@ approves this brief.
 3. **Reports and first sellers.** "Report this listing" through the
    support library, the seller application form, and the first real
    sellers Jim invites.
-4. **Later, each its own decision.** Seller accounts and a listing editor
+4. **Later, each its own decision.** Photo storage past about 1,000
+   listings (R2, on hold, or another store); a private store for proof;
+   seller accounts and a listing editor
    (Auth0 plus the `bogan` tenant in D1); the management app's curation
    queue; payments (`issues/propose-payments-decision.md`), which a link-out
    catalog doesn't need until Jim wants Bogan to take orders itself.
