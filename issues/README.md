@@ -93,6 +93,6 @@ may approve what, as a matrix of domains and project tiers in
 
 See [decision 0026](../standards/docs/decisions/0026-project-isolation.md)
 and [standards/docs/project-isolation.md](../standards/docs/project-isolation.md).
-One `write-isolation-guide.md` per project, in any order (products first);
+One `docs/issues/write-isolation-guide.md` per project, in any order (products first);
 `telemetry/docs/isolation.md` is the example. The last issue,
-`project-isolation-strict-audit.md`, makes the check fail instead of warn.
+`standards/docs/issues/project-isolation-strict-audit.md`, makes the check fail instead of warn.
