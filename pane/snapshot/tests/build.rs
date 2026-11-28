@@ -616,3 +616,77 @@ fn splits_shared_costs_by_merged_prs_from_git() -> TestResult {
     assert_eq!((oct.month.as_str(), oct.merged_prs), ("2026-10", 0));
     Ok(())
 }
+
+#[test]
+fn reads_the_repo_health_badges() -> TestResult {
+    let repo_dir = FixtureRepo::new("repo_health")?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
+    assert_eq!(
+        s.repo_health.rows(),
+        0,
+        "no standards/repo-health.toml, no badges"
+    );
+
+    fs::create_dir_all(repo_dir.0.join("standards"))?;
+    fs::write(
+        repo_dir.0.join("standards/repo-health.toml"),
+        r#"
+[[domain]]
+name = "Build"
+summary = "Whether main builds."
+
+[[domain.row]]
+area = "Main CI"
+runs = "Every push"
+checks = "CI"
+red = "CI failed"
+pane = "/projects"
+[[domain.row.badge]]
+alt = "Main CI"
+image = "https://example.com/a.svg"
+link = "https://example.com/a"
+"#,
+    )?;
+    let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
+    let row = &s.repo_health.domain[0].row[0];
+    assert_eq!(
+        (row.area.as_str(), row.pane.as_deref()),
+        ("Main CI", Some("/projects"))
+    );
+    assert_eq!(row.badge[0].image, "https://example.com/a.svg");
+
+    fs::write(
+        repo_dir.0.join("standards/repo-health.toml"),
+        "domain = 1\n",
+    )?;
+    let err = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")
+        .err()
+        .ok_or("an invalid repo-health.toml must fail the snapshot")?;
+    assert!(err.contains("repo-health.toml"), "{err}");
+    Ok(())
+}
+
+#[test]
+fn the_real_repo_health_file_parses() -> TestResult {
+    // The README's tables come from this file (`chores repo-health`), so
+    // pane must read every row of it, or the two would disagree.
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let health = repo::repo_health(&repo)?;
+    assert!(health.rows() > 10, "{} rows", health.rows());
+    let readme = fs::read_to_string(repo.join("README.md"))?;
+    for domain in &health.domain {
+        for row in &domain.row {
+            for badge in &row.badge {
+                assert!(
+                    readme.contains(&badge.image),
+                    "README lacks {}",
+                    badge.image
+                );
+            }
+            if let Some(route) = &row.pane {
+                assert!(route.starts_with('/'), "{}: pane route {route}", row.area);
+            }
+        }
+    }
+    Ok(())
+}

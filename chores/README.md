@@ -61,6 +61,11 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 c user-docs
 c user-docs --json
 
+# HLT-001: the README's and repo-health.md's Repo health tables must match
+# standards/repo-health.toml, which pane reads too; --write rewrites them.
+c repo-health
+c repo-health --write
+
 # QUAL-404: fail on a tracked .sh file not in standards/shell-scripts.toml
 # (scripts stay Rust-only; the list only shrinks), or a stale line there.
 c shell-scripts
@@ -82,6 +87,7 @@ c threat-check --projects cookbook,pane
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `repo-health` | `mise run //:audit` (any skill's hooks) | Editing the README's badge table by hand and pane showing different checks |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 

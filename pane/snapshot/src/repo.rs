@@ -8,6 +8,7 @@ use cost_model::{COST_FILE, CostFile, LimitsFile, Month, Radar};
 use pane_model::costs::{
     Costs, ProjectCosts, build_costs, build_history, months_ending, shared_cents,
 };
+use pane_model::repo_health::RepoHealth;
 use pane_model::{DeliverableKind, Project, Snapshot, WorkKind, WorkSource};
 
 use crate::{blame, merged, parse};
@@ -111,7 +112,20 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
         .deliverables
         .extend(snapshot.reviews.iter().map(parse::review_deliverable));
     snapshot.costs = costs(root, &roots, taken_at)?;
+    snapshot.repo_health = repo_health(root)?;
     Ok(snapshot)
+}
+
+/// The repo health badges, the same file the README's tables are written
+/// from. A checkout without it (a test fixture) has none; one that doesn't
+/// parse fails the snapshot, so pane never shows fewer badges than the
+/// README.
+pub fn repo_health(root: &Path) -> Result<RepoHealth, String> {
+    let path = root.join(pane_model::repo_health::SOURCE);
+    if !path.exists() {
+        return Ok(RepoHealth::default());
+    }
+    toml::from_str(&read(&path)?).map_err(|e| format!("{}: {e}", path.display()))
 }
 
 /// Every project's `docs/cost.toml` with the radar's budgets and the free
