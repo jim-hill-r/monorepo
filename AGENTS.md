@@ -221,8 +221,7 @@ repo, rather than in any one agent tool's settings.
   patterns and infrastructure definitions, not services a product's
   requests pass through. Shared database infrastructure is allowed only
   with tenant-scoped tables that one export can move out
-  ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md),
-  proposed).
+  ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
