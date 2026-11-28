@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["cloudflare", "model", "snapshot", "web"]
+members = ["model", "snapshot", "web"]
+# cloudflare is the Worker, its own workspace (see its Cargo.toml).
+exclude = ["cloudflare"]
 default-members = ["web"]
 
 [workspace.lints.clippy]
