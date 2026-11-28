@@ -1,5 +1,5 @@
-# backups: docs project for now; phase 1 adds the backup workflow and its
-# chores command (decision 0030). Standard tasks: ci, fix, build, test, dev,
+# backups: docs project for now; phase 1 adds the nightly D1 export workflow and
+# its chores command (decision 0030). Standard tasks: ci, fix, build, test, dev,
 # release, deploy.
 
 [task_config]

@@ -10,7 +10,8 @@
 A copy of the repo, and with it the cookbook content, that survives
 losing both GitHub and Cloudflare
 ([decision 0030](../decisions/0030-backups-and-disaster-recovery.md),
-part 4; requirement BACK-002).
+parts 2 and 4; requirement BACK-001). It is the only copy outside GitHub, so what it
+lacks is what we lose if GitHub goes.
 
 ## Why a person
 
@@ -23,12 +24,13 @@ own computer or drive.
 
 ## Steps
 
-1. Until backups phase 1 lands: open github.com/jimhillr/monorepo >
-   Code > Download ZIP. This is `main` without history, which is enough
-   to read every recipe.
-2. Once phase 1 lands: open the newest successful run of the "Backups
-   Nightly" workflow under Actions and download its `repo-bundle`
-   artifact, which has every branch and the full history.
+1. Best, if you have git: in your backups folder run
+   `git clone --mirror https://github.com/jimhillr/monorepo.git monorepo-<date>.git`.
+   That has every branch (including `feedback-data`) and the full
+   history.
+2. Otherwise: open github.com/jimhillr/monorepo > Code > Download ZIP.
+   This is `main` without history, which is enough to read every recipe
+   and rebuild the repo.
 3. Save it in your backups folder named with today's date, and delete
    copies older than a year.
 

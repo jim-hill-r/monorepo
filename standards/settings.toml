@@ -352,9 +352,9 @@ every = "365d"
 [[setting]]
 id = "offline-backup-copy"
 vendor = "GitHub"
-where = "Your own computer or backup drive, from github.com/jimhillr/monorepo (Download ZIP, or the Backups Nightly bundle once it exists)"
+where = "Your own computer or backup drive, from github.com/jimhillr/monorepo (git clone --mirror, or Code > Download ZIP)"
 expect = "A copy of the repo dated within the last 90 days is on your own computer or drive, and its cookbook/content folder has recipes in it (standards/docs/runbooks/offline-backup-copy.md)."
-why = "It is the only copy of the cookbook that survives losing both GitHub and Cloudflare (BACK-002)."
+why = "It is the only copy of the cookbook that survives losing both GitHub and Cloudflare (BACK-001)."
 every = "90d"
 
 [[setting]]

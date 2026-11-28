@@ -8,7 +8,7 @@ branch, a new vendor that keeps user data) adds its row here.
 
 | Tier | RPO | RTO |
 | --- | --- | --- |
-| 0 | 24 hours | 1 day to read, 3 days to work |
+| 0 | 0 while GitHub is up; up to 90 days if it is lost | 1 day to read, 3 days to work |
 | 1 | 24 hours | 4 hours |
 | 2 | 0 (built from the repo) | 1 day |
 | 3 | none kept (re-minted) | 2 days |
@@ -18,9 +18,9 @@ branch, a new vendor that keeps user data) adds its row here.
 
 | What | Owner | Tier | Backup | Restore |
 | --- | --- | --- | --- | --- |
-| `jimhillr/monorepo`, `main` and every branch: code, docs, issues, and the cookbook content (`cookbook/content/`, the product) | all | 0 | Nightly `git bundle --all` to Workers KV (phase 1); offline copy with Jim every 90 days | Clone the bundle, push to a new repository, then [disaster-recovery.md](../../standards/docs/runbooks/disaster-recovery.md) |
-| `feedback-data` branch (weekly fan feedback summaries) | telemetry, bear_down | 0 | In the bundle | In the bundle |
-| `evals-results`, `coverage-results` branches | evals | 4 | In the bundle | Or rerun the nightly workflows |
+| `jimhillr/monorepo`, `main` and every branch: code, docs, issues, and the cookbook content (`cookbook/content/`, the product) | all | 0 | Git history on GitHub; offline copy with Jim every 90 days | From the offline copy into a new repository, then [disaster-recovery.md](../../standards/docs/runbooks/disaster-recovery.md) |
+| `feedback-data` branch (weekly fan feedback summaries) | telemetry, bear_down | 0 | In the offline copy if Jim uses `git clone --mirror`; a ZIP of `main` leaves it out | From the copy |
+| `evals-results`, `coverage-results` branches | evals | 4 | None needed | Rerun the nightly workflows |
 | Repo settings, rulesets, environments, labels | infra | 2 | The `github` IaC stack; by-hand ones in `standards/settings.toml` | `infra-apply`, then the settings runbooks |
 | GitHub secrets and variables | infra | 3 | Never backed up | Bootstrap credentials by hand, then Infra Mint ([infra-credentials-environment.md](../../standards/docs/runbooks/infra-credentials-environment.md)) |
 | Actions artifacts (D1 exports, review decks) | backups | 1 | They are the backup | - |
@@ -29,9 +29,8 @@ branch, a new vendor that keeps user data) adds its row here.
 
 | What | Owner | Tier | Backup | Restore |
 | --- | --- | --- | --- | --- |
-| D1 `jimhillr-tofu-state` (OpenTofu state, already encrypted) | tofu_state | 1 | 10 versions per stack in the Worker; Time Travel 7 days; nightly encrypted export (phase 2) | Roll back a version (tofu_state README), Time Travel, or import the export |
-| Product D1 data (flags, feedback, support; decisions 0018, 0020, 0021) | each product | 1 | Planned: nightly encrypted export from the day it exists (phase 2) | Time Travel, or import the export |
-| Workers KV `jimhillr-backups` | backups | 4 | It is a backup | - |
+| D1 `jimhillr-tofu-state` (OpenTofu state, already encrypted) | tofu_state | 1 | 10 versions per stack in the Worker; Time Travel 7 days; nightly encrypted export (phase 1) | Roll back a version (tofu_state README), Time Travel, or import the export |
+| Product D1 data (flags, feedback, support; decisions 0018, 0020, 0021) | each product | 1 | Planned: nightly encrypted export from the day it exists (phase 1) | Time Travel, or import the export |
 | Pages projects, Workers, routes, bindings | each project | 2 | The repo (`wrangler.toml`, deploy workflows) and the `cloudflare` stack | Nightly CD and `infra-apply` |
 | Analytics Engine (telemetry events), Workers Logs | telemetry, observability | 4 | None | Accept the loss |
 

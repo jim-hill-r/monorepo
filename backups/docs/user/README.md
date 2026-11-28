@@ -22,8 +22,8 @@ it will work once phases 1 and 2 ship.
 
 ### Get back a file or a deleted branch
 
-Ask an agent. Git history usually has it; if not, the agent restores it
-from the newest nightly bundle.
+Ask an agent. Git history usually has it; if history was rewritten, it
+restores it from your offline copy.
 
 ### Undo a bad change to D1 data
 
@@ -35,7 +35,7 @@ export (up to 90 days back), following
 ### Recover after losing GitHub or Cloudflare
 
 Follow [disaster-recovery.md](../../../standards/docs/runbooks/disaster-recovery.md).
-It starts from the copy that is left (Cloudflare KV, or your offline copy)
+It starts from your offline copy
 and lists the steps only you can do.
 
 ### Read the cookbook with nothing else left

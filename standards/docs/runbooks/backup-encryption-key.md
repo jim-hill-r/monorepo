@@ -12,7 +12,7 @@ The nightly backup job encrypts every D1 export with
 public and so are its workflow artifacts
 ([decision 0030](../decisions/0030-backups-and-disaster-recovery.md),
 part 3). The public key encrypts; only the private key decrypts. Without
-it, backups phase 2 can't start.
+it, backups phase 1 can't start.
 
 ## Why a person
 
@@ -59,4 +59,4 @@ and passes. Tell the thread "done" so it deletes the issue.
 Make a new pair with the same steps, commit the new public key, replace
 `BACKUP_AGE_KEY`, and keep the old private key until the last export
 encrypted to it has expired (90 days). Add a row for it in
-[secret-rotation.md](../secret-rotation.md) when phase 2 lands.
+[secret-rotation.md](../secret-rotation.md) when phase 1 lands.

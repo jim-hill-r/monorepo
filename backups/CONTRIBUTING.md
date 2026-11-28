@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-This is a docs-only project until phase 1 adds the nightly backup job, so
+This is a docs-only project until phase 1 adds the nightly D1 export job, so
 there is nothing to build yet:
 
 ```bash

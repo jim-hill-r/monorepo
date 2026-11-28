@@ -31,9 +31,9 @@ deletion that a person approves.
 
 1. An agent finds it in git history (`git log --all -- <path>`,
    `git reflog` on a clone) and opens a PR restoring it.
-2. If history was rewritten, the agent clones the newest nightly bundle
-   from KV (`repo/latest/*`, joined in order), finds the commit and pushes
-   it to a new branch. **Jim** approves the PR.
+2. If history was rewritten, look for the commit in any other clone,
+   then in your offline copy (a `--mirror` copy has the history), and
+   push it to a new branch. **Jim** approves the PR.
 
 ### B. D1 data is wrong or deleted
 
@@ -76,11 +76,10 @@ makes comes back with one run; the bootstrap credentials follow
    (Settings > Repositories > Deleted repositories).
 2. If it can't come back: **Jim** creates a new account or organization
    and an empty public repository (see [github-repo-setup.md](github-repo-setup.md)).
-3. From any computer with git and a Cloudflare sign-in (or the offline
-   copy): download `repo/latest/*` from the `jimhillr-backups` KV
-   namespace in the Cloudflare dashboard, join the chunks in order
-   (`cat repo-*.part > repo.bundle`), `git clone --mirror repo.bundle`
-   and `git push --mirror` to the new repository.
+3. From your offline copy: for a `--mirror` copy, `git push --mirror`
+   to the new repository; for a ZIP, unzip it, `git init`, commit
+   everything and push. Work since the copy's date is lost unless some
+   other clone has it.
 4. **Jim**: install the Claude GitHub App on it and point the Claude
    project at it ([claude-setup.md](claude-setup.md)).
 5. An agent then: updates the repository name in the `github` stack and
@@ -88,8 +87,7 @@ makes comes back with one run; the bootstrap credentials follow
    and environments, and asks **Jim** to set the bootstrap credentials and
    approve the Infra Mint run, which remakes every other secret. Nightly
    CD then redeploys every site.
-6. If Cloudflare is gone too, use your offline copy for step 3 and
-   [cloudflare-account.md](cloudflare-account.md) to start again.
+6. If Cloudflare is gone too, follow case G as well.
 
 ### G. Cloudflare is gone
 
