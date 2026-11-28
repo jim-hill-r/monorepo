@@ -8,7 +8,7 @@
     "cloudflare_web_analytics_site": {
       "bear_down": {
         "account_id": "${var.cloudflare_account_id}",
-        "auto_install": true,
+        "auto_install": false,
         "host": "jimhillr-bear-down.pages.dev",
         "lifecycle": {
           "create_before_destroy": false,
@@ -18,7 +18,7 @@
       },
       "cahokia": {
         "account_id": "${var.cloudflare_account_id}",
-        "auto_install": true,
+        "auto_install": false,
         "host": "jimhillr-cahokia.pages.dev",
         "lifecycle": {
           "create_before_destroy": false,
@@ -28,7 +28,7 @@
       },
       "controlled_chaos": {
         "account_id": "${var.cloudflare_account_id}",
-        "auto_install": true,
+        "auto_install": false,
         "host": "jimhillr-controlled-chaos.pages.dev",
         "lifecycle": {
           "create_before_destroy": false,
@@ -38,7 +38,7 @@
       },
       "cookbook": {
         "account_id": "${var.cloudflare_account_id}",
-        "auto_install": true,
+        "auto_install": false,
         "host": "jimhillr-cookbook.pages.dev",
         "lifecycle": {
           "create_before_destroy": false,
@@ -48,7 +48,7 @@
       },
       "design_system": {
         "account_id": "${var.cloudflare_account_id}",
-        "auto_install": true,
+        "auto_install": false,
         "host": "jimhillr-design-system.pages.dev",
         "lifecycle": {
           "create_before_destroy": false,
@@ -58,7 +58,7 @@
       },
       "sparkhill": {
         "account_id": "${var.cloudflare_account_id}",
-        "auto_install": true,
+        "auto_install": false,
         "host": "jimhillr-sparkhill.pages.dev",
         "lifecycle": {
           "create_before_destroy": false,

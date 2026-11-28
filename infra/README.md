@@ -27,7 +27,7 @@ How it works:
 | Stack | Manages | Credentials |
 | --- | --- | --- |
 | `auth0` | The cookbook and cahokia Auth0 applications: callback, web origin and logout URLs for production, Pages previews (`https://*.<pages project>.pages.dev`) and localhost, and the Single Page Application type | `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` from the environment |
-| `cloudflare` | Web Analytics on each production Pages site (`cloudflare_web_analytics_site`, beacon auto-installed); wrangler still creates and deploys the Pages projects | `CLOUDFLARE_API_TOKEN` and `TF_VAR_cloudflare_account_id` from the environment |
+| `cloudflare` | Web Analytics on each production Pages site (`cloudflare_web_analytics_site`, not auto-installed: Cloudflare allows that only on proxied zone hostnames, so each app adds the beacon script with its site token); wrangler still creates and deploys the Pages projects | `CLOUDFLARE_API_TOKEN` and `TF_VAR_cloudflare_account_id` from the environment |
 | `github` | This repository (imported, with every setting written out), secret scanning and push protection, Dependabot alerts and security updates, and a `CI` ruleset that requires `CI result` from GitHub Actions on `main`. Never the `Default` ruleset (provider 6.13.0 can't express its unattributed-changes rule, so an update would drop it), any bypass list or the `infra-credentials` environment | `GITHUB_TOKEN` from the environment: a token minted per run from the read-only infra GitHub App for plans, and from the infra GitHub App for applies |
 
 Every resource that already exists is brought in with an `import` block, and
