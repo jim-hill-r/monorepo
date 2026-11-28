@@ -1,9 +1,11 @@
-//! `chores badges`: the attention line at the top of a PR description
+//! `chores badges`: the Attention section at the top of a PR description
 //! (Jim, 2026-11-27), telling a reviewer how closely to look:
 //!
 //! - **Requirements**: a project's `docs/requirements.md` changed. Red when
 //!   a `must` requirement is added, removed or edited (or one stops or
 //!   starts being a `must`), amber for `should` and `could` ones.
+//! - **Cost**: a file that sets what the repo uses or costs changed (the
+//!   cost files of the PR cost summary).
 //! - **Threat/risk**: a file that sets what is exposed or trusted changed:
 //!   the security files of the PR security summary (threat models,
 //!   `_headers`, `wrangler` configs, workflows, gitleaks, cargo-deny and
@@ -11,7 +13,7 @@
 //!
 //! Whether a risk change *weakens* security is the Security summary job's
 //! call (`threat summary`, `needs-human`); this line only says where to
-//! look. The rules are under "Attention badges" in
+//! look. The rules are under "Attention tags" in
 //! `standards/docs/pull-requests.md`.
 
 use std::collections::BTreeMap;
@@ -21,8 +23,97 @@ use std::process::Command;
 use anyhow::{Context, Result, bail};
 use serde::Serialize;
 
-/// Every attention line starts with this, so the PR-001 check skips it.
-pub const PREFIX: &str = "> **Attention:**";
+/// The heading of the Attention section, the first section of every PR
+/// description (Jim, 2026-11-27).
+pub const HEADING: &str = "## Attention";
+
+/// The attention tags: a closed set, so the PR-001 check can reject any
+/// other. Each Attention section has exactly one requirements tag, one cost
+/// tag and one threat/risk tag. Keep in step with `standards/scripts/pr-summary-check.sh`
+/// and "Attention tags" in `standards/docs/pull-requests.md`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Tag {
+    /// A `must` requirement was added, removed or edited.
+    MustRequirementChanged,
+    /// A `should` or `could` requirement, or text outside any, changed.
+    RequirementChanged,
+    /// No `docs/requirements.md` changed.
+    RequirementsUnchanged,
+    /// A cost file changed.
+    CostChanged,
+    /// No cost file changed.
+    CostUnchanged,
+    /// A threat or risk file changed.
+    ThreatRiskChanged,
+    /// No threat or risk file changed.
+    ThreatRiskUnchanged,
+}
+
+/// Which question a tag answers; a section has one tag per group.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Group {
+    Requirements,
+    Cost,
+    ThreatRisk,
+}
+
+impl Tag {
+    pub const ALL: [Tag; 7] = [
+        Tag::MustRequirementChanged,
+        Tag::RequirementChanged,
+        Tag::RequirementsUnchanged,
+        Tag::CostChanged,
+        Tag::CostUnchanged,
+        Tag::ThreatRiskChanged,
+        Tag::ThreatRiskUnchanged,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Tag::MustRequirementChanged => "must-requirement-changed",
+            Tag::RequirementChanged => "requirement-changed",
+            Tag::RequirementsUnchanged => "requirements-unchanged",
+            Tag::CostChanged => "cost-changed",
+            Tag::CostUnchanged => "cost-unchanged",
+            Tag::ThreatRiskChanged => "threat-risk-changed",
+            Tag::ThreatRiskUnchanged => "threat-risk-unchanged",
+        }
+    }
+
+    pub fn emoji(self) -> &'static str {
+        match self {
+            Tag::MustRequirementChanged => "🔴",
+            Tag::RequirementChanged => "🟡",
+            Tag::CostChanged | Tag::ThreatRiskChanged => "🟠",
+            Tag::RequirementsUnchanged | Tag::CostUnchanged | Tag::ThreatRiskUnchanged => "🟢",
+        }
+    }
+
+    pub fn group(self) -> Group {
+        match self {
+            Tag::MustRequirementChanged | Tag::RequirementChanged | Tag::RequirementsUnchanged => {
+                Group::Requirements
+            }
+            Tag::CostChanged | Tag::CostUnchanged => Group::Cost,
+            Tag::ThreatRiskChanged | Tag::ThreatRiskUnchanged => Group::ThreatRisk,
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Tag> {
+        Tag::ALL.into_iter().find(|t| t.as_str() == s)
+    }
+}
+
+/// The tag name on one bullet of an Attention section
+/// (`- 🔴 must-requirement-changed: ...`): the first word after the dash
+/// that isn't an emoji, without a trailing colon or backticks.
+pub fn bullet_tag(line: &str) -> Option<&str> {
+    let rest = line.trim().strip_prefix("- ")?;
+    rest.split_whitespace()
+        .find(|w| w.chars().any(|c| c.is_ascii_alphanumeric()))
+        .map(|w| w.trim_end_matches(':').trim_matches('`'))
+}
 
 /// What the badges say.
 #[derive(Debug, Default, Clone, Serialize, PartialEq, Eq)]
@@ -33,6 +124,9 @@ pub struct Attention {
     pub other: Vec<String>,
     /// Changed files that affect a threat or risk.
     pub risk: Vec<String>,
+    /// Changed files that set what the repo uses or costs.
+    #[serde(default)]
+    pub cost: Vec<String>,
 }
 
 /// Files whose change affects a threat or risk. Keep the first group in
@@ -68,6 +162,23 @@ pub fn is_risk_file(path: &str) -> bool {
                 | ".github/CODEOWNERS"
         );
     security_file || auth_or_secrets
+}
+
+/// Files whose change can move money or free-tier usage: the cost files of
+/// the PR cost summary (`cost summary` in `standards/docs/cost.md`). That
+/// job also reads workflow schedules and dependency lines; this tag only
+/// says where to look, and the job's `cost` label stays the authority.
+pub fn is_cost_file(path: &str) -> bool {
+    let name = path.rsplit('/').next().unwrap_or(path);
+    path.ends_with("/docs/cost.toml")
+        || matches!(
+            path,
+            "standards/radar/limits.toml" | "standards/radar/radar.json"
+        )
+        || matches!(
+            name,
+            "detectors.toml" | "wrangler.toml" | "wrangler.json" | "wrangler.jsonc"
+        )
 }
 
 fn is_threat_file(path: &str) -> bool {
@@ -150,6 +261,9 @@ pub fn attention(changed: &[String], read: impl Fn(&str, bool) -> Option<String>
         if is_risk_file(path) {
             out.risk.push(path.clone());
         }
+        if is_cost_file(path) {
+            out.cost.push(path.clone());
+        }
         if is_requirements_file(path) {
             let before = read(path, false).unwrap_or_default();
             let after = read(path, true).unwrap_or_default();
@@ -166,7 +280,7 @@ pub fn attention(changed: &[String], read: impl Fn(&str, bool) -> Option<String>
     out
 }
 
-fn list(items: &[String], max: usize) -> String {
+pub fn list(items: &[String], max: usize) -> String {
     let shown: Vec<String> = items.iter().take(max).map(|i| format!("`{i}`")).collect();
     let more = items.len().saturating_sub(max);
     if more > 0 {
@@ -176,25 +290,53 @@ fn list(items: &[String], max: usize) -> String {
     }
 }
 
-/// The attention line, in Markdown: always both badges, so a green line
-/// says "nothing fundamental here" too.
+impl Attention {
+    /// The three tags: requirements, cost, threat/risk.
+    pub fn tags(&self) -> [Tag; 3] {
+        let req = if !self.must.is_empty() {
+            Tag::MustRequirementChanged
+        } else if !self.other.is_empty() {
+            Tag::RequirementChanged
+        } else {
+            Tag::RequirementsUnchanged
+        };
+        let cost = if self.cost.is_empty() {
+            Tag::CostUnchanged
+        } else {
+            Tag::CostChanged
+        };
+        let risk = if self.risk.is_empty() {
+            Tag::ThreatRiskUnchanged
+        } else {
+            Tag::ThreatRiskChanged
+        };
+        [req, cost, risk]
+    }
+}
+
+/// The Attention section, in Markdown: always both tags, so a green
+/// section says "nothing fundamental here" too.
 pub fn render(a: &Attention) -> String {
-    let req = if !a.must.is_empty() {
-        format!("🔴 must requirement changed: {}", list(&a.must, 5))
-    } else if !a.other.is_empty() {
-        format!("🟡 requirement changed: {}", list(&a.other, 5))
-    } else {
-        "🟢 requirements unchanged".to_string()
-    };
-    let risk = if a.risk.is_empty() {
-        "🟢 threat/risk unchanged".to_string()
-    } else {
-        format!(
-            "🟠 threat/risk files changed: {} (the Security summary check says whether it weakens anything)",
-            list(&a.risk, 4)
-        )
-    };
-    format!("{PREFIX} {req} · {risk}")
+    let mut s = format!("{HEADING}\n\n");
+    for tag in a.tags() {
+        let what = match tag {
+            Tag::MustRequirementChanged => format!(": {}", list(&a.must, 5)),
+            Tag::RequirementChanged => format!(": {}", list(&a.other, 5)),
+            Tag::CostChanged => format!(
+                ": {} (the Cost summary check says what moved)",
+                list(&a.cost, 4)
+            ),
+            Tag::ThreatRiskChanged => format!(
+                ": {} (the Security summary check says whether it weakens anything)",
+                list(&a.risk, 4)
+            ),
+            Tag::RequirementsUnchanged | Tag::CostUnchanged | Tag::ThreatRiskUnchanged => {
+                String::new()
+            }
+        };
+        s.push_str(&format!("- {} {}{what}\n", tag.emoji(), tag.as_str()));
+    }
+    s
 }
 
 fn git(root: &Path, args: &[&str]) -> Result<std::process::Output> {
@@ -206,7 +348,7 @@ fn git(root: &Path, args: &[&str]) -> Result<std::process::Output> {
         .with_context(|| format!("running git {}", args.join(" ")))
 }
 
-/// The attention line for the working tree against the merge base with
+/// The attention tags for the working tree against the merge base with
 /// `base` (such as `origin/main`), counting uncommitted changes too.
 pub fn for_repo(root: &Path, base: &str) -> Result<Attention> {
     let mb = git(root, &["merge-base", base, "HEAD"])?;
@@ -278,6 +420,22 @@ mod tests {
     }
 
     #[test]
+    fn cost_files() {
+        for p in [
+            "cookbook/docs/cost.toml",
+            "standards/radar/limits.toml",
+            "standards/radar/radar.json",
+            "pane/cloudflare/wrangler.toml",
+            "cost/detectors.toml",
+        ] {
+            assert!(is_cost_file(p), "{p}");
+        }
+        for p in ["cookbook/src/main.rs", "standards/docs/cost.md"] {
+            assert!(!is_cost_file(p), "{p}");
+        }
+    }
+
+    #[test]
     fn must_and_other_changes() {
         let edited_must = REQS.replace("days 1 to 365.", "days 1 to 366.");
         assert_eq!(
@@ -302,11 +460,12 @@ mod tests {
     fn renders_the_line() {
         assert_eq!(
             render(&Attention::default()),
-            "> **Attention:** 🟢 requirements unchanged · 🟢 threat/risk unchanged"
+            "## Attention\n\n- 🟢 requirements-unchanged\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n"
         );
         let changed = vec![
             "cookbook/docs/requirements.md".to_string(),
             "cookbook/docs/threat.toml".to_string(),
+            "cookbook/docs/cost.toml".to_string(),
             "cookbook/src/lib.rs".to_string(),
         ];
         let a = attention(&changed, |_, after| {
@@ -319,9 +478,10 @@ mod tests {
         assert_eq!(a.must, vec!["COOK-001"]);
         assert_eq!(a.risk, vec!["cookbook/docs/threat.toml"]);
         let line = render(&a);
-        assert!(line.starts_with(PREFIX));
-        assert!(line.contains("🔴 must requirement changed: `COOK-001`"));
-        assert!(line.contains("🟠 threat/risk files changed: `cookbook/docs/threat.toml`"));
+        assert!(line.starts_with(HEADING));
+        assert!(line.contains("- 🔴 must-requirement-changed: `COOK-001`\n"));
+        assert!(line.contains("- 🟠 threat-risk-changed: `cookbook/docs/threat.toml`"));
+        assert!(line.contains("- 🟠 cost-changed: `cookbook/docs/cost.toml`"));
         let intro_only = attention(&changed[..1], |_, after| {
             Some(if after {
                 format!("{REQS}x")
@@ -329,7 +489,22 @@ mod tests {
                 REQS.to_string()
             })
         });
-        assert!(render(&intro_only).contains("🟡 requirement changed"));
+        assert!(render(&intro_only).contains("- 🟡 requirement-changed: "));
+    }
+
+    #[test]
+    fn tags_round_trip_and_bullets_parse() {
+        for tag in Tag::ALL {
+            assert_eq!(Tag::parse(tag.as_str()), Some(tag));
+            let bullet = format!("- {} {}: `x`", tag.emoji(), tag.as_str());
+            assert_eq!(bullet_tag(&bullet), Some(tag.as_str()));
+        }
+        assert_eq!(Tag::parse("looks-fine"), None);
+        assert_eq!(
+            bullet_tag("- `threat-risk-unchanged`"),
+            Some("threat-risk-unchanged")
+        );
+        assert_eq!(bullet_tag("not a bullet"), None);
     }
 
     #[test]

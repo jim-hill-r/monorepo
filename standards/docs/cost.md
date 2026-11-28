@@ -85,6 +85,36 @@ Shared free resources are counted where they are used: two projects that
 each deploy a Pages site each list `pages_projects = 1`. A resource two
 projects share (the one Auth0 tenant) is not listed as usage by either.
 
+## Accounting rules
+
+Jim, 2026-11-27: "All of our cost software should follow GAP accounting so
+that everything is double counted on the ledger and also we should have
+attribution in such a way that if you sum up all service costs/revenue it
+equals total revenue/costs." So every piece of cost, money or ledger code
+here follows these rules ([decision 0016](decisions/0016-holding-and-handling-money.md)):
+
+1. **Double entry.** Every money movement is an entry whose postings sum
+   to zero: each amount leaves one account and enters another (`income:`,
+   `expense:`, `asset:`, `liability:`, `equity:`). An entry that doesn't
+   balance is an error, never rounded away.
+2. **Accrual and matching**, as GAAP asks: a cost is booked in the months
+   it serves (a yearly cost spread over twelve months, a once cost in its
+   month), revenue in the month it is earned, whatever day the cash moved.
+   The bank reconciliation shows the cash side.
+3. **Full attribution.** Every cent of revenue and cost belongs to exactly
+   one project, and the projects sum, to the cent, to the totals. A shared
+   cost is split by a stated rule (today: share of merged PRs, with
+   repo-wide PRs and months with none charged to `standards`); leftover
+   cents go by largest remainder, so there is no unattributed remainder.
+4. **Whole cents** (integers), so nothing is lost to floating point.
+5. **Consistency and disclosure.** A changed rule is a decision record,
+   and every number links to its source.
+
+The checks: pane's `attribution_gaps` (PANE-013) proves the per-project
+money adds up to the month's totals; the double-entry balance check comes
+with the financial ledger
+([issue](../../cost/issues/ledger-double-entry-balance-check.md)).
+
 ## The check
 
 `cost check` (the [`cost`](../../cost/README.md) project) runs from
@@ -110,6 +140,12 @@ only for the affected projects in the git hooks and PR CI: `hooks.sh` and
 the PR's audit step pass the list in `COST_PROJECTS`. The account-wide rules
 read every project's file every time, which takes milliseconds.
 
+A requirement can depend on this check through an eval of kind `cost` in
+the project's `evals.toml`: in stage `ci`, `cost check --evals-results`
+writes its result in the eval engine's format, failing on COST-001 to
+COST-007 in the project's own files. See
+[Cost evals](evals.md#cost-evals).
+
 ### Detectors
 
 [`standards/radar/detectors.toml`](../radar/detectors.toml) maps what is in
@@ -130,6 +166,12 @@ through a series of small PRs. Comment lines don't count.
 | a `rapidapi.com` host, a `RAPIDAPI_` name or an `X-RapidAPI-` header | RapidAPI (Zillow data) |
 | a workflow named `<project>.yml` or `<project>-*.yml` with a `schedule:` | GitHub Actions minutes |
 | any other `https://` host | COST-009 |
+
+A detector can also carry a `threat` field saying what a match means for
+the project's threat model; the threat check reads the same matches for
+THR-004 ([security.md](security.md#threat-models)). A detector with a
+`threat` but no `blip` (a deploy URL, `wrangler secret put`, raw HTML, CORS
+open to every origin) matters only to the threat check and costs nothing.
 
 Links a person follows (an HTML or rsx `href`, a Markdown link) are not
 services, so they never raise COST-009. When a host costs nothing (a docs

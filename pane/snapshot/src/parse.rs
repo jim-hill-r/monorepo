@@ -789,6 +789,23 @@ pub fn health_thresholds(health_toml: &str) -> Result<pane_model::health::Thresh
     toml::from_str(health_toml).map_err(|e| format!("pane/health.toml: {e}"))
 }
 
+/// The 1-based line of every `[[table]]` header in a TOML file, in order,
+/// so each array entry can link to its source line.
+pub fn table_lines(text: &str, table: &str) -> Vec<u32> {
+    let header = format!("[[{table}]]");
+    text.lines()
+        .enumerate()
+        .filter(|(_, line)| {
+            let line = line.trim();
+            line == header
+                || line
+                    .strip_prefix(&header)
+                    .is_some_and(|rest| rest.trim_start().starts_with('#'))
+        })
+        .filter_map(|(i, _)| u32::try_from(i + 1).ok())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1376,5 +1393,13 @@ mod tests {
         assert_eq!(t.build.stale_after_days, 3);
         assert_eq!(t.review, pane_model::health::ReviewThresholds::default());
         Ok(())
+    }
+
+    #[test]
+    fn finds_table_header_lines() {
+        let text = "a = 1\n[[cost]]\nx = 1\n  [[cost]] # second\n[[revenue]]\n[cost]\n[[costs]]\n";
+        assert_eq!(table_lines(text, "cost"), [2, 4]);
+        assert_eq!(table_lines(text, "revenue"), [5]);
+        assert!(table_lines(text, "service").is_empty());
     }
 }

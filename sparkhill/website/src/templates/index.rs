@@ -24,6 +24,15 @@ fn section_link<G: Html>(cx: Scope, home: &str, id: &str, label: &'static str) -
     }
 }
 
+/// The footer's copyright line, from 2023 to the year the site was built
+/// (set by `build.rs`).
+fn copyright() -> String {
+    format!(
+        "© 2023–{} Spark Hill. All Rights Reserved.",
+        env!("JIMHILLR_BUILD_YEAR")
+    )
+}
+
 /// The whole home page: nav, the four sections and the footer. It takes the
 /// translated tagline and the locale's home URL so tests can render it
 /// without a translator.
@@ -142,17 +151,33 @@ fn page<G: Html>(cx: Scope, tagline: String, home: String) -> View<G> {
                     a(href="https://blue.eel.education", target="_blank", rel="noopener noreferrer", class="text-sky-50 hover:text-teal-500 pr-4 pl-4") { "Blue Eel" }
                 }
                 div(class="text-sky-100 text-right pb-2 mr-2") {
-                    "© 2023 Spark Hill. All Rights Reserved."
+                    (copyright())
                 }
             }
         }
     }
 }
 
+/// Where the site is served, for the absolute URLs link previews need.
+const SITE_URL: &str = "https://jimhillr-sparkhill.pages.dev";
+
+/// The summary search results and link previews show.
+const DESCRIPTION: &str = "Spark Hill helps struggling readers and readers with dyslexia, \
+with one-on-one tutoring, assessments and support for parents and teachers, online and in \
+Oceanside, CA.";
+
 #[engine_only_fn]
 fn head(cx: Scope) -> View<SsrNode> {
+    let image = format!("{SITE_URL}/.perseus/static/images/Classroom.e9004107.jpg");
+    let url = format!("{SITE_URL}/en-US/");
     view! { cx,
         title { "Spark Hill - Reading Instruction" }
+        meta(name="description", content=DESCRIPTION)
+        meta(property="og:type", content="website")
+        meta(property="og:title", content="Spark Hill - Reading Instruction")
+        meta(property="og:description", content=DESCRIPTION)
+        meta(property="og:url", content=url)
+        meta(property="og:image", content=image)
         link(rel = "icon", type = "image/x-icon", href = ".perseus/static/favicon.ico")
         link(rel = "stylesheet", href = ".perseus/static/css/reset.css")
         link(rel = "stylesheet", href = ".perseus/static/css/theme.css")
@@ -166,7 +191,7 @@ pub fn get_template<G: Html>() -> Template<G> {
 
 #[cfg(test)]
 mod tests {
-    use super::{page, CONTACT_URL};
+    use super::{head, page, CONTACT_URL, SITE_URL};
     use std::collections::HashSet;
     use std::path::Path;
 
@@ -217,6 +242,51 @@ mod tests {
         let html = render();
         assert_eq!(html.matches("<h1").count(), 1);
         assert_eq!(html.matches("<h2").count(), 4);
+    }
+
+    #[test]
+    fn every_image_in_static_is_used() {
+        // Unused images would still be exported and deployed.
+        let sources = attr_values(&render(), "src");
+        let dir = Path::new("static/images");
+        let files = std::fs::read_dir(dir).unwrap_or_else(|e| panic!("{dir:?}: {e}"));
+        for file in files.flatten() {
+            let name = file.file_name().to_string_lossy().into_owned();
+            let src = format!(".perseus/static/images/{name}");
+            assert!(sources.contains(&src), "{name} isn't used by the page");
+        }
+    }
+
+    #[test]
+    fn head_has_a_description_and_link_preview() {
+        let html = sycamore::render_to_string(head);
+        for tag in [
+            "name=\"description\"",
+            "property=\"og:title\"",
+            "property=\"og:description\"",
+            "property=\"og:url\"",
+            "property=\"og:image\"",
+        ] {
+            assert!(html.contains(tag), "no {tag} in {html}");
+        }
+        // Link previews need absolute URLs, and the image must exist.
+        let image = attr_values(&html, "content")
+            .into_iter()
+            .find(|c| c.ends_with(".jpg"))
+            .unwrap_or_else(|| panic!("no og:image in {html}"));
+        let file = image
+            .strip_prefix(&format!("{SITE_URL}/.perseus/static/"))
+            .unwrap_or_else(|| panic!("{image} isn't an absolute static URL"));
+        assert!(Path::new("static").join(file).exists(), "{image} missing");
+    }
+
+    #[test]
+    fn copyright_runs_to_the_build_year() {
+        let year: i32 = env!("JIMHILLR_BUILD_YEAR")
+            .parse()
+            .unwrap_or_else(|e| panic!("build year: {e}"));
+        assert!((2026..3000).contains(&year), "{year}");
+        assert!(render().contains(&format!("© 2023–{year} Spark Hill")));
     }
 
     #[test]

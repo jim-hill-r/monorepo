@@ -8,7 +8,8 @@ It runs on the web, desktop and mobile from one Dioxus codebase. The data
 model and layout maths are in [core](core/README.md), the shared pages and
 components in [ui](ui/README.md), one crate per platform adds its entry
 point, and [cloudflare](cloudflare/README.md) deploys the web app. Sign-in
-uses Auth0 through `auth_sdk`. How to build and test it is in
+uses Auth0 through `auth_sdk`. How to use it is in the
+[user guide](docs/user/README.md); how to build and test it is in
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development

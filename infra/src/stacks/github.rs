@@ -5,7 +5,7 @@
 //! and every setting the provider would otherwise default is written out with
 //! today's value. Code security (secret scanning with push protection,
 //! Dependabot alerts and security updates) and a `CI` ruleset that requires
-//! the `CI result` check on `main` are what it adds.
+//! the `CI result` and `Human review` checks on `main` are what it adds.
 //!
 //! Every change here is a credential change (decision 0010), so it applies
 //! only in `infra-credentials`, after Jim approves the run. Plans read with a
@@ -51,8 +51,11 @@ pub const TF_ID: &str = "jimhillr";
 /// [`TF_ID`] so nothing is recreated.
 const OLD_TF_ID: &str = "monorepo";
 
-/// The check PR CI reports for every PR (`pull-request-ci.yml`).
-pub const REQUIRED_CHECK: &str = "CI result";
+/// The checks every PR into `main` must pass: `CI result` from PR CI
+/// (`pull-request-ci.yml`), and `Human review` (`pull-request-human-review.yml`,
+/// PR-004), which holds a PR with a red attention tag or a cost change
+/// until a human approves it (Jim, 2026-11-27).
+pub const REQUIRED_CHECKS: [&str; 2] = ["CI result", "Human review"];
 
 /// The GitHub Actions app's ID, so only a check from Actions counts.
 pub const GITHUB_ACTIONS_APP_ID: f64 = 15368.0;
@@ -138,16 +141,21 @@ pub fn synth() -> anyhow::Result<Synth> {
         updates.extract_ref(),
     );
 
-    let check = BuildRepositoryRuleset_Rules_RequiredStatusChecks_RequiredCheck {
-        context: REQUIRED_CHECK.into(),
-    }
-    .build()
-    .set_integration_id(GITHUB_ACTIONS_APP_ID);
+    let checks: Vec<_> = REQUIRED_CHECKS
+        .iter()
+        .map(|context| {
+            BuildRepositoryRuleset_Rules_RequiredStatusChecks_RequiredCheck {
+                context: (*context).into(),
+            }
+            .build()
+            .set_integration_id(GITHUB_ACTIONS_APP_ID)
+        })
+        .collect();
     let status_checks = BuildRepositoryRuleset_Rules_RequiredStatusChecks {}
         .build()
         // A PR need not be up to date with `main`, only green.
         .set_strict_required_status_checks_policy(false)
-        .set_required_check(vec![check]);
+        .set_required_check(checks);
     let ref_name = BuildRepositoryRuleset_Conditions_RefName {
         exclude: Vec::<PrimField<String>>::new().into(),
         include: vec![PrimField::from("~DEFAULT_BRANCH")].into(),
@@ -257,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    fn main_requires_ci_result_from_actions() -> anyhow::Result<()> {
+    fn main_requires_ci_result_and_jim_review_from_actions() -> anyhow::Result<()> {
         let synth = synth()?;
         let ruleset = &synth.json["resource"]["github_repository_ruleset"]["ci"];
         assert_eq!(ruleset["name"], "CI");
@@ -270,7 +278,10 @@ mod tests {
         let checks = &ruleset["rules"][0]["required_status_checks"][0];
         assert_eq!(
             checks["required_check"],
-            json!([{ "context": "CI result", "integration_id": 15368.0 }])
+            json!([
+                { "context": "CI result", "integration_id": 15368.0 },
+                { "context": "Human review", "integration_id": 15368.0 }
+            ])
         );
         assert_eq!(checks["strict_required_status_checks_policy"], false);
         Ok(())

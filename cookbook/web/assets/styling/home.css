@@ -125,3 +125,12 @@
 .intro-description p {
   margin-bottom: var(--ds-space-4);
 }
+
+/* The privacy note for session replay, under the cards. */
+.privacy-note {
+  max-width: 65ch;
+  margin: var(--ds-space-6) auto 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-color-text-muted);
+  text-align: center;
+}

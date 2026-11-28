@@ -56,6 +56,15 @@ would run no CI). Its only pushes are to `evals-triage` (SEC-007). Nothing
 is pushed on a quiet day. See
 [standards/docs/evals.md](../../standards/docs/evals.md#triage).
 
+### evals-fire-drill.yml
+
+Run by hand (and on pull requests that change the drill): breaks one
+production `http` eval on purpose against the live site and checks the
+requirement turns red, that triage would file it, and that it turns green
+again (`evals drill`), with results kept in memory. Read-only; it never
+pushes. See "Fire drill" in
+[standards/docs/evals.md](../../standards/docs/evals.md#fire-drill).
+
 ### pull-request-ci.yml
 
 Runs on every pull request against the projects it changes. Never deploys.
@@ -86,12 +95,27 @@ ruleset.
 
 Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
 warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
-when its description doesn't open with a linked executive summary of at most
-75 words, after the attribution lines ("Pull request descriptions" in
+when its description is missing a section (Attention, What changed, Why,
+Cost changes, Risk changes, Details), has an unknown attention tag, or has a
+summary over its word limit ("Pull request descriptions" in
 [standards/docs/pull-requests.md](../../standards/docs/pull-requests.md)).
 Warnings only, so it never fails and CI result doesn't wait for it. It runs
 on edits, so fixing the description clears the warning without re-running
 project CI.
+
+### pull-request-human-review.yml
+
+The **Human review** check (PR-004, Jim, 2026-11-27). Runs when a pull
+request is opened, edited, pushed to, labelled or reviewed. A PR with a red
+attention tag (`must-requirement-changed`) or a cost change, from its diff
+(`chores badges`), its description's Attention section or the `cost` label,
+fails it until a human collaborator (never an `-agt` account,
+`jimhillr-reviewer`, a bot or a non-collaborator) approves its head commit; the check also labels
+it `needs-human` and turns its auto-merge off. Every other PR passes. It
+builds `chores gate` from the base branch, so a PR can't change its own
+rules. The `CI` ruleset in `infra`'s `github` stack requires it on `main`
+beside `CI result`. See "Human review" in
+[standards/docs/pull-requests.md](../../standards/docs/pull-requests.md).
 
 ### push-main.yml
 

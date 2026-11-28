@@ -1,7 +1,8 @@
 //! `evals run`: turns the test reports a project's tasks already wrote into
 //! one result per eval (the `cargo`, `trycmd` and `playwright` kinds), and makes the
-//! requests of the `http` kind (see `http.rs`). Other kinds are left for
-//! later phases and produce no result.
+//! requests of the `http` kind (see `http.rs`). `cost check` writes the
+//! `ci` results of `cost` evals. Other kinds are left for later phases and
+//! produce no result.
 
 use chrono::{DateTime, Utc};
 use evals_model::{
@@ -77,6 +78,9 @@ pub fn collect(
             Kind::Cargo { .. } => (&reports.cargo, "cargo"),
             Kind::Playwright { .. } => (&reports.playwright, "playwright"),
             Kind::Trycmd { .. } => (&reports.trycmd, "trycmd"),
+            // `cost check --evals-results` writes these results itself, so
+            // the cost rules run once (standards/docs/evals.md).
+            Kind::Cost {} if ctx.stage == Stage::Ci => continue,
             other => {
                 notes.push(format!(
                     "eval `{}`: {} evals aren't collected yet",
@@ -246,6 +250,12 @@ stages = ["cd"]
 kind = "http"
 path = "/"
 body_contains = "Cookbook"
+
+[[eval]]
+id = "free"
+requirement = "COOK-003"
+stages = ["ci", "observe"]
+kind = "cost"
 "#;
 
     /// Answers every request with the same page.
@@ -344,6 +354,25 @@ body_contains = "Cookbook"
         assert_eq!(first.by, By::Ci);
         assert_eq!(first.run.as_deref(), Some("42"));
         Ok(())
+    }
+
+    #[test]
+    fn cost_evals_are_left_to_cost_check_in_ci() {
+        let (results, notes) = collect(&file(), &Reports::default(), &ctx());
+        assert!(results.iter().all(|r| r.eval != "free"), "{results:?}");
+        assert!(notes.is_empty(), "{notes:?}");
+
+        let mut ctx = ctx();
+        ctx.stage = Stage::Observe;
+        let (results, notes) = collect(&file(), &Reports::default(), &ctx);
+        assert!(results.is_empty(), "{results:?}");
+        assert_eq!(
+            notes,
+            vec![
+                "eval `lcp`: metric evals aren't collected yet",
+                "eval `free`: cost evals aren't collected yet",
+            ]
+        );
     }
 
     #[test]

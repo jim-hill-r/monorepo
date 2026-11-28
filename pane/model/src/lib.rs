@@ -40,6 +40,10 @@ pub struct Snapshot {
     pub reviews: Vec<Review>,
     #[serde(default)]
     pub retros: Vec<Retro>,
+    /// What every project's `docs/cost.toml` says, with the radar's budgets
+    /// and the free limits, for the month the snapshot was taken in.
+    #[serde(default)]
+    pub costs: costs::Costs,
     /// The traffic-light thresholds from `pane/health.toml`, so the web app
     /// applies the same rules the snapshot was built with.
     #[serde(default)]
@@ -64,6 +68,7 @@ impl Snapshot {
             deliverables: Vec::new(),
             reviews: Vec::new(),
             retros: Vec::new(),
+            costs: costs::Costs::default(),
             thresholds: health::Thresholds::default(),
             audit: None,
         }
@@ -342,6 +347,7 @@ pub struct Link {
 }
 
 pub mod acks;
+pub mod costs;
 pub mod money;
 pub mod queue;
 

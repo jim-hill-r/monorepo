@@ -4,13 +4,18 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
+use std::process::Command;
+
 use anyhow::{Context as _, Result};
+use cost_model::{Detectors, SourceFile, parse_detectors};
 use threat_model::{
-    Context, Date, Finding, THREAT_FILE, Workflow, check_project, parse_setting_ids,
+    Context, Date, Finding, THREAT_FILE, Workflow, check_drift, check_project, parse_setting_ids,
 };
 
 pub const SETTINGS: &str = "standards/settings.toml";
 pub const WORKFLOWS: &str = ".github/workflows";
+/// The cost check's detectors, shared with THR-004.
+pub const DETECTORS: &str = "standards/radar/detectors.toml";
 
 pub struct Report {
     pub findings: Vec<Finding>,
@@ -71,6 +76,79 @@ fn workflows(root: &Path) -> Result<Vec<Workflow>> {
     Ok(found)
 }
 
+/// The detectors, or `None` when the repo has no detectors.toml (THR-004
+/// is then skipped).
+fn load_detectors(root: &Path) -> Result<Option<Detectors>> {
+    let Ok(text) = fs::read_to_string(root.join(DETECTORS)) else {
+        return Ok(None);
+    };
+    parse_detectors(&text)
+        .map(Some)
+        .map_err(|e| anyhow::anyhow!("{DETECTORS}: {e}"))
+}
+
+/// Files under `prefix` that git tracks, or every file under it (hidden
+/// directories skipped) outside a git repo.
+fn tracked(root: &Path, prefix: &str) -> Vec<String> {
+    let out = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["ls-files", "-z", "--", prefix])
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_INDEX_FILE")
+        .env_remove("GIT_WORK_TREE")
+        .output();
+    if let Ok(out) = out
+        && out.status.success()
+    {
+        return String::from_utf8_lossy(&out.stdout)
+            .split('\0')
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .collect();
+    }
+    let mut found = Vec::new();
+    walk(root, prefix, &mut found);
+    found.sort();
+    found
+}
+
+fn walk(root: &Path, rel: &str, out: &mut Vec<String>) {
+    let Ok(entries) = fs::read_dir(root.join(rel)) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let path = format!("{rel}/{name}");
+        match entry.file_type() {
+            Ok(t) if t.is_dir() && !name.starts_with('.') => walk(root, &path, out),
+            Ok(t) if t.is_file() => out.push(path),
+            _ => {}
+        }
+    }
+}
+
+/// THR-004 for one project: runs the shared detectors over its tracked
+/// files.
+fn drift(
+    root: &Path,
+    name: &str,
+    text: Option<&str>,
+    detectors: &Detectors,
+    workflows: &[SourceFile],
+) -> Vec<Finding> {
+    let files: Vec<SourceFile> = tracked(root, name)
+        .into_iter()
+        .filter(|p| detectors.scans(p))
+        .filter_map(|path| {
+            let text = fs::read_to_string(root.join(&path)).ok()?;
+            Some(SourceFile { path, text })
+        })
+        .collect();
+    let detection = detectors.detect(name, &files, workflows);
+    check_drift(name, text, detectors, &detection)
+}
+
 pub fn check(root: &Path, selected: Option<&[String]>, today: Date) -> Result<Report> {
     let settings =
         fs::read_to_string(root.join(SETTINGS)).with_context(|| format!("reading {SETTINGS}"))?;
@@ -83,11 +161,22 @@ pub fn check(root: &Path, selected: Option<&[String]>, today: Date) -> Result<Re
         workflows: &workflows,
         today,
     };
+    let detectors = load_detectors(root)?;
+    let sources: Vec<SourceFile> = workflows
+        .iter()
+        .map(|w| SourceFile {
+            path: w.path.clone(),
+            text: w.text.clone(),
+        })
+        .collect();
     let chosen = selection(&projects(root)?, selected);
     let mut findings = Vec::new();
     for name in &chosen {
         let text = fs::read_to_string(root.join(name).join(THREAT_FILE)).ok();
         findings.extend(check_project(name, text.as_deref(), &cx));
+        if let Some(detectors) = &detectors {
+            findings.extend(drift(root, name, text.as_deref(), detectors, &sources));
+        }
     }
     Ok(Report {
         findings,
@@ -176,6 +265,42 @@ mod tests {
         assert!(report.findings.is_empty());
         let report = check(dir.path(), Some(&[]), today()).expect("check");
         assert_eq!(report.checked, 0);
+    }
+
+    #[test]
+    fn test_drift_through_the_shared_detectors() {
+        let dir = fixture();
+        let root = dir.path();
+        write(
+            root,
+            DETECTORS,
+            "[scan]\nextensions = [\"toml\"]\nskip_dirs = [\"docs\"]\nskip_files = []\n[[detector]]\nid = \"pages\"\nblip = \"Cloudflare Pages\"\nwhy = \"x\"\nwrangler = \"pages_build_output_dir\"\nthreat = \"pages\"\n",
+        );
+        write(
+            root,
+            "cookbook/wrangler.toml",
+            "pages_build_output_dir = \"dist\"\n",
+        );
+        let selected = ["cookbook".to_string()];
+        let report = check(root, Some(&selected), today()).expect("check");
+        assert_eq!(
+            codes(&report),
+            [("THR-004", "cookbook/docs/threat.toml".to_string())]
+        );
+        assert!(
+            report.findings[0]
+                .message
+                .contains("cookbook/wrangler.toml"),
+            "{}",
+            report.findings[0].message
+        );
+    }
+
+    #[test]
+    fn test_broken_detectors_is_an_error() {
+        let dir = fixture();
+        write(dir.path(), DETECTORS, "nope");
+        assert!(check(dir.path(), None, today()).is_err());
     }
 
     #[test]

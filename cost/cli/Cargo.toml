@@ -16,6 +16,7 @@ anyhow = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 cost_model = { path = "../model" }
+evals_model = { path = "../../evals/model" }
 serde_json = { workspace = true }
 
 [dev-dependencies]

@@ -17,17 +17,19 @@ bill; a card turns on pay-as-you-go.
 
 What a read-only API can show is checked weekly by the **Billing check**
 (`standards/scripts/billing-check.sh`): Cloudflare's payment methods and
-subscriptions, GitHub's charges this month and PostHog's subscription. The
+subscriptions and PostHog's subscription (both checked since 2026-11-27),
+and GitHub's charges this month once `GITHUB_BILLING_READ_TOKEN` exists. The
 rest has no API: a personal GitHub account's card and Actions budget, Auth0's
-plan, RapidAPI billing and claude.ai billing
+plan, RapidAPI billing, Squarespace billing and claude.ai billing
 ([free-tiers.md](../free-tiers.md#billing-checks)).
 
 ## Before you start
 
 - Signed in to GitHub, Auth0, RapidAPI, Squarespace and claude.ai.
 - Open the latest **All Free Tier Usage** run in jimhillr/monorepo >
-  Actions and look at its **Billing check** table. Do steps 2 and 4 only
-  for a vendor it shows as "not checked".
+  Actions and look at its **Billing check** table. Cloudflare and PostHog
+  are checked there, so do steps 2 and 4 only if it shows one of them as
+  "not checked" or failing.
 
 ## Steps
 

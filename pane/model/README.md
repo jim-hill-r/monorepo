@@ -20,6 +20,16 @@ two projects counts half to each, a repo-wide PR counts for none, and the
 shares always add up to the whole cost. `month_money` puts them together for
 the Money page.
 
+The `costs` module puts every project's `docs/cost.toml` together with the
+radar's monthly budgets and the free limits: `build_costs` gives `Costs`,
+with each project's services, plans, expected usage, cost and revenue lines
+and this month's money, account-wide expected usage against each limit's
+ceiling, and each vendor's spend this month against its radar budget.
+`pane_snapshot` fills `Snapshot.costs` with it. `build_history` adds
+twelve `MonthMoney` rows (each project's `ProjectMoney` for the month,
+with the shared costs from `shared_cents` split by that month's merged
+PRs), and `MonthMoney::totals` sums a month for the Money page.
+
 ## Review queue
 
 The `queue` module holds the Approve page's rules from [decision
@@ -46,6 +56,7 @@ the PR's project.
 | `Deliverable` | A live site, plan, decision, retro, review deck, release or UAT report, with its download links and, for documents, its Markdown `body`. New fields default, so the format version stays 1. |
 | `Review` | An executive review deck and its scorecard rows. |
 | `Retro` | A retro and its actions. |
+| `Costs` | Every project's `docs/cost.toml`, account-wide usage against the free limits and vendor spend against the radar budgets, for the month the snapshot was taken. Defaults to empty, so the format version stays 1. |
 | `Signal`, `Health` | One traffic light (green, amber, red or grey) with its reason and evidence links. |
 | `audit::Audit`, `audit::parse` | The repo audit's findings, read from its output (`level[CODE] <subject> ...` lines and a closing `audit:` line); each finding belongs to the longest config root that contains its subject. `Snapshot.audit` is `None` without them. |
 | `signals::project_signals` | A project's Review, Retros, Open issues and Standards lights, worked out from the snapshot alone. |

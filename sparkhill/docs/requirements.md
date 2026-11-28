@@ -13,18 +13,21 @@ has no requirements yet.
 
 Drafted by an agent on 2026-11-27 from the web app's README, the "Blue Eel
 parity" epic in [issues/README.md](../issues/README.md), the parity PRs
-(#709, #762, #767) and the threat model. Cloud sandboxes can't load
-blue.eel.education, so "like the live app" means what its page head and
-its public pattern data show.
+(#709, #762, #767) and the threat model. When these were drafted
+cloud sandboxes couldn't load blue.eel.education, so "like the live app"
+meant what its page head and public pattern data showed. Sandboxes can
+load it since 2026-11-27; the gaps that turned up are in
+[issues/README.md](../issues/README.md).
 
 ## SPRK-001: A learner can start practising straight away
 
 - Priority: must
 - Why: The learner is often a child; the first screen must get them
-  tracing with no account, no setup and nothing to read but a name.
-- Accept: the home page shows "Blue Eel", "Writing made simple!", a name
-  box and a Begin button; Begin opens the letter level, whose first letter
-  is b; no sign-in or download is needed.
+  tracing with no account, no setup and nothing to read.
+- Accept: the home page shows "Blue Eel", "Writing made simple!" and a
+  Begin button, as on the live app; Begin opens the letter level, whose
+  first letter is b; no sign-in or download is needed. The learner's name
+  is optional, in the settings panel (SPRK-010).
 
 ## SPRK-002: Every letter is shown being written before the learner tries it
 
@@ -32,7 +35,8 @@ its public pattern data show.
 - Why: Learners copy the stroke order and direction they are shown, so
   the demonstration must draw each letter the way Blue Eel teaches it.
 - Accept: every lowercase letter, capital and practice word has a
-  demonstration, drawn stroke by stroke from the live app's own recorded
+  demonstration which, with the Tracing technique (the default, see
+  SPRK-009), is drawn stroke by stroke from the live app's own recorded
   pattern on the four writing guide lines (cap, mean, base and beard), in
   Blue Eel's colours; the patterns ship with the app, so a demonstration
   never waits on another site.
@@ -66,10 +70,12 @@ its public pattern data show.
 - Priority: must
 - Why: Practice happens a few minutes at a time, often with several
   children sharing one tablet, so each must carry on where they left off.
-- Accept: progress is saved after every tracing under the name typed on
-  the home page ("Standard" when blank); a reload or a later visit carries
-  on where that learner was; another name starts afresh; the home page
-  remembers the last name.
+- Accept: progress is saved after every tracing under the name typed as
+  Student in the settings panel ("Standard" when blank); a reload or a
+  later visit carries on where that learner was; another name starts
+  afresh; the settings panel remembers the last name; practising a
+  sequence (SPRK-008) keeps its own progress, apart from the whole
+  level's.
 
 ## SPRK-006: Nothing a learner types or draws leaves their device
 
@@ -100,4 +106,34 @@ its public pattern data show.
 - Accept: a link such as `/letter?practice=b,d`, `/word?practice=hi` or
   `/capital?practice=T` practises only those, in that order, as one group,
   ignoring anything that has no pattern; such a session never changes the
-  learner's saved progress.
+  learner's saved progress. The settings panel's Sequence, such as
+  `d, f, fun`, does the same and is kept on the device: its single
+  lowercase letters on the letter level, its capitals on the capital
+  level and its longer entries on the word level; a level it leaves out
+  has its own groups.
+
+## SPRK-009: A learner can practise with less help
+
+- Priority: should
+- Why: As on the live app, a learner who can trace a letter moves on to
+  writing it from its start and end dots, then from memory, which is how
+  they learn to write it alone.
+- Accept: a Technique picker in the settings panel, and a link with
+  `?tech=Tracing`, `?tech=Pattern` or `?tech=Freeform`, chooses how
+  letters are shown: Tracing animates every stroke; Pattern shows only
+  each stroke's start and end dots, which stay while the learner draws;
+  Freeform shows nothing. Tracing is the default, the choice is kept on
+  the device, and a letter written right passes with any technique.
+
+## SPRK-010: The practice menu and settings panel work like the live app
+
+- Priority: should
+- Why: Learners and teachers who know the live app find each level in its
+  left menu and set the student, what to practise and how in its settings
+  panel, so Blue Eel keeps them where they are used to.
+- Accept: a menu button at the top left opens Letter Practice and Word
+  Practice (and this app's Capital Practice), each with a caption; a
+  button at the top right opens a settings panel with Student, Sequence
+  and Technique, which Save keeps on the device and which starts the open
+  level again with them; Escape or a tap outside closes either. It has no
+  Upload Practice switch, since nothing leaves the device (SPRK-006).

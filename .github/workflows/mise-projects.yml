@@ -71,13 +71,15 @@ jobs:
         with:
           install: false
 
-      # The audit builds the evals CLI (`evals check`) and the cost CLI
-      # (`cost check`). Cache those builds, saved from main only.
+      # The audit builds the evals CLI (`evals check`), the cost CLI
+      # (`cost check`) and chores (`chores user-docs`). Cache those builds,
+      # saved from main only.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: |
             evals
             cost
+            chores
           key: audit
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -254,7 +256,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           echo "deployed=true" >> "$GITHUB_OUTPUT"
 
-      # Stage cd: right after a deploy, check the live site (the `http`
+      # Stage cd: right after a deploy, run the project's `@smoke`
+      # Playwright tests against the live site (`evals.sh smoke`;
+      # nothing when it sets no SMOKE_DIR), check the live site (the `http`
       # evals, joined to DEPLOY_URL) and add the table to the job summary
       # (standards/docs/evals.md). A failed eval of a `must` requirement
       # fails the job, so a broken deploy shows red on main; the site is
@@ -272,6 +276,11 @@ jobs:
         run: |
           echo "artifact=evals-results-cd-${PROJECT//\//-}" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/cd"
+          # mise exec loads SMOKE_DIR from the [env] of the project's mise.toml.
+          # A failing smoke test only warns here: the evals below turn it
+          # into a failed requirement, which fails the job when it's a must.
+          mise exec -- bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" smoke \
+            || echo "::warning::smoke tests failed; see the log and the smoke-${PROJECT//\/-} artifact"
           status=0
           bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" run || status=$?
           bash "$GITHUB_WORKSPACE/standards/scripts/evals.sh" publish || true
@@ -288,4 +297,15 @@ jobs:
           name: ${{ steps.cd-evals.outputs.artifact }}
           path: ${{ runner.temp }}/cd/evals-results.jsonl
           retention-days: 7  # read by evals-store.yml in the same run (RES-003)
+          if-no-files-found: ignore
+
+      # The smoke run's JSON report, and each test's video, screenshot and
+      # trace (open a trace at https://trace.playwright.dev).
+      - name: Upload smoke report
+        if: ${{ !cancelled() && steps.cd-evals.outputs.artifact }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-${{ steps.cd-evals.outputs.slug }}
+          path: ${{ matrix.project }}/target/evals-reports/cd/
+          retention-days: 7  # evidence for the deploy just made (RES-003)
           if-no-files-found: ignore

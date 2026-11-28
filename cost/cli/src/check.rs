@@ -57,8 +57,8 @@ pub fn detect_here(
 
 pub struct Report {
     pub findings: Vec<Finding>,
-    /// How many projects the per-project rules ran on.
-    pub checked: usize,
+    /// The projects the per-project rules ran on, sorted.
+    pub projects: Vec<String>,
 }
 
 /// Every top-level directory with a `mise.toml`, sorted.
@@ -161,7 +161,7 @@ pub fn check(root: &Path, selected: Option<&[String]>, today: NaiveDate) -> Resu
     findings.extend(check_account(&parsed, &radar, &limits, month));
     Ok(Report {
         findings,
-        checked: chosen.len(),
+        projects: chosen.into_iter().collect(),
     })
 }
 
@@ -224,7 +224,7 @@ mod tests {
     fn test_check_reports_missing_files_and_account_totals() {
         let dir = fixture();
         let report = check(dir.path(), None, today()).expect("check");
-        assert_eq!(report.checked, 3);
+        assert_eq!(report.projects, ["cookbook", "homer", "pane"]);
         assert_eq!(
             codes(&report),
             [
@@ -239,7 +239,7 @@ mod tests {
         let dir = fixture();
         let selected = ["cookbook/web".to_string(), "nope".to_string()];
         let report = check(dir.path(), Some(&selected), today()).expect("check");
-        assert_eq!(report.checked, 1);
+        assert_eq!(report.projects, ["cookbook"]);
         assert_eq!(codes(&report), [("COST-005", LIMITS.to_string())]);
     }
 

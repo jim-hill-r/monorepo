@@ -1,8 +1,11 @@
 use crate::Route;
+use crate::SettingsSaved;
 use crate::canvas_js::CANVAS_JS;
 use crate::patterns::demonstration_js;
 use crate::progress;
+use crate::settings::{self, Settings};
 use crate::state::{AppState, PracticePhase, next_level, practice_from_query};
+use crate::technique::Technique;
 use crate::tracing_check;
 use dioxus::document::eval;
 use dioxus::prelude::*;
@@ -16,17 +19,34 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
     let mut phase = use_signal(|| PracticePhase::Start);
     let mut feedback = use_signal(|| "Have fun!".to_string());
     let mut canvas_initialized = use_signal(|| false);
-    // Whose progress this is, or `None` while practising `?practice=` only,
-    // which is never saved.
-    let mut learner = use_signal(|| None::<String>);
+    // Where this session's progress is saved, or `None` while practising
+    // `?practice=` only, which is never saved.
+    let mut progress_key = use_signal(|| None::<String>);
     // The level is fixed for the page, so a signal lets each handler read it.
     let level_name = use_signal(|| level.clone());
+    // How the demonstration shows each letter, chosen on Start.
+    let mut technique = use_signal(Technique::default);
 
     // Initialize the canvas JS library once
     use_effect(move || {
         if !canvas_initialized() {
             eval(CANVAS_JS);
             canvas_initialized.set(true);
+        }
+    });
+
+    // Saving the settings panel starts the level again, with the new
+    // learner, sequence and technique, as on the live app.
+    let saved = use_context::<SettingsSaved>().0;
+    let mut seen = use_signal(|| *saved.peek());
+    use_effect(move || {
+        let now = saved();
+        if now != *seen.peek() {
+            seen.set(now);
+            eval("window.eelCanvas && window.eelCanvas.clear();");
+            state.set(AppState::new(&level_name.peek()));
+            phase.set(PracticePhase::Start);
+            feedback.set("Have fun!".to_string());
         }
     });
 
@@ -38,21 +58,40 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             .join::<String>()
             .await
             .unwrap_or_default();
+        let chosen = Settings::parse(
+            &eval(&settings::load_js())
+                .join::<String>()
+                .await
+                .unwrap_or_default(),
+        );
+        technique.set(Technique::choose(&query, chosen.technique.as_str()));
+        let level = level_name.read().clone();
         if let Some(expressions) = practice_from_query(&query) {
-            learner.set(None);
+            progress_key.set(None);
+            state.set(AppState::new(&level));
             state.write().practise_only(expressions);
             state.write().start_practice();
         } else {
-            // Carry on from the learner's saved progress, if any.
-            let loaded = eval(&progress::load_js(&level_name.read()))
+            // The settings' sequence, or else the whole level; carry on from
+            // the learner's saved progress in it, if any.
+            let sequence = settings::sequence_for_level(&chosen.sequence, &level);
+            let key =
+                progress::progress_key(&settings::learner(&chosen), &level, sequence.as_deref());
+            let saved = eval(&progress::load_js(&key))
                 .join::<String>()
                 .await
                 .unwrap_or_default();
-            let (name, saved) = progress::parse_loaded(&loaded);
-            learner.set(Some(name));
-            match saved {
+            progress_key.set(Some(key));
+            match progress::restore(&saved) {
                 Some(saved) => state.set(saved),
-                None => state.write().start_practice(),
+                None => {
+                    let mut fresh = AppState::new(&level);
+                    if let Some(expressions) = sequence {
+                        fresh.practise_only(expressions);
+                    }
+                    fresh.start_practice();
+                    state.set(fresh);
+                }
             }
         }
         let expr = state.read().expression.clone();
@@ -62,7 +101,7 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             phase.set(PracticePhase::Watching);
             eval(&format!(
                 "window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{ window._eelAnimDone = true; }}); {}",
-                demonstration_js(&letter)
+                demonstration_js(&letter, technique())
             ));
         }
     };
@@ -71,7 +110,10 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         // User indicates they're ready to try - enable recording
         phase.set(PracticePhase::Drawing);
         feedback.set("Begin!".to_string());
-        eval("window.eelCanvas.clear(); window.eelCanvas.startRecording();");
+        eval(&format!(
+            "{} window.eelCanvas.startRecording();",
+            technique().drawing_canvas_js()
+        ));
     };
 
     let on_done = move |_| async move {
@@ -96,8 +138,8 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 .is_some_and(|h| h.attempts > 0);
         let next_expr = state_write.expression.clone();
         let is_done = state_write.is_complete();
-        if let Some(name) = learner.read().as_deref()
-            && let Some(js) = progress::save_js(name, &level_name.read(), &state_write)
+        if let Some(key) = progress_key.read().as_deref()
+            && let Some(js) = progress::save_js(key, &state_write)
         {
             eval(&js);
         }
@@ -108,7 +150,10 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             feedback.set("Amazing!".to_string());
         } else if try_again {
             feedback.set("Try again!".to_string());
-            eval("window.eelCanvas.clear(); window.eelCanvas.startRecording();");
+            eval(&format!(
+                "{} window.eelCanvas.startRecording();",
+                technique().drawing_canvas_js()
+            ));
         } else if let Some(next) = next_expr {
             feedback.set(
                 if success {
@@ -121,7 +166,7 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             phase.set(PracticePhase::Watching);
             eval(&format!(
                 "window.eelCanvas.clear(); {}",
-                demonstration_js(&next)
+                demonstration_js(&next, technique())
             ));
         }
     };
