@@ -2,8 +2,8 @@
 kind: todo
 priority: backlog
 tags: [agent-generated]
-epic: "Management app / Phase 6: the plan editor"
-order: 60
+epic: "Management app / Phase 7: the plan editor"
+order: 70
 added: 2026-11-28
 ---
 

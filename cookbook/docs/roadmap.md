@@ -108,22 +108,28 @@ In the order it is built:
    origin that verifies the Auth0 access token and the `manage:cookbook`
    permission on every call. This, not the app's pages, is what keeps
    everyone else out.
-4. **The cooking log**: "we cooked this" with the date, who cooked, a
-   rating, notes and what they changed. It is the heart of test-driving
-   the content.
-5. **The recipe editor**: change a recipe's title, ingredients, steps,
-   status and notes in a form with a live preview, with no git; a save goes
-   to the public site with the next deploy.
-6. **The plan editor** (COOK-009): move a recipe to another day or week,
+4. **Saving as content PRs**: the management app's server saves a
+   curator's change as a commit to a content PR that touches only
+   `cookbook/content/`, through a GitHub App token minted by Infra Mint
+   (a credential change). The reviewer account's written rules gain a case
+   for those PRs, so a curator's save reaches the public site on the next
+   deploy without anyone using git.
+5. **The cooking log**: "we cooked this" with the date, who cooked (a display name, never an email), a
+   rating, notes and what they changed, kept in the recipe's own Markdown
+   file. It is the heart of test-driving the content, and the notes are
+   public like the recipes.
+6. **The recipe editor**: change a recipe's title, ingredients, steps,
+   status and notes in a form with a live preview, with no git.
+7. **The plan editor** (COOK-009): move a recipe to another day or week,
    swap in a different recipe, and set a week's theme and staples.
-7. **Remove sign-in from the public site**: once the curators are using the
+8. **Remove sign-in from the public site**: once the curators are using the
    management app, the public site drops its Login button, `auth_sdk`, the
    Auth0 call on every page load and its Auth0 callback URLs. Open PR #783
    (the public site's sign-in redirect) becomes unneeded then.
 
-Where the curators' edits and notes are stored is Jim's call (asked
-2026-11-28, see "Open decisions"). The phases above assume the recommended
-answer and change only in phases 4 and 5 if he picks another.
+All content, cooking notes included, stays Markdown in this repo, the
+book's source (Jim, 2026-11-28: "Let's do A, but I don't think we need
+private notes"). There is no database.
 
 ### Later: the book (epic "Book")
 
@@ -184,28 +190,25 @@ Auth0 as an approved exception):
   a day.
 - Two Auth0 monthly active users once the public site drops sign-in, down
   from today's estimate of 5.
-- With the recommended storage answer, one D1 database for the cooking log
-  (of 10) and a GitHub App token for content PRs, minted by Infra Mint.
+- No database: content and cooking notes are Markdown in the repo. One
+  GitHub App token for content PRs, minted and rotated by Infra Mint.
 
 Claude build effort is about 3 PRs for the content epic, about 8 for the
 management app and about 2 for the book, spread over several weeks of the
 $25 a month budget.
 
-## Open decisions
+## Decisions
 
-1. **Where curated recipes and cooking notes live** (asked on a decision
-   card, 2026-11-28). Every option is $0:
-   - *Recommended:* recipes stay Markdown in this repo, the book's source,
-     and the management app saves an edit as a content PR that the
-     reviewer account may approve when it changes only
-     `cookbook/content/`. Cooking notes and ratings name the curators, so
-     they live in D1, never in the public repo. About 6 PRs.
-   - Everything in D1, copied to the repo nightly. Instant saves, but two
-     copies to keep in step. About 5 PRs.
-   - A private GitHub repo for recipes and notes, so drafts stay hidden
-     until a deploy. The public site's build needs a read token. About 7
-     PRs.
-2. **Weekly themes**: what a theme is (a cuisine, a season, an
+1. **Where curated content lives** (Jim, 2026-11-28, on a decision card:
+   "Let's do A, but I don't think we need private notes"). Recipes, plans
+   and the cooking log are Markdown in this repo, and the management app
+   saves changes as content PRs. Not chosen: everything in D1 copied to
+   the repo nightly (two copies to keep in step), and a private content
+   repo (a read token for the public build). All three were $0.
+
+## Open questions
+
+1. **Weekly themes**: what a theme is (a cuisine, a season, an
    ingredient) and whether staples are per week or one pantry list (the
    review's question 3). The content epic starts with a free-text theme
    and per-week staples, which work for any answer.

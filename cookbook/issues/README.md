@@ -22,9 +22,9 @@ The private app where Jim and his wife, the cookbook's curators, log what
 they cooked and edit recipes and plans. Named and built as a project's
 management app in
 [decision 0018](../../standards/docs/decisions/0018-feature-flags.md).
-Phase 1 is a credential change (decision 0010). Phases 4 and 5 store data
-where Jim's open storage decision in the roadmap says; until he answers,
-build on the recommended option.
+Phases 1 and 4 are credential changes (decision 0010). All content,
+cooking notes included, is Markdown in the repo, saved as content PRs
+(Jim, 2026-11-28); there is no database.
 
 ## Book
 

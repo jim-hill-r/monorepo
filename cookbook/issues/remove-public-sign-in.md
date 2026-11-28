@@ -2,8 +2,8 @@
 kind: todo
 priority: backlog
 tags: [agent-generated]
-epic: "Management app / Phase 7: public site without sign-in"
-order: 70
+epic: "Management app / Phase 8: public site without sign-in"
+order: 80
 added: 2026-11-28
 ---
 
