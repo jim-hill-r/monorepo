@@ -27,8 +27,10 @@ narrow window, those three links move into the sidebar so the top bar fits
 on one row. **Recipes** always opens today's recipe and **Plans** this
 week's plan.
 
-The **Login** button at the top right signs you in, but nothing on the site
-needs it yet, so you can ignore it.
+The **Sign in with jimhillr** button at the top right signs you in with
+your jimhillr account, the one account that works in every jimhillr app.
+Once you're in, your name and **Sign out** take its place. Nothing on the
+site needs it yet, so you can ignore it.
 
 ![The home page on a computer: the sidebar with this week's days and plans, and the introduction](desktop-home.png)
 

@@ -12,21 +12,21 @@ import { mainNavLink } from './nav';
  *   npm test
  */
 
+const SIGN_IN = 'Sign in with jimhillr';
+
 test.describe('Authentication in Header', () => {
-  test('should display login button or loading state in header', async ({ page }) => {
+  test('should display the jimhillr sign-in button in header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
+
     const header = page.locator('#header');
     await expect(header).toBeVisible();
-    
-    // Check for either login button or loading state (since auth initialization is async)
-    const hasLoginButton = await header.locator('button', { hasText: 'Login' }).isVisible().catch(() => false);
-    const hasLoadingState = await header.locator('div', { hasText: 'Loading authentication' }).isVisible().catch(() => false);
-    const hasError = await header.locator('.error').isVisible().catch(() => false);
-    
-    // At least one should be visible
-    expect(hasLoginButton || hasLoadingState || hasError).toBeTruthy();
+
+    // The button shows while auth loads too (disabled), and after an error.
+    await expect(header.getByRole('button', { name: SIGN_IN })).toBeVisible();
+    await expect(header.locator('.ds-account-sign-in')).toHaveAttribute(
+      'title',
+      'One jimhillr account works in every jimhillr app.',
+    );
   });
 
   test('should display user-friendly error messages when auth fails', async ({ page }) => {
@@ -57,6 +57,7 @@ test.describe('Authentication in Header', () => {
       // Verify it uses plain language
       const plainLanguageTerms = [
         'authentication',
+        'sign-in',
         'login',
         'service',
         'error',
@@ -91,13 +92,9 @@ test.describe('Authentication in Header', () => {
       const header = page.locator('#header');
       await expect(header).toBeVisible();
 
-      // The login button, or the loading or error state, is in the header.
-      // expect() retries until one renders.
-      const authState = header
-        .locator('button', { hasText: 'Login' })
-        .or(header.locator('div', { hasText: 'Loading authentication' }))
-        .or(header.locator('.error'));
-      await expect(authState.first()).toBeVisible();
+      // The jimhillr sign-in button is in the header; expect() retries
+      // until it renders.
+      await expect(header.getByRole('button', { name: SIGN_IN })).toBeVisible();
     }
   });
 
@@ -139,7 +136,7 @@ test.describe('Authentication in Header', () => {
     await page.waitForLoadState('networkidle');
     
     // Wait for login button to appear in header (it may take time for auth to initialize)
-    const loginButton = page.locator('#header button', { hasText: 'Login' });
+    const loginButton = page.locator('#header').getByRole('button', { name: SIGN_IN });
     
     // Check if button is present (it should eventually appear or show an error/loading state)
     const isVisible = await loginButton.isVisible().catch(() => false);

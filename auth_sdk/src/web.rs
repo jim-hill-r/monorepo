@@ -6,13 +6,15 @@ use crate::provider::{
     AccessToken, AppState, AuthError, AuthProvider, CsrfTokenState, CsrfTokenWrapper, NonceWrapper,
     PkceVerifierWrapper, ProviderConfig,
 };
-use crate::redirect::{safe_return_path, strip_authorization_response};
+use crate::redirect::{logout_url, safe_return_path, strip_authorization_response};
 
 const DEFAULT_APP_STATE_STORAGE_KEY: &str = "auth_app_state";
 
 #[derive(Clone)]
 pub struct WebAuthProvider {
     client: OidcClient,
+    issuer_url: String,
+    client_id: String,
     access_token: Option<AccessToken>,
     id_token_claims: Option<CoreIdTokenClaims>,
     return_to: Option<String>,
@@ -28,6 +30,7 @@ impl WebAuthProvider {
     /// URL carries an authorization response.
     pub async fn new(config: ProviderConfig) -> Result<WebAuthProvider, AuthError> {
         let client = flow::discover(&config).await?;
+        let issuer_url = config.issuer_url.clone().unwrap_or_default();
 
         let (access_token, id_token_claims, return_to) =
             if let Ok((authorization_code, state)) = fetch_code_and_state_from_browser() {
@@ -48,6 +51,8 @@ impl WebAuthProvider {
 
         Ok(WebAuthProvider {
             client,
+            issuer_url,
+            client_id: config.client_id,
             access_token,
             id_token_claims,
             return_to,
@@ -66,16 +71,22 @@ impl WebAuthProvider {
 }
 
 impl AuthProvider for WebAuthProvider {
+    /// Signed in on this page load. Tokens live in memory only, so a reload
+    /// signs out of the app (Auth0's own session still signs the person
+    /// straight back in from the button).
     fn is_authenticated(&self) -> bool {
-        todo!()
+        self.access_token.is_some()
     }
 
+    /// Always false: [`WebAuthProvider::new`] finishes everything before it
+    /// returns, so the app's own resource state is the loading state.
     fn is_loading(&self) -> bool {
-        todo!()
+        false
     }
 
+    /// Always `None`: errors come back from [`WebAuthProvider::new`].
     fn error(&self) -> Option<crate::provider::AuthError> {
-        todo!()
+        None
     }
 
     fn login(&self) -> Result<(), AuthError> {
@@ -96,8 +107,13 @@ impl AuthProvider for WebAuthProvider {
         redirect_browser(auth_url.as_ref())
     }
 
+    /// Drop the stored sign-in state and send the browser to the
+    /// provider's logout endpoint, which returns to the site's origin.
     fn logout(&self) -> Result<(), AuthError> {
-        todo!()
+        remove_app_state_from_browser();
+        let origin = fetch_origin_from_browser()
+            .ok_or_else(|| AuthError::BrowserApiError("no page origin".to_string()))?;
+        redirect_browser(&logout_url(&self.issuer_url, &self.client_id, &origin)?)
     }
 
     fn user(&self) -> Option<crate::provider::User> {

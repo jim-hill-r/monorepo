@@ -11,6 +11,8 @@ use auth_sdk::web::{WebAuthProvider, fetch_origin_from_browser};
 use dioxus::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
+use design_system_dioxus::{AccountButton, AccountState};
+#[cfg(target_arch = "wasm32")]
 use ui::{Navbar, Sidebar};
 #[cfg(target_arch = "wasm32")]
 use views::about::About;
@@ -139,7 +141,7 @@ fn WebNavbar() -> Element {
     let mut sidebar_open = use_signal(|| false);
 
     // After a sign-in redirect the app loads at `/`; put the user back on the
-    // page they clicked Login from.
+    // page they signed in from.
     use_effect(move || {
         if let Some(Ok(provider)) = &*auth.read()
             && let Some(route) = provider.return_to().and_then(return_route)
@@ -171,28 +173,21 @@ fn WebNavbar() -> Element {
         }
 
         Navbar {
-            match &*auth_state {
-                Some(Ok(provider)) => {
-                    let provider = provider.clone();
-                    rsx! {
-                        button {
-                            onclick: move |_| {
-                                if let Err(e) = provider.login() {
-                                    eprintln!("Login error: {}", e);
-                                }
-                            },
-                            "Login"
-                        }
+            AccountButton {
+                state: account_state(auth_state.as_ref()),
+                on_sign_in: move |()| {
+                    if let Some(Ok(provider)) = &*auth.peek()
+                        && let Err(e) = provider.login()
+                    {
+                        eprintln!("Sign-in error: {e}");
                     }
                 },
-                Some(Err(err)) => rsx! {
-                    div {
-                        class: "error",
-                        "Authentication Error: {err}"
+                on_sign_out: move |()| {
+                    if let Some(Ok(provider)) = &*auth.peek()
+                        && let Err(e) = provider.logout()
+                    {
+                        eprintln!("Sign-out error: {e}");
                     }
-                },
-                None => rsx! {
-                    div { "Loading authentication..." }
                 },
             }
         }
@@ -220,6 +215,23 @@ fn WebNavbar() -> Element {
         }
 
         Outlet::<Route> {}
+    }
+}
+
+/// The jimhillr account state to show for the provider's state.
+#[cfg(target_arch = "wasm32")]
+fn account_state(auth: Option<&Result<WebAuthProvider, AuthError>>) -> AccountState {
+    match auth {
+        None => AccountState::Loading,
+        Some(Err(err)) => AccountState::Error(err.user_message().into()),
+        Some(Ok(provider)) => match provider.user() {
+            Some(user) if provider.is_authenticated() => AccountState::signed_in(
+                user.name.as_deref(),
+                user.preferred_username.as_deref(),
+                user.email.as_deref(),
+            ),
+            _ => AccountState::SignedOut,
+        },
     }
 }
 

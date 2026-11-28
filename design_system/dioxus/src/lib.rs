@@ -19,6 +19,11 @@
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
 
+mod account;
+pub use account::{
+    ACCOUNT_HINT, AccountButton, AccountState, SIGN_IN_LABEL, SIGN_OUT_LABEL, SIGNED_IN_TITLE,
+};
+
 /// `dist/tokens.css`: every standard theme in every combination.
 pub const TOKENS_CSS: &str = include_str!("../../dist/tokens.css");
 /// `dist/base.css`: the reset and element defaults.

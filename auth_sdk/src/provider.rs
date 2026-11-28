@@ -37,6 +37,33 @@ pub enum AuthError {
     Unknown,
 }
 
+impl AuthError {
+    /// A short message to show the person signing in, with no technical
+    /// detail. Every app shows these words, so sign-in reads the same in
+    /// every jimhillr product.
+    #[must_use]
+    pub fn user_message(&self) -> &'static str {
+        match self {
+            AuthError::ParseError
+            | AuthError::SerializationError(_)
+            | AuthError::LoopbackError(_) => "Unable to process sign-in",
+            AuthError::TokenExchangeError(_) => "Sign-in failed. Please try again",
+            AuthError::BrowserApiError(_) => "Browser compatibility issue",
+            AuthError::MissingUrlParameter(_)
+            | AuthError::MissingStateData(_)
+            | AuthError::CallbackMismatch(_) => "Sign-in incomplete. Please try again",
+            AuthError::CsrfValidationFailed => "Security check failed. Please try again",
+            AuthError::OidcDiscoveryFailed(_) => "Sign-in is unavailable right now",
+            AuthError::IdTokenValidationFailed(_) => "Sign-in verification failed",
+            AuthError::HttpClientError(_) => "Network error. Please check your connection",
+            AuthError::ConfigError(_) => "Sign-in is not set up",
+            AuthError::AuthorizationDenied(_) => "Sign-in was cancelled",
+            AuthError::SignInTimedOut(_) => "Sign-in timed out. Please try again",
+            AuthError::Unknown => "An unexpected error occurred",
+        }
+    }
+}
+
 pub trait AuthProvider {
     fn is_authenticated(&self) -> bool;
     fn is_loading(&self) -> bool;
@@ -149,6 +176,27 @@ impl AccessToken {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn user_messages_hide_technical_detail() {
+        let detail = "invalid_grant: code abc123 at https://tenant.us.auth0.com/oauth/token";
+        for error in [
+            AuthError::TokenExchangeError(detail.into()),
+            AuthError::OidcDiscoveryFailed(detail.into()),
+            AuthError::IdTokenValidationFailed(detail.into()),
+            AuthError::HttpClientError(detail.into()),
+            AuthError::ConfigError(detail.into()),
+        ] {
+            let message = error.user_message();
+            assert!(message.len() < 60, "{message:?} is too long");
+            assert!(!message.contains("abc123") && !message.contains("http"));
+            assert!(!message.to_lowercase().contains("oidc"));
+        }
+        assert_eq!(
+            AuthError::AuthorizationDenied(detail.into()).user_message(),
+            "Sign-in was cancelled"
+        );
+    }
 
     #[test]
     fn test_auth_error_parse_error() {

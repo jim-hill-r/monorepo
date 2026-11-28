@@ -4,6 +4,8 @@
 //! for the redirect URI, the page to return to after sign-in, and the URL to
 //! show once the authorization response is consumed.
 
+use crate::provider::AuthError;
+
 /// The OAuth `redirect_uri` for a site: its origin plus `/`.
 ///
 /// Auth0 accepts a redirect URI only when it exactly matches an Allowed
@@ -13,6 +15,37 @@
 /// redirect URI is always the site root.
 pub fn redirect_url_for_origin(origin: &str) -> String {
     format!("{}/", origin.trim_end_matches('/'))
+}
+
+/// The URL that signs the user out of the provider and returns them to the
+/// site: Auth0's OIDC RP-initiated logout endpoint, `{issuer}oidc/logout`.
+///
+/// `post_logout_redirect` must be one of the application's Allowed Logout
+/// URLs, which are the site origins without a trailing slash, so pass the
+/// page's origin. Without the provider round trip, the next sign-in would
+/// reuse Auth0's session and sign the same person straight back in.
+///
+/// # Errors
+///
+/// [`AuthError::ConfigError`] when the issuer isn't a URL.
+pub fn logout_url(
+    issuer: &str,
+    client_id: &str,
+    post_logout_redirect: &str,
+) -> Result<String, AuthError> {
+    let endpoint = format!("{}/oidc/logout", issuer.trim_end_matches('/'));
+    let url = openidconnect::url::Url::parse_with_params(
+        &endpoint,
+        [
+            ("client_id", client_id),
+            (
+                "post_logout_redirect_uri",
+                post_logout_redirect.trim_end_matches('/'),
+            ),
+        ],
+    )
+    .map_err(|e| AuthError::ConfigError(format!("issuer is not a URL: {e}")))?;
+    Ok(url.into())
 }
 
 /// The page to send the user back to after sign-in, as a same-origin path.
@@ -76,6 +109,36 @@ mod tests {
             redirect_url_for_origin("https://jimhillr-cahokia.pages.dev/"),
             "https://jimhillr-cahokia.pages.dev/"
         );
+    }
+
+    #[test]
+    fn logout_url_returns_to_the_origin() -> Result<(), AuthError> {
+        assert_eq!(
+            logout_url(
+                "https://tenant.us.auth0.com/",
+                "abc",
+                "https://jimhillr-cookbook.pages.dev"
+            )?,
+            "https://tenant.us.auth0.com/oidc/logout?client_id=abc&post_logout_redirect_uri=https%3A%2F%2Fjimhillr-cookbook.pages.dev"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn logout_url_drops_trailing_slashes() -> Result<(), AuthError> {
+        assert_eq!(
+            logout_url("https://t.example", "abc", "http://localhost:8080/")?,
+            "https://t.example/oidc/logout?client_id=abc&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8080"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn logout_url_rejects_a_bad_issuer() {
+        assert!(matches!(
+            logout_url("not a url", "abc", "https://x.example"),
+            Err(AuthError::ConfigError(_))
+        ));
     }
 
     #[test]

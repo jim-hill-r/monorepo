@@ -116,7 +116,7 @@ The test suite covers:
   on each recipe, wrapping from day 365 to day 1
 - **Authentication Navbar**: Tests the authentication navbar functionality
   - Navbar visibility on all pages
-  - Login button or loading/error state display
+  - "Sign in with jimhillr" button, and its loading and error states
   - Navbar positioning below header
   - Navbar persistence during navigation
   - Button styling and interactivity

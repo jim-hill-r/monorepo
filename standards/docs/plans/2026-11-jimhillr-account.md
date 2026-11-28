@@ -3,7 +3,7 @@
 - Asked by: Jim (project thread, 2026-11-28): "make sure that every login
   in every app makes it clear you are logging into a jimhillr product and
   that every one of these products shares a user pool."
-- Decision: [0027](../decisions/0027-one-jimhillr-account.md) (proposed)
+- Decision: [0027](../decisions/0027-one-jimhillr-account.md) (accepted)
 - Migration guide for the shared pool:
   [infra/docs/auth0-user-pool.md](../../../infra/docs/auth0-user-pool.md)
 - Scope: every end user and app manager who signs in through Auth0 today
@@ -132,9 +132,9 @@ products separable (decision 0021's spirit):
 | 3 | `infra`: set the branding, text, names and connections above. The run waits for Jim in `infra-credentials` | Yes, Jim approves the run | 1 PR |
 | 4 | An eval that the hosted page and each app's button say "jimhillr", user guide page "Your jimhillr account" linked from every signed-in product's guide, isolation sections per product | No | 1 PR |
 
-Phase 1 changes nothing outside our own code and can start right away.
-Phases 2 and 3 change the live tenant, so they wait for Jim to accept
-decision 0027.
+Phase 1 changes nothing outside our own code. Jim accepted decision 0027
+on 2026-11-28, so phases 2 and 3 can follow; phase 3's apply still waits
+for his approval of the run in `infra-credentials`.
 
 ## Cost
 

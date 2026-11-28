@@ -121,7 +121,7 @@ id = "sign-in-config"
 requirement = "CAHO-003"
 stages = ["ci"]
 kind = "playwright"
-description = "Login shows on the home page, never an authentication error, and the redirect is the site root from every page."
+description = "Sign in with jimhillr shows on the home page, never a sign-in error, and the redirect is the site root from every page."
 
 [[eval]]
 id = "home-page-live"

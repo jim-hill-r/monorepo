@@ -72,6 +72,13 @@ accessible mode: system, on or off) that saves the choice in `localStorage`.
 before first paint, also inline `design_system_dioxus::head_script(...)` in
 the app's `index.html`.
 
+`AccountButton` is the jimhillr account control every product with sign-in
+puts in its header: "Sign in with jimhillr" with the hint "One jimhillr
+account works in every jimhillr app." when signed out, the person's name
+and "Sign out" when signed in. It takes an `AccountState` and two
+callbacks, so it works with `auth_sdk` or any other provider
+([plan](../standards/docs/plans/2026-11-jimhillr-account.md)).
+
 In the browser (wasm) the picker and `Stylesheets` read and write the
 choice with `web-sys`, not an inline script or `eval`, so they work under a
 strict Content Security Policy like cookbook's and cahokia's
@@ -166,7 +173,7 @@ js/theme.js          applies the saved theme choice; inline it in <head>
 model/               design_system_model: parse, resolve, contrast maths
 cli/                 design_system_cli: render and check
 palette/             design_system_palette: the values as Rust constants (generated)
-dioxus/              design_system_dioxus: Stylesheets, ThemePicker, use_theme for Dioxus 0.7
+dioxus/              design_system_dioxus: Stylesheets, ThemePicker, AccountButton, use_theme for Dioxus 0.7
 dioxus/assets/       tokens.css and base.css (generated copies of dist/), linked in the browser
 dioxus/assets/design-system-fonts/
                      Atkinson Hyperlegible and Press Start 2P (SIL OFL), latin subsets, and fonts.css

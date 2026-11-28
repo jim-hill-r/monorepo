@@ -94,6 +94,6 @@ may approve what, as a matrix of domains and project tiers in
 See [standards/docs/plans/2026-11-jimhillr-account.md](../standards/docs/plans/2026-11-jimhillr-account.md)
 and [decision 0027](../standards/docs/decisions/0027-one-jimhillr-account.md):
 every sign-in says "jimhillr account" and every product shares one Auth0
-user pool. Phase 1 can start now; phases 2 and 3 (in `infra/issues/`) wait
-for Jim to accept decision 0027, and phase 3's apply waits for his
-approval in `infra-credentials`.
+user pool. Jim accepted decision 0027 on 2026-11-28. Phases 2 and 3 are in
+`infra/issues/`; phase 3's apply waits for his approval in
+`infra-credentials`.

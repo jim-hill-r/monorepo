@@ -185,6 +185,37 @@ textarea {
   }
 }
 
+/* design_system_dioxus::AccountButton: the jimhillr account in a header. */
+.ds-account {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-1) var(--ds-space-2);
+}
+
+.ds-account-hint,
+.ds-account-name {
+  color: var(--ds-color-text-muted);
+  font-size: var(--ds-text-sm);
+}
+
+.ds-account-name {
+  color: var(--ds-color-text);
+  font-weight: var(--ds-weight-strong);
+}
+
+.ds-account-error {
+  color: var(--ds-color-danger);
+  font-size: var(--ds-text-sm);
+}
+
+/* On a phone the hint is the button's tooltip instead. */
+@media (max-width: 40rem) {
+  .ds-account-hint {
+    display: none;
+  }
+}
+
 /* design_system_dioxus::ThemePicker: one row of labelled selects. */
 .ds-theme-picker {
   align-items: center;

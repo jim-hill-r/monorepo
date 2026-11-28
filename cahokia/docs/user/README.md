@@ -53,8 +53,11 @@ there are no downloads of them yet, so use the web address above.
 
 ## How to sign in
 
-Press **Login** at the top of any page. You go to Cahokia's sign-in page,
-and after signing in you come back to the page you were on. Signing in doesn't change anything yet: it's there for when
+Press **Sign in with jimhillr** at the top of any page. Cahokia uses your
+jimhillr account, the one account that works in every jimhillr app, so if
+you already have one (from Cookbook, say) use that. You go to the jimhillr
+sign-in page, and after signing in you come back to the page you were on,
+with your name and **Sign out** in place of the button. Signing in doesn't change anything yet: it's there for when
 your family's own tree is private to the people signed in to it. The
 desktop and phone apps can't sign in yet.
 
@@ -73,7 +76,7 @@ In the desktop and phone apps the same box is at the foot of each page.
 - **I can't see the whole family.** Press **Fit**.
 - **The page scrolls when I try to drag the tree.** Start the drag inside
   the tree's frame, not beside it.
-- **Login shows an error, or sign-in doesn't bring me back.** Try again from
+- **Sign-in shows an error, or doesn't bring me back.** Try again from
   the home page. If it keeps happening, report it.
 - **I want to add my own family.** You can't yet. It's the next big step.
 

@@ -1,6 +1,6 @@
 [package]
 name = "design_system_dioxus"
-description = "The design system for Dioxus 0.7 apps: stylesheets, fonts and a theme picker."
+description = "The design system for Dioxus 0.7 apps: stylesheets, fonts, a theme picker and the jimhillr account button."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

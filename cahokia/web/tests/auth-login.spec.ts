@@ -10,8 +10,10 @@ import { test, expect } from '@playwright/test';
  *   npm test -- auth-login.spec.ts
  */
 
-test.describe('Authentication and Login', () => {
-  test('should display login button when auth provider loads', async ({ page }) => {
+const SIGN_IN = 'Sign in with jimhillr';
+
+test.describe('Authentication and sign-in', () => {
+  test('should display the jimhillr sign-in button', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
@@ -21,19 +23,11 @@ test.describe('Authentication and Login', () => {
     
     // Check that either the login button or loading state is present
     // The auth provider may still be loading or may show error
-    const loginButton = page.locator('button:has-text("Login")');
-    const loadingText = page.locator('div:has-text("Loading authentication...")');
-    const errorText = page.locator('.error');
-    
-    // One of these should be visible
-    const isLoginVisible = await loginButton.isVisible();
-    const isLoadingVisible = await loadingText.isVisible();
-    const isErrorVisible = await errorText.isVisible();
-    
-    expect(isLoginVisible || isLoadingVisible || isErrorVisible).toBe(true);
+    // The button shows while loading too (disabled), so it is always there.
+    await expect(navbar.getByRole('button', { name: SIGN_IN })).toBeVisible();
   });
 
-  test('login button should be clickable without crashing app', async ({ page }) => {
+  test('sign-in button should be clickable without crashing app', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
@@ -41,7 +35,7 @@ test.describe('Authentication and Login', () => {
     await page.waitForTimeout(1000);
     
     // Check if login button is present
-    const loginButton = page.locator('button:has-text("Login")');
+    const loginButton = page.getByRole('button', { name: SIGN_IN });
     
     // Only test if the button is visible (it might not be if auth provider failed to load)
     if (await loginButton.isVisible()) {
@@ -82,18 +76,12 @@ test.describe('Authentication and Login', () => {
     const errorDiv = page.locator('.error');
     
     if (await errorDiv.isVisible()) {
-      // If there's an error, verify it's displayed with proper message
-      const errorText = await errorDiv.textContent();
-      expect(errorText).toContain('Authentication Error');
-    } else {
-      // If no error, verify login button or loading state is shown
-      const loginButton = page.locator('button:has-text("Login")');
-      const loadingText = page.locator('div:has-text("Loading authentication...")');
-      
-      const isLoginVisible = await loginButton.isVisible();
-      const isLoadingVisible = await loadingText.isVisible();
-      
-      expect(isLoginVisible || isLoadingVisible).toBe(true);
+      // An error is a short message for people, with no technical detail.
+      const errorText = (await errorDiv.textContent()) ?? '';
+      expect(errorText.length).toBeLessThan(60);
+      expect(errorText).not.toMatch(/https?:|oidc|discovery/i);
     }
+    // The sign-in button stays, so the person can try again.
+    await expect(page.getByRole('button', { name: SIGN_IN })).toBeVisible();
   });
 });

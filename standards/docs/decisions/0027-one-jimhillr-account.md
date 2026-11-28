@@ -1,7 +1,7 @@
 # 0027. One jimhillr account: every product signs in to one shared Auth0 user pool, branded jimhillr
 
-- Status: Proposed
-- Decided by: Jim (pending)
+- Status: Accepted
+- Decided by: Jim (decision card in the project thread, 2026-11-28)
 - Date: 2026-11-28
 - Asked by: Jim (project thread, 2026-11-28)
 - Plan: [2026-11-jimhillr-account.md](../plans/2026-11-jimhillr-account.md)

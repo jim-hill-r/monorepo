@@ -37,7 +37,8 @@ the current earthy palette.
 
 - Priority: must
 - Why: A family's own tree will be private to the people signed in.
-- Accept: every page shows a Login button and never "Authentication Error";
+- Accept: every page shows a "Sign in with jimhillr" button and never a
+  sign-in error;
   signing in from any page sends Auth0 the site root as the redirect URL,
   which is one of the Cahokia application's Allowed Callback URLs.
 

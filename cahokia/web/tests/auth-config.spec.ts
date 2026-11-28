@@ -9,23 +9,26 @@ import { test, expect, type Page } from '@playwright/test';
 
 const AUTH0_AUTHORIZE = 'https://dev-jdadpn4pckxevrv5.us.auth0.com/authorize**';
 
-/** Wait until the navbar has finished loading auth (Login or an error). */
+const SIGN_IN = 'Sign in with jimhillr';
+
+/** Wait until the navbar has finished loading auth (the button is enabled or an error shows). */
 async function waitForAuth(page: Page) {
   const navbar = page.locator('#navbar');
   await expect(navbar).toBeVisible();
-  await expect(navbar.getByText('Loading authentication...')).toHaveCount(0, {
+  await expect(navbar.locator('.ds-account-sign-in[aria-busy="true"]')).toHaveCount(0, {
     timeout: 30_000,
   });
 }
 
 test.describe('Auth0 sign-in config @req:CAHO-003 @network', () => {
-  // AUTH-003: the home page must never render "Authentication Error".
-  test('home page shows Login, never an authentication error', async ({ page }) => {
+  // AUTH-003: the home page must never show a sign-in error.
+  test('home page shows Sign in with jimhillr, never a sign-in error', async ({ page }) => {
     await page.goto('/');
     await waitForAuth(page);
 
-    await expect(page.getByText('Authentication Error')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
+    await expect(page.locator('.ds-account-error')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: SIGN_IN })).toBeEnabled();
+    await expect(page.locator('#navbar')).toContainText('One jimhillr account works in every jimhillr app.');
   });
 
   // AUTH-002: the redirect URI is the site root from every page, so it
@@ -42,7 +45,7 @@ test.describe('Auth0 sign-in config @req:CAHO-003 @network', () => {
 
     await page.goto('/history?tab=timeline');
     await waitForAuth(page);
-    await page.getByRole('button', { name: 'Login' }).click();
+    await page.getByRole('button', { name: SIGN_IN }).click();
 
     await expect.poll(() => authorizeUrl?.toString()).toBeTruthy();
     const origin = new URL(baseURL ?? 'http://localhost:8080').origin;
