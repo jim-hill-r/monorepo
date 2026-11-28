@@ -8,6 +8,9 @@ property details, or provide filtering criteria to score how well a property mat
 New to homer? The [user guide](docs/user/README.md) walks through installing it,
 setting up a free RapidAPI key, and fixing common problems.
 
+homer is becoming a web app: the plan is in the [roadmap](docs/roadmap.md)
+and the [mission](docs/mission.md).
+
 ## Usage
 
 ### Look up a property
