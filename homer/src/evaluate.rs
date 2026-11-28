@@ -63,87 +63,92 @@ pub fn parse_bathroom_count(arg: &str) -> std::result::Result<f32, String> {
     })
 }
 
-/// Evaluate whether a property meets the given preferences
+/// Which side of a preference a value must be on to meet it.
+#[derive(Clone, Copy)]
+enum Bound {
+    AtLeast,
+    AtMost,
+}
+
+/// Check one criterion: `None` when the preference isn't set, otherwise
+/// `Ok(())` when the value meets it or `Err` with the line the report shows
+/// when it doesn't. A value Zillow didn't report counts as not met.
+fn criterion<T: PartialOrd + Copy>(
+    label: &str,
+    bound: Bound,
+    preference: Option<T>,
+    value: Option<T>,
+    show: fn(T) -> String,
+) -> Option<Result<(), String>> {
+    let limit = preference?;
+    let need = match bound {
+        Bound::AtLeast => format!("need at least {}", show(limit)),
+        Bound::AtMost => format!("max is {}", show(limit)),
+    };
+    Some(match value {
+        Some(v) if matches!(bound, Bound::AtLeast) && v >= limit => Ok(()),
+        Some(v) if matches!(bound, Bound::AtMost) && v <= limit => Ok(()),
+        Some(v) => Err(format!("{label}: {} ({need})", show(v))),
+        None => Err(format!("{label}: unknown ({need})")),
+    })
+}
+
+/// Evaluate whether a property meets the given preferences.
+///
+/// Every criterion is checked once, from one list, so the score and the
+/// unmet lines can't disagree.
 pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> PropertyEvaluation {
-    let mut unmet_criteria = Vec::new();
-
-    if let Some(min_beds) = prefs.min_bedrooms {
-        match details.bedrooms {
-            Some(beds) if beds >= min_beds => {}
-            Some(beds) => {
-                unmet_criteria.push(format!("Bedrooms: {} (need at least {})", beds, min_beds))
-            }
-            None => unmet_criteria.push(format!("Bedrooms: unknown (need at least {})", min_beds)),
-        }
-    }
-
-    if let Some(max_beds) = prefs.max_bedrooms {
-        match details.bedrooms {
-            Some(beds) if beds <= max_beds => {}
-            Some(beds) => unmet_criteria.push(format!("Bedrooms: {} (max is {})", beds, max_beds)),
-            None => unmet_criteria.push(format!("Bedrooms: unknown (max is {})", max_beds)),
-        }
-    }
-
-    if let Some(min_baths) = prefs.min_bathrooms {
-        match details.bathrooms {
-            Some(baths) if baths >= min_baths => {}
-            Some(baths) => unmet_criteria.push(format!(
-                "Bathrooms: {:.1} (need at least {:.1})",
-                baths, min_baths
-            )),
-            None => unmet_criteria.push(format!(
-                "Bathrooms: unknown (need at least {:.1})",
-                min_baths
-            )),
-        }
-    }
-
-    if let Some(max_price) = prefs.max_price {
-        match details.price {
-            Some(price) if price <= max_price => {}
-            Some(price) => unmet_criteria.push(format!(
-                "Price: {} (max is {})",
-                format_dollars(price),
-                format_dollars(max_price)
-            )),
-            None => unmet_criteria.push(format!(
-                "Price: unknown (max is {})",
-                format_dollars(max_price)
-            )),
-        }
-    }
-
-    if let Some(min_sqft) = prefs.min_sqft {
-        match details.living_area {
-            Some(sqft) if sqft >= min_sqft => {}
-            Some(sqft) => unmet_criteria.push(format!(
-                "Square footage: {} sqft (need at least {} sqft)",
-                sqft, min_sqft
-            )),
-            None => unmet_criteria.push(format!(
-                "Square footage: unknown (need at least {} sqft)",
-                min_sqft
-            )),
-        }
-    }
-
-    let criteria_checked = [
-        prefs.min_bedrooms.is_some(),
-        prefs.max_bedrooms.is_some(),
-        prefs.min_bathrooms.is_some(),
-        prefs.max_price.is_some(),
-        prefs.min_sqft.is_some(),
+    let count = |n: u32| n.to_string();
+    let baths = |n: f32| format!("{n:.1}");
+    let sqft = |n: u32| format!("{n} sqft");
+    let results: Vec<Result<(), String>> = [
+        criterion(
+            "Bedrooms",
+            Bound::AtLeast,
+            prefs.min_bedrooms,
+            details.bedrooms,
+            count,
+        ),
+        criterion(
+            "Bedrooms",
+            Bound::AtMost,
+            prefs.max_bedrooms,
+            details.bedrooms,
+            count,
+        ),
+        criterion(
+            "Bathrooms",
+            Bound::AtLeast,
+            prefs.min_bathrooms,
+            details.bathrooms,
+            baths,
+        ),
+        criterion(
+            "Price",
+            Bound::AtMost,
+            prefs.max_price,
+            details.price,
+            format_dollars,
+        ),
+        criterion(
+            "Square footage",
+            Bound::AtLeast,
+            prefs.min_sqft,
+            details.living_area,
+            sqft,
+        ),
     ]
     .into_iter()
-    .filter(|set| *set)
-    .count();
+    .flatten()
+    .collect();
+
+    let criteria_checked = results.len();
+    let unmet_criteria: Vec<String> = results.into_iter().filter_map(Result::err).collect();
     let criteria_met = criteria_checked - unmet_criteria.len();
-    let meets_preferences = unmet_criteria.is_empty();
 
     PropertyEvaluation {
         details: details.clone(),
-        meets_preferences,
+        meets_preferences: unmet_criteria.is_empty(),
         unmet_criteria,
         criteria_checked,
         criteria_met,
@@ -153,6 +158,43 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+
+    #[test]
+    fn test_criterion_not_set_met_unmet_and_unknown() {
+        let show = |n: u32| n.to_string();
+        assert_eq!(criterion("Beds", Bound::AtLeast, None, Some(3), show), None);
+        assert_eq!(
+            criterion("Beds", Bound::AtLeast, Some(3), Some(3), show),
+            Some(Ok(()))
+        );
+        assert_eq!(
+            criterion("Beds", Bound::AtMost, Some(3), Some(3), show),
+            Some(Ok(()))
+        );
+        assert_eq!(
+            criterion("Beds", Bound::AtMost, Some(3), Some(4), show),
+            Some(Err("Beds: 4 (max is 3)".to_string()))
+        );
+        assert_eq!(
+            criterion("Beds", Bound::AtLeast, Some(3), None, show),
+            Some(Err("Beds: unknown (need at least 3)".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_evaluate_every_criterion_unknown_counts_each_once() {
+        let details = make_property(None, None, None, None);
+        let prefs = HomePreferences {
+            min_bedrooms: Some(2),
+            max_bedrooms: Some(4),
+            min_bathrooms: Some(1.0),
+            max_price: Some(500_000),
+            min_sqft: Some(900),
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert_eq!((eval.criteria_met, eval.criteria_checked), (0, 5));
+        assert_eq!(eval.unmet_criteria.len(), 5);
+    }
 
     pub(crate) fn make_property(
         price: Option<u64>,
