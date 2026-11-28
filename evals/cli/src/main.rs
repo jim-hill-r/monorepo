@@ -318,6 +318,9 @@ fn dispatch(cli: Cli) -> Result<ExitCode> {
                         .flat_map(|t| reports::parse_trycmd_output(t))
                         .collect()
                 }),
+                cargo_build_failure: cargo_texts
+                    .as_ref()
+                    .and_then(|texts| texts.iter().find_map(|t| reports::cargo_build_failure(t))),
                 playwright: match read_all(&playwright_report)? {
                     None => None,
                     Some(texts) => {
