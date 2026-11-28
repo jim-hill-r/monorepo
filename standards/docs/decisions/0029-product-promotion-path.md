@@ -70,6 +70,25 @@ product on its own domain.
 | Only a goal Jim sets per product | $0 | None | Most flexible | No standing bar; every deck is a negotiation |
 | No revenue gate, traction only | $0 | None | Lets free products promote | A domain becomes a cost with no funding, against the free-tier rule |
 
+## Cost at scale
+
+Projects now: 27 (`ls */docs/cost.toml | wc -l`, 2026-11-28). The
+worst case below assumes every project is promoted, though only `product`
+tier projects can be. The rule and its checks cost nothing to run; the
+only money is each promoted product's domain, about $15 a year each
+(about $1.25 a month), and gate G4 makes each product's own revenue cover
+it before it is bought, so the repo's net cost stays $0 at every scale.
+
+| Scale | Projects | Money a month (gross, all promoted) | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 27 | $0 today (none promoted); up to about $34 if all were, paid by their own revenue | None binds: Pages allows 100 custom domains per project and each uses one; the checks read files in the audit, seconds of Actions time | 2 small PRs once, then about $1 per promotion deck |
+| 5x | 135 | Up to about $170, paid by the products' revenue | None binds: one custom domain per Pages project; a Cloudflare zone, if used, is one free zone per domain | Same build; about $1 per deck, so a few dollars a month if several promote |
+| 100x | 2,700 | Up to about $3,400, paid by the products' revenue | Jim's review time binds first, not a free limit: one deck each; Cloudflare's free account zone limit would need checking before moving thousands of domains | Decks alone could exceed the $25 a month budget, so promotions would be batched or paced |
+
+What gives first as it grows: Jim's time to review decks, then the
+Claude Code budget for writing them. Then we would batch promotions into
+one deck per review and let `chores promotion` do the gathering.
+
 ## Consequences
 
 - Cost: $0 for the rule and its checks; each promotion adds one domain
