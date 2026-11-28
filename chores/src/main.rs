@@ -5,14 +5,18 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
 mod badges;
+mod conflict_markers;
 mod gate;
 mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
 mod quality;
+mod retire;
+mod shell_scripts;
 mod tiers;
 mod user_docs;
+mod wrapped_checks;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -160,6 +164,24 @@ enum Command {
         #[arg(long)]
         json: Option<PathBuf>,
     },
+    /// Which temporary resources to delete ("Temporary resources" in
+    /// standards/docs/resources.md): Pages previews older than 14 days
+    /// (keeping the newest of each open PR's branch), non-current production
+    /// deployments older than 30 days, and branches 7 days after their PR
+    /// closed. Reads the live list the `all-retire-resources.yml` workflow
+    /// writes, prints the run summary and never deletes anything itself.
+    RetireTemporary {
+        /// The live list as JSON: `default_branch`, `pages` (name,
+        /// canonical, deployments), `branches` and `pulls`.
+        #[arg(long)]
+        live: PathBuf,
+        /// Also write the plan as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
+        /// Today's date, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<String>,
+    },
     /// Check every project's user guide, <project>/docs/user/README.md
     /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
     /// against the baseline in standards/user-docs.toml. Exits 1 on any
@@ -202,6 +224,36 @@ enum Command {
         base: Option<String>,
         /// With --report, print every finding as JSON instead.
         #[arg(long, requires = "report")]
+        json: bool,
+    },
+    /// Check that no tracked file holds an unresolved merge conflict marker
+    /// (STD-005). Exits 1 on any. Run by `mise run //:audit`.
+    ConflictMarkers {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
+    },
+    /// The evals check (EVL-*, standards/docs/evals.md): run the evals
+    /// project's `evals check` once any project has a docs/requirements.md
+    /// or evals.toml. Warnings only, so it always exits 0. Run by
+    /// `mise run //:audit`.
+    EvalsCheck,
+    /// The threat check (THR-*, standards/docs/security.md): run the threat
+    /// project's `threat check` with these arguments (such as `--projects
+    /// a,b`); without any, THREAT_PROJECTS or else COST_PROJECTS becomes
+    /// `--projects` when set. Warnings only, so it always exits 0. Run by
+    /// `mise run //:audit`.
+    ThreatCheck {
+        /// Arguments for `threat check`.
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+    /// QUAL-404: fail on a tracked .sh file not listed in
+    /// standards/shell-scripts.toml, or a listed one that is gone. Scripts
+    /// stay Rust-only; the list only shrinks. Run by `mise run //:audit`.
+    ShellScripts {
+        /// Print JSON instead of text.
+        #[arg(long)]
         json: bool,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
@@ -398,6 +450,10 @@ fn run() -> Result<ExitCode> {
                 return Ok(ExitCode::FAILURE);
             }
         }
+        Command::RetireTemporary { live, json, today } => {
+            let plan = retire::run(&live, today.as_deref(), json.as_deref())?;
+            print!("{}", retire::render(&plan));
+        }
         Command::UserDocs { json } => {
             let report = user_docs::check(&root)?;
             if json {
@@ -437,6 +493,39 @@ fn run() -> Result<ExitCode> {
                 base,
             };
             if !quality::run(&root, &options)? {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::ConflictMarkers { json } => {
+            let findings = conflict_markers::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&findings)?);
+            } else {
+                print!("{}", conflict_markers::render(&findings));
+            }
+            if !findings.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::EvalsCheck => {
+            if let Some(check) = wrapped_checks::evals(&root)? {
+                run_wrapped(&root, &check);
+            }
+        }
+        Command::ThreatCheck { args } => {
+            let threat = std::env::var("THREAT_PROJECTS").ok();
+            let cost = std::env::var("COST_PROJECTS").ok();
+            let check = wrapped_checks::threat(&args, threat.as_deref(), cost.as_deref());
+            run_wrapped(&root, &check);
+        }
+        Command::ShellScripts { json } => {
+            let report = shell_scripts::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", shell_scripts::render(&report));
+            }
+            if !report.ok() {
                 return Ok(ExitCode::FAILURE);
             }
         }
@@ -500,6 +589,14 @@ fn run() -> Result<ExitCode> {
         }
     }
     Ok(ExitCode::SUCCESS)
+}
+
+/// Run a warnings-only check and print why it didn't run, if it didn't.
+fn run_wrapped(root: &Path, check: &wrapped_checks::Wrapped) {
+    let outcome = wrapped_checks::run(root, check);
+    if let Some(w) = wrapped_checks::warning(check.label, outcome) {
+        println!("{w}");
+    }
 }
 
 fn read_input(path: &Path) -> Result<String> {

@@ -1,6 +1,6 @@
 ---
 name: human-issues-digest
-description: Gather the tasks only a person can do (the issue files in issues/human/, due checks of settings made by hand, and open needs-human PRs) and post one short digest to Jim. Use for the weekly scheduled digest, when asked what is waiting on Jim or on a human, or when Jim answers a settings check.
+description: Gather the tasks only a person can do (the issue files in issues/human/, due checks of settings made by hand, orphans from the weekly resource sweep, and open needs-human PRs) and post one short digest to Jim. Use for the weekly scheduled digest, when asked what is waiting on Jim or on a human, or when Jim answers a settings check.
 ---
 
 # Human issues digest
@@ -10,9 +10,10 @@ message. Read `AGENTS.md` first. The process is in
 `standards/docs/issue-management.md` ("Human issues"), and the checks of
 settings made by hand are under "Human checks" in `standards/docs/evals.md`.
 This skill changes the repo only to add due settings checks to
-`issues/human/` (step 2) and to record Jim's answers (step 5), each
-through one PR; it never changes anything on GitHub or in a dashboard
-itself.
+`issues/human/` (step 2), to propose entries in `standards/resources.toml`
+for what the resource sweep found (step 3) and to record Jim's answers
+(step 6), each through PRs; it never changes anything on GitHub or in a
+dashboard itself, and never deletes a resource.
 
 ## 1. Gather
 
@@ -60,14 +61,58 @@ checks it.
    line each: the setting, what to look at and where, ending "reply ok or
    what is wrong".
 
-## 3. Check what is already done
+## 3. Act on the resource sweep
+
+The weekly resource sweep (the `threat-live` job of the All Free Tier
+Usage workflow, Mondays) sorts every live Cloudflare and GitHub resource
+against what the repo claims ("The weekly sweep" in
+`standards/docs/resources.md`). A workflow can't make the judgement calls,
+so this step does, with no extra scheduled task
+([plan](../../../standards/docs/plans/2026-11-resource-cleanup.md), Part 3).
+
+1. With your GitHub tools, find the latest completed run of All Free Tier
+   Usage on `main` and read `resource-sweep/report.json` from its
+   `threat-live` artifact (kept 7 days). It has `today`, `rows` (each a
+   `kind`, `name`, `status` and `note`) and `unlisted` (kinds a token
+   couldn't read). If there is no run in the last 8 days, or no report in
+   it, say so under **Resources** in the digest and skip the rest of this
+   step.
+2. **`orphan` rows.** For each one that no open PR already proposes (look
+   for its `kind` and `name` in the `standards/resources.toml` diff of open
+   PRs), open one draft PR with the `open-pull-request` skill
+   ("Resources: retire <kind> <name>"), changing only
+   `standards/resources.toml`:
+   - a `[[retired]]` entry with `kind`, `name`, every `url` it answers on,
+     `why` (what it was, if its name or history says, and that the sweep
+     found nothing claiming it), `retired` (today) and `delete_after` (7
+     days later), and `replaced_by` when a claimed resource clearly took
+     its place;
+   - or a `[[keep]]` entry with `why` and a `review` date six months out,
+     when it is clearly Jim's own and made outside the repo (a hand-made
+     landing page, a resource named after something only he uses).
+   The Resource entries job labels it `needs-human`, so it waits for Jim;
+   his approval is the approval to delete. When you can't tell what it is,
+   propose `[[retired]]` and say in the PR that you couldn't tell. One PR
+   per orphan, so Jim can approve or refuse each on its own.
+3. **`gone` rows.** A `[[retired]]` entry the sweep no longer finds live:
+   set its `deleted` to the report's `today` date, all of them in one PR
+   ("Resources: mark deleted, <date>"). It adds no entry, so it needs no
+   approval beyond the usual review.
+4. **Rows only Jim can decide** go in the digest, not in a PR:
+   `keep-overdue` (keep it for another six months, or retire it?),
+   `retired-still-live` (the cleanup failed; link the run), and `no-pr`
+   (a branch with no PR, untouched for 14 days: delete it, or open a PR?).
+   List each `unlisted` kind too, with its `why`, so a token that lost a
+   permission is noticed.
+
+## 4. Check what is already done
 
 Where you can check a task without any write (for example, whether a repo
 secret now exists, from the secrets list if your account can read it), do so.
 List a task that looks done under "Looks done" with what you saw, and offer to
 remove it. Never remove a task without Jim's go-ahead.
 
-## 4. Report
+## 5. Report
 
 Post one message. If nothing is open, say so in one line. Otherwise:
 
@@ -82,6 +127,11 @@ Post one message. If nothing is open, say so in one line. Otherwise:
 - **Renewals**, only when there are any: one line per renewal from step 1.6,
   with its price and date, and "consider dropping" on a domain nothing
   serves any more.
+- **Resources**, only when step 3 found anything: one line per retirement
+  or keep PR it opened (`#<n> <kind> <name>: <why>`), then each
+  `keep-overdue`, `retired-still-live` and `no-pr` row as a question for
+  Jim, then any kind the sweep couldn't read, or a line saying the sweep
+  report was missing.
 - **Looks done** and **Misfiled**, only when there are any.
 - End with one line: tell any thread when a task is done and it will remove
   it.
@@ -89,7 +139,7 @@ Post one message. If nothing is open, say so in one line. Otherwise:
 Keep it short and in full sentences, with no repo jargon Jim would have to
 look up.
 
-## 5. When Jim says a task is done, or answers a check
+## 6. When Jim says a task is done, or answers a check
 
 Delete its file from `issues/human/` and open a PR with the
 `open-pull-request` skill. If the task unblocks an agent issue, mention it in

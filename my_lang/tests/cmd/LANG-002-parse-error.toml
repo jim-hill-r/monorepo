@@ -1,0 +1,6 @@
+# A missing bracket is a parse error naming the token, with a failing status
+# and no panic.
+bin.name = "my_lang"
+args = ["run", "broken.my"]
+env.remove = ["RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+status.code = 1

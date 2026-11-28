@@ -1,0 +1,3 @@
+[project]
+name = "bear_down"
+description = "A small static website that tells a Chicago Bears fan which NFL games to root for each week to give the Bears the best chance of winning the Super Bowl."

@@ -20,6 +20,12 @@ description: Branch, commit, and open a pull request in this monorepo the way it
    editor settings.
 4. Don't open a new automated-task PR while another agent-authored PR is still
    open; finish that one first.
+5. If the PR renames or removes a resource (a Pages project, Worker,
+   binding, URL or release), follow "Renaming a resource" in
+   `standards/docs/resources.md`: add a `[[retired]]` entry for the old one
+   to `standards/resources.toml` in the same PR, and list in `## Details`
+   the inbound references outside the repo (Auth0 URLs, DNS records,
+   PostHog hosts, shared links) that must go before it is deleted.
 
 ## Open it as a draft
 
@@ -92,6 +98,8 @@ Mark the PR ready for review once **all** of these hold:
   project (**Dev commands** in `AGENTS.md`), and no new waiver lacks a
   reason (QUAL-501, QUAL-504).
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
+- A renamed or removed resource has its `[[retired]]` entry and its
+  inbound references listed (step 5 of "Before pushing").
 - You've re-read the full diff and would be comfortable with a human reviewing it.
 - The description has the Attention, What changed, Why, Cost changes,
   Risk changes and Details sections, and the PR summary check shows no

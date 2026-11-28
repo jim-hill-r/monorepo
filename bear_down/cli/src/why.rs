@@ -198,6 +198,7 @@ fn channel_line(impact: &GameImpact, channel: &ChannelImpact, goal: Goal) -> Str
         Channel::WildCard => "Wild card",
         Channel::Seed => "Seeding",
         Channel::PlayoffPath => "NFC playoff field (who else gets in, and where)",
+        Channel::Bracket => "NFC bracket (who advances, and who the Bears could face)",
         Channel::SuperBowlOpponent => "Super Bowl opponent (who wins the AFC)",
         Channel::Chance => "Chance",
     };
@@ -223,6 +224,10 @@ fn channel_line(impact: &GameImpact, channel: &ChannelImpact, goal: Goal) -> Str
 
 /// Why a game with every link closed can't matter.
 fn closed(impact: &GameImpact, standings: &Standings) -> String {
+    if impact.relevance.postseason {
+        return "The Bears are out of the playoffs, so no result this round can change their odds."
+            .to_string();
+    }
     if !impact.relevance.focus_alive {
         return "The Bears can no longer make the playoffs, so no result this week can change their odds.".to_string();
     }
@@ -250,7 +255,11 @@ fn links(impact: &GameImpact, record: &dyn Fn(Team) -> String) -> String {
         }
         let has = |wanted: &dyn Fn(&Link) -> bool| impact.relevance.links.iter().any(wanted);
         let status = if has(&|link| *link == Link::Race(team)) {
-            "are still in the NFC race"
+            if impact.relevance.postseason {
+                "are still in the NFC playoffs"
+            } else {
+                "are still in the NFC race"
+            }
         } else if has(&|link| *link == Link::SuperBowlRace(team)) {
             "could still be the Super Bowl opponent"
         } else {
@@ -305,6 +314,9 @@ fn rivalry(
         impact.home
     };
     let record = |team: Team| format_record(standings.record(team));
+    if impact.relevance.postseason {
+        return Some(playoff_rivalry(root, other));
+    }
     if root == bears || other == bears {
         let opponent = if root == bears { other } else { root };
         let mut line = format!("The Bears' own game: a win over the {}", nickname(opponent));
@@ -336,6 +348,31 @@ fn rivalry(
         )
     } else {
         None
+    }
+}
+
+/// [`rivalry`] for a playoff game: the Bears' own game keeps them alive,
+/// an NFC game decides who they could meet, an AFC game who they could
+/// meet in the Super Bowl.
+fn playoff_rivalry(root: Team, other: Team) -> String {
+    let bears = Team::BEARS;
+    if root == bears || other == bears {
+        let opponent = if root == bears { other } else { root };
+        return format!(
+            "The Bears' own playoff game: a win over the {} keeps their season going.",
+            nickname(opponent)
+        );
+    }
+    if root.conference() == Conference::Nfc {
+        format!(
+            "An NFC playoff game: the winner stays in the Bears' bracket, and {} leaves them a better path.",
+            a_win(root)
+        )
+    } else {
+        format!(
+            "An AFC playoff game: the winner could be the Bears' Super Bowl opponent, and {} leaves them a better one on average.",
+            a_win(root)
+        )
     }
 }
 
