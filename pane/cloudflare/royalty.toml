@@ -1,3 +1,3 @@
 [project]
 name = "cloudflare"
-description = "Handles deployment of the pane Dioxus web application to Cloudflare Pages."
+description = "pane's Cloudflare Worker: serves the web app as static assets and runs Rust only for /api/*."

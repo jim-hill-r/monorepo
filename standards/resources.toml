@@ -27,3 +27,15 @@
 # retired = "2026-11-27"
 # delete_after = "2026-12-04"
 # deleted = ""
+
+[[retired]]
+kind = "pages"
+name = "jimhillr-pane"
+url = "https://jimhillr-pane.pages.dev"
+replaced_by = "jimhillr-pane"
+# The Worker that replaces it has the same name, so look only for the url.
+match_name = false
+why = "pane moved from Cloudflare Pages to the Worker jimhillr-pane with static assets (pane/cloudflare), so the Pages project is retired."
+retired = "2026-11-28"
+delete_after = "2026-12-05"
+deleted = ""
