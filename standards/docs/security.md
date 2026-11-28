@@ -46,7 +46,7 @@ vulnerability is in the root [SECURITY.md](../../SECURITY.md).
 | SEC-003 | A `Cargo.lock` has a RustSec advisory (vulnerable, unsound, yanked, or an unmaintained direct dependency) or a crate from a source other than crates.io or this repo. Config: [`standards/deny.toml`](../deny.toml), or a project's own `deny.toml`. Licences are not checked yet. | The hooks and PR CI (**Dependency audit**) for the lockfiles a change touches, and nightly over every lockfile (`all-dependency-audit.yml`). All through [`standards/scripts/deps-check.sh`](../scripts/deps-check.sh). | Phase 1, as a warning |
 | SEC-004 | A `package-lock.json` has a high or critical advisory in a production dependency (`npm audit --omit=dev --audit-level=high`). | Same as SEC-003. | Phase 1, as a warning |
 | SEC-005 | A workflow has a medium or high [zizmor](https://docs.zizmor.sh/audits/) finding: `pull_request_target` or `workflow_run` running PR code, template injection into `run:`, secrets reaching PR code, broad permissions or app tokens, credentials persisted by `actions/checkout`, or an action not pinned to a commit. Offline, with our ignores in [`.github/zizmor.yml`](../../.github/zizmor.yml). | The hooks and PR CI (**Workflow audit**, as annotations on the lines) for the workflows a change touches (every workflow when `.github/zizmor.yml` changed), and nightly over all of them (`all-dependency-audit.yml`). All through [`standards/scripts/workflows-check.sh`](../scripts/workflows-check.sh). | Phase 3, as a warning |
-| THR-* | A project's [threat model](#threat-models) is missing, breaks a rule above, or has drifted from its code (THR-004). | `//:audit` (and so the hooks and PR CI, for the affected projects), through [`standards/scripts/threat-check.sh`](../scripts/threat-check.sh). | Phase 2 (THR-004 phase 3), as warnings |
+| THR-* | A project's [threat model](#threat-models) is missing, breaks a rule above, or has drifted from its code (THR-004). | `//:audit` (and so the hooks and PR CI, for the affected projects), through `chores threat-check` ([chores](../../chores/README.md)). | Phase 2 (THR-004 phase 3), as warnings |
 | Live | What is deployed doesn't match the threat models (see [Live check](#live-check)). | Weekly, the **Live threat check** job of `all-security-scans.yml`, through [`standards/scripts/threat-live.sh`](../scripts/threat-live.sh). | Phase 3, as an error |
 
 CodeQL scans our own code (not dependencies): JavaScript/TypeScript and
@@ -211,8 +211,8 @@ and reports:
 | THR-008 | A surface whose `access` isn't `none` has no `[[threat]]` covering it, a threat has no `mitigation`, or names a surface the file doesn't list. |
 | THR-009 | `reviewed` is more than 180 days old. Always a warning. |
 
-Run it with `bash standards/scripts/threat-check.sh` (every project, or
-`--projects a,b`); the audit passes it the affected projects in the hooks
+Run it with `cargo run --quiet --manifest-path chores/Cargo.toml --
+threat-check` (every project, or `--projects a,b`); the audit passes it the affected projects in the hooks
 and PR CI.
 
 ### Drift

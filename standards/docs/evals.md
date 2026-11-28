@@ -212,7 +212,7 @@ kind = "cost"
 `evals check` (the `evals` project, `cargo run -p evals_cli -- check` in
 `evals/`) checks every top-level project with an `evals.toml` or
 `docs/requirements.md`. `mise run //:audit` runs it through
-`standards/scripts/evals-check.sh` once any project has one of those files
+`chores evals-check` once any project has one of those files
 (so it builds nothing before then), and so do the git hooks and PR CI.
 Until Phase 4 of the plan the findings are warnings and never fail the
 audit (`--strict` makes the command itself fail); then EVL-004 becomes an
