@@ -1,0 +1,3 @@
+[project]
+name = "observability"
+description = "Monitoring, alerting, logging and paging for every production site and Worker in the repo."

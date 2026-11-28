@@ -1,7 +1,7 @@
 # Issue Management Standards
 
 This document defines how issues, tasks and TODOs are tracked in this
-monorepo. Work is tracked in the repo, not in GitHub issues.
+monorepo. Work is tracked in the repo, not in GitHub issues (the watchdog's `incident` issues are alerts, not work; decision 0023).
 
 ## Issue Tracking Locations
 

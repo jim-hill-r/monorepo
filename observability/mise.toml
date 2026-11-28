@@ -1,0 +1,5 @@
+# observability: docs project for now; phase 1 makes it a Rust Worker project
+# (decision 0023). Standard tasks: ci, fix, build, test, dev, release, deploy.
+
+[task_config]
+includes = ["../standards/tasks/docs.toml"]

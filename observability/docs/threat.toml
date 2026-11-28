@@ -1,0 +1,10 @@
+# observability: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-28"
+summary = "Docs and issue files only so far; nothing deployed, no secrets. The watchdog's threats are in decision 0023 and land here in phase 1."
+
+[[surface]]
+name = "docs"
+kind = "library"
+access = "none"
+data = "public"
+notes = "Files in the repo only."

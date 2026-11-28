@@ -1,0 +1,3 @@
+# observability: cost analysis. Format and rules: standards/docs/cost.md
+reviewed = "2026-11-28"
+summary = "Docs and issue files only so far; nothing deployed. $0 a month. Phase 1 adds the watchdog Worker and its Cron Trigger (decision 0023)."

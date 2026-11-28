@@ -950,6 +950,110 @@
     }
   },
   {
+    "name": "PagerDuty",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Recommended as the pager in decision 0023 (free plan: 5 users, app push, 100 SMS and phone calls a month, Events API v2, Terraform provider), but Jim chose GitHub Mobile to add no vendor. First to revisit if a page is missed.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0023-observability.md"
+    ],
+    "claude": "Official PagerDuty MCP server.",
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account yet, so nothing can bill. Before Trial: a read-only billing API check if PagerDuty exposes the plan, otherwise a settings check for Jim (RAD-007)."
+    }
+  },
+  {
+    "name": "Watchdog Worker and alert rules as code",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Chosen in decision 0023, not built yet: one Rust Worker in the observability project, on a Cron Trigger, checks every production URL and error spikes every 5 minutes and opens or closes a GitHub incident issue that pushes to Jim's phone through GitHub Mobile. Rules live in the repo.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0023-observability.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "Cloudflare Monitors and Notifications",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Cloudflare's alerting: email and webhook notifications are free on every plan (PagerDuty destinations need Business); Monitors (SQL alerts on Workers events, beta) are checked for the Free plan in decision 0023 phase 1. Same account as Workers.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0023-observability.md"
+    ],
+    "claude": "Cloudflare MCP servers.",
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "Same Cloudflare account and billing check as Workers; the check fails on a paid plan."
+    }
+  },
+  {
+    "name": "ntfy.sh and Pushover",
+    "ring": "Assess",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Other pagers considered in decision 0023. ntfy.sh is free but best effort, and its terms rule out being the main alert path for critical systems; Pushover is the best one-person pager but costs $4.99 once per platform, which needs Jim to raise a budget.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0023-observability.md"
+    ],
+    "claude": "",
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account yet, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
+  },
+  {
+    "name": "Grafana Cloud, Better Stack, UptimeRobot, Healthchecks.io and Opsgenie",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "vendor",
+    "description": "Monitoring, logging and on-call services considered in decision 0023. Each adds a vendor for work Cloudflare and a Worker already do; Worker logs can't reach them without paid export, Better Stack and Healthchecks.io have no phone alerts free, and Opsgenie is being retired.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0023-observability.md"
+    ],
+    "claude": "",
+    "budget": 0,
+    "billing": {
+      "api": [],
+      "human": "",
+      "note": "No account yet, so nothing can bill. Moving it to Trial or Adopt needs a billing check first (RAD-007)."
+    }
+  },
+  {
+    "name": "Self-hosted Uptime Kuma, Gatus, Prometheus and Alertmanager",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Open-source monitors considered in decision 0023. Each needs a long-running server, and no approved vendor hosts one for free.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0023-observability.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "RentCast, ATTOM and HouseCanary",
     "ring": "Hold",
     "quadrant": "Platforms",
