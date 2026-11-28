@@ -1186,32 +1186,34 @@
   },
   {
     "name": "OpenTofu",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Tools",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Accepted in decision 0007 (Jim, 2026-11-26) as the IaC engine: plans and applies the Terraform JSON the infra crate synthesizes, with built-in state encryption and no account. Moves to Trial when its phase 1 merges.",
+    "description": "Accepted in decision 0007 (Jim, 2026-11-26) as the IaC engine: plans and applies the Terraform JSON the infra crate synthesizes, with built-in state encryption and no account. Trial since phase 1 applied (the auth0 stack plans no changes on main, 2026-11-28); the guide is standards/docs/infra.md.",
     "exemplars": [
       "infra"
     ],
     "sources": [
-      "standards/docs/decisions/0007-infrastructure-as-code.md"
+      "standards/docs/decisions/0007-infrastructure-as-code.md",
+      "standards/docs/infra.md"
     ],
     "claude": "OpenTofu MCP server (registry and resource docs) and HashiCorp's Terraform MCP server, read-only.",
     "budget": 0
   },
   {
     "name": "Infrastructure as code synthesized from Rust",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Techniques",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Accepted in decision 0007 (Jim, 2026-11-26): Rust constructs write committed Terraform JSON (*.tf.json), PR CI plans it, and main applies the saved plan, so generation and apply are decoupled. Dashboard settings move into code; drift is checked weekly.",
+    "description": "Accepted in decision 0007 (Jim, 2026-11-26): Rust constructs write committed Terraform JSON (*.tf.json), PR CI plans it, and main applies the saved plan, so generation and apply are decoupled. Dashboard settings move into code when a provider covers them; drift is checked weekly. Trial since phase 1 applied (2026-11-28); the guide is standards/docs/infra.md.",
     "exemplars": [
       "infra"
     ],
     "sources": [
-      "standards/docs/decisions/0007-infrastructure-as-code.md"
+      "standards/docs/decisions/0007-infrastructure-as-code.md",
+      "standards/docs/infra.md"
     ],
     "claude": "",
     "budget": 0
@@ -1284,17 +1286,18 @@
   },
   {
     "name": "terrars",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Languages & Frameworks",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26).",
+    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26). Trial since phase 1 applied (2026-11-28).",
     "exemplars": [
       "infra"
     ],
     "sources": [
       "standards/docs/decisions/0007-infrastructure-as-code.md",
-      "standards/docs/decisions/0007-terrars-spike.md"
+      "standards/docs/decisions/0007-terrars-spike.md",
+      "standards/docs/infra.md"
     ],
     "claude": "",
     "budget": 0

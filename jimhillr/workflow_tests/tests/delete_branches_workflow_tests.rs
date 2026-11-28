@@ -9,18 +9,22 @@ fn workflow() -> (String, serde_yaml::Value) {
 }
 
 #[test]
-fn test_workflow_is_manual_only() {
+fn test_workflow_is_manual_or_called() {
     let (_, yaml) = workflow();
     let on = &yaml["on"];
     assert!(
         on.get("workflow_dispatch").is_some(),
         "Workflow must be triggered by workflow_dispatch"
     );
+    assert!(
+        on.get("workflow_call").is_some(),
+        "all-retire-resources.yml calls it, so it must allow workflow_call"
+    );
     let triggers = on.as_mapping().expect("'on' must be a mapping");
     assert_eq!(
         triggers.len(),
-        1,
-        "Workflow must only run on workflow_dispatch"
+        2,
+        "Workflow must only run by hand or when another workflow calls it"
     );
 }
 
@@ -31,6 +35,12 @@ fn test_dry_run_defaults_to_true() {
     assert_eq!(dry_run["default"], serde_yaml::Value::Bool(true));
     let branches = &yaml["on"]["workflow_dispatch"]["inputs"]["branches"];
     assert_eq!(branches["required"], serde_yaml::Value::Bool(true));
+    let called = &yaml["on"]["workflow_call"]["inputs"];
+    assert_eq!(called["dry_run"]["default"], serde_yaml::Value::Bool(true));
+    assert_eq!(
+        called["branches"]["required"],
+        serde_yaml::Value::Bool(true)
+    );
 }
 
 #[test]
