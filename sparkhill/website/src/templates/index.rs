@@ -8,7 +8,38 @@ pub(crate) const CONTACT_URL: &str =
     "https://nextdoor.com/pages/private-reading-tutor-oceanside-ca/";
 
 fn index_page<G: Html>(cx: Scope) -> View<G> {
+    #[cfg(client)]
+    on_mount(cx, scroll_to_url_section);
     page(cx, t!(cx, "tagline"), link!(cx, ""))
+}
+
+/// Scrolls to the section the URL's `#id` names, if the browser hasn't.
+///
+/// Perseus 0.4.2 doesn't hydrate the exported page: it builds the page's
+/// view before it enters its hydration context, so the client renders new
+/// nodes and replaces every exported one. The browser scrolls to a `#id` on
+/// the exported node, and when the Wasm replaced the page before that
+/// scroll began (a fast load, or a section link clicked just then) the
+/// node was gone and the browser never scrolled. This runs once the new
+/// page is in, and leaves alone a page that is already scrolled, so it
+/// never moves a visitor who has scrolled since.
+#[cfg(client)]
+fn scroll_to_url_section() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    if window.scroll_y().unwrap_or(0.0) > 0.0 {
+        return;
+    }
+    let Ok(hash) = window.location().hash() else {
+        return;
+    };
+    let Some(id) = hash.strip_prefix('#').filter(|id| !id.is_empty()) else {
+        return;
+    };
+    if let Some(section) = window.document().and_then(|doc| doc.get_element_by_id(id)) {
+        section.scroll_into_view();
+    }
 }
 
 /// A link to one of the page's sections, from `home`, the page's own URL

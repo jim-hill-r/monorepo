@@ -59,6 +59,7 @@ homer prints what Zillow knows about the property:
 
 ```text
 Address:    123 Main St, Seattle, WA 98101
+ZPID:       48749425
 Type:       SINGLE_FAMILY
 Price:      $750,000
 Bedrooms:   3
@@ -66,6 +67,17 @@ Bathrooms:  2.5
 Sqft:       1850
 Year Built: 1998
 ```
+
+The address is the one Zillow matched, and the ZPID is Zillow's id for the
+property. Zillow matches addresses loosely, so check it: when it found a
+different address from the one you typed, homer says so on the next line:
+
+```text
+Address:    1230 Main St, Seattle, WA 98102
+Searched:   123 Main, Seattle, WA (Zillow matched a different address)
+```
+
+If that happens, try again with the full address, including the ZIP code.
 
 When there is no list price, the price shown is Zillow's estimate. Each
 lookup uses one request of your free quota.
@@ -109,7 +121,8 @@ the text report:
 homer --address "123 Main St, Seattle, WA 98101" --min-bedrooms 3 --json > house.json
 ```
 
-Warnings go to the screen (stderr), so the file holds only the JSON. A
+Warnings go to the screen (stderr), so the file holds only the JSON.
+`address` is what you typed and `matched_address` is what Zillow matched. A
 value Zillow doesn't report is `null`.
 
 ## Getting help

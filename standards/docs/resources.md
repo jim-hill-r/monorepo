@@ -155,13 +155,39 @@ in `jimhillr/workflow_tests/tests/resources_tests.rs`.
 | RES-003 artifact retention of 7 days or less | `mise run //:audit` | Every `actions/upload-artifact` step sets `retention-days` of 7 or less, or has a `# RES-003:` comment in the step saying why it keeps longer |
 | RES-004 entries are well formed | `mise run //:audit` | Known `kind`, the required fields, dates as `YYYY-MM-DD`, `delete_after` at least 7 days after `retired` |
 | `needs-human` on new entries | PR CI, **Resource entries** job | `resources.sh new-entries BASE` lists the `[[retired]]` and `[[keep]]` entries a PR adds; the job lists them in its summary and labels the PR `needs-human` |
-| Weekly sweep for orphans, overdue keeps and failed deletions | [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml) | Planned (phase 1) |
+| Weekly sweep for orphans, overdue keeps and failed deletions | [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), first step of the `threat-live` job, Mondays | `resources.sh sweep` lists what is live and `chores sweep` sorts it (below); the report is in the run summary and the `threat-live` artifact (`report.json`, kept 7 days) |
 
 What the claims are, per kind: a `wrangler.toml` gives `pages` or `worker`
 by its `name`, `d1` by `database_name`, `kv` as `<worker>/<binding>`, `r2`
 by `bucket_name`, `queue` by queue name and `cron` as `<worker>/<schedule>`;
 a project's `RELEASE_TAG` gives `release`. A retirement entry uses the same
 `kind` and `name`.
+
+### The weekly sweep
+
+`resources.sh sweep` reads, with the read-only Cloudflare token and the
+workflow's `GITHUB_TOKEN`, every Pages project (with its deployment
+count), Worker, Cron Trigger, D1 database, KV namespace, Queue, DNS record
+(once a zone exists), branch, release and Actions cache (one row per ref),
+into `live.json`. A kind a token can't read is a warning, not a failure,
+and retired entries of that kind are left alone. `chores sweep` then gives
+each one a status:
+
+| Status | Meaning | Red |
+| --- | --- | --- |
+| `claimed` | A claim names it, or it is `main`, an open PR's branch or cache, a branch under 14 days old with no PR yet, or a DNS record for a `threat.toml` `[[surface]] url` host | no |
+| `kept` | A `[[keep]]` entry before its `review` date | no |
+| `keep-overdue` | A `[[keep]]` entry past its `review` date | yes |
+| `retired-pending` | A `[[retired]]` entry up to its `delete_after` date | no |
+| `retired-still-live` | A `[[retired]]` entry still live after `delete_after`: the deletion failed | yes |
+| `gone` | A `[[retired]]` entry with no `deleted` date that is no longer live: set `deleted` | no |
+| `temporary` | A branch of a closed PR, or caches of a closed PR or deleted branch (phase 2 deletes them) | no |
+| `no-pr` | A branch with no PR, last changed over 14 days ago: the digest asks Jim | no |
+| `orphan` | Anything else live: open a retirement (or keep) PR for Jim | yes |
+
+A claim wins over an entry: a retired name that is claimed again is
+`claimed`, and the cleanup workflow will refuse to delete it. The sweep
+never changes anything.
 
 ## Cost
 
