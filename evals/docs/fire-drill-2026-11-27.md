@@ -40,7 +40,7 @@ met).
    `evals/model/src/verdict.rs`).
 2. **A build failure leaves no eval result.** The PR check fails, so nothing
    ships, but the verdicts can't see it.
-   [issues/eval-build-failure-leaves-no-result.md](../../issues/eval-build-failure-leaves-no-result.md).
+   [evals/issues/build-failure-leaves-no-result.md](../issues/build-failure-leaves-no-result.md).
 3. **Triage was the missing link.** Red verdicts reached `verdicts.json`,
    but nothing filed the `FIX`. The daily `evals-triage.yml` now does, and
    `evals drill` checks that a dry run of triage picks the requirement up.

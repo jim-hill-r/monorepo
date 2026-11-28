@@ -59,8 +59,22 @@ commit or PR link. Say plainly when something is a guess.
   anything confusing or broken. If it doesn't build or run, that is a
   finding: record the exact error.
 - **Architecture.** Crates or packages, modules, data model, data flow,
-  external services, deploy targets, and the dependency tree (`cargo tree
-  --depth 1`, `package.json`).
+  external services and deploy targets.
+- **Where the code lives.** Every place in the repo that holds part of the
+  project, not only its folder: its crates and sub-projects, the workflows
+  in `.github/workflows/` and scripts in `standards/scripts/` that build,
+  deploy or run it, skills in `.agents/skills/`, its standards, plans and
+  decisions in `standards/docs/`, files it owns in other projects (such as
+  each project's `evals.toml` for evals), long-lived data branches, and
+  other projects that call it or that it calls. Find them with `grep -rl`
+  for its name, crate names and paths, and list each with its path.
+- **Dependencies and vendors.** Every direct dependency from the manifests
+  (`cargo tree --depth 1 -e normal,build` per crate, `package.json`,
+  `mise.toml` tools, pinned GitHub Actions), with its version and what the
+  project uses it for, and every vendor or hosted service it reaches (from
+  `docs/cost.toml`, workflows, config and the code), with its plan, monthly
+  cost, how its billing is checked (the tech radar) and whether it is on the
+  approved vendor list in `AGENTS.md`.
 - **Security.** A STRIDE threat model of the assets, actors and trust
   boundaries; authentication and authorization; input handling; secrets and
   configuration; CORS and headers for web apps; and known-vulnerable
@@ -129,24 +143,30 @@ these sections, one or more slides each, in this order:
 5. **Features**: a table of every feature with its status (works, partial,
    broken, stub).
 6. **User experience**: journeys walked, screenshots, what works, what hurts.
-7. **Architecture**: components, data flow, dependencies, deployment. Draw
-   diagrams as text in a fenced code block or as a table; Marp doesn't render
-   Mermaid.
-8. **Security**: threat model, then findings by severity.
-9. **Performance**: measurements, then findings.
-10. **Code quality and testing**: CI result, coverage of tests, gaps against
+7. **Architecture**: components, data flow, deployment. Draw diagrams as
+   text in a fenced code block or as a table; Marp doesn't render Mermaid.
+8. **Where the code lives**: a `| What | Where |` table of every place in
+   the repo that holds part of the project (step 2), and one line on
+   whether it is one project or spread across the repo, and why.
+9. **Dependencies and vendors**: a `| Dependency | Version | Used for |`
+   table of every direct dependency (split across slides when long), then
+   a `| Vendor | Plan | Cost a month | Billing check | Approved |` table of
+   every vendor and hosted service. Say "None" when there are none.
+10. **Security**: threat model, then findings by severity.
+11. **Performance**: measurements, then findings.
+12. **Code quality and testing**: CI result, coverage of tests, gaps against
     the standards.
-11. **Operations and cost**: build, deploy, observability, vendors, cost.
-12. **Tech selection against the radar**: a table of every technology and
+13. **Operations and cost**: build, deploy, observability, cost.
+14. **Tech selection against the radar**: a table of every technology and
     vendor the project uses, with its ring, whether its use fits the radar,
     whether the decision behind it still holds (and what changed, with
     sources), and the recommended radar change if any (move ring, add or
     drop a blip, add or drop this project as an exemplar).
-13. **Risks and technical debt**.
-14. **Recommendations**: a prioritized table with impact, effort (S, M, L)
+15. **Risks and technical debt**.
+16. **Recommendations**: a prioritized table with impact, effort (S, M, L)
     and the area each one moves forward.
-15. **Questions for Jim**: decisions or facts only Jim can give.
-16. **Appendix**: method, commands run with their results, and evidence
+17. **Questions for Jim**: decisions or facts only Jim can give.
+18. **Appendix**: method, commands run with their results, and evidence
     links.
 
 Aim for 25 to 45 slides. Keep each slide to what fits on one screen: split a
@@ -177,7 +197,7 @@ folder (`priority: priority`, tagged `[agent-generated]`, in the shape the
 PR accepts them; Jim can delete any he disagrees with in review. Don't add an
 issue that duplicates an existing one.
 
-Apply the radar changes from section 12 in the same PR: edit
+Apply the radar changes from section 14 in the same PR: edit
 `standards/radar/radar.json` (ring, description, exemplars, sources, and
 `isNew` set to `"TRUE"` for a blip that moved), then run
 `bash standards/scripts/radar.sh render`. List each change in the PR

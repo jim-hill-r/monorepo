@@ -13,6 +13,9 @@ phases are in the
 [eval engine plan](../standards/docs/plans/2026-11-eval-engine.md) and
 [decision 0003](../standards/docs/decisions/0003-eval-engine.md).
 
+What comes next, and where every part of the eval process lives, is in
+the [evals roadmap](docs/roadmap.md).
+
 ## Crates
 
 | Crate | Job |

@@ -2,7 +2,8 @@
 kind: todo
 priority: backlog
 tags: [agent-generated]
-epic: Eval engine
+epic: "Evals roadmap / Phase 2: Cover every project"
+order: 90
 added: 2026-11-27
 ---
 
