@@ -83,18 +83,29 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   Details are under "Auto-merge" in `standards/docs/pull-requests.md`.
 - **Human review for red flags and cost (Jim, 2026-11-27).** "Lets make sure
   no prs with red attention flags get auto merged. Cost changes must be
-  reviewed by jim", then "Lets make it needs human review". A PR with a red attention tag
-  (`must-requirement-changed`) or `cost-changed`, in its diff or its
-  description, or the `cost` label, is labelled `human-review` (PR-004,
-  `chores gate`) until a human collaborator approves its head commit
-  (Jim: "Any human collaborator is fine"); agent accounts (`-agt`),
-  `jimhillr-reviewer`, bots and non-collaborators never count. It is not a
+  reviewed by jim", then "Lets make it needs human review". Who may
+  approve is in `standards/reviewers.toml` (review roles, decision 0019):
+  a PR that changes a requirement (any, `must` or not) or a cost, in its
+  diff or its description, or with the `cost` label, is labelled
+  `human-review` (PR-004, `chores gate`) until a `requirements-reviewer`
+  or `cost-reviewer` over that project (today only Jim) approves its head
+  commit; agent accounts (`-agt`), `jimhillr-reviewer`, bots and
+  non-collaborators never hold a role. It is not a
   CI check and posts no status, so CI shows only real results (Jim,
   2026-11-28). Agents and `jimhillr-reviewer` never approve it; an agent
   marks it ready and turns auto-merge on once its checks are green, like
   any agent PR, so the human's approval merges it (Jim, 2026-11-28: "Yes,
   merge on my approval"). Details are under
   "Human review" in `standards/docs/pull-requests.md`.
+- **Project tiers (Jim, 2026-11-27, decision 0019).** Every top-level
+  folder is in exactly one tier in `standards/reviewers.toml`:
+  `software-development-platform` (strict: how we make and guard
+  software, such as `standards`, `chores`, `pane`, `infra`, plus the root
+  files and dot folders), `technical-platform` (reviewed: reusable
+  components such as `auth_sdk` and `design_system`) or `product` (fast
+  lane: what end users use). A PR that adds a top-level folder adds it to
+  one tier; the audit fails a folder in none or in two (REV-002), and
+  REV-001 fails an edit that breaks a fixed rule.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
   own folder, or `standards/docs/` for repo-wide work) and commit them with the

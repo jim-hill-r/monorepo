@@ -41,10 +41,11 @@ c pr-body --check body.md                 # check an existing description
 # threat/risk file changes, against the base.
 c badges --base origin/main
 
-# The human-review label (PR-004): exit 1 while a PR with a red attention tag
-# or a cost change (diff, description or `cost` label) lacks a human's approval
-# of its head commit. The Human review workflow runs it and labels the PR;
-# agents rarely need to.
+# The human-review label (PR-004): exit 1 while a PR that changes a
+# requirement or a cost (diff, description or `cost` label) lacks the
+# approval of its head commit by someone holding that domain's role in
+# standards/reviewers.toml (decision 0019, read from --base). The Human
+# review workflow runs it and labels the PR; agents rarely need to.
 c gate --author jimhillr-agt --head <sha> --body body.md --labels cost,docs \
   --reviews reviews.json --json gate.json
 
@@ -57,6 +58,12 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 ```
 
 ```bash
+# The review roles policy, standards/reviewers.toml (REV-001, REV-002): no
+# broken fixed rule or unknown role, scope or member, and every top-level
+# folder in exactly one tier; run by `mise run //:audit`. Exit 1 on a finding.
+c reviewers
+c reviewers --json
+
 # Which temporary resources to delete (Pages previews over 14 days, old
 # production deployments, branches 7 days after their PR closed), from the
 # live list all-retire-resources.yml writes. Prints the run summary; never
@@ -91,7 +98,8 @@ c threat-check --projects cookbook,pane
 | --- | --- | --- |
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
-| `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
+| `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's requirement or cost changes have the right reviewer's approval |
+| `reviewers` | `mise run //:audit` (any skill's hooks) | Reading decision 0019 to tell whether an edit to `standards/reviewers.toml` is allowed |
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |

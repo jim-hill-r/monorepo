@@ -94,5 +94,6 @@ per site. Each site's own fixes are issue files in its project.
 
 See [decision 0019](../standards/docs/decisions/0019-review-roles.md): who
 may approve what, as a matrix of domains and project tiers in
-`standards/reviewers.toml`. Work the phases in order; phase 1 needs PR 904
-(the `Human review` check) merged first.
+`standards/reviewers.toml`. Work the phases in order; phase 1 (the file,
+`chores reviewers` and the `requirements` and `cost` domains in `chores
+gate`) is done.

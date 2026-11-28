@@ -53,6 +53,14 @@ All projects live in the root directory. Each project may have:
 - `Cargo.toml` - Rust project configuration
 - Standard Rust project structure: `src/`, `tests/`, `benches/`, etc.
 
+### Project tiers
+Every top-level folder is in exactly one tier ([decision 0019](standards/docs/decisions/0019-review-roles.md)), listed in `standards/reviewers.toml` with who may approve changes in it; the audit fails a folder in no tier or in two (REV-002):
+- **`software-development-platform`** (strict): how we make, check, deploy and guard software, such as `standards`, `chores`, `pane`, `athenaeum`, `evals`, `infra`, `issues`, `docs`, and the root files and dot folders.
+- **`technical-platform`** (reviewed): reusable components products are built from: `auth_sdk`, `design_system`, `telemetry`, `royalty`.
+- **`product`** (fast lane): what an end user uses, such as `cookbook`, `cahokia`, `sparkhill` and `bear_down`.
+
+A new top-level folder adds itself to one tier in `standards/reviewers.toml` in the same PR.
+
 ### `.github/workflows/`
 Contains GitHub Actions workflows, including:
 - `pull-request-ci.yml` - Runs `mise run ci` for projects changed in a pull request

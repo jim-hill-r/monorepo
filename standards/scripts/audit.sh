@@ -14,6 +14,10 @@
 #            LIN-* are warnings only for now.
 #   DOC-005 to DOC-008  User guides against the baseline in
 #            standards/user-docs.toml (`chores user-docs`, Rust).
+#   REV-001, REV-002  Review roles policy, standards/reviewers.toml
+#            (`chores reviewers`, Rust, decision 0019): no broken fixed rule
+#            or unknown role, scope or member, and every top-level folder
+#            in exactly one tier.
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (`chores evals-check`); warnings only for now.
@@ -87,10 +91,12 @@ if command -v cargo >/dev/null 2>&1; then
   "${chores[@]}" conflict-markers || errors=$((errors + 1))
   # QUAL-404: no new shell scripts (standards/shell-scripts.toml).
   "${chores[@]}" shell-scripts || errors=$((errors + 1))
+  # REV-001, REV-002: who may approve what (decision 0019).
+  "${chores[@]}" reviewers || errors=$((errors + 1))
   # EVL-*: requirements and evals. Warnings only; never fails the audit.
   "${chores[@]}" evals-check || true
 else
-  echo "warning: user docs, conflict marker, shell script, evals and threat checks skipped: cargo is not installed"
+  echo "warning: user docs, conflict marker, shell script, review roles, evals and threat checks skipped: cargo is not installed"
 fi
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.

@@ -12,6 +12,7 @@ mod new_issue;
 mod next_task;
 mod pr_body;
 mod retire;
+mod review_roles;
 mod shell_scripts;
 mod tiers;
 mod user_docs;
@@ -131,10 +132,11 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// The `human-review` label (PR-004): a PR with a red attention tag or a
-    /// cost change, from its diff, its description or the `cost` label,
-    /// passes only once a human (not an `-agt` account, the reviewer account
-    /// or a bot) has approved its head commit.
+    /// The `human-review` label (PR-004): a PR that changes a requirement or
+    /// a cost, from its diff, its description or the `cost` label, passes
+    /// only once someone holding that domain's role in
+    /// standards/reviewers.toml (decision 0019; never an `-agt` account, the
+    /// reviewer account or a bot) has approved its head commit.
     /// Prints "pass: ..." or "hold: ..."; exits 1 while it holds.
     Gate {
         /// The branch the PR merges into, for the diff's tags.
@@ -162,6 +164,15 @@ enum Command {
         /// Also write the verdict as JSON to this file.
         #[arg(long)]
         json: Option<PathBuf>,
+    },
+    /// Check the review roles policy, standards/reviewers.toml (decision
+    /// 0019): REV-001 (a fixed rule broken, or an unknown role, scope,
+    /// member or protection) and REV-002 (a top-level folder in no tier or
+    /// in two). Exits 1 on any finding. Run by `mise run //:audit`.
+    Reviewers {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
     },
     /// Which temporary resources to delete ("Temporary resources" in
     /// standards/docs/resources.md): Pages previews older than 14 days
@@ -411,6 +422,19 @@ fn run() -> Result<ExitCode> {
                 json,
             };
             if !gate::run(&root, &args)? {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Reviewers { json } => {
+            let findings = review_roles::audit(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&findings)?);
+            } else {
+                for f in &findings {
+                    println!("error[{}] {}", f.rule, f.message);
+                }
+            }
+            if !findings.is_empty() {
                 return Ok(ExitCode::FAILURE);
             }
         }

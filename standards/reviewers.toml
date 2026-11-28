@@ -1,0 +1,88 @@
+# Who may approve what (decision 0019,
+# standards/docs/decisions/0019-review-roles.md). Read by `chores gate`
+# from the base branch, so a PR can't grant itself an approver, and checked
+# by `chores reviewers` in the audit (REV-001, REV-002).
+#
+# One approval counts for every role its author holds. Code adds fixed
+# rules this file can't change: agents (`-agt`), bots and
+# jimhillr-reviewer never hold a human role, `auto` only ever satisfies the
+# `change` domain, and the repo owner holds every role over the whole repo.
+#
+# Phase 1 checks the `requirements` and `cost` domains; the other grants are
+# here already so phase 2 only adds code.
+
+# Every top-level folder is in exactly one tier (REV-002).
+[tiers.software-development-platform]
+protection = "strict"          # never auto-approved or auto-merged
+projects = ["standards", "chores", "pane", "athenaeum", "evals", "cost",
+  "threat", "infra", "tofu_state", "jimhillr", "issues", "docs"]
+root = true                    # root files and dot folders belong here
+
+[tiers.technical-platform]
+protection = "reviewed"        # a human always approves
+projects = ["auth_sdk", "design_system", "telemetry", "royalty"]
+
+[tiers.product]
+protection = "fast"            # `auto` may approve a plain change
+projects = ["bear_down", "blueeel", "bogan", "cahokia", "controlled_chaos",
+  "cookbook", "homer", "luggage", "my_lang", "profiles", "psy_ents",
+  "sparkhill", "starcraft"]
+
+# Grants: who holds each domain's role, and over what.
+# A scope is "repo", "tier:<name>" or "project:<name>".
+# A member is a GitHub login or "github:collaborators" (any human
+# collaborator on the repo).
+[[grants]]
+role = "software-development-platform-reviewer"   # change-reviewer over that tier
+members = ["jimhillr"]
+scope = "tier:software-development-platform"
+
+[[grants]]
+role = "technical-platform-reviewer"
+members = ["jimhillr"]
+scope = "tier:technical-platform"
+
+[[grants]]
+role = "product-reviewer"
+members = ["github:collaborators"]
+scope = "tier:product"
+
+[[grants]]
+role = "requirements-reviewer"
+members = ["jimhillr"]
+scope = "repo"
+
+[[grants]]
+role = "cost-reviewer"
+members = ["jimhillr"]
+scope = "repo"
+
+[[grants]]
+role = "threat-reviewer"
+members = ["jimhillr"]
+scope = "repo"
+
+[[grants]]
+role = "quality-reviewer"
+members = ["jimhillr"]
+scope = "repo"
+
+[[grants]]
+role = "credential-reviewer"
+members = ["jimhillr"]
+scope = "repo"
+environments = ["infra-credentials"]   # its required reviewers must equal these members
+
+[[grants]]
+role = "docs-reviewer"           # Jim, 2026-11-28; the docs-only tag
+members = ["jimhillr"]
+scope = "repo"
+
+[[grants]]
+role = "minting-reviewer"
+members = ["jimhillr"]
+scope = "repo"
+environments = ["infra-mint"]
+
+[auto]
+members = ["jimhillr-reviewer"]   # decision 0014; size limit and green checks still apply

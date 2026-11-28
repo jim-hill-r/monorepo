@@ -25,7 +25,7 @@ pub enum Side {
 
 /// Decision 0019's product tier. Every other top-level folder, the root
 /// files and the dot folders are platform.
-const FALLBACK_PRODUCTS: &[&str] = &[
+pub(crate) const FALLBACK_PRODUCTS: &[&str] = &[
     "bear_down",
     "blueeel",
     "bogan",
