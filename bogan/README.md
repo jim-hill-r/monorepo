@@ -18,6 +18,11 @@ Bogan is Algonquin for a quiet tributary or backwater. Bogan brings
 transparency to all the tributaries that feed into a big marketplace: we
 value the little guys and want consumers to have a real choice.
 
+Bogan is a codename. The product is planned to ship as **Bristlecone
+Market**, part of a larger Bristlecone project still to be introduced (Jim,
+2026-11-28). Keep the `bogan` folder, prefix `BOGN` and
+`jimhillr-bogan` names until that project is set up.
+
 Bogan is in early design and has no code yet. The first version is a
 curated catalog that links out to where sellers already sell.
 
