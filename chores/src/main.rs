@@ -10,6 +10,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod sweep;
 mod tiers;
 mod user_docs;
 
@@ -167,6 +168,26 @@ enum Command {
         /// Print JSON instead of text.
         #[arg(long)]
         json: bool,
+    },
+    /// The weekly resource sweep: sort what `resources.sh sweep` listed as
+    /// live into claimed, kept, retired, temporary or orphan against the
+    /// claims and standards/resources.toml, and print the report. Exits 1
+    /// on an orphan, a keep past its review date or a retired resource
+    /// still live after delete_after (standards/docs/resources.md).
+    Sweep {
+        /// The live resources as JSON, from `resources.sh sweep`.
+        #[arg(long)]
+        live: PathBuf,
+        /// The claims, `kind<TAB>name` per line, from `resources.sh claims`.
+        #[arg(long)]
+        claims: PathBuf,
+        /// The date to judge review and delete_after dates by, YYYY-MM-DD.
+        /// Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<String>,
+        /// Also write the report as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
     /// agent-generated and dated today.
@@ -370,6 +391,23 @@ fn run() -> Result<ExitCode> {
                 print!("{}", user_docs::render(&report));
             }
             if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Sweep {
+            live,
+            claims,
+            today,
+            json,
+        } => {
+            let live: sweep::Live = serde_json::from_str(&read_input(&live)?)?;
+            let claims = sweep::load_claims(&root, &read_input(&claims)?)?;
+            let report = sweep::sweep(&live, &claims, &today.unwrap_or_else(new_issue::today));
+            if let Some(path) = json {
+                std::fs::write(&path, serde_json::to_string_pretty(&report)?)?;
+            }
+            print!("{}", sweep::render(&report));
+            if report.failures().next().is_some() {
                 return Ok(ExitCode::FAILURE);
             }
         }

@@ -6,7 +6,8 @@ in `standards/docs/` and is called from a skill in `.agents/skills/`, which
 leaves only the judgment to the model. Why and what comes next is in the
 [baked skills plan](../standards/docs/plans/2026-11-baked-skills.md).
 
-It reads and writes only files in the working tree. It never uses the
+It reads and writes only files in the working tree (`sweep` reads a
+listing its script made). It never uses the
 network and never calls GitHub: agents do that with their own GitHub tools.
 
 ## Commands
@@ -62,6 +63,13 @@ c user-docs
 c user-docs --json
 ```
 
+```bash
+# The weekly resource sweep's classifier: what `resources.sh sweep` listed
+# as live, sorted against the claims and standards/resources.toml. Exit 1 on
+# an orphan, an overdue keep or a retired resource still live.
+c sweep --live live.json --claims claims.tsv --json report.json
+```
+
 `new-human-task` starts the runbook from
 `standards/docs/runbooks/TEMPLATE.md` (title and status filled in) unless
 `--runbook` names one that exists; the agent still writes its sections.
@@ -72,6 +80,7 @@ c user-docs --json
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `sweep` | none (`resources.sh sweep` in All Free Tier Usage) | Sorting a live inventory against the claims by hand, or a longer embedded script |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command
