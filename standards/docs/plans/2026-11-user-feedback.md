@@ -77,13 +77,43 @@ tenant-scoped tables.
 
 | Piece | Where it is planned or built | Who uses it | What happens to it |
 | --- | --- | --- | --- |
-| Review toolbar: Vercel-like pins on a page, Jim only, sent to pane | [Eval engine plan](2026-11-eval-engine.md), Phase 6; decision 0003 item 8 | Jim and reviewers | Unchanged in purpose; lives in this project (`feedback/model`, `feedback/toolbar`, `feedback/bevy`). Gains a browser extension (Phase 8). |
+| Review toolbar: Vercel-like pins on a page, Jim only, sent to pane | [Eval engine plan](2026-11-eval-engine.md), Phase 6; decision 0003 item 8 | Jim and reviewers | Becomes the staff modes of the same Feedback button users see ([One feedback tool, four roles](#one-feedback-tool-four-roles)), built in Phase 8 with its own browser extension. Its eval engine issues moved to this epic (Jim, 2026-11-28). |
 | Fan votes on each game, with an A/B test | [bear_down fan feedback plan](../../../bear_down/docs/plans/2026-11-fan-feedback.md), `bear_down/web/src/feedback.rs` | Public fans | The buttons become the shared `QuickVote` component, and the votes move to bear_down's own endpoint and tenant tables (Phase 7). |
 | The `telemetry` Worker | [telemetry/](../../../telemetry/README.md) | Every app | Not used for user feedback or support: it is a shared service, which the rule above rules out for product data. Its validation and scrubbing code moves into `feedback/model` so products reuse it as a library. Whether telemetry itself becomes a library is a separate question for later. |
 
-The review toolbar and the user widget share `feedback/model`, never data:
-the user widget takes no screenshot, reads no DOM and attaches no errors,
+The user form and the staff modes share `feedback/model`, never data:
+the user form takes no screenshot, reads no DOM and attaches no errors,
 because a user can't check what those contain before sending.
+
+## One feedback tool, four roles
+
+Jim, 2026-11-28, on the eval review: "the vercel like plugin may fit in
+better with the feedback project. Maybe it's a common tool but depending
+on who is logged in, you can give user feedback, app manager feedback,
+product owner feedback or engineering feedback?" So there is one Feedback
+button, and who is signed in picks what it does:
+
+| Role | Who | What they can send | Where it goes |
+| --- | --- | --- | --- |
+| User | Anyone, signed out | The privacy-safe form above: topic, rating, note; support requests | The product's own tenant tables and management app inbox |
+| App manager | A product's managers (decision 0018) | User feedback plus pins on the page, the build, and a "for my users" flag | The product's own inbox |
+| Product owner | Jim today; any requirements owner | Pins with kind (bug, idea, not met, looks good) and a requirement; ratings | `<project>/evals/feedback.jsonl` through pane, where they count as ratings (eval engine) |
+| Engineering | Agents' reviewers and engineers | Pins with screenshot, last 20 console errors, selectors and build | `FIX` or `TODO` issue files in the project's `issues/`, through pane |
+
+- **Signed out is the default and stays safe.** The staff code (pins,
+  screenshots, console capture) is a separate module that loads only after
+  a staff sign-in returns a role, so a user's page never runs it and
+  SPRK-006 holds. The production builds of strict products can leave the
+  module out entirely and rely on the browser extension (Phase 8).
+- **Staff sign-in** uses Auth0, as the management apps do (decision 0018):
+  a popup returns a short-lived token with the role, kept in
+  `sessionStorage`. Product owner and engineering roles are platform roles
+  held in pane; app manager is a per-product role, so one product's
+  managers can't send as another's.
+- **Same origin for product data.** User and app manager feedback goes to
+  the product's own `/api/feedback`. Product owner and engineering
+  feedback is about how we build software, so it goes to pane, the
+  software development platform, not to a product's tables.
 
 ## What a Blue Eel user sees
 
@@ -377,10 +407,12 @@ Each phase is one PR and one issue file (`epic: User feedback`).
    menu, SPRK-011 and the SPRK-006 clause (needs-human), and evals.
 7. **QuickVote and bear_down.** `QuickVote`, and bear_down's votes moved
    to its own endpoint and tenant tables, keeping its A/B arms.
-8. **Review toolbar as a browser extension.** A Manifest V3 extension
-   that injects the eval engine's review toolbar into production sites,
-   so production builds carry no review code. Unpacked from a GitHub
-   release. Needs eval engine Phase 6's toolbar.
+8. **One feedback tool with roles.** The build meta tag, staff sign-in
+   with roles, the staff modes (the review toolbar) in cookbook first and
+   then every web app, the cahokia webviews and the Bevy plugin, and the
+   Manifest V3 extension that loads the staff modes on production sites
+   (unpacked from a GitHub release). Needs pane's feedback routes (eval
+   engine Phase 5) for the product owner and engineering roles.
 9. **Triage and pane.** The weekly aggregate export, triage into issue
    files, pane's Feedback page showing aggregates, and the `observe`
    evals.
@@ -401,6 +433,9 @@ Each phase is one PR and one issue file (`epic: User feedback`).
   companies and the platform shares only libraries and patterns.
 - 2026-11-28, Jim: support through something set up with IaC or scripts,
   not email; options above.
+- 2026-11-28, Jim (eval review): the Vercel-like toolbar belongs here,
+  as one tool whose signed-in role picks user, app manager, product owner
+  or engineering feedback.
 - 2026-11-28, Jim (decision card): option A, our own support requests, for
   every product. Tally and the other vendors are not used.
 - 2026-11-28, Jim: shared database infrastructure with tenant-scoped

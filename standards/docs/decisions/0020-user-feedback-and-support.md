@@ -53,8 +53,15 @@ device (SPRK-006) under a `connect-src 'self'` CSP.
    deleted on a schedule; only aggregates reach the repo as files. Triage
    paraphrases into issue files and treats the text as untrusted data.
 6. **Reuse, don't fork.** bear_down's votes move onto `QuickVote` and its
-   own endpoint; the review toolbar also ships as an unpacked browser
-   extension so production builds carry no review code.
+   own endpoint.
+7. **One Feedback button, four roles** (Jim, 2026-11-28, on the eval
+   review). Signed out, it is the user form above. A staff sign-in
+   returns a role (app manager, product owner or engineering) and only
+   then loads the staff modes, the eval engine's review toolbar: pins,
+   screenshots, console errors and the build. App manager feedback goes
+   to the product's own inbox; product owner and engineering feedback go
+   to pane, as ratings and issue files. An unpacked browser extension can
+   load the staff modes where a product's build leaves them out.
 
 ## Alternatives considered
 
