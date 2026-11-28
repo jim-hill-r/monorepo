@@ -220,6 +220,8 @@ fn format_auth_error(err: &AuthError) -> String {
         AuthError::ConfigError(_) => "Authentication not configured".to_string(),
         AuthError::AuthorizationDenied(_) => "Sign-in was cancelled".to_string(),
         AuthError::CallbackMismatch(_) => "Authentication incomplete".to_string(),
+        AuthError::LoopbackError(_) => "Unable to process authentication".to_string(),
+        AuthError::SignInTimedOut(_) => "Sign-in timed out. Please try again".to_string(),
         AuthError::Unknown => "An unexpected error occurred".to_string(),
     }
 }
@@ -2060,6 +2062,14 @@ mod tests {
             (
                 AuthError::ConfigError("config error".to_string()),
                 "Authentication not configured",
+            ),
+            (
+                AuthError::LoopbackError("port taken".to_string()),
+                "Unable to process authentication",
+            ),
+            (
+                AuthError::SignInTimedOut("no callback".to_string()),
+                "Sign-in timed out. Please try again",
             ),
             (AuthError::Unknown, "An unexpected error occurred"),
         ];

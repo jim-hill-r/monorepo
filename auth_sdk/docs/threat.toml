@@ -1,5 +1,5 @@
 # auth_sdk: threat model. Format and rules: standards/docs/security.md
-reviewed = "2026-11-27"
+reviewed = "2026-11-28"
 summary = "Rust library for OAuth2 and OpenID Connect sign-in, used by cahokia and cookbook in the browser, with a native (desktop and mobile) client in progress. Holds no secrets; apps pass in their public client id."
 
 [[surface]]
@@ -25,4 +25,4 @@ mitigation = "We only verify Auth0 tokens with a public key, which that attack d
 id = "AUTH-T3"
 stride = "spoofing"
 what = "On desktop or mobile, another local app takes the loopback port or registers the same URL scheme and receives the callback meant for ours."
-mitigation = "PKCE: the code is useless without the verifier, which never leaves our process. The callback must match the configured redirect URI and carry our state, and the loopback listener (phase 2) binds 127.0.0.1 only. See docs/plans/2026-11-native-sign-in.md."
+mitigation = "PKCE: the code is useless without the verifier, which never leaves our process. The callback must match the configured redirect URI and carry our state, and the loopback listener (src/native/loopback.rs) binds 127.0.0.1 only, accepts one GET /callback, and closes the port once it arrives or after a timeout. See docs/plans/2026-11-native-sign-in.md."

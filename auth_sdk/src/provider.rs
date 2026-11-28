@@ -29,6 +29,10 @@ pub enum AuthError {
     AuthorizationDenied(String),
     #[error("callback URL mismatch: {0}")]
     CallbackMismatch(String),
+    #[error("loopback listener error: {0}")]
+    LoopbackError(String),
+    #[error("sign-in timed out: {0}")]
+    SignInTimedOut(String),
     #[error("unknown error")]
     Unknown,
 }
@@ -256,6 +260,8 @@ mod tests {
             AuthError::HttpClientError("test".to_string()),
             AuthError::AuthorizationDenied("test".to_string()),
             AuthError::CallbackMismatch("test".to_string()),
+            AuthError::LoopbackError("test".to_string()),
+            AuthError::SignInTimedOut("test".to_string()),
             AuthError::Unknown,
         ];
         for error in errors {
