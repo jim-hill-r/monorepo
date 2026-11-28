@@ -1,0 +1,4 @@
+# Arguments after the file go to main, negatives included; the body ends in
+# an expression with no `return`, which gives its value: -3 * 4 - 5.
+bin.name = "my_lang"
+args = ["run", "multiply.my", "--", "-3", "4"]

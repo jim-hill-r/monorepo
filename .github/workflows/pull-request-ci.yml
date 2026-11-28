@@ -127,10 +127,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # The admin CLIs' build that main saves (the audit cache in
+      # mise-projects.yml); the workspaces must match it to restore.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
-          workspaces: threat
-          key: threat-summary
+          workspaces: |
+            evals
+            cost
+            chores
+            threat
+          shared-key: audit
           save-if: false
 
       - name: Summarize
@@ -187,10 +193,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # The admin CLIs' build that main saves (the audit cache in
+      # mise-projects.yml); the workspaces must match it to restore.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
-          workspaces: cost
-          key: cost-summary
+          workspaces: |
+            evals
+            cost
+            chores
+            threat
+          shared-key: audit
           save-if: false
 
       - name: Summarize

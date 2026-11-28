@@ -24,10 +24,11 @@ const DEFAULT_THEME: &str = "earthy";
 
 /// Content Security Policy for the application
 /// - default-src 'none': Block all sources by default
-/// - script-src 'self' 'wasm-unsafe-eval' POSTHOG_ASSETS: Allow scripts from same origin,
-///   WASM, and PostHog's script host for session replay (public/posthog.js, production only)
-/// - connect-src 'self' AUTH0_DOMAIN POSTHOG_HOSTS: Allow API calls to same origin, Auth0,
-///   and PostHog's ingest and config hosts
+/// - script-src 'self' 'wasm-unsafe-eval' POSTHOG_ASSETS CF_BEACON: Allow scripts from same
+///   origin, WASM, PostHog's script host for session replay (public/posthog.js, production
+///   only), and the Cloudflare Web Analytics beacon that Pages injects
+/// - connect-src 'self' AUTH0_DOMAIN POSTHOG_HOSTS CF_INSIGHTS: Allow API calls to same
+///   origin, Auth0, PostHog's ingest and config hosts, and Web Analytics' report endpoint
 /// - img-src 'self': Allow images from same origin
 /// - style-src 'self': Allow stylesheets from same origin only. No inline styles: the
 ///   design system links its CSS as files and the app sets no `style` attributes
@@ -38,7 +39,7 @@ const DEFAULT_THEME: &str = "earthy";
 /// Note: The Auth0 origin is hardcoded in the CSP string because it must be a
 /// const. `test_csp_connect_src_matches_auth0_domain` checks it against
 /// `Auth0Urls::origin` for `auth::AUTH0_DOMAIN`.
-const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://us-assets.i.posthog.com; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com https://us.i.posthog.com https://us-assets.i.posthog.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://us-assets.i.posthog.com https://static.cloudflareinsights.com; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com https://us.i.posthog.com https://us-assets.i.posthog.com https://cloudflareinsights.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 fn main() {
     dioxus::launch(App);
@@ -200,6 +201,24 @@ mod tests {
             );
         }
         assert!(!CONTENT_SECURITY_POLICY.contains("*.posthog.com"));
+    }
+
+    /// Pages injects Cloudflare Web Analytics' beacon, which loads a script
+    /// from one host and reports to another (`web_apps()` in
+    /// `infra/src/stacks/mod.rs` turns it on for cookbook).
+    #[test]
+    fn csp_allows_the_cloudflare_web_analytics_beacon() {
+        let directive = |name: &str| {
+            CONTENT_SECURITY_POLICY
+                .split(';')
+                .map(str::trim)
+                .find_map(|d| d.strip_prefix(name))
+                .unwrap_or_default()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+        };
+        assert!(directive("script-src ").contains(&"https://static.cloudflareinsights.com"));
+        assert!(directive("connect-src ").contains(&"https://cloudflareinsights.com"));
     }
 
     #[test]

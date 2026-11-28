@@ -182,7 +182,8 @@ fn is_placeholder(text: &str) -> bool {
 }
 
 /// Warnings for the Attention section: every bullet is a known tag, with
-/// exactly one requirements tag, one cost tag and one threat/risk tag.
+/// exactly one requirements tag, one cost tag, one threat/risk tag and one
+/// docs tag.
 fn check_attention(body: &str, warnings: &mut Vec<String>) {
     let Some(text) = section(body, "Attention") else {
         warnings.push(
@@ -210,6 +211,7 @@ fn check_attention(body: &str, warnings: &mut Vec<String>) {
         (Group::Requirements, "requirements"),
         (Group::Cost, "cost"),
         (Group::ThreatRisk, "threat/risk"),
+        (Group::Docs, "docs"),
     ] {
         let n = groups.iter().filter(|g| **g == group).count();
         if n != 1 {
@@ -309,6 +311,7 @@ mod tests {
              - 🟢 requirements-unchanged\n\
              - 🟢 cost-unchanged\n\
              - 🟢 threat-risk-unchanged\n\
+             - 🟢 docs-unchanged\n\
              \n\
              ## What changed\n\nAdds chores. See [the plan](standards/docs/plans/x.md).\n\n\
              ## Why\n\nRoutine work costs tokens.\n\n\

@@ -80,16 +80,27 @@ mise's version service. Follow these steps there; each one is safe to repeat.
    - **dx:** compiling `cargo:dioxus-cli` through mise fails there, because
      mise first installs `cargo-binstall` and can't verify its attestation
      (sigstore's TUF host is blocked). Download the prebuilt binary instead,
-     with the version from the project's `mise.toml`, then tell mise not to
-     install either tool:
+     then tell mise not to install either tool. Use the release that matches
+     the project's `"cargo:dioxus-cli"` in its `mise.toml` (0.6.3, the latest
+     0.6.x, for `sparkhill/webapp`): another minor version
+     builds the app differently and fails its tests. dx 0.7 serves `public/`
+     at the site root, for example, so a 0.6 app's
+     `/assets/manifest.webmanifest` answers with `index.html`. 0.6 releases
+     name the archive with the version (`...-gnu-v0.6.3.tar.gz`) and 0.7
+     releases don't, so the snippet tries both:
 
      ```sh
      v=0.7.3
      d=$(mktemp -d)
-     curl -sSL "https://github.com/DioxusLabs/dioxus/releases/download/v$v/dx-x86_64-unknown-linux-gnu.tar.gz" | tar xz -C "$d"
+     u="https://github.com/DioxusLabs/dioxus/releases/download/v$v/dx-x86_64-unknown-linux-gnu"
+     { curl -fsSL "$u-v$v.tar.gz" || curl -fsSL "$u.tar.gz"; } | tar xz -C "$d"
      install -m755 "$d/dx" ~/.cargo/bin/dx
+     dx --version  # check it says $v
      export MISE_DISABLE_TOOLS=cargo-binstall,cargo:dioxus-cli
      ```
+
+     After switching dx versions, delete the project's `target/dx` so no
+     files from the other version's build are served.
 
    - **Chromium:** when Playwright can't download its own browser build, the
      task uses the Chromium in `PLAYWRIGHT_CHROMIUM_PATH`, else the cloud
@@ -97,7 +108,8 @@ mise's version service. Follow these steps there; each one is safe to repeat.
      `playwright.config.ts` launches `PLAYWRIGHT_CHROMIUM_PATH` when it is
      set, and then runs only its Chromium projects (no Firefox or WebKit).
      An app opts in by reading `PLAYWRIGHT_CHROMIUM_PATH` in that config
-     (pane, cahokia, cookbook and bear_down do); other apps still skip.
+     (pane, cahokia, cookbook, bear_down and sparkhill/webapp do); other
+     apps still skip.
      The task also skips tests tagged `@network`, which need a service the
      sandbox can't reach (cahokia's Auth0 sign-in); tag any such test that
      way. PR CI runs every browser and every test.
@@ -128,6 +140,7 @@ mise's version service. Follow these steps there; each one is safe to repeat.
    | `luggage` | the Swagger UI zip from GitHub, or `SWAGGER_UI_DOWNLOAD_URL` | `luggage/mise.toml` |
    | `infra` | registry.opentofu.org, for `tofu validate` | `infra/mise.toml` |
    | `tofu_state` | `wrangler` and `tofu`, for `tests/e2e.sh` | `tofu_state/mise.toml` |
+   | `pane/cloudflare` | `wrangler` and `worker-build`, for `tests/e2e.rs` | `pane/cloudflare/mise.toml` |
 
    `cahokia/web` and `cookbook/web` need none: without `dx` their Rust
    checks still run and the Playwright step skips itself (step 5). Add a

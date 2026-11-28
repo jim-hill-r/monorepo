@@ -1,0 +1,3 @@
+[project]
+name = "tofu_state"
+description = "The Cloudflare Worker that stores OpenTofu state for infra in D1, serving OpenTofu's http backend."

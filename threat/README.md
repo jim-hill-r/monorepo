@@ -28,6 +28,6 @@ cargo run -p threat_cli -- check --strict
 cargo run -p threat_cli -- summary --base origin/main --labels labels.txt
 ```
 
-The audit runs it through `standards/scripts/threat-check.sh`. It reads
+The audit runs it through `chores threat-check`. It reads
 only files in the repo, needs no credentials or network, and takes well
 under a second once built.

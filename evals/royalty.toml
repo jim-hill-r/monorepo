@@ -1,0 +1,3 @@
+[project]
+name = "evals"
+description = "The eval engine, which checks that each project's product requirements hold as built, at every stage from CI to production."

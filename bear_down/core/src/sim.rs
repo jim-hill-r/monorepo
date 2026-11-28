@@ -5,9 +5,11 @@
 //! regular-season game with the Elo win probability, seeds both conferences
 //! with [`Standings::seeds`] and plays the bracket game by game, many times
 //! over. Simulated games never tie, and ratings don't move inside a simulated
-//! season. Playoff games that were already played keep their real winner.
+//! season. Playoff games that were already played keep their real winner,
+//! and scheduled ones use their betting line when they have one.
 //!
-//! For every regular-season game left in the current week, each simulated
+//! For every game left in the current week, regular-season or playoff (the
+//! playoff guide in decision 0008), each simulated
 //! season is played twice from the same seed, once with each result (common
 //! random numbers). That gives the swing on the focus team's playoff and
 //! Super Bowl odds and on the NFC North divisional-round goal with little
@@ -26,7 +28,7 @@ use std::collections::HashMap;
 use crate::NFC_NORTH;
 use crate::elo::{Ratings, win_probability};
 use crate::games::Outcome;
-use crate::games::{Date, Game, Season};
+use crate::games::{Date, Game, GameType, Season};
 use crate::relevance::{Relevance, relevance};
 use crate::standings::{Conference, Procedure, Record, Standings, Step, Team, wild_cards};
 
@@ -286,6 +288,11 @@ pub enum Channel {
     /// Same conference field, but a different champion of the other
     /// conference: the likely Super Bowl opponent.
     SuperBowlOpponent,
+    /// The same field and the same other champion, but different winners
+    /// in the focus team's bracket: who advances, and so who it could meet,
+    /// or whether it advances itself. Only a playoff game is measured this
+    /// way; with the same seeds and draws, nothing else changes a bracket.
+    Bracket,
     /// Both conferences were seeded the same, so the seasons differ only in
     /// the playoff draws (a tiebreaker coin flip used one more draw). This is
     /// simulation noise and averages out.
@@ -294,12 +301,13 @@ pub enum Channel {
 
 impl Channel {
     /// Every channel, in attribution order.
-    pub const ALL: [Channel; 6] = [
+    pub const ALL: [Channel; 7] = [
         Channel::DivisionTitle,
         Channel::WildCard,
         Channel::Seed,
         Channel::PlayoffPath,
         Channel::SuperBowlOpponent,
+        Channel::Bracket,
         Channel::Chance,
     ];
 
@@ -382,6 +390,9 @@ pub struct Simulation {
     pub season: u16,
     /// The current week: the first with a game left, if any.
     pub week: Option<u8>,
+    /// The playoff round the current week is, or `None` in the regular
+    /// season and once the season is over.
+    pub round: Option<GameType>,
     /// How many seasons were simulated.
     pub simulations: u32,
     /// The team the swings are measured for.
@@ -391,7 +402,8 @@ pub struct Simulation {
     /// The share of simulations in which all four NFC North teams reached
     /// the divisional round.
     pub nfc_north: f64,
-    /// The current week's remaining regular-season games, in schedule order.
+    /// The current week's remaining games, in schedule order: regular-season
+    /// games, or a playoff round's games.
     pub games: Vec<GameImpact>,
 }
 
@@ -409,6 +421,23 @@ impl Simulation {
 
 /// A remaining regular-season game, ready to play.
 struct Remaining {
+    home: Team,
+    away: Team,
+    home_win_probability: f64,
+}
+
+/// A game whose result a season is played with: a regular-season game, by
+/// its index in the remaining games, or a playoff game, by its teams.
+#[derive(Clone, Copy, PartialEq)]
+enum Fixed {
+    Regular(usize),
+    Playoff(Team, Team),
+}
+
+/// One game left this week that is measured.
+struct Tracked<'g> {
+    game: &'g Game,
+    fixed: Fixed,
     home: Team,
     away: Team,
     home_win_probability: f64,
@@ -546,6 +575,18 @@ fn classify(home: &Played, away: &Played, focus: Team) -> Option<(Channel, Optio
     if home.conference_champion(other) != away.conference_champion(other) {
         return Some((Channel::SuperBowlOpponent, None, false));
     }
+    // With the same seeds, the same draws and the same other champion, the
+    // focus team's bracket only plays out differently when the measured
+    // game is one of its playoff games.
+    let bracket = |played: &Played| {
+        played.seeds[conference]
+            .iter()
+            .map(|team| played.postseason.reached[team.index()])
+            .collect::<Vec<_>>()
+    };
+    if bracket(home) != bracket(away) {
+        return Some((Channel::Bracket, None, false));
+    }
     let focus_reached = |played: &Played| played.postseason.reached[focus.index()];
     if focus_reached(home) != focus_reached(away) {
         return Some((Channel::Chance, None, false));
@@ -594,26 +635,57 @@ pub fn simulate(
         });
     }
     let mut played_playoffs = HashMap::new();
+    // Scheduled playoff games: the home team and its chance to win, from
+    // the betting line when there is one, as for regular-season games.
+    let mut scheduled_playoffs = HashMap::new();
     for game in season.playoffs() {
         if let Some(winner) = game.winner() {
             let (home, away) = (team(game, &game.home_team)?, team(game, &game.away_team)?);
             played_playoffs.insert(pair(home, away), team(game, winner)?);
+        } else if let (Some(home), Some(away)) = (
+            Team::from_abbr(&game.home_team),
+            Team::from_abbr(&game.away_team),
+        ) {
+            let probability = game
+                .spread_line
+                .map(spread_win_probability)
+                .unwrap_or_else(|| ratings.home_win_probability(game));
+            scheduled_playoffs.insert(pair(home, away), (home, probability));
         }
     }
 
-    // The current week's games to measure, as indexes into `remaining`.
+    // The current week's games to measure.
     let week = season.current_week();
     let week_number = week.map(|week| week.number);
     let mut tracked = Vec::new();
-    let mut tracked_games = Vec::new();
     for (index, game) in season
         .regular_season()
         .filter(|game| !game.is_played())
         .enumerate()
     {
         if Some(game.week) == week_number {
-            tracked.push(index);
-            tracked_games.push(game);
+            tracked.push(Tracked {
+                game,
+                fixed: Fixed::Regular(index),
+                home: remaining[index].home,
+                away: remaining[index].away,
+                home_win_probability: remaining[index].home_win_probability,
+            });
+        }
+    }
+    for game in season
+        .playoffs()
+        .filter(|game| !game.is_played() && Some(game.week) == week_number)
+    {
+        let (home, away) = (team(game, &game.home_team)?, team(game, &game.away_team)?);
+        if let Some(&(_, home_win_probability)) = scheduled_playoffs.get(&pair(home, away)) {
+            tracked.push(Tracked {
+                game,
+                fixed: Fixed::Playoff(home, away),
+                home,
+                away,
+                home_win_probability,
+            });
         }
     }
 
@@ -629,16 +701,16 @@ pub fn simulate(
         .map(Team::index)
         .collect();
 
-    // Plays one season from `seed`: the remaining regular-season games (with
-    // `forced`'s game given to the home team if `true`, the away team if
-    // `false`), then the playoffs. The same seed gives the same draws, so two
+    // Plays one season from `seed`: the remaining regular-season games, then
+    // the playoffs, with `forced`'s game given to its home team if `true`,
+    // its away team if `false`. The same seed gives the same draws, so two
     // seasons that differ only in the forced game share everything else.
-    let play_season = |seed: u64, forced: Option<(usize, bool)>| -> Played {
+    let play_season = |seed: u64, forced: Option<(Fixed, bool)>| -> Played {
         let mut rng = Rng::new(seed);
         let mut standings = base.clone();
         for (index, game) in remaining.iter().enumerate() {
             let mut home_won = rng.chance(game.home_win_probability);
-            if let Some((forced_index, home_wins)) = forced
+            if let Some((Fixed::Regular(forced_index), home_wins)) = forced
                 && forced_index == index
             {
                 home_won = home_wins;
@@ -661,16 +733,27 @@ pub fn simulate(
             standings.seeds_inner(conference, playoff_seeds - 4, &mut coin, &mut trace)
         });
         let mut play = |home: Team, away: Team, neutral: bool| {
-            if let Some(&winner) = played_playoffs.get(&pair(home, away)) {
+            let key = pair(home, away);
+            if let Some(&winner) = played_playoffs.get(&key) {
                 return winner;
             }
-            let edge = rating[home.index()] - rating[away.index()]
-                + if neutral { 0.0 } else { home_field };
-            if rng.chance(win_probability(edge)) {
-                home
-            } else {
-                away
+            // Every unplayed game takes one draw, forced or not, so the
+            // draws after it line up in both seasons of a pair.
+            let (host, host_wins) = match scheduled_playoffs.get(&key) {
+                Some(&(host, probability)) => (host, rng.chance(probability)),
+                None => {
+                    let edge = rating[home.index()] - rating[away.index()]
+                        + if neutral { 0.0 } else { home_field };
+                    (home, rng.chance(win_probability(edge)))
+                }
+            };
+            if let Some((Fixed::Playoff(forced_home, forced_away), home_wins)) = forced
+                && pair(forced_home, forced_away) == key
+            {
+                return if home_wins { forced_home } else { forced_away };
             }
+            let guest = if host == home { away } else { home };
+            if host_wins { host } else { guest }
         };
         let focus_seed = seeds[config.focus.conference() as usize]
             .iter()
@@ -730,9 +813,9 @@ pub fn simulate(
     let links = relevance(season, &base, config.focus)?;
     let games = tracked
         .iter()
-        .zip(&tracked_games)
-        .map(|(&index, game)| -> Result<GameImpact, String> {
-            let (home_team, away_team) = (remaining[index].home, remaining[index].away);
+        .map(|tracked| -> Result<GameImpact, String> {
+            let game = tracked.game;
+            let (home_team, away_team) = (tracked.home, tracked.away);
             let Some(relevance) = links
                 .iter()
                 .find(|relevance| relevance.home == home_team && relevance.away == away_team)
@@ -749,8 +832,8 @@ pub fn simulate(
             while done < target {
                 for run in done..target {
                     let seed = run_seed(run);
-                    let home_played = play_season(seed, Some((index, true)));
-                    let away_played = play_season(seed, Some((index, false)));
+                    let home_played = play_season(seed, Some((tracked.fixed, true)));
+                    let away_played = play_season(seed, Some((tracked.fixed, false)));
                     let home = goals(&home_played);
                     let away = goals(&away_played);
                     for ((counts, home), away) in pairs.iter_mut().zip(home).zip(away) {
@@ -834,9 +917,9 @@ pub fn simulate(
             Ok(GameImpact {
                 game_id: game.id.clone(),
                 gameday: game.gameday,
-                home: remaining[index].home,
-                away: remaining[index].away,
-                home_win_probability: remaining[index].home_win_probability,
+                home: tracked.home,
+                away: tracked.away,
+                home_win_probability: tracked.home_win_probability,
                 playoffs,
                 champion,
                 nfc_north,
@@ -863,9 +946,16 @@ pub fn simulate(
         super_bowl: share(counts[usize::from(SUPER_BOWL)]),
         champion: share(counts[usize::from(CHAMPION)]),
     });
+    let round = week.and_then(|week| {
+        week.games()
+            .iter()
+            .map(|game| game.game_type)
+            .find(|game_type| game_type.is_playoff())
+    });
     Ok(Simulation {
         season: season.year,
         week: week_number,
+        round,
         simulations: runs,
         focus: config.focus,
         odds,
@@ -1267,6 +1357,51 @@ mod tests {
         assert!(game.playoffs.if_away_wins <= overall && overall <= 1.0);
     }
 
+    /// The fixture as it stood just before `week` of `year`, playoffs
+    /// included.
+    fn as_of(year: u16, week: u8) -> Schedule {
+        let full = match Schedule::parse(SEASONS) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("seasons fixture should parse: {error}"),
+        };
+        match full.as_of(year, week) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("{year} week {week}: {error}"),
+        }
+    }
+
+    #[test]
+    fn measures_each_playoff_game_this_round() {
+        // 2020 wild card round: the Bears (No. 7) at the Saints (No. 2).
+        let simulation = run(&as_of(2020, 18), 2020, &config(2_000, "CHI"));
+        assert_eq!(simulation.round, Some(GameType::WildCard));
+        assert_eq!(simulation.games.len(), 6);
+        close(simulation.focus_odds().playoffs, 1.0);
+        let Some(own) = simulation.games.iter().find(|game| game.home == team("NO")) else {
+            panic!("the Saints should host the Bears");
+        };
+        // Their line was Saints by 11.
+        close(own.home_win_probability, spread_win_probability(11.0));
+        // A Saints win ends the Bears' season.
+        close(own.champion.if_home_wins, 0.0);
+        assert!(own.champion.if_away_wins > 0.0);
+        assert_eq!(own.root_for(&own.champion), Some(team("CHI")));
+        // Already in: no playoff game moves the playoff odds.
+        for game in &simulation.games {
+            close(game.playoffs.swing(), 0.0);
+        }
+        // They win it all only when they win this game, so the swing is at
+        // least their overall odds.
+        assert!(own.champion.swing().abs() >= simulation.focus_odds().champion - 1e-12);
+    }
+
+    #[test]
+    fn the_regular_season_has_no_round() {
+        let schedule = schedule(2023, before_week_18);
+        let simulation = run(&schedule, 2023, &config(100, "CHI"));
+        assert_eq!(simulation.round, None);
+    }
+
     #[test]
     fn an_eliminated_team_has_no_swings() {
         let schedule = schedule(2023, before_week_18);
@@ -1379,6 +1514,7 @@ mod tests {
         Relevance {
             home: team(home),
             away: team(away),
+            postseason: false,
             focus_alive: true,
             alive: [true, true],
             links: vec![crate::relevance::Link::Race(team(home))],

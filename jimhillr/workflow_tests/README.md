@@ -26,6 +26,7 @@ One test file per workflow:
 | `codeql_workflow_tests.rs` | `all-codeql.yml` |
 | `delete_branches_workflow_tests.rs` | `all-delete-branches.yml` |
 | `agent_skills_workflow_tests.rs` | `pull-request-agent-skills.yml` |
+| `pane_redeploy_workflow_tests.rs` | `pane-redeploy.yml` |
 
 ## Why Rust Tests?
 

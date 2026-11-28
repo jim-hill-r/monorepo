@@ -60,8 +60,10 @@ const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 
 /// Content Security Policy for the application
 /// - default-src 'none': Block all sources by default
-/// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
-/// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
+/// - script-src 'self' 'wasm-unsafe-eval' CF_BEACON: Allow scripts from same origin, WASM
+///   and the Cloudflare Web Analytics beacon that Pages injects
+/// - connect-src 'self' AUTH0_DOMAIN CF_INSIGHTS: Allow API calls to same origin, Auth0
+///   and Web Analytics' report endpoint
 /// - img-src 'self': Allow images from same origin
 /// - style-src 'self': Allow stylesheets from same origin only. No inline
 ///   styles: every style is a class in a linked stylesheet (see
@@ -74,7 +76,7 @@ const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 /// const. `test_csp_connect_src_matches_auth0_domain` checks it against
 /// `Auth0Urls::origin` for AUTH0_DOMAIN.
 #[cfg(any(target_arch = "wasm32", test))]
-const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com https://cloudflareinsights.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
@@ -271,6 +273,24 @@ mod tests {
             !CONTENT_SECURITY_POLICY.contains("'unsafe-inline'"),
             "CSP must not allow inline styles or scripts"
         );
+    }
+
+    /// Pages injects Cloudflare Web Analytics' beacon, which loads a script
+    /// from one host and reports to another (`web_apps()` in
+    /// `infra/src/stacks/mod.rs` turns it on for cahokia).
+    #[test]
+    fn test_csp_allows_the_cloudflare_web_analytics_beacon() {
+        let directive = |name: &str| {
+            CONTENT_SECURITY_POLICY
+                .split(';')
+                .map(str::trim)
+                .find_map(|d| d.strip_prefix(name))
+                .unwrap_or_default()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+        };
+        assert!(directive("script-src ").contains(&"https://static.cloudflareinsights.com"));
+        assert!(directive("connect-src ").contains(&"https://cloudflareinsights.com"));
     }
 
     #[test]

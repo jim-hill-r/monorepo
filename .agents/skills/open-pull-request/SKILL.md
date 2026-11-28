@@ -20,6 +20,12 @@ description: Branch, commit, and open a pull request in this monorepo the way it
    editor settings.
 4. Don't open a new automated-task PR while another agent-authored PR is still
    open; finish that one first.
+5. If the PR renames or removes a resource (a Pages project, Worker,
+   binding, URL or release), follow "Renaming a resource" in
+   `standards/docs/resources.md`: add a `[[retired]]` entry for the old one
+   to `standards/resources.toml` in the same PR, and list in `## Details`
+   the inbound references outside the repo (Auth0 URLs, DNS records,
+   PostHog hosts, shared links) that must go before it is deleted.
 
 ## Open it as a draft
 
@@ -28,8 +34,9 @@ as "Pull request descriptions" in `standards/docs/pull-requests.md` says
 (Jim, 2026-11-27), following `.github/pull_request_template.md`:
 
 1. The attribution lines your platform requires, if any, first.
-2. `## Attention`: the attention tags, one requirements, one cost and one
-   threat/risk tag, from `chores badges` (never written by hand).
+2. `## Attention`: the attention tags, one requirements, one cost, one
+   threat/risk and one docs tag, from `chores badges` (never written by
+   hand).
 3. `## What changed`: at most 50 words.
 4. `## Why`: at most 50 words, with any engineering tradeoffs.
 5. `## Cost changes`: under 25 words, or `None.`
@@ -65,7 +72,8 @@ The **Attention** section comes from `chores badges --base origin/main`
 (commit first so the diff is complete): 🔴 `must-requirement-changed`,
 🟡 `requirement-changed` or 🟢 `requirements-unchanged`; 🟠
 `cost-changed` or 🟢 `cost-unchanged`; 🟠 `threat-risk-changed` or 🟢
-`threat-risk-unchanged` ("Attention tags" in
+`threat-risk-unchanged`; 🔵 `docs-only` (every changed file is docs,
+plans included), 🟢 `docs-changed` or 🟢 `docs-unchanged` ("Attention tags" in
 `standards/docs/pull-requests.md`). Never edit the tags by hand. When a
 later push changes which files the PR touches, run `chores badges` and
 replace the section. A red requirement tag means the PR gets
@@ -87,6 +95,8 @@ Mark the PR ready for review once **all** of these hold:
   folder.
 - CI for the changed projects passes on the PR's head commit.
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
+- A renamed or removed resource has its `[[retired]]` entry and its
+  inbound references listed (step 5 of "Before pushing").
 - You've re-read the full diff and would be comfortable with a human reviewing it.
 - The description has the Attention, What changed, Why, Cost changes,
   Risk changes and Details sections, and the PR summary check shows no
