@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-28T00:55:40.031151566Z",
+  "generated_at": "2026-11-28T00:57:09.780261061Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 12.6,
+    "percent": 13.4,
     "musts_percent": 37.5,
     "judged_percent": 16.9,
     "warn_below": 80.0,
@@ -890,8 +890,8 @@
       "musts_in_production": 6,
       "coverage": {
         "requirements": 10,
-        "met": 1,
-        "percent": 10.0,
+        "met": 3,
+        "percent": 30.0,
         "musts_met": 0,
         "musts_percent": 0.0,
         "warning": true
@@ -904,7 +904,7 @@
           "verdict": "at-risk",
           "reasons": [
             "first-session-judged has no judge results yet",
-            "home-page-live failed 4 of its last 7 cd runs"
+            "home-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -913,7 +913,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "app-loads-live failed 4 of its last 7 cd runs",
+            "app-loads-live failed 3 of its last 7 cd runs",
             "demonstrations-judged has no judge results yet"
           ]
         },
@@ -924,7 +924,7 @@
           "verdict": "at-risk",
           "reasons": [
             "tracing-judged has no judge results yet",
-            "tracing-page-live failed 4 of its last 7 cd runs"
+            "tracing-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -933,7 +933,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "capital-level-live failed 4 of its last 7 cd runs"
+            "capital-level-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -942,7 +942,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "home-page-live-for-progress failed 4 of its last 7 cd runs",
+            "home-page-live-for-progress failed 3 of its last 7 cd runs",
             "progress-judged has no judge results yet"
           ]
         },
@@ -952,7 +952,7 @@
           "priority": "must",
           "verdict": "at-risk",
           "reasons": [
-            "connects-only-to-itself-live failed 4 of its last 7 cd runs"
+            "connects-only-to-itself-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -961,19 +961,16 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed 4 of its last 7 cd runs",
-            "manifest-live failed 4 of its last 7 cd runs",
-            "no-zoom-live failed 4 of its last 7 cd runs"
+            "home-screen-icon-live failed 3 of its last 7 cd runs",
+            "manifest-live failed 3 of its last 7 cd runs",
+            "no-zoom-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-008",
           "title": "A few letters or words can be practised on their own",
           "priority": "could",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         },
         {
           "requirement": "SPRK-009",
@@ -985,10 +982,7 @@
           "requirement": "SPRK-010",
           "title": "The practice menu and settings panel work like the live app",
           "priority": "should",
-          "verdict": "unknown",
-          "reasons": [
-            "no production-stage results yet"
-          ]
+          "verdict": "met"
         }
       ]
     },
