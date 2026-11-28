@@ -11,14 +11,14 @@ Bogan has one seller rule that big marketplaces lack: no white-labelled or
 copy-cat listings. A seller may not relabel generic goods as their own
 brand or list knock-offs of another seller's product. How the rule is
 enforced, and what the first version is, are in the
-[product brief](docs/plans/2026-11-product-brief.md) (proposed, waiting on
-Jim's review).
+[product brief](docs/plans/2026-11-product-brief.md) (approved by Jim on
+2026-11-28).
 
 Bogan is Algonquin for a quiet tributary or backwater. Bogan brings
 transparency to all the tributaries that feed into a big marketplace: we
 value the little guys and want consumers to have a real choice.
 
-Bogan is in early design and has no code yet. The brief proposes a
+Bogan is in early design and has no code yet. The first version is a
 curated catalog that links out to where sellers already sell as the first
 version.
 

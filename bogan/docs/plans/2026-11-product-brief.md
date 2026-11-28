@@ -7,7 +7,10 @@ no white-label rule is enforced, the smallest first version worth
 shipping, and how it fits the repo rules. Every choice that is Jim's is in
 [Questions for Jim](#questions-for-jim), each with its cost.
 
-Status: **proposed**, waiting on Jim. Nothing in it is built yet.
+Status: **approved** by Jim on 2026-11-28, with the recommended answer to
+every question in [Questions for Jim](#questions-for-jim) (see
+[Decisions](#decisions)). Nothing in it is built yet; the phases are issue
+files in [bogan/issues/](../../issues/) with `epic: Bogan first version`.
 
 It builds on, and doesn't repeat:
 
@@ -241,8 +244,8 @@ Claude Code build effort: about six medium agent PRs for the first version
 
 ## Phases
 
-Each phase becomes issue files with `epic: Bogan first version` once Jim
-approves this brief.
+Each phase is issue files in [bogan/issues/](../../issues/) with
+`epic: Bogan first version`.
 
 1. **Schema and listings.** `bogan/docs/requirements.md` (prefix `BOGN`),
    `bogan/core` with the schema, the two chain rules and the transparency
@@ -288,5 +291,11 @@ approves this brief.
 
 ## Decisions
 
-None yet. Jim's answers are recorded here, and the phases become issue
-files, in the PR that follows his review.
+- 2026-11-28, Jim (decision card): yes to all four recommendations.
+  1. The first version is a curated catalog that links out to where
+     sellers already sell; no checkout, accounts or payments.
+  2. Sellers are invite-only at first, 5 to 10 that Jim picks.
+  3. A seller's first listing needs its making hop documented; later
+     listings may be declared.
+  4. The address is `jimhillr-bogan.pages.dev` for now; a custom domain
+     waits until the first sellers are live.
