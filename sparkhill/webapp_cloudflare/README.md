@@ -13,6 +13,10 @@ so it needs no Functions, Worker or outside host
   tier budget (`standards/scripts/free-tiers.sh pages-project`) and uploads
   the site with `wrangler pages deploy`. It needs `CLOUDFLARE_API_TOKEN` and
   `CLOUDFLARE_ACCOUNT_ID`, the repo's existing Cloudflare secrets.
+- After each deploy, the deploy job runs the web app's `@smoke` Playwright
+  tests against the live site (`SMOKE_DIR = "../webapp"` in `mise.toml`,
+  `standards/scripts/evals.sh smoke`), and the `cd` evals in `../evals.toml` read
+  their report.
 - `mise run ci` checks this config (`tests/config.rs`): the Pages name, the
   output directory and free-plan settings only.
 

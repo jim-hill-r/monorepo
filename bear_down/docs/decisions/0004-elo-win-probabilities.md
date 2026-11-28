@@ -32,3 +32,7 @@ only reliable for the coming week and good sources usually need a paid API.
   remaining game with a betting line in `games.csv` (nflverse publishes
   them about two weeks ahead) uses the line instead, as
   `Φ(spread_line / 13.45)`. Elo covers later games and the playoffs.
+- Amended 2026-11-27: tuned by Brier score on 2005 to 2025 games
+  ([elo-tuning.md](../elo-tuning.md)). Home field is now 30 Elo points,
+  since the home edge has shrunk since 2019; K = 20, the one-third
+  regression and the margin multiplier held up and stay.

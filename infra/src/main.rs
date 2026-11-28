@@ -44,6 +44,15 @@ enum Command {
         /// The state Worker's origin, such as `https://jimhillr-tofu-state.<subdomain>.workers.dev`.
         origin: String,
     },
+    /// Print the state encryption block for a passphrase generation as JSON,
+    /// for `TF_ENCRYPTION`: the current passphrase under that generation's
+    /// key name, the previous one as the fallback (`tofu.sh` sets it from
+    /// `TOFU_STATE_KEY_GEN`).
+    Encryption {
+        /// The passphrase generation, 1 or more.
+        #[arg(value_parser = clap::value_parser!(u32).range(1..))]
+        generation: u32,
+    },
     /// Check a plan (`tofu show -json plan.tfplan > plan.json`) against the
     /// plan guards; fails on any finding.
     Guard {
@@ -84,6 +93,10 @@ fn main() -> anyhow::Result<()> {
             for arg in synth::backend_config_args(&stack, &origin)? {
                 println!("{arg}");
             }
+            Ok(())
+        }
+        Command::Encryption { generation } => {
+            println!("{}", synth::encryption_for(generation));
             Ok(())
         }
         Command::Guard {

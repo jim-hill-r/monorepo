@@ -1,0 +1,17 @@
+# A test helper with terms. Acme uses it only as a dev-dependency, so it
+# is non-production and always free.
+[project]
+name = "testkit"
+description = "Test helpers."
+
+[[payee]]
+name = "Testkit"
+[[payee.method]]
+kind = "link"
+url = "https://testkit.example/pay"
+
+[[tier]]
+id = "everyone"
+[[tier.price]]
+unit = "flat"
+cents = 10000

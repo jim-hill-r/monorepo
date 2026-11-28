@@ -7,8 +7,8 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use chrono::{Datelike, NaiveDate};
 use cost_model::{
-    COST_FILE, Decision, Detection, Detectors, Finding, Month, SourceFile, check_account,
-    check_drift, check_project, parse_detectors, parse_limits, parse_radar,
+    COST_FILE, Decision, Detection, Detectors, Finding, Month, Project, SourceFile, check_account,
+    check_drift, check_project, parse_cost_file, parse_detectors, parse_limits, parse_radar,
 };
 
 use crate::git;
@@ -57,8 +57,8 @@ pub fn detect_here(
 
 pub struct Report {
     pub findings: Vec<Finding>,
-    /// How many projects the per-project rules ran on.
-    pub checked: usize,
+    /// The projects the per-project rules ran on, sorted.
+    pub projects: Vec<String>,
 }
 
 /// Every top-level directory with a `mise.toml`, sorted.
@@ -108,6 +108,19 @@ fn decision(root: &Path, link: &str) -> Decision {
     }
 }
 
+/// Every project whose `docs/cost.toml` exists and parses. `cost check`
+/// reports the rest.
+pub fn parsed_projects(root: &Path) -> Result<Vec<Project>> {
+    Ok(projects(root)?
+        .into_iter()
+        .filter_map(|name| {
+            let text = fs::read_to_string(root.join(&name).join(COST_FILE)).ok()?;
+            let file = parse_cost_file(&text).ok()?;
+            Some(Project { name, file })
+        })
+        .collect())
+}
+
 pub fn check(root: &Path, selected: Option<&[String]>, today: NaiveDate) -> Result<Report> {
     let read =
         |rel: &str| fs::read_to_string(root.join(rel)).with_context(|| format!("reading {rel}"));
@@ -148,7 +161,7 @@ pub fn check(root: &Path, selected: Option<&[String]>, today: NaiveDate) -> Resu
     findings.extend(check_account(&parsed, &radar, &limits, month));
     Ok(Report {
         findings,
-        checked: chosen.len(),
+        projects: chosen.into_iter().collect(),
     })
 }
 
@@ -211,7 +224,7 @@ mod tests {
     fn test_check_reports_missing_files_and_account_totals() {
         let dir = fixture();
         let report = check(dir.path(), None, today()).expect("check");
-        assert_eq!(report.checked, 3);
+        assert_eq!(report.projects, ["cookbook", "homer", "pane"]);
         assert_eq!(
             codes(&report),
             [
@@ -226,7 +239,7 @@ mod tests {
         let dir = fixture();
         let selected = ["cookbook/web".to_string(), "nope".to_string()];
         let report = check(dir.path(), Some(&selected), today()).expect("check");
-        assert_eq!(report.checked, 1);
+        assert_eq!(report.projects, ["cookbook"]);
         assert_eq!(codes(&report), [("COST-005", LIMITS.to_string())]);
     }
 
@@ -257,6 +270,39 @@ mod tests {
         let selected = ["cookbook".to_string()];
         let report = check(root, Some(&selected), today()).expect("check");
         assert_eq!(codes(&report), [("COST-005", LIMITS.to_string())]);
+    }
+
+    #[test]
+    fn test_parsed_projects_skip_missing_and_broken_files() {
+        let dir = fixture();
+        let root = dir.path();
+        write(root, "homer/docs/cost.toml", "summary = 1");
+        let names: Vec<String> = parsed_projects(root)
+            .expect("projects")
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
+        assert_eq!(names, ["cookbook", "pane"]);
+    }
+
+    #[test]
+    fn test_check_warns_on_past_renewals() {
+        let dir = fixture();
+        let root = dir.path();
+        write(
+            root,
+            "homer/docs/cost.toml",
+            "reviewed = \"2026-11-26\"\nsummary = \"x\"\n[[cost]]\nname = \"d\"\nvendor = \"Squarespace\"\ncents = 0\nevery = \"year\"\nsince = \"2026-01\"\nrenews = \"2026-11-01\"\n",
+        );
+        let selected = ["homer".to_string()];
+        let report = check(root, Some(&selected), today()).expect("check");
+        assert_eq!(
+            codes(&report),
+            [
+                ("COST-010", "homer/docs/cost.toml".to_string()),
+                ("COST-005", LIMITS.to_string()),
+            ]
+        );
     }
 
     #[test]

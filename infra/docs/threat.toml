@@ -1,0 +1,161 @@
+# infra: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Infrastructure as code (decision 0007): a Rust synth of OpenTofu JSON, planned on PRs, applied on main, and Infra Mint, which makes every other infra secret straight into GitHub (decision 0011). Changes Auth0, Cloudflare and GitHub settings; holds no secret values in git or state."
+
+[[surface]]
+name = "infra workflows"
+kind = "cli"
+access = "none"
+data = "private"
+notes = "Nothing is served. The risk is what the workflows can change: infra-plan (PRs, read-only), infra-apply (main, infra and infra-credentials environments), infra-drift (weekly, read-only) and infra-mint (infra-credentials, Jim approves each run)."
+
+[[secret]]
+name = "TOFU_STATE_READ_PASSWORD"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml"]
+scope = "Reads state only"
+setting = "github-secrets-tofu-state"
+
+[[secret]]
+name = "TOFU_STATE_WRITE_PASSWORD"
+where = "github"
+used_by = ["infra-apply.yml"]
+scope = "Reads, writes and locks state; infra environment only"
+setting = "github-secrets-tofu-state"
+
+[[secret]]
+name = "TOFU_STATE_PASSPHRASE"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "Encrypts and decrypts state"
+setting = "github-secrets-tofu-state"
+
+[[secret]]
+name = "AUTH0_INFRA_READ_DOMAIN"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "infra-read Auth0 app: read:clients only"
+setting = "auth0-infra-apps"
+
+[[secret]]
+name = "AUTH0_INFRA_READ_CLIENT_ID"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "infra-read Auth0 app: read:clients only"
+setting = "auth0-infra-apps"
+
+[[secret]]
+name = "AUTH0_INFRA_READ_CLIENT_SECRET"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "infra-read Auth0 app: read:clients only"
+setting = "auth0-infra-apps"
+
+[[secret]]
+name = "AUTH0_INFRA_APPLY_DOMAIN"
+where = "github"
+used_by = ["infra-apply.yml"]
+scope = "infra-apply Auth0 app: read:clients and update:clients; infra environment only"
+setting = "auth0-infra-apps"
+
+[[secret]]
+name = "AUTH0_INFRA_APPLY_CLIENT_ID"
+where = "github"
+used_by = ["infra-apply.yml"]
+scope = "infra-apply Auth0 app: read:clients and update:clients; infra environment only"
+setting = "auth0-infra-apps"
+
+[[secret]]
+name = "AUTH0_INFRA_APPLY_CLIENT_SECRET"
+where = "github"
+used_by = ["infra-apply.yml"]
+scope = "infra-apply Auth0 app: read:clients and update:clients; infra environment only"
+setting = "auth0-infra-apps"
+
+[[secret]]
+name = "AUTH0_INFRA_CREDENTIALS_DOMAIN"
+where = "github"
+used_by = ["infra-apply.yml credentials job", "infra-mint.yml"]
+scope = "Bootstrap Auth0 app that manages clients and grants; infra-credentials only"
+setting = "rotate-auth0-infra-credentials"
+
+[[secret]]
+name = "AUTH0_INFRA_CREDENTIALS_CLIENT_ID"
+where = "github"
+used_by = ["infra-apply.yml credentials job", "infra-mint.yml"]
+scope = "Bootstrap Auth0 app that manages clients and grants; infra-credentials only"
+setting = "rotate-auth0-infra-credentials"
+
+[[secret]]
+name = "AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET"
+where = "github"
+used_by = ["infra-apply.yml credentials job", "infra-mint.yml"]
+scope = "Bootstrap Auth0 app that manages clients and grants; infra-credentials only"
+setting = "rotate-auth0-infra-credentials"
+
+[[secret]]
+name = "CLOUDFLARE_INFRA_READ_TOKEN"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "jimhillr-infra-read: Account Settings Read only"
+setting = "cloudflare-infra-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_INFRA_APPLY_TOKEN"
+where = "github"
+used_by = ["infra-apply.yml"]
+scope = "jimhillr-infra-apply: Account Settings Write only; infra environment only"
+setting = "cloudflare-infra-token-scopes"
+
+[[secret]]
+name = "CLOUDFLARE_INFRA_CREDENTIALS_TOKEN"
+where = "github"
+used_by = ["infra-apply.yml credentials job", "infra-mint.yml"]
+scope = "Bootstrap token: Account API Tokens Write only; infra-credentials only"
+setting = "cloudflare-infra-credentials-token"
+
+[[secret]]
+name = "CLOUDFLARE_ACCOUNT_ID"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml", "infra-mint.yml"]
+scope = "An identifier, not a credential; kept as a secret so logs never show it"
+setting = "github-secret-cloudflare-account-id"
+
+[[secret]]
+name = "CLOUDFLARE_API_TOKEN"
+where = "github"
+used_by = ["infra-mint.yml"]
+scope = "jimhillr-deploy, which Infra Mint rotates: Pages, Workers Scripts and D1 Write"
+setting = "cloudflare-api-token-scopes"
+
+[[secret]]
+name = "GH_INFRA_CREDENTIALS_APP_KEY"
+where = "github"
+used_by = ["infra-mint.yml"]
+scope = "Private key of the infra GitHub App: Secrets, Environments, Variables and Administration on this repo; infra-credentials only"
+setting = "github-app-infra"
+
+[[secret]]
+name = "GH_INFRA_READ_APP_KEY"
+where = "github"
+used_by = ["infra-plan.yml", "infra-drift.yml", "infra-apply.yml"]
+scope = "Private key of the read-only infra GitHub App: Administration and Metadata read on this repo"
+setting = "github-app-infra-read"
+
+[[threat]]
+id = "INFRA-T1"
+stride = "elevation-of-privilege"
+what = "A pull request uses the plan's credentials to change settings."
+mitigation = "infra-plan gets only read-only credentials (read:clients, Account Settings Read, the read-only GitHub App, the state read password), and only for PRs from this repo, never forks. Every write credential is in the infra or infra-credentials environment, which run only on main."
+
+[[threat]]
+id = "INFRA-T2"
+stride = "elevation-of-privilege"
+what = "A credential change applies without Jim seeing it."
+mitigation = "Credential changes run in the infra-credentials environment, which needs Jim's approval for each run on top of the PR approval (decision 0010)."
+
+[[threat]]
+id = "INFRA-T3"
+stride = "information-disclosure"
+what = "A secret ends up in git or OpenTofu state."
+mitigation = "OpenTofu never makes or copies a secret: Infra Mint pipes each one straight into a GitHub secret (decision 0011), and the IAC-002 plan guard fails any plan with a sensitive value in state."

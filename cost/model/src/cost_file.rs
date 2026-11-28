@@ -60,6 +60,10 @@ pub struct Cost {
     pub every: Every,
     /// The first month it is paid.
     pub since: Month,
+    /// The next charge, `YYYY-MM-DD`. Required for `every = "year"`, so a
+    /// renewal can be seen coming; not allowed for `every = "once"`.
+    #[serde(default, deserialize_with = "optional_date")]
+    pub renews: Option<NaiveDate>,
     /// A decision record, repo-relative. Required when `cents > 0`.
     #[serde(default)]
     pub decision: Option<String>,
@@ -89,6 +93,12 @@ fn date<'de, D: Deserializer<'de>>(deserializer: D) -> Result<NaiveDate, D::Erro
         .map_err(|_| serde::de::Error::custom(format!("`{s}` is not a date written YYYY-MM-DD")))
 }
 
+fn optional_date<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<NaiveDate>, D::Error> {
+    date(deserializer).map(Some)
+}
+
 /// Parses a `docs/cost.toml`. The error is one line, for a COST-002 finding.
 pub fn parse_cost_file(text: &str) -> Result<CostFile, String> {
     toml::from_str(text).map_err(|e| e.message().to_string())
@@ -116,6 +126,7 @@ vendor = "Squarespace"
 cents = 1200
 every = "year"
 since = "2026-12"
+renews = "2027-12-01"
 decision = "standards/docs/decisions/0006-cookbook-domain.md"
 
 [[revenue]]
@@ -140,6 +151,10 @@ source = "None yet"
                 year: 2026,
                 month: 12
             }
+        );
+        assert_eq!(
+            file.cost[0].renews,
+            Some(NaiveDate::from_ymd_opt(2027, 12, 1).expect("date"))
         );
         assert_eq!(file.revenue[0].cents, 0);
     }
@@ -175,5 +190,15 @@ source = "None yet"
         let err =
             parse_cost_file("reviewed = \"26 Nov 2026\"\nsummary = \"x\"\n").expect_err("bad");
         assert!(err.contains("YYYY-MM-DD"), "{err}");
+        let cost = "reviewed = \"2026-11-26\"\nsummary = \"x\"\n[[cost]]\nname = \"x\"\nvendor = \"Squarespace\"\ncents = 1\nevery = \"year\"\nsince = \"2026-11\"\nrenews = \"2027-11\"\n";
+        let err = parse_cost_file(cost).expect_err("bad renews");
+        assert!(err.contains("YYYY-MM-DD"), "{err}");
+    }
+
+    #[test]
+    fn test_renews_is_optional() {
+        let cost = "reviewed = \"2026-11-26\"\nsummary = \"x\"\n[[cost]]\nname = \"x\"\nvendor = \"Squarespace\"\ncents = 1\nevery = \"month\"\nsince = \"2026-11\"\n";
+        let file = parse_cost_file(cost).expect("parses");
+        assert_eq!(file.cost[0].renews, None);
     }
 }

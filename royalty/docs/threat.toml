@@ -1,0 +1,10 @@
+# royalty: threat model. Format and rules: standards/docs/security.md
+reviewed = "2026-11-27"
+summary = "Docs project; no code, nothing deployed, no secrets."
+
+[[surface]]
+name = "docs"
+kind = "library"
+access = "none"
+data = "public"
+notes = "Files in the repo only."

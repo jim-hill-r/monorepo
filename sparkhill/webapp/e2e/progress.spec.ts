@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
+import { saveSettings } from './settings-panel';
 
 /**
- * Each learner's progress is kept in the browser (src/progress.rs): a reload
+ * Each learner's progress is kept in the browser (src/progress.rs) under the
+ * name typed as Student in the settings panel: a reload
  * carries on where the learner was, and another name starts afresh.
  */
 
@@ -23,12 +25,12 @@ async function traceRight(page: Page): Promise<void> {
 
 async function beginAs(page: Page, name: string): Promise<void> {
   await page.goto('/');
-  await page.getByPlaceholder('Your name').fill(name);
+  await saveSettings(page, { student: name });
   await page.getByRole('link', { name: 'Begin' }).click();
   await page.getByRole('button', { name: 'Start' }).click();
 }
 
-test('a reload carries on where the learner was', async ({ page }) => {
+test('a reload carries on where the learner was @smoke @req:SPRK-005', async ({ page }) => {
   await beginAs(page, 'Ada');
   await expect(page.locator('main b')).toHaveText('b');
   await traceRight(page);
@@ -39,10 +41,11 @@ test('a reload carries on where the learner was', async ({ page }) => {
   await expect(page.locator('main b')).toHaveText('c');
 
   await page.goto('/');
-  await expect(page.getByPlaceholder('Your name')).toHaveValue('Ada');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByLabel('Student')).toHaveValue('Ada');
 });
 
-test('another learner starts afresh', async ({ page }) => {
+test('another learner starts afresh @smoke @req:SPRK-005', async ({ page }) => {
   await beginAs(page, 'Ada');
   await traceRight(page);
   await expect(page.locator('main b')).toHaveText('c');

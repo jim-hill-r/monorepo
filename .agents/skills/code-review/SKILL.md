@@ -24,7 +24,10 @@ Review one project and turn the findings into issues that the
 
 Before reading code, read the relevant files in `standards/docs/`: `rust.md`,
 `testing.md`, `documentation.md`, `naming.md`, and `typescript.md` if the
-project has TypeScript.
+project has TypeScript. For design and naming judgement calls, read the
+notes in `athenaeum/resources/code_quality/` (Rust API Guidelines, Clippy,
+Effective Rust, Clean Code, Ousterhout, Fowler's smells) and name each
+finding with the source's own term, such as `C-GETTER` or "feature envy".
 
 ## 3. Inspect the code
 

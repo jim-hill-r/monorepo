@@ -529,6 +529,9 @@ pub fn issue_file(file: &str, project: Option<&str>, contents: &str) -> Option<W
         section,
         epic: field(&fields, "epic").map(str::to_owned),
         tags,
+        added: field(&fields, "added")
+            .and_then(leading_date)
+            .map(str::to_owned),
     })
 }
 
@@ -629,6 +632,8 @@ pub fn code_comments(file: &str, project: Option<&str>, contents: &str) -> Vec<W
                 section: None,
                 epic: None,
                 tags,
+                // repo::build fills a FIX's date in from git blame.
+                added: None,
             });
         }
     }
@@ -776,6 +781,29 @@ pub fn retro(path: &str, project: Option<&str>, contents: &str) -> Retro {
         path: path.to_owned(),
         actions,
     }
+}
+
+/// Parse `pane/health.toml` into the health rules' thresholds. Missing keys
+/// take the plan's starting values; an unknown key is an error.
+pub fn health_thresholds(health_toml: &str) -> Result<pane_model::health::Thresholds, String> {
+    toml::from_str(health_toml).map_err(|e| format!("pane/health.toml: {e}"))
+}
+
+/// The 1-based line of every `[[table]]` header in a TOML file, in order,
+/// so each array entry can link to its source line.
+pub fn table_lines(text: &str, table: &str) -> Vec<u32> {
+    let header = format!("[[{table}]]");
+    text.lines()
+        .enumerate()
+        .filter(|(_, line)| {
+            let line = line.trim();
+            line == header
+                || line
+                    .strip_prefix(&header)
+                    .is_some_and(|rest| rest.trim_start().starts_with('#'))
+        })
+        .filter_map(|(i, _)| u32::try_from(i + 1).ok())
+        .collect()
 }
 
 #[cfg(test)]
@@ -1250,6 +1278,17 @@ mod tests {
     }
 
     #[test]
+    fn issue_file_keeps_its_added_date() -> Result<(), String> {
+        let with = "---\nkind: fix\npriority: priority\nadded: 2026-11-20\n---\n\nBroken.\n";
+        let item = issue_file("app/issues/x.md", Some("app"), with).ok_or("no item")?;
+        assert_eq!(item.added.as_deref(), Some("2026-11-20"));
+        let odd = with.replace("2026-11-20", "last week");
+        let item = issue_file("app/issues/x.md", Some("app"), &odd).ok_or("no item")?;
+        assert_eq!(item.added, None);
+        Ok(())
+    }
+
+    #[test]
     fn reads_issue_files_with_sections_and_epics() {
         let items: Vec<_> = [FLAT, EPIC, PHASE, LATER]
             .into_iter()
@@ -1320,5 +1359,47 @@ mod tests {
         assert_eq!(owning_project("app/issues/a.md", &roots), Some("app"));
         assert_eq!(owning_project("application/issues/a.md", &roots), None);
         assert_eq!(owning_project("issues/a.md", &roots), None);
+    }
+
+    #[test]
+    fn pane_health_toml_parses_and_sets_every_key() -> Result<(), String> {
+        let text = include_str!("../../health.toml");
+        let parsed = health_thresholds(text)?;
+        // Every key is written out, so the file is the full list Jim tunes.
+        let table: toml::Table = toml::from_str(text).map_err(|e| e.to_string())?;
+        let defaults = toml::Table::try_from(pane_model::health::Thresholds::default())
+            .map_err(|e| e.to_string())?;
+        for (section, keys) in &defaults {
+            let (Some(want), Some(got)) = (
+                keys.as_table(),
+                table.get(section).and_then(|v| v.as_table()),
+            ) else {
+                return Err(format!("health.toml is missing [{section}]"));
+            };
+            for key in want.keys() {
+                if !got.contains_key(key) {
+                    return Err(format!("health.toml is missing {section}.{key}"));
+                }
+            }
+        }
+        assert!(parsed.build.stale_after_days > 0);
+        Ok(())
+    }
+
+    #[test]
+    fn health_thresholds_reject_typos_and_default_missing() -> Result<(), String> {
+        assert!(health_thresholds("[build]\nstale_days = 3\n").is_err());
+        let t = health_thresholds("[build]\nstale_after_days = 3\n")?;
+        assert_eq!(t.build.stale_after_days, 3);
+        assert_eq!(t.review, pane_model::health::ReviewThresholds::default());
+        Ok(())
+    }
+
+    #[test]
+    fn finds_table_header_lines() {
+        let text = "a = 1\n[[cost]]\nx = 1\n  [[cost]] # second\n[[revenue]]\n[cost]\n[[costs]]\n";
+        assert_eq!(table_lines(text, "cost"), [2, 4]);
+        assert_eq!(table_lines(text, "revenue"), [5]);
+        assert!(table_lines(text, "service").is_empty());
     }
 }

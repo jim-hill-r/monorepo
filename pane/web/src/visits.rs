@@ -166,6 +166,7 @@ mod tests {
             section: Some("Priority Issues".into()),
             epic: None,
             tags: vec![],
+            added: None,
         }
     }
 

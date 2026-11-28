@@ -1,0 +1,240 @@
+{
+  "import": [
+    {
+      "id": "monorepo",
+      "to": "github_repository.jimhillr"
+    }
+  ],
+  "moved": [
+    {
+      "from": "github_repository.monorepo",
+      "to": "github_repository.jimhillr"
+    },
+    {
+      "from": "github_repository_vulnerability_alerts.monorepo",
+      "to": "github_repository_vulnerability_alerts.jimhillr"
+    },
+    {
+      "from": "github_repository_dependabot_security_updates.monorepo",
+      "to": "github_repository_dependabot_security_updates.jimhillr"
+    }
+  ],
+  "provider": {
+    "github": [
+      {
+        "owner": "jimhillr"
+      }
+    ]
+  },
+  "resource": {
+    "github_repository": {
+      "jimhillr": {
+        "allow_auto_merge": true,
+        "allow_merge_commit": false,
+        "allow_rebase_merge": false,
+        "allow_squash_merge": true,
+        "allow_update_branch": true,
+        "archive_on_destroy": true,
+        "archived": false,
+        "delete_branch_on_merge": true,
+        "description": "Monorepo for all projects",
+        "dynamic": {
+          "pages": null,
+          "security_and_analysis": null,
+          "template": null
+        },
+        "has_discussions": false,
+        "has_issues": false,
+        "has_projects": false,
+        "has_wiki": false,
+        "homepage_url": "",
+        "is_template": false,
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        },
+        "merge_commit_message": "PR_TITLE",
+        "merge_commit_title": "MERGE_MESSAGE",
+        "name": "monorepo",
+        "security_and_analysis": [
+          {
+            "dynamic": {
+              "advanced_security": null,
+              "code_security": null,
+              "secret_scanning": null,
+              "secret_scanning_ai_detection": null,
+              "secret_scanning_non_provider_patterns": null,
+              "secret_scanning_push_protection": null
+            },
+            "secret_scanning": [
+              {
+                "status": "enabled"
+              }
+            ],
+            "secret_scanning_push_protection": [
+              {
+                "status": "enabled"
+              }
+            ]
+          }
+        ],
+        "squash_merge_commit_message": "BLANK",
+        "squash_merge_commit_title": "PR_TITLE",
+        "visibility": "public",
+        "web_commit_signoff_required": false
+      }
+    },
+    "github_repository_dependabot_security_updates": {
+      "jimhillr": {
+        "enabled": true,
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        },
+        "repository": "monorepo"
+      }
+    },
+    "github_repository_ruleset": {
+      "ci": {
+        "conditions": [
+          {
+            "dynamic": {
+              "ref_name": null
+            },
+            "ref_name": [
+              {
+                "exclude": [],
+                "include": [
+                  "~DEFAULT_BRANCH"
+                ]
+              }
+            ]
+          }
+        ],
+        "dynamic": {
+          "bypass_actors": null,
+          "conditions": null,
+          "rules": null
+        },
+        "enforcement": "active",
+        "lifecycle": {
+          "create_before_destroy": false,
+          "ignore_changes": [
+            "bypass_actors"
+          ],
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        },
+        "name": "CI",
+        "repository": "monorepo",
+        "rules": [
+          {
+            "dynamic": {
+              "branch_name_pattern": null,
+              "commit_author_email_pattern": null,
+              "commit_message_pattern": null,
+              "committer_email_pattern": null,
+              "copilot_code_review": null,
+              "file_extension_restriction": null,
+              "file_path_restriction": null,
+              "max_file_path_length": null,
+              "max_file_size": null,
+              "merge_queue": null,
+              "pull_request": null,
+              "required_code_scanning": null,
+              "required_deployments": null,
+              "required_status_checks": null,
+              "tag_name_pattern": null
+            },
+            "required_status_checks": [
+              {
+                "dynamic": {
+                  "required_check": null
+                },
+                "required_check": [
+                  {
+                    "context": "CI result",
+                    "integration_id": 15368.0
+                  },
+                  {
+                    "context": "Human review",
+                    "integration_id": 15368.0
+                  }
+                ],
+                "strict_required_status_checks_policy": false
+              }
+            ]
+          }
+        ],
+        "target": "branch"
+      }
+    },
+    "github_repository_vulnerability_alerts": {
+      "jimhillr": {
+        "enabled": true,
+        "lifecycle": {
+          "create_before_destroy": false,
+          "prevent_destroy": true,
+          "replace_triggered_by": []
+        },
+        "repository": "monorepo"
+      }
+    }
+  },
+  "terraform": {
+    "backend": {
+      "http": {
+        "lock_method": "LOCK",
+        "retry_max": 5,
+        "unlock_method": "UNLOCK",
+        "update_method": "POST",
+        "username": "tofu"
+      }
+    },
+    "encryption": {
+      "key_provider": {
+        "pbkdf2": {
+          "state": {
+            "passphrase": "${var.tofu_state_passphrase}"
+          }
+        }
+      },
+      "method": {
+        "aes_gcm": {
+          "state": {
+            "keys": "key_provider.pbkdf2.state"
+          }
+        }
+      },
+      "plan": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
+      },
+      "state": {
+        "enforced": true,
+        "method": "method.aes_gcm.state"
+      }
+    },
+    "required_providers": {
+      "github": {
+        "source": "integrations/github",
+        "version": "6.13.0"
+      }
+    }
+  },
+  "variable": {
+    "tofu_state_passphrase": {
+      "nullable": false,
+      "sensitive": true,
+      "type": "string"
+    },
+    "tofu_state_passphrase_old": {
+      "default": "",
+      "nullable": false,
+      "sensitive": true,
+      "type": "string"
+    }
+  }
+}

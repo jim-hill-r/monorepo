@@ -16,6 +16,10 @@ const TIMEOUT: Duration = Duration::from_secs(30);
 /// in the site's analytics.
 pub const USER_AGENT: &str = "jimhillr-evals/0.1 (synthetic check)";
 
+/// Also sent with every request: the header the `telemetry` Worker and
+/// other non-browser analytics drop (eval engine phase 3).
+pub const SYNTHETIC_HEADER: (&str, &str) = ("x-jimhillr-synthetic", "1");
+
 /// One response, as much of it as the checks need.
 #[derive(Debug, Clone, Default)]
 pub struct Response {
@@ -74,6 +78,7 @@ impl Fetch for Client {
         let request = ureq::http::Request::builder()
             .method(method)
             .uri(url)
+            .header(SYNTHETIC_HEADER.0, SYNTHETIC_HEADER.1)
             .body(())
             .map_err(|e| format!("bad request {method} {url}: {e}"))?;
         let start = Instant::now();
@@ -116,6 +121,7 @@ pub struct Expect {
     /// Name in lower case, and the text its value must contain.
     pub header: Option<(String, String)>,
     pub body_contains: Option<String>,
+    pub asset_contains: Option<String>,
     pub max_ms: Option<u64>,
 }
 
@@ -131,6 +137,7 @@ impl Expect {
             status,
             header,
             body_contains,
+            asset_contains,
             max_ms,
         } = kind
         else {
@@ -154,6 +161,7 @@ impl Expect {
             status: status.unwrap_or(200),
             header,
             body_contains: body_contains.clone(),
+            asset_contains: asset_contains.clone(),
             max_ms: *max_ms,
         })
     }
@@ -274,7 +282,14 @@ pub fn run(kind: &Kind, deploy_url: Option<&str>, fetch: &dyn Fetch, retry: Retr
         let (status, mut note, value) =
             match fetch.fetch(&expect.method, &expect.url, expect.follows_redirects()) {
                 Ok(response) => {
-                    let (status, note) = expect.judge(&response);
+                    let (mut status, mut note) = expect.judge(&response);
+                    if status == ResultStatus::Pass
+                        && let Some(needle) = &expect.asset_contains
+                        && let Err(miss) = check_assets(&expect.url, &response.body, needle, fetch)
+                    {
+                        status = ResultStatus::Fail;
+                        note = format!("{} {}: {miss}", expect.method, expect.url);
+                    }
                     #[allow(clippy::cast_precision_loss)]
                     let ms = response.elapsed_ms as f64;
                     (status, note, Some(ms))
@@ -301,6 +316,196 @@ pub fn run(kind: &Kind, deploy_url: Option<&str>, fetch: &dyn Fetch, retry: Retr
         value: None,
         threshold: None,
     })
+}
+
+/// Fetches every same-origin asset `page` names, and the wasm modules
+/// its scripts load, and checks that each answers 200 and that one of them
+/// contains `needle`. `Err` says what missed.
+fn check_assets(
+    page_url: &str,
+    page: &[u8],
+    needle: &str,
+    fetch: &dyn Fetch,
+) -> Result<(), String> {
+    let mut assets = page_assets(page_url, &String::from_utf8_lossy(page));
+    if assets.is_empty() {
+        return Err("the page names no same-origin script, stylesheet or wasm".into());
+    }
+    let mut misses = Vec::new();
+    let mut found = false;
+    let mut next = 0;
+    while let Some(asset) = assets.get(next).cloned() {
+        next += 1;
+        match fetch.fetch("GET", &asset, true) {
+            Ok(response) if response.status == 200 => {
+                found = found || contains(&response.body, needle.as_bytes());
+                let path = asset.split(['?', '#']).next().unwrap_or("");
+                if path.ends_with(".js") || path.ends_with(".mjs") {
+                    for wasm in wasm_paths(&asset, &String::from_utf8_lossy(&response.body)) {
+                        if !assets.contains(&wasm) {
+                            assets.push(wasm);
+                        }
+                    }
+                }
+            }
+            Ok(response) => misses.push(format!("asset {asset}: status {}", response.status)),
+            Err(why) => misses.push(format!("asset {asset}: no response: {why}")),
+        }
+    }
+    if !found {
+        misses.push(format!(
+            "none of its {} assets contains `{needle}`",
+            assets.len()
+        ));
+    }
+    if misses.is_empty() {
+        Ok(())
+    } else {
+        Err(misses.join("; "))
+    }
+}
+
+/// The same-origin assets an HTML page loads: `src` of `<script>` tags,
+/// `href` of stylesheet, preload and modulepreload `<link>` tags, and the
+/// wasm paths in [`wasm_paths`]. Each is an absolute URL, in the order
+/// first named, without duplicates.
+pub fn page_assets(page_url: &str, html: &str) -> Vec<String> {
+    let mut found: Vec<String> = Vec::new();
+    let mut add = |url: String| {
+        if !found.contains(&url) {
+            found.push(url);
+        }
+    };
+    let lower = html.to_ascii_lowercase();
+    let mut rest = 0;
+    while let Some(start) = lower[rest..].find('<').map(|i| rest + i) {
+        let end = lower[start..].find('>').map_or(lower.len(), |i| start + i);
+        let tag = &html[start..end];
+        let tag_lower = &lower[start..end];
+        let reference = if tag_lower.starts_with("<script") {
+            attribute(tag, "src")
+        } else if tag_lower.starts_with("<link")
+            && attribute(tag, "rel").is_some_and(|rel| {
+                rel.split_ascii_whitespace().any(|r| {
+                    matches!(
+                        r.to_ascii_lowercase().as_str(),
+                        "stylesheet" | "preload" | "modulepreload"
+                    )
+                })
+            })
+        {
+            attribute(tag, "href")
+        } else {
+            None
+        };
+        if let Some(url) = reference.and_then(|r| resolve(page_url, r)) {
+            add(url);
+        }
+        rest = end.max(start + 1);
+    }
+    for url in wasm_paths(page_url, html) {
+        add(url);
+    }
+    found
+}
+
+/// Quoted absolute `.wasm` paths in a page or script, such as the one a
+/// wasm-bindgen loader passes to `init`, as same-origin URLs. Bare relative
+/// names (`"web_bg.wasm"`) are a loader's unused default, so they're left
+/// out.
+fn wasm_paths(base_url: &str, text: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    for quote in ['"', '\''] {
+        for piece in text.split(quote).skip(1).step_by(2) {
+            let absolute = piece.starts_with('/') || piece.contains("://");
+            if absolute
+                && piece.ends_with(".wasm")
+                && !piece.contains(char::is_whitespace)
+                && let Some(url) = resolve(base_url, piece)
+                && !found.contains(&url)
+            {
+                found.push(url);
+            }
+        }
+    }
+    found
+}
+
+/// The value of attribute `name` in one tag's text (`<link rel=x href="y"`).
+fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let lower = tag.to_ascii_lowercase();
+    let mut from = 0;
+    while let Some(i) = lower[from..].find(name).map(|i| from + i) {
+        from = i + name.len();
+        let before = lower[..i].chars().next_back();
+        if !before.is_some_and(char::is_whitespace) {
+            continue;
+        }
+        let after = lower[from..].trim_start();
+        let Some(value) = after.strip_prefix('=') else {
+            continue;
+        };
+        let value_start = tag.len() - value.trim_start().len();
+        let value = &tag[value_start..];
+        return Some(match value.chars().next() {
+            Some(q @ ('"' | '\'')) => value[1..].split(q).next().unwrap_or(""),
+            _ => value.split_whitespace().next().unwrap_or(""),
+        });
+    }
+    None
+}
+
+/// `reference` as an absolute URL on `page_url`'s origin, or `None` when it
+/// points at another origin or isn't a fetchable URL (`data:`, empty).
+fn resolve(page_url: &str, reference: &str) -> Option<String> {
+    let reference = reference.trim();
+    let (scheme, after) = page_url.split_once("://")?;
+    let host_end = after.find(['/', '?', '#']).unwrap_or(after.len());
+    let host = &after[..host_end];
+    let origin = format!("{scheme}://{host}");
+    let path = if reference.is_empty() || reference.starts_with('#') {
+        return None;
+    } else if let Some(other) = reference.strip_prefix("//") {
+        other
+            .strip_prefix(host)
+            .filter(|p| p.starts_with('/'))?
+            .to_string()
+    } else if reference.starts_with('/') {
+        reference.to_string()
+    } else if reference.contains(':') {
+        // Another scheme, or an absolute URL: only this origin's are kept.
+        reference
+            .strip_prefix(&origin)
+            .filter(|p| p.starts_with('/'))?
+            .to_string()
+    } else {
+        let page_path = after[host_end..].split(['?', '#']).next().unwrap_or("");
+        let dir = page_path.rfind('/').map_or("/", |i| &page_path[..=i]);
+        format!("{dir}{reference}")
+    };
+    Some(normalize(&origin, &path))
+}
+
+/// Joins `origin` and `path`, dropping `.` segments and applying `..`.
+fn normalize(origin: &str, path: &str) -> String {
+    let (path, query) = match path.find(['?', '#']) {
+        Some(i) => (&path[..i], &path[i..]),
+        None => (path, ""),
+    };
+    let mut segments: Vec<&str> = Vec::new();
+    let parts: Vec<&str> = path.split('/').skip(1).collect();
+    for (i, part) in parts.iter().enumerate() {
+        match *part {
+            "." => {}
+            ".." => {
+                segments.pop();
+            }
+            "" if i + 1 < parts.len() => {}
+            other => segments.push(other),
+        }
+    }
+    let query = query.split('#').next().unwrap_or("");
+    format!("{origin}/{}{query}", segments.join("/"))
 }
 
 fn contains(haystack: &[u8], needle: &[u8]) -> bool {
@@ -500,6 +705,116 @@ mod tests {
         );
     }
 
+    /// The shell `dx bundle` writes: a preload and a module script, whose
+    /// loader names the hashed wasm.
+    const DX_SHELL: &str = r#"<!DOCTYPE html><html><head><title>Cookbook</title>
+<link rel="preload" as="script" href="/./assets/web-dxh1.js" crossorigin>
+<link rel="icon" href="/favicon.ico"></head><body><div id="main"></div>
+<script type="module" async src="/./assets/web-dxh1.js"></script></body></html>"#;
+
+    const DX_LOADER: &str = r#"if(m===undefined){m=new URL("web_bg.wasm",import.meta.url);}
+__wbg_init({module_or_path:"/./assets/web_bg-dxh2.wasm"})"#;
+
+    #[test]
+    fn finds_the_assets_a_page_loads() {
+        assert_eq!(
+            page_assets("https://a/recipe/1", DX_SHELL),
+            vec!["https://a/assets/web-dxh1.js"]
+        );
+        let html = r#"<link rel=stylesheet href=style.css><link REL="modulepreload" href='../m.js'>
+<script>init('/pkg/app_bg.wasm')</script><script src="https://cdn.example/x.js"></script>
+<script src="https://a/same.js?v=1"></script><script src="//a/proto.js"></script>
+<img src="/logo.png"><script src="data:text/javascript,1"></script>"#;
+        assert_eq!(
+            page_assets("https://a/docs/page", html),
+            vec![
+                "https://a/docs/style.css",
+                "https://a/m.js",
+                "https://a/same.js?v=1",
+                "https://a/proto.js",
+                "https://a/pkg/app_bg.wasm",
+            ]
+        );
+    }
+
+    #[test]
+    fn checks_the_wasm_a_client_rendered_page_ships() {
+        let wasm = Response {
+            body: b"\0asm...New Year's Day Celebration Pancakes...".to_vec(),
+            ..ok_page("")
+        };
+        let fetch = Canned::new(vec![
+            Ok(ok_page(DX_SHELL)),
+            Ok(ok_page(DX_LOADER)),
+            Ok(wasm),
+        ]);
+        let outcome = run(
+            &http("path = \"/recipe/1\"\nasset_contains = \"Celebration Pancakes\""),
+            Some("https://a"),
+            &fetch,
+            NOW,
+        );
+        assert_eq!(outcome.status, ResultStatus::Pass, "{}", outcome.note);
+        let asked: Vec<String> = fetch.asked.borrow().iter().map(|a| a.1.clone()).collect();
+        assert_eq!(
+            asked,
+            vec![
+                "https://a/recipe/1",
+                "https://a/assets/web-dxh1.js",
+                "https://a/assets/web_bg-dxh2.wasm",
+            ]
+        );
+    }
+
+    #[test]
+    fn a_missing_asset_or_missing_content_fails() {
+        let mut gone = ok_page("not found");
+        gone.status = 404;
+        let fetch = Canned::new(vec![
+            Ok(ok_page(DX_SHELL)),
+            Ok(ok_page(DX_LOADER)),
+            Ok(gone),
+        ]);
+        let retry = Retry {
+            attempts: 1,
+            delay: Duration::ZERO,
+        };
+        let kind = http("path = \"/\"\nasset_contains = \"Pancakes\"");
+        let outcome = run(&kind, Some("https://a"), &fetch, retry);
+        assert_eq!(outcome.status, ResultStatus::Fail);
+        assert_eq!(
+            outcome.note,
+            "GET https://a/: asset https://a/assets/web_bg-dxh2.wasm: status 404; \
+             none of its 2 assets contains `Pancakes`"
+        );
+
+        let fetch = Canned::new(vec![Ok(ok_page("<p>maintenance</p>"))]);
+        let outcome = run(&kind, Some("https://a"), &fetch, retry);
+        assert_eq!(
+            outcome.note,
+            "GET https://a/: the page names no same-origin script, stylesheet or wasm"
+        );
+    }
+
+    #[test]
+    fn assets_are_not_fetched_when_the_page_itself_fails() {
+        let mut down = ok_page("");
+        down.status = 503;
+        let fetch = Canned::new(vec![Ok(down)]);
+        let retry = Retry {
+            attempts: 1,
+            delay: Duration::ZERO,
+        };
+        let outcome = run(
+            &http("path = \"/\"\nasset_contains = \"x\""),
+            Some("https://a"),
+            &fetch,
+            retry,
+        );
+        assert_eq!(outcome.note, "GET https://a/: status 503 (expected 200)");
+        assert_eq!(fetch.asked.borrow().len(), 1);
+    }
+
     /// Serves one canned HTTP/1.1 reply per connection on localhost and
     /// returns the base URL.
     fn serve(replies: Vec<&'static str>) -> std::io::Result<String> {
@@ -522,6 +837,53 @@ mod tests {
             }
         });
         Ok(base)
+    }
+
+    /// Answers one request with 200 and returns the request's header lines,
+    /// lower-cased, once it has been read.
+    fn capture() -> std::io::Result<(String, std::sync::mpsc::Receiver<Vec<String>>)> {
+        let listener = TcpListener::bind("127.0.0.1:0")?;
+        let base = format!("http://{}", listener.local_addr()?);
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let Ok((mut stream, _)) = listener.accept() else {
+                return;
+            };
+            let mut reader = BufReader::new(match stream.try_clone() {
+                Ok(s) => s,
+                Err(_) => return,
+            });
+            let mut lines = Vec::new();
+            let mut line = String::new();
+            while reader.read_line(&mut line).is_ok_and(|n| n > 2) {
+                lines.push(line.trim_end().to_ascii_lowercase());
+                line.clear();
+            }
+            let _ = stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            let _ = send.send(lines);
+        });
+        Ok((base, receive))
+    }
+
+    #[test]
+    fn the_client_says_it_is_synthetic() -> anyhow::Result<()> {
+        let (base, request) = capture()?;
+        Client::new()
+            .fetch("GET", &format!("{base}/"), true)
+            .map_err(anyhow::Error::msg)?;
+        let lines = request.recv_timeout(Duration::from_secs(10))?;
+        assert!(
+            lines.contains(&"x-jimhillr-synthetic: 1".to_string()),
+            "{lines:?}"
+        );
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.starts_with("user-agent: ") && l.contains("jimhillr-evals")),
+            "{lines:?}"
+        );
+        Ok(())
     }
 
     #[test]

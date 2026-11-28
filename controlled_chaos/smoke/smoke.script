@@ -1,0 +1,29 @@
+# Smoke run: one round against the CPU, from the start screen.
+# Run it with `mise run smoke` (README.md, "Scripted runs").
+# One step per line: <frame> <command> [argument]. See src/script.rs.
+seed 42
+
+30 screenshot start-screen
+40 expect state splash
+50 start
+60 expect state in-game
+61 expect phase draw
+62 expect round 1
+90 screenshot first-turn
+
+# Player 1: draw, attack with the first card, the CPU defends.
+100 advance
+110 expect phase play
+120 pick 1
+130 expect phase end
+140 screenshot after-attack
+150 advance
+
+# The CPU draws and attacks; Player 1 defends with the first card.
+160 expect phase battle
+170 screenshot cpu-attacks
+180 pick 1
+200 expect round 3
+201 expect phase draw
+230 screenshot second-round
+240 exit

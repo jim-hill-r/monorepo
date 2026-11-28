@@ -69,6 +69,23 @@ pub struct HomePreferences {
     pub min_sqft: Option<u32>,
 }
 
+impl HomePreferences {
+    /// Fail when no property could meet these preferences, such as
+    /// `--min-bedrooms` above `--max-bedrooms`, so homer stops before it
+    /// spends a RapidAPI free-quota request on a lookup that can only fail.
+    pub fn validate(&self) -> Result<()> {
+        if let (Some(min), Some(max)) = (self.min_bedrooms, self.max_bedrooms)
+            && min > max
+        {
+            anyhow::bail!(
+                "No property can meet these preferences: --min-bedrooms {min} is more than \
+                 --max-bedrooms {max}. Lower --min-bedrooms or raise --max-bedrooms."
+            );
+        }
+        Ok(())
+    }
+}
+
 /// Property details returned by the Zillow API
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
 pub struct PropertyDetails {
@@ -190,7 +207,11 @@ impl ZillowClient {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().unwrap_or_default();
-            anyhow::bail!("Zillow API returned status {}: {}", status, body);
+            anyhow::bail!(
+                "Zillow API returned status {}: {}",
+                status,
+                summarize_error_body(&body)
+            );
         }
 
         let raw: serde_json::Value = response
@@ -198,6 +219,23 @@ impl ZillowClient {
             .context("Failed to parse Zillow API response")?;
 
         parse_property_details(&raw, address)
+    }
+}
+
+/// How many characters of an error response body to show.
+const ERROR_BODY_LIMIT: usize = 300;
+
+/// Shorten an error response body for an error message.
+///
+/// Collapses runs of whitespace into single spaces and keeps at most
+/// [`ERROR_BODY_LIMIT`] characters (never splitting a character), adding
+/// " (truncated)" when it cuts. A gateway error page can be long HTML that
+/// would otherwise flood the terminal and hide the status.
+fn summarize_error_body(body: &str) -> String {
+    let collapsed = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    match collapsed.char_indices().nth(ERROR_BODY_LIMIT) {
+        Some((cut, _)) => format!("{} (truncated)", &collapsed[..cut]),
+        None => collapsed,
     }
 }
 
@@ -247,8 +285,49 @@ fn parse_bathroom_count(arg: &str) -> std::result::Result<f32, String> {
     })
 }
 
-/// Parse property details from the raw Zillow API JSON response
+/// The response fields that show the Zillow API found a property: `zpid`
+/// and every field homer reads.
+const PROPERTY_FIELDS: [&str; 10] = [
+    "zpid",
+    "price",
+    "zestimate",
+    "bedrooms",
+    "bathrooms",
+    "livingArea",
+    "yearBuilt",
+    "homeType",
+    "description",
+    "hdpUrl",
+];
+
+/// Fail when a successful response holds no property.
+///
+/// RapidAPI can answer 200 with `{}` or `{"message": "..."}` when Zillow has
+/// no match for the address. Without this check homer would print just the
+/// typed address and call every criterion "unknown", as if it had found a
+/// house. A field that is present but has a value homer can't use still
+/// counts as a property, so the report shows it as unknown.
+fn ensure_property_found(raw: &serde_json::Value, address: &str) -> Result<()> {
+    let found = raw
+        .as_object()
+        .is_some_and(|fields| PROPERTY_FIELDS.iter().any(|key| fields.contains_key(*key)));
+    if found {
+        return Ok(());
+    }
+    let reason = ["message", "error"]
+        .iter()
+        .find_map(|key| raw.get(*key).and_then(|v| v.as_str()))
+        .map(|text| format!(" Zillow API said: {}", summarize_error_body(text)))
+        .unwrap_or_default();
+    anyhow::bail!("Zillow found no property for \"{address}\".{reason}")
+}
+
+/// Parse property details from the raw Zillow API JSON response.
+///
+/// Fails when the response holds no property (see [`ensure_property_found`]).
 pub fn parse_property_details(raw: &serde_json::Value, address: &str) -> Result<PropertyDetails> {
+    ensure_property_found(raw, address)?;
+
     let price = raw
         .get("price")
         .and_then(json_whole_number)
@@ -332,10 +411,15 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
     if let Some(max_price) = prefs.max_price {
         match details.price {
             Some(price) if price <= max_price => {}
-            Some(price) => {
-                unmet_criteria.push(format!("Price: ${} (max is ${})", price, max_price))
-            }
-            None => unmet_criteria.push(format!("Price: unknown (max is ${})", max_price)),
+            Some(price) => unmet_criteria.push(format!(
+                "Price: {} (max is {})",
+                format_dollars(price),
+                format_dollars(max_price)
+            )),
+            None => unmet_criteria.push(format!(
+                "Price: unknown (max is {})",
+                format_dollars(max_price)
+            )),
         }
     }
 
@@ -375,6 +459,20 @@ pub fn evaluate_property(details: &PropertyDetails, prefs: &HomePreferences) -> 
     }
 }
 
+/// Format a whole-dollar amount with thousands separators, such as `$750,000`.
+fn format_dollars(amount: u64) -> String {
+    let digits = amount.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3 + 1);
+    out.push('$');
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
+}
+
 /// Format property details for display
 pub fn format_property(evaluation: &PropertyEvaluation) -> String {
     let details = &evaluation.details;
@@ -384,7 +482,7 @@ pub fn format_property(evaluation: &PropertyEvaluation) -> String {
         lines.push(format!("Type:       {}", home_type));
     }
     if let Some(price) = details.price {
-        lines.push(format!("Price:      ${}", price));
+        lines.push(format!("Price:      {}", format_dollars(price)));
     }
     if let Some(beds) = details.bedrooms {
         lines.push(format!("Bedrooms:   {}", beds));
@@ -444,6 +542,7 @@ fn main() -> Result<()> {
         max_price: args.max_price,
         min_sqft: args.min_sqft,
     };
+    prefs.validate()?;
 
     let quota_file = args.quota_file.or_else(quota::default_quota_file).context(
         "No place to keep the RapidAPI quota: set --quota-file, HOMER_QUOTA_FILE or HOME",
@@ -608,7 +707,7 @@ mod tests {
                 "criteria_checked": 2,
                 "criteria_met": 1,
                 "meets_preferences": false,
-                "unmet_criteria": ["Price: $900000 (max is $800000)"],
+                "unmet_criteria": ["Price: $900,000 (max is $800,000)"],
             })
         );
     }
@@ -652,7 +751,39 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         assert!(!eval.meets_preferences);
         assert_eq!(eval.unmet_criteria.len(), 1);
-        assert!(eval.unmet_criteria[0].contains("Price"));
+        assert_eq!(eval.unmet_criteria[0], "Price: $900,000 (max is $800,000)");
+    }
+
+    #[test]
+    fn test_evaluate_unknown_price_formats_max() {
+        let details = make_property(None, None, None, None);
+        let prefs = HomePreferences {
+            max_price: Some(1_250_000),
+            ..Default::default()
+        };
+        let eval = evaluate_property(&details, &prefs);
+        assert_eq!(
+            eval.unmet_criteria,
+            vec!["Price: unknown (max is $1,250,000)".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_format_property_price_has_separators() {
+        let details = make_property(Some(750_000), None, None, None);
+        let output = format_property(&evaluate_property(&details, &HomePreferences::default()));
+        assert!(output.contains("Price:      $750,000"), "{output}");
+    }
+
+    #[test]
+    fn test_format_dollars() {
+        assert_eq!(format_dollars(0), "$0");
+        assert_eq!(format_dollars(999), "$999");
+        assert_eq!(format_dollars(1_000), "$1,000");
+        assert_eq!(format_dollars(12_345), "$12,345");
+        assert_eq!(format_dollars(750_000), "$750,000");
+        assert_eq!(format_dollars(1_000_000), "$1,000,000");
+        assert_eq!(format_dollars(u64::MAX), "$18,446,744,073,709,551,615");
     }
 
     #[test]
@@ -747,6 +878,43 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_rejects_min_bedrooms_above_max() {
+        let prefs = HomePreferences {
+            min_bedrooms: Some(4),
+            max_bedrooms: Some(2),
+            ..Default::default()
+        };
+        let message = prefs.validate().expect_err("4 > 2 must fail").to_string();
+        assert!(message.contains("--min-bedrooms 4"), "{message}");
+        assert!(message.contains("--max-bedrooms 2"), "{message}");
+    }
+
+    #[test]
+    fn test_validate_accepts_equal_bedroom_bounds() {
+        let prefs = HomePreferences {
+            min_bedrooms: Some(3),
+            max_bedrooms: Some(3),
+            ..Default::default()
+        };
+        assert!(prefs.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_accepts_one_sided_or_no_bounds() {
+        assert!(HomePreferences::default().validate().is_ok());
+        let only_min = HomePreferences {
+            min_bedrooms: Some(9),
+            ..Default::default()
+        };
+        assert!(only_min.validate().is_ok());
+        let only_max = HomePreferences {
+            max_bedrooms: Some(0),
+            ..Default::default()
+        };
+        assert!(only_max.validate().is_ok());
+    }
+
+    #[test]
     fn test_parse_property_details_negative_bathrooms_is_unknown() {
         let raw = json!({ "bathrooms": -1.5 });
         let details = parse_property_details(&raw, "123 Main St").unwrap();
@@ -825,9 +993,44 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_property_details_empty() {
-        let raw = json!({});
-        let details = parse_property_details(&raw, "789 Oak Ave").unwrap();
+    fn test_parse_property_details_empty_is_not_found() {
+        let err = parse_property_details(&json!({}), "789 Oak Ave")
+            .expect_err("an empty response holds no property");
+        assert_eq!(
+            err.to_string(),
+            "Zillow found no property for \"789 Oak Ave\"."
+        );
+    }
+
+    #[test]
+    fn test_parse_property_details_message_only_is_not_found() {
+        let raw = json!({ "message": "  No   property found " });
+        let err = parse_property_details(&raw, "789 Oak Ave")
+            .expect_err("a message-only response holds no property");
+        assert_eq!(
+            err.to_string(),
+            "Zillow found no property for \"789 Oak Ave\". Zillow API said: No property found"
+        );
+        let raw = json!({ "error": "Invalid address" });
+        let err = parse_property_details(&raw, "a").expect_err("error-only response");
+        assert!(
+            err.to_string()
+                .ends_with("Zillow API said: Invalid address"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn test_parse_property_details_non_object_is_not_found() {
+        for raw in [json!([]), json!(null), json!("text"), json!(42)] {
+            assert!(parse_property_details(&raw, "a").is_err(), "{raw}");
+        }
+    }
+
+    #[test]
+    fn test_parse_property_details_zpid_only_is_found() {
+        let details = parse_property_details(&json!({ "zpid": 12345 }), "789 Oak Ave")
+            .expect("a zpid means Zillow found the property");
         assert_eq!(details.address, "789 Oak Ave");
         assert!(details.price.is_none());
         assert!(details.bedrooms.is_none());
@@ -926,7 +1129,7 @@ mod tests {
         let eval = evaluate_property(&details, &prefs);
         let output = format_property(&eval);
         assert!(output.contains("✓"));
-        assert!(output.contains("750000"));
+        assert!(output.contains("$750,000"));
         assert!(output.contains("3"));
     }
 
@@ -1003,6 +1206,89 @@ mod tests {
     }
 
     #[test]
+    fn test_property_details_long_error_body_is_truncated() {
+        let mut server = mockito::Server::new();
+        let page = format!(
+            "<html>\n  <head><title>502 Bad Gateway</title></head>\n  <body>\n{}\n  </body>\n</html>",
+            "    <p>upstream proxy error</p>\n".repeat(200)
+        );
+        let _mock = server
+            .mock("GET", "/property")
+            .match_query(mockito::Matcher::Any)
+            .with_status(502)
+            .with_body(page)
+            .create();
+
+        let client = ZillowClient::with_base_url("test-key".to_string(), server.url());
+        let err = client
+            .property_details("123 Main St")
+            .expect_err("a 502 response must be an error");
+
+        let message = err.to_string();
+        assert!(message.contains("502"), "unexpected error: {message}");
+        assert!(
+            message.contains("<title>502 Bad Gateway</title>"),
+            "unexpected error: {message}"
+        );
+        assert!(
+            message.ends_with("(truncated)"),
+            "unexpected error: {message}"
+        );
+        assert!(
+            !message.contains('\n'),
+            "whitespace not collapsed: {message}"
+        );
+        assert!(
+            message.len() < 400,
+            "message too long: {} bytes",
+            message.len()
+        );
+    }
+
+    #[test]
+    fn test_summarize_error_body_keeps_short_body() {
+        assert_eq!(summarize_error_body("rate limited"), "rate limited");
+    }
+
+    #[test]
+    fn test_summarize_error_body_collapses_whitespace() {
+        assert_eq!(
+            summarize_error_body("  bad\n\n   request\t here  "),
+            "bad request here"
+        );
+    }
+
+    #[test]
+    fn test_summarize_error_body_empty() {
+        assert_eq!(summarize_error_body(""), "");
+        assert_eq!(summarize_error_body(" \n\t "), "");
+    }
+
+    #[test]
+    fn test_summarize_error_body_at_limit_is_not_truncated() {
+        let body = "a".repeat(ERROR_BODY_LIMIT);
+        assert_eq!(summarize_error_body(&body), body);
+    }
+
+    #[test]
+    fn test_summarize_error_body_over_limit_is_truncated() {
+        let body = "a".repeat(ERROR_BODY_LIMIT + 1);
+        let expected = format!("{} (truncated)", "a".repeat(ERROR_BODY_LIMIT));
+        assert_eq!(summarize_error_body(&body), expected);
+    }
+
+    #[test]
+    fn test_summarize_error_body_cuts_on_char_boundary() {
+        // Multi-byte characters must not be split.
+        let body = "é".repeat(ERROR_BODY_LIMIT + 10);
+        let summary = summarize_error_body(&body);
+        let kept = summary.trim_end_matches(" (truncated)");
+        assert_eq!(kept.chars().count(), ERROR_BODY_LIMIT);
+        assert!(kept.chars().all(|c| c == 'é'));
+        assert!(summary.ends_with(" (truncated)"));
+    }
+
+    #[test]
     fn test_property_details_non_json_body_is_error() {
         let mut server = mockito::Server::new();
         let _mock = server
@@ -1031,7 +1317,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let client =
@@ -1059,7 +1345,7 @@ mod tests {
             .with_header("x-ratelimit-requests-limit", "100")
             .with_header("x-ratelimit-requests-remaining", "3")
             .with_header("x-ratelimit-requests-reset", "86400")
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let path = temp_quota_file("quota-saved");
@@ -1089,7 +1375,7 @@ mod tests {
             .with_header("x-ratelimit-requests-limit", "100")
             .with_header("x-ratelimit-requests-remaining", "0")
             .with_header("x-ratelimit-requests-reset", "86400")
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .expect(1)
             .create();
 
@@ -1121,7 +1407,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let path = temp_quota_file("quota-reset");
@@ -1147,7 +1433,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .expect(1)
             .create();
 
@@ -1189,7 +1475,7 @@ mod tests {
             .mock("GET", "/property")
             .match_query(mockito::Matcher::Any)
             .with_status(200)
-            .with_body("{}")
+            .with_body(r#"{"zpid": 1}"#)
             .create();
 
         let path = temp_quota_file("quota-none-yet");

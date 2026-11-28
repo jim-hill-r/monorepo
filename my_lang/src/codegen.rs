@@ -48,7 +48,7 @@ use std::collections::HashMap;
 
 use inkwell::{
     IntPredicate,
-    builder::Builder,
+    builder::{Builder, BuilderError},
     context::Context,
     module::Module,
     values::{FunctionValue, IntValue, PointerValue},
@@ -68,6 +68,21 @@ pub enum CodegenError {
     /// An expression statement that produces no value was found where a value
     /// was required.
     ExpressionWithoutValue,
+    /// LLVM's instruction builder rejected an instruction.
+    Builder(String),
+    /// LLVM did not provide a parameter the function was declared with.
+    MissingParameter {
+        /// The function being compiled.
+        function: String,
+        /// The zero-based index of the missing parameter.
+        index: usize,
+    },
+}
+
+impl From<BuilderError> for CodegenError {
+    fn from(err: BuilderError) -> Self {
+        CodegenError::Builder(err.to_string())
+    }
 }
 
 impl std::fmt::Display for CodegenError {
@@ -87,6 +102,12 @@ impl std::fmt::Display for CodegenError {
             }
             CodegenError::ExpressionWithoutValue => {
                 write!(f, "expression statement produced no value")
+            }
+            CodegenError::Builder(message) => {
+                write!(f, "LLVM builder error: {message}")
+            }
+            CodegenError::MissingParameter { function, index } => {
+                write!(f, "function '{function}' has no parameter at index {index}")
             }
         }
     }
@@ -196,25 +217,42 @@ impl<'ctx> CodeGenerator<'ctx> {
         // Allocate stack slots for each parameter and store the initial value.
         let mut locals: HashMap<String, PointerValue<'ctx>> = HashMap::new();
         for (i, param_name) in parameters.iter().enumerate() {
-            let alloca = self.builder.build_alloca(i64_type, param_name).unwrap();
-            let param_val = function.get_nth_param(i as u32).unwrap().into_int_value();
-            self.builder.build_store(alloca, param_val).unwrap();
+            let alloca = self.builder.build_alloca(i64_type, param_name)?;
+            let param_val = u32::try_from(i)
+                .ok()
+                .and_then(|index| function.get_nth_param(index))
+                .ok_or_else(|| CodegenError::MissingParameter {
+                    function: name.to_string(),
+                    index: i,
+                })?
+                .into_int_value();
+            self.builder.build_store(alloca, param_val)?;
             locals.insert(param_name.clone(), alloca);
         }
 
-        // Compile each statement.
+        // Compile each statement.  In a declaration that may return a value,
+        // a trailing expression statement is the value, as if it were
+        // written `return <expression>`.
         let mut explicit_return = false;
-        for stmt in body {
+        for (index, stmt) in body.iter().enumerate() {
+            let is_last = index + 1 == body.len();
+            if let (true, true, Statement::Expression(expr)) = (allows_return, is_last, stmt) {
+                let val = self.compile_expression(expr, &locals)?;
+                self.builder.build_return(Some(&val))?;
+                explicit_return = true;
+                break;
+            }
             if self.compile_statement(stmt, &mut locals, allows_return)? {
                 explicit_return = true;
                 break; // Stop generating code after a return statement.
             }
         }
 
-        // If no explicit return was emitted, return 0 as a default value.
+        // A body with no return and no trailing expression (empty, or ending
+        // in an assignment), and every `input` declaration, returns 0.
         if !explicit_return {
             let zero = i64_type.const_int(0, false);
-            self.builder.build_return(Some(&zero)).unwrap();
+            self.builder.build_return(Some(&zero))?;
         }
 
         Ok(function)
@@ -240,16 +278,21 @@ impl<'ctx> CodeGenerator<'ctx> {
                     return Err(CodegenError::ReturnInInputDeclaration);
                 }
                 let val = self.compile_expression(expr, locals)?;
-                self.builder.build_return(Some(&val)).unwrap();
+                self.builder.build_return(Some(&val))?;
                 Ok(true)
             }
             Statement::Assignment { name, value } => {
                 let i64_type = self.context.i64_type();
                 let val = self.compile_expression(value, locals)?;
-                let alloca = locals
-                    .entry(name.clone())
-                    .or_insert_with(|| self.builder.build_alloca(i64_type, name).unwrap());
-                self.builder.build_store(*alloca, val).unwrap();
+                let alloca = match locals.get(name) {
+                    Some(alloca) => *alloca,
+                    None => {
+                        let alloca = self.builder.build_alloca(i64_type, name)?;
+                        locals.insert(name.clone(), alloca);
+                        alloca
+                    }
+                };
+                self.builder.build_store(alloca, val)?;
                 Ok(false)
             }
             Statement::Expression(expr) => {
@@ -278,13 +321,14 @@ impl<'ctx> CodeGenerator<'ctx> {
             Expression::StringLiteral(s) => {
                 let name = format!("str_{}", self.string_counter);
                 self.string_counter += 1;
-                let global_str = self.builder.build_global_string_ptr(s, &name).unwrap();
+                let global_str = self.builder.build_global_string_ptr(s, &name)?;
                 let i64_type = self.context.i64_type();
                 let ptr_name = format!("{name}_ptr");
-                Ok(self
-                    .builder
-                    .build_ptr_to_int(global_str.as_pointer_value(), i64_type, &ptr_name)
-                    .unwrap())
+                Ok(self.builder.build_ptr_to_int(
+                    global_str.as_pointer_value(),
+                    i64_type,
+                    &ptr_name,
+                )?)
             }
             Expression::Identifier(name) => {
                 let alloca = locals
@@ -293,8 +337,7 @@ impl<'ctx> CodeGenerator<'ctx> {
                 let i64_type = self.context.i64_type();
                 Ok(self
                     .builder
-                    .build_load(i64_type, *alloca, name)
-                    .unwrap()
+                    .build_load(i64_type, *alloca, name)?
                     .into_int_value())
             }
             Expression::Binary {
@@ -320,63 +363,51 @@ impl<'ctx> CodeGenerator<'ctx> {
         let rhs = self.compile_expression(right, locals)?;
 
         let result = match operator {
-            BinaryOperator::Add => self.builder.build_int_add(lhs, rhs, "add").unwrap(),
-            BinaryOperator::Subtract => self.builder.build_int_sub(lhs, rhs, "sub").unwrap(),
-            BinaryOperator::Multiply => self.builder.build_int_mul(lhs, rhs, "mul").unwrap(),
-            BinaryOperator::Divide => self.builder.build_int_signed_div(lhs, rhs, "div").unwrap(),
+            BinaryOperator::Add => self.builder.build_int_add(lhs, rhs, "add")?,
+            BinaryOperator::Subtract => self.builder.build_int_sub(lhs, rhs, "sub")?,
+            BinaryOperator::Multiply => self.builder.build_int_mul(lhs, rhs, "mul")?,
+            BinaryOperator::Divide => self.builder.build_int_signed_div(lhs, rhs, "div")?,
             BinaryOperator::Equal => {
                 let cmp = self
                     .builder
-                    .build_int_compare(IntPredicate::EQ, lhs, rhs, "eq")
-                    .unwrap();
+                    .build_int_compare(IntPredicate::EQ, lhs, rhs, "eq")?;
                 self.builder
-                    .build_int_z_extend(cmp, self.context.i64_type(), "eq_ext")
-                    .unwrap()
+                    .build_int_z_extend(cmp, self.context.i64_type(), "eq_ext")?
             }
             BinaryOperator::NotEqual => {
                 let cmp = self
                     .builder
-                    .build_int_compare(IntPredicate::NE, lhs, rhs, "ne")
-                    .unwrap();
+                    .build_int_compare(IntPredicate::NE, lhs, rhs, "ne")?;
                 self.builder
-                    .build_int_z_extend(cmp, self.context.i64_type(), "ne_ext")
-                    .unwrap()
+                    .build_int_z_extend(cmp, self.context.i64_type(), "ne_ext")?
             }
             BinaryOperator::LessThan => {
                 let cmp = self
                     .builder
-                    .build_int_compare(IntPredicate::SLT, lhs, rhs, "lt")
-                    .unwrap();
+                    .build_int_compare(IntPredicate::SLT, lhs, rhs, "lt")?;
                 self.builder
-                    .build_int_z_extend(cmp, self.context.i64_type(), "lt_ext")
-                    .unwrap()
+                    .build_int_z_extend(cmp, self.context.i64_type(), "lt_ext")?
             }
             BinaryOperator::GreaterThan => {
                 let cmp = self
                     .builder
-                    .build_int_compare(IntPredicate::SGT, lhs, rhs, "gt")
-                    .unwrap();
+                    .build_int_compare(IntPredicate::SGT, lhs, rhs, "gt")?;
                 self.builder
-                    .build_int_z_extend(cmp, self.context.i64_type(), "gt_ext")
-                    .unwrap()
+                    .build_int_z_extend(cmp, self.context.i64_type(), "gt_ext")?
             }
             BinaryOperator::LessThanEqual => {
                 let cmp = self
                     .builder
-                    .build_int_compare(IntPredicate::SLE, lhs, rhs, "le")
-                    .unwrap();
+                    .build_int_compare(IntPredicate::SLE, lhs, rhs, "le")?;
                 self.builder
-                    .build_int_z_extend(cmp, self.context.i64_type(), "le_ext")
-                    .unwrap()
+                    .build_int_z_extend(cmp, self.context.i64_type(), "le_ext")?
             }
             BinaryOperator::GreaterThanEqual => {
                 let cmp = self
                     .builder
-                    .build_int_compare(IntPredicate::SGE, lhs, rhs, "ge")
-                    .unwrap();
+                    .build_int_compare(IntPredicate::SGE, lhs, rhs, "ge")?;
                 self.builder
-                    .build_int_z_extend(cmp, self.context.i64_type(), "ge_ext")
-                    .unwrap()
+                    .build_int_z_extend(cmp, self.context.i64_type(), "ge_ext")?
             }
         };
         Ok(result)
@@ -399,10 +430,7 @@ impl<'ctx> CodeGenerator<'ctx> {
             compiled_args.push(val.into());
         }
 
-        let call_result = self
-            .builder
-            .build_call(function, &compiled_args, "call")
-            .unwrap();
+        let call_result = self.builder.build_call(function, &compiled_args, "call")?;
 
         let return_val = call_result
             .try_as_basic_value()
@@ -837,5 +865,31 @@ mod tests {
         let ir = compile_program_to_ir(&program).unwrap();
         assert!(ir.contains("inc"));
         assert!(ir.contains("dec"));
+    }
+
+    // ------------------------------------------------------------------
+    // LLVM builder errors are returned, not panicked on
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_builder_error_converts_to_codegen_error() {
+        let err = CodegenError::from(BuilderError::UnsetPosition);
+        assert_eq!(
+            err,
+            CodegenError::Builder("Builder position is not set".to_string())
+        );
+        assert_eq!(
+            err.to_string(),
+            "LLVM builder error: Builder position is not set"
+        );
+    }
+
+    #[test]
+    fn test_missing_parameter_error_message() {
+        let err = CodegenError::MissingParameter {
+            function: "f".to_string(),
+            index: 2,
+        };
+        assert_eq!(err.to_string(), "function 'f' has no parameter at index 2");
     }
 }

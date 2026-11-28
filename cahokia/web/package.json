@@ -1,5 +1,5 @@
 {
-  "name": "cahokia-web-tests",
+  "name": "cahokia_web",
   "version": "0.1.0",
   "description": "Playwright tests for Cahokia web application",
   "private": true,

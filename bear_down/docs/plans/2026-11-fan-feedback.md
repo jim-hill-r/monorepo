@@ -64,10 +64,10 @@ Cloudflare only, which is already approved and free:
   or phone number) and writes to Analytics Engine: 100,000 data points a
   day free, far beyond our traffic.
 - Files before databases: a weekly GitHub workflow queries Analytics Engine
-  and commits `bear_down/feedback/<season>-week-<nn>.jsonl` (one line per
-  vote) and a short Markdown summary per arm. The repo stays the record;
+  and commits `bear_down/<season>-week-<nn>.jsonl` (one line per event) and
+  a short Markdown summary per arm to the `feedback-data` data branch. The repo stays the record;
   Analytics Engine is only the inbox.
-- Synthetic traffic (UAT and eval runs) sends `x-monorepo-synthetic: 1`, and
+- Synthetic traffic (UAT and eval runs) sends `x-jimhillr-synthetic: 1`, and
   the Worker drops it, per eval engine phase 3.
 
 Why not PostHog: its free plan has surveys (1,500 responses a month) and
@@ -125,7 +125,13 @@ Each is one PR:
    in UAT. Done: a page in arm B that turns a game into a pick
    explains it with a "small edge" line over the 0.02-point line, and each
    visit sends one `exposure` per arm, week and tab (`sessionStorage`).
-5. The weekly export workflow and per-arm summary, and the evals.
+5. The weekly export workflow and per-arm summary, and the evals. Export
+   done: `telemetry-feedback-export.yml` runs Tuesdays and writes
+   `bear_down/<season>-week-<nn>.jsonl` and a per-arm `.md` summary with
+   `standards/scripts/feedback.sh`. They go to the `feedback-data` data
+   branch, not to `main`, because CI may never write `main` (SEC-007); the
+   branch is in the repo, like `evals-results`. BEAR-010 and its evals
+   follow in their own requirement PR, which Jim approves.
 6. After the decision point, a retro in this file and, if arm B wins, a
    BEAR-005 change for Jim.
 

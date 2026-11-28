@@ -63,7 +63,9 @@ const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 /// - script-src 'self' 'wasm-unsafe-eval': Allow scripts from same origin and WASM
 /// - connect-src 'self' AUTH0_DOMAIN: Allow API calls to same origin and Auth0
 /// - img-src 'self': Allow images from same origin
-/// - style-src 'self' 'unsafe-inline': Allow styles from same origin and inline styles (required by Dioxus)
+/// - style-src 'self': Allow stylesheets from same origin only. No inline
+///   styles: every style is a class in a linked stylesheet (see
+///   `ui/CONTRIBUTING.md`), so an injected `<style>` or `style` attribute is blocked
 /// - font-src 'self': Allow fonts from same origin (required for self-hosted web fonts)
 /// - base-uri 'self': Restrict base tag to same origin
 /// - form-action 'self': Restrict form submissions to same origin
@@ -72,7 +74,7 @@ const HEADER_CSS: Asset = asset!("/assets/styling/header.css");
 /// const. `test_csp_connect_src_matches_auth0_domain` checks it against
 /// `Auth0Urls::origin` for AUTH0_DOMAIN.
 #[cfg(any(target_arch = "wasm32", test))]
-const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'";
+const CONTENT_SECURITY_POLICY: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://dev-jdadpn4pckxevrv5.us.auth0.com; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'";
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
@@ -108,7 +110,7 @@ fn App() -> Element {
         // unsafe-eval or unsafe-inline for scripts. WASM modules and proper event binding
         // are used instead of eval() or inline script handlers. The 'wasm-unsafe-eval'
         // directive is needed for WebAssembly instantiation in some browsers.
-        // Style unsafe-inline is kept for any inline styling that may be needed.
+        // Styles are linked stylesheets only, so style-src has no unsafe-inline.
         // Auth0 domain whitelisted for OAuth authentication flows (authorize, token endpoints)
         document::Meta {
             http_equiv: "Content-Security-Policy",
@@ -260,6 +262,18 @@ mod tests {
     }
 
     #[test]
+    fn test_csp_blocks_inline_styles() {
+        assert!(
+            CONTENT_SECURITY_POLICY.contains("style-src 'self';"),
+            "style-src must allow only same-origin stylesheets"
+        );
+        assert!(
+            !CONTENT_SECURITY_POLICY.contains("'unsafe-inline'"),
+            "CSP must not allow inline styles or scripts"
+        );
+    }
+
+    #[test]
     fn test_csp_allows_fonts() {
         // Verify CSP includes font-src for web fonts
         assert!(
@@ -293,9 +307,16 @@ mod tests {
         let origin = Auth0Urls::from_domain(AUTH0_DOMAIN)
             .map(|urls| urls.origin().to_string())
             .unwrap_or_default();
+        let connect_src = CONTENT_SECURITY_POLICY
+            .split(';')
+            .map(str::trim)
+            .find_map(|directive| directive.strip_prefix("connect-src "))
+            .unwrap_or_default();
         assert!(
-            CONTENT_SECURITY_POLICY.contains(&format!("connect-src 'self' {origin};")),
-            "CSP connect-src must allow {origin}"
+            connect_src
+                .split_whitespace()
+                .any(|source| source == origin),
+            "CSP connect-src must allow {origin}: {connect_src}"
         );
     }
 

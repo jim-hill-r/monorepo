@@ -1,5 +1,7 @@
 # bear_down
 
+[![Eval coverage](https://raw.githubusercontent.com/jimhillr/monorepo/evals-results/badges/bear_down.svg)](https://github.com/jimhillr/monorepo/blob/evals-results/verdicts.json)
+
 A small static website that tells a Chicago Bears fan which NFL games to root
 for each week to give the Bears the best chance of winning the Super Bowl.
 
@@ -14,11 +16,14 @@ and redeployed every week, and Cloudflare serves the result as static files.
 
 The name comes from "Bear Down, Chicago Bears", the team's fight song.
 
+How to use the site is in the [user guide](docs/user/README.md).
+
 ## Status
 
 Early development. `core` parses the nflverse schedule and results
 (`bear_down_core::Schedule`) and builds Elo ratings and single-game win
-probabilities from them (`bear_down_core::Ratings`). It also computes
+probabilities from them (`bear_down_core::Ratings`), with parameters
+tuned against past seasons ([docs/elo-tuning.md](docs/elo-tuning.md)). It also computes
 standings, division winners and playoff seeds with the NFL tiebreakers from
 decision 0005 (`bear_down_core::Standings`), checked against every real
 playoff field since 2002. `bear_down_core::simulate` plays out the rest of
@@ -28,6 +33,8 @@ odds, plus each of this week's games' swing on the Bears' playoff and Super
 Bowl odds and on the NFC North divisional-round goal. The `bear_down` CLI downloads
 the nflverse schedule, runs the simulation and writes `rooting.json`
 ([format](docs/rooting-json.md)).
+`bear_down --week <n> [--season <year>]` rebuilds a past week's guide from
+the results before it, for the [archive](docs/plans/2026-11-archive.md).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
 the remaining work to build v1 is listed in [issues/](issues/).
 

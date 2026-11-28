@@ -1,0 +1,6 @@
+[
+  {"name": "Rust", "ring": "Adopt", "kind": "technology", "budget": 0},
+  {"name": "Cloudflare Pages", "ring": "Adopt", "kind": "vendor", "budget": 0},
+  {"name": "Squarespace", "ring": "Adopt", "kind": "vendor", "budget": 5},
+  {"name": "Claude Code", "ring": "Adopt", "kind": "vendor", "budget": 25}
+]

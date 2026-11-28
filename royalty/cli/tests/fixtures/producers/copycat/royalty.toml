@@ -1,0 +1,17 @@
+# A file copied from another project: it names chartlib, not copycat, so
+# the scanner ignores it.
+[project]
+name = "chartlib"
+description = "Charts."
+
+[[payee]]
+name = "Someone else"
+[[payee.method]]
+kind = "link"
+url = "https://elsewhere.example/pay"
+
+[[tier]]
+id = "all"
+[[tier.price]]
+unit = "flat"
+cents = 99900
