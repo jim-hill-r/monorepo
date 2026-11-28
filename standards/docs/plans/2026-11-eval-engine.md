@@ -746,7 +746,9 @@ Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 - `feedback/model` (built as phase 1 of the
   [user feedback plan](2026-11-user-feedback.md), which also adds the public
-  user widget, in-app help and a browser extension for this toolbar), and
+  user widget, in-app help and a browser extension for this toolbar; the
+  toolbar, webview and Bevy steps below moved to its Phase 8, one
+  feedback tool with roles, Jim 2026-11-28), and
   pane's `/feedback/sign-in` token page and
   `/api/feedback` routes writing `feedback.jsonl` lines and screenshots
   through `pane-edit` PRs.

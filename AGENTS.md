@@ -51,7 +51,10 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   tags)", one of which is cost changed. This replaces the 75-word
   executive summary. So after any required attribution lines, every PR
   description has `## Attention` (the tags from `chores badges`: one
-  requirements, one cost and one threat/risk tag from a closed set), `##
+  requirements, one cost, one threat/risk and one docs tag from a closed
+  set; Jim, 2026-11-28: "state if it is only docs being updated which
+  includes plans", so a PR whose every file is docs says `docs-only` and goes to the
+  `docs-reviewer`, Jim for now, decision 0019), `##
   What changed` (at most 50 words), `## Why` (at most 50), `## Cost
   changes` and `## Risk changes` (under 25 each, `None.` when nothing
   changes) and `## Details` (testing, review notes, links to committed
@@ -76,17 +79,15 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   no prs with red attention flags get auto merged. Cost changes must be
   reviewed by jim", then "Lets make it needs human review". A PR with a red attention tag
   (`must-requirement-changed`) or `cost-changed`, in its diff or its
-  description, or the `cost` label, holds the `Human review` status (PR-004,
-  `chores gate`) at pending until a human collaborator approves its head commit
+  description, or the `cost` label, is labelled `human-review` (PR-004,
+  `chores gate`) until a human collaborator approves its head commit
   (Jim: "Any human collaborator is fine"); agent accounts (`-agt`),
-  `jimhillr-reviewer`, bots and non-collaborators never count. It is a
-  commit status, not a failing check, so an approval leaves no stale red
-  check behind (Jim, 2026-11-28). That check labels it `human-review`
-  while it waits. Agents and `jimhillr-reviewer` never approve it, but
-  an agent may turn its auto-merge on once every other check is green, so
-  the human's approval merges it (Jim, 2026-11-28: "Yes, merge on my
-  approval"); without auto-merge, any agent may merge it once a human
-  approves and checks are green. Details are under
+  `jimhillr-reviewer`, bots and non-collaborators never count. It is not a
+  CI check and posts no status, so CI shows only real results (Jim,
+  2026-11-28). Agents and `jimhillr-reviewer` never approve it; an agent
+  marks it ready and turns auto-merge on once its checks are green, like
+  any agent PR, so the human's approval merges it (Jim, 2026-11-28: "Yes,
+  merge on my approval"). Details are under
   "Human review" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
@@ -221,8 +222,7 @@ repo, rather than in any one agent tool's settings.
   patterns and infrastructure definitions, not services a product's
   requests pass through. Shared database infrastructure is allowed only
   with tenant-scoped tables that one export can move out
-  ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md),
-  proposed).
+  ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -278,7 +278,7 @@ repo, rather than in any one agent tool's settings.
   `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
   changes what the repo uses or costs, and `needs-human` when it adds a
   vendor or money or raises a budget (standards/docs/cost.md). The
-  `Human review` check adds `human-review` to a PR waiting for a human's
+  Human review workflow adds `human-review` to a PR waiting for a human's
   approval and takes it off once one approves.
 - **Retire what you rename (Jim, 2026-11-26).** Renaming or removing a
   resource (a Pages project, Worker, binding, URL, release) retires the old

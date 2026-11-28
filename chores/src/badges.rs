@@ -10,6 +10,11 @@
 //!   the security files of the PR security summary (threat models,
 //!   `_headers`, `wrangler` configs, workflows, gitleaks, cargo-deny and
 //!   zizmor configs) plus sign-in, secrets and credential code and docs.
+//! - **Docs**: whether the PR changes only docs (Jim, 2026-11-28: "i want
+//!   the attention section to state if it is only docs being updated which
+//!   includes plans"). Docs are Markdown anywhere (plans, decisions, retros,
+//!   user guides, READMEs, issue files, skills) and images in a `docs/`
+//!   folder. A docs-only PR is the `docs-reviewer`'s (decision 0019).
 //!
 //! Whether a risk change *weakens* security is the Security summary job's
 //! call (`threat summary`, `needs-human`); this line only says where to
@@ -29,7 +34,7 @@ pub const HEADING: &str = "## Attention";
 
 /// The attention tags: a closed set, so the PR-001 check can reject any
 /// other. Each Attention section has exactly one requirements tag, one cost
-/// tag and one threat/risk tag. Keep in step with `standards/scripts/pr-summary-check.sh`
+/// tag, one threat/risk tag and one docs tag. Keep in step with `standards/scripts/pr-summary-check.sh`
 /// and "Attention tags" in `standards/docs/pull-requests.md`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -48,6 +53,12 @@ pub enum Tag {
     ThreatRiskChanged,
     /// No threat or risk file changed.
     ThreatRiskUnchanged,
+    /// Every changed file is docs.
+    DocsOnly,
+    /// Docs changed alongside other files.
+    DocsChanged,
+    /// No docs changed.
+    DocsUnchanged,
 }
 
 /// Which question a tag answers; a section has one tag per group.
@@ -56,10 +67,11 @@ pub enum Group {
     Requirements,
     Cost,
     ThreatRisk,
+    Docs,
 }
 
 impl Tag {
-    pub const ALL: [Tag; 7] = [
+    pub const ALL: [Tag; 10] = [
         Tag::MustRequirementChanged,
         Tag::RequirementChanged,
         Tag::RequirementsUnchanged,
@@ -67,6 +79,9 @@ impl Tag {
         Tag::CostUnchanged,
         Tag::ThreatRiskChanged,
         Tag::ThreatRiskUnchanged,
+        Tag::DocsOnly,
+        Tag::DocsChanged,
+        Tag::DocsUnchanged,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -78,6 +93,9 @@ impl Tag {
             Tag::CostUnchanged => "cost-unchanged",
             Tag::ThreatRiskChanged => "threat-risk-changed",
             Tag::ThreatRiskUnchanged => "threat-risk-unchanged",
+            Tag::DocsOnly => "docs-only",
+            Tag::DocsChanged => "docs-changed",
+            Tag::DocsUnchanged => "docs-unchanged",
         }
     }
 
@@ -86,7 +104,12 @@ impl Tag {
             Tag::MustRequirementChanged => "🔴",
             Tag::RequirementChanged => "🟡",
             Tag::CostChanged | Tag::ThreatRiskChanged => "🟠",
-            Tag::RequirementsUnchanged | Tag::CostUnchanged | Tag::ThreatRiskUnchanged => "🟢",
+            Tag::DocsOnly => "🔵",
+            Tag::RequirementsUnchanged
+            | Tag::CostUnchanged
+            | Tag::ThreatRiskUnchanged
+            | Tag::DocsChanged
+            | Tag::DocsUnchanged => "🟢",
         }
     }
 
@@ -97,6 +120,7 @@ impl Tag {
             }
             Tag::CostChanged | Tag::CostUnchanged => Group::Cost,
             Tag::ThreatRiskChanged | Tag::ThreatRiskUnchanged => Group::ThreatRisk,
+            Tag::DocsOnly | Tag::DocsChanged | Tag::DocsUnchanged => Group::Docs,
         }
     }
 
@@ -127,6 +151,12 @@ pub struct Attention {
     /// Changed files that set what the repo uses or costs.
     #[serde(default)]
     pub cost: Vec<String>,
+    /// Changed docs files.
+    #[serde(default)]
+    pub docs: Vec<String>,
+    /// How many changed files are not docs.
+    #[serde(default)]
+    pub non_docs: usize,
 }
 
 /// Files whose change affects a threat or risk. Keep the first group in
@@ -179,6 +209,18 @@ pub fn is_cost_file(path: &str) -> bool {
             name,
             "detectors.toml" | "wrangler.toml" | "wrangler.json" | "wrangler.jsonc"
         )
+}
+
+/// Docs: Markdown anywhere (plans, decisions, retros, user guides, READMEs,
+/// issue files, skills, review decks) and images in a `docs/` folder. A
+/// file's other tags still apply, so a changed `docs/requirements.md` or
+/// `standards/docs/security.md` is docs and also flags its own group.
+pub fn is_docs_file(path: &str) -> bool {
+    let name = path.rsplit('/').next().unwrap_or(path).to_ascii_lowercase();
+    let ext = name.rsplit_once('.').map_or("", |(_, e)| e);
+    let in_docs = path.starts_with("docs/") || path.contains("/docs/");
+    matches!(ext, "md" | "markdown" | "mdx")
+        || (in_docs && matches!(ext, "png" | "jpg" | "jpeg" | "gif" | "svg" | "webp"))
 }
 
 fn is_threat_file(path: &str) -> bool {
@@ -264,6 +306,11 @@ pub fn attention(changed: &[String], read: impl Fn(&str, bool) -> Option<String>
         if is_cost_file(path) {
             out.cost.push(path.clone());
         }
+        if is_docs_file(path) {
+            out.docs.push(path.clone());
+        } else {
+            out.non_docs += 1;
+        }
         if is_requirements_file(path) {
             let before = read(path, false).unwrap_or_default();
             let after = read(path, true).unwrap_or_default();
@@ -291,8 +338,13 @@ pub fn list(items: &[String], max: usize) -> String {
 }
 
 impl Attention {
-    /// The three tags: requirements, cost, threat/risk.
-    pub fn tags(&self) -> [Tag; 3] {
+    /// Whether the PR changes only docs (and changes something).
+    pub fn docs_only(&self) -> bool {
+        !self.docs.is_empty() && self.non_docs == 0
+    }
+
+    /// The four tags: requirements, cost, threat/risk, docs.
+    pub fn tags(&self) -> [Tag; 4] {
         let req = if !self.must.is_empty() {
             Tag::MustRequirementChanged
         } else if !self.other.is_empty() {
@@ -310,11 +362,18 @@ impl Attention {
         } else {
             Tag::ThreatRiskChanged
         };
-        [req, cost, risk]
+        let docs = if self.docs_only() {
+            Tag::DocsOnly
+        } else if self.docs.is_empty() {
+            Tag::DocsUnchanged
+        } else {
+            Tag::DocsChanged
+        };
+        [req, cost, risk, docs]
     }
 }
 
-/// The Attention section, in Markdown: always both tags, so a green
+/// The Attention section, in Markdown: always every group's tag, so a green
 /// section says "nothing fundamental here" too.
 pub fn render(a: &Attention) -> String {
     let mut s = format!("{HEADING}\n\n");
@@ -330,9 +389,15 @@ pub fn render(a: &Attention) -> String {
                 ": {} (the Security summary check says whether it weakens anything)",
                 list(&a.risk, 4)
             ),
-            Tag::RequirementsUnchanged | Tag::CostUnchanged | Tag::ThreatRiskUnchanged => {
-                String::new()
-            }
+            Tag::DocsOnly => format!(
+                ": only docs change, {} (a docs-reviewer's call)",
+                list(&a.docs, 4)
+            ),
+            Tag::DocsChanged => format!(": {} alongside other files", list(&a.docs, 4)),
+            Tag::RequirementsUnchanged
+            | Tag::CostUnchanged
+            | Tag::ThreatRiskUnchanged
+            | Tag::DocsUnchanged => String::new(),
         };
         s.push_str(&format!("- {} {}{what}\n", tag.emoji(), tag.as_str()));
     }
@@ -436,6 +501,46 @@ mod tests {
     }
 
     #[test]
+    fn docs_files() {
+        for p in [
+            "README.md",
+            "cookbook/docs/plans/2026-11-x.md",
+            "standards/docs/decisions/0019-review-roles.md",
+            "pane/issues/fix-x.md",
+            ".agents/skills/code-review/SKILL.md",
+            "cookbook/docs/user/shot.png",
+            "docs/reviews/x/diagram.svg",
+        ] {
+            assert!(is_docs_file(p), "{p}");
+        }
+        for p in [
+            "cookbook/docs/cost.toml",
+            "cookbook/src/main.rs",
+            "cookbook/web/public/logo.png",
+            "AGENTS",
+        ] {
+            assert!(!is_docs_file(p), "{p}");
+        }
+    }
+
+    #[test]
+    fn docs_only_tag() {
+        let tag = |files: &[&str]| {
+            let changed: Vec<String> = files.iter().map(|f| (*f).to_string()).collect();
+            attention(&changed, |_, _| None).tags()[3]
+        };
+        let plan = "pane/docs/plans/2026-11-x.md";
+        assert_eq!(tag(&[plan, "README.md"]), Tag::DocsOnly);
+        assert_eq!(tag(&[plan, "pane/src/lib.rs"]), Tag::DocsChanged);
+        assert_eq!(tag(&["pane/src/lib.rs"]), Tag::DocsUnchanged);
+        assert_eq!(tag(&[]), Tag::DocsUnchanged);
+        let only = attention(&[plan.to_string()], |_, _| None);
+        assert!(render(&only).contains(
+            "- 🔵 docs-only: only docs change, `pane/docs/plans/2026-11-x.md` (a docs-reviewer's call)\n"
+        ));
+    }
+
+    #[test]
     fn must_and_other_changes() {
         let edited_must = REQS.replace("days 1 to 365.", "days 1 to 366.");
         assert_eq!(
@@ -460,7 +565,7 @@ mod tests {
     fn renders_the_line() {
         assert_eq!(
             render(&Attention::default()),
-            "## Attention\n\n- 🟢 requirements-unchanged\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n"
+            "## Attention\n\n- 🟢 requirements-unchanged\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n- 🟢 docs-unchanged\n"
         );
         let changed = vec![
             "cookbook/docs/requirements.md".to_string(),
@@ -482,6 +587,9 @@ mod tests {
         assert!(line.contains("- 🔴 must-requirement-changed: `COOK-001`\n"));
         assert!(line.contains("- 🟠 threat-risk-changed: `cookbook/docs/threat.toml`"));
         assert!(line.contains("- 🟠 cost-changed: `cookbook/docs/cost.toml`"));
+        assert!(line.contains(
+            "- 🟢 docs-changed: `cookbook/docs/requirements.md` alongside other files\n"
+        ));
         let intro_only = attention(&changed[..1], |_, after| {
             Some(if after {
                 format!("{REQS}x")
