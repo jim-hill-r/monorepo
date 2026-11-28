@@ -29,6 +29,7 @@ GitHub for free and add no workflow runs, so they cost $0. See
 | Infra drift | [![Infra drift](https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-drift.yml) | Weekly | Refresh-only plan of every stack: red when a live setting differs from state |
 | Infra mint | [![Infra mint](https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/infra-mint.yml) | Quarterly, after Jim approves | Rotates the minted infra passwords and tokens ([rotation plan](standards/docs/secret-rotation.md)) |
 | tofu_state | [![tofu_state deploy](https://github.com/jimhillr/monorepo/actions/workflows/tofu-state-deploy.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/tofu-state-deploy.yml) | Push to `main` | Deploy of the OpenTofu state Worker (decision 0009) |
+| Pane redeploy | [![Pane redeploy](https://github.com/jimhillr/monorepo/actions/workflows/pane-redeploy.yml/badge.svg)](https://github.com/jimhillr/monorepo/actions/workflows/pane-redeploy.yml) | After each eval run on `main` | Redeploys pane so its Requirements section shows the eval results just stored |
 
 # Getting Started
 
