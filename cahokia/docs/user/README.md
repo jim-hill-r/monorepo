@@ -55,8 +55,14 @@ there are no downloads of them yet, so use the web address above.
 
 Press **Login** at the top of any page. You go to Cahokia's sign-in page,
 and after signing in you come back to the page you were on. Signing in doesn't change anything yet: it's there for when
-your family's own tree is private to the people signed in to it. The
-desktop and phone apps can't sign in yet.
+your family's own tree is private to the people signed in to it.
+
+In the desktop app, **Login** opens your usual web browser at the same
+sign-in page. Sign in there, close the tab when it says so, and the app
+shows **Signed in as** your name with a **Sign out** button. The desktop
+app forgets the sign-in when you close it. Until the desktop app's own
+sign-in is switched on, Login there says "Sign-in isn't set up in this
+build yet." The phone app can't sign in yet.
 
 ## How to change how it looks
 
@@ -75,6 +81,8 @@ In the desktop and phone apps the same box is at the foot of each page.
   the tree's frame, not beside it.
 - **Login shows an error, or sign-in doesn't bring me back.** Try again from
   the home page. If it keeps happening, report it.
+- **The desktop app says sign-in timed out.** It waits five minutes for
+  you to finish in the browser. Press **Login** again.
 - **I want to add my own family.** You can't yet. It's the next big step.
 
 Cahokia has no feedback button yet. To report a problem, tell the person
