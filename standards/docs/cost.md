@@ -109,6 +109,16 @@ here follows these rules ([decision 0016](decisions/0016-holding-and-handling-mo
 4. **Whole cents** (integers), so nothing is lost to floating point.
 5. **Consistency and disclosure.** A changed rule is a decision record,
    and every number links to its source.
+6. **Only actual money (Jim, 2026-11-28).** "Our accounting should not
+   make any assumptions about cost ... A budget is not actual spend. Our
+   accounting should only count actual spend." The financial ledger books
+   only money received or charged, each with its receipt; radar budgets and
+   expected `[[cost]]` entries are plans and never ledger lines.
+7. **Jim is paid back, paid a salary, and 1% goes to the planet (Jim,
+   2026-11-28).** Spend Jim pays is owed back to him; 1% of revenue is his
+   salary, at most $1,000,000 a calendar year; 1% of revenue goes to 1% for
+   the Planet. All three are liabilities until paid. Details are in
+   [money.md](money.md).
 
 The checks: pane's `attribution_gaps` (PANE-013) proves the per-project
 money adds up to the month's totals; the double-entry balance check comes

@@ -1,0 +1,3 @@
+[project]
+name = "infra"
+description = "Infrastructure as code for this repo: Auth0, GitHub and Cloudflare settings written as Rust in the style of the AWS CDK."

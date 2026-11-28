@@ -1,0 +1,3 @@
+# An `output` declaration may `return`, and main can use its value.
+bin.name = "my_lang"
+args = ["run", "effects.my"]

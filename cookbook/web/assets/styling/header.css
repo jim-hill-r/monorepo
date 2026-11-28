@@ -1,5 +1,9 @@
 /* Colours, type, spacing and motion come from the design system's tokens
- * (design_system/dist/tokens.css); the default theme is earthy. */
+ * (design_system/dist/tokens.css); the default theme is earthy.
+ *
+ * The header is a light paper bar, not a solid accent fill: the accent is
+ * kept for the title and the one primary action, so it reads as a warm
+ * highlight instead of a heavy brown band (athenaeum/resources/design/). */
 :root {
   --header-height: 60px;
 }
@@ -19,9 +23,9 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: var(--ds-space-2) var(--ds-space-6);
-  background: var(--ds-color-accent);
-  color: var(--ds-color-on-accent);
-  border-bottom: 2px solid var(--ds-color-accent-hover);
+  background: var(--ds-color-surface-raised);
+  color: var(--ds-color-text);
+  border-bottom: var(--ds-border-width) solid var(--ds-color-border);
   box-shadow: var(--ds-shadow-1);
   height: var(--header-height);
   min-height: var(--header-height);
@@ -61,14 +65,14 @@ body {
 }
 
 .hamburger-btn:focus-visible {
-  outline: var(--ds-focus-width) solid var(--ds-color-on-accent);
+  outline: var(--ds-focus-width) solid var(--ds-color-focus);
   outline-offset: var(--ds-focus-offset);
 }
 
 .hamburger-icon {
   width: 2rem;
-  height: 0.25rem;
-  background: var(--ds-color-on-accent);
+  height: 0.2rem;
+  background: var(--ds-color-text);
   border-radius: 2px;
   transition: all var(--ds-motion-slow) linear;
   position: relative;
@@ -78,9 +82,9 @@ body {
 .header-title {
   margin: 0;
   font-size: var(--ds-text-xl);
-  color: var(--ds-color-on-accent);
+  color: var(--ds-color-accent);
   font-weight: var(--ds-weight-strong);
-  letter-spacing: 1px;
+  letter-spacing: 0.02em;
 }
 
 .header-nav {
@@ -90,7 +94,7 @@ body {
 }
 
 .header-nav a {
-  color: var(--ds-color-on-accent);
+  color: var(--ds-color-text);
   text-decoration: none;
   font-size: var(--ds-text-base);
   font-weight: var(--ds-weight-strong);
@@ -102,24 +106,17 @@ body {
 }
 
 .header-nav a:hover {
-  background-color: var(--ds-color-accent-hover);
-  color: var(--ds-color-on-accent);
-  border-color: var(--ds-color-accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--ds-shadow-1);
+  background-color: var(--ds-color-bg);
+  color: var(--ds-color-accent);
+  border-color: var(--ds-color-border);
   cursor: pointer;
 }
 
-.header-nav a:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
 .header-nav a:focus-visible {
-  background-color: var(--ds-color-accent-hover);
-  color: var(--ds-color-on-accent);
-  border-color: var(--ds-color-accent-hover);
-  outline: var(--ds-focus-width) solid var(--ds-color-on-accent);
+  background-color: var(--ds-color-bg);
+  color: var(--ds-color-accent);
+  border-color: var(--ds-color-border);
+  outline: var(--ds-focus-width) solid var(--ds-color-focus);
   outline-offset: var(--ds-focus-offset);
   cursor: pointer;
 }
@@ -130,9 +127,9 @@ body {
 }
 
 .header-auth button {
-  background-color: var(--ds-color-accent-hover);
+  background-color: var(--ds-color-accent);
   color: var(--ds-color-on-accent);
-  border: var(--ds-border-width) solid var(--ds-color-on-accent);
+  border: var(--ds-border-width) solid var(--ds-color-accent);
   padding: var(--ds-space-2) var(--ds-space-4);
   border-radius: var(--ds-radius-sm);
   font-size: var(--ds-text-sm);
@@ -143,31 +140,31 @@ body {
 }
 
 .header-auth button:hover {
-  transform: translateY(-1px);
+  background-color: var(--ds-color-accent-hover);
+  border-color: var(--ds-color-accent-hover);
   box-shadow: var(--ds-shadow-2);
 }
 
 .header-auth button:active {
-  transform: translateY(0);
   box-shadow: var(--ds-shadow-1);
 }
 
 .header-auth button:focus-visible {
-  outline: var(--ds-focus-width) solid var(--ds-color-on-accent);
+  outline: var(--ds-focus-width) solid var(--ds-color-focus);
   outline-offset: var(--ds-focus-offset);
 }
 
 .header-auth .error {
-  color: var(--ds-color-on-danger);
-  background-color: var(--ds-color-danger);
+  color: var(--ds-color-danger);
+  background-color: var(--ds-color-surface-raised);
   padding: var(--ds-space-2) var(--ds-space-4);
   border-radius: var(--ds-radius-sm);
-  border: var(--ds-border-width) solid var(--ds-color-on-accent);
+  border: var(--ds-border-width) solid var(--ds-color-danger);
   font-size: var(--ds-text-sm);
 }
 
 .header-auth div {
-  color: var(--ds-color-on-accent);
+  color: var(--ds-color-text-muted);
   font-size: var(--ds-text-sm);
 }
 

@@ -1,0 +1,5 @@
+# Calling a function the program doesn't define names it.
+bin.name = "my_lang"
+args = ["run", "typo.my"]
+env.remove = ["RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+status.code = 1

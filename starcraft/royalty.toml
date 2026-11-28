@@ -1,0 +1,3 @@
+[project]
+name = "starcraft"
+description = "A Bevy experiment that draws an isometric tile map, for trying out real-time strategy path finding."

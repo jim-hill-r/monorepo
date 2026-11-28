@@ -36,7 +36,8 @@ dx serve
 
 ### Test
 
-To run its tests (route parsing and server-side renders of each view):
+To run its tests (route parsing, server-side renders of each view, and
+sign-in against a fake OpenID provider on 127.0.0.1):
 
 ```bash
 cargo test -p desktop

@@ -197,10 +197,8 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
         }
     });
     let odds = &rooting.bears.odds;
-    let week = match rooting.week {
-        Some(w) => format!("Week {w}, {} season", rooting.season),
-        None => format!("{} season", rooting.season),
-    };
+    let week = rooting.when();
+    let goals = rooting.goals();
     let record = rooting.bears.record.display();
     let games = rooting.ranked(goal_now);
 
@@ -236,17 +234,21 @@ fn Guide(rooting: Rooting, archived: bool) -> Element {
                     onclick: move |_| goal.set(Goal::SuperBowl),
                     "Bears Super Bowl"
                 }
-                button {
-                    class: if goal_now == Goal::Playoffs { "active" },
-                    aria_pressed: goal_now == Goal::Playoffs,
-                    onclick: move |_| goal.set(Goal::Playoffs),
-                    "Make the playoffs"
+                if goals.contains(&Goal::Playoffs) {
+                    button {
+                        class: if goal_now == Goal::Playoffs { "active" },
+                        aria_pressed: goal_now == Goal::Playoffs,
+                        onclick: move |_| goal.set(Goal::Playoffs),
+                        "Make the playoffs"
+                    }
                 }
-                button {
-                    class: if goal_now == Goal::NfcNorth { "active" },
-                    aria_pressed: goal_now == Goal::NfcNorth,
-                    onclick: move |_| goal.set(Goal::NfcNorth),
-                    "NFC North"
+                if goals.contains(&Goal::NfcNorth) {
+                    button {
+                        class: if goal_now == Goal::NfcNorth { "active" },
+                        aria_pressed: goal_now == Goal::NfcNorth,
+                        onclick: move |_| goal.set(Goal::NfcNorth),
+                        "NFC North"
+                    }
                 }
             }
             p { class: "explain",

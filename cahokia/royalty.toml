@@ -1,0 +1,3 @@
+[project]
+name = "cahokia"
+description = "A genealogy app that draws people, their relationships and life events as a family tree, on the web, desktop and mobile from one Dioxus codebase."

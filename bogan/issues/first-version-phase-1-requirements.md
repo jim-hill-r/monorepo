@@ -1,6 +1,6 @@
 ---
 kind: todo
-priority: backlog
+priority: priority
 tags: [agent-generated]
 epic: "Bogan first version / Phase 1: schema and listings"
 order: 10
