@@ -14,6 +14,9 @@ name: All Free Tier Usage
 # threat check's full-history scan, standards/docs/security.md), so a new
 # gitleaks rule catches an old commit within a week.
 #
+# A `repo-security` job fails if private vulnerability reporting is turned
+# off; the `github` infra stack holds the other code security settings.
+#
 # A `threat-live` job compares what is deployed on Cloudflare with the
 # threat models (standards/scripts/threat-live.sh, "Live check" in
 # standards/docs/security.md): unclaimed Pages projects or Workers, sites
@@ -100,6 +103,27 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}  # mise's gitleaks download
           MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
         run: bash standards/scripts/secrets-check.sh history
+
+  # Private vulnerability reporting has no OpenTofu resource, so the
+  # `github` infra stack can't hold it on. Anyone can read it on a public
+  # repo, so this needs no admin token ("GitHub security settings" in
+  # standards/docs/security.md).
+  repo-security:
+    name: GitHub security settings
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Private vulnerability reporting is on
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          enabled=$(gh api "repos/$REPO/private-vulnerability-reporting" --jq .enabled)
+          if [ "$enabled" != "true" ]; then
+            echo "::error::Private vulnerability reporting is off; turn it on (standards/docs/runbooks/github-code-security.md)"
+            exit 1
+          fi
+          echo "Private vulnerability reporting is on." >>"$GITHUB_STEP_SUMMARY"
 
   threat-live:
     name: Live threat check

@@ -29,7 +29,8 @@ description = "Playwright tests when the project has a package.json"
 # In CI (CI is set) every step must pass. Anywhere else, such as an agent's
 # cloud sandbox, a tool that can't be installed there (npm packages, dx or
 # Playwright's browsers) skips the tests with a note instead of failing, since
-# PR CI runs them. Tested by
+# PR CI runs them. When Playwright can't download its browser there, the tests
+# run in the machine's own Chromium if it has one. Tested by
 # standards/tests/e2e-task.test.sh; see standards/docs/git-hooks.md.
 run = """
 [ -f package.json ] || exit 0
@@ -41,11 +42,24 @@ skip() {
 }
 npm ci || skip "couldn't install the npm packages"
 command -v dx >/dev/null 2>&1 || skip "dx (dioxus-cli) is not installed"
-npx playwright install --with-deps || skip "couldn't install Playwright's browsers"
+if ! npx playwright install --with-deps; then
+  # Outside CI, fall back to a Chromium the machine already has: the one in
+  # PLAYWRIGHT_CHROMIUM_PATH, else a Claude Code cloud sandbox's own, for an
+  # app whose playwright.config.ts launches PLAYWRIGHT_CHROMIUM_PATH.
+  [ -n "${CI:-}" ] || export PLAYWRIGHT_CHROMIUM_PATH="${PLAYWRIGHT_CHROMIUM_PATH:-/opt/pw-browsers/chromium}"
+  [ -z "${CI:-}" ] && [ -x "$PLAYWRIGHT_CHROMIUM_PATH" ] \
+    && grep -qs PLAYWRIGHT_CHROMIUM_PATH playwright.config.* \
+    || skip "couldn't install Playwright's browsers"
+  echo "e2e: using the Chromium at $PLAYWRIGHT_CHROMIUM_PATH" >&2
+  # Such a machine also can't reach outside services, so tests tagged
+  # @network (like Auth0 sign-in) are left to PR CI.
+  echo "e2e: skipping @network tests; PR CI runs them" >&2
+  set -- --grep-invert @network
+fi
 # Also save the JSON report for the evals task (standards/docs/evals.md).
 mkdir -p target/evals-reports
 rm -f target/evals-reports/playwright.json
-PLAYWRIGHT_JSON_OUTPUT_FILE="$PWD/target/evals-reports/playwright.json" npm test -- --reporter=list,json
+PLAYWRIGHT_JSON_OUTPUT_FILE="$PWD/target/evals-reports/playwright.json" npm test -- --reporter=list,json "$@"
 """
 
 ["ci:deps"]

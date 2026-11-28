@@ -3,8 +3,8 @@
 # (2026-11-27), after the attribution lines:
 #
 #   ## Attention      one bullet per tag: exactly one requirements tag, one
-#                     cost tag and one threat/risk tag, from the closed set
-#                     below (`chores badges` writes it)
+#                     cost tag, one threat/risk tag and one docs tag, from
+#                     the closed set below (`chores badges` writes it)
 #   ## What changed   at most 50 words
 #   ## Why            at most 50 words
 #   ## Cost changes   under 25 words ("None." when nothing changes)
@@ -28,6 +28,7 @@ set -uo pipefail
 requirement_tags="must-requirement-changed requirement-changed requirements-unchanged"
 cost_tags="cost-changed cost-unchanged"
 risk_tags="threat-risk-changed threat-risk-unchanged"
+docs_tags="docs-only docs-changed docs-unchanged"
 
 body=${PR_BODY-$(cat)}
 
@@ -74,19 +75,20 @@ report=$(PR_BODY=$body perl -e '
 
 warnings=()
 counts=()
-req=0 cost=0 risk=0
+req=0 cost=0 risk=0 docs=0
 while IFS=$'\t' read -r kind tag; do
   [ "$kind" = tag ] || continue
   if [[ " $requirement_tags " == *" $tag "* ]]; then req=$((req + 1))
   elif [[ " $cost_tags " == *" $tag "* ]]; then cost=$((cost + 1))
   elif [[ " $risk_tags " == *" $tag "* ]]; then risk=$((risk + 1))
+  elif [[ " $docs_tags " == *" $tag "* ]]; then docs=$((docs + 1))
   else
-    known="$requirement_tags $cost_tags $risk_tags"
+    known="$requirement_tags $cost_tags $risk_tags $docs_tags"
     warnings+=("\"$tag\" is not an attention tag; use one of ${known// /, }.")
   fi
 done <<<"$report"
 if grep -q $'^Attention\t0\t1' <<<"$report"; then
-  for pair in "requirements:$req" "cost:$cost" "threat/risk:$risk"; do
+  for pair in "requirements:$req" "cost:$cost" "threat/risk:$risk" "docs:$docs"; do
     n=${pair##*:}
     [ "$n" -eq 1 ] || warnings+=("The \"## Attention\" section has $n ${pair%:*} tags; it needs exactly one.")
   done

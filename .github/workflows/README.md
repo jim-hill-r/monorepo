@@ -105,21 +105,18 @@ project CI.
 
 ### pull-request-human-review.yml
 
-The **Human review** check (PR-004, Jim, 2026-11-27). Runs when a pull
+The **`human-review` label** (PR-004, Jim, 2026-11-27). Runs when a pull
 request is opened, edited, pushed to, labelled or reviewed. A PR with a red
 attention tag (`must-requirement-changed`) or a cost change, from its diff
 (`chores badges`), its description's Attention section or the `cost` label,
-holds its `Human review` commit status at pending (yellow) until a human
-collaborator (never an `-agt` account, `jimhillr-reviewer`, a bot or a
-non-collaborator) approves its head commit, and at failure while a human
-asks for changes. The verdict is a status, which each run replaces, so an
-approval leaves no stale red check run behind; the job itself, `Human
-review gate`, fails only when the gate breaks. A held PR is labelled
-`human-review` until a human approves; its auto-merge is left on, so that
-approval merges it (Jim, 2026-11-28). Every other PR passes. It
-builds `chores gate` from the base branch, so a PR can't change its own
-rules. The `CI` ruleset in `infra`'s `github` stack requires it on `main`
-beside `CI result`. See "Human review" in
+is labelled `human-review` until a human collaborator (never an `-agt`
+account, `jimhillr-reviewer`, a bot or a non-collaborator) approves its head
+commit. It is not a CI check (Jim, 2026-11-28): it posts no status, its job
+(`Human review label`) is green whenever it ran, and it clears the pending
+`Human review` status an earlier version left on a commit. The label holds
+the PR because `jimhillr-reviewer` refuses it and only a human's approval
+can then merge it. It builds `chores gate` from the base branch, so a PR
+can't change its own rules. See "Human review" in
 [standards/docs/pull-requests.md](../../standards/docs/pull-requests.md).
 
 ### push-main.yml
@@ -191,9 +188,12 @@ and `tofu_state_deploy_tests.rs`.
 ## pull-request-review-decks.yml (Review decks)
 
 Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).
-Builds every review deck to HTML and PDF with the Marp CLI through
-`standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
-uploads them as the `review-decks` artifact. See
+First records the narrated demo videos of the decks the pull request changes
+(or of the deck folders in the `demos` input when run by hand) with
+`docs/reviews/demo-recorder`, then builds every review deck to HTML and PDF
+with the Marp CLI through `standards/scripts/review-decks.sh` (also
+`mise run //:review-decks`) and uploads them, videos included, as the
+`review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
 
 ## nightly-coverage.yml

@@ -37,6 +37,7 @@ The `cookbook-core` library contains shared business logic and data models:
 - **RecipeWriter trait**: Trait for writing recipes to a data source (create, update, delete, save/upsert)
 - **RecipeError**: Error type for recipe operations with variants for NotFound, StorageError, InvalidData, and AlreadyExists
 - **Shopping list**: `shopping::build_shopping_list` sums a week's ingredients per item and unit and lists staples apart
+- **Calendar**: `calendar` says which recipe falls on which date from the weekly plans (today's recipe, a week's dated recipes and shopping list, the sidebar's weeks), taking any `PlanReader` and `RecipeReader`
 - Designed to be consumed by web, cloudflare, and future platform crates
 
 ## Data MD Library

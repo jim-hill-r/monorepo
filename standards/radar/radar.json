@@ -468,6 +468,23 @@
     "budget": 0
   },
   {
+    "name": "Kokoro text-to-speech",
+    "ring": "Trial",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Open-weight voice (kokoro-onnx, Apache 2.0) that narrates the review deck demo videos, run locally with ffmpeg and Playwright's video recording. Brings Python in for that one script only. Decision 0025 (proposed).",
+    "exemplars": [
+      "docs/reviews"
+    ],
+    "sources": [
+      "standards/docs/decisions/0025-review-deck-demo-videos.md",
+      "https://github.com/thewh1teagle/kokoro-onnx"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "cross",
     "ring": "Adopt",
     "quadrant": "Tools",
@@ -608,7 +625,6 @@
     "exemplars": [
       "cookbook/cloudflare",
       "cahokia/cloudflare",
-      "pane/cloudflare",
       "controlled_chaos"
     ],
     "sources": [
@@ -631,8 +647,9 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. Written in Rust with workers-rs: tofu_state is OpenTofu's http state backend (decision 0009), and telemetry takes events into Analytics Engine with a rate-limit binding (decision 0001). Web Analytics and pane's API are planned. Workers are created only through free-tiers.sh worker.",
+    "description": "Approved vendor, Free plan only. Written in Rust with workers-rs: tofu_state is OpenTofu's http state backend (decision 0009), telemetry takes events into Analytics Engine with a rate-limit binding (decision 0001), and pane/cloudflare serves pane's Dioxus build as Workers static assets and runs Rust only for /api/* (standards/tasks/cloudflare-worker-assets.toml). Web Analytics is planned. Workers are created only through free-tiers.sh worker.",
     "exemplars": [
+      "pane/cloudflare",
       "telemetry",
       "tofu_state"
     ],

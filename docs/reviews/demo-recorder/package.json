@@ -1,0 +1,21 @@
+{
+  "name": "demo-recorder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Records narrated, captioned demo videos of live apps for the review decks (docs/reviews/README.md).",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "record": "node src/record.ts",
+    "test": "tsc --noEmit && node --test src/*.test.ts"
+  },
+  "dependencies": {
+    "playwright": "1.63.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "typescript": "5.9.3"
+  }
+}
