@@ -282,10 +282,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cloudflare"
-version = "0.1.0"
-
-[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2041,6 +2037,7 @@ version = "0.1.0"
 dependencies = [
  "cost_model",
  "pane_model",
+ "serde",
  "serde_json",
  "toml",
 ]

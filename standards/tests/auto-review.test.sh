@@ -20,9 +20,10 @@ pr() { # draft, author, labels JSON, additions, base, body
 }
 green='{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},
   {"name":"PR summary","status":"completed","conclusion":"success"},
-  {"name":"Human review","status":"completed","conclusion":"success"},
+  {"name":"Human review label","status":"completed","conclusion":"success"},
   {"name":"Analyze (rust)","status":"completed","conclusion":"skipped"},
-  {"name":"Auto review","status":"in_progress","conclusion":null}],"statuses":[]}'
+  {"name":"Auto review","status":"in_progress","conclusion":null}],
+  "statuses":[]}'
 
 check() { # name, files, checks JSON, reviews JSON, expected prefix
   printf '%s\n' "$2" >"$tmp/files.txt"
@@ -54,22 +55,20 @@ check "security headers" "pane/web/public/_headers" "$green" '[]' "skip: touches
 check "a failing check" "pane/web/src/main.rs" \
   '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"failure"}],"statuses":[]}' '[]' "skip: check CI result is failure"
 check "a pending check" "pane/web/src/main.rs" \
-  '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},{"name":"PR summary","status":"completed","conclusion":"success"},{"name":"Human review","status":"completed","conclusion":"success"},{"name":"CodeQL","status":"queued"}],"statuses":[]}' '[]' "skip: check CodeQL is queued"
+  '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},{"name":"PR summary","status":"completed","conclusion":"success"},{"name":"CodeQL","status":"queued"}],"statuses":[]}' '[]' "skip: check CodeQL is queued"
 check "CI result missing" "pane/web/src/main.rs" \
   '{"check_runs":[{"name":"PR summary","status":"completed","conclusion":"success"}],"statuses":[]}' '[]' "skip: check CI result has not passed"
 check "a failing commit status" "pane/web/src/main.rs" \
   "$(jq -c '.statuses = [{"context":"deploy","state":"pending"}]' <<<"$green")" '[]' "skip: check deploy is pending"
 
-check "Human review missing" "pane/web/src/main.rs" \
-  "$(jq -c 'del(.check_runs[] | select(.name == "Human review"))' <<<"$green")" '[]' "skip: check Human review has not passed"
 check "an older cancelled run of a check doesn't count" "pane/web/src/main.rs" \
-  "$(jq -c '.check_runs += [{"name":"Human review","status":"completed","conclusion":"cancelled","started_at":"2026-01-01T00:00:00Z"}]
-    | (.check_runs[] | select(.name == "Human review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
+  "$(jq -c '.check_runs += [{"name":"CI result","status":"completed","conclusion":"cancelled","started_at":"2026-01-01T00:00:00Z"}]
+    | (.check_runs[] | select(.name == "CI result" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
   '[]' "approve:"
 check "a newer failing run does count" "pane/web/src/main.rs" \
-  "$(jq -c '.check_runs += [{"name":"Human review","status":"completed","conclusion":"failure","started_at":"2026-01-01T00:02:00Z"}]
-    | (.check_runs[] | select(.name == "Human review" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
-  '[]' "skip: check Human review is failure"
+  "$(jq -c '.check_runs += [{"name":"CI result","status":"completed","conclusion":"failure","started_at":"2026-01-01T00:02:00Z"}]
+    | (.check_runs[] | select(.name == "CI result" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \
+  '[]' "skip: check CI result is failure"
 check "wrangler.jsonc" "pane/cloudflare/wrangler.jsonc" "$green" '[]' "skip: touches pane/cloudflare/wrangler.jsonc"
 
 pr false jimhillr-agt '[]' 40 main $'## Attention\n\n- 🔴 must-requirement-changed: `COOK-001`\n- 🟢 cost-unchanged\n- 🟢 threat-risk-unchanged\n'
@@ -87,6 +86,8 @@ pr false jimhillr-agt '[{"name":"cost"}]' 40
 check "orange label" "pane/web/src/main.rs" "$green" '[]' "skip: labelled cost"
 pr false jimhillr-agt '[{"name":"needs-human"}]' 40
 check "red label" "pane/web/src/main.rs" "$green" '[]' "skip: labelled needs-human"
+pr false jimhillr-agt '[{"name":"human-review"}]' 40
+check "held for a human" "pane/web/src/main.rs" "$green" '[]' "skip: labelled human-review"
 pr true jimhillr-agt '[]' 40
 check "draft" "pane/web/src/main.rs" "$green" '[]' "skip: draft"
 pr false dependabot[bot] '[]' 40

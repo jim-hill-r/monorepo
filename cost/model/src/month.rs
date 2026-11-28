@@ -3,7 +3,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Month {
@@ -15,6 +15,22 @@ pub struct Month {
 impl Month {
     pub fn new(year: i32, month: u32) -> Option<Self> {
         (1..=12).contains(&month).then_some(Self { year, month })
+    }
+
+    /// The month after this one.
+    #[must_use]
+    pub fn next(self) -> Self {
+        if self.month >= 12 {
+            Self {
+                year: self.year + 1,
+                month: 1,
+            }
+        } else {
+            Self {
+                year: self.year,
+                month: self.month + 1,
+            }
+        }
     }
 }
 
@@ -46,6 +62,12 @@ impl<'de> Deserialize<'de> for Month {
     }
 }
 
+impl Serialize for Month {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -66,6 +88,30 @@ mod tests {
             }
             .to_string(),
             "2026-03"
+        );
+    }
+
+    #[test]
+    fn test_next_month_rolls_over_the_year() {
+        let dec = Month {
+            year: 2026,
+            month: 12,
+        };
+        assert_eq!(
+            dec.next(),
+            Month {
+                year: 2027,
+                month: 1
+            }
+        );
+        assert_eq!(
+            Month {
+                year: 2026,
+                month: 3
+            }
+            .next()
+            .to_string(),
+            "2026-04"
         );
     }
 

@@ -10,9 +10,18 @@ pub struct Rooting {
     pub generated_at: String,
     pub season: u16,
     pub week: Option<u8>,
+    /// The playoff round this week is (`wild_card`, `divisional`,
+    /// `conference` or `super_bowl`); missing in the regular season and in
+    /// older files.
+    #[serde(default)]
+    pub round: Option<String>,
     pub simulations: u32,
     pub latest_game: Option<LatestGame>,
     pub bears: Bears,
+    /// The celebration banner the nightly build worked out: only after a
+    /// Bears win. Missing in older files.
+    #[serde(default)]
+    pub banner: Option<Banner>,
     pub nfc_north_divisional: f64,
     pub games: Vec<Game>,
 }
@@ -39,11 +48,13 @@ pub struct Bears {
     pub division_rival: Option<String>,
 }
 
-/// The celebration banner: a headline and a line under it.
-#[derive(Clone, Debug, PartialEq)]
+/// The celebration banner: a headline and the lines under it, picked by the
+/// CLI from the current results (`cli/src/banner.rs`).
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Banner {
     pub headline: String,
-    pub line: String,
+    #[serde(default)]
+    pub lines: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -194,53 +205,38 @@ impl Rooting {
         games
     }
 
-    /// True when the Bears can no longer make the playoffs.
-    /// The banner to celebrate the Bears' place atop the NFC North, with
-    /// their latest win if they just won. None when they aren't in first.
-    pub fn banner(&self) -> Option<Banner> {
-        let lead = self.bears.division_lead?;
-        if lead < 0.0 {
-            return None;
-        }
-        let line = if lead == 0.0 {
-            "Tied for first place in the NFC North.".to_string()
-        } else {
-            let rival = self
-                .bears
-                .division_rival
-                .as_deref()
-                .map(crate::teams::nickname)
-                .unwrap_or("pack");
-            let games = if lead == 1.0 {
-                "a game".to_string()
-            } else {
-                format!("{lead} games")
-            };
-            format!("Alone in first place in the NFC North, {games} ahead of the {rival}.")
-        };
-        let won = self.latest_game.as_ref().and_then(|game| {
-            let (us, them, opponent) = if game.home == "CHI" {
-                (game.home_score, game.away_score, &game.away)
-            } else if game.away == "CHI" {
-                (game.away_score, game.home_score, &game.home)
-            } else {
-                return None;
-            };
-            (us > them).then(|| {
-                format!(
-                    "Bears win! Chicago {us}, {} {them}.",
-                    crate::teams::nickname(opponent)
-                )
-            })
-        });
-        Some(Banner {
-            headline: won.unwrap_or_else(|| "Bear Down!".to_string()),
-            line,
-        })
+    /// True when the Bears can no longer make the playoffs, or, in the
+    /// playoffs, have been knocked out.
+    pub fn bears_eliminated(&self) -> bool {
+        self.bears.odds.playoffs <= 0.0 || (self.round.is_some() && self.bears.odds.champion <= 0.0)
     }
 
-    pub fn bears_eliminated(&self) -> bool {
-        self.bears.odds.playoffs <= 0.0
+    /// The heading under the Bears' record: "Wild card round, 2026 season"
+    /// in the playoffs, "Week 13, 2026 season" before them.
+    pub fn when(&self) -> String {
+        let round = match self.round.as_deref() {
+            Some("wild_card") => Some("Wild card round"),
+            Some("divisional") => Some("Divisional round"),
+            Some("conference") => Some("Conference championships"),
+            Some("super_bowl") => Some("Super Bowl"),
+            _ => None,
+        };
+        match (round, self.week) {
+            (Some(round), _) => format!("{round}, {} season", self.season),
+            (None, Some(week)) => format!("Week {week}, {} season", self.season),
+            (None, None) => format!("{} season", self.season),
+        }
+    }
+
+    /// The goals worth a tab this week. In the playoffs the Bears are in or
+    /// out already, so "Make the playoffs" goes, and after the wild card
+    /// round the NFC North goal is decided too.
+    pub fn goals(&self) -> Vec<Goal> {
+        match self.round.as_deref() {
+            None => vec![Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth],
+            Some("wild_card") => vec![Goal::SuperBowl, Goal::NfcNorth],
+            Some(_) => vec![Goal::SuperBowl],
+        }
     }
 }
 
@@ -298,6 +294,79 @@ pub fn timestamp(rfc3339: &str) -> String {
             format!("{date} {time} {zone}")
         }
         _ => rfc3339.to_string(),
+    }
+}
+
+/// `archive/index.json`: the past weeks whose guides the site has rebuilt
+/// ([archive plan](../../docs/plans/2026-11-archive.md)). Each week's guide
+/// is `archive/<season>-week-<nn>.json`, in the `rooting.json` format.
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct ArchiveIndex {
+    pub weeks: Vec<ArchiveWeek>,
+}
+
+/// One past week in the archive.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ArchiveWeek {
+    pub season: u16,
+    pub week: u8,
+}
+
+impl ArchiveIndex {
+    pub fn parse(json: &str) -> Result<Self, String> {
+        serde_json::from_str(json).map_err(|e| format!("archive/index.json is not valid: {e}"))
+    }
+
+    /// The weeks to offer, newest first, once each, leaving out `current`
+    /// (the week the live guide shows).
+    pub fn newest_first(&self, current: Option<ArchiveWeek>) -> Vec<ArchiveWeek> {
+        let mut weeks: Vec<ArchiveWeek> = self
+            .weeks
+            .iter()
+            .copied()
+            .filter(|week| Some(*week) != current)
+            .collect();
+        weeks.sort_unstable_by(|a, b| b.cmp(a));
+        weeks.dedup();
+        weeks
+    }
+}
+
+impl ArchiveWeek {
+    /// The week's guide, as in `/archive/2026-week-07.json`.
+    pub fn path(self) -> String {
+        format!("/archive/{}-week-{:02}.json", self.season, self.week)
+    }
+
+    /// The picker's value for the week, as in `2026-07`.
+    pub fn value(self) -> String {
+        format!("{}-{:02}", self.season, self.week)
+    }
+
+    /// The week a picker value names; `None` for anything else, such as
+    /// the empty "this week" value.
+    pub fn from_value(value: &str) -> Option<Self> {
+        let (season, week) = value.split_once('-')?;
+        Some(Self {
+            season: season.parse().ok()?,
+            week: week.parse().ok().filter(|week| *week >= 1)?,
+        })
+    }
+
+    /// "Week 7, 2026 season".
+    pub fn label(self) -> String {
+        format!("Week {}, {} season", self.week, self.season)
+    }
+}
+
+impl Rooting {
+    /// The week this guide is for, as an archive entry; `None` once the
+    /// regular season is over.
+    pub fn archive_week(&self) -> Option<ArchiveWeek> {
+        self.week.map(|week| ArchiveWeek {
+            season: self.season,
+            week,
+        })
     }
 }
 
@@ -468,55 +537,34 @@ mod tests {
     }
 
     #[test]
-    fn the_banner_celebrates_first_place_and_the_latest_win() {
+    fn the_banner_is_read_from_the_file() {
         let mut rooting = match Rooting::parse(SAMPLE) {
             Ok(rooting) => rooting,
             Err(error) => panic!("sample should parse: {error}"),
         };
-        rooting.bears.division_lead = Some(1.0);
-        rooting.bears.division_rival = Some("DET".to_string());
-        rooting.latest_game = Some(LatestGame {
-            id: "2026_12_CHI_DET".to_string(),
-            gameday: "2026-11-26".to_string(),
-            away: "CHI".to_string(),
-            home: "DET".to_string(),
-            away_score: 39,
-            home_score: 35,
-        });
-        assert_eq!(
-            rooting.banner(),
-            Some(Banner {
-                headline: "Bears win! Chicago 39, Lions 35.".to_string(),
-                line: "Alone in first place in the NFC North, a game ahead of the Lions."
-                    .to_string(),
-            })
-        );
-        // Someone else's game: still first, no win to cheer.
-        if let Some(game) = rooting.latest_game.as_mut() {
-            game.away = "GB".to_string();
-        }
-        rooting.bears.division_lead = Some(1.5);
-        let banner = rooting.banner();
+        let banner = rooting.banner.take();
         assert_eq!(
             banner.as_ref().map(|b| b.headline.as_str()),
-            Some("Bear Down!")
+            Some("Bears win! Chicago 39, Lions 35.")
         );
+        assert!(banner.is_some_and(|b| !b.lines.is_empty()));
+        // No banner after a loss (null), or in an older file (missing).
+        let mut json: serde_json::Value = match serde_json::from_str(SAMPLE) {
+            Ok(json) => json,
+            Err(error) => panic!("sample is JSON: {error}"),
+        };
+        json["banner"] = serde_json::Value::Null;
         assert_eq!(
-            banner.map(|b| b.line),
-            Some(
-                "Alone in first place in the NFC North, 1.5 games ahead of the Lions.".to_string()
-            )
+            Rooting::parse(&json.to_string()).map(|r| r.banner),
+            Ok(None)
         );
-        rooting.bears.division_lead = Some(0.0);
+        if let Some(fields) = json.as_object_mut() {
+            fields.remove("banner");
+        }
         assert_eq!(
-            rooting.banner().map(|b| b.line),
-            Some("Tied for first place in the NFC North.".to_string())
+            Rooting::parse(&json.to_string()).map(|r| r.banner),
+            Ok(None)
         );
-        // Behind, or an older file: no banner.
-        rooting.bears.division_lead = Some(-1.0);
-        assert_eq!(rooting.banner(), None);
-        rooting.bears.division_lead = None;
-        assert_eq!(rooting.banner(), None);
     }
 
     #[test]
@@ -525,5 +573,77 @@ mod tests {
         assert!(!r.bears_eliminated());
         r.bears.odds.playoffs = 0.0;
         assert!(r.bears_eliminated());
+    }
+
+    const WILD_CARD: &str = include_str!("../tests/fixtures/rooting-wild-card.json");
+
+    #[test]
+    fn a_playoff_round_names_itself_and_drops_decided_goals() {
+        let r = Rooting::parse(WILD_CARD).expect("wild card fixture parses");
+        assert_eq!(r.round.as_deref(), Some("wild_card"));
+        assert_eq!(r.when(), "Wild card round, 2020 season");
+        assert_eq!(r.goals(), vec![Goal::SuperBowl, Goal::NfcNorth]);
+        assert!(!r.bears_eliminated());
+        let mut later = r.clone();
+        later.round = Some("divisional".to_string());
+        assert_eq!(later.when(), "Divisional round, 2020 season");
+        assert_eq!(later.goals(), vec![Goal::SuperBowl]);
+        // Knocked out: in the playoffs, but no Super Bowl chance left.
+        later.bears.odds.champion = 0.0;
+        assert!(later.bears_eliminated());
+    }
+
+    #[test]
+    fn the_regular_season_keeps_every_goal() {
+        let r = Rooting::parse(SAMPLE).expect("sample parses");
+        assert_eq!(r.round, None);
+        assert!(r.when().starts_with("Week "));
+        assert_eq!(
+            r.goals(),
+            vec![Goal::SuperBowl, Goal::Playoffs, Goal::NfcNorth]
+        );
+    }
+
+    #[test]
+    fn archive_weeks_are_offered_newest_first_without_the_current_one() {
+        let index = match ArchiveIndex::parse(
+            r#"{"weeks":[{"season":2026,"week":2},{"season":2026,"week":11},{"season":2025,"week":18},{"season":2026,"week":2},{"season":2026,"week":12}]}"#,
+        ) {
+            Ok(index) => index,
+            Err(error) => panic!("index should parse: {error}"),
+        };
+        let week = |season, week| ArchiveWeek { season, week };
+        assert_eq!(
+            index.newest_first(Some(week(2026, 12))),
+            vec![week(2026, 11), week(2026, 2), week(2025, 18)]
+        );
+        assert_eq!(index.newest_first(None).len(), 4);
+        assert!(ArchiveIndex::parse("<!doctype html>").is_err());
+    }
+
+    #[test]
+    fn archive_weeks_name_their_files_and_picker_values() {
+        let week = ArchiveWeek {
+            season: 2026,
+            week: 7,
+        };
+        assert_eq!(week.path(), "/archive/2026-week-07.json");
+        assert_eq!(week.value(), "2026-07");
+        assert_eq!(week.label(), "Week 7, 2026 season");
+        assert_eq!(ArchiveWeek::from_value("2026-07"), Some(week));
+        assert_eq!(ArchiveWeek::from_value(""), None);
+        assert_eq!(ArchiveWeek::from_value("2026-00"), None);
+        assert_eq!(ArchiveWeek::from_value("week"), None);
+        let rooting = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting,
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        assert_eq!(
+            rooting.archive_week(),
+            Some(ArchiveWeek {
+                season: 2026,
+                week: 12
+            })
+        );
     }
 }

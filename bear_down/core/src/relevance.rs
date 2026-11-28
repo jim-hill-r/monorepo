@@ -43,8 +43,12 @@ pub struct Relevance {
     pub home: Team,
     /// The away team.
     pub away: Team,
-    /// Whether the focus team can still make the playoffs. If not, nothing
-    /// can matter and `links` is empty.
+    /// Whether the game is a playoff game. Then "alive" means still in the
+    /// playoffs rather than still able to make them.
+    pub postseason: bool,
+    /// Whether the focus team can still make the playoffs (in the
+    /// postseason, is still in them). If not, nothing can matter and
+    /// `links` is empty.
     pub focus_alive: bool,
     /// Whether each team can still make the playoffs, home first.
     pub alive: [bool; 2],
@@ -105,7 +109,8 @@ impl Race {
 }
 
 /// The open links for every game left in `season`'s current week, in
-/// schedule order, measured for `focus`.
+/// schedule order, measured for `focus`. A playoff week's games are
+/// measured with [`postseason_relevance`].
 ///
 /// Fails for unknown teams.
 pub fn relevance(
@@ -122,10 +127,13 @@ pub fn relevance(
         opponents[home.index()].push(away);
         opponents[away.index()].push(home);
     }
-    let focus_alive = race.alive(focus);
     let Some(week) = season.current_week() else {
         return Ok(Vec::new());
     };
+    if week.games().iter().any(|game| game.game_type.is_playoff()) {
+        return postseason_relevance(season, standings, focus);
+    }
+    let focus_alive = race.alive(focus);
     week.remaining()
         .map(|game| {
             let (home, away) = (team(&game.home_team)?, team(&game.away_team)?);
@@ -164,12 +172,81 @@ pub fn relevance(
             Ok(Relevance {
                 home,
                 away,
+                postseason: false,
                 focus_alive,
                 alive,
                 links,
             })
         })
         .collect()
+}
+
+/// The open links for a playoff week's games (decision 0008's playoff
+/// guide). A team is still in the playoffs when it plays this round, or,
+/// in the first round, when it is a seed with a bye, and it hasn't lost a
+/// playoff game. While the focus team is in, every game reaches it: a
+/// game in its own conference decides who it could meet, a game in the
+/// other conference who it could meet in the Super Bowl. Regular-season
+/// schedules no longer matter, so there are no [`Link::Schedule`] links.
+///
+/// Fails for unknown teams.
+pub fn postseason_relevance(
+    season: &Season<'_>,
+    standings: &Standings,
+    focus: Team,
+) -> Result<Vec<Relevance>, String> {
+    let team = |abbr: &str| Team::from_abbr(abbr).ok_or_else(|| format!("unknown team {abbr:?}"));
+    let Some(week) = season.current_week() else {
+        return Ok(Vec::new());
+    };
+    let mut lost = Vec::new();
+    let mut earlier_rounds = false;
+    for game in season.playoffs().filter(|game| game.week < week.number) {
+        earlier_rounds = true;
+        if let Some(loser) = game.loser() {
+            lost.push(team(loser)?);
+        }
+    }
+    let playing = week
+        .remaining()
+        .map(|game| Ok([team(&game.home_team)?, team(&game.away_team)?]))
+        .collect::<Result<Vec<_>, String>>()?;
+    let plays = playing.iter().flatten().any(|&team| team == focus);
+    // Only the first round has byes: the seeds that don't play it.
+    let bye = !earlier_rounds && !plays && {
+        let seeds = standings.seeds(focus.conference(), wild_cards(season.year), &mut |_| 0);
+        seeds.contains(&focus)
+    };
+    let focus_alive = !lost.contains(&focus) && (plays || bye);
+    Ok(playing
+        .into_iter()
+        .map(|[home, away]| {
+            let mut links = Vec::new();
+            if focus_alive {
+                if home == focus || away == focus {
+                    links.push(Link::FocusPlays);
+                }
+                for playing in [home, away] {
+                    if playing == focus {
+                        continue;
+                    }
+                    links.push(if playing.conference() == focus.conference() {
+                        Link::Race(playing)
+                    } else {
+                        Link::SuperBowlRace(playing)
+                    });
+                }
+            }
+            Relevance {
+                home,
+                away,
+                postseason: true,
+                focus_alive,
+                alive: [true, true],
+                links,
+            }
+        })
+        .collect())
 }
 
 #[cfg(test)]
@@ -284,6 +361,79 @@ mod tests {
                 for &made_it in &playoff_teams {
                     assert!(race.alive(made_it), "{year} week {week}: {made_it}");
                 }
+            }
+        }
+    }
+
+    /// The fixture as it stood just before `week` of `year`, playoffs
+    /// included.
+    fn playoff_links(year: u16, week: u8, focus: &str) -> Vec<Relevance> {
+        let full = match Schedule::parse(SEASONS) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("seasons fixture should parse: {error}"),
+        };
+        let schedule = match full.as_of(year, week) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("{year} week {week}: {error}"),
+        };
+        let Some(season) = schedule.season(year) else {
+            panic!("schedule should have {year}");
+        };
+        let standings = match Standings::from_season(&season) {
+            Ok(standings) => standings,
+            Err(error) => panic!("{year} should have standings: {error}"),
+        };
+        match relevance(&season, &standings, team(focus)) {
+            Ok(relevance) => relevance,
+            Err(error) => panic!("{year} should have relevance: {error}"),
+        }
+    }
+
+    #[test]
+    fn a_playoff_round_reaches_every_team_still_in() {
+        // 2020 wild card round: the Bears played at the Saints.
+        let games = playoff_links(2020, 18, "CHI");
+        assert_eq!(games.len(), 6);
+        assert!(games.iter().all(|game| game.postseason && game.focus_alive));
+        assert_eq!(game(&games, "NO").links.first(), Some(&Link::FocusPlays));
+        assert!(game(&games, "WAS").links.contains(&Link::Race(team("TB"))));
+        assert!(
+            game(&games, "BUF")
+                .links
+                .contains(&Link::SuperBowlRace(team("IND")))
+        );
+        for game in &games {
+            assert!(
+                !game
+                    .links
+                    .iter()
+                    .any(|link| matches!(link, Link::Schedule { .. }))
+            );
+        }
+    }
+
+    #[test]
+    fn the_top_seed_is_alive_through_its_bye() {
+        // The Packers were the NFC's No. 1 seed in 2020.
+        let games = playoff_links(2020, 18, "GB");
+        assert!(
+            games
+                .iter()
+                .all(|game| game.focus_alive && game.can_matter())
+        );
+    }
+
+    #[test]
+    fn a_team_out_of_the_playoffs_has_no_links() {
+        // The Panthers missed the 2020 playoffs; the Bears lost in the wild
+        // card round.
+        for (week, focus) in [(18, "CAR"), (19, "CHI")] {
+            let games = playoff_links(2020, week, focus);
+            assert!(!games.is_empty());
+            for game in &games {
+                assert!(game.postseason);
+                assert!(!game.focus_alive, "week {week} {focus}");
+                assert!(!game.can_matter());
             }
         }
     }

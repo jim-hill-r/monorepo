@@ -452,6 +452,22 @@
     "budget": 0
   },
   {
+    "name": "Lighthouse CI",
+    "ring": "Assess",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Proposed in decision 0028: @lhci/cli (pinned) runs Lighthouse's performance, SEO, accessibility and Agentic Browsing audits in GitHub Actions on the runner's Chrome, on each site's build in PR CI and on the live site after deploy, with assertions per site (standards/docs/web.md). Reports stay as Actions artifacts, never temporary-public-storage. PageSpeed Insights API, Unlighthouse, sitespeed.io and Cloudflare Observatory were compared.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0028-web-checks.md",
+      "standards/docs/web.md",
+      "https://github.com/GoogleChrome/lighthouse-ci"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Marp",
     "ring": "Adopt",
     "quadrant": "Tools",
@@ -463,6 +479,23 @@
     ],
     "sources": [
       ".agents/skills/deep-project-review/SKILL.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "Kokoro text-to-speech",
+    "ring": "Trial",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Open-weight voice (kokoro-onnx, Apache 2.0) that narrates the review deck demo videos, run locally with ffmpeg and Playwright's video recording. Brings Python in for that one script only. Decision 0025 (proposed).",
+    "exemplars": [
+      "docs/reviews"
+    ],
+    "sources": [
+      "standards/docs/decisions/0025-review-deck-demo-videos.md",
+      "https://github.com/thewh1teagle/kokoro-onnx"
     ],
     "claude": "",
     "budget": 0
@@ -608,7 +641,6 @@
     "exemplars": [
       "cookbook/cloudflare",
       "cahokia/cloudflare",
-      "pane/cloudflare",
       "controlled_chaos"
     ],
     "sources": [
@@ -631,8 +663,9 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Approved vendor, Free plan only. Written in Rust with workers-rs: tofu_state is OpenTofu's http state backend (decision 0009), and telemetry takes events into Analytics Engine with a rate-limit binding (decision 0001). Web Analytics and pane's API are planned. Workers are created only through free-tiers.sh worker.",
+    "description": "Approved vendor, Free plan only. Written in Rust with workers-rs: tofu_state is OpenTofu's http state backend (decision 0009), telemetry takes events into Analytics Engine with a rate-limit binding (decision 0001), and pane/cloudflare serves pane's Dioxus build as Workers static assets and runs Rust only for /api/* (standards/tasks/cloudflare-worker-assets.toml). Web Analytics is planned. Workers are created only through free-tiers.sh worker.",
     "exemplars": [
+      "pane/cloudflare",
       "telemetry",
       "tofu_state"
     ],
@@ -1153,32 +1186,34 @@
   },
   {
     "name": "OpenTofu",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Tools",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Accepted in decision 0007 (Jim, 2026-11-26) as the IaC engine: plans and applies the Terraform JSON the infra crate synthesizes, with built-in state encryption and no account. Moves to Trial when its phase 1 merges.",
+    "description": "Accepted in decision 0007 (Jim, 2026-11-26) as the IaC engine: plans and applies the Terraform JSON the infra crate synthesizes, with built-in state encryption and no account. Trial since phase 1 applied (the auth0 stack plans no changes on main, 2026-11-28); the guide is standards/docs/infra.md.",
     "exemplars": [
       "infra"
     ],
     "sources": [
-      "standards/docs/decisions/0007-infrastructure-as-code.md"
+      "standards/docs/decisions/0007-infrastructure-as-code.md",
+      "standards/docs/infra.md"
     ],
     "claude": "OpenTofu MCP server (registry and resource docs) and HashiCorp's Terraform MCP server, read-only.",
     "budget": 0
   },
   {
     "name": "Infrastructure as code synthesized from Rust",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Techniques",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Accepted in decision 0007 (Jim, 2026-11-26): Rust constructs write committed Terraform JSON (*.tf.json), PR CI plans it, and main applies the saved plan, so generation and apply are decoupled. Dashboard settings move into code; drift is checked weekly.",
+    "description": "Accepted in decision 0007 (Jim, 2026-11-26): Rust constructs write committed Terraform JSON (*.tf.json), PR CI plans it, and main applies the saved plan, so generation and apply are decoupled. Dashboard settings move into code when a provider covers them; drift is checked weekly. Trial since phase 1 applied (2026-11-28); the guide is standards/docs/infra.md.",
     "exemplars": [
       "infra"
     ],
     "sources": [
-      "standards/docs/decisions/0007-infrastructure-as-code.md"
+      "standards/docs/decisions/0007-infrastructure-as-code.md",
+      "standards/docs/infra.md"
     ],
     "claude": "",
     "budget": 0
@@ -1251,17 +1286,49 @@
   },
   {
     "name": "terrars",
-    "ring": "Assess",
+    "ring": "Trial",
     "quadrant": "Languages & Frameworks",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26).",
+    "description": "Generates strongly typed Rust bindings from Terraform provider schemas and writes .tf.json. Accepted in decision 0007 (Jim, 2026-11-26) as the typed layer under the infra crate's constructs. The phase 1 spike passed (2026-11-26): only the resource types we use are generated, which build in seconds. We fix bugs we find upstream rather than work around them (Jim, 2026-11-26). Trial since phase 1 applied (2026-11-28).",
     "exemplars": [
       "infra"
     ],
     "sources": [
       "standards/docs/decisions/0007-infrastructure-as-code.md",
-      "standards/docs/decisions/0007-terrars-spike.md"
+      "standards/docs/decisions/0007-terrars-spike.md",
+      "standards/docs/infra.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "WebMCP",
+    "ring": "Assess",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Browser API for a page to register tools and declarative forms that AI agents can call; Lighthouse 13 checks it. Too new to require; worth trying in an interactive app (web.md WEB-208).",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0028-web-checks.md",
+      "standards/docs/web.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "Cloudflare Markdown for Agents",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Cloudflare converts HTML to Markdown for clients that ask for text/markdown, but only on Pro plans and up and only for zones, so not for our free *.pages.dev sites. We build our own .md copies instead (web.md WEB-203).",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0028-web-checks.md",
+      "standards/docs/web.md",
+      "https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/"
     ],
     "claude": "",
     "budget": 0

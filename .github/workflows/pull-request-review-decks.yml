@@ -1,6 +1,8 @@
 # Builds the project review decks in docs/reviews/ to HTML and PDF with Marp
 # (standards/scripts/review-decks.sh) and uploads them as the `review-decks`
-# artifact, so a reviewer can read the slides without a local clone. See
+# artifact, so a reviewer can read the slides without a local clone. It
+# first records the narrated demo videos (docs/reviews/demo-recorder) of the
+# decks the pull request changes, or of the decks named by hand. See
 # docs/reviews/README.md.
 name: Review decks
 
@@ -11,6 +13,11 @@ name: Review decks
       - 'standards/scripts/review-decks.sh'
       - '.github/workflows/pull-request-review-decks.yml'
   workflow_dispatch:
+    inputs:
+      demos:
+        description: 'Deck folders whose demo videos to record (space-separated, or all)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -33,7 +40,48 @@ jobs:
         with:
           node-version: '22'
 
+      # A demo records the live app as it is today, so only the decks this
+      # pull request changes (or the ones named by hand) get new videos.
+      - name: Choose demos
+        id: demos
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          INPUT_DEMOS: ${{ inputs.demos }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            git fetch --quiet --depth=1 origin "$BASE_SHA"
+            demos="$(git diff --name-only "$BASE_SHA" HEAD -- 'docs/reviews/*/deck.md' 'docs/reviews/*/demos/*.json' \
+              | cut -d/ -f3 | sort -u | while read -r folder; do
+                  compgen -G "docs/reviews/$folder/demos/*.json" > /dev/null && echo "$folder"
+                done | tr '\n' ' ')"
+          else
+            demos="$INPUT_DEMOS"
+          fi
+          echo "Recording demos for: ${demos:-none}"
+          echo "list=$demos" >> "$GITHUB_OUTPUT"
+
+      # kokoro-onnx supports Python 3.10 to 3.13 only.
+      - name: Setup Python
+        if: steps.demos.outputs.list != ''
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+
+      - name: Set up the demo recorder
+        if: steps.demos.outputs.list != ''
+        working-directory: docs/reviews/demo-recorder
+        run: |
+          command -v ffmpeg > /dev/null || { sudo apt-get update -q && sudo apt-get install -y -q ffmpeg; }
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          python -m venv .venv
+          .venv/bin/pip install --quiet -r tts/requirements.txt
+
       - name: Build decks
+        env:
+          REVIEW_DEMOS: ${{ steps.demos.outputs.list }}
+          DEMO_PYTHON: ${{ github.workspace }}/docs/reviews/demo-recorder/.venv/bin/python
         run: bash standards/scripts/review-decks.sh build/reviews
 
       - name: Upload decks

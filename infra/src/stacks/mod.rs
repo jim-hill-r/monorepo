@@ -30,7 +30,9 @@ pub fn web_apps() -> Vec<WebApp> {
             ))
             .web_analytics(),
         WebApp::new("design_system").web_analytics(),
-        WebApp::new("pane").web_analytics(),
+        // pane is not here: it is a Worker with static assets on
+        // workers.dev (pane/cloudflare), where Web Analytics can't be
+        // auto-installed, and it sits behind Cloudflare Access for one person.
         WebApp::new("sparkhill").web_analytics(),
         // Blue Eel. Web Analytics isn't on yet; that adds a Cloudflare
         // resource, so it waits for its own PR.

@@ -22,7 +22,8 @@ cargo run --quiet --manifest-path chores/Cargo.toml -- next-task
 Add `--project <name>` when your thread is scoped to a project, and
 `--skip <path>` for an issue an open PR already handles. A coordinator
 starting several threads runs it once with `--count <n> --exclude
-<projects or epic:names other threads have>` to get one issue per project.
+<projects or epic:names other threads have> --working <one project per working thread>` to get one
+issue per project.
 Your judgment is only whether the pick is really workable now (a phase
 that needs something first, a human task it waits on); if not, run it
 again with `--skip`. The rules it applies, for reference:
@@ -50,7 +51,16 @@ Be eager: take the first issue that qualifies under these rules.
    4. `TODO`/`FIX` comments anywhere in the code.
    Read the folder's `README.md` too: it has the epic's notes and what a
    phase needs first.
-5. If nothing qualifies, investigate the codebase, record a few real issues as
+5. **Product share (Jim, 2026-11-28).** "At least 50% of all of my claude
+   credits are being used on product work." When the threads working now
+   (`--working`) and the PRs merged on `main` in the last week put
+   products under half, take the first product issue in the order above
+   instead of the first issue. Tiers are decision 0019's; both platform
+   tiers and the root `issues/` count as platform. It is soft: with no
+   product issue left, take the platform one, and a thread scoped with
+   `--project` skips it. The rule is under "Product share" in decision
+   0013.
+6. If nothing qualifies, investigate the codebase, record a few real issues as
    issue files in the right `issues/` folder, and open a PR with just those.
 
 ## 2. Set up

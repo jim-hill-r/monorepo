@@ -128,6 +128,7 @@ is too generic and not meaningful").
 | `quality` | `quality-reviewer` | A quality baseline goes up or a lint or complexity limit is loosened (decision 0015). Jim: "fine for now"; other threads are working out what quality means, and this trigger follows them |
 | `credential` | `credential-reviewer` | IaC adds or changes something that creates a credential: the `credential-change` label from the plan guard (IAC-005) |
 | `minting` | `minting-reviewer` | It changes something that can mint other credentials: `infra/scripts/mint.sh`, `infra-mint.yml`, the bootstrap credentials or the environment that holds them |
+| `docs` | `docs-reviewer` | Every file it changes is docs, plans included: the `docs-only` tag (Jim, 2026-11-28: "add a docs-reviewer. i want the attention section to state if it is only docs being updated which includes plans") |
 
 The two credential roles are separate on purpose (Jim: "clearly delineate
 between the two types of credential reviewers"). A `credential-reviewer`
@@ -154,6 +155,7 @@ every domain role is held over the whole repo for now.
 | `quality` | Jim | Jim | Jim |
 | `credential` | Jim | Jim | Jim |
 | `minting` | Jim | not applicable | not applicable |
+| `docs` | Jim | Jim | Jim |
 
 The matrix is uniform across tiers today except for the `change` row. It
 earns its keep when a second person arrives: they can be given one cell
@@ -245,6 +247,11 @@ role = "credential-reviewer"
 members = ["jimhillr"]
 scope = "repo"
 environments = ["infra-credentials"]   # its required reviewers must equal these members
+
+[[grants]]
+role = "docs-reviewer"           # Jim, 2026-11-28; the docs-only tag
+members = ["jimhillr"]
+scope = "repo"
 
 [[grants]]
 role = "minting-reviewer"

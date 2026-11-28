@@ -31,7 +31,8 @@ plays the smoke script against the released build (eval engine phase 2).
 - Priority: should
 - Why: A card game is only fair, and only worth testing, if the software
   plays by the rules that are written down.
-- Accept: each turn runs draw, play, battle and end in order; in a battle
+- Accept: each turn runs draw, play, battle and end in order; a player
+  draws only with five or fewer cards in hand; in a battle
   the higher card wins, the loser loses 1 life and the winner gains 5
   happiness, kept between 0 and 100; a player with no life or no civilians
   loses at once; when the deck runs out the happier player wins, and equal

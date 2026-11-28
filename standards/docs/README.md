@@ -9,12 +9,14 @@ This directory contains development standards and guidelines for the monorepo.
 - [Documentation](./documentation.md) - Documentation standards
 - [Cost](./cost.md) - Each project's cost analysis (`docs/cost.toml`), the cost check and how an expense is approved
 - [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
+- [Money](./money.md) - The financial ledger's monthly statements and the runway, written by `cost money`
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
+- [Infrastructure as code](./infra.md) - Dashboard settings as code in `infra`: adding a resource, the plan guards, state, drift, and why IaC never destroys
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Runbooks](./runbooks/README.md) - Step-by-step runbooks for every task only a person can do
 - [Naming](./naming.md) - Naming conventions
-- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md), the [eval engine](./plans/2026-11-eval-engine.md), the [cost check](./plans/2026-11-cost-check.md), [cost tracking](./plans/2026-11-cost-tracking.md), the [threat check](./plans/2026-11-threat-check.md), the [design system](./plans/2026-11-design-system.md), [resource cleanup](./plans/2026-11-resource-cleanup.md), [code quality](./plans/2026-11-code-quality.md) and [baked skills](./plans/2026-11-baked-skills.md)
+- [Plans](./plans/) - Repo-wide plans, such as [feedback on every change](./plans/2026-11-deploy-feedback.md), the [eval engine](./plans/2026-11-eval-engine.md), the [cost check](./plans/2026-11-cost-check.md), [cost tracking](./plans/2026-11-cost-tracking.md), the [threat check](./plans/2026-11-threat-check.md), the [design system](./plans/2026-11-design-system.md), [resource cleanup](./plans/2026-11-resource-cleanup.md), [code quality](./plans/2026-11-code-quality.md), [baked skills](./plans/2026-11-baked-skills.md) and [revenue](./plans/2026-11-revenue-402.md)
 - [Pull Requests](./pull-requests.md) - How every PR is driven to merge or close
 - [Repo health](./repo-health.md) - The README's health badges, and how PR triage checks them and fixes what is red
 - [Scheduled tasks](./scheduled-tasks/) - The exact prompts of the Claude scheduled tasks, such as [PR triage](./scheduled-tasks/pr-triage.md) and the hourly [credit window check](./scheduled-tasks/credit-window.md)
@@ -25,6 +27,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
 - [Tech radar](./tech-radar.md) - Every approved, evaluated and held technology and vendor, with exemplar projects
 - [TypeScript](./typescript.md) - TypeScript coding standards
+- [Websites](./web.md) - Search (SEO), AI agent readiness and web performance rules (WEB-1xx to WEB-4xx) for every site we deploy, checked by Lighthouse CI and `chores site-check`
 
 ---
 

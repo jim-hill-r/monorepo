@@ -10,8 +10,11 @@
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bear_down_core::{EloParams, Ratings, Schedule, SimConfig, Standings, simulate};
+use bear_down_core::{
+    EloParams, Ratings, Schedule, SimConfig, Simulation, Standings, Team, TeamOdds, simulate,
+};
 
+mod banner;
 mod rooting;
 mod why;
 
@@ -159,20 +162,49 @@ fn build(
     generated_at: String,
 ) -> Result<rooting::Guide, String> {
     let season = schedule.latest_season().ok_or("games.csv has no games")?;
+    let simulation = run_simulation(schedule, simulations)?;
+    let standings = Standings::from_season(&season)?;
+    let banner = banner::banner(&banner::Context {
+        season: &season,
+        standings: &standings,
+        focus: simulation.focus,
+        odds: simulation.odds(simulation.focus),
+        odds_before: odds_before(schedule, simulations),
+    });
+    Ok(rooting::Guide::new(
+        &simulation,
+        &standings,
+        season.latest_played(),
+        banner,
+        generated_at,
+    ))
+}
+
+/// Simulates the rest of the schedule's latest season.
+fn run_simulation(schedule: &Schedule, simulations: Option<u32>) -> Result<Simulation, String> {
+    let season = schedule.latest_season().ok_or("games.csv has no games")?;
     let ratings = Ratings::from_schedule(schedule, EloParams::default());
     let week = season.current_week().map_or(0, |week| week.number);
     let mut config = SimConfig::weekly(season.year, week);
     if let Some(simulations) = simulations {
         config.simulations = simulations;
     }
-    let simulation = simulate(&season, &ratings, &config)?;
-    let standings = Standings::from_season(&season)?;
-    Ok(rooting::Guide::new(
-        &simulation,
-        &standings,
-        season.latest_played(),
-        generated_at,
-    ))
+    simulate(&season, &ratings, &config)
+}
+
+/// The Bears' odds just before the week of their latest regular-season
+/// game, for the banner's "odds up from" line: a second simulation of the
+/// schedule as it stood then. `None` when there is no such game or it was a
+/// playoff game.
+fn odds_before(schedule: &Schedule, simulations: Option<u32>) -> Option<TeamOdds> {
+    let season = schedule.latest_season()?;
+    let game = banner::latest_game(&season, Team::BEARS)?;
+    if game.game_type.is_playoff() {
+        return None;
+    }
+    let before = schedule.as_of(season.year, game.week).ok()?;
+    let simulation = run_simulation(&before, simulations).ok()?;
+    Some(simulation.odds(simulation.focus))
 }
 
 /// Formats `time` as an RFC 3339 UTC timestamp to the second.
@@ -334,6 +366,7 @@ mod tests {
             "simulations",
             "latest_game",
             "bears",
+            "banner",
             "nfc_north_divisional",
             "games",
         ] {
@@ -370,6 +403,43 @@ mod tests {
         // game and a half.
         assert_eq!(json["bears"]["division_lead"].as_f64(), Some(1.5));
         assert_eq!(json["bears"]["division_rival"], "GB");
+        // Their latest game, week 17 at the 49ers, was a 42-38 loss.
+        assert!(json["banner"].is_null());
+    }
+
+    #[test]
+    fn the_banner_follows_a_bears_win_with_current_context() {
+        let full = match Schedule::parse(include_str!("../../core/fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("fixture should parse: {error}"),
+        };
+        let banner_as_of = |week: u8| {
+            let schedule = match full.as_of(2025, week) {
+                Ok(schedule) => schedule,
+                Err(error) => panic!("2025 week {week}: {error}"),
+            };
+            match build(&schedule, Some(2_000), "2026-01-01T00:00:00Z".into()) {
+                Ok(guide) => guide.banner,
+                Err(error) => panic!("build should succeed: {error}"),
+            }
+        };
+        // 2025 before week 17: the Bears had just beaten the Packers 22-16.
+        let Some(banner) = banner_as_of(17) else {
+            panic!("a win should get a banner");
+        };
+        assert_eq!(banner.headline, "Bears win! Chicago 22, Packers 16.");
+        assert!(!banner.lines.is_empty() && banner.lines.len() <= banner::MAX_LINES);
+        assert!(
+            banner.lines[0].contains("NFC North"),
+            "the division race leads: {:?}",
+            banner.lines
+        );
+        // After the wild-card win over the Packers, 31-27.
+        let Some(banner) = banner_as_of(20) else {
+            panic!("a playoff win should get a banner");
+        };
+        assert_eq!(banner.headline, "Bears win! Chicago 31, Packers 27.");
+        assert_eq!(banner.lines, ["On to the divisional round."]);
     }
 
     #[test]
@@ -579,6 +649,101 @@ mod tests {
                 assert_ne!(channel.channel, "division_title", "{}", game.id);
             }
         }
+    }
+
+    /// The fixture as it stood just before `week` of `year`, playoff weeks
+    /// included.
+    fn as_of_week(year: u16, week: u8) -> Schedule {
+        let full = match Schedule::parse(include_str!("../../core/fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("seasons fixture should parse: {error}"),
+        };
+        match full.as_of(year, week) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("{year} week {week}: {error}"),
+        }
+    }
+
+    /// A golden playoff week (decision 0008's playoff guide): the 2020 wild
+    /// card round. The 8-8 Bears were the No. 7 seed at the Saints.
+    #[test]
+    fn golden_wild_card_round_2020() {
+        let guide = match build(&as_of_week(2020, 18), Some(4_000), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!((guide.season, guide.week), (2020, Some(18)));
+        assert_eq!(guide.round, Some("wild_card"));
+        assert_eq!(guide.games.len(), 6);
+        assert!((guide.bears.odds.playoffs - 1.0).abs() < 1e-12);
+        let game = |away: &str, home: &str| match guide
+            .games
+            .iter()
+            .find(|game| game.away == away && game.home == home)
+        {
+            Some(game) => game,
+            None => panic!("{away} at {home} should be in the wild card round"),
+        };
+        for game in &guide.games {
+            // In already: nothing moves the Bears' playoff odds.
+            assert_eq!(game.playoffs.swing, 0.0, "{}", game.id);
+            assert_eq!(game.playoffs.root_for, None, "{}", game.id);
+        }
+        // Their own game is the whole season: a loss ends it.
+        let own = game("CHI", "NO");
+        assert_eq!(own.champion.root_for.as_deref(), Some("CHI"));
+        assert_eq!(own.champion.tier, "matters");
+        assert_eq!(own.champion.if_home_wins, 0.0);
+        assert!(
+            own.champion.why[0].starts_with("The Bears' own playoff game"),
+            "{:?}",
+            own.champion.why
+        );
+        // Another NFC game decides who the Bears could meet next.
+        let nfc = game("TB", "WAS");
+        assert_ne!(nfc.champion.tier, "none");
+        assert!(
+            nfc.champion
+                .channels
+                .iter()
+                .all(|channel| channel.channel == "bracket"),
+            "{:?}",
+            nfc.champion.channels
+        );
+        // An AFC game only reaches them through the Super Bowl opponent.
+        for channel in &game("IND", "BUF").champion.channels {
+            assert_eq!(channel.channel, "super_bowl_opponent");
+        }
+    }
+
+    /// The 2020 divisional round, after the Bears lost at the Saints:
+    /// nothing is left to root for.
+    #[test]
+    fn a_playoff_round_after_the_bears_are_out() {
+        let guide = match build(&as_of_week(2020, 19), Some(500), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!(guide.round, Some("divisional"));
+        assert_eq!(guide.games.len(), 4);
+        assert_eq!(guide.bears.odds.champion, 0.0);
+        for game in &guide.games {
+            assert_eq!(game.champion.tier, "none", "{}", game.id);
+            assert!(
+                game.champion.why[0].contains("out of the playoffs"),
+                "{:?}",
+                game.champion.why
+            );
+        }
+    }
+
+    #[test]
+    fn the_regular_season_has_no_round() {
+        let guide = match build(&before_week(2020, 17), Some(200), String::new()) {
+            Ok(guide) => guide,
+            Err(error) => panic!("build should succeed: {error}"),
+        };
+        assert_eq!(guide.round, None);
     }
 
     #[test]

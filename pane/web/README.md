@@ -39,6 +39,16 @@ keep comparing with the visit before, and a newer snapshot moves the last
 visit into its place. Without `localStorage` the page still works and says
 nothing is marked new. A changed line of text counts as new.
 
+Each Project page has a Requirements section (`src/requirements.rs`): the
+Requirements light (the worst `must` verdict, with coverage, from
+`pane_model::signals::requirements`), then every requirement of its
+top-level project with its verdict and reasons, and each eval's latest
+result with its evidence link and its last ten runs as dots, newest first.
+The data comes from the `evals-results` branch, which the `eval-results`
+task copies into `target/evals-results/` for the snapshot; without it the
+section says the snapshot was built without eval results. The Pane redeploy
+workflow redeploys pane after each eval run, so the verdicts are current.
+
 Documents are rendered with `pulldown-cmark`. Raw HTML in a document is
 shown as text, `javascript:`, `vbscript:` and `data:` links are dropped, and
 relative links point at the file on GitHub at the snapshot's commit. Every
@@ -59,7 +69,8 @@ dx serve --platform web --package pane_web
 
 `cargo test` runs the unit tests in `src/view.rs` and `src/visits.rs`. The Playwright tests in
 `tests/` check the app in Chromium: the home page loads the snapshot, the
-main nav opens every page, a project page opens and shows its sections,
+main nav opens every page, a project page opens and shows its sections (the Requirements section with
+a fixed set of verdicts and runs in `tests/requirements.spec.ts`),
 Today shows what is new against a stored older visit (and works without
 `localStorage`), the Reviews page opens a deck as slides with its PDF, pull
 request and full screen (locally the slides are stubbed, since `dev` doesn't
@@ -70,7 +81,7 @@ first, and run in CI as part of `mise run ci`.
 npm ci
 npm test            # every test, in Chromium
 npm run smoke       # only the @smoke tests, recording video, screenshots and traces
-BASE_URL=https://jimhillr-pane.pages.dev npm run smoke   # against the live site instead
+BASE_URL=https://jimhillr-pane.jim-hill-r.workers.dev npm run smoke   # against the live site instead
 ```
 
 ## Prerequisites

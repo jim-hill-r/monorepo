@@ -7,7 +7,10 @@ mod data;
 mod feedback;
 mod teams;
 
-use data::{Game, Goal, Rooting, no_pick_label, percent, swing_percent, timestamp};
+use data::{
+    ArchiveIndex, ArchiveWeek, Game, Goal, Rooting, no_pick_label, percent, swing_percent,
+    timestamp,
+};
 use design_system_dioxus::{Stylesheets, ThemePicker};
 use dioxus::prelude::*;
 use feedback::{
@@ -31,12 +34,60 @@ fn main() {
 #[component]
 fn App() -> Element {
     let rooting = use_resource(load);
-    let body = match &*rooting.read() {
-        None => rsx! { p { class: "status", "Loading this week's games…" } },
-        Some(Err(e)) => rsx! {
-            p { class: "status error", "Couldn't load this week's rooting guide. {e}" }
+    let archive = use_resource(load_archive);
+    // The past week being shown, or `None` for this week's guide.
+    let mut showing = use_signal(|| None::<ArchiveWeek>);
+    let past = use_resource(move || async move {
+        match showing() {
+            Some(week) => Some((
+                week,
+                fetch_text(&week.path())
+                    .await
+                    .and_then(|t| Rooting::parse(&t)),
+            )),
+            None => None,
+        }
+    });
+    let current = rooting
+        .read()
+        .as_ref()
+        .and_then(|r| r.as_ref().ok())
+        .and_then(Rooting::archive_week);
+    let weeks = archive
+        .read()
+        .as_ref()
+        .and_then(|index| index.as_ref().ok())
+        .map(|index| index.newest_first(current))
+        .unwrap_or_default();
+    let body = match showing() {
+        None => match &*rooting.read() {
+            None => rsx! { p { class: "status", "Loading this week's games…" } },
+            Some(Err(e)) => rsx! {
+                p { class: "status error", "Couldn't load this week's rooting guide. {e}" }
+            },
+            Some(Ok(r)) => rsx! { Guide { rooting: r.clone(), archived: false } },
         },
-        Some(Ok(r)) => rsx! { Guide { rooting: r.clone() } },
+        Some(week) => {
+            let label = week.label();
+            let guide = match &*past.read() {
+                Some(Some((loaded, Ok(r)))) if *loaded == week => {
+                    rsx! { Guide { rooting: r.clone(), archived: true } }
+                }
+                Some(Some((loaded, Err(e)))) if *loaded == week => rsx! {
+                    p { class: "status error", "Couldn't load the guide for {label}. {e}" }
+                },
+                _ => rsx! { p { class: "status", "Loading {label}…" } },
+            };
+            rsx! {
+                div { class: "archived", role: "note",
+                    p {
+                        "You're looking at {label}, rebuilt with today's model from the results known before that week. It can differ a little from what this page showed then."
+                    }
+                    button { class: "back", onclick: move |_| showing.set(None), "Back to this week" }
+                }
+                {guide}
+            }
+        }
     };
     rsx! {
         Stylesheets { default_theme: "bears", app_css: Some(THEME_CSS.into()), custom: bears() }
@@ -47,13 +98,61 @@ fn App() -> Element {
                 p { class: "tagline", "Which NFL games to root for this week, for Bears fans." }
             }
             {body}
+            if !weeks.is_empty() {
+                WeekPicker { weeks, showing }
+            }
             footer { class: "appearance", ThemePicker { custom: bears() } }
+        }
+    }
+}
+
+/// "Past weeks": a picker of the archive's weeks under the guide. Choosing
+/// one shows its guide in place of this week's, from the top of the page.
+#[component]
+fn WeekPicker(weeks: Vec<ArchiveWeek>, showing: Signal<Option<ArchiveWeek>>) -> Element {
+    let selected = showing().map(ArchiveWeek::value).unwrap_or_default();
+    rsx! {
+        section { class: "past-weeks",
+            h2 { "Past weeks" }
+            label {
+                "See what the guide says about an earlier week "
+                select {
+                    value: "{selected}",
+                    onchange: move |event| {
+                        showing.set(ArchiveWeek::from_value(&event.value()));
+                        if let Some(window) = web_sys::window() {
+                            window.scroll_to_with_x_and_y(0.0, 0.0);
+                        }
+                    },
+                    option { value: "", selected: selected.is_empty(), "This week" }
+                    for week in weeks {
+                        option {
+                            key: "{week.value()}",
+                            value: "{week.value()}",
+                            selected: selected == week.value(),
+                            "{week.label()}"
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 /// Fetches and parses `/rooting.json` from the same origin.
 async fn load() -> Result<Rooting, String> {
+    Rooting::parse(&fetch_text("/rooting.json").await?)
+}
+
+/// Fetches and parses `/archive/index.json`. Until the deploy builds the
+/// archive there is none, and the page shows no picker.
+async fn load_archive() -> Result<ArchiveIndex, String> {
+    ArchiveIndex::parse(&fetch_text("/archive/index.json").await?)
+}
+
+/// Fetches a file from the same origin as text, skipping the browser cache
+/// so a nightly rebuild shows at once.
+async fn fetch_text(path: &str) -> Result<String, String> {
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
 
@@ -61,30 +160,33 @@ async fn load() -> Result<Rooting, String> {
     let window = web_sys::window().ok_or("no browser window")?;
     let init = web_sys::RequestInit::new();
     init.set_cache(web_sys::RequestCache::NoCache);
-    let response: web_sys::Response =
-        JsFuture::from(window.fetch_with_str_and_init("/rooting.json", &init))
-            .await
-            .map_err(js)?
-            .dyn_into()
-            .map_err(js)?;
+    let response: web_sys::Response = JsFuture::from(window.fetch_with_str_and_init(path, &init))
+        .await
+        .map_err(js)?
+        .dyn_into()
+        .map_err(js)?;
     if !response.ok() {
         return Err(format!("The server answered {}.", response.status()));
     }
-    let text = JsFuture::from(response.text().map_err(js)?)
+    JsFuture::from(response.text().map_err(js)?)
         .await
         .map_err(js)?
         .as_string()
-        .ok_or("rooting.json is not text")?;
-    Rooting::parse(&text)
+        .ok_or_else(|| format!("{path} is not text"))
 }
 
+/// A week's guide. `archived` is a past week from the archive: it has no
+/// banner and no voting, and reports no exposures, since votes on old weeks
+/// would mix into the A/B test's results.
 #[component]
-fn Guide(rooting: Rooting) -> Element {
+fn Guide(rooting: Rooting, archived: bool) -> Element {
     let mut goal = use_signal(Goal::default);
     let goal_now = goal();
     let arm = use_hook(current_arm);
     // One exposure per arm, week and tab in each visit.
-    let (season, week_now) = (rooting.season, rooting.week);
+    let season = rooting.season;
+    // The week votes and exposures are for; none for a past week.
+    let week_now = rooting.week.filter(|_| !archived);
     use_effect(move || {
         let goal = goal();
         if let Some(week) = week_now.filter(|_| voting_allowed()) {
@@ -95,20 +197,20 @@ fn Guide(rooting: Rooting) -> Element {
         }
     });
     let odds = &rooting.bears.odds;
-    let week = match rooting.week {
-        Some(w) => format!("Week {w}, {} season", rooting.season),
-        None => format!("{} season", rooting.season),
-    };
+    let week = rooting.when();
+    let goals = rooting.goals();
     let record = rooting.bears.record.display();
     let games = rooting.ranked(goal_now);
 
     rsx! {
-        if let Some(banner) = rooting.banner() {
+        if let Some(banner) = rooting.banner.as_ref().filter(|_| !archived) {
             div { class: "banner", role: "status",
                 span { class: "banner-bear", aria_hidden: "true", "🐻" }
                 div {
                     p { class: "banner-headline", "{banner.headline}" }
-                    p { class: "banner-line", "{banner.line}" }
+                    for line in &banner.lines {
+                        p { class: "banner-line", "{line}" }
+                    }
                 }
                 span { class: "banner-bear", aria_hidden: "true", "🏈" }
             }
@@ -132,17 +234,21 @@ fn Guide(rooting: Rooting) -> Element {
                     onclick: move |_| goal.set(Goal::SuperBowl),
                     "Bears Super Bowl"
                 }
-                button {
-                    class: if goal_now == Goal::Playoffs { "active" },
-                    aria_pressed: goal_now == Goal::Playoffs,
-                    onclick: move |_| goal.set(Goal::Playoffs),
-                    "Make the playoffs"
+                if goals.contains(&Goal::Playoffs) {
+                    button {
+                        class: if goal_now == Goal::Playoffs { "active" },
+                        aria_pressed: goal_now == Goal::Playoffs,
+                        onclick: move |_| goal.set(Goal::Playoffs),
+                        "Make the playoffs"
+                    }
                 }
-                button {
-                    class: if goal_now == Goal::NfcNorth { "active" },
-                    aria_pressed: goal_now == Goal::NfcNorth,
-                    onclick: move |_| goal.set(Goal::NfcNorth),
-                    "NFC North"
+                if goals.contains(&Goal::NfcNorth) {
+                    button {
+                        class: if goal_now == Goal::NfcNorth { "active" },
+                        aria_pressed: goal_now == Goal::NfcNorth,
+                        onclick: move |_| goal.set(Goal::NfcNorth),
+                        "NFC North"
+                    }
                 }
             }
             p { class: "explain",
@@ -164,7 +270,7 @@ fn Guide(rooting: Rooting) -> Element {
                             game: game.clone(),
                             goal: goal_now,
                             season: rooting.season,
-                            week: rooting.week,
+                            week: week_now,
                             arm,
                         }
                     }
@@ -173,12 +279,15 @@ fn Guide(rooting: Rooting) -> Element {
         }
 
         footer {
-            if voting_allowed() && rooting.week.is_some() {
+            if voting_allowed() && week_now.is_some() {
                 p { class: "privacy",
                     "A vote sends the game, the verdict shown, your answer and any note to this site's own server. No cookies, no sign-in, and Do Not Track turns voting off."
                 }
             }
-            p { "Updated {timestamp(&rooting.generated_at)} from {rooting.simulations} simulated seasons." }
+            p {
+                if archived { "Rebuilt " } else { "Updated " }
+                "{timestamp(&rooting.generated_at)} from {rooting.simulations} simulated seasons."
+            }
             if let Some(g) = &rooting.latest_game {
                 p {
                     "Latest game included: {teams::nickname(&g.away)} {g.away_score} at {teams::nickname(&g.home)} {g.home_score} ({g.gameday})."

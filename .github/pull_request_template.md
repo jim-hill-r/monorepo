@@ -11,7 +11,7 @@ See "Pull request descriptions" in standards/docs/pull-requests.md.
 
 ## Attention
 
-<Run `chores badges` and paste its bullets: one requirements tag and one threat/risk tag. See "Attention tags" in standards/docs/pull-requests.md.>
+<Run `chores badges` and paste its bullets: one requirements, one cost, one threat/risk and one docs tag. See "Attention tags" in standards/docs/pull-requests.md.>
 
 ## What changed
 

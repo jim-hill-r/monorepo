@@ -11,15 +11,17 @@ example `CHI`, `DET`, `GB`, `MIN`. Dates are `YYYY-MM-DD`.
 | --- | --- | --- |
 | `generated_at` | string | When the guide was built, RFC 3339 UTC. |
 | `season` | number | The season simulated. |
-| `week` | number or null | The current week: the first with a game left. Null once the regular season is over. |
+| `week` | number or null | The current week: the first with a game left, a playoff round's week included. Null once the season is over. |
+| `round` | string or null | The playoff round the week is: `wild_card`, `divisional`, `conference` or `super_bowl`. Null in the regular season; missing in older files. |
 | `simulations` | number | How many seasons were simulated. |
 | `latest_game` | object or null | The latest game with a final score: `id`, `gameday`, `away`, `home`, `away_score`, `home_score`. Shows how fresh the data is (decision 0006). |
 | `bears.record` | object | `wins`, `losses`, `ties`. |
 | `bears.division_lead` | number | Games ahead of the best NFC North rival, by record alone (no tiebreakers; a tie counts half): positive is alone in first place, 0 is tied for it, negative is behind. |
 | `bears.division_rival` | string | That best rival. |
 | `bears.odds` | object | `playoffs`, `divisional_round`, `conference_game`, `super_bowl` (reached it), `champion` (won it). |
+| `banner` | object or null | The celebration banner, worked out every build from the current results, or null unless the Bears' most recent game (regular season or playoffs) was a win. `headline` is the score ("Bears win! Chicago 39, Lions 35."); `lines` holds up to two notes, the first that apply in this order: the next playoff round, the NFC North race (clinched, alone in first or tied for it), a clear move in Super Bowl or playoff odds since just before that week (from a second simulation as of then), a winning streak of three or more, and the record. Missing in older files. The rules are in `cli/src/banner.rs`. |
 | `nfc_north_divisional` | number | The chance all four NFC North teams reach the divisional round (decision 0007). |
-| `games` | array | The current week's games still to be played, in schedule order. |
+| `games` | array | The current week's games still to be played, in schedule order: the regular-season slate, or the playoff round's games once nflverse lists their matchups. |
 
 Each game has `id`, `gameday`, `away`, `home`, `home_win_probability` and one
 swing object per goal:
@@ -55,7 +57,9 @@ A swing object has:
   `none`, why nothing can change.
 - `channels`: the measured channels behind `why`, biggest first, each
   clearly bigger than its noise. Each has `channel` (`division_title`,
-  `wild_card`, `seed`, `playoff_path` or `super_bowl_opponent`), `cause`
+  `wild_card`, `seed`, `playoff_path`, `super_bowl_opponent` or, for a
+  playoff game, `bracket`: who advances in the NFC, and so who the Bears
+  could face, or whether they advance themselves), `cause`
   (for the first three: `record`, `coin flip` or the tiebreaker step whose
   result differed, such as `strength of victory`; null otherwise),
   `favors` (the team whose win it helps), `share` (its size, as a
@@ -76,6 +80,10 @@ A swing object has:
     "odds": { "playoffs": 0.907, "divisional_round": 0.580, "conference_game": 0.301, "super_bowl": 0.145, "champion": 0.068 },
     "division_lead": 1.0,
     "division_rival": "DET"
+  },
+  "banner": {
+    "headline": "Bears win! Chicago 39, Lions 35.",
+    "lines": ["Alone in first place in the NFC North, a game ahead of the Lions.", "Super Bowl odds up from 7.8% to 11%."]
   },
   "nfc_north_divisional": 0.0006,
   "games": [
@@ -98,6 +106,20 @@ A swing object has:
   ]
 }
 ```
+
+## The archive
+
+The site also serves past weeks' guides for the archive
+([plan](plans/2026-11-archive.md)), each in this same format:
+
+- `archive/<season>-week-<nn>.json`, such as `archive/2026-week-07.json`:
+  the guide `bear_down --week <n> --season <year>` writes, so its `week` is
+  that week.
+- `archive/index.json`: the weeks there are, as
+  `{"weeks": [{"season": 2026, "week": 7}, ...]}`. Order doesn't matter.
+  The page reads it (`ArchiveIndex` in `web/src/data.rs`), lists the weeks
+  newest first without the current one, and shows no picker when the file
+  is missing or isn't valid.
 
 ## Running the CLI
 

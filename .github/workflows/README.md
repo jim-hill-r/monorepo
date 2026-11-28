@@ -105,16 +105,18 @@ project CI.
 
 ### pull-request-human-review.yml
 
-The **Human review** check (PR-004, Jim, 2026-11-27). Runs when a pull
+The **`human-review` label** (PR-004, Jim, 2026-11-27). Runs when a pull
 request is opened, edited, pushed to, labelled or reviewed. A PR with a red
 attention tag (`must-requirement-changed`) or a cost change, from its diff
 (`chores badges`), its description's Attention section or the `cost` label,
-fails it until a human collaborator (never an `-agt` account,
-`jimhillr-reviewer`, a bot or a non-collaborator) approves its head commit; the check also labels
-it `needs-human` and turns its auto-merge off. Every other PR passes. It
-builds `chores gate` from the base branch, so a PR can't change its own
-rules. The `CI` ruleset in `infra`'s `github` stack requires it on `main`
-beside `CI result`. See "Human review" in
+is labelled `human-review` until a human collaborator (never an `-agt`
+account, `jimhillr-reviewer`, a bot or a non-collaborator) approves its head
+commit. It is not a CI check (Jim, 2026-11-28): it posts no status, its job
+(`Human review label`) is green whenever it ran, and it clears the pending
+`Human review` status an earlier version left on a commit. The label holds
+the PR because `jimhillr-reviewer` refuses it and only a human's approval
+can then merge it. It builds `chores gate` from the base branch, so a PR
+can't change its own rules. See "Human review" in
 [standards/docs/pull-requests.md](../../standards/docs/pull-requests.md).
 
 ### push-main.yml
@@ -183,12 +185,26 @@ secrets from the bootstrap credentials (decision 0011). Every job that touches s
 `tofu_state/README.md`. Tests: `jimhillr/workflow_tests/tests/infra_workflows_tests.rs`
 and `tofu_state_deploy_tests.rs`.
 
+## pane-redeploy.yml (Pane redeploy)
+
+Runs when Push Main CI/CD, Nightly CI or Nightly CD finishes on `main` (and
+on `workflow_dispatch`), and deploys `pane/cloudflare` from the latest
+`main` through `mise-projects.yml`. Those runs store their eval results on
+the `evals-results` branch after their own jobs, so this redeploy is what
+puts the new verdicts and runs on each Project page's Requirements section
+(pane's snapshot reads the branch at build time). A newer run cancels a
+pending redeploy (`pane-redeploy` concurrency group). Tests:
+`jimhillr/workflow_tests/tests/pane_redeploy_workflow_tests.rs`.
+
 ## pull-request-review-decks.yml (Review decks)
 
 Runs on pull requests that touch `docs/reviews/` (and on `workflow_dispatch`).
-Builds every review deck to HTML and PDF with the Marp CLI through
-`standards/scripts/review-decks.sh` (also `mise run //:review-decks`) and
-uploads them as the `review-decks` artifact. See
+First records the narrated demo videos of the decks the pull request changes
+(or of the deck folders in the `demos` input when run by hand) with
+`docs/reviews/demo-recorder`, then builds every review deck to HTML and PDF
+with the Marp CLI through `standards/scripts/review-decks.sh` (also
+`mise run //:review-decks`) and uploads them, videos included, as the
+`review-decks` artifact. See
 [docs/reviews/README.md](../../docs/reviews/README.md).
 
 ## nightly-coverage.yml
@@ -281,12 +297,44 @@ Deletes remote branches without needing a local clone. Run it manually from the 
 - `branches`: branch names separated by spaces or newlines.
 - `dry_run`: defaults to `true`, which only reports what would be deleted. Set it to `false` to delete.
 
-The workflow never deletes the default branch and skips any branch that is the head of an open pull request. Branches that no longer exist are reported as not found. The run summary lists how many branches were deleted, skipped, missing, or failed.
+The workflow never deletes the default branch or `evals-results`, and skips any branch that is the head of an open pull request. Branches that no longer exist are reported as not found. The run summary lists how many branches were deleted, skipped, missing, or failed.
+
+`all-retire-resources.yml` calls it (`workflow_call`, same inputs) with the branches it retires, so both use the same guards.
 
 ### Permissions
 
 - `contents: write` - To delete branch refs
 - `pull-requests: read` - To find branches with open pull requests
+
+## all-retire-resources.yml
+
+Deletes temporary resources every Monday at 4 PM UTC, an hour after the
+resource sweep, following "Temporary resources" in
+[standards/docs/resources.md](../../standards/docs/resources.md#temporary-resources):
+
+- Pages preview deployments older than 14 days, except the newest one of each
+  branch with an open PR.
+- Pages production deployments older than 30 days, never the current one.
+- Branches whose newest PR closed more than 7 days ago, through
+  `all-delete-branches.yml`.
+
+Branches with no PR are only counted: the sweep lists them and the weekly
+digest asks Jim. The rules are `chores retire-temporary`
+(`chores/src/retire.rs`); the workflow lists what is live with `gh api` and
+the Cloudflare API, and deletes what the plan names. A scheduled run deletes;
+a manual run (Actions tab) is a dry run unless `dry_run` is set to `false`.
+Without the Cloudflare secrets it warns and checks branches only. It uses the
+existing `CLOUDFLARE_API_TOKEN` (Pages edit, which deploys already need) and
+costs a few Actions minutes a week.
+
+### Permissions
+
+- `contents: read` - Check out `chores`
+- `pull-requests: read` - List PRs to match branches and previews
+- `contents: write` (branches job only) - Passed to `all-delete-branches.yml`
+
+Tests: `jimhillr/workflow_tests/tests/retire_resources_workflow_tests.rs`
+and the unit tests in `chores/src/retire.rs`.
 
 ## pull-request-closed-cleanup.yml
 

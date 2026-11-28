@@ -52,6 +52,11 @@ pub struct Snapshot {
     /// snapshot was built without them (the Standards light is then grey).
     #[serde(default)]
     pub audit: Option<audit::Audit>,
+    /// The eval engine's requirement verdicts and eval runs from the
+    /// `evals-results` branch, or `None` when the snapshot was built without
+    /// them (the Requirements light is then grey).
+    #[serde(default)]
+    pub requirements: Option<requirements::Requirements>,
 }
 
 impl Snapshot {
@@ -71,6 +76,7 @@ impl Snapshot {
             costs: costs::Costs::default(),
             thresholds: health::Thresholds::default(),
             audit: None,
+            requirements: None,
         }
     }
 
@@ -350,6 +356,7 @@ pub mod acks;
 pub mod costs;
 pub mod money;
 pub mod queue;
+pub mod requirements;
 
 pub mod audit;
 
@@ -362,7 +369,7 @@ mod tests {
         s.projects.push(Project {
             path: "pane/web".into(),
             kind: "dioxus-web".into(),
-            deploy_url: Some("https://jimhillr-pane.pages.dev".into()),
+            deploy_url: Some("https://jimhillr-pane.jim-hill-r.workers.dev".into()),
             summary: Some("The web frontend for pane.".into()),
             status: ProjectStatus::Priority,
         });

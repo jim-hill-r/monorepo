@@ -8,6 +8,8 @@ A programming language implementation that compiles to LLVM IR.
 
 This project provides the foundation for building a new programming language with a focus on pure functions and controlled side effects.
 
+To write and run my_lang programs, read the [user guide](docs/user/README.md).
+
 ## Language Semantics
 
 ### Keywords
@@ -16,7 +18,8 @@ This project provides the foundation for building a new programming language wit
   - Single segment only
   - Gives a single value: the `return` it reaches, or else the expression
     its body ends with (`function add(a, b) { a + b }` gives `a + b`)
-  - A body with neither (empty, or ending in an assignment) gives 0 for now
+  - Cannot be void: a body with neither (empty, or ending in an assignment)
+    is a compile error naming the function
   - No side effects allowed
   
 - **`input`**: Allows side effects (input operations)

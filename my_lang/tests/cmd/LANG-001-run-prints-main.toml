@@ -1,0 +1,4 @@
+# `run` compiles answer.my with the JIT, calls main and prints its result:
+# square(6) + 6.
+bin.name = "my_lang"
+args = ["run", "answer.my"]

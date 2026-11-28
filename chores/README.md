@@ -7,7 +7,8 @@ leaves only the judgment to the model. Why and what comes next is in the
 [baked skills plan](../standards/docs/plans/2026-11-baked-skills.md).
 
 It reads and writes only files in the working tree. It never uses the
-network and never calls GitHub: agents do that with their own GitHub tools.
+network and never calls GitHub: agents do that with their own GitHub tools,
+and workflows list what they need into a file first.
 
 ## Commands
 
@@ -22,6 +23,7 @@ c next-task
 c next-task --project cookbook            # scoped to one project
 c next-task --count 5 --exclude pane,epic:Cost check   # one per project, for new threads
 c next-task --skip cookbook/issues/x.md   # an open PR already has it
+c next-task --count 5 --working cookbook,pane,repo   # prefer products while under half
 c next-task --json
 
 # A PR description in the shape pull-requests.md asks for, checked against
@@ -39,9 +41,10 @@ c pr-body --check body.md                 # check an existing description
 # threat/risk file changes, against the base.
 c badges --base origin/main
 
-# The Human review check (PR-004): exit 1 while a PR with a red attention tag
+# The human-review label (PR-004): exit 1 while a PR with a red attention tag
 # or a cost change (diff, description or `cost` label) lacks a human's approval
-# of its head commit. The Human review workflow runs it; agents rarely need to.
+# of its head commit. The Human review workflow runs it and labels the PR;
+# agents rarely need to.
 c gate --author jimhillr-agt --head <sha> --body body.md --labels cost,docs \
   --reviews reviews.json --json gate.json
 
@@ -54,10 +57,30 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 ```
 
 ```bash
+# Which temporary resources to delete (Pages previews over 14 days, old
+# production deployments, branches 7 days after their PR closed), from the
+# live list all-retire-resources.yml writes. Prints the run summary; never
+# deletes anything itself.
+c retire-temporary --live live.json --json plan.json
+
 # Every project's user guide (DOC-005 to DOC-008) against the baseline in
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
 c user-docs --json
+
+# Unresolved merge conflict markers in any tracked file (STD-005); run by
+# `mise run //:audit`. Exit 1 on any.
+c conflict-markers
+
+# QUAL-404: fail on a tracked .sh file not in standards/shell-scripts.toml
+# (scripts stay Rust-only; the list only shrinks), or a stale line there.
+c shell-scripts
+
+# Warnings-only audit checks that run another project's CLI and always exit
+# 0: EVL-* (evals check, once a project has requirements or evals) and THR-*
+# (threat check; COST_PROJECTS or THREAT_PROJECTS picks the projects).
+c evals-check
+c threat-check --projects cookbook,pane
 ```
 
 `new-human-task` starts the runbook from
@@ -69,7 +92,10 @@ c user-docs --json
 | `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
+| `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
+| `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command

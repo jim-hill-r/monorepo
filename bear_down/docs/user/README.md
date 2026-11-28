@@ -19,8 +19,11 @@ so the odds include the latest scores.
 2. The top of the page shows the Bears' record, the week and season, and
    their odds of winning the Super Bowl, making the playoffs, reaching the
    divisional round, and all four NFC North teams reaching the divisional
-   round. When the Bears lead or share the lead in the NFC North, a banner
-   above says so (and "Bears win!" with the score after a win).
+   round. When the Bears' most recent game was a win, a banner above
+   celebrates it with the score and a line or two about where things stand
+   now, such as their place in the NFC North, how much the win moved their
+   Super Bowl odds, a winning streak or the next playoff round. It is
+   rebuilt every night, and disappears after a loss.
 3. Below that is this week's list of games, the most important first.
 
 ## How to read this week's rooting list
@@ -71,6 +74,18 @@ Above the list are three buttons. The one that's highlighted is in use:
 The line under the buttons says which goal the list is using. Your choice
 resets to Bears Super Bowl when you reload the page.
 
+## How to use it in the playoffs
+
+Once the regular season ends, the page shows the playoff round ("Wild card
+round, 2026 season") instead of the week, and lists that round's games as
+soon as their matchups are set. If the Bears are in, their own game is
+usually the one that matters most; the other NFC games decide who they could
+face next, and the AFC games who they could meet in the Super Bowl.
+**Make the playoffs** disappears, since the Bears are in or out already,
+and **NFC North** goes after the wild card round, once that goal is decided.
+When the Bears are knocked out, the page says there is nothing left to root
+for.
+
 ## How to vote on a verdict
 
 Under each game is "Does this verdict look right?" with three buttons:
@@ -87,6 +102,20 @@ the game, the verdict shown, your answer and any note to this site's own
 server: no cookies, no sign-in and nothing about who you are. If your
 browser has Do Not Track or Global Privacy Control turned on, the vote
 buttons don't appear at all.
+
+## How to look back at a past week
+
+Under the list, **Past weeks** lets you pick an earlier week of the season
+(it appears once the site has some to show). Choose one and the page shows
+that week's guide in the same layout, from the results known before that
+week: the Bears' odds then and which games to root for. A note at the top
+says which week you're looking at, and **Back to this week** (or **This
+week** in the picker) returns to the current guide.
+
+A past week is rebuilt every night with today's model, so it can differ a
+little from what the page said that week, for example after an
+improvement to the odds or the explanations. Past weeks have no vote
+buttons and no celebration banner.
 
 ## How to change the colours
 

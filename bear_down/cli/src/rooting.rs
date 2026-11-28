@@ -2,10 +2,12 @@
 //! `docs/rooting-json.md`; change both together.
 
 use bear_down_core::{
-    Cause, Channel, Game, GameImpact, Record, Simulation, Standings, Swing, Team, TeamOdds,
+    Cause, Channel, Game, GameImpact, GameType, Record, Simulation, Standings, Swing, Team,
+    TeamOdds,
 };
 use serde::Serialize;
 
+use crate::banner::Banner;
 use crate::why::{self, Goal};
 
 /// The whole file.
@@ -15,14 +17,21 @@ pub struct Guide {
     pub generated_at: String,
     /// The season simulated.
     pub season: u16,
-    /// The current week, or `None` once the regular season is over.
+    /// The current week (the first with a game left), or `None` once the
+    /// season is over.
     pub week: Option<u8>,
+    /// The playoff round the current week is: `wild_card`, `divisional`,
+    /// `conference` or `super_bowl`. `None` in the regular season.
+    pub round: Option<&'static str>,
     /// How many seasons were simulated.
     pub simulations: u32,
     /// The most recent game with a final score, to show how fresh the data is.
     pub latest_game: Option<LatestGame>,
     /// The Bears' record and odds.
     pub bears: Bears,
+    /// The celebration banner, worked out from the current results: only
+    /// when the Bears' most recent game was a win, otherwise `None`.
+    pub banner: Option<Banner>,
     /// The chance all four NFC North teams reach the divisional round.
     pub nfc_north_divisional: f64,
     /// The current week's remaining games, in schedule order.
@@ -130,7 +139,7 @@ pub struct SwingEntry {
 /// One channel's share of a swing.
 #[derive(Debug, Serialize)]
 pub struct ChannelEntry {
-    /// `division_title`, `wild_card`, `seed`, `playoff_path` or
+    /// `division_title`, `wild_card`, `seed`, `playoff_path`, `bracket` or
     /// `super_bowl_opponent`.
     pub channel: &'static str,
     /// For the seeding channels, what decided it: `record`, `coin flip` or a
@@ -153,6 +162,7 @@ impl Guide {
         simulation: &Simulation,
         standings: &Standings,
         latest: Option<&Game>,
+        banner: Option<Banner>,
         generated_at: String,
     ) -> Self {
         let focus = simulation.focus;
@@ -160,6 +170,7 @@ impl Guide {
             generated_at,
             season: simulation.season,
             week: simulation.week,
+            round: simulation.round.and_then(round_name),
             simulations: simulation.simulations,
             latest_game: latest.and_then(LatestGame::new),
             bears: Bears {
@@ -168,6 +179,7 @@ impl Guide {
                 division_lead: division_lead(standings, focus).0,
                 division_rival: team(division_lead(standings, focus).1),
             },
+            banner,
             nfc_north_divisional: simulation.nfc_north,
             games: simulation
                 .games
@@ -243,6 +255,17 @@ impl GameEntry {
     }
 }
 
+/// A playoff round's name in `rooting.json`; `None` for the regular season.
+fn round_name(round: GameType) -> Option<&'static str> {
+    match round {
+        GameType::Regular => None,
+        GameType::WildCard => Some("wild_card"),
+        GameType::Divisional => Some("divisional"),
+        GameType::Conference => Some("conference"),
+        GameType::SuperBowl => Some("super_bowl"),
+    }
+}
+
 fn team(team: Team) -> String {
     team.abbr().to_string()
 }
@@ -253,6 +276,7 @@ fn channel_name(channel: Channel) -> &'static str {
         Channel::WildCard => "wild_card",
         Channel::Seed => "seed",
         Channel::PlayoffPath => "playoff_path",
+        Channel::Bracket => "bracket",
         Channel::SuperBowlOpponent => "super_bowl_opponent",
         Channel::Chance => "chance",
     }

@@ -1,0 +1,3 @@
+[project]
+name = "bear_down_web"
+description = "The Dioxus page of bear_down, which ranks the week's NFL games by how much each result moves the Bears' odds."

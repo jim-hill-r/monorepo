@@ -1,4 +1,4 @@
-//! `chores gate`: the `Human review` check (PR-004, Jim, 2026-11-27: "Lets
+//! `chores gate`: the `human-review` label (PR-004, Jim, 2026-11-27: "Lets
 //! make sure no prs with red attention flags get auto merged. Cost changes
 //! must be reviewed by jim", then "Lets make it needs human review").
 //!
@@ -13,9 +13,14 @@
 //!
 //! Such a PR passes only once a human has approved its head commit (and no
 //! human has asked for changes since), or when a human opened it. Agent
-//! accounts (`-agt`), `jimhillr-reviewer` and bots never count. The
-//! workflow (`pull-request-human-review.yml`) also labels it `needs-human`
-//! and turns its auto-merge off. The rules are under "Human review" in
+//! accounts (`-agt`), `jimhillr-reviewer` and bots never count.
+//!
+//! The verdict is a label, not a CI status (Jim, 2026-11-28: a pending
+//! status "is preventing claude from marking PRs as ready for review and it
+//! shows CI as red"). The workflow (`pull-request-human-review.yml`) labels
+//! a held PR `human-review` until a human approves and takes the label off
+//! then; jimhillr-reviewer refuses the label, so only a human's approval
+//! can merge it. The rules are under "Human review" in
 //! `standards/docs/pull-requests.md`.
 
 use std::path::{Path, PathBuf};
@@ -84,7 +89,7 @@ pub struct User {
 pub struct Verdict {
     /// The PR has a red tag or a cost change, so a human must approve it.
     pub needs_human: bool,
-    /// The check passes.
+    /// Nothing holds it: no `human-review` label.
     pub pass: bool,
     /// Why it needs a human, one line each.
     pub reasons: Vec<String>,
@@ -103,10 +108,22 @@ pub fn body_tags(body: &str) -> Vec<Tag> {
     })
 }
 
-/// Whether a human approved `head` with no human approval or change
-/// request after it: each human's last word counts, a dismissed review
-/// withdraws theirs, and a comment changes nothing. Only humans count.
-pub fn human_approved(reviews: &[Review], head: &str) -> bool {
+/// Where the humans' reviews leave a PR.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Humans {
+    /// A human approved the head and none asks for changes.
+    Approved,
+    /// A human's last word is "changes requested".
+    ChangesRequested,
+    /// Neither: no human has approved the head yet.
+    Waiting,
+}
+
+/// Where the humans' reviews leave `head`: approved once a human approved
+/// it with no human change request after, where each human's last word
+/// counts, a dismissed review withdraws theirs, and a comment changes
+/// nothing. Only humans count.
+pub fn humans(reviews: &[Review], head: &str) -> Humans {
     let mut last: Vec<(&str, &Review)> = Vec::new();
     for r in reviews {
         let Some(login) = r.user.as_ref().map(|u| u.login.as_str()) else {
@@ -124,11 +141,16 @@ pub fn human_approved(reviews: &[Review], head: &str) -> bool {
         last.retain(|(l, _)| *l != login);
         last.push((login, r));
     }
-    let changes = last.iter().any(|(_, r)| r.state == "CHANGES_REQUESTED");
-    !changes
-        && last
-            .iter()
-            .any(|(_, r)| r.state == "APPROVED" && r.commit_id.as_deref() == Some(head))
+    if last.iter().any(|(_, r)| r.state == "CHANGES_REQUESTED") {
+        Humans::ChangesRequested
+    } else if last
+        .iter()
+        .any(|(_, r)| r.state == "APPROVED" && r.commit_id.as_deref() == Some(head))
+    {
+        Humans::Approved
+    } else {
+        Humans::Waiting
+    }
 }
 
 /// Everything the check reads about one PR.
@@ -169,34 +191,24 @@ pub fn decide(input: &Input<'_>) -> Verdict {
     }
     let needs_human = !reasons.is_empty();
     let short = |s: &str| s.chars().take(7).collect::<String>();
+    let head = short(input.head);
+    let why = reasons.join("; ");
     let (pass, line) = if !needs_human {
         (
             true,
             "pass: no red attention tag and no cost change".to_string(),
         )
     } else if is_human(input.author) && is_collaborator(Some(input.author_association)) {
-        (
-            true,
-            format!("pass: {} opened it ({})", input.author, reasons.join("; ")),
-        )
-    } else if human_approved(input.reviews, input.head) {
-        (
-            true,
-            format!(
-                "pass: a human approved {} ({})",
-                short(input.head),
-                reasons.join("; ")
-            ),
-        )
+        (true, format!("pass: {} opened it ({why})", input.author))
     } else {
-        (
-            false,
-            format!(
-                "block: needs a human's approval of {}, and no auto-merge ({})",
-                short(input.head),
-                reasons.join("; ")
+        match humans(input.reviews, input.head) {
+            Humans::Approved => (true, format!("pass: a human approved {head} ({why})")),
+            Humans::ChangesRequested => (false, format!("hold: a human asked for changes ({why})")),
+            Humans::Waiting => (
+                false,
+                format!("hold: needs a human's approval of {head} ({why})"),
             ),
-        )
+        }
     };
     Verdict {
         needs_human,
@@ -345,11 +357,28 @@ mod tests {
         assert!(!v.pass && v.needs_human, "{v:?}");
         assert!(
             v.line
-                .starts_with("block: needs a human's approval of abcdef1"),
+                .starts_with("hold: needs a human's approval of abcdef1"),
             "{}",
             v.line
         );
         assert!(v.line.contains("pane/docs/cost.toml"), "{}", v.line);
+    }
+
+    #[test]
+    fn changes_requested_holds_with_its_own_line() {
+        let v = verdict(
+            &cost_diff(),
+            "",
+            &[],
+            "jimhillr-agt",
+            &[review("jimhillr", "CHANGES_REQUESTED", HEAD)],
+        );
+        assert!(!v.pass, "{v:?}");
+        assert!(
+            v.line.starts_with("hold: a human asked for changes"),
+            "{}",
+            v.line
+        );
     }
 
     #[test]

@@ -39,6 +39,12 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   value. A change that makes or needs one adds its entry in the same PR; the
   weekly digest asks Jim to re-check each one on its schedule ("Human
   checks" in `standards/docs/evals.md`).
+- **Dashboard settings go into `infra` (decision 0007).** A setting made
+  in a vendor dashboard goes into the `infra` project when an OpenTofu
+  provider covers it, instead of a human task or a settings check; only
+  what no provider can express, or what would put a secret in state,
+  stays by hand. How to add one, the plan guards, state and drift are in
+  [standards/docs/infra.md](standards/docs/infra.md).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
@@ -51,7 +57,10 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   tags)", one of which is cost changed. This replaces the 75-word
   executive summary. So after any required attribution lines, every PR
   description has `## Attention` (the tags from `chores badges`: one
-  requirements, one cost and one threat/risk tag from a closed set), `##
+  requirements, one cost, one threat/risk and one docs tag from a closed
+  set; Jim, 2026-11-28: "state if it is only docs being updated which
+  includes plans", so a PR whose every file is docs says `docs-only` and goes to the
+  `docs-reviewer`, Jim for now, decision 0019), `##
   What changed` (at most 50 words), `## Why` (at most 50), `## Cost
   changes` and `## Risk changes` (under 25 each, `None.` when nothing
   changes) and `## Details` (testing, review notes, links to committed
@@ -76,13 +85,15 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   no prs with red attention flags get auto merged. Cost changes must be
   reviewed by jim", then "Lets make it needs human review". A PR with a red attention tag
   (`must-requirement-changed`) or `cost-changed`, in its diff or its
-  description, or the `cost` label, fails the `Human review` check (PR-004,
+  description, or the `cost` label, is labelled `human-review` (PR-004,
   `chores gate`) until a human collaborator approves its head commit
   (Jim: "Any human collaborator is fine"); agent accounts (`-agt`),
-  `jimhillr-reviewer`, bots and non-collaborators never count. That check labels
-  it `needs-human` and turns its auto-merge off. Agents and
-  `jimhillr-reviewer` never approve it or turn its auto-merge on; once a
-  human approves and checks are green, any agent may merge it. Details are under
+  `jimhillr-reviewer`, bots and non-collaborators never count. It is not a
+  CI check and posts no status, so CI shows only real results (Jim,
+  2026-11-28). Agents and `jimhillr-reviewer` never approve it; an agent
+  marks it ready and turns auto-merge on once its checks are green, like
+  any agent PR, so the human's approval merges it (Jim, 2026-11-28: "Yes,
+  merge on my approval"). Details are under
   "Human review" in `standards/docs/pull-requests.md`.
 - **Plans, decisions and retros live in the repo**, not in chat tools or
   hosted docs. Write them as Markdown next to what they are about (a project's
@@ -199,6 +210,15 @@ repo, rather than in any one agent tool's settings.
   [plan](standards/docs/plans/2026-11-code-quality.md)). Leave no new
   findings in files you touch. Scripts stay Rust-only: add no new `.sh`
   files, and port existing ones into `chores` commands over time.
+- **Admin CLIs, built once (Jim, 2026-11-28).** "Rust scripts can
+  sometimes run slow due to build times, so it's okay if we make a admin
+  cli for a project so it can be built once and reused many times." A
+  project may have one admin CLI binary with a subcommand per routine job
+  (like `chores`, `cost`, `threat`), run with `cargo run --quiet
+  --manifest-path`, so it builds once per clone and reruns in a fraction
+  of a second. One the audit runs over the whole repo builds its
+  dependencies optimized. Rules under "Admin CLIs" in
+  [standards/docs/rust.md](standards/docs/rust.md#admin-clis).
 - **GAAP books (Jim, 2026-11-27).** "All of our cost software should
   follow GAP accounting so that everything is double counted on the ledger
   and also we should have attribution in such a way that if you sum up all
@@ -209,6 +229,25 @@ repo, rather than in any one agent tool's settings.
   remainder. The rules are under "Accounting rules" in
   [standards/docs/cost.md](standards/docs/cost.md)
   ([decision 0016](standards/docs/decisions/0016-holding-and-handling-money.md)).
+- **Actual money only, Jim paid back (Jim, 2026-11-28).** "Until we get
+  the actual financial accounts everything will be paid by me so we should
+  have some accounting of that so I can get paid back eventually. Also, 1%
+  of all revenue should be paid to me as salary with a ceiling of 1
+  million dollars per year. 1% for the planet as well. ... A budget is not
+  actual spend. Our accounting should only count actual spend." The
+  financial ledger books only actual spend and revenue, never a budget or
+  estimate; what Jim pays is owed back to him; 1% of revenue accrues as
+  his salary (capped at $1,000,000 a year) and 1% to 1% for the Planet
+  ([money.md](standards/docs/money.md)).
+- **Products are separate companies (Jim, 2026-11-28).** "Assume
+  products are owned by different companies during architecture. We
+  should have shared technical platform services, just libraries and
+  patterns." Each product runs its own endpoints on its own origin, owns
+  its data and answers its own users; the technical platform shares crates,
+  patterns and infrastructure definitions, not services a product's
+  requests pass through. Shared database infrastructure is allowed only
+  with tenant-scoped tables that one export can move out
+  ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md)).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
@@ -245,6 +284,15 @@ repo, rather than in any one agent tool's settings.
   [athenaeum/resources/code_quality/](athenaeum/resources/code_quality/README.md),
   and when a source changes how we write code here, add a note for it
   there. The standards still hold the rules; the notes explain them.
+- **Websites are found, readable by agents and fast (Jim, 2026-11-28).**
+  "We should add some standards around seo, agent optimization, and
+  website performance." Every site we deploy follows
+  [standards/docs/web.md](standards/docs/web.md) (WEB-1xx search, WEB-2xx
+  agents such as `llms.txt`, JSON-LD and content in the HTML, WEB-3xx Core
+  Web Vitals and budgets), checked by Lighthouse CI and `chores site-check`
+  ([decision 0028](standards/docs/decisions/0028-web-checks.md)). A PR
+  that adds or changes a site's pages keeps it within its rules and its
+  baseline in `standards/web.toml`.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit
@@ -263,7 +311,9 @@ repo, rather than in any one agent tool's settings.
   unsafe change) gets the `needs-human` label (Jim, 2026-11-26; it replaces
   `needs-jim`). PR CI's **Cost summary** job adds `cost` to any PR that
   changes what the repo uses or costs, and `needs-human` when it adds a
-  vendor or money or raises a budget (standards/docs/cost.md).
+  vendor or money or raises a budget (standards/docs/cost.md). The
+  Human review workflow adds `human-review` to a PR waiting for a human's
+  approval and takes it off once one approves.
 - **Retire what you rename (Jim, 2026-11-26).** Renaming or removing a
   resource (a Pages project, Worker, binding, URL, release) retires the old
   one in `standards/resources.toml` in the same PR, with Jim's approval
@@ -331,6 +381,15 @@ repo, rather than in any one agent tool's settings.
   rule is [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md),
   the prompt is in
   [standards/docs/scheduled-tasks/credit-window.md](standards/docs/scheduled-tasks/credit-window.md).
+- **Product share (Jim, 2026-11-28).** "I'd like to ensure that at least
+  50% of all of my claude credits are being used on product work, not to
+  let the platform work overwhelm it." A soft heuristic: when new threads
+  start, `chores next-task --working <one project per working thread>`
+  prefers product issues while products (decision 0019's `product` tier)
+  are under half of the working threads and last week's merged PRs. Pass
+  `--working` whenever you pick for new threads. Details are under
+  "Product share" in
+  [decision 0013](standards/docs/decisions/0013-credit-window-scheduler.md).
 - **Starting new work.** Apart from the credit window check above, there
   is no scheduled job for new work. Whenever no agent PRs or agent tasks
   are in flight, the coordinating agent starts a new

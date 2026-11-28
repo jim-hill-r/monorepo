@@ -1,0 +1,6 @@
+# An `input` declaration may not `return`: side effects can't hand a value
+# back into pure code.
+bin.name = "my_lang"
+args = ["run", "effects.my"]
+env.remove = ["RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+status.code = 1

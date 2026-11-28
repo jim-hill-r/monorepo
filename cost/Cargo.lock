@@ -183,6 +183,7 @@ dependencies = [
  "clap",
  "cost_model",
  "evals_model",
+ "serde",
  "serde_json",
  "tempfile",
 ]

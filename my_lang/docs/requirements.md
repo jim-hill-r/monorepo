@@ -7,9 +7,9 @@ evals that check each requirement are in [evals.toml](../evals.toml).
 Drafted by an agent on 2026-11-27 from the README, `docs/threat.toml`,
 `docs/cost.toml`, the issue files and the existing tests. my_lang has no
 deep review yet, so these are a first guess at Jim's intent. It is a Rust
-library today, with no command line tool, release or deploy, so every eval
-runs in `ci`. Its production evals arrive with the CLI
-([issues/production-evals-with-the-cli.md](../issues/production-evals-with-the-cli.md)).
+library with a `my_lang` command line tool (`build` and `run`). Each `must`
+requirement is also checked through that binary by the transcripts in
+[tests/cmd/](../tests/cmd/), listed for the `ci` and `cd` stages.
 
 ## LANG-001: A program runs and gives the right answer
 
@@ -31,8 +31,9 @@ runs in `ci`. Its production evals arrive with the CLI
 - Accept: an unknown character, an unterminated string, an integer too
   large for 64 bits, a missing bracket or an unexpected token, an undefined
   variable or function, calling a function that doesn't exist, and calling
-  with too many or too few arguments each return an error that names the
-  problem, and none of them panics.
+  with too many or too few arguments, and a `function` that gives no value
+  (empty, or ending in an assignment, with no `return`) each return an
+  error that names the problem, and none of them panics.
 
 ## LANG-003: Side effects stay where they are declared
 
