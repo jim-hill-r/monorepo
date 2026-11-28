@@ -15,6 +15,20 @@ only files a run changes are its deck folder, the rotation table in
 `docs/reviews/README.md`, new files in the project's `issues/` (step 6), and the tech
 radar (step 6).
 
+## Promotion mode
+
+When asked for a promotion review of a product (or when every
+agent-checkable promotion gate is met), write a promotion deck instead of
+a deep review: follow "The promotion review" in
+[`standards/docs/product-lifecycle.md`](../../../standards/docs/product-lifecycle.md).
+Skip step 1 (the product is given), gather evidence (step 2) for each
+gate, write the deck to `docs/reviews/<YYYY-MM-DD>-<project>-promotion/deck.md`
+with the Promotion scorecard, skip the rotation (step 5), file each unmet
+gate as an issue (step 6), and open the PR as in step 7 with the
+`needs-human` and `cost` labels and the title
+`<project>: promotion review <YYYY-MM-DD>`. Ask Jim directly for the
+decisions on the deck's ask slide.
+
 ## 1. Pick the project
 
 Unless you were asked to review a specific project:
