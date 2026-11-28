@@ -922,7 +922,7 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Proposed in decision 0022 as the pager: the free plan (5 users, app push, 100 SMS and phone calls a month, Events API v2, Terraform provider) pages Jim's phone for production outages. Needs Jim's sign-off as a new vendor.",
+    "description": "Recommended as the pager in decision 0022 (free plan: 5 users, app push, 100 SMS and phone calls a month, Events API v2, Terraform provider), but Jim chose GitHub Mobile to add no vendor. First to revisit if a page is missed.",
     "exemplars": [],
     "sources": [
       "standards/docs/decisions/0022-monitoring-alerting-logging-paging.md"
@@ -941,7 +941,7 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "technology",
-    "description": "Proposed in decision 0022: one Rust Worker on a Cron Trigger checks every production URL and error spikes every 5 minutes and sends deduplicated trigger and resolve events to the pager. Rules live in the repo.",
+    "description": "Chosen in decision 0022, not built yet: one Rust Worker on a Cron Trigger checks every production URL and error spikes every 5 minutes and opens or closes a GitHub incident issue that pushes to Jim's phone through GitHub Mobile. Rules live in the repo.",
     "exemplars": [],
     "sources": [
       "standards/docs/decisions/0022-monitoring-alerting-logging-paging.md"
@@ -974,7 +974,7 @@
     "quadrant": "Platforms",
     "isNew": "TRUE",
     "kind": "vendor",
-    "description": "Fallback pagers in decision 0022. ntfy.sh is free but best effort, and its terms rule out being the main alert path for critical systems; Pushover is the best one-person pager but costs $4.99 once per platform, which needs Jim to raise a budget.",
+    "description": "Other pagers considered in decision 0022. ntfy.sh is free but best effort, and its terms rule out being the main alert path for critical systems; Pushover is the best one-person pager but costs $4.99 once per platform, which needs Jim to raise a budget.",
     "exemplars": [],
     "sources": [
       "standards/docs/decisions/0022-monitoring-alerting-logging-paging.md"

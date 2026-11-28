@@ -15,7 +15,10 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
 - **Work is tracked as one file per issue** in `issues/` folders (the root
   `issues/` for repo-wide work, `<project>/issues/` for a project's), not in
   GitHub issues and not in `ISSUES.md` files, which are retired so parallel
-  PRs stop conflicting (decision 0006). Add an issue by adding a file, close
+  PRs stop conflicting (decision 0006). The one exception is production
+  alerts: the watchdog opens and closes `incident` GitHub issues to page
+  Jim through GitHub Mobile (decision 0022), and follow-up work still
+  becomes an issue file. Add an issue by adding a file, close
   it by deleting the file, and see the list with `mise run //:issues`; never
   commit a generated index. The format is in
   `standards/docs/issue-management.md`.
