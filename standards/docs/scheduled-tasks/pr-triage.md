@@ -23,6 +23,10 @@ History:
   triage (Jim: "no prs with red attention flags get auto merged. Cost
   changes must be reviewed by jim", then "Lets make it needs human
   review").
+- 2026-11-28: `Human review` is a commit status (pending while it waits,
+  success once a human approves), read from the commit's combined status,
+  not a failing check run (Jim, after PR 916: "I don't think that should
+  block the merge once I approve").
 
 ## Prompt
 
@@ -47,7 +51,7 @@ MERGEABLE means ALL of: not a draft; no merge conflict (mergeStateStatus not "DI
 
 BACK TO DRAFT (Jim, 2026-11-26): before you do any work on a PR that changes its branch (updating it from main, or any other push), first convert it to draft (`gh pr ready <n> --repo jimhillr/monorepo --undo`) and, if auto-merge is on, turn it off (REST route above), and note it in the report. On a later run, once its checks are GREEN on the new head, mark it ready again (`gh pr ready <n>`) if it was ready before, and for an agent PR turn auto-merge back on (AUTO-MERGE). Approving, labelling, merging and closing are not work on the branch and don't need this.
 
-HUMAN REVIEW (Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto merged. Cost changes must be reviewed by jim", then "Lets make it needs human review"): a PR NEEDS A HUMAN when its `## Attention` section has a red tag (`must-requirement-changed`) or `cost-changed`, it is labelled `cost`, or its `Human review` check is failing (that check works the same out from the diff, labels the PR `needs-human` and turns auto-merge off; standards/docs/pull-requests.md, "Human review"). Never approve a PR that NEEDS A HUMAN, never turn auto-merge on for it, and if auto-merge is on, turn it off and list it under "Needs a human". A human is any repo collaborator (owner, member or collaborator) except agent `-agt` accounts (including `jimhillr-agt`), `jimhillr-reviewer` and bots; today that is Jim (`jimhillr`). Merge it only once a human has approved its head SHA and `Human review` (latest run) and every other check are GREEN.
+HUMAN REVIEW (Jim, 2026-11-27: "Lets make sure no prs with red attention flags get auto merged. Cost changes must be reviewed by jim", then "Lets make it needs human review"): a PR NEEDS A HUMAN when its `## Attention` section has a red tag (`must-requirement-changed`) or `cost-changed`, it is labelled `cost`, or its `Human review` commit status is pending or failing (that check works the same out from the diff, labels the PR `needs-human` and turns auto-merge off; standards/docs/pull-requests.md, "Human review"). Never approve a PR that NEEDS A HUMAN, never turn auto-merge on for it, and if auto-merge is on, turn it off and list it under "Needs a human". A human is any repo collaborator (owner, member or collaborator) except agent `-agt` accounts (including `jimhillr-agt`), `jimhillr-reviewer` and bots; today that is Jim (`jimhillr`). Merge it only once a human has approved its head SHA and the `Human review` status (a commit status, not a check run: `gh api repos/jimhillr/monorepo/commits/<sha>/status`) is `success` and every other check is GREEN. A pending `Human review` is a PR waiting for Jim, never a failure to fix.
 
 AUTO-MERGE (Jim, 2026-11-26): GitHub auto-merge (squash) lets an agent PR merge the moment a reviewer approves it. Turn it on only for an agent PR (author ending in `-agt`) that is not a draft, has no merge conflict, is not labelled `needs-human`, doesn't NEED A HUMAN, and whose checks have ALL finished and passed (no red check at all, not even one also failing on main, because auto-merge can't apply that exception). Never turn it on for dependabot or human PRs (you merge those yourself when safe), and turn it off on any PR you label `needs-human`. Auto-merge never replaces the approval: never approve an agent PR to make it merge.
 

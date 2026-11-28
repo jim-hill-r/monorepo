@@ -11,6 +11,17 @@
 # `needs-human` and has its auto-merge turned off, so neither
 # jimhillr-reviewer nor an agent can approve or merge it. Every other PR
 # passes. Runs again on every review, so a human's approval turns it green.
+#
+# The verdict is the `Human review` commit status, not this job's result
+# (Jim, 2026-11-28: "I don't think that should block the merge once I
+# approve"): `pending` (yellow) while it waits, `success` once a human
+# approves, `failure` only when a human asks for changes. Each event runs
+# this workflow again, and a failed check run from an earlier event would
+# stay on the commit beside the passing one, so the PR looked red even
+# after Jim approved it (PR 916). One status context replaces itself
+# instead. The job is called `Human review gate` so its own check run never
+# satisfies the required `Human review` context; it fails only when the
+# gate itself breaks.
 # The rules are under "Human review" in standards/docs/pull-requests.md and
 # the logic is `chores gate` (chores/src/gate.rs), built from the base
 # branch so a PR can't change the rules it is judged by.
@@ -31,14 +42,29 @@ concurrency:
 
 jobs:
   gate:
-    name: Human review
+    name: Human review gate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
       issues: write         # create the needs-human label the first time
       pull-requests: write  # label the PR and turn its auto-merge off
+      statuses: write       # post the Human review commit status
+    env:
+      STATUS_CONTEXT: Human review
     steps:
+      # A fork's token can't post statuses; the last step then fails the job.
+      - name: Mark as checking
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api "repos/$GH_REPO/statuses/$HEAD_SHA" -f state=pending -f context="$STATUS_CONTEXT" \
+            -f description="Checking for red attention tags and cost changes" -f target_url="$RUN_URL" >/dev/null
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -75,7 +101,8 @@ jobs:
             --json "$RUNNER_TEMP/gate.json" | tee -a "$GITHUB_STEP_SUMMARY"
           code=${PIPESTATUS[0]}
           set -e
-          [ -f "$RUNNER_TEMP/gate.json" ] || exit "$code"
+          # Exit 1 is a verdict (pending or failure), not a broken gate.
+          [ -f "$RUNNER_TEMP/gate.json" ] || exit "${code:-1}"
           echo "needs-human=$(jq -r .needs_human "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
           echo "pass=$(jq -r .pass "$RUNNER_TEMP/gate.json")" >>"$GITHUB_OUTPUT"
 
@@ -99,7 +126,31 @@ jobs:
             echo "Turned auto-merge off"
           fi
 
-      - name: Result
+      # The verdict. A pending status is the approval it waits for, not a
+      # failure, so the job itself stays green.
+      - name: Post the Human review status
         env:
-          PASS: ${{ steps.decide.outputs.pass }}
-        run: test "$PASS" = true
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # A base branch whose chores gate predates `state` (only the PR
+          # that adds it) gives just `pass`: waiting, not failed.
+          state=$(jq -r '.state // (if .pass then "success" else "pending" end)' "$RUNNER_TEMP/gate.json")
+          description=$(jq -r '.description // .line | .[0:140]' "$RUNNER_TEMP/gate.json")
+          gh api "repos/$GH_REPO/statuses/$HEAD_SHA" -f state="$state" -f context="$STATUS_CONTEXT" \
+            -f description="$description" -f target_url="$RUN_URL" >/dev/null
+          echo "Posted $STATUS_CONTEXT: $state ($description)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Report a broken gate
+        if: failure()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api "repos/$GH_REPO/statuses/$HEAD_SHA" -f state=error -f context="$STATUS_CONTEXT" \
+            -f description="The Human review gate failed; see the run" -f target_url="$RUN_URL" >/dev/null

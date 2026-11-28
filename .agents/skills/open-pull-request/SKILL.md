@@ -103,8 +103,9 @@ as a reviewer approves it. Skip this when the PR is labelled `needs-human` or
 `cost`, its Attention section has a red tag (`must-requirement-changed`)
 or `cost-changed`, or a check is red, even one also failing on `main`.
 Such a PR needs a human's approval (the `Human review` check, "Human review" in
-`standards/docs/pull-requests.md`): mark it ready once every check but
-`Human review` is green, since that one turns green only when he approves,
+`standards/docs/pull-requests.md`): mark it ready once every check is
+green and the `Human review` status is pending, since that commit status
+turns green only when he approves,
 and merge it by hand once he has approved and checks are green. The auto-merge rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
 your own PR, so it waits for a human's approval either way.

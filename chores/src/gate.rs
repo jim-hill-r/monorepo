@@ -13,10 +13,16 @@
 //!
 //! Such a PR passes only once a human has approved its head commit (and no
 //! human has asked for changes since), or when a human opened it. Agent
-//! accounts (`-agt`), `jimhillr-reviewer` and bots never count. The
-//! workflow (`pull-request-human-review.yml`) also labels it `needs-human`
-//! and turns its auto-merge off. The rules are under "Human review" in
-//! `standards/docs/pull-requests.md`.
+//! accounts (`-agt`), `jimhillr-reviewer` and bots never count.
+//!
+//! The verdict is a commit status, not a failing check (Jim, 2026-11-28:
+//! "I don't think that should block the merge once I approve"): `pending`
+//! while it waits for a human, `success` once one approves, and `failure`
+//! only when a human asked for changes. One status context replaces itself
+//! on every run, so an approval leaves no stale red check behind. The
+//! workflow (`pull-request-human-review.yml`) posts it, and also labels a
+//! held PR `needs-human` and turns its auto-merge off. The rules are under
+//! "Human review" in `standards/docs/pull-requests.md`.
 
 use std::path::{Path, PathBuf};
 
@@ -79,6 +85,21 @@ pub struct User {
     pub login: String,
 }
 
+/// The `Human review` commit status the workflow posts.
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum State {
+    /// Nothing holds it, a human opened it, or a human approved its head.
+    Success,
+    /// Waiting for a human's approval: yellow, not red.
+    Pending,
+    /// A human asked for changes.
+    Failure,
+}
+
+/// The most characters GitHub keeps of a commit status description.
+pub const DESCRIPTION_CHARS: usize = 140;
+
 /// What the check decided.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct Verdict {
@@ -86,6 +107,10 @@ pub struct Verdict {
     pub needs_human: bool,
     /// The check passes.
     pub pass: bool,
+    /// The commit status to post.
+    pub state: State,
+    /// The status description, at most [`DESCRIPTION_CHARS`] characters.
+    pub description: String,
     /// Why it needs a human, one line each.
     pub reasons: Vec<String>,
     /// One line for the job summary.
@@ -103,10 +128,22 @@ pub fn body_tags(body: &str) -> Vec<Tag> {
     })
 }
 
-/// Whether a human approved `head` with no human approval or change
-/// request after it: each human's last word counts, a dismissed review
-/// withdraws theirs, and a comment changes nothing. Only humans count.
-pub fn human_approved(reviews: &[Review], head: &str) -> bool {
+/// Where the humans' reviews leave a PR.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Humans {
+    /// A human approved the head and none asks for changes.
+    Approved,
+    /// A human's last word is "changes requested".
+    ChangesRequested,
+    /// Neither: no human has approved the head yet.
+    Waiting,
+}
+
+/// Where the humans' reviews leave `head`: approved once a human approved
+/// it with no human change request after, where each human's last word
+/// counts, a dismissed review withdraws theirs, and a comment changes
+/// nothing. Only humans count.
+pub fn humans(reviews: &[Review], head: &str) -> Humans {
     let mut last: Vec<(&str, &Review)> = Vec::new();
     for r in reviews {
         let Some(login) = r.user.as_ref().map(|u| u.login.as_str()) else {
@@ -124,11 +161,27 @@ pub fn human_approved(reviews: &[Review], head: &str) -> bool {
         last.retain(|(l, _)| *l != login);
         last.push((login, r));
     }
-    let changes = last.iter().any(|(_, r)| r.state == "CHANGES_REQUESTED");
-    !changes
-        && last
-            .iter()
-            .any(|(_, r)| r.state == "APPROVED" && r.commit_id.as_deref() == Some(head))
+    if last.iter().any(|(_, r)| r.state == "CHANGES_REQUESTED") {
+        Humans::ChangesRequested
+    } else if last
+        .iter()
+        .any(|(_, r)| r.state == "APPROVED" && r.commit_id.as_deref() == Some(head))
+    {
+        Humans::Approved
+    } else {
+        Humans::Waiting
+    }
+}
+
+/// Cut `text` to at most `max` characters, ending with an ellipsis when
+/// it was longer.
+fn clip(text: &str, max: usize) -> String {
+    if text.chars().count() <= max {
+        return text.to_string();
+    }
+    let mut out: String = text.chars().take(max.saturating_sub(1)).collect();
+    out.push('…');
+    out
 }
 
 /// Everything the check reads about one PR.
@@ -169,38 +222,58 @@ pub fn decide(input: &Input<'_>) -> Verdict {
     }
     let needs_human = !reasons.is_empty();
     let short = |s: &str| s.chars().take(7).collect::<String>();
-    let (pass, line) = if !needs_human {
+    let head = short(input.head);
+    let why = reasons.join("; ");
+    let tags = || {
+        let mut t: Vec<&str> = Vec::new();
+        for r in &reasons {
+            let tag = if r.contains(Tag::MustRequirementChanged.as_str()) {
+                Tag::MustRequirementChanged.as_str()
+            } else {
+                Tag::CostChanged.as_str()
+            };
+            if !t.contains(&tag) {
+                t.push(tag);
+            }
+        }
+        t.join(", ")
+    };
+    let (state, line, description) = if !needs_human {
         (
-            true,
+            State::Success,
             "pass: no red attention tag and no cost change".to_string(),
+            "No red attention tag or cost change".to_string(),
         )
     } else if is_human(input.author) && is_collaborator(Some(input.author_association)) {
         (
-            true,
-            format!("pass: {} opened it ({})", input.author, reasons.join("; ")),
-        )
-    } else if human_approved(input.reviews, input.head) {
-        (
-            true,
-            format!(
-                "pass: a human approved {} ({})",
-                short(input.head),
-                reasons.join("; ")
-            ),
+            State::Success,
+            format!("pass: {} opened it ({why})", input.author),
+            format!("{} opened it ({})", input.author, tags()),
         )
     } else {
-        (
-            false,
-            format!(
-                "block: needs a human's approval of {}, and no auto-merge ({})",
-                short(input.head),
-                reasons.join("; ")
+        match humans(input.reviews, input.head) {
+            Humans::Approved => (
+                State::Success,
+                format!("pass: a human approved {head} ({why})"),
+                format!("A human approved {head} ({})", tags()),
             ),
-        )
+            Humans::ChangesRequested => (
+                State::Failure,
+                format!("block: a human asked for changes ({why})"),
+                format!("A human asked for changes ({})", tags()),
+            ),
+            Humans::Waiting => (
+                State::Pending,
+                format!("wait: needs a human's approval of {head}, and no auto-merge ({why})"),
+                format!("Waiting for a human to approve {head} ({})", tags()),
+            ),
+        }
     };
     Verdict {
         needs_human,
-        pass,
+        pass: state == State::Success,
+        state,
+        description: clip(&description, DESCRIPTION_CHARS),
         reasons,
         line,
     }
@@ -345,11 +418,60 @@ mod tests {
         assert!(!v.pass && v.needs_human, "{v:?}");
         assert!(
             v.line
-                .starts_with("block: needs a human's approval of abcdef1"),
+                .starts_with("wait: needs a human's approval of abcdef1"),
             "{}",
             v.line
         );
         assert!(v.line.contains("pane/docs/cost.toml"), "{}", v.line);
+        assert_eq!(v.state, State::Pending);
+        assert_eq!(
+            v.description,
+            "Waiting for a human to approve abcdef1 (cost-changed)"
+        );
+    }
+
+    #[test]
+    fn the_status_is_pending_while_waiting_and_green_once_approved() {
+        let diff = cost_diff();
+        let state = |reviews: &[Review]| verdict(&diff, "", &[], "jimhillr-agt", reviews).state;
+        assert_eq!(state(&[]), State::Pending);
+        assert_eq!(
+            state(&[review("jimhillr-reviewer", "APPROVED", HEAD)]),
+            State::Pending
+        );
+        assert_eq!(
+            state(&[review("jimhillr", "APPROVED", HEAD)]),
+            State::Success
+        );
+        assert_eq!(
+            state(&[review("jimhillr", "CHANGES_REQUESTED", HEAD)]),
+            State::Failure
+        );
+        assert_eq!(
+            verdict(&Attention::default(), "", &[], "jimhillr-agt", &[]).state,
+            State::Success
+        );
+    }
+
+    #[test]
+    fn descriptions_fit_a_commit_status() {
+        let diff = Attention {
+            must: vec!["X".repeat(300)],
+            cost: vec!["Y".repeat(300)],
+            ..Attention::default()
+        };
+        let body = "## Attention\n\n- 🔴 must-requirement-changed\n- 🟠 cost-changed\n";
+        let v = verdict(&diff, body, &["cost"], "jimhillr-agt", &[]);
+        assert!(
+            v.description.chars().count() <= DESCRIPTION_CHARS,
+            "{}",
+            v.description
+        );
+        assert_eq!(
+            v.description,
+            "Waiting for a human to approve abcdef1 (must-requirement-changed, cost-changed)"
+        );
+        assert_eq!(clip(&"z".repeat(200), 10).chars().count(), 10);
     }
 
     #[test]

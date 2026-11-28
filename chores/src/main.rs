@@ -118,7 +118,9 @@ enum Command {
     /// cost change, from its diff, its description or the `cost` label,
     /// passes only once a human (not an `-agt` account, the reviewer account
     /// or a bot) has approved its head commit.
-    /// Prints "pass: ..." or "block: ..."; exits 1 when it blocks.
+    /// Prints "pass: ...", "wait: ..." (pending a human) or "block: ..."
+    /// (a human asked for changes); exits 1 unless it passes. `--json`
+    /// writes the commit status `state` and `description` to post.
     Gate {
         /// The branch the PR merges into, for the diff's tags.
         #[arg(long, default_value = "origin/main")]

@@ -117,9 +117,9 @@ decide() {
   [ -z "$blocked" ] || { echo "skip: touches $blocked"; return; }
 
   # Every check run on the head finished and passed (skipped and neutral
-  # count as passed), and every commit status is success. A check that ran
-  # more than once (a re-run, or Human review on a later event) counts by its
-  # latest run.
+  # count as passed), and every commit status is success, so a pending
+  # Human review status holds it. A check that ran more than once (a re-run)
+  # counts by its latest run.
   local bad
   bad=$(jq -r --arg self "$SELF_CHECK" '
     .check_runs = ([.check_runs[]?] | group_by(.name) | map(max_by(.started_at // "")))
@@ -131,7 +131,9 @@ decide() {
   [ -z "$bad" ] || { echo "skip: check $bad"; return; }
   local need
   while IFS= read -r need; do
-    if ! jq -e --arg n "$need" 'any(.check_runs[]?; .name == $n and .conclusion == "success")' "$checks" >/dev/null; then
+    # Human review is a commit status (PR-004); the others are check runs.
+    if ! jq -e --arg n "$need" 'any(.check_runs[]?; .name == $n and .conclusion == "success")
+        or any(.statuses[]?; .context == $n and .state == "success")' "$checks" >/dev/null; then
       echo "skip: check $need has not passed"
       return
     fi
