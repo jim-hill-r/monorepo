@@ -209,6 +209,16 @@ repo, rather than in any one agent tool's settings.
   remainder. The rules are under "Accounting rules" in
   [standards/docs/cost.md](standards/docs/cost.md)
   ([decision 0016](standards/docs/decisions/0016-holding-and-handling-money.md)).
+- **Products are separate companies (Jim, 2026-11-28).** "Assume
+  products are owned by different companies during architecture. We
+  should have shared technical platform services, just libraries and
+  patterns." Each product runs its own endpoints on its own origin, owns
+  its data and answers its own users; the technical platform shares crates,
+  patterns and infrastructure definitions, not services a product's
+  requests pass through. Shared database infrastructure is allowed only
+  with tenant-scoped tables that one export can move out
+  ([decision 0021](standards/docs/decisions/0021-tenant-scoped-product-data.md),
+  proposed).
 - **Files before databases (Jim, 2026-11-26).** Avoid databases for as long
   as possible. Dev work, results and data (eval results, reports, fixtures,
   scraped data) are files committed to the monorepo: Markdown, JSON, JSON
