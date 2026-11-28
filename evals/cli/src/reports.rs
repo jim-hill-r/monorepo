@@ -48,6 +48,30 @@ pub fn parse_cargo_output(text: &str) -> Vec<TestCase> {
         .collect()
 }
 
+/// The first error line of a saved `cargo test` output whose build failed
+/// before any test ran (`error: could not compile` or `failed to run custom
+/// build command`, and no `test result:` line), so its evals can fail with
+/// the reason instead of matching no test. `None` when tests ran.
+pub fn cargo_build_failure(text: &str) -> Option<String> {
+    let lines: Vec<String> = text
+        .lines()
+        .map(|l| strip_ansi(l).trim().to_string())
+        .collect();
+    if lines.iter().any(|l| l.starts_with("test result:")) {
+        return None;
+    }
+    let broke = lines.iter().any(|l| {
+        l.starts_with("error: could not compile")
+            || l.starts_with("error: failed to run custom build command")
+    });
+    if !broke {
+        return None;
+    }
+    lines
+        .into_iter()
+        .find(|l| l.starts_with("error:") || l.starts_with("error["))
+}
+
 /// Parses the case lines trycmd prints inside `cargo test` output, one
 /// [`TestCase`] per case file, named by its path (`tests/cmd/help.toml`).
 /// Colour codes are stripped, and the `:setup`/`:teardown` lines of a
@@ -216,6 +240,48 @@ test src/lib.rs - units::convert (line 12) ... ok
                 ("src/lib.rs - units::convert (line 12)", Outcome::Passed),
             ]
         );
+    }
+
+    const BUILD_SCRIPT_FAILED: &str = "\
+   Compiling cookbook_data_md v0.1.0 (/repo/cookbook/data_md)
+error: failed to run custom build command for `cookbook_data_md v0.1.0 (/repo/cookbook/data_md)`
+
+Caused by:
+  process didn't exit successfully: `/repo/target/debug/build/x/build-script-build` (exit status: 101)
+  --- stderr
+  thread 'main' panicked at build.rs:40:9:
+  day-200.md has no day tag
+";
+
+    const COMPILE_FAILED: &str = "\
+   Compiling cookbook v0.1.0 (/repo/cookbook)
+\u{1b}[1m\u{1b}[31merror[E0425]\u{1b}[0m: cannot find value `days` in this scope
+  --> src/lib.rs:12:5
+error: could not compile `cookbook` (lib test) due to 1 previous error
+";
+
+    #[test]
+    fn finds_a_build_that_failed_before_its_tests() {
+        assert_eq!(
+            cargo_build_failure(BUILD_SCRIPT_FAILED).as_deref(),
+            Some(
+                "error: failed to run custom build command for `cookbook_data_md v0.1.0 (/repo/cookbook/data_md)`"
+            )
+        );
+        assert!(parse_cargo_output(BUILD_SCRIPT_FAILED).is_empty());
+        assert_eq!(
+            cargo_build_failure(COMPILE_FAILED).as_deref(),
+            Some("error[E0425]: cannot find value `days` in this scope")
+        );
+    }
+
+    #[test]
+    fn a_build_that_ran_its_tests_did_not_fail() {
+        assert_eq!(cargo_build_failure(CARGO), None);
+        assert_eq!(cargo_build_failure(""), None);
+        // A test that prints a compiler error is still a test run.
+        let text = "error: could not compile `x`\ntest result: ok. 1 passed; 0 failed\n";
+        assert_eq!(cargo_build_failure(text), None);
     }
 
     #[test]

@@ -254,7 +254,9 @@ to `main` and nightly CI), through the shared tasks and
    `$EVALS_RESULTS`. A project with no `evals.toml` collects nothing. A
    sub-project's job (`cookbook/web`), or a top-level project that has
    sub-projects, passes `--partial`, so it reports only the evals its own
-   tests cover; each part's job reports its share.
+   tests cover; each part's job reports its share. A build that fails
+   before its tests run fails the `cargo` and `trycmd` evals it hid
+   ("build failed: ..."), partial or not.
 3. The workflow then writes the job summary table (`evals.sh publish`) and
    uploads the results file as a 14-day `evals-results-<project>` artifact.
 4. On pushes to `main` and nightly CI (never pull requests, whose results
