@@ -36,6 +36,13 @@ pub const DECIDE_LABELS: &[&str] = &["needs-human", "credential-change"];
 /// Labels that mean "read this one closely": orange.
 pub const LOOK_LABELS: &[&str] = &["security", "cost"];
 
+/// The label the Human review workflow puts on a PR with a red attention
+/// tag or a cost change until a human collaborator approves it ("Human
+/// review" in `standards/docs/pull-requests.md`). It needs Jim's approval,
+/// not a decision, so the PR stays in the approve group with its own badge
+/// and is at least orange.
+pub const HUMAN_REVIEW_LABEL: &str = "human-review";
+
 /// Authors whose PRs come from this repo's own agents, Jim or Dependabot.
 /// A PR from anyone else (a fork) gets an orange `outside author` badge.
 pub const KNOWN_AUTHORS: &[&str] = &["jimhillr", "jimhillr-agt", "dependabot[bot]"];
@@ -260,6 +267,8 @@ pub struct QueueItem {
     /// The labels that set [`QueueItem::attention`], in label order, and
     /// [`OUTSIDE_AUTHOR`] for a PR from outside.
     pub badges: Vec<String>,
+    /// Labelled [`HUMAN_REVIEW_LABEL`]: only a human's approval merges it.
+    pub human_review: bool,
     pub created_at: String,
     /// For a stack's top PR: how many PRs the one approval covers (itself
     /// included). 1 for a PR on its own.
@@ -354,7 +363,11 @@ pub fn badges(labels: &[Label], author: &str) -> (Vec<String>, Attention) {
 }
 
 fn item(p: &Pull) -> QueueItem {
-    let (badges, level) = badges(&p.labels, &p.user.login);
+    let (badges, mut level) = badges(&p.labels, &p.user.login);
+    let human_review = p.labels.iter().any(|l| l.name == HUMAN_REVIEW_LABEL);
+    if human_review {
+        level = level.max(Attention::Look);
+    }
     let covers = stack_size_from_body(p.body.as_deref().unwrap_or_default());
     QueueItem {
         number: p.number,
@@ -365,6 +378,7 @@ fn item(p: &Pull) -> QueueItem {
         summary: summary(p.body.as_deref().unwrap_or_default()),
         attention: level,
         badges,
+        human_review,
         created_at: p.created_at.clone(),
         covers,
     }
@@ -576,6 +590,36 @@ mod tests {
         let q = build(&[p], &[30].into());
         assert_eq!(q.approve[0].attention, Attention::Look);
         assert_eq!(q.approve[0].badges, vec![OUTSIDE_AUTHOR.to_owned()]);
+    }
+
+    #[test]
+    fn a_human_review_pr_waits_in_the_approve_group_with_its_own_badge() {
+        let pulls = vec![
+            pull(40, "red", "main", &["human-review"], false),
+            pull(41, "costly", "main", &["cost", "human-review"], false),
+            pull(
+                42,
+                "decide",
+                "main",
+                &["human-review", "needs-human"],
+                false,
+            ),
+            pull(43, "plain", "main", &[], false),
+        ];
+        let q = build(&pulls, &[40, 41, 42, 43].into());
+        let approve: Vec<u64> = q.approve.iter().map(|i| i.number).collect();
+        assert_eq!(approve, vec![43, 40, 41]);
+        let red = &q.approve[1];
+        assert!(red.human_review);
+        assert_eq!(red.attention, Attention::Look);
+        // Its own badge, not one of the label badges.
+        assert!(red.badges.is_empty());
+        assert_eq!(q.approve[2].badges, vec!["cost".to_owned()]);
+        assert!(!q.approve[0].human_review);
+        // A decision still comes first when the PR also asks for one.
+        assert_eq!(q.decide.len(), 1);
+        assert!(q.decide[0].human_review);
+        assert_eq!(q.decide[0].attention, Attention::Decide);
     }
 
     #[test]

@@ -26,3 +26,45 @@ export async function mainNavLink(page: Page, name: string): Promise<Locator> {
   }
   return page.locator('#header .header-nav a', { hasText: name });
 }
+
+/**
+ * Waits until the app has rendered the page: its `#content h1`, which every
+ * route has (home, recipe, plan, error and not-found pages). Use it after
+ * `page.goto` or `page.reload` instead of `waitForLoadState('networkidle')`,
+ * which Playwright discourages and which can outlast the test timeout while
+ * the Auth0 discovery request is in flight. It then waits for the page's
+ * stylesheets and colour transitions (`animationsDone`).
+ */
+export async function pageReady(page: Page): Promise<void> {
+  await expect(page.locator('#content h1').first()).toBeVisible();
+  await animationsDone(page);
+}
+
+/**
+ * Waits for the page's styles to settle: every stylesheet link loaded, then
+ * no finite animation or transition still running. The app adds its
+ * stylesheets after it renders, and the header and cards fade their colours
+ * in (`transition: all`), so an accessibility scan or a style check made
+ * before then reads the wrong colours.
+ */
+export async function animationsDone(page: Page): Promise<void> {
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).every(
+      (link) => link.sheet !== null,
+    ),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const running = () =>
+          document
+            .getAnimations()
+            .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity);
+        await Promise.all(running().map((a) => a.finished.catch(() => undefined)));
+        // A style applied by the last frame can start a new transition.
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        return running().length;
+      }),
+    )
+    .toBe(0);
+}

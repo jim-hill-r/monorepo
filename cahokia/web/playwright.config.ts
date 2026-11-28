@@ -12,12 +12,21 @@ const synthetic = (device: (typeof devices)[string]) => ({
 
 /**
  * Playwright configuration for Cahokia web application tests.
- * 
- * Tests expect the Dioxus web app to be running on http://localhost:8080
- * Start the dev server with: dx serve --port 8080 (from cahokia/web directory)
- * 
+ *
+ * By default the tests start the Dioxus dev server (`mise run dev`) and run
+ * against http://localhost:8080.
+ *
+ * With BASE_URL set (the `smoke` task of cahokia/cloudflare after a deploy,
+ * see standards/docs/evals.md), they run against that site instead: no dev
+ * server, and every test records its video, screenshot and trace. Only
+ * signed-out tests are tagged `@smoke`, since production has no test
+ * account. Run them against production by hand with:
+ *   BASE_URL=https://jimhillr-cahokia.pages.dev npx playwright test --grep @smoke --project chromium
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
+const liveURL = process.env.BASE_URL;
+
 /**
  * The sandbox Chromium fallback (standards/tasks/dioxus-web.toml) has no
  * Firefox or WebKit, so with PLAYWRIGHT_CHROMIUM_PATH set only the Chromium
@@ -30,8 +39,9 @@ const onlyChromiumInSandbox = (project: { use?: { defaultBrowserType?: string } 
 export default defineConfig({
   testDir: './tests',
 
-  /* Wait for the dev server's first build before running tests. */
-  globalSetup: './global-setup.ts',
+  /* Wait for the dev server's first build before running tests. A live
+     site is already built. */
+  globalSetup: liveURL ? undefined : './global-setup.ts',
   
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -55,14 +65,16 @@ export default defineConfig({
   /* Shared settings for all the projects below. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:8080',
-    
-    /* Collect trace when retrying the failed test. */
-    trace: 'on-first-retry',
+    baseURL: liveURL ?? 'http://localhost:8080',
 
-    screenshot: 'off',
+    /* Collect trace when retrying the failed test. A live (smoke) run
+       records the trace, screenshot and video of every test as evidence
+       (standards/docs/plans/2026-11-deploy-feedback.md, phase 3a). */
+    trace: liveURL ? 'on' : 'on-first-retry',
 
-    video: 'off',
+    screenshot: liveURL ? 'on' : 'off',
+
+    video: liveURL ? 'on' : 'off',
     // A sandbox whose Chromium doesn't match this Playwright can point at it
     // (the e2e task in standards/tasks/dioxus-web.toml sets it).
     launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined },
@@ -96,8 +108,9 @@ export default defineConfig({
     },
   ].filter(onlyChromiumInSandbox),
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
+  /* Run your local dev server before starting the tests, unless they run
+     against a live site. */
+  webServer: liveURL ? undefined : {
     // `mise run dev` is the project's standard dev task (dx serve on port 8080).
     command: 'mise run dev',
     url: 'http://localhost:8080',

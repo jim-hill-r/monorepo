@@ -8,6 +8,8 @@ A programming language implementation that compiles to LLVM IR.
 
 This project provides the foundation for building a new programming language with a focus on pure functions and controlled side effects.
 
+To write and run my_lang programs, read the [user guide](docs/user/README.md).
+
 ## Language Semantics
 
 ### Keywords

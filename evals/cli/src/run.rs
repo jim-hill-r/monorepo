@@ -20,6 +20,9 @@ pub struct Reports {
     pub playwright: Option<Vec<TestCase>>,
     /// trycmd cases, read from the same `cargo test` output.
     pub trycmd: Option<Vec<TestCase>>,
+    /// The first error line of a `cargo test` output whose build failed
+    /// before its tests ran ([`crate::reports::cargo_build_failure`]).
+    pub cargo_build_failure: Option<String>,
 }
 
 /// Where and when this run happened, copied into every result.
@@ -90,6 +93,17 @@ pub fn collect(
                 continue;
             }
         };
+        // A build that broke before its tests ran fails the evals its report
+        // would have covered, in a partial run too: the report is that
+        // part's own, and the break is what the verdict should show.
+        if let (Kind::Cargo { .. } | Kind::Trycmd { .. }, Some(error)) =
+            (&eval.kind, &reports.cargo_build_failure)
+            && !has_match(eval, cases.as_deref())
+        {
+            let note = format!("build failed: {error}");
+            results.push(result(eval, ctx, kind, ResultStatus::Fail, note));
+            continue;
+        }
         if ctx.partial && !has_match(eval, cases.as_deref()) {
             continue;
         }
@@ -329,6 +343,7 @@ kind = "cost"
     fn collects_cargo_and_playwright_evals_for_the_stage() -> anyhow::Result<()> {
         let reports = Reports {
             trycmd: None,
+            cargo_build_failure: None,
             cargo: Some(parse_cargo_output(
                 "test units::tests::cook_002_cups ... ok\ntest units::tests::cook_002_grams ... ok\n",
             )),
@@ -456,6 +471,7 @@ glob = "cmd/help*.toml"
                  Testing tests/cmd/help.toml ... ok\n\
                  Testing tests/cmd/help-hides-api-key.toml ... ok\n",
             )),
+            cargo_build_failure: None,
         };
         let (results, notes) = collect(&file, &reports, &ctx());
         assert!(notes.is_empty(), "{notes:?}");
@@ -508,6 +524,7 @@ glob = "cmd/help*.toml"
     fn failures_errors_and_skips() {
         let reports = Reports {
             trycmd: None,
+            cargo_build_failure: None,
             cargo: Some(parse_cargo_output(
                 "test cook_002_a ... ok\ntest cook_002_b ... FAILED\n",
             )),
@@ -532,6 +549,7 @@ glob = "cmd/help*.toml"
 
         let reports = Reports {
             trycmd: None,
+            cargo_build_failure: None,
             cargo: Some(parse_cargo_output(
                 "test cook_002_a ... ignored\ntest cook_002_b ... ignored\n",
             )),
@@ -555,6 +573,7 @@ glob = "cmd/help*.toml"
     fn a_skipped_test_beside_a_pass_still_passes() {
         let reports = Reports {
             trycmd: None,
+            cargo_build_failure: None,
             cargo: Some(parse_cargo_output(
                 "test cook_002_a ... ok\ntest cook_002_b ... ignored\n",
             )),
@@ -571,6 +590,7 @@ glob = "cmd/help*.toml"
         ctx.partial = true;
         let reports = Reports {
             trycmd: None,
+            cargo_build_failure: None,
             cargo: Some(parse_cargo_output("test web::other_test ... ok\n")),
             playwright: Some(Vec::new()),
         };
@@ -579,6 +599,7 @@ glob = "cmd/help*.toml"
 
         let reports = Reports {
             trycmd: None,
+            cargo_build_failure: None,
             cargo: Some(parse_cargo_output("test cook_002_a ... FAILED\n")),
             playwright: None,
         };
@@ -590,6 +611,50 @@ glob = "cmd/help*.toml"
                 ResultStatus::Fail,
                 "1 of 1 tests failed: cook_002_a"
             )]
+        );
+    }
+
+    #[test]
+    fn a_build_failure_fails_the_cargo_evals_it_hid() {
+        let reports = Reports {
+            cargo: Some(Vec::new()),
+            trycmd: Some(Vec::new()),
+            playwright: None,
+            cargo_build_failure: Some("error: could not compile `cookbook`".into()),
+        };
+        for partial in [false, true] {
+            let mut ctx = ctx();
+            ctx.partial = partial;
+            let (results, _) = collect(&file(), &reports, &ctx);
+            let units: Vec<_> = statuses(&results)
+                .into_iter()
+                .filter(|(id, ..)| *id == "units")
+                .collect();
+            assert_eq!(
+                units,
+                vec![(
+                    "units",
+                    ResultStatus::Fail,
+                    "build failed: error: could not compile `cookbook`"
+                )],
+                "partial: {partial}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_build_failure_leaves_evals_with_tests_alone() {
+        // Two saved outputs: one sub-project's build broke, another's ran.
+        let reports = Reports {
+            cargo: Some(parse_cargo_output("test cook_002_a ... ok\n")),
+            trycmd: Some(Vec::new()),
+            playwright: None,
+            cargo_build_failure: Some("error: could not compile `data_md`".into()),
+        };
+        let (results, _) = collect(&file(), &reports, &ctx());
+        assert!(
+            statuses(&results).contains(&("units", ResultStatus::Pass, "1 test passed")),
+            "{results:?}"
         );
     }
 }

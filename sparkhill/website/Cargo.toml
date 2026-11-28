@@ -29,3 +29,5 @@ tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 
 # Browser-only dependencies go here
 [target.'cfg(client)'.dependencies]
+# For scrolling to the URL's #section once the page renders (index.rs).
+web-sys = { version = "0.3", features = ["Window", "Document", "Location", "Element"] }

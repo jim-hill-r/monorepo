@@ -410,6 +410,13 @@ h1 {
   border-color: var(--ds-color-danger);
 }
 
+/* Waits for a human's approval ("Human review" in pull-requests.md). */
+.badge.human-review {
+  color: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
+  font-weight: 600;
+}
+
 .meta a.approve {
   font-weight: 600;
 }
@@ -464,4 +471,68 @@ h1 {
     display: block;
     overflow-x: auto;
   }
+}
+
+/* Each Project page's Requirements section: verdict and light badges, and
+ * each eval's recent runs as dots, newest first. */
+.badge.health-green {
+  color: var(--ds-color-success);
+  border-color: var(--ds-color-success);
+}
+
+.badge.health-amber {
+  color: var(--ds-color-warning);
+  border-color: var(--ds-color-warning);
+}
+
+.badge.health-red {
+  color: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
+}
+
+.badge.health-grey {
+  color: var(--ds-color-text-muted);
+}
+
+.reasons {
+  margin: 0.2rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.eval-name {
+  font-weight: 600;
+}
+
+.run-status.run-fail,
+.run-status.run-error {
+  color: var(--ds-color-danger);
+  font-weight: 600;
+}
+
+.history {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.run {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 1px solid var(--ds-color-border);
+}
+
+.run.run-pass {
+  background: var(--ds-color-success);
+}
+
+.run.run-fail {
+  background: var(--ds-color-danger);
+}
+
+.run.run-error {
+  background: var(--ds-color-warning);
 }

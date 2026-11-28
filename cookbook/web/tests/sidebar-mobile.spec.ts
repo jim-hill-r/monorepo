@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 
 /**
  * Tests for the Cookbook sidebar mobile responsiveness.
@@ -15,7 +16,7 @@ test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
 
   test('should hide sidebar by default on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On mobile, sidebar should be hidden by default
     const sidebar = page.locator('#sidebar');
@@ -25,7 +26,7 @@ test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
 
   test('should show sidebar when hamburger is clicked on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Sidebar should be hidden initially
     const sidebar = page.locator('#sidebar');
@@ -42,7 +43,7 @@ test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
 
   test('should hide sidebar when hamburger is clicked again on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const sidebar = page.locator('#sidebar');
     const hamburger = page.locator('#header .hamburger-btn');
@@ -63,7 +64,7 @@ test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
 
   test('hamburger button aria-expanded should be false initially on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const hamburger = page.locator('#header .hamburger-btn');
     
@@ -73,7 +74,7 @@ test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
 
   test('should allow navigation with sidebar open on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Open sidebar
     const hamburger = page.locator('#header .hamburger-btn');
@@ -83,7 +84,6 @@ test.describe('Sidebar Mobile Responsiveness', { tag: '@req:COOK-004' }, () => {
     // Navigate using sidebar link
     const recipeLink = page.locator('#sidebar .sidebar-section').first().locator('a').first();
     await recipeLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Should navigate to recipe page
     await expect(page).toHaveURL(/\/recipe\/\d+/);
@@ -98,7 +98,7 @@ test.describe('Sidebar Desktop Behavior', () => {
 
   test('should show sidebar by default on desktop', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // On desktop, sidebar should be visible by default
     const sidebar = page.locator('#sidebar');
@@ -107,7 +107,7 @@ test.describe('Sidebar Desktop Behavior', () => {
 
   test('hamburger button aria-expanded should be true initially on desktop', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     const hamburger = page.locator('#header .hamburger-btn');
     

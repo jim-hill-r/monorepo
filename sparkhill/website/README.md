@@ -22,3 +22,12 @@ Files in `static/` are served at `/.perseus/static/`, so stylesheets and
 templates link them there (a root path such as `/fonts/x.ttf` 404s). The
 Niramit font in `static/fonts/` is under the SIL Open Font License
 (`Niramit-OFL.txt`).
+
+Perseus 0.4.2 doesn't really hydrate the export: its client builds the page
+before it enters its hydration context, so it renders new nodes and
+replaces every exported one about 50 ms after load. Anything that holds an
+exported node (the browser's own scroll to a URL's `#section`, a script)
+loses it then. `scroll_to_url_section` in `src/templates/index.rs` redoes
+that scroll, and the e2e test "a section link still lands on its section
+when the app replaces the page" checks it. The flake it fixed shows only in
+Chromium's headless shell, the browser CI runs, not in full Chromium.

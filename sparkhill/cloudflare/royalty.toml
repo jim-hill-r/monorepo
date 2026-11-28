@@ -1,0 +1,3 @@
+[project]
+name = "sparkhill_cloudflare"
+description = "Deploys the Sparkhill website to Cloudflare Pages."

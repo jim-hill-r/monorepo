@@ -34,3 +34,4 @@ Earlier repo-wide decisions about the move to mise are listed in
 | [0021](0021-tenant-scoped-product-data.md) | Product runtime data in one shared D1 database, in tenant-scoped tables with per-tenant budgets and a one-command move out | Accepted |
 | [0023](0023-observability.md) | Observability as one project and review domain: Cloudflare logs, a watchdog Worker for checks and alert rules, GitHub Mobile to page Jim's phone (0022 is taken by an open PR) | Accepted |
 | [0025](0025-review-deck-demo-videos.md) | Narrated, captioned demo videos in the review decks, recorded from a script with Playwright, Kokoro and ffmpeg | Proposed |
+| [0028](0028-web-checks.md) | Check SEO, agent readiness and web performance with Lighthouse CI on the runner's Chrome, a Rust site check and real-user Core Web Vitals | Proposed |

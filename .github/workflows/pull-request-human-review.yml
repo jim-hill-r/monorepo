@@ -53,6 +53,19 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # The admin CLIs' build that main saves (the audit cache in
+      # mise-projects.yml), so chores isn't built from cold on every event.
+      # The workspaces must match it to restore.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: |
+            evals
+            cost
+            chores
+            threat
+          shared-key: audit
+          save-if: false
+
       - name: Decide
         id: decide
         env:
@@ -63,6 +76,8 @@ jobs:
           AUTHOR: ${{ github.event.pull_request.user.login }}
           AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Build the base branch's chores into the restored target.
+          CARGO_TARGET_DIR: ${{ github.workspace }}/chores/target
         run: |
           # The rules come from the base branch. Only until chores gate
           # first reaches it (the PR that adds it) is the PR's own copy used.

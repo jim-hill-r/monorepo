@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { isPhone, mainNavLink } from './nav';
+import { isPhone, mainNavLink, pageReady } from './nav';
 
 /**
  * Tests for the Cookbook header navigation bar.
@@ -15,7 +15,7 @@ import { isPhone, mainNavLink } from './nav';
 test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
   test('should display header on home page', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check that header exists
     const header = page.locator('#header');
@@ -24,7 +24,7 @@ test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
 
   test('should display Cookbook title in header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Check for title in header - the h1 with class "header-title" is directly in the header
     const headerTitle = page.locator('#header h1.header-title');
@@ -52,12 +52,11 @@ test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
   test('should navigate to home from header', async ({ page }) => {
     // Start on a recipe page
     await page.goto('/recipe/10');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Click Home link in header
     const homeLink = await mainNavLink(page, 'Home');
     await homeLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on home page by checking URL and content sections
     await expect(page).toHaveURL('/');
@@ -68,12 +67,11 @@ test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
 
   test('should navigate to recipes from header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Click Recipes link in header
     const recipesLink = await mainNavLink(page, 'Recipes');
     await recipesLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on a recipe page (check URL pattern)
     await expect(page).toHaveURL(/\/recipe\/\d+/);
@@ -83,12 +81,11 @@ test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
 
   test('should navigate to plans from header', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Click Plans link in header
     const plansLink = await mainNavLink(page, 'Plans');
     await plansLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on a plan page (check URL pattern)
     await expect(page).toHaveURL(/\/plan\/\d+/);
@@ -123,26 +120,26 @@ test.describe('Header Navigation', { tag: ['@req:COOK-006', '@smoke'] }, () => {
 
   test('should persist header during navigation', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     
     // Navigate between pages and verify header is always present
     const recipesLink = await mainNavLink(page, 'Recipes');
     await recipesLink.click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/recipe\/\d+/);
     
     let header = page.locator('#header');
     await expect(header).toBeVisible();
     
     const plansLink = await mainNavLink(page, 'Plans');
     await plansLink.click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/plan\/\d+/);
     
     header = page.locator('#header');
     await expect(header).toBeVisible();
     
     const homeLink = await mainNavLink(page, 'Home');
     await homeLink.click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL('/');
     
     header = page.locator('#header');
     await expect(header).toBeVisible();
