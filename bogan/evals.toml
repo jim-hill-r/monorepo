@@ -1,0 +1,145 @@
+# How each requirement in docs/requirements.md is checked.
+# Format: standards/docs/evals.md.
+#
+# Bogan has no code yet, so most of these evals are written ahead of what
+# they read: the `cargo` evals match tests that `bogan/core` adds in phase 1
+# (until then `evals check` warns EVL-003), and the `http` evals run after
+# each deploy once the catalog site ships in phase 2. Their paths and texts
+# are the brief's proposed pages and sample listing; phase 2 corrects them
+# to the real ones. Only the `cost` eval runs today.
+
+prefix = "BOGN"
+
+# BOGN-001: Every listing names its maker
+
+[[eval]]
+id = "listing-without-maker-is-rejected"
+requirement = "BOGN-001"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_001_"
+
+[[eval]]
+id = "listing-page-shows-maker"
+requirement = "BOGN-001"
+stages = ["cd"]
+kind = "http"
+path = "/listings/example-oak-cutting-board/"
+body_contains = "Made by"
+
+# BOGN-002: A listing has no hidden hops
+
+[[eval]]
+id = "chain-must-reach-buyer"
+requirement = "BOGN-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_002_"
+
+[[eval]]
+id = "listing-page-shows-every-hop"
+requirement = "BOGN-002"
+stages = ["cd"]
+kind = "http"
+path = "/listings/example-oak-cutting-board/"
+body_contains = "Shipping"
+
+# BOGN-003: Every hop shows its evidence level
+
+[[eval]]
+id = "hop-evidence-is-validated"
+requirement = "BOGN-003"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_003_"
+
+[[eval]]
+id = "listing-page-shows-evidence-levels"
+requirement = "BOGN-003"
+stages = ["cd"]
+kind = "http"
+path = "/listings/example-oak-cutting-board/"
+body_contains = "Declared by the seller"
+
+# BOGN-004: The transparency summary never hides what is only claimed
+
+[[eval]]
+id = "summary-counts-every-level"
+requirement = "BOGN-004"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_004_"
+
+[[eval]]
+id = "listing-page-shows-summary"
+requirement = "BOGN-004"
+stages = ["cd"]
+kind = "http"
+path = "/listings/example-oak-cutting-board/"
+body_contains = "hops documented or verified"
+
+[[eval]]
+id = "summary-adds-no-labels"
+requirement = "BOGN-004"
+stages = ["judge"]
+kind = "judge"
+rubric = "Pass when every listing's transparency summary is counts of hops by evidence level and whether the making hop is at least documented. Fail on any single score or grade, or any label Bogan adds itself (ethical, local, sustainable) that the chain doesn't show."
+
+# BOGN-005: No white-label or copy-cat listings
+
+[[eval]]
+id = "first-listing-needs-documented-maker"
+requirement = "BOGN-005"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_005_"
+
+[[eval]]
+id = "sell-page-states-the-rule"
+requirement = "BOGN-005"
+stages = ["cd"]
+kind = "http"
+path = "/sell/"
+body_contains = "white-label"
+
+# BOGN-006: Buyers buy through the seller's own link
+
+[[eval]]
+id = "listing-without-buy-link-is-rejected"
+requirement = "BOGN-006"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_006_"
+
+[[eval]]
+id = "listing-page-links-to-seller"
+requirement = "BOGN-006"
+stages = ["cd"]
+kind = "http"
+path = "/listings/example-oak-cutting-board/"
+body_contains = "Buy from the seller"
+
+# BOGN-007: Proof never enters the repo
+
+[[eval]]
+id = "listing-folders-hold-no-proof-files"
+requirement = "BOGN-007"
+stages = ["ci"]
+kind = "cargo"
+filter = "bogn_007_"
+
+[[eval]]
+id = "listing-page-describes-proof"
+requirement = "BOGN-007"
+stages = ["cd"]
+kind = "http"
+path = "/listings/example-oak-cutting-board/"
+body_contains = "Checked by"
+
+# BOGN-008: Bogan runs at $0 a month
+
+[[eval]]
+id = "runs-free"
+requirement = "BOGN-008"
+stages = ["ci", "observe"]
+kind = "cost"
