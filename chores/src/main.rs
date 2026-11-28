@@ -10,6 +10,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod quality;
 mod tiers;
 mod user_docs;
 
@@ -166,6 +167,37 @@ enum Command {
     UserDocs {
         /// Print JSON instead of text.
         #[arg(long)]
+        json: bool,
+    },
+    /// The code quality ratchet (QUAL-501): run clippy with the Rust strict
+    /// profile in standards/quality/ and the 800-line file check, and
+    /// compare the counts per lint with each project's docs/quality.toml.
+    /// --check exits 1 when a count rose; --update writes the baseline;
+    /// --report lists every project's totals and worst lints and files.
+    #[command(group(clap::ArgGroup::new("mode").required(true).args(["check", "update", "report"])))]
+    Quality {
+        /// Fail when any project's findings rose above its baseline.
+        #[arg(long)]
+        check: bool,
+        /// Write each project's baseline (refuses a rise).
+        #[arg(long)]
+        update: bool,
+        /// Print each project's totals, worst lints and worst files.
+        #[arg(long)]
+        report: bool,
+        /// Project folders (`cookbook`, `pane`). Comma separated or
+        /// repeated. Defaults to every top-level folder with Rust code.
+        #[arg(long, value_delimiter = ',')]
+        project: Vec<String>,
+        /// With --update, let a count rise: only for a toolchain or profile
+        /// change, said in the PR.
+        #[arg(long, requires = "update")]
+        accept_rise: bool,
+        /// With --update, the baseline's date, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long, requires = "update")]
+        date: Option<String>,
+        /// With --report, print every finding as JSON instead.
+        #[arg(long, requires = "report")]
         json: bool,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
@@ -370,6 +402,35 @@ fn run() -> Result<ExitCode> {
                 print!("{}", user_docs::render(&report));
             }
             if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Quality {
+            check,
+            update,
+            report: _,
+            project,
+            accept_rise,
+            date,
+            json,
+        } => {
+            if json {
+                let measured = quality::measure_all(&root, &project)?;
+                println!("{}", serde_json::to_string_pretty(&measured)?);
+                return Ok(ExitCode::SUCCESS);
+            }
+            let mode = match (check, update) {
+                (true, _) => quality::Mode::Check,
+                (_, true) => quality::Mode::Update,
+                _ => quality::Mode::Report,
+            };
+            let options = quality::Options {
+                projects: project,
+                mode,
+                accept_rise,
+                date,
+            };
+            if !quality::run(&root, &options)? {
                 return Ok(ExitCode::FAILURE);
             }
         }

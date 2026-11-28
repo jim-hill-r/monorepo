@@ -88,6 +88,9 @@ Mark the PR ready for review once **all** of these hold:
   it's recorded as an issue file tagged `[agent-generated]` in an `issues/`
   folder.
 - CI for the changed projects passes on the PR's head commit.
+- For a Rust change, the code quality ratchet passes for each changed
+  project (**Dev commands** in `AGENTS.md`), and no new waiver lacks a
+  reason (QUAL-501, QUAL-504).
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
 - You've re-read the full diff and would be comfortable with a human reviewing it.
 - The description has the Attention, What changed, Why, Cost changes,

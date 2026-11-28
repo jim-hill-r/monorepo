@@ -388,6 +388,9 @@ and the PR must say which checks didn't run.
 - List the project's tasks: `mise tasks`
 - List the open issues: `mise run //:issues` (`-- --human` for human tasks)
 - Check the repo standards: `mise run //:audit`
+- Check the code quality ratchet (QUAL-501) for a Rust project:
+  `cargo run --quiet --manifest-path chores/Cargo.toml -- quality --check
+  --project <project>` (`--update` lowers its `docs/quality.toml`)
 - Routine agent work (pick the next issue, write a PR description, write
   an issue file): `cargo run --quiet --manifest-path chores/Cargo.toml --
   <command>`; the commands are in [chores/README.md](chores/README.md).

@@ -1,0 +1,22 @@
+# The Rust strict profile (QUAL-402 in standards/docs/code-quality.md), as
+# `chores quality` runs it. The thresholds are in clippy.toml next to this
+# file. Read by chores/src/quality/; change both only with the standard.
+
+# Lint levels passed to clippy, warnings first, then the allowed lints,
+# which win because they come later.
+warn = [
+  "clippy::pedantic",
+  "clippy::cognitive_complexity",
+  "clippy::excessive_nesting",
+]
+# must_use_candidate fires on nearly every getter, and module_name_repetitions
+# fights our crate and type naming (cost::CostReport).
+allow = ["clippy::must_use_candidate", "clippy::module_name_repetitions"]
+
+# QUAL-206: a Rust file longer than this is a `jimhillr::file_too_long`
+# finding.
+max_file_lines = 800
+
+# QUAL-407: code a tool writes is left out of every finding. Paths from the
+# repo root; a folder ends with `/`.
+generated = ["infra/src/tfschema/"]
