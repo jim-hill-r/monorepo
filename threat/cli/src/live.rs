@@ -149,8 +149,9 @@ mod tests {
             "{}",
             out.output
         );
-        let issue = fs::read_to_string(issues.join("issues/claim-or-delete-pages-pane-dbc.md"))
-            .expect("issue file");
+        let issue =
+            fs::read_to_string(issues.join("threat/docs/issues/claim-or-delete-pages-pane-dbc.md"))
+                .expect("issue file");
         assert!(issue.contains("added: 2026-11-30"), "{issue}");
     }
 

@@ -1,7 +1,7 @@
 # pane: cost analysis. Format and rules: standards/docs/cost.md
 reviewed = "2026-11-27"
 summary = "Dioxus review dashboard served by a Cloudflare Worker with static assets. $0 a month."
-notes = "Static asset requests are free and unlimited; only /api/* runs the Worker. Phase 3 adds the cached /api/github/* routes and Phase 7 /api/free-tiers. The old Pages project jimhillr-pane is retired (issues/human/delete-jimhillr-pane-pages-project-after-worker.md)."
+notes = "Static asset requests are free and unlimited; only /api/* runs the Worker. Phase 3 adds the cached /api/github/* routes and Phase 7 /api/free-tiers. The old Pages project jimhillr-pane is retired (pane/docs/issues/human/delete-jimhillr-pane-pages-project-after-worker.md)."
 
 [[service]]
 blip = "Cloudflare Workers"

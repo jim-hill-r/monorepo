@@ -12,7 +12,7 @@ holds the rotation record and the deck format.
 
 This skill writes a review, not fixes. Don't change the project's code. The
 only files a run changes are its deck folder, the rotation table in
-`docs/reviews/README.md`, new files in the project's `issues/` (step 6), and the tech
+`docs/reviews/README.md`, new files in the project's `docs/issues/` (step 6), and the tech
 radar (step 6).
 
 ## 1. Pick the project
@@ -27,7 +27,7 @@ Unless you were asked to review a specific project:
 3. Pick the project that has gone longest without a review, using the
    rotation table in `docs/reviews/README.md`. A project with no row has never
    been reviewed and goes first. Break ties in this order: projects under
-   `# Priority Projects` in the root `issues/README.md` (in listed order), then the
+   `# Priority Projects` in `standards/docs/issues/README.md` (in listed order), then the
    rest alphabetically, then projects under `# On Hold Projects` last.
 
 Record the choice and the reason in the deck's title slide and in the
@@ -39,9 +39,9 @@ Take the time to read the whole project. Every claim in the deck must point
 at evidence: a `path:line`, a command and its output, a screenshot, or a
 commit or PR link. Say plainly when something is a guess.
 
-- **Purpose and goals.** The project's `README.md`, its `issues/` folder, any
+- **Purpose and goals.** The project's `README.md`, its `docs/issues/` folder, any
   `docs/`, plans and decisions (its own and in `standards/docs/`), and the
-  root `issues/`. Find the long-term goal it was built for. If no goal is
+  `standards/docs/issues/`. Find the long-term goal it was built for. If no goal is
   written down anywhere, say so and infer one from the code, marked as a
   guess, and ask Jim to confirm it.
 - **History.** `git log --stat` for the project (run `git fetch --unshallow`
@@ -183,7 +183,7 @@ PR |` columns, ISO dates, and a `[deck](<folder>/deck.md)` link.
 
 ## 6. File the follow-ups
 
-Add each recommendation as its own issue file in the project's `issues/`
+Add each recommendation as its own issue file in the project's `docs/issues/`
 folder (`priority: priority`, tagged `[agent-generated]`, in the shape the
 `code-review` skill uses), each linking back to the deck. Merging the review
 PR accepts them; Jim can delete any he disagrees with in review. Don't add an
@@ -195,7 +195,7 @@ Apply the radar changes from section 13 in the same PR: edit
 `bash standards/scripts/radar.sh render`. List each change in the PR
 description. A change that approves a new vendor, or moves a vendor into
 Adopt or Trial, needs Jim's sign-off: label the PR `needs-human`. A decision
-that no longer holds gets an issue file in `standards/issues/` to write a
+that no longer holds gets an issue file in `standards/docs/issues/` to write a
 superseding decision record, not a rewrite of the old one.
 
 ## 7. Open the pull request

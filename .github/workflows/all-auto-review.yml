@@ -9,7 +9,7 @@
 # Pull requests read and write, Contents, Checks and Commit statuses read).
 # It lives only in the `reviewer` environment, which deploys from main
 # alone; it is never in git or OpenTofu state. Until Jim adds it
-# (issues/human/jimhillr-reviewer-account.md) the run passes and says so.
+# (standards/docs/issues/human/jimhillr-reviewer-account.md) the run passes and says so.
 name: All Auto Review
 
 'on':
@@ -48,7 +48,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "REVIEWER_TOKEN isn't set yet (issues/human/jimhillr-reviewer-account.md); nothing approved." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "REVIEWER_TOKEN isn't set yet (standards/docs/issues/human/jimhillr-reviewer-account.md); nothing approved." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           login=$(gh api user --jq .login)

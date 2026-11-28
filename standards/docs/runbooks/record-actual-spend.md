@@ -1,7 +1,7 @@
 # Record what you actually paid each month
 
 - **Kind:** recurring (every month, early in the month for the one before)
-- **Status:** open (issues/human/record-actual-spend.md)
+- **Status:** open (cost/docs/issues/human/record-actual-spend.md)
 - **Time:** about 5 minutes
 - **Cost:** $0 (reading receipts; no service or free tier is used)
 

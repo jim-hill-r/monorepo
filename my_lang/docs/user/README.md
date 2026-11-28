@@ -141,4 +141,4 @@ Common problems:
 
 my_lang has no feedback button. To report a problem or ask for a feature,
 tell Jim the program, the command you ran and what my_lang printed. It
-will be recorded as an issue in `my_lang/issues/`.
+will be recorded as an issue in `my_lang/docs/issues/`.

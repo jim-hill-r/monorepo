@@ -10,7 +10,7 @@ run book in the task."
 ## The rule
 
 - **A human task ships with its runbook.** A PR that adds a file to
-  `issues/human/` adds or reuses a runbook here in the same PR. The issue
+  `docs/issues/human/` adds or reuses a runbook here in the same PR. The issue
   file has `runbook: standards/docs/runbooks/<name>.md` in its front matter
   and three sections, `## Requirement`, `## Why it can't be automated` and
   `## Runbook` (a link to this folder). `mise run //:audit` fails

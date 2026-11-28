@@ -52,7 +52,7 @@ the PR's project.
 | `Snapshot` | Everything read from one checkout of the repo: the format version, commit, time taken, and the lists below. |
 | `Project` | One entry from `[monorepo].config_roots`: path, type, `DEPLOY_URL`, README summary, priority or on-hold status. |
 | `WorkItem` | One `TODO` or `FIX`, from an issue file or a code comment, with its file, line, section, epic, tags and the date it was added. |
-| `HumanIssue` | One task file in `issues/human/`, with its added date and what it unblocks. |
+| `HumanIssue` | One task file in a project's `docs/issues/human/`, with its project, added date and what it unblocks. |
 | `Deliverable` | A live site, plan, decision, retro, review deck, release or UAT report, with its download links and, for documents, its Markdown `body`. New fields default, so the format version stays 1. |
 | `Review` | An executive review deck and its scorecard rows. |
 | `Retro` | A retro and its actions. |
@@ -99,7 +99,7 @@ signals the snapshot can light on its own:
 | --- | --- |
 | Review | The newest deck in the rotation for the project's top-level folder (`cookbook` for `cookbook/web`), its scorecard rows rated Poor, and a rotation of one week per top-level project that isn't on hold. |
 | Retros | The project's newest retro; each open action has been open since the retro's date. |
-| Open issues | The project's `FIX` items, aged from `WorkItem::added`, and the human issues whose `unblocks` names the project as a whole word. |
+| Open issues | The project's `FIX` items, aged from `WorkItem::added`, and the human issues in the project's own `docs/issues/human/` or whose `unblocks` names the project as a whole word. |
 | Standards | The project's own audit errors in `Snapshot::audit` (red, each one linked as evidence), then its open code-review findings (agent-generated `TODO`s outside any epic). Grey when the snapshot was built without the audit, or the audit didn't finish. |
 
 Ages are whole days from a date to `taken_at` (`signals::days_between`), so

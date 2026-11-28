@@ -49,7 +49,7 @@ cargo run -p evals_cli -- run --stage cd --project cookbook \
 cargo run -p evals_cli -- publish
 
 # Settings made by hand (standards/settings.toml): list the checks that are
-# due (--write adds their issues/human/settings-check-<id>.md tasks), and record
+# due (--write adds their standards/docs/issues/human/settings-check-<id>.md tasks), and record
 # Jim's answer (which deletes the task).
 cargo run -p evals_cli -- human-checks due --write
 cargo run -p evals_cli -- human-checks answer claude-connectors --ok

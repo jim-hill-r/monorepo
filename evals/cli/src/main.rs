@@ -200,7 +200,7 @@ enum Command {
 enum HumanChecksCommand {
     /// List each check that is due: never checked, last answered longer
     /// ago than its `every`, or last answered "not ok". With --write, also
-    /// write its human task, issues/human/settings-check-<id>.md.
+    /// write its human task, standards/docs/issues/human/settings-check-<id>.md.
     Due {
         /// Write a task file for each due check that has none yet.
         #[arg(long)]

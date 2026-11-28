@@ -82,7 +82,7 @@ while IFS= read -r lock; do
       say "$d: cargo deny (SEC-003)"
       if ! (cd "$d" && "${deny_cmd[@]}" --log-level error --config "$config" check \
         --hide-inclusion-graph advisories sources 2>&1); then
-        echo "warning[SEC-003] $d: cargo-deny found problems (above). Update the crate, or file a fix issue (issues/), or add a dated ignore with a reason to $(basename "$config")."
+        echo "warning[SEC-003] $d: cargo-deny found problems (above). Update the crate, or file a fix issue (the project's docs/issues/), or add a dated ignore with a reason to $(basename "$config")."
         warnings=$((warnings + 1))
       fi
       ;;
@@ -93,7 +93,7 @@ while IFS= read -r lock; do
       fi
       say "$d: npm audit (SEC-004)"
       if ! (cd "$d" && npm audit --omit=dev --audit-level=high 2>&1); then
-        echo "warning[SEC-004] $d: npm audit found a high or critical advisory (above). Run 'npm audit fix' or file a fix issue (issues/)."
+        echo "warning[SEC-004] $d: npm audit found a high or critical advisory (above). Run 'npm audit fix' or file a fix issue (the project's docs/issues/)."
         warnings=$((warnings + 1))
       fi
       ;;

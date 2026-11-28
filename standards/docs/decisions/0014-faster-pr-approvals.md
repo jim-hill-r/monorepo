@@ -19,7 +19,7 @@ How approvals work today, checked on 2026-11-27:
 - The Default ruleset on `main` requires a PR with 1 approval, dismisses
   approvals on a new push, and has an empty bypass list
   ([runbook](../runbooks/github-repo-setup.md)). The `CI result` required
-  check waits on `issues/human/github-app-infra-read.md`.
+  check waits on `infra/docs/issues/human/github-app-infra-read.md`.
 - Agents turn on squash auto-merge when they mark a PR ready, so Jim's
   approval is already the last step: GitHub merges as soon as it lands.
 - That day 40 agent PRs were out of draft, 27 of them green and waiting on

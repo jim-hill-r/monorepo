@@ -33,9 +33,9 @@ Login again. The session is kept in memory only. The code is in
   dx at it. iOS hands the URL to the app as tao's `Event::Opened`.
 - **Android:** not yet. tao doesn't pass the opened URL on, so Login says
   sign-in isn't available
-  ([issue](issues/native-sign-in-phase-5b-android-callback.md)).
+  ([issue](docs/issues/native-sign-in-phase-5b-android-callback.md)).
 - **Client ID:** the native Auth0 application doesn't exist yet
-  ([phase 3](../../infra/issues/native-sign-in-phase-3-auth0-native-app.md)).
+  ([phase 3](../../infra/docs/issues/native-sign-in-phase-3-auth0-native-app.md)).
   Until it does, build with `CAHOKIA_NATIVE_CLIENT_ID=<id>`; without one
   Login says sign-in isn't set up in this build.
 

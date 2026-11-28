@@ -67,7 +67,7 @@ Everything is in `bogan/` today, plus a handful of references elsewhere:
 | README, CONTRIBUTING, tasks | `bogan/README.md`, `bogan/CONTRIBUTING.md`, `bogan/mise.toml` (docs-only tasks) |
 | Product brief | `bogan/docs/plans/2026-11-product-brief.md` |
 | Cost and threat files | `bogan/docs/cost.toml`, `bogan/docs/threat.toml` |
-| Work items | `bogan/issues/` (8 files) |
+| Work items | `bogan/docs/issues/` (8 files) |
 | Config root | `mise.toml:24` |
 | Requirement prefix `BOGN` | `standards/docs/naming.md:49` |
 | Product tier | `standards/docs/decisions/0019-review-roles.md:105`, `chores/src/tiers.rs:31` |
@@ -119,7 +119,7 @@ should check it and the site should mark outbound links.
 ## Quality, operations and cost
 
 `mise run ci` for a docs-only project prints a line and checks nothing
-(root issue `issues/docs-only-ci-checks-nothing.md`). Eval coverage is 0
+(root issue `standards/docs/issues/docs-only-ci-checks-nothing.md`). Eval coverage is 0
 requirements. No user guide (in the DOC-008 baseline). Nothing deploys.
 Cost is $0 a month now and stays $0 through phase 3; Claude Code effort is
 about six medium PRs, against the $25 a month budget.

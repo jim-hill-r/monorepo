@@ -10,7 +10,7 @@ Drafted by an agent on 2026-11-26 from `core/README.md`, the
 [OIDC error plan](plans/2026-11-prod-oidc-error.md) and the existing tests.
 Cahokia has no deep review yet, so these are a first guess at Jim's intent.
 Its colours are left out: the design system migration
-(`design-system-phase-3-move-cahokia` in the root `issues/`) will replace
+(`design-system-phase-3-move-cahokia` in `standards/docs/issues/`) will replace
 the current earthy palette.
 
 ## CAHO-001: A family tree is drawn so anyone can read it

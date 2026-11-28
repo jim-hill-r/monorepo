@@ -64,7 +64,7 @@ run = "echo 'deploy: tofu_state deploys from tofu-state-deploy.yml in the infra 
 [tasks."deploy:worker"]
 description = "Deploy the Worker, its D1 database and its two password secrets, within the free tier budgets"
 run = [
-  "test -n \"${TOFU_STATE_READ_PASSWORD:-}\" && test -n \"${TOFU_STATE_WRITE_PASSWORD:-}\" || { echo 'deploy: TOFU_STATE_READ_PASSWORD and TOFU_STATE_WRITE_PASSWORD must be set (issues/human/tofu-state-passwords.md)'; exit 1; }",
+  "test -n \"${TOFU_STATE_READ_PASSWORD:-}\" && test -n \"${TOFU_STATE_WRITE_PASSWORD:-}\" || { echo 'deploy: TOFU_STATE_READ_PASSWORD and TOFU_STATE_WRITE_PASSWORD must be set (docs/issues/human/tofu-state-passwords.md)'; exit 1; }",
   "bash \"$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh\" worker",
   "id=$(bash \"$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh\" d1-database jimhillr-tofu-state) && sed \"s/^database_id = .*/database_id = \\\"$id\\\"/\" wrangler.toml > .wrangler.deploy.toml",
   "wrangler d1 migrations apply DB --remote -c .wrangler.deploy.toml",

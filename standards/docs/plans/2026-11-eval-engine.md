@@ -9,8 +9,8 @@ Started 2026-11-26 from Jim's request:
 
 The decision behind this plan is
 [../decisions/0003-eval-engine.md](../decisions/0003-eval-engine.md). The work
-items are issue files in the root [issues/](../../../issues/) with
-`epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
+items are issue files in the root [issues/](../issues/) with
+`epic: Eval engine`, and in [pane/docs/issues/](../../../pane/docs/issues/) for the
 pane pages, one group per phase below.
 
 > **Update, 2026-11-27.** Jim: "The eval process is a continuous

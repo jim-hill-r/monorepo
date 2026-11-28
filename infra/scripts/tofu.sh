@@ -23,7 +23,7 @@
 # plans and drift, the write password otherwise) and TOFU_STATE_PASSPHRASE.
 # A PR plan (TOFU_LOCK=false) reads state without locking.
 #
-# The passphrase has generations (issues/iac-rotate-state-passphrase.md).
+# The passphrase has generations (infra/docs/issues/iac-rotate-state-passphrase.md).
 # TOFU_STATE_KEY_GEN (default 1) is the current one; from 2 on, the state is
 # encrypted under that generation's key name and TOFU_STATE_PASSPHRASE_OLD,
 # the previous passphrase, is the fallback, so state written before a

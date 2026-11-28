@@ -14,5 +14,5 @@ holds no code, only the shared decisions and issues.
 How to use Blue Eel and the website is in the
 [user guide](docs/user/README.md). Decisions are in
 [docs/decisions](docs/decisions/README.md) and open work in
-[issues/](issues/). How to build and test each project is in
+[docs/issues/](docs/issues/). How to build and test each project is in
 [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -1,7 +1,7 @@
 # Open the terrars upstream PRs
 
 - **Kind:** one-time, optional
-- **Status:** open (`issues/human/open-terrars-upstream-prs.md`)
+- **Status:** open (`infra/docs/issues/human/open-terrars-upstream-prs.md`)
 - **Time:** about 10 minutes
 - **Cost:** $0
 
@@ -11,7 +11,7 @@ Two fixes the `infra` project carries in `infra/upstream/`:
 `terrars-generate-opentofu-schema-key.patch` makes `terrars-generate` work
 with `"binary": "tofu"`, and `terrars-import-blocks.patch` adds
 `Stack::add_import`. Once they merge upstream, `infra` can drop its own
-copies (`issues/iac-terrars-import-upstream.md`).
+copies (`infra/docs/issues/iac-terrars-import-upstream.md`).
 
 ## Why a person
 

@@ -53,7 +53,7 @@ met).
    change it.
 5. **COOK-005 (accessibility, a must) is always `unknown`.** Its `cd`
    Playwright eval never runs, because no smoke step runs after deploy yet
-   (`issues/nightly-uat-smoke-step-after-deploy.md`), yet the coverage line
+   (`standards/docs/issues/nightly-uat-smoke-step-after-deploy.md`), yet the coverage line
    said "3 of 3 musts evaluated in production". Fixed in a follow-up PR:
    the count is now musts with a stored production result, not musts with
    a production eval, so COOK-005 stops counting until the smoke step runs

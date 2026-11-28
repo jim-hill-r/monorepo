@@ -6,7 +6,7 @@
 # but isn't a report the engine reads yet. The `http` evals use the
 # Worker's full URL, since tofu_state has no DEPLOY_URL: it deploys from
 # tofu-state-deploy.yml, which doesn't run the cd evals yet
-# (issues/run-cd-evals-after-deploy.md). They hold no password, so TOFU-003
+# (docs/issues/run-cd-evals-after-deploy.md). They hold no password, so TOFU-003
 # has no production eval until then.
 
 prefix = "TOFU"

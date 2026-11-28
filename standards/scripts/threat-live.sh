@@ -18,7 +18,7 @@
 #    answers without a token, a public site missing a security header.
 #
 # The report goes to the job summary, and an issue file for each orphan into
-# $THREAT_LIVE_OUT/issues/ (uploaded as the run's artifact) for PR triage to
+# $THREAT_LIVE_OUT/threat/docs/issues/ (uploaded as the run's artifact) for PR triage to
 # commit (standards/docs/repo-health.md). Exit 1 on any finding, or when a
 # call fails. Without the token it warns and exits 0. It only reads.
 set -euo pipefail

@@ -257,7 +257,7 @@ The ruleset on `main` dismisses an approval when new commits are pushed, so a
 push always needs a fresh approval. Once the `CI` ruleset from the `github`
 stack in `infra` is applied (it requires the `CI result` check from
 `pull-request-ci.yml` on `main`, and waits for
-`issues/human/github-app-infra-read.md` and Jim's approval of its run),
+`infra/docs/issues/human/github-app-infra-read.md` and Jim's approval of its run),
 GitHub also waits for green CI on the new head before auto-merging. Until
 then, an agent turns auto-merge on only while every check
 is green, and turns it off before any push (see "Working on an existing PR").
@@ -350,7 +350,7 @@ Jim reads every merged PR afterwards, whoever approved it, on pane's
 **Acknowledge** page (`/acknowledge`): newest first, each with its summary
 and attention tags, until he acknowledges it. "Flag for follow-up" opens
 GitHub's editor with a `fix` issue file for that PR in its project's
-`issues/`, which the normal agent loop then works.
+`docs/issues/`, which the normal agent loop then works.
 
 ## PR triage
 

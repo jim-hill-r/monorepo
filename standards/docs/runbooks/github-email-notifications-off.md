@@ -2,7 +2,7 @@
 
 - **Kind:** one-time per account (do it again for any new jimhillr
   account), then a settings check every 180 days
-- **Status:** open (issues/human/github-email-notifications-off.md)
+- **Status:** open (standards/docs/issues/human/github-email-notifications-off.md)
 - **Time:** about 5 minutes per account, 15 in all
 - **Cost:** $0 (account settings on GitHub's Free plan)
 - **Asked for:** Jim, 2026-11-28: "remove all email notifications from all
@@ -93,7 +93,7 @@ None: no credential is made or changed.
    accounts except account security or billing mail, while
    github.com/notifications still fills up.
 3. Tell any agent "done": it deletes
-   [the human task](../../../issues/human/github-email-notifications-off.md).
+   [the human task](../issues/human/github-email-notifications-off.md).
    The settings check `github-email-notifications-off` re-asks every 180
    days, because GitHub sometimes adds new email types turned on.
 

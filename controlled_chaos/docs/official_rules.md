@@ -145,7 +145,7 @@ When a player may draw but the action deck is empty:
 ## Not built yet
 
 These rules are in `rulebook.md` but the game doesn't play them.  Each has an
-issue file in [`../issues/`](../issues/):
+issue file in [`issues/`](issues/):
 
 - **Crisis and society cards**: one crisis card shuffled halfway into the
   deck and one at the bottom, one society card removed at random, and a

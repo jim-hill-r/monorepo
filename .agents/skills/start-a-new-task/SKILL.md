@@ -1,6 +1,6 @@
 ---
 name: start-a-new-task
-description: Pick one TODO or FIX from this monorepo's issue files (issues/ folders), following its priority rules, and complete it end to end with tests and a draft pull request. Use when asked to "start a new task", "work the next issue", or for scheduled autonomous work on the repo.
+description: Pick one TODO or FIX from this monorepo's issue files (docs/issues/ folders), following its priority rules, and complete it end to end with tests and a draft pull request. Use when asked to "start a new task", "work the next issue", or for scheduled autonomous work on the repo.
 metadata:
   replaces: agent_copilot/prompts/start-a-new-task.md
 ---
@@ -30,25 +30,28 @@ again with `--skip`. The rules it applies, for reference:
 
 Be eager: take the first issue that qualifies under these rules.
 
-1. An issue is a file in an `issues/` folder (one file per issue, format in
-   `standards/docs/issue-management.md`) or a code comment starting with
-   `TODO` or `FIX`. `mise run //:issues` lists the files, priority first.
-2. Skip anything tagged `agent-ignore`, and never take work from
-   `issues/human/`: those tasks need a person. If an issue turns out to need
-   one (a dashboard, a secret, a sign-off), add a file to `issues/human/` for
-   that part, saying why it can't be automated and linking its runbook in
-   `standards/docs/runbooks/`, which you write in the same PR (the format
-   is under "Human issues" in `standards/docs/issue-management.md`).
-3. Never work in a project listed under `# On Hold Projects` in the root
-   `issues/README.md`.
+1. An issue is a file in a project's `docs/issues/` folder (one file per
+   issue, format in `standards/docs/issue-management.md`; repo-wide work is
+   in `standards/docs/issues/`) or a code comment starting with `TODO` or
+   `FIX`. `mise run //:issues` lists the files, priority first.
+2. Skip anything tagged `agent-ignore`, and never take work from a
+   `docs/issues/human/` folder: those tasks need a person. If an issue
+   turns out to need one (a dashboard, a secret, a sign-off), add a file
+   to the owning project's `docs/issues/human/` for that part (`chores
+   new-human-task --folder <project>`), saying why it can't be automated
+   and linking its runbook in `standards/docs/runbooks/`, which you write
+   in the same PR (the format is under "Human issues" in
+   `standards/docs/issue-management.md`).
+3. Never work in a project listed under `# On Hold Projects` in
+   `standards/docs/issues/README.md`.
 4. Search in this order and stop at the first hit:
-   1. `priority: priority` issues in the root `issues/`. Within an epic, take
-      the earliest phase and lowest `order`.
-   2. `priority: priority` issues of each project under `# Priority Projects`
-      in the root `issues/README.md`, in list order (a project's sub-projects,
-      such as `cahokia/web/issues/`, count as part of it).
-   3. Any other issue, priority before backlog.
-   4. `TODO`/`FIX` comments anywhere in the code.
+   1. `priority: priority` issues of each project under `# Priority
+      Projects` in `standards/docs/issues/README.md`, in list order (a
+      project's sub-projects, such as `cahokia/web/docs/issues/`, count as
+      part of it). Within an epic, take the earliest phase and lowest
+      `order`.
+   2. Any other issue, priority before backlog.
+   3. `TODO`/`FIX` comments anywhere in the code.
    Read the folder's `README.md` too: it has the epic's notes and what a
    phase needs first.
 5. **Product share (Jim, 2026-11-28).** "At least 50% of all of my claude
@@ -56,12 +59,12 @@ Be eager: take the first issue that qualifies under these rules.
    (`--working`) and the PRs merged on `main` in the last week put
    products under half, take the first product issue in the order above
    instead of the first issue. Tiers are decision 0019's; both platform
-   tiers and the root `issues/` count as platform. It is soft: with no
+   tiers, including `standards`, count as platform. It is soft: with no
    product issue left, take the platform one, and a thread scoped with
    `--project` skips it. The rule is under "Product share" in decision
    0013.
 6. If nothing qualifies, investigate the codebase, record a few real issues as
-   issue files in the right `issues/` folder, and open a PR with just those.
+   issue files in the right `docs/issues/` folder, and open a PR with just those.
 
 ## 2. Set up
 

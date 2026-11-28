@@ -1,12 +1,12 @@
 # Settings made by hand in a dashboard ("clickops"), which no file in the
 # repo holds, so no eval can read them. Jim checks each one every `every`
 # days: the weekly human issues digest writes a due check as a human task,
-# issues/human/settings-check-<id>.md, and his answer is recorded in
+# standards/docs/issues/human/settings-check-<id>.md, and his answer is recorded in
 # settings-checks.jsonl.
 # Format and process: "Human checks" in standards/docs/evals.md.
 #
 # Never put a secret's value here: only that it exists and what it is for.
-# A human task (issues/human/) that creates a setting adds its entry here in
+# A human task (docs/issues/human/) that creates a setting adds its entry here in
 # the same PR. `evals check` validates this file.
 
 # Claude: the agents' own platform.
@@ -200,7 +200,7 @@ id = "squarespace-billing"
 vendor = "Squarespace"
 where = "account.squarespace.com > Billing"
 expect = "Squarespace bills only the domain renewals you already pay for (Jim, 2026-11-27: several domains), with no new domain, paid plan or add-on since the last check, and each renewal's date and price match what the cost framework records once it tracks them."
-why = "Squarespace is an approved vendor with no billing API, so only you can check it. Its domains are real money outside the free-tier rule, and bringing them into the cost framework (docs/cost.toml and the radar budget) is issues/cost-tracking-phase-4-domains-as-costs.md (plan: standards/docs/plans/2026-11-cost-tracking.md, Phase 4). See standards/docs/free-tiers.md#billing-checks."
+why = "Squarespace is an approved vendor with no billing API, so only you can check it. Its domains are real money outside the free-tier rule, and bringing them into the cost framework (docs/cost.toml and the radar budget) is cost/docs/issues/cost-tracking-phase-4-domains-as-costs.md (plan: standards/docs/plans/2026-11-cost-tracking.md, Phase 4). See standards/docs/free-tiers.md#billing-checks."
 every = "90d"
 
 # Read-only billing credentials for the weekly Billing check

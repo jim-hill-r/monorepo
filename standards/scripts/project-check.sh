@@ -26,7 +26,7 @@
 #            standards/docs/rust.md.
 #
 # A project is a directory with a mise.toml (not the repo root). Every check
-# is an error. Projects under the "# On Hold Projects" list in issues/README.md
+# is an error. Projects under the "# On Hold Projects" list in standards/docs/issues/README.md
 # are exempt from DOC-* and LIN-* until they come back off hold. Exits
 # non-zero on any error.
 set -euo pipefail
@@ -112,11 +112,11 @@ projects=$(git ls-files -- '*/mise.toml' | xargs -r -n1 dirname | sort -u)
 
 # The on hold projects: the "- name" lines under "# On Hold Projects".
 on_hold=""
-if [ -f issues/README.md ]; then
+if [ -f standards/docs/issues/README.md ]; then
   on_hold=$(awk '
     /^#/ { in_list = ($0 ~ /^#[[:space:]]+On Hold Projects[[:space:]]*$/); next }
     in_list && /^[[:space:]]*-[[:space:]]+/ { sub(/^[[:space:]]*-[[:space:]]+/, ""); sub(/[[:space:]]+$/, ""); print }
-  ' issues/README.md)
+  ' standards/docs/issues/README.md)
 fi
 # held PATH: PATH is in, or is, an on hold project.
 held() {

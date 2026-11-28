@@ -79,7 +79,7 @@ as it is (a job that has to push with the checkout's token), add an ignore
 for that file and rule to [`.github/zizmor.yml`](../../.github/zizmor.yml)
 with a comment saying why. A PR that adds an ignore gets `needs-human`. The
 findings left in the infra workflows are
-`issues/threat-check-zizmor-infra-findings.md`.
+`threat/docs/issues/threat-check-zizmor-infra-findings.md`.
 
 ## PR security summary
 
@@ -118,7 +118,7 @@ so there is nothing to ignore. A PR that adds an ignore line gets the
 already out: rewriting history doesn't help. Instead:
 
 1. Remove it from the code and load it from a secret instead.
-2. Add a human task in `issues/human/` to revoke and replace
+2. Add a human task in `docs/issues/human/` to revoke and replace
    it, naming the service and the secret (never its value).
 3. Once it is revoked, add its fingerprint to `.gitleaksignore` with the date
    it was revoked, so the weekly full-history scan passes again.
@@ -132,11 +132,11 @@ Dependabot opens weekly version bumps for every lockfile.
 
 **An advisory (SEC-003, SEC-004).** Update the crate or package if you can
 (`cargo update -p <crate>`, `npm audit fix`). If you can't now, add a
-fix issue file in `issues/` naming the advisory IDs. If it doesn't affect
+fix issue file in `docs/issues/` naming the advisory IDs. If it doesn't affect
 us, or no fix exists, add it to the `ignore` list of the project's
 `deny.toml` (copy `standards/deny.toml` to start one) with a reason and a
 review date. A PR that adds an ignore gets the `needs-human` label. The
-advisories found on 2026-11-26 are `issues/threat-check-advisories-*.md`. When a project
+advisories found on 2026-11-26 are `threat-check-advisories-*.md` issue files in each affected project's `docs/issues/`. When a project
 adds a `Cargo.lock` or `package-lock.json`, add its entry to
 `.github/dependabot.yml` in the same PR (SEC-006 fails until you do). Pinned
 dependencies from `AGENTS.md` are listed under that entry's `ignore`, so

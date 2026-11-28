@@ -27,7 +27,7 @@ their eval coverage."
 
 - **Green is the normal state.** A requirement that is not met or at risk
   is a bug in the product or in its evals, and gets a `FIX` (product) or
-  `TODO` (eval) issue file in its project's `issues/`. A `must` that stays
+  `TODO` (eval) issue file in its project's `docs/issues/`. A `must` that stays
   unknown (no production result) gets a `TODO` to add a production eval.
 - **The loop files the work.** Eval triage reads `verdicts.json` and files
   those issues; agents work them like any other issue. Nothing is left for
@@ -379,7 +379,7 @@ every = "90d"
 
 It never holds a secret's value, only that the secret exists and what it
 is for; `evals check` rejects any other field. A human task
-(`issues/human/`) that creates a setting adds its entry here in the same PR.
+(`docs/issues/human/`) that creates a setting adds its entry here in the same PR.
 
 ### Answers
 
@@ -403,14 +403,14 @@ appended by `evals human-checks answer` and never edited by hand.
    ```
 
 2. **Asked.** The weekly `human-issues-digest` run (Mondays) runs it with
-   `--write`, which writes a human task, `issues/human/settings-check-<id>.md`, for
+   `--write`, which writes a human task, `standards/docs/issues/human/settings-check-<id>.md`, for
    up to five due checks that have none yet (`--limit`), opens one PR with
    them, and lists every open check in the digest under "Checks due".
 3. **Answered.** When Jim replies "ok", or says what is wrong, the agent
    that reads it runs `evals human-checks answer <id> --ok` or
    `evals human-checks answer <id> --not-ok "<his words>"`, which appends
    the answer and deletes the task file, and opens one PR. A "not ok" also
-   files a `kind: fix` issue in the owning project's `issues/`, or a new
+   files a `kind: fix` issue in the owning project's `docs/issues/`, or a new
    human task when only Jim can fix it, and the check comes up again until
    a newer "ok".
 
@@ -542,9 +542,9 @@ files them, not a Claude session, so a quiet day costs nothing (Jim,
 Nightly CD have stored their results, and runs
 `bash standards/scripts/evals.sh triage`. That computes every verdict
 again from the `evals-results` branch and `main` (`evals triage`) and, in a
-worktree of `main`, writes one issue file in `<project>/issues/` for each
+worktree of `main`, writes one issue file in `<project>/docs/issues/` for each
 requirement that needs work and that no open issue file names (any
-`issues/` folder in the project, or the root `issues/`, by its ID):
+`docs/issues/` folder in the project, or `standards/docs/issues/`, by its ID):
 
 | Verdict | Issue | File |
 | --- | --- | --- |

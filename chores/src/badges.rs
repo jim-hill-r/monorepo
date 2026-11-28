@@ -506,7 +506,7 @@ mod tests {
             "README.md",
             "cookbook/docs/plans/2026-11-x.md",
             "standards/docs/decisions/0019-review-roles.md",
-            "pane/issues/fix-x.md",
+            "pane/docs/issues/fix-x.md",
             ".agents/skills/code-review/SKILL.md",
             "cookbook/docs/user/shot.png",
             "docs/reviews/x/diagram.svg",

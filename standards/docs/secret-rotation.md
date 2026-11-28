@@ -46,7 +46,7 @@ state").
 | `GH_INFRA_READ_APP_KEY` (read-only GitHub App private key) | repository | Jim, [github-app-infra-read.md](runbooks/github-app-infra-read.md) | 365 days | settings check `rotate-github-app-infra-read-key` |
 | `AUTH0_INFRA_CREDENTIALS_CLIENT_SECRET` (bootstrap) | `infra-credentials` | Jim, [infra-credentials-environment.md](runbooks/infra-credentials-environment.md) | 180 days | settings check `rotate-auth0-infra-credentials` |
 | `CLOUDFLARE_INFRA_CREDENTIALS_TOKEN` (bootstrap) | `infra-credentials` | Jim, the same runbook; set a 200-day expiry on it when you make it | 180 days | settings check `rotate-cloudflare-infra-credentials` |
-| `TOFU_STATE_PASSPHRASE` | repository | not rotated yet: changing it needs state re-encrypted first (`issues/iac-rotate-state-passphrase.md`) | on a leak only, until that issue lands | none |
+| `TOFU_STATE_PASSPHRASE` | repository | not rotated yet: changing it needs state re-encrypted first (`infra/docs/issues/iac-rotate-state-passphrase.md`) | on a leak only, until that issue lands | none |
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | repository | not rotated: a new key can't update an installed APK, so testers would have to reinstall | on a leak only | none |
 | `RAPIDAPI_KEY` (homer) | Jim's shell, not GitHub | Jim, [rapidapi-zillow.md](runbooks/rapidapi-zillow.md) | 365 days | settings check `rotate-rapidapi-key` |
 | `POSTHOG_PERSONAL_API_KEY` | repository, once made | Jim, [posthog-sign-up.md](runbooks/posthog-sign-up.md) | 180 days | settings check, added in the PR that first uses it |

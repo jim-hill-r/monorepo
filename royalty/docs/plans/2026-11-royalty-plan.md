@@ -26,7 +26,7 @@ Started 2026-11-27 from Jim's request:
 Status: **approved** (Jim, 2026-11-27: "All recommended"). Nothing is
 built yet. Jim took the recommended option of every question in
 [Decisions for Jim](#decisions-for-jim); the work items are the issue files
-in [`../../issues/`](../../issues/README.md).
+in [`../../issues/`](../issues/README.md).
 
 ## Summary
 

@@ -43,5 +43,5 @@ tests), as CI runs them:
 mise run ci
 ```
 
-Work the issues in [issues/](issues/) by phase and `order`, as
-[issues/README.md](issues/README.md) says.
+Work the issues in [docs/issues/](docs/issues/) by phase and `order`, as
+[standards/docs/issues/README.md](docs/issues/README.md) says.

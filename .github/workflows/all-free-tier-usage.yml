@@ -186,7 +186,7 @@ jobs:
           name: threat-live
           path: |
             ${{ runner.temp }}/threat-live/report.md
-            ${{ runner.temp }}/threat-live/issues/
+            ${{ runner.temp }}/threat-live/threat/docs/issues/
             ${{ runner.temp }}/resource-sweep/report.md
             ${{ runner.temp }}/resource-sweep/report.json
             ${{ runner.temp }}/resource-sweep/live.json

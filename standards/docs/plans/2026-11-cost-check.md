@@ -10,7 +10,7 @@ Started 2026-11-26 from Jim's request:
 
 Status: **approved** by Jim (PR #644, 2026-11-26), with the recommended
 answer to every question (see "Decisions" at the end). The work items are
-issue files in the root [issues/](../../../issues/) with `epic: Cost check`,
+issue files in the root [issues/](../issues/) with `epic: Cost check`,
 one group per phase.
 
 ## Goal
@@ -346,7 +346,7 @@ Jim, 2026-11-26: "Yes to all, use default guesses."
 
 - Reading real bills. Agents can't see billing pages, and the free plans
   have no payment method; Jim's checks in
-  [issues/human/](../../../issues/human/) cover that.
+  [issues/human/](../issue-management.md#human-issues) cover that.
 - Pricing paid plans or forecasting "what would it cost if we outgrew the
   free tier". Rule 2 in free-tiers.md says stop, don't pay; a decision
   record does that maths when it is needed.

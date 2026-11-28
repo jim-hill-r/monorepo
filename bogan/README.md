@@ -31,4 +31,4 @@ curated catalog that links out to where sellers already sell.
 - Payments: use existing currencies, or treat Bogan as the front for
   bringing money into a more centralized socialist currency. This is an
   open question, to be settled in a decision record before any payment code
-  is written (`issues/propose-payments-decision.md`).
+  is written (`docs/issues/propose-payments-decision.md`).

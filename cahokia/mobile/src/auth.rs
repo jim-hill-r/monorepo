@@ -7,7 +7,7 @@
 //! iOS hands the opened URL to the app as tao's `Event::Opened`, registered
 //! in `ios/Info.plist`. Android doesn't yet: tao doesn't forward an
 //! activity's intent, so Login there says sign-in isn't available
-//! (`issues/native-sign-in-phase-5b-android-callback.md`).
+//! (`docs/issues/native-sign-in-phase-5b-android-callback.md`).
 //!
 //! Plan: `auth_sdk/docs/plans/2026-11-native-sign-in.md` (phase 5).
 
@@ -21,7 +21,7 @@ pub const AUTH0_ISSUER: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
 
 /// The public client ID of cahokia's native Auth0 application, shared with
 /// the desktop app. Native sign-in phase 3
-/// (`infra/issues/native-sign-in-phase-3-auth0-native-app.md`) creates the
+/// (`infra/docs/issues/native-sign-in-phase-3-auth0-native-app.md`) creates the
 /// application; until then a build can pass one in with
 /// `CAHOKIA_NATIVE_CLIENT_ID`, and without one Login says sign-in isn't set
 /// up. It is public, like the web app's, so it is not a secret.

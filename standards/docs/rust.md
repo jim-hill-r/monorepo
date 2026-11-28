@@ -140,7 +140,7 @@ a project so it can be built once and reused many times"). So:
 
 ## Enforcement
 
-`mise run //:audit` checks LIN-001 and LIN-002 for every tracked Cargo.toml with a `[package]` (`standards/scripts/project-check.sh`), as errors that fail the audit. Packages in an on hold project (the `# On Hold Projects` list in `issues/README.md`) are exempt until it comes off hold. A stricter clippy level (`deny`, `forbid`) passes LIN-001. `unsafe_code = "deny"` passes LIN-002 only when a comment on the line directly above it says why the package needs its one `#[allow(unsafe_code)]` item, such as a platform entry point.
+`mise run //:audit` checks LIN-001 and LIN-002 for every tracked Cargo.toml with a `[package]` (`standards/scripts/project-check.sh`), as errors that fail the audit. Packages in an on hold project (the `# On Hold Projects` list in `standards/docs/issues/README.md`) are exempt until it comes off hold. A stricter clippy level (`deny`, `forbid`) passes LIN-001. `unsafe_code = "deny"` passes LIN-002 only when a comment on the line directly above it says why the package needs its one `#[allow(unsafe_code)]` item, such as a platform entry point.
 
 ## Further reading
 

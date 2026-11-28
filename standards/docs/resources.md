@@ -92,7 +92,7 @@ sign-in codes.
 2. **Remove inbound references.** Auth0 callback, origin and logout URLs;
    DNS records and custom domains; PostHog allowed hosts; links in the repo
    (RES-002 blocks those). While no workflow can read Auth0, the retirement
-   PR adds a human issue in `issues/human/` for Jim to remove the Auth0 URLs,
+   PR adds a human issue in `docs/issues/human/` for Jim to remove the Auth0 URLs,
    and deletion waits until that file is gone.
 3. **Delete the resource.** For Pages, delete the project, which removes
    every deployment and preview alias with it. For a data store (D1, KV),

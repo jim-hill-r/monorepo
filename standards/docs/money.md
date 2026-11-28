@@ -103,7 +103,7 @@ the projects add up to the total to the cent.
 
 The check that the closing bank line matches the real balance Jim enters,
 and that each statement's lines add up per project, is the next step
-([issue](../../cost/issues/ledger-double-entry-balance-check.md)).
+([issue](../../cost/docs/issues/ledger-double-entry-balance-check.md)).
 
 ## Runway
 

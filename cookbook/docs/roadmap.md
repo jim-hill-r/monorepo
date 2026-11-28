@@ -16,9 +16,9 @@ of emphasis (Jim, 2026-11-28):
 > 2) The earthy theme is still pretty harsh. [...] This is our brand and
 > should be a strength of the app.
 
-The work is tracked as issue files in [`../issues/`](../issues/), grouped
+The work is tracked as issue files in [`../issues/`](issues/), grouped
 into the epics below; the epic notes are in
-[`../issues/README.md`](../issues/README.md).
+[`../issues/README.md`](issues/README.md).
 
 The mission and vision are in [mission.md](mission.md).
 
@@ -54,24 +54,24 @@ Curation foundations (epic "Content curation").
 
 Make the content model fit a book before building the tools that edit it.
 
-1. **A recipe format for the book** ([issue](../issues/recipe-book-format.md)): a written spec,
+1. **A recipe format for the book** ([issue](issues/recipe-book-format.md)): a written spec,
    `docs/content-format.md`, and new fields on every recipe: a `Status`
    (`placeholder`, `draft`, `tested`, `book-ready`), `Yield`, `Source`
    (who it came from, for attribution in the book) and `Equipment`. Every
    generated recipe is marked `placeholder`, so progress toward the book is
    a number anyone can see.
-2. **Weekly themes and staples** (COOK-008, [issue](../issues/plan-themes-and-staples.md)): each plan names its theme and
+2. **Weekly themes and staples** (COOK-008, [issue](issues/plan-themes-and-staples.md)): each plan names its theme and
    lists the staples the week assumes, shown on the plan page.
-3. **Show progress on the public site** ([issue](../issues/kitchen-tested-mark.md)): a small "kitchen-tested" mark on
+3. **Show progress on the public site** ([issue](issues/kitchen-tested-mark.md)): a small "kitchen-tested" mark on
    recipes the curators have tested, so readers know which ones to trust.
 
 ### Next
 
 The management app (epic "Management app"). Its first three phases are
 priority issues, so agents start them alongside the content epic:
-[who can sign in](../issues/manage-auth0-curator-role.md), [the app
-shell](../issues/manage-app-shell.md) and [the server
-check](../issues/manage-api-token-check.md).
+[who can sign in](issues/manage-auth0-curator-role.md), [the app
+shell](issues/manage-app-shell.md) and [the server
+check](issues/manage-api-token-check.md).
 
 A separate Dioxus app at `cookbook/manage`, deployed as the Pages project
 `jimhillr-cookbook-manage`, named and built the way
@@ -152,7 +152,7 @@ management app uses the same theme, so it picks up the redesign for free.
   hold the model and the Markdown format; the management app uses them as
   they are, so the public site and the management app can never disagree
   on what a recipe is. `data_md` gains a writer that round-trips every new
-  field ([issue](../issues/recipe-book-format.md)).
+  field ([issue](issues/recipe-book-format.md)).
 
 ### Next
 

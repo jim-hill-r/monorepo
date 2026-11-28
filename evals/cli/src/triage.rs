@@ -119,7 +119,7 @@ pub fn triage(
                 Outcome::Open(relative(root, path))
             } else {
                 let rel = format!(
-                    "{}/issues/{}",
+                    "{}/docs/issues/{}",
                     project.project,
                     file_name(&r.requirement, work)
                 );
@@ -325,12 +325,15 @@ fn short(commit: &str) -> &str {
     commit.get(..12).unwrap_or(commit)
 }
 
-/// Every open issue file of a project (any `issues/` folder under it) and
-/// of the repo root's `issues/` (human tasks included), with its text.
+/// Every open issue file of a project (any `docs/issues/` folder under it)
+/// and of the repo-wide `standards/docs/issues/` (human tasks included),
+/// with its text.
 fn open_issues(root: &Path, project: &str) -> Result<Vec<(PathBuf, String)>> {
     let mut files = Vec::new();
     collect_issue_files(&root.join(project), false, &mut files)?;
-    collect_issue_files(&root.join("issues"), true, &mut files)?;
+    if project != "standards" {
+        collect_issue_files(&root.join("standards/docs/issues"), true, &mut files)?;
+    }
     let mut out = Vec::new();
     for path in files {
         let text =
@@ -340,7 +343,7 @@ fn open_issues(root: &Path, project: &str) -> Result<Vec<(PathBuf, String)>> {
     Ok(out)
 }
 
-/// Walks `dir` for `*.md` files inside an `issues` folder, skipping build
+/// Walks `dir` for `*.md` files inside a `docs/issues` folder, skipping build
 /// output and dependencies. `inside` says `dir` is already in one.
 fn collect_issue_files(dir: &Path, inside: bool, out: &mut Vec<PathBuf>) -> Result<()> {
     let Ok(entries) = fs::read_dir(dir) else {
@@ -512,7 +515,7 @@ every = "30d"
         let root = tempfile::tempdir()?;
         let p = root.path();
         fs::create_dir_all(p.join("cookbook/docs"))?;
-        fs::create_dir_all(p.join("cookbook/web/issues"))?;
+        fs::create_dir_all(p.join("cookbook/web/docs/issues"))?;
         fs::create_dir_all(p.join("standards"))?;
         fs::create_dir_all(p.join("evals"))?;
         fs::write(p.join("cookbook/docs/requirements.md"), REQUIREMENTS_MD)?;
@@ -524,12 +527,12 @@ every = "30d"
         )?;
         // COOK-004 already has an issue, in a sub-project's folder.
         fs::write(
-            p.join("cookbook/web/issues/search-flaky.md"),
+            p.join("cookbook/web/docs/issues/search-flaky.md"),
             "---\nkind: todo\npriority: backlog\nadded: 2026-12-01\n---\n\nMake the cook-004 search eval reliable.\n",
         )?;
         // Names COOK-012 only, which must not count for COOK-001.
         fs::write(
-            p.join("cookbook/web/issues/README.md"),
+            p.join("cookbook/web/docs/issues/README.md"),
             "COOK-001 notes, not an issue.\n",
         )?;
         Ok(root)
@@ -638,15 +641,18 @@ every = "30d"
         assert_eq!(
             lines,
             vec![
-                "COOK-001 A recipe is easy to cook from on a phone (not met, product fix): wrote cookbook/issues/eval-cook-001-failing.md",
+                "COOK-001 A recipe is easy to cook from on a phone (not met, product fix): wrote cookbook/docs/issues/eval-cook-001-failing.md",
                 "COOK-002 Sign-in works (at risk, eval fix): waiting on a human check",
-                "COOK-003 Shopping list (unknown, needs a production eval): wrote cookbook/issues/eval-cook-003-unproven.md",
-                "COOK-004 Search (at risk, eval fix): open cookbook/web/issues/search-flaky.md",
-                "COOK-012 Print (at risk, eval fix): wrote cookbook/issues/eval-cook-012-eval-at-risk.md",
+                "COOK-003 Shopping list (unknown, needs a production eval): wrote cookbook/docs/issues/eval-cook-003-unproven.md",
+                "COOK-004 Search (at risk, eval fix): open cookbook/web/docs/issues/search-flaky.md",
+                "COOK-012 Print (at risk, eval fix): wrote cookbook/docs/issues/eval-cook-012-eval-at-risk.md",
             ],
         );
 
-        let fix = fs::read_to_string(root.path().join("cookbook/issues/eval-cook-001-failing.md"))?;
+        let fix = fs::read_to_string(
+            root.path()
+                .join("cookbook/docs/issues/eval-cook-001-failing.md"),
+        )?;
         assert!(
             fix.starts_with(
                 "---\nkind: fix\npriority: priority\ntags: [agent-generated]\nepic: Eval triage\nadded: 2026-12-10\n---\n\nEval triage: COOK-001 (A recipe is easy to cook from on a phone) is not met"
@@ -659,12 +665,12 @@ every = "30d"
         );
         let unproven = fs::read_to_string(
             root.path()
-                .join("cookbook/issues/eval-cook-003-unproven.md"),
+                .join("cookbook/docs/issues/eval-cook-003-unproven.md"),
         )?;
         assert!(unproven.starts_with("---\nkind: todo\npriority: priority\n"));
         let eval = fs::read_to_string(
             root.path()
-                .join("cookbook/issues/eval-cook-012-eval-at-risk.md"),
+                .join("cookbook/docs/issues/eval-cook-012-eval-at-risk.md"),
         )?;
         assert!(eval.starts_with("---\nkind: todo\npriority: backlog\n"));
         assert!(eval.contains("It has never passed in this stage"), "{eval}");
@@ -687,7 +693,7 @@ every = "30d"
         let verdicts = compute(root.path(), &results, None, now())?;
         let dry = triage(root.path(), &verdicts, &results, now(), None)?;
         assert!(dry[0].line().ends_with("(dry run)"));
-        assert!(!root.path().join("cookbook/issues").exists());
+        assert!(!root.path().join("cookbook/docs/issues").exists());
 
         let findings = triage(root.path(), &verdicts, &results, now(), Some(1))?;
         let wrote = findings

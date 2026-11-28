@@ -177,7 +177,7 @@ work. Sources: [llmstxt.org](https://llmstxt.org/), Lighthouse's
   each site's `robots.txt`, so a change is one edit. The site check fails a
   `robots.txt` that doesn't match it.
   Jim asked for the stance to be re-evaluated on the product roadmaps
-  (`issues/web-standard-reevaluate-training-crawlers.md`).
+  (`standards/docs/issues/web-standard-reevaluate-training-crawlers.md`).
 - **WEB-207: Agentic Browsing score at least 90.** Lighthouse's Agentic
   Browsing category scores at least 0.9. It is asserted as a **warning**
   while Google calls the category experimental; then it fails like the
@@ -259,7 +259,7 @@ of page loads.
   CI, so a noisy lab number is caught before it blocks anyone (QUAL-507).
 - **WEB-405: red results become issue files.** A failing rule on a live
   site is fixed through the normal loop: the `cd` and `observe` evals turn
-  red, and eval triage writes a `FIX` in the project's `issues/`
+  red, and eval triage writes a `FIX` in the project's `docs/issues/`
   ([evals.md](evals.md#continuous-improvement)). Each public site's
   `docs/requirements.md` has a requirement that it meets this standard,
   with these evals linked to it.
@@ -291,12 +291,12 @@ How the checks in decision 0028 run:
 
 The checks land in phases, each an issue file:
 
-1. `issues/web-standard-phase-1-site-list.md`: `standards/web.toml` with
+1. `standards/docs/issues/web-standard-phase-1-site-list.md`: `standards/web.toml` with
    every site, its kind and its pages.
-2. `issues/web-standard-phase-2-lighthouse-ci.md`: the Lighthouse CI
+2. `standards/docs/issues/web-standard-phase-2-lighthouse-ci.md`: the Lighthouse CI
    workflow and a `lighthouserc.json` per site, warnings only, with the
    measured baseline.
-3. `issues/web-standard-phase-3-site-check.md`: `chores site-check`.
+3. `standards/docs/issues/web-standard-phase-3-site-check.md`: `chores site-check`.
 4. One issue per public site for its gaps (prerendering, `llms.txt`,
    sitemap, JSON-LD), starting with the cookbook and sparkhill's website.
 5. Field Core Web Vitals once Web Analytics is on (decision 0001).

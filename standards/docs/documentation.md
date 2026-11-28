@@ -2,7 +2,7 @@
     - {Name of the project} section which includes a short description (executive summary) of the goal of the project, including why it was named that.
 - All projects MUST include a CONTRIBUTING.md. The CONTRIBUTING.md should include the following sections:
     - A `Getting Started` section which describes how to install the project's toolchain, how to build, and how to test.
-- `mise run //:audit` checks both for every project (a directory with a `mise.toml`): DOC-001 (no README.md), DOC-002 (no heading with the project's package name, directory name or path, such as `bear_down/cloudflare`, or the name with spaces for `_` and `-`, optionally after `The`, such as `The Psy Ents`), DOC-003 (no CONTRIBUTING.md) and DOC-004 (no `Getting Started` heading). They are errors, so they fail the audit (`standards/scripts/project-check.sh`). Projects in the `# On Hold Projects` list in `issues/README.md` are exempt until they come off hold, and must pass before they do.
+- `mise run //:audit` checks both for every project (a directory with a `mise.toml`): DOC-001 (no README.md), DOC-002 (no heading with the project's package name, directory name or path, such as `bear_down/cloudflare`, or the name with spaces for `_` and `-`, optionally after `The`, such as `The Psy Ents`), DOC-003 (no CONTRIBUTING.md) and DOC-004 (no `Getting Started` heading). They are errors, so they fail the audit (`standards/scripts/project-check.sh`). Projects in the `# On Hold Projects` list in `standards/docs/issues/README.md` are exempt until they come off hold, and must pass before they do.
 
 ## User docs
 
@@ -79,7 +79,7 @@ light each project's Retros health signal, so they follow one shape.
   - `## What went well`
   - `## What to change`
   - `## Actions`: a checkbox list, `- [ ]` for open and `- [x]` for done.
-    Each open action is also an issue file in the right `issues/` folder,
+    Each open action is also an issue file in the right `docs/issues/` folder,
     and the action links to that file. Tick the action when its issue is
     done.
 
@@ -96,7 +96,7 @@ light each project's Retros health signal, so they follow one shape.
 
 ## Actions
 
-- [ ] Run the smoke tests against PR previews ([issue](../../issues/run-smoke-tests-against-pr-preview.md))
+- [ ] Run the smoke tests against PR previews ([issue](issues/run-smoke-tests-against-pr-preview.md))
 - [x] Add a retro convention
 ```
 

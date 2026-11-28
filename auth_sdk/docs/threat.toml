@@ -19,7 +19,7 @@ mitigation = "PKCE, a random state checked on return (CSRF), and the ID token's 
 id = "AUTH-T2"
 stride = "information-disclosure"
 what = "A vulnerable crypto dependency leaks keys (RUSTSEC-2023-0071 in rsa, through openidconnect)."
-mitigation = "We only verify Auth0 tokens with a public key, which that attack doesn't touch; the advisory is tracked in issues/threat-check-advisories-openidconnect.md."
+mitigation = "We only verify Auth0 tokens with a public key, which that attack doesn't touch; the advisory is tracked in auth_sdk/docs/issues/threat-check-advisories-openidconnect.md."
 
 [[threat]]
 id = "AUTH-T3"

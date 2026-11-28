@@ -1,5 +1,5 @@
 //! The manifest of settings made by hand (`standards/settings.toml`),
-//! the human tasks that ask Jim to check them (`issues/human/settings-check-<id>.md`)
+//! the human tasks that ask Jim to check them (`standards/docs/issues/human/settings-check-<id>.md`)
 //! and his answers (`standards/settings-checks.jsonl`).
 //! See "Human checks" in `standards/docs/evals.md`.
 //!
@@ -187,12 +187,12 @@ pub fn due_checks<'a>(
         .collect()
 }
 
-/// The file name of a due check's human task in `issues/human/`.
+/// The file name of a due check's human task in `standards/docs/issues/human/`.
 pub fn human_issue_file_name(setting: &str) -> String {
     format!("settings-check-{setting}.md")
 }
 
-/// The human task file (`issues/human/settings-check-<id>.md`) for a due check,
+/// The human task file (`standards/docs/issues/human/settings-check-<id>.md`) for a due check,
 /// added on `added` (`YYYY-MM-DD`).
 ///
 /// It has the three sections every human task needs (ISS-004 in
@@ -200,7 +200,7 @@ pub fn human_issue_file_name(setting: &str) -> String {
 /// settings check.
 pub fn human_issue_file(due: &DueCheck<'_>, covers: &[String], added: &str) -> String {
     format!(
-        "---\nadded: {added}\nunblocks: \"an up-to-date check of {id} in standards/settings.toml\"\nrunbook: {SETTINGS_CHECK_RUNBOOK}\n---\n\n## Requirement\n\n{line}\n\n## Why it can't be automated\n\nThis setting is made by hand in {vendor} ({location}), and no file in the repo or API an agent can reach holds it, so only a person can look at it.\n\n## Runbook\n\n[Answer a settings check](../../{SETTINGS_CHECK_RUNBOOK})\n",
+        "---\nadded: {added}\nunblocks: \"an up-to-date check of {id} in standards/settings.toml\"\nrunbook: {SETTINGS_CHECK_RUNBOOK}\n---\n\n## Requirement\n\n{line}\n\n## Why it can't be automated\n\nThis setting is made by hand in {vendor} ({location}), and no file in the repo or API an agent can reach holds it, so only a person can look at it.\n\n## Runbook\n\n[Answer a settings check](../../../../{SETTINGS_CHECK_RUNBOOK})\n",
         id = due.setting.id,
         line = human_issue_line(due, covers),
         vendor = due.setting.vendor,
@@ -422,7 +422,7 @@ every = "0d"
         );
         assert_eq!(
             human_issue_file(&due[0], &[], "2026-01-01"),
-            "---\nadded: 2026-01-01\nunblocks: \"an up-to-date check of claude-connectors in standards/settings.toml\"\nrunbook: standards/docs/runbooks/settings-check.md\n---\n\n## Requirement\n\nCheck claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)\n\n## Why it can't be automated\n\nThis setting is made by hand in Claude (claude.ai > Settings > Connectors), and no file in the repo or API an agent can reach holds it, so only a person can look at it.\n\n## Runbook\n\n[Answer a settings check](../../standards/docs/runbooks/settings-check.md)\n"
+            "---\nadded: 2026-01-01\nunblocks: \"an up-to-date check of claude-connectors in standards/settings.toml\"\nrunbook: standards/docs/runbooks/settings-check.md\n---\n\n## Requirement\n\nCheck claude-connectors: GitHub is connected (Claude: claude.ai > Settings > Connectors). Reply ok or what is wrong. (Periodic, every 30d. Never checked.)\n\n## Why it can't be automated\n\nThis setting is made by hand in Claude (claude.ai > Settings > Connectors), and no file in the repo or API an agent can reach holds it, so only a person can look at it.\n\n## Runbook\n\n[Answer a settings check](../../../../standards/docs/runbooks/settings-check.md)\n"
         );
     }
 

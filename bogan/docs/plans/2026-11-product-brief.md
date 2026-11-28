@@ -1,6 +1,6 @@
 # Plan: Bogan product brief
 
-Started 2026-11-28 from `bogan/issues/write-product-brief.md`. Bogan has
+Started 2026-11-28 from `bogan/docs/issues/write-product-brief.md`. Bogan has
 only a short README, so no agent can start building it. This brief says
 who Bogan is for, what "supply-chain transparency" means as data, how the
 no white-label rule is enforced, the smallest first version worth
@@ -10,7 +10,7 @@ shipping, and how it fits the repo rules. Every choice that is Jim's is in
 Status: **approved** by Jim on 2026-11-28, with the recommended answer to
 every question in [Questions for Jim](#questions-for-jim) (see
 [Decisions](#decisions)). Nothing in it is built yet; the phases are issue
-files in [bogan/issues/](../../issues/) with `epic: Bogan first version`.
+files in [bogan/docs/issues/](../issues/) with `epic: Bogan first version`.
 
 It builds on, and doesn't repeat:
 
@@ -244,7 +244,7 @@ Claude Code build effort: about six medium agent PRs for the first version
 
 ## Phases
 
-Each phase is issue files in [bogan/issues/](../../issues/) with
+Each phase is issue files in [bogan/docs/issues/](../issues/) with
 `epic: Bogan first version`.
 
 1. **Schema and listings.** `bogan/docs/requirements.md` (prefix `BOGN`),

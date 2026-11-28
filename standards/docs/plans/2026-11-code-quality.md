@@ -10,7 +10,7 @@ Started 2026-11-27 from Jim's request:
 Status: **approved** by Jim (decision cards, 2026-11-27), with the
 recommended answer to both questions (see [Decisions](#decisions)). The
 decision is [0015](../decisions/0015-code-quality-process.md). The work items are issue files in the root
-[issues/](../../../issues/) with `epic: Code quality`.
+[issues/](../issues/) with `epic: Code quality`.
 
 This plan is the code twin of the [eval engine](2026-11-eval-engine.md):
 evals keep *what we ship* green, this keeps *how it is built* green, with

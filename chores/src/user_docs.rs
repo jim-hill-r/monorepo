@@ -259,7 +259,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         for (p, guide) in projects {
             fs::create_dir_all(dir.path().join(p).join("docs/user")).unwrap();
-            fs::create_dir_all(dir.path().join(p).join("issues")).unwrap();
+            fs::create_dir_all(dir.path().join(p).join("docs/issues")).unwrap();
             fs::write(dir.path().join(p).join("mise.toml"), "").unwrap();
             if let Some(g) = guide {
                 fs::write(dir.path().join(p).join(GUIDE), g).unwrap();
@@ -316,9 +316,9 @@ mod tests {
     fn the_baseline_allows_gaps_with_an_issue() {
         let dir = repo(
             &[("a", None), ("b", Some("# B\n"))],
-            "[missing]\na = \"a/issues/user-docs.md\"\nb = \"on hold\"\n",
+            "[missing]\na = \"a/docs/issues/user-docs.md\"\nb = \"on hold\"\n",
         );
-        fs::write(dir.path().join("a/issues/user-docs.md"), "x").unwrap();
+        fs::write(dir.path().join("a/docs/issues/user-docs.md"), "x").unwrap();
         let r = check(dir.path()).unwrap();
         assert!(r.errors.is_empty(), "{:?}", r.errors);
         assert_eq!(rules(&r.baselined)[0], "DOC-005");
@@ -332,12 +332,12 @@ mod tests {
     fn a_stale_baseline_fails() {
         let dir = repo(
             &[("a", Some(GOOD)), ("b", None)],
-            "[missing]\na = \"on hold\"\nb = \"b/issues/gone.md\"\nzzz = \"on hold\"\n",
+            "[missing]\na = \"on hold\"\nb = \"b/docs/issues/gone.md\"\nzzz = \"on hold\"\n",
         );
         let r = check(dir.path()).unwrap();
         assert_eq!(rules(&r.errors), ["DOC-008", "DOC-008", "DOC-008"]);
         let text = render(&r);
-        assert!(text.contains("b's issue file b/issues/gone.md does not exist"));
+        assert!(text.contains("b's issue file b/docs/issues/gone.md does not exist"));
         assert!(text.contains("zzz, which is not a top-level project"));
         assert!(text.contains("a's user guide passes; remove it"));
     }

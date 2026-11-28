@@ -12,7 +12,7 @@
   ledger, GitHub Sponsors, x402 staged; still in PR #764),
   [0004](0004-database-engine.md) (files before databases),
   [0011](0011-mint-secrets-by-workflow.md) (secrets)
-- Human task: [open a project bank account and get an EIN](../../../issues/human/open-project-bank-account-and-ein.md)
+- Human task: [open a project bank account and get an EIN](../../../cost/docs/issues/human/open-project-bank-account-and-ein.md)
 
 Not legal or tax advice. The tax lines are what a tax professional should
 confirm before real money moves.
@@ -115,7 +115,7 @@ out under "Accounting rules" in [cost.md](../cost.md) and applies to the
 - **Checked deterministically**: pane's `attribution_gaps` (requirement
   PANE-013) checks the per-project money against the month's totals now;
   the ledger's balance check lands with 0012 phase 1
-  ([issue](../../../cost/issues/ledger-double-entry-balance-check.md)).
+  ([issue](../../../cost/docs/issues/ledger-double-entry-balance-check.md)).
 
 ## 3. The processor for card payments (402 and royalties)
 

@@ -254,7 +254,7 @@ pub fn process_loaded_maps(
                 // 1. Create a RemoveMap marker component
                 // 2. Add a separate cleanup system that processes RemoveMap components
                 // 3. Only despawn entities when explicitly marked for removal
-                // See starcraft/issues/ for the breakdown of this refactoring work.
+                // See starcraft/docs/issues/ for the breakdown of this refactoring work.
                 for layer_entity in layer_storage.storage.values() {
                     if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
                         for tile in layer_tile_storage.iter().flatten() {

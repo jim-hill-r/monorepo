@@ -46,8 +46,8 @@ struct ProjectToml {
     tier: Option<String>,
 }
 
-/// Which side a top-level folder is on. `None` (the root `issues/` folder,
-/// root files) is platform.
+/// Which side a top-level folder is on. `None` (root files, and the old
+/// root `issues/` folder in history) is platform.
 pub fn side(root: &Path, project: Option<&str>) -> Side {
     let Some(project) = project else {
         return Side::Platform;
@@ -160,7 +160,7 @@ impl Balance {
 }
 
 /// Count working threads by side from their projects (`repo` or an
-/// `epic:` name means the root `issues/` folder, so platform).
+/// `epic:` name means repo-wide work in standards, so platform).
 pub fn count_working(root: &Path, working: &[String], balance: &mut Balance) {
     for w in working {
         let w = w.trim().trim_end_matches('/');
@@ -254,7 +254,7 @@ mod tests {
             Side::Platform
         );
         assert_eq!(
-            side_of_files(root, &files(&["cookbook/issues/x.md"])),
+            side_of_files(root, &files(&["cookbook/docs/issues/x.md"])),
             Side::Product
         );
         assert_eq!(

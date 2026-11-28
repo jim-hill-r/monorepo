@@ -5,13 +5,19 @@ monorepo. Work is tracked in the repo, not in GitHub issues.
 
 ## Issue Tracking Locations
 
-1. **Issue files** - one Markdown file per issue, in an `issues/` folder
+1. **Issue files** - one Markdown file per issue, in the `docs/issues/`
+   folder of the project it belongs to
    (decision [0006](decisions/0006-one-file-per-issue.md)):
-   - `issues/` at the repo root for repo-wide work.
-   - `<project>/issues/` for a project's own work (any project or
+   - `<project>/docs/issues/` for a project's own work (any project or
      sub-project folder, such as `pane/` or `cahokia/web/`).
-   - `issues/human/` for tasks only a person can do (see
+   - Repo-wide work goes in the platform project that owns it (`evals`
+     for the eval engine, `infra` for IaC, `threat` for the threat check,
+     `cost` for cost and revenue), and in `standards/docs/issues/` when no
+     other project fits.
+   - `<project>/docs/issues/human/` for tasks only a person can do (see
      [Human issues](#human-issues)).
+   - There is no root `issues/` folder, and no `<project>/issues/`: the
+     audit fails an issue file there (ISS-001).
 2. **TODO comments** - in-code markers for specific issues
 3. **FIX comments** - in-code markers for bugs or problems
 
@@ -38,8 +44,8 @@ the same files for its Work and Human issues pages.
 ## Issue file format
 
 The file name is a short kebab-case slug of the issue, unique in its folder:
-`issues/<slug>.md`, for example
-`cahokia/issues/auth-003-playwright-test-home-page-never-shows.md`. Don't
+`<project>/docs/issues/<slug>.md`, for example
+`cahokia/docs/issues/auth-003-playwright-test-home-page-never-shows.md`. Don't
 number files: two PRs picking the same next number would clash.
 
 The file starts with front matter, then the issue's text in Markdown:
@@ -69,7 +75,8 @@ project, kind, priority or backlog, and tag.
 
 Front matter is plain `key: value` lines. Quote a value that has a `:`, `#`
 or quote in it. Links in the text are relative to the issue file, so a link
-to the project's `docs/` is `../docs/...`.
+to the project's `docs/plans/` is `../plans/...` and one to the repo root
+is `../../../...` from a top-level project.
 
 ### Notes and project lists
 
@@ -77,7 +84,7 @@ Prose that isn't one issue, such as an epic's goal, its plan link or what a
 phase needs first, goes in the folder's `README.md` under a heading named
 after the epic. `README.md` is never an issue.
 
-The root [`issues/README.md`](../../issues/README.md) also holds the
+[`standards/docs/issues/README.md`](issues/README.md) also holds the
 `# Priority Projects` and `# On Hold Projects` lists.
 
 ## TODO Comment Conventions
@@ -102,8 +109,8 @@ Mark TODOs with `(agent-ignore)` if they should not be worked on by automated ag
 
 ### Human TODOs
 
-Tasks only a person can do go in `issues/human/`, never in a project's
-`issues/` folder or a code comment. See [Human issues](#human-issues).
+Tasks only a person can do go in the owning project's `docs/issues/human/`,
+never among its agent issues or in a code comment. See [Human issues](#human-issues).
 
 ### Removing Completed TODOs
 
@@ -115,14 +122,15 @@ behind TODO markers.
 
 When looking for work to do, check these in priority order:
 
-1. **Root `issues/`** with `priority: priority`, then the priority projects
-   listed in `issues/README.md`.
-2. **Priority projects' `issues/`** with `priority: priority`.
-3. **Other `issues/` folders**, then backlog issues.
-4. **TODO/FIX comments in code** (skip items marked `(agent-ignore)`).
+1. **Priority projects' `docs/issues/`** with `priority: priority`, in the
+   order of the list in `standards/docs/issues/README.md`.
+2. **Other projects' `docs/issues/`** with `priority: priority`, then
+   backlog issues.
+3. **TODO/FIX comments in code** (skip items marked `(agent-ignore)`).
 
-`mise run //:issues` lists them in that order apart from the priority
-projects, which you pick out by path. Within an epic, work the phases and
+`chores next-task` picks in that order (with the product share
+heuristic); `mise run //:issues` lists priority first, then backlog, by
+project. Within an epic, work the phases and
 `order` in order.
 
 ## Searching for References
@@ -160,7 +168,7 @@ find . -name "Cargo.toml" -exec grep -l "pattern" {} \;
 When creating issues that are too complex to tackle immediately:
 
 1. Break the issue into smaller, manageable tasks.
-2. Write one issue file per task in the right `issues/` folder.
+2. Write one issue file per task in the right `docs/issues/` folder.
 3. Tag new issues `[agent-generated]` if created by an agent.
 4. Give the tasks of a multi-phase epic the same `epic` (with the phase) and
    an `order`, and put the epic's notes in the folder's `README.md`.
@@ -194,7 +202,10 @@ they must reach Jim rather than sit in a project's issues or a chat thread
 
 ### Where they live
 
-- **One file per task** in the root [`issues/human/`](../../issues/human/):
+- **One file per task** in the owning project's `docs/issues/human/`
+  (repo-wide ones in `standards/docs/issues/human/`), written with
+  `chores new-human-task --folder <project>`. Pane's Human issues page
+  gathers every project's tasks into one list, each with its project:
 
   ```markdown
   ---
@@ -215,7 +226,7 @@ they must reach Jim rather than sit in a project's issues or a chat thread
 
   ## Runbook
 
-  [Make the OpenTofu state passwords](../../standards/docs/runbooks/tofu-state-passwords.md)
+  [Make the OpenTofu state passwords](../../../../standards/docs/runbooks/tofu-state-passwords.md)
   ```
 
   Every human task has these three sections (Jim, 2026-11-27: "document

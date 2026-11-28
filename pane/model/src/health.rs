@@ -701,7 +701,7 @@ pub fn pr_queue(ages: &[u32], t: &PrQueueThresholds) -> Signal {
     signal(NAME, Health::Green, format!("{count} PRs open"))
 }
 
-/// **Human queue**: the ages in days of every task in `issues/human/`.
+/// **Human queue**: the ages in days of every task in a `docs/issues/human/`.
 pub fn human_queue(ages: &[u32], t: &HumanQueueThresholds) -> Signal {
     const NAME: &str = "Human queue";
     let oldest = ages.iter().copied().max().unwrap_or(0);

@@ -16,7 +16,7 @@ use dioxus::prelude::*;
 pub const AUTH0_ISSUER: &str = "https://dev-jdadpn4pckxevrv5.us.auth0.com/";
 
 /// The public client ID of cahokia's native Auth0 application. Native
-/// sign-in phase 3 (`infra/issues/native-sign-in-phase-3-auth0-native-app.md`)
+/// sign-in phase 3 (`infra/docs/issues/native-sign-in-phase-3-auth0-native-app.md`)
 /// creates the application; until then a build can pass one in with
 /// `CAHOKIA_NATIVE_CLIENT_ID`, and without one Login says sign-in isn't set
 /// up. It is public, like the web app's, so it is not a secret.

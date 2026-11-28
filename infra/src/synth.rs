@@ -369,7 +369,7 @@ mod tests {
     }
 
     /// A rotation end to end with real OpenTofu (the proof
-    /// issues/iac-rotate-state-passphrase.md asked for): state written at
+    /// infra/docs/issues/iac-rotate-state-passphrase.md asked for): state written at
     /// generation 1 still plans at generation 2 through the fallback, `state
     /// pull | state push` (what `tofu.sh rekey` runs) re-encrypts it under the
     /// new key, and after that the old passphrase isn't needed. Skipped when

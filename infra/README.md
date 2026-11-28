@@ -144,7 +144,7 @@ doesn't rewrite state, so `tofu.sh rekey <stack>` re-encrypts it (`state
 pull | state push`, never touching disk) and skips a stack already on the
 current key. `opentofu_rotates_the_passphrase` in `src/synth.rs` runs two
 rotations with real OpenTofu. Wiring this into Infra Mint and the
-workflows is `issues/iac-rotate-state-passphrase.md`; until then the
+workflows is `infra/docs/issues/iac-rotate-state-passphrase.md`; until then the
 passphrase is rotated only after a leak, by hand.
 
 ## Changing a setting

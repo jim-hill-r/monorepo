@@ -230,7 +230,7 @@ in only with reports (phase 3), in the `bogan` tenant of
 | README, CONTRIBUTING, docs-only tasks | `bogan/README.md`, `bogan/CONTRIBUTING.md`, `bogan/mise.toml` |
 | Product brief | `bogan/docs/plans/2026-11-product-brief.md` |
 | Cost and threat files | `bogan/docs/cost.toml`, `bogan/docs/threat.toml` |
-| Work items (8) | `bogan/issues/` |
+| Work items (8) | `bogan/docs/issues/` |
 | Config root | `mise.toml:24` |
 | Requirement prefix `BOGN` | `standards/docs/naming.md:49` |
 | Product tier | `standards/docs/decisions/0019-review-roles.md:105`, `chores/src/tiers.rs:31` |
@@ -382,7 +382,7 @@ Please answer as review comments on this deck's pull request.
 - Read all of `bogan/` on `main` at `be6078a`, including the brief and its
   "Decisions" section with Jim's answers (PR #968).
 - `git log -- bogan` for history (first commit `781ffb6`, 2025-12-20).
-- Issue priorities: `grep priority bogan/issues/*.md` (all `backlog`);
+- Issue priorities: `grep priority bogan/docs/issues/*.md` (all `backlog`);
   picker order in `chores/src/next_task.rs:7`.
 - Support library status: `issues/user-feedback-phase-1` to `-5` all open.
 - Eval coverage: `evals-results` `verdicts.json`, bogan has 0 requirements.

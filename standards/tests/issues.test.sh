@@ -11,7 +11,7 @@ trap 'rm -rf "$work"' EXIT
 repo=$work/repo
 failures=0
 
-mkdir -p "$repo/standards/scripts" "$repo/standards/docs/runbooks" "$repo/issues/human"
+mkdir -p "$repo/standards/scripts" "$repo/standards/docs/runbooks" "$repo/cost/docs/issues/human"
 cp "$root/standards/scripts/issues.sh" "$repo/standards/scripts/"
 echo '# Do it' >"$repo/standards/docs/runbooks/do-it.md"
 git -C "$repo" init -q
@@ -24,7 +24,7 @@ task() { # task FILE RUNBOOK [SECTIONS...]: write a human task.
     [ -n "$rb" ] && echo "runbook: $rb"
     printf -- '---\n\n'
     for s in "$@"; do printf '## %s\n\nText.\n\n' "$s"; done
-  } >"$repo/issues/human/$f"
+  } >"$repo/cost/docs/issues/human/$f"
 }
 
 # expect NAME WANT_EXIT WANT_TEXT: run --check and compare.
@@ -39,7 +39,7 @@ expect() {
   else
     echo "ok   $1"
   fi
-  rm -f "$repo"/issues/human/*.md
+  rm -f "$repo"/cost/docs/issues/human/*.md "$repo"/issues/*.md
 }
 
 all=("Requirement" "Why it can't be automated" "Runbook")
@@ -57,6 +57,10 @@ expect "missing runbook file fails" 1 "runbook standards/docs/runbooks/nope.md d
 
 task elsewhere.md docs/do-it.md "${all[@]}"
 expect "runbook outside the folder fails" 1 "must be a file in standards/docs/runbooks/"
+
+mkdir -p "$repo/issues"
+printf -- '---\nkind: todo\npriority: backlog\nadded: 2026-11-28\n---\n\nDo it.\n' >"$repo/issues/root.md"
+expect "an issue in the retired root issues/ folder fails" 1 "error[ISS-001] issues/root.md"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures failure(s)"

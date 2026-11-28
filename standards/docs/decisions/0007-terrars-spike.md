@@ -35,7 +35,7 @@ Jim's rule is that `terrars` bugs are fixed upstream (decision 0007, item 2).
 The fixes are in `infra/upstream/` as `git format-patch` files, ready to open
 as pull requests on `andrewbaxter/terrars`. Agents can't reach that
 repository, so opening them is a human task
-(`issues/human/open-terrars-upstream-prs.md`).
+(`infra/docs/issues/human/open-terrars-upstream-prs.md`).
 
 1. **`terrars-generate` fails with OpenTofu.** With `"binary": "tofu"`, the
    schema is keyed `registry.opentofu.org/<vendor>/<name>`, but the generator

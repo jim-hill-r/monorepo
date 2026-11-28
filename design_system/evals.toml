@@ -7,7 +7,7 @@
 # report the engine reads. The `http` evals check the preview site, the
 # sub-project that deploys (design_system/preview, DEPLOY_URL). DSGN-002
 # has no production eval yet: the app themes ship inside each app's wasm
-# (issues/dsgn-002-production-eval.md).
+# (docs/issues/dsgn-002-production-eval.md).
 
 prefix = "DSGN"
 

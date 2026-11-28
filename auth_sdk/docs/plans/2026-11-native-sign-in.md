@@ -81,11 +81,11 @@ Each phase is an issue file with the `Native sign-in` epic.
 | --- | --- | --- | --- |
 | 1 | Shared `flow`, `NativeAuthClient`, tests with a fake provider | auth_sdk | done in this PR |
 | 2 | Loopback listener and system browser for desktop | auth_sdk | done: `native::loopback` |
-| 3 | A native Auth0 application for cahokia, through IaC | infra | [native-sign-in-phase-3-auth0-native-app.md](../../../infra/issues/native-sign-in-phase-3-auth0-native-app.md) |
+| 3 | A native Auth0 application for cahokia, through IaC | infra | [native-sign-in-phase-3-auth0-native-app.md](../../../infra/docs/issues/native-sign-in-phase-3-auth0-native-app.md) |
 | 4 | cahokia desktop Login button signs in | cahokia/desktop | done: `cahokia/desktop/src/auth.rs`, client ID from phase 3 |
 | 5 | cahokia mobile Login with a custom URL scheme | cahokia/mobile | done for iOS: `cahokia/mobile/src/auth.rs`, client ID from phase 3 |
-| 5b | Android hands the callback URL to the app | cahokia/mobile | [native-sign-in-phase-5b-android-callback.md](../../../cahokia/mobile/issues/native-sign-in-phase-5b-android-callback.md) |
-| 6 | Stay signed in: refresh token in the OS keychain | auth_sdk | [native-sign-in-phase-6-stay-signed-in.md](../../issues/native-sign-in-phase-6-stay-signed-in.md) |
+| 5b | Android hands the callback URL to the app | cahokia/mobile | [native-sign-in-phase-5b-android-callback.md](../../../cahokia/mobile/docs/issues/native-sign-in-phase-5b-android-callback.md) |
+| 6 | Stay signed in: refresh token in the OS keychain | auth_sdk | [native-sign-in-phase-6-stay-signed-in.md](../issues/native-sign-in-phase-6-stay-signed-in.md) |
 
 Phase 3 is a credential change (a new Auth0 application and its grants), so
 it applies only after Jim approves its run in the `infra-credentials`
