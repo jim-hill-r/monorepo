@@ -119,6 +119,14 @@ filter = "test_jit_too_"
 description = "Too many (over 8) and too few arguments are errors."
 
 [[eval]]
+id = "function-without-value"
+requirement = "LANG-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "test_function_without_value_"
+description = "A `function` that is empty or ends in an assignment, with no `return`, is an error naming it."
+
+[[eval]]
 id = "jit-extra-arguments"
 requirement = "LANG-002"
 stages = ["ci"]

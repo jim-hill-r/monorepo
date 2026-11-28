@@ -31,8 +31,9 @@ runs in `ci`. Its production evals arrive with the CLI
 - Accept: an unknown character, an unterminated string, an integer too
   large for 64 bits, a missing bracket or an unexpected token, an undefined
   variable or function, calling a function that doesn't exist, and calling
-  with too many or too few arguments each return an error that names the
-  problem, and none of them panics.
+  with too many or too few arguments, and a `function` that gives no value
+  (empty, or ending in an assignment, with no `return`) each return an
+  error that names the problem, and none of them panics.
 
 ## LANG-003: Side effects stay where they are declared
 

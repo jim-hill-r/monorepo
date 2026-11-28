@@ -103,12 +103,14 @@ fn Guide(rooting: Rooting) -> Element {
     let games = rooting.ranked(goal_now);
 
     rsx! {
-        if let Some(banner) = rooting.banner() {
+        if let Some(banner) = &rooting.banner {
             div { class: "banner", role: "status",
                 span { class: "banner-bear", aria_hidden: "true", "🐻" }
                 div {
                     p { class: "banner-headline", "{banner.headline}" }
-                    p { class: "banner-line", "{banner.line}" }
+                    for line in &banner.lines {
+                        p { class: "banner-line", "{line}" }
+                    }
                 }
                 span { class: "banner-bear", aria_hidden: "true", "🏈" }
             }

@@ -60,7 +60,9 @@ they are.
 - Accept: every page has Home, Recipes and Plans links (in the header, or
   in the sidebar below 768 px wide), the home page links to today's recipe
   and this week's plan, the sidebar lists this week's recipes and nearby
-  plans, and each recipe links to the previous and next day.
+  plans, and each recipe links to the previous and next day. Today's
+  recipe is the one this week's plan puts on today's date, so the home
+  page, the Recipes link, the sidebar and the plan agree.
 
 ## COOK-007: The recipes are real and varied
 
