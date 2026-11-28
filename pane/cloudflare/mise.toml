@@ -1,22 +1,23 @@
-# pane/cloudflare: cloudflare-pages project. Standard tasks: ci, fix, build, test, dev, release, deploy.
+# pane/cloudflare: cloudflare-worker-assets project. Standard tasks: ci, fix, build, test, dev, release, deploy.
 # Run with: mise run <task>
 # affected-by: ../web
 # deploy-on-every-push: pane's snapshot reads the whole repo, so redeploy it
 # on every push to main (push-main.yml), not only pushes under pane/.
 
 [tools]
-rust = { version = "stable", components = "rustfmt,clippy" }
+rust = { version = "stable", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
 node = "24"
 "npm:wrangler" = "4"
+"cargo:worker-build" = "0.9.0"
 
 [env]
 # Production URL. CI shows it on the GitHub deployment and in the job summary.
-DEPLOY_URL = "https://jimhillr-pane.pages.dev"
+DEPLOY_URL = "https://jimhillr-pane.jim-hill-r.workers.dev"
 
 [task_config]
-includes = ["../../standards/tasks/cloudflare-pages.toml"]
+includes = ["../../standards/tasks/cloudflare-worker-assets.toml"]
 
-[tasks.release]
-description = "Build the web app this project deploys"
+[tasks."release:assets"]
+description = "Build the web app whose bundle the Worker serves"
 dir = "{{config_root}}/../web"
 run = "mise run release"

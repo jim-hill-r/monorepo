@@ -7,4 +7,5 @@ edition = "2024"
 workspace = true
 
 [dependencies]
+chrono = { workspace = true }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
