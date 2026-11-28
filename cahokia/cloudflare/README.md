@@ -73,6 +73,20 @@ export CLOUDFLARE_ACCOUNT_ID=<your-account-id>
 mise run deploy
 ```
 
+### Smoke tests after deploy
+
+After CI deploys, it runs the `@smoke` Playwright tests of `cahokia/web`
+(`SMOKE_DIR` in `mise.toml`) in desktop Chromium against `DEPLOY_URL`, and
+the `cd` evals in `cahokia/evals.toml` read their results
+([After deploy](../../standards/docs/evals.md#after-deploy)). Only
+signed-out tests are tagged, since production has no test account. Run
+them by hand from this directory with `mise run smoke`, or from
+`cahokia/web`:
+
+```bash
+BASE_URL=https://jimhillr-cahokia.pages.dev npx playwright test --grep @smoke --project chromium
+```
+
 ## Project Structure
 
 ```

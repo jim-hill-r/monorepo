@@ -36,6 +36,11 @@ pub fn get_delete_branches_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/all-delete-branches.yml")
 }
 
+/// Get the path to the all-retire-resources.yml workflow file
+pub fn get_retire_resources_workflow_path() -> PathBuf {
+    get_repo_root().join(".github/workflows/all-retire-resources.yml")
+}
+
 /// Get the path to the pull-request-agent-skills.yml workflow file
 pub fn get_agent_skills_workflow_path() -> PathBuf {
     get_repo_root().join(".github/workflows/pull-request-agent-skills.yml")

@@ -40,7 +40,8 @@ pub fn Approve() -> Element {
         p { class: "muted",
             "Pull requests whose checks passed and that wait on your review, clear ones first. "
             "Approve opens the pull request's changes on GitHub: Review changes, Approve, Submit. "
-            "Stacks get one approval for the whole stack."
+            "Stacks get one approval for the whole stack. "
+            "A human-review badge means a red attention tag or a cost change: it merges only once a person approves it."
         }
         match state {
             None => rsx! { p { class: "muted", "Loading pull requests from GitHub…" } },
@@ -123,6 +124,11 @@ fn QueueRow(item: QueueItem, now: i64) -> Element {
             }
             div { class: "meta",
                 span { class: "badge attention-{word}", "{word}" }
+                if item.human_review {
+                    span { class: "badge human-review", title: "Merges only once a human approves it",
+                        "{queue::HUMAN_REVIEW_LABEL}"
+                    }
+                }
                 for label in item.badges.iter() {
                     span { class: "badge attention-{word}", "{label}" }
                 }
