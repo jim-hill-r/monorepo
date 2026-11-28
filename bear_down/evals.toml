@@ -176,3 +176,37 @@ metric = "bear_down_feedback_events"
 min = 1
 window = "14d"
 description = "At least one real vote arrived in the past two weeks (in season)."
+
+# BEAR-011: Playoff weeks get a guide
+
+[[eval]]
+id = "golden-wild-card-round-2020"
+requirement = "BEAR-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "golden_wild_card_round_2020"
+description = "The 2020 wild card round, with the Bears in it, gets a guide for its playoff games."
+
+[[eval]]
+id = "playoff-round-after-elimination"
+requirement = "BEAR-011"
+stages = ["ci"]
+kind = "cargo"
+filter = "a_playoff_round_after_the_bears_are_out"
+description = "After the Bears are knocked out, no playoff game can change their odds."
+
+[[eval]]
+id = "playoff-round-page"
+requirement = "BEAR-011"
+stages = ["ci"]
+kind = "playwright"
+grep = "names the round"
+description = "The page names the playoff round and keeps only the goals still open."
+
+[[eval]]
+id = "playoff-page-after-elimination"
+requirement = "BEAR-011"
+stages = ["ci"]
+kind = "playwright"
+grep = "Bears are knocked out"
+description = "Once the Bears are knocked out, the page says there is nothing to root for."

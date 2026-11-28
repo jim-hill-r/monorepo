@@ -107,3 +107,15 @@ net is, including when the net is close to zero.
 - Accept: every game in every tab has a Yes / No / Confusing vote with an
   optional note, votes reach the repo weekly as files, and the summary
   shows each A/B arm's results.
+
+## BEAR-011: Playoff weeks get a guide
+
+- Priority: should
+- Why: decision 0008 left the playoffs out of v1; a fan still wants to know
+  whom to cheer for while the Bears are alive in January.
+- Accept: in a playoff week every game left in the round appears with a
+  verdict on the Bears' Super Bowl odds, explained through the Bears'
+  bracket or the Super Bowl opponent rather than regular-season
+  tiebreakers; the page names the round and drops the goals already
+  decided; and once the Bears are out it says there is nothing left to
+  root for.
