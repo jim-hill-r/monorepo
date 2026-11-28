@@ -1,0 +1,10 @@
+# The thresholds of the Rust strict profile (QUAL-202 to QUAL-205 in
+# standards/docs/code-quality.md). `chores quality` points clippy at this
+# folder with CLIPPY_CONF_DIR, so every project is measured the same way. A
+# project with its own clippy.toml (cahokia) copies these values.
+too-many-lines-threshold = 60
+cognitive-complexity-threshold = 15
+too-many-arguments-threshold = 5
+excessive-nesting-threshold = 4
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

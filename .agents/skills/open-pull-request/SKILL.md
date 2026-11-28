@@ -94,6 +94,9 @@ Mark the PR ready for review once **all** of these hold:
   it's recorded as an issue file tagged `[agent-generated]` in an `issues/`
   folder.
 - CI for the changed projects passes on the PR's head commit.
+- For a Rust change, the code quality ratchet passes for each changed
+  project (**Dev commands** in `AGENTS.md`), and no new waiver lacks a
+  reason (QUAL-501, QUAL-504).
 - The `TODO`/`FIX` you fixed is removed and docs are updated.
 - A renamed or removed resource has its `[[retired]]` entry and its
   inbound references listed (step 5 of "Before pushing").

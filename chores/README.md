@@ -6,9 +6,10 @@ in `standards/docs/` and is called from a skill in `.agents/skills/`, which
 leaves only the judgment to the model. Why and what comes next is in the
 [baked skills plan](../standards/docs/plans/2026-11-baked-skills.md).
 
-It reads and writes only files in the working tree. It never uses the
-network and never calls GitHub: agents do that with their own GitHub tools,
-and workflows list what they need into a file first.
+It reads and writes only files in the working tree. It never calls
+GitHub: agents do that with their own GitHub tools, and workflows list
+what they need into a file first. Only `quality` uses the network, through
+cargo, which may fetch crates.
 
 ## Commands
 
@@ -83,6 +84,23 @@ c evals-check
 c threat-check --projects cookbook,pane
 ```
 
+```bash
+# The code quality ratchet (QUAL-501, standards/docs/code-quality.md): clippy
+# with the Rust strict profile in standards/quality/ (--all-targets), plus a
+# finding per Rust file over 800 lines, counted per lint against each
+# project's docs/quality.toml. Generated code (infra/src/tfschema/) is left out.
+c quality --check --project cookbook      # exit 1 when a count rose, naming that lint's findings
+c quality --check --project cookbook --base origin/main   # list only the risen lint's findings in changed files
+c quality --update --project cookbook     # write the baseline; refuses a rise
+c quality --update --project cookbook --accept-rise   # only for a toolchain or profile change
+c quality --report                        # every project with Rust code: totals, worst lints and files
+c quality --report --project cost --json  # every finding, for triage
+```
+
+`quality` runs `cargo metadata` and `cargo clippy` in each of the
+project's cargo workspaces (so cargo may fetch crates), and passes a
+project with no baseline yet, saying how to write one.
+
 `new-human-task` starts the runbook from
 `standards/docs/runbooks/TEMPLATE.md` (title and status filled in) unless
 `--runbook` names one that exists; the agent still writes its sections.
@@ -94,6 +112,7 @@ c threat-check --projects cookbook,pane
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `retire-temporary` | none (the `All Retire Resources` workflow) | Deciding by hand which previews and branches are old enough to delete |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `quality` | `open-pull-request` (the ratchet line of its checklist) | Counting clippy findings by hand, and nothing holding a project's quality from getting worse |
 | `conflict-markers` | `mise run //:audit` (any skill's hooks) | Nothing: conflict markers merged into `main` (PRs 881 and 890) broke TOML parsing and docs until someone noticed |
 | `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
