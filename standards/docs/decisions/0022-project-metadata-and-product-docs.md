@@ -1,6 +1,7 @@
 # 0022. Project metadata in one file per project, and a mission, vision and roadmaps in every product
 
-- Status: Proposed
+- Status: Accepted
+- Decided by: Jim (decision card, 2026-11-28: `docs/project.toml` per project)
 - Date: 2026-11-28
 - Asked by: Jim
 - Plan: [2026-11-product-strategy.md](../plans/2026-11-product-strategy.md)
@@ -48,7 +49,7 @@ table in the plan's "Question 1").
 
 | Option | For | Against |
 | --- | --- | --- |
-| `<project>/docs/project.toml` (chosen, pending Jim) | Parallel PRs never conflict; lives with `cost.toml` and `threat.toml`; a new project adds its own file | A tier change must be detected per file to keep strict review |
+| `<project>/docs/project.toml` (chosen by Jim) | Parallel PRs never conflict; lives with `cost.toml` and `threat.toml`; a new project adds its own file | A tier change must be detected per file to keep strict review |
 | One `standards/projects.toml` | Every project on one screen; any edit is already a strict change | Every new project or field edits one shared file |
 | Tiers in `standards/reviewers.toml` (0019 as written) | No change | Mixes who-may-approve with what-a-project-is; other fields still have no home |
 | `[package.metadata]` in `Cargo.toml` or a table in `mise.toml` | No new file | Not every project is Rust; mise rejects unknown keys in its config |

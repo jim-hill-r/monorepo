@@ -29,8 +29,7 @@ committed).
 
 See
 [standards/docs/plans/2026-11-product-strategy.md](../standards/docs/plans/2026-11-product-strategy.md)
-(decision 0022, proposed). Phase 1 waits for Jim's answer on where project
-metadata lives; phase 3's issues are added by phase 2.
+(decision 0022, accepted). Phase 3's issues are added by phase 2.
 
 ## Feedback on every change
 

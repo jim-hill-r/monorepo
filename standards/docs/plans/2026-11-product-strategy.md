@@ -7,8 +7,8 @@ Started 2026-11-28 from Jim's request:
 > project. How are we storing metadata about a project (for now what tier
 > it is but later more might become relevant)?
 
-Status: **proposed**, waiting on Jim's answer to the one question under
-[Decisions](#decisions). The decision record is
+Status: **approved** by Jim (decision card, 2026-11-28), with the
+recommended answer under [Decisions](#decisions). The decision record is
 [0022](../decisions/0022-project-metadata-and-product-docs.md). The work
 items are issue files in the root [issues/](../../../issues/) with
 `epic: Product strategy`.
@@ -230,8 +230,8 @@ Each phase is one issue file, one PR.
 
 ## Decisions
 
-1. **Where project metadata lives.** Asked on a decision card,
-   2026-11-28. Options, all $0 and about one agent PR to build:
+1. **Where project metadata lives.** Jim chose `docs/project.toml` per
+   project on a decision card, 2026-11-28. Options were, all $0 and about one agent PR to build:
    - **`<project>/docs/project.toml` per project (recommended)**: no
      conflicts between parallel PRs, sits with `cost.toml` and
      `threat.toml`, any tier change still gets strict review.
