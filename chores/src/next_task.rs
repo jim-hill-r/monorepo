@@ -8,7 +8,8 @@
 //!    priority projects in list order, then the rest by name).
 //!
 //! Within a group, issues sort by project, epic, phase, `order` and path, so
-//! an epic's earliest phase and lowest order come first. Human tasks,
+//! an epic's earliest phase and lowest order come first; a named phase
+//! with no number sorts after the numbered ones. Human tasks,
 //! `agent-ignore` issues and on-hold projects are never picked.
 //!
 //! Tier balance (Jim, 2026-11-28): when the product share of recent work
@@ -207,7 +208,9 @@ fn candidates<'a>(all: &'a [Issue], lists: &ProjectLists, options: &Options) -> 
         (
             group(i, lists),
             i.epic_name().unwrap_or("").to_string(),
-            i.phase().unwrap_or(0),
+            // A named phase without a number ("Eval engine: ...") follows
+            // the numbered ones, which usually come first in its plan.
+            i.phase().unwrap_or(u64::MAX),
             i.order.unwrap_or(u64::MAX),
             i.path.clone(),
         )
@@ -495,6 +498,24 @@ mod tests {
         let picks = pick(&all, &lists(), &Options::default());
         assert_eq!(paths(&picks), vec!["issues/c.md"]);
         assert_eq!(picks[0].key, "epic:Cost");
+    }
+
+    #[test]
+    fn unnumbered_phase_comes_after_numbered_ones() {
+        let all = vec![
+            issue(
+                "pane/issues/rate.md",
+                "priority",
+                "epic: \"Review / Eval engine: feedback\"\norder: 260\n",
+            ),
+            issue(
+                "pane/issues/access.md",
+                "priority",
+                "epic: \"Review / Phase 3: live data\"\norder: 110\n",
+            ),
+        ];
+        let picks = pick(&all, &lists(), &Options::default());
+        assert_eq!(paths(&picks), vec!["pane/issues/access.md"]);
     }
 
     #[test]
