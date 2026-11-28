@@ -173,29 +173,53 @@ a collaborator never count.
 
 A PR that needs a human:
 
-1. **Fails the `Human review` check** (PR-004,
+1. **Waits on the `Human review` status** (PR-004,
    `.github/workflows/pull-request-human-review.yml`, the logic in `chores
-   gate`) until a human collaborator approves its current head commit,
-   with no later "changes requested" from one. The check runs again on every
-   review, so that approval turns it green. A PR a human collaborator opened passes. The check
-   builds `chores` from the base branch, so a PR can't change the rules it
-   is judged by.
-2. **Is labelled `needs-human`** by that check, which never removes it.
-3. **Never has auto-merge on.** The check turns it off, and no agent turns
-   it on. Once a human has approved and every check is green, that human,
-   PR triage or any agent merges it by hand under the merge rule.
+   gate`): it is `pending` (yellow, "Waiting for a human to approve ...")
+   until a human collaborator approves its current head commit, with no
+   later "changes requested" from one, and `failure` (red) only while a
+   human's last word is "changes requested". The workflow runs again on
+   every review, so that approval turns it green. A PR a human collaborator
+   opened passes. The workflow builds `chores` from the base branch, so a
+   PR can't change the rules it is judged by.
+2. **Is labelled `human-review`** by that check while it waits, and the
+   check takes the label off again once a human approves. It is not
+   `needs-human`: that label still means a sign-off or manual step beyond
+   the approval, which the gate can't see.
+3. **May merge on the human's approval** (Jim, 2026-11-28: "Yes, merge on
+   my approval"). The check no longer turns auto-merge off, and an agent
+   may turn it on for a held PR under "Auto-merge" below once every other
+   check is green. Only a human's approval can then merge it, because
+   `jimhillr-reviewer` refuses it, agents never approve, and the `main`
+   ruleset dismisses an approval when commits are pushed. Without
+   auto-merge, that human, PR triage or any agent merges it by hand under
+   the merge rule once the human has approved and every check is green.
 4. **Is never approved by anyone but a human.** `jimhillr-reviewer`
    refuses it (rules v2), and so do triage and agents.
 
 `Human review` is the one check that waits for a person, so a held PR is
-marked ready for review once every *other* check is green; its red
+marked ready for review once every *other* check is green; its pending
 `Human review` is the approval it is waiting for, not a failure to fix.
+
+`Human review` is a **commit status**, not a check run (Jim, 2026-11-28,
+after PR 916: "I don't think that should block the merge once I
+approve"). The workflow runs once per event, and each run used to leave
+its own `Human review` check run on the commit, so the failed runs from
+before an approval stayed red beside the passing one and the PR still
+looked failed. A commit status has one context that each run replaces,
+so the latest verdict is the only one. The workflow's own job is called
+`Human review gate`; it is green whenever the gate ran, pending or not,
+and red only when the gate itself broke (it then posts the status as
+`error`). A fork's token can't post statuses, so a fork PR gets no
+`Human review` status and its `Human review gate` job fails; a human
+merges those by hand.
 
 Every other PR passes `Human review` at once. Once the `CI` ruleset in the
 `github` stack of `infra` is applied, `main` requires both `CI result` and
 `Human review`, so GitHub itself won't merge a held PR. Until then, the
-merge rule's "checks are green" is what holds it. A check that ran more
-than once on the head commit counts by its latest run.
+merge rule's "checks are green" is what holds it: a pending `Human
+review` is not green. A check that ran more than once on the head commit
+counts by its latest run.
 
 ## Auto-merge
 
@@ -207,9 +231,14 @@ these hold:
 
 - The PR meets the `open-pull-request` ready checklist: complete, every check
   finished and green on the head commit, and nothing left for a human to
-  decide. A PR labelled `needs-human` never gets auto-merge, and nor
-  does one with a red or `cost-changed` attention tag (see "Human review").
-- No check is red, not even one also failing on `main`. Auto-merge can't
+  decide. A PR labelled `needs-human` or `credential-change` never gets
+  auto-merge. One held by `Human review` (a red or `cost-changed`
+  attention tag, the `cost` label, the `human-review` label) may, once
+  every other check is green, with `Human review` still pending: the
+  human's approval is then the last step (Jim, 2026-11-28; see "Human
+  review").
+- No check is red, not even one also failing on `main`. (A pending `Human
+  review` status is not red.) Auto-merge can't
   apply the "also failing on `main`" exception, so that PR is merged by hand
   under the merge rule instead.
 

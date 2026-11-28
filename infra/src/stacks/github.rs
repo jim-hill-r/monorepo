@@ -54,7 +54,9 @@ const OLD_TF_ID: &str = "monorepo";
 /// The checks every PR into `main` must pass: `CI result` from PR CI
 /// (`pull-request-ci.yml`), and `Human review` (`pull-request-human-review.yml`,
 /// PR-004), which holds a PR with a red attention tag or a cost change
-/// until a human approves it (Jim, 2026-11-27).
+/// until a human approves it (Jim, 2026-11-27). `Human review` is a commit
+/// status that workflow posts with its `GITHUB_TOKEN`, so it too comes from
+/// the GitHub Actions app (Jim, 2026-11-28).
 pub const REQUIRED_CHECKS: [&str; 2] = ["CI result", "Human review"];
 
 /// The GitHub Actions app's ID, so only a check from Actions counts.
