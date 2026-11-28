@@ -12,7 +12,7 @@
 ## What it's for
 
 The server-side net behind the repo's own secret scan and dependency audit
-([threat check plan](../plans/2026-11-threat-check.md)): GitHub blocks a
+([threat check plan](../../../threat/docs/plans/2026-11-threat-check.md)): GitHub blocks a
 push that contains a known secret, raises Dependabot alerts and opens
 security update PRs, and lets outsiders report a vulnerability privately.
 

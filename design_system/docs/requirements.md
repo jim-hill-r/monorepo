@@ -6,7 +6,7 @@ use those apps. The format and the rules are in
 check each requirement are in [evals.toml](../evals.toml).
 
 Drafted by an agent on 2026-11-27 from the README, the
-[design system plan](../../standards/docs/plans/2026-11-design-system.md),
+[design system plan](plans/2026-11-design-system.md),
 `docs/contrast.md` and the existing tests. design_system has no deep review
 yet, so these are a first guess at Jim's intent. Its production surface is
 the preview site, <https://jimhillr-design-system.pages.dev>; the apps that

@@ -5,11 +5,11 @@ and potential costs and potential for overruns."
 
 This plan ties the pieces we already have into one process and fills the
 gaps. It doesn't replace them: the [cost check](2026-11-cost-check.md)
-(`docs/cost.toml`, the PR cost summary), [free-tiers.md](../free-tiers.md)
-(limits, budgets, guards), the weekly usage run, [repo health](../repo-health.md)
+(`docs/cost.toml`, the PR cost summary), [free-tiers.md](../../../standards/docs/free-tiers.md)
+(limits, budgets, guards), the weekly usage run, [repo health](../../../standards/docs/repo-health.md)
 and PR triage, the weekly human issues digest and its settings checks
 (`standards/settings.toml`), and the billing checks that the free-tier
-payment check work is adding ([Billing checks](../free-tiers.md#billing-checks):
+payment check work is adding ([Billing checks](../../../standards/docs/free-tiers.md#billing-checks):
 `standards/scripts/billing-check.sh`, run by the `billing` job in
 `all-free-tier-usage.yml`). Jim, 2026-11-27: "the billing check should
 check every vendor in the tech radar", so it covers every vendor blip in
@@ -144,7 +144,7 @@ and the digest (weekly), with pane as the place to look anything up.
 
 - **Answers now:** the list of Squarespace domains with their prices and
   renewal dates, and a Squarespace budget (phase 4,
-  [runbook](../runbooks/squarespace-domains.md)).
+  [runbook](../../../standards/docs/runbooks/squarespace-domains.md)).
 - **Credentials, through the second approval (decision 0010):** phase 1
   needs the usage token to read Cloudflare account analytics; phase 3 needs
   an Auth0 token with `read:stats` and a number for
@@ -194,7 +194,7 @@ list comes from Jim once and is then kept true by a settings check.
 
 - Jim lists each domain, its yearly price, renewal date, auto-renew
   setting and what it is for (human task, runbook
-  [squarespace-domains.md](../runbooks/squarespace-domains.md)), and sets
+  [squarespace-domains.md](../../../standards/docs/runbooks/squarespace-domains.md)), and sets
   the Squarespace budget in the radar.
 - Each domain becomes a `[[cost]]` (`every = "year"`, `vendor =
   "Squarespace"`) in the `docs/cost.toml` of the project it serves, or in

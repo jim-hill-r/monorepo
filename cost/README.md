@@ -7,7 +7,7 @@ The cost check: it holds each project's cost analysis
 limits in `standards/radar/limits.toml`, so a PR that could change what the
 repo costs is caught before it merges. The format and rules are in
 [standards/docs/cost.md](../standards/docs/cost.md); the design and phases
-are in the [cost check plan](../standards/docs/plans/2026-11-cost-check.md).
+are in the [cost check plan](docs/plans/2026-11-cost-check.md).
 
 ## Crates
 

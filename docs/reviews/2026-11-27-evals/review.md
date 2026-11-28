@@ -34,7 +34,7 @@ explicit and checkable, and gives every project the same simple light:
 green (met), amber (at risk), red (not met) or grey (unknown).
 
 The design is in the
-[eval engine plan](../../../standards/docs/plans/2026-11-eval-engine.md) and
+[eval engine plan](../../../evals/docs/plans/2026-11-eval-engine.md) and
 [decision 0003](../../../standards/docs/decisions/0003-eval-engine.md), both
 approved on 2026-11-26. The day-to-day rules are in
 [standards/docs/evals.md](../../../standards/docs/evals.md).

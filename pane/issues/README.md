@@ -22,7 +22,7 @@ change" issues in the root [`issues/`](../../issues/).
 
 Needs Phases 3 to 5 above and the eval engine's `evals-results` files (root
 `issues/`, eval engine phase 1). The plan is
-[standards/docs/plans/2026-11-eval-engine.md](../../standards/docs/plans/2026-11-eval-engine.md).
+[evals/docs/plans/2026-11-eval-engine.md](../../evals/docs/plans/2026-11-eval-engine.md).
 
 ### Phase 7: revenue and cost
 

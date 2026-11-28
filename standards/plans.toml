@@ -1,0 +1,10 @@
+# Repo-wide plans: the only plans allowed in standards/docs/plans/
+# (DOC-010, `chores plans-check`, "Plans" in standards/docs/documentation.md).
+# A plan about one project lives in that project's docs/plans/ instead.
+# Each entry is the file name and why no single project owns it.
+
+[repo-wide]
+"2026-11-code-quality.md" = "The code quality process and ratchet for every project (decision 0015)."
+"2026-11-deploy-feedback.md" = "Preview deploys, smoke UAT and real-user review across every app (decision 0001)."
+"2026-11-resource-cleanup.md" = "Every live resource on every vendor, and retiring orphans repo-wide."
+"2026-11-user-feedback.md" = "User feedback and support for every product; moves to the feedback project once it exists."

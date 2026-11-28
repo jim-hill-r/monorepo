@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The weekly live threat check ("The weekly live check" in
-# standards/docs/plans/2026-11-threat-check.md, and "Live check" in
+# threat/docs/plans/2026-11-threat-check.md, and "Live check" in
 # standards/docs/security.md). The `threat-live` job of All Free Tier Usage
 # runs it every Monday with the same read-only Cloudflare token as the usage
 # check, so it needs no new secret.

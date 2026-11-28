@@ -8,7 +8,7 @@ Started 2026-11-26 from Jim's request:
 > requirements against as implemented.
 
 The decision behind this plan is
-[../decisions/0003-eval-engine.md](../decisions/0003-eval-engine.md). The work
+[../decisions/0003-eval-engine.md](../../../standards/docs/decisions/0003-eval-engine.md). The work
 items are issue files in the root [issues/](../../../issues/) with
 `epic: Eval engine`, and in [pane/issues/](../../../pane/issues/) for the
 pane pages, one group per phase below.
@@ -18,7 +18,7 @@ pane pages, one group per phase below.
 > phases below are the order the engine's capabilities arrive; keeping
 > every requirement green and growing coverage through issue files runs
 > continuously. See "Continuous improvement" in
-> [evals.md](../evals.md#continuous-improvement) and the
+> [evals.md](../../../standards/docs/evals.md#continuous-improvement) and the
 > [executive review](../../../docs/reviews/2026-11-27-evals/review.md).
 
 ## Goal
@@ -52,11 +52,11 @@ production stages, and the verdict.
 | Product requirements | None written down. Intent lives in READMEs, issue epics, plans and the review decks' Goals slide. |
 | CI | `mise run ci` per project on every PR (`pull-request-ci.yml`), on push to main, and nightly at 2 AM Pacific (`nightly-ci.yml`). |
 | CD | `push-main.yml` deploys affected projects; `nightly-cd.yml` redeploys the latest green main of every deploying project at 2:30 AM Pacific (PR #583, #595). `DEPLOY_URL` per project. |
-| UAT | Planned: Playwright `@smoke` against previews and production, `trycmd` for CLIs, scripted Bevy runs ([deploy feedback](2026-11-deploy-feedback.md), phases 2 and 3). |
+| UAT | Planned: Playwright `@smoke` against previews and production, `trycmd` for CLIs, scripted Bevy runs ([deploy feedback](../../../standards/docs/plans/2026-11-deploy-feedback.md), phases 2 and 3). |
 | Observability | Planned: `telemetry` Worker with Analytics Engine, Cloudflare Web Analytics, PostHog replay (deploy feedback, phases 4 and 5; decision 0001). |
 | Human review | Planned: pane ([plan](../../../pane/docs/plans/2026-11-review-dashboard.md), PR #606), with a traffic-light Health page and `pane-edit` PRs for writes. |
 | Chaos testing | None. |
-| Free tiers | Limits, budgets and guards in [free-tiers.md](../free-tiers.md) (PR #582). |
+| Free tiers | Limits, budgets and guards in [free-tiers.md](../../../standards/docs/free-tiers.md) (PR #582). |
 
 So the engine is built in the order its inputs become real: requirements and
 CI first, then production stages as the deploy-feedback plan lands them, then
@@ -96,7 +96,7 @@ and a number, and three fixed fields:
   written from it.
 - IDs are never reused. A dropped requirement stays with
   `- Status: retired (<date>, <why>)`, so old results still resolve.
-- The prefix is listed once in [naming.md](../naming.md) per project
+- The prefix is listed once in [naming.md](../../../standards/docs/naming.md) per project
   (`COOK`, `PANE`, `CAHO`, `HOME`, ...).
 
 Requirements are Jim's product intent, so a PR that adds or changes one is
@@ -687,13 +687,13 @@ phase 3.
 - Done (2026-11-27): `cd` evals after `deploy`, and the `http` eval kind
   (with `max_ms`); a failed `must` fails the deploy job. They will read
   the `smoke` reports from `target/evals-reports/cd/` once projects have
-  `smoke` tasks. See "After deploy" in [evals.md](../evals.md).
+  `smoke` tasks. See "After deploy" in [evals.md](../../../standards/docs/evals.md).
 - `trycmd` and `script` kinds for CLIs and controlled_chaos, against the
   released binaries. Done (2026-11-27): the `trycmd` kind, collected from
   the saved `cargo test` output.
 - Done (2026-11-27): eval triage, replacing the planned nightly FIX task.
   The free `evals-triage.yml` workflow files the issues daily (see
-  "Triage" in [evals.md](../evals.md)); the `eval-triage` skill is for
+  "Triage" in [evals.md](../../../standards/docs/evals.md)); the `eval-triage` skill is for
   the judgment calls it can't make (rollback advice, a disputed eval),
   run on demand, not as a daily Claude task (Jim, 2026-11-27).
 - `evals check` makes "every `must` has a production eval" an error.
@@ -739,7 +739,7 @@ Needs pane phases 3 to 5 (Worker, Health page, `pane-edit` writes).
 Needs Phase 5 (pane's Worker, Access and `pane-edit` writes).
 
 - `feedback/model` (built as phase 1 of the
-  [user feedback plan](2026-11-user-feedback.md), which also adds the public
+  [user feedback plan](../../../standards/docs/plans/2026-11-user-feedback.md), which also adds the public
   user widget, in-app help and a browser extension for this toolbar; the
   toolbar, webview and Bevy steps below moved to its Phase 8, one
   feedback tool with roles, Jim 2026-11-28), and
@@ -785,7 +785,7 @@ that needs them, not before:
 ## Cost
 
 All on approved vendors and free plans. Limits from
-[free-tiers.md](../free-tiers.md).
+[free-tiers.md](../../../standards/docs/free-tiers.md).
 
 | Piece | Free limit | Our use |
 | --- | --- | --- |

@@ -2,7 +2,7 @@
 //! each combination of scheme and accessible mode, and check contrast.
 //!
 //! See `design_system/README.md` and the plan in
-//! `standards/docs/plans/2026-11-design-system.md`.
+//! `design_system/docs/plans/2026-11-design-system.md`.
 
 pub mod check;
 pub mod color;

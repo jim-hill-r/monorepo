@@ -4,9 +4,9 @@
 - Decided by: Jim (project thread, 2026-11-27: "That all seems pretty reasonable", with every recommended answer)
 - Date: 2026-11-27
 - Asked by: Jim
-- Plan: [2026-11-revenue-402.md](../plans/2026-11-revenue-402.md)
-- Builds on: the [cost check](../plans/2026-11-cost-check.md),
-  [cost tracking](../plans/2026-11-cost-tracking.md) (PR #756), the billing
+- Plan: [2026-11-revenue-402.md](../../../cost/docs/plans/2026-11-revenue-402.md)
+- Builds on: the [cost check](../../../cost/docs/plans/2026-11-cost-check.md),
+  [cost tracking](../../../cost/docs/plans/2026-11-cost-tracking.md) (PR #756), the billing
   checks (PR #760), [0010](0010-credential-second-approval.md) and
   [0011](0011-mint-secrets-by-workflow.md)
 

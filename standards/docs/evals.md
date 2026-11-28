@@ -2,7 +2,7 @@
 
 How a project writes down its product requirements and the evals that check
 them. The why and the full design are in the
-[eval engine plan](./plans/2026-11-eval-engine.md) and
+[eval engine plan](../../evals/docs/plans/2026-11-eval-engine.md) and
 [decision 0003](./decisions/0003-eval-engine.md). This page is the
 convention: the two file formats every project uses and the rules
 `evals check` enforces.
@@ -44,7 +44,7 @@ their eval coverage."
   checks what the response says (`body_contains`), not only that it
   answered: a single-page app answers every path.
 
-The phases in the [plan](./plans/2026-11-eval-engine.md) are the order the
+The phases in the [plan](../../evals/docs/plans/2026-11-eval-engine.md) are the order the
 engine's *capabilities* arrive (metrics, chaos, ratings, in-app feedback,
 judge); the improvement loop above runs all the time, from today.
 
@@ -349,7 +349,7 @@ can read: Claude connectors and scheduled tasks, repo secrets, Auth0
 applications, Cloudflare token scopes, free-plan billing. They break
 silently (an expired connector sign-in, a token missing a scope, a dropped
 callback URL), so Jim checks each one on a schedule. The design is in the
-plan's [Human checks](./plans/2026-11-eval-engine.md#human-checks-settings-made-by-hand)
+plan's [Human checks](../../evals/docs/plans/2026-11-eval-engine.md#human-checks-settings-made-by-hand)
 section.
 
 ### The manifest
@@ -464,8 +464,8 @@ run creates the branch.
 Each requirement gets one verdict (met, at risk, not met, unknown) computed
 by the `evals/model` crate, with thresholds in `evals/verdicts.toml`. The
 rules are in the plan's
-[Results](./plans/2026-11-eval-engine.md#results) and
-[Verdicts](./plans/2026-11-eval-engine.md#verdicts) sections, plus the
+[Results](../../evals/docs/plans/2026-11-eval-engine.md#results) and
+[Verdicts](../../evals/docs/plans/2026-11-eval-engine.md#verdicts) sections, plus the
 human-check rules above. `verdicts.json` lists each project's requirements
 with their verdict and reasons, how many active `must` requirements it
 has and how many have a stored result from a production stage (an eval

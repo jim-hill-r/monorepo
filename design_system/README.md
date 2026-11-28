@@ -10,7 +10,7 @@ Apps can also define their own theme that extends a standard one, for
 example a Chicago Bears theme for bear_down.
 
 The plan, with the reasons behind each choice, is
-[standards/docs/plans/2026-11-design-system.md](../standards/docs/plans/2026-11-design-system.md).
+[design_system/docs/plans/2026-11-design-system.md](docs/plans/2026-11-design-system.md).
 The latest contrast results are in [docs/contrast.md](docs/contrast.md).
 
 ## Status

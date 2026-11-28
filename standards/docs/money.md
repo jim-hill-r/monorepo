@@ -3,7 +3,7 @@
 The repo keeps a public **financial ledger** of every money movement, and a
 **runway** that says how long the money lasts
 ([decision 0012](decisions/0012-revenue-and-http-402.md), revenue phase 1 of
-the [revenue plan](plans/2026-11-revenue-402.md)). It is kept double-entry
+the [revenue plan](../../cost/docs/plans/2026-11-revenue-402.md)). It is kept double-entry
 under the [accounting rules](cost.md#accounting-rules)
 ([decision 0016](decisions/0016-holding-and-handling-money.md)). The
 `cost money` command (the [`cost`](../../cost/README.md) project) writes

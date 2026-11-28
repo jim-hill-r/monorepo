@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DS-*: projects that have adopted the design system use its tokens, not raw
-# colours (standards/docs/plans/2026-11-design-system.md, "Using the tokens").
+# colours (design_system/docs/plans/2026-11-design-system.md, "Using the tokens").
 # Run by //:audit. Reads only repo files. Exits non-zero on any error.
 #
 #   DS-001  A CSS file in an adopted project has a raw colour in a declaration:

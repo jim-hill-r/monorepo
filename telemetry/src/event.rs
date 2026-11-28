@@ -14,7 +14,7 @@ pub const MAX_NOTE: usize = 200;
 pub const MAX_MESSAGE: usize = 500;
 
 /// The user agent token every eval, smoke and UAT run sends (eval engine
-/// phase 3, `standards/docs/plans/2026-11-eval-engine.md`).
+/// phase 3, `evals/docs/plans/2026-11-eval-engine.md`).
 pub const SYNTHETIC_AGENT: &str = "jimhillr-evals";
 
 /// Whether a request is accepted but not stored: Do Not Track, Global
