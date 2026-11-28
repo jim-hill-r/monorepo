@@ -12,7 +12,8 @@ Each story is a [Marp](https://marp.app/) slide deck, one deck per story:
 - [The Psy Ents](The%20Psy%20Ents.md)
 - [The Psy Ents Go Climbing](The%20Psy%20Ents%20Go%20Climbing.md)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to preview a story.
+The [user guide](docs/user/README.md) says how to read the stories, and
+[CONTRIBUTING.md](CONTRIBUTING.md) how to write and preview one.
 
 ## Writing notes
 
