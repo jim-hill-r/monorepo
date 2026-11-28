@@ -11,6 +11,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
+- [Infrastructure as code](./infra.md) - Dashboard settings as code in `infra`: adding a resource, the plan guards, state, drift, and why IaC never destroys
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Runbooks](./runbooks/README.md) - Step-by-step runbooks for every task only a person can do
 - [Naming](./naming.md) - Naming conventions

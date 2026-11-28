@@ -61,6 +61,14 @@ So most of the work is shared with the browser flow. Only "open a URL" and
   timeout, so a browser's speculative preconnect that never sends can't
   block the real callback. Phase 3 checks whether
   Auth0 has since relaxed this; if it has, the list shrinks to port 0.
+- **Mobile callback (phase 5):** the redirect URI is
+  `com.jimhillr.cahokia://callback`, registered in
+  `cahokia/mobile/ios/Info.plist`. iOS hands the opened URL to the app as
+  tao's `Event::Opened`, which the app reads with
+  `dioxus::mobile::use_wry_event_handler`. tao doesn't do this on Android
+  (it never forwards the activity's intent), so Android is phase 5b. Since
+  the app can't tell when the user closes the browser without signing in,
+  the waiting state has a Cancel button instead of a timeout.
 - **Tokens stay in memory** until phase 6. Staying signed in across
   restarts needs a refresh token in the OS keychain, which is its own
   decision (scopes, storage, revocation).
@@ -75,7 +83,8 @@ Each phase is an issue file with the `Native sign-in` epic.
 | 2 | Loopback listener and system browser for desktop | auth_sdk | done: `native::loopback` |
 | 3 | A native Auth0 application for cahokia, through IaC | infra | [native-sign-in-phase-3-auth0-native-app.md](../../../infra/issues/native-sign-in-phase-3-auth0-native-app.md) |
 | 4 | cahokia desktop Login button signs in | cahokia/desktop | [native-sign-in-phase-4-desktop-login.md](../../../cahokia/desktop/issues/native-sign-in-phase-4-desktop-login.md) |
-| 5 | cahokia mobile Login with a custom URL scheme | cahokia/mobile | [native-sign-in-phase-5-mobile-login.md](../../../cahokia/mobile/issues/native-sign-in-phase-5-mobile-login.md) |
+| 5 | cahokia mobile Login with a custom URL scheme | cahokia/mobile | done for iOS: `cahokia/mobile/src/auth.rs`, client ID from phase 3 |
+| 5b | Android hands the callback URL to the app | cahokia/mobile | [native-sign-in-phase-5b-android-callback.md](../../../cahokia/mobile/issues/native-sign-in-phase-5b-android-callback.md) |
 | 6 | Stay signed in: refresh token in the OS keychain | auth_sdk | [native-sign-in-phase-6-stay-signed-in.md](../../issues/native-sign-in-phase-6-stay-signed-in.md) |
 
 Phase 3 is a credential change (a new Auth0 application and its grants), so

@@ -91,6 +91,20 @@ server: no cookies, no sign-in and nothing about who you are. If your
 browser has Do Not Track or Global Privacy Control turned on, the vote
 buttons don't appear at all.
 
+## How to look back at a past week
+
+Under the list, **Past weeks** lets you pick an earlier week of the season
+(it appears once the site has some to show). Choose one and the page shows
+that week's guide in the same layout, from the results known before that
+week: the Bears' odds then and which games to root for. A note at the top
+says which week you're looking at, and **Back to this week** (or **This
+week** in the picker) returns to the current guide.
+
+A past week is rebuilt every night with today's model, so it can differ a
+little from what the page said that week, for example after an
+improvement to the odds or the explanations. Past weeks have no vote
+buttons and no celebration banner.
+
 ## How to change the colours
 
 At the bottom of the page, **Appearance** has three choices: **Theme**
