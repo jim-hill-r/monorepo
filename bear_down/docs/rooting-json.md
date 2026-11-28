@@ -18,6 +18,7 @@ example `CHI`, `DET`, `GB`, `MIN`. Dates are `YYYY-MM-DD`.
 | `bears.division_lead` | number | Games ahead of the best NFC North rival, by record alone (no tiebreakers; a tie counts half): positive is alone in first place, 0 is tied for it, negative is behind. |
 | `bears.division_rival` | string | That best rival. |
 | `bears.odds` | object | `playoffs`, `divisional_round`, `conference_game`, `super_bowl` (reached it), `champion` (won it). |
+| `banner` | object or null | The celebration banner, worked out every build from the current results, or null unless the Bears' most recent game (regular season or playoffs) was a win. `headline` is the score ("Bears win! Chicago 39, Lions 35."); `lines` holds up to two notes, the first that apply in this order: the next playoff round, the NFC North race (clinched, alone in first or tied for it), a clear move in Super Bowl or playoff odds since just before that week (from a second simulation as of then), a winning streak of three or more, and the record. Missing in older files. The rules are in `cli/src/banner.rs`. |
 | `nfc_north_divisional` | number | The chance all four NFC North teams reach the divisional round (decision 0007). |
 | `games` | array | The current week's games still to be played, in schedule order. |
 
@@ -76,6 +77,10 @@ A swing object has:
     "odds": { "playoffs": 0.907, "divisional_round": 0.580, "conference_game": 0.301, "super_bowl": 0.145, "champion": 0.068 },
     "division_lead": 1.0,
     "division_rival": "DET"
+  },
+  "banner": {
+    "headline": "Bears win! Chicago 39, Lions 35.",
+    "lines": ["Alone in first place in the NFC North, a game ahead of the Lions.", "Super Bowl odds up from 7.8% to 11%."]
   },
   "nfc_north_divisional": 0.0006,
   "games": [

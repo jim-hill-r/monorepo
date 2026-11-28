@@ -13,6 +13,10 @@ pub struct Rooting {
     pub simulations: u32,
     pub latest_game: Option<LatestGame>,
     pub bears: Bears,
+    /// The celebration banner the nightly build worked out: only after a
+    /// Bears win. Missing in older files.
+    #[serde(default)]
+    pub banner: Option<Banner>,
     pub nfc_north_divisional: f64,
     pub games: Vec<Game>,
 }
@@ -39,11 +43,13 @@ pub struct Bears {
     pub division_rival: Option<String>,
 }
 
-/// The celebration banner: a headline and a line under it.
-#[derive(Clone, Debug, PartialEq)]
+/// The celebration banner: a headline and the lines under it, picked by the
+/// CLI from the current results (`cli/src/banner.rs`).
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Banner {
     pub headline: String,
-    pub line: String,
+    #[serde(default)]
+    pub lines: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -195,50 +201,6 @@ impl Rooting {
     }
 
     /// True when the Bears can no longer make the playoffs.
-    /// The banner to celebrate the Bears' place atop the NFC North, with
-    /// their latest win if they just won. None when they aren't in first.
-    pub fn banner(&self) -> Option<Banner> {
-        let lead = self.bears.division_lead?;
-        if lead < 0.0 {
-            return None;
-        }
-        let line = if lead == 0.0 {
-            "Tied for first place in the NFC North.".to_string()
-        } else {
-            let rival = self
-                .bears
-                .division_rival
-                .as_deref()
-                .map(crate::teams::nickname)
-                .unwrap_or("pack");
-            let games = if lead == 1.0 {
-                "a game".to_string()
-            } else {
-                format!("{lead} games")
-            };
-            format!("Alone in first place in the NFC North, {games} ahead of the {rival}.")
-        };
-        let won = self.latest_game.as_ref().and_then(|game| {
-            let (us, them, opponent) = if game.home == "CHI" {
-                (game.home_score, game.away_score, &game.away)
-            } else if game.away == "CHI" {
-                (game.away_score, game.home_score, &game.home)
-            } else {
-                return None;
-            };
-            (us > them).then(|| {
-                format!(
-                    "Bears win! Chicago {us}, {} {them}.",
-                    crate::teams::nickname(opponent)
-                )
-            })
-        });
-        Some(Banner {
-            headline: won.unwrap_or_else(|| "Bear Down!".to_string()),
-            line,
-        })
-    }
-
     pub fn bears_eliminated(&self) -> bool {
         self.bears.odds.playoffs <= 0.0
     }
@@ -468,55 +430,34 @@ mod tests {
     }
 
     #[test]
-    fn the_banner_celebrates_first_place_and_the_latest_win() {
+    fn the_banner_is_read_from_the_file() {
         let mut rooting = match Rooting::parse(SAMPLE) {
             Ok(rooting) => rooting,
             Err(error) => panic!("sample should parse: {error}"),
         };
-        rooting.bears.division_lead = Some(1.0);
-        rooting.bears.division_rival = Some("DET".to_string());
-        rooting.latest_game = Some(LatestGame {
-            id: "2026_12_CHI_DET".to_string(),
-            gameday: "2026-11-26".to_string(),
-            away: "CHI".to_string(),
-            home: "DET".to_string(),
-            away_score: 39,
-            home_score: 35,
-        });
-        assert_eq!(
-            rooting.banner(),
-            Some(Banner {
-                headline: "Bears win! Chicago 39, Lions 35.".to_string(),
-                line: "Alone in first place in the NFC North, a game ahead of the Lions."
-                    .to_string(),
-            })
-        );
-        // Someone else's game: still first, no win to cheer.
-        if let Some(game) = rooting.latest_game.as_mut() {
-            game.away = "GB".to_string();
-        }
-        rooting.bears.division_lead = Some(1.5);
-        let banner = rooting.banner();
+        let banner = rooting.banner.take();
         assert_eq!(
             banner.as_ref().map(|b| b.headline.as_str()),
-            Some("Bear Down!")
+            Some("Bears win! Chicago 39, Lions 35.")
         );
+        assert!(banner.is_some_and(|b| !b.lines.is_empty()));
+        // No banner after a loss (null), or in an older file (missing).
+        let mut json: serde_json::Value = match serde_json::from_str(SAMPLE) {
+            Ok(json) => json,
+            Err(error) => panic!("sample is JSON: {error}"),
+        };
+        json["banner"] = serde_json::Value::Null;
         assert_eq!(
-            banner.map(|b| b.line),
-            Some(
-                "Alone in first place in the NFC North, 1.5 games ahead of the Lions.".to_string()
-            )
+            Rooting::parse(&json.to_string()).map(|r| r.banner),
+            Ok(None)
         );
-        rooting.bears.division_lead = Some(0.0);
+        if let Some(fields) = json.as_object_mut() {
+            fields.remove("banner");
+        }
         assert_eq!(
-            rooting.banner().map(|b| b.line),
-            Some("Tied for first place in the NFC North.".to_string())
+            Rooting::parse(&json.to_string()).map(|r| r.banner),
+            Ok(None)
         );
-        // Behind, or an older file: no banner.
-        rooting.bears.division_lead = Some(-1.0);
-        assert_eq!(rooting.banner(), None);
-        rooting.bears.division_lead = None;
-        assert_eq!(rooting.banner(), None);
     }
 
     #[test]

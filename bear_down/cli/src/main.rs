@@ -10,8 +10,11 @@
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bear_down_core::{EloParams, Ratings, Schedule, SimConfig, Standings, simulate};
+use bear_down_core::{
+    EloParams, Ratings, Schedule, SimConfig, Simulation, Standings, Team, TeamOdds, simulate,
+};
 
+mod banner;
 mod rooting;
 mod why;
 
@@ -159,20 +162,49 @@ fn build(
     generated_at: String,
 ) -> Result<rooting::Guide, String> {
     let season = schedule.latest_season().ok_or("games.csv has no games")?;
+    let simulation = run_simulation(schedule, simulations)?;
+    let standings = Standings::from_season(&season)?;
+    let banner = banner::banner(&banner::Context {
+        season: &season,
+        standings: &standings,
+        focus: simulation.focus,
+        odds: simulation.odds(simulation.focus),
+        odds_before: odds_before(schedule, simulations),
+    });
+    Ok(rooting::Guide::new(
+        &simulation,
+        &standings,
+        season.latest_played(),
+        banner,
+        generated_at,
+    ))
+}
+
+/// Simulates the rest of the schedule's latest season.
+fn run_simulation(schedule: &Schedule, simulations: Option<u32>) -> Result<Simulation, String> {
+    let season = schedule.latest_season().ok_or("games.csv has no games")?;
     let ratings = Ratings::from_schedule(schedule, EloParams::default());
     let week = season.current_week().map_or(0, |week| week.number);
     let mut config = SimConfig::weekly(season.year, week);
     if let Some(simulations) = simulations {
         config.simulations = simulations;
     }
-    let simulation = simulate(&season, &ratings, &config)?;
-    let standings = Standings::from_season(&season)?;
-    Ok(rooting::Guide::new(
-        &simulation,
-        &standings,
-        season.latest_played(),
-        generated_at,
-    ))
+    simulate(&season, &ratings, &config)
+}
+
+/// The Bears' odds just before the week of their latest regular-season
+/// game, for the banner's "odds up from" line: a second simulation of the
+/// schedule as it stood then. `None` when there is no such game or it was a
+/// playoff game.
+fn odds_before(schedule: &Schedule, simulations: Option<u32>) -> Option<TeamOdds> {
+    let season = schedule.latest_season()?;
+    let game = banner::latest_game(&season, Team::BEARS)?;
+    if game.game_type.is_playoff() {
+        return None;
+    }
+    let before = schedule.as_of(season.year, game.week).ok()?;
+    let simulation = run_simulation(&before, simulations).ok()?;
+    Some(simulation.odds(simulation.focus))
 }
 
 /// Formats `time` as an RFC 3339 UTC timestamp to the second.
@@ -334,6 +366,7 @@ mod tests {
             "simulations",
             "latest_game",
             "bears",
+            "banner",
             "nfc_north_divisional",
             "games",
         ] {
@@ -370,6 +403,43 @@ mod tests {
         // game and a half.
         assert_eq!(json["bears"]["division_lead"].as_f64(), Some(1.5));
         assert_eq!(json["bears"]["division_rival"], "GB");
+        // Their latest game, week 17 at the 49ers, was a 42-38 loss.
+        assert!(json["banner"].is_null());
+    }
+
+    #[test]
+    fn the_banner_follows_a_bears_win_with_current_context() {
+        let full = match Schedule::parse(include_str!("../../core/fixtures/seasons.csv")) {
+            Ok(schedule) => schedule,
+            Err(error) => panic!("fixture should parse: {error}"),
+        };
+        let banner_as_of = |week: u8| {
+            let schedule = match full.as_of(2025, week) {
+                Ok(schedule) => schedule,
+                Err(error) => panic!("2025 week {week}: {error}"),
+            };
+            match build(&schedule, Some(2_000), "2026-01-01T00:00:00Z".into()) {
+                Ok(guide) => guide.banner,
+                Err(error) => panic!("build should succeed: {error}"),
+            }
+        };
+        // 2025 before week 17: the Bears had just beaten the Packers 22-16.
+        let Some(banner) = banner_as_of(17) else {
+            panic!("a win should get a banner");
+        };
+        assert_eq!(banner.headline, "Bears win! Chicago 22, Packers 16.");
+        assert!(!banner.lines.is_empty() && banner.lines.len() <= banner::MAX_LINES);
+        assert!(
+            banner.lines[0].contains("NFC North"),
+            "the division race leads: {:?}",
+            banner.lines
+        );
+        // After the wild-card win over the Packers, 31-27.
+        let Some(banner) = banner_as_of(20) else {
+            panic!("a playoff win should get a banner");
+        };
+        assert_eq!(banner.headline, "Bears win! Chicago 31, Packers 27.");
+        assert_eq!(banner.lines, ["On to the divisional round."]);
     }
 
     #[test]
