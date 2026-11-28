@@ -1,0 +1,3 @@
+[project]
+name = "backups"
+description = "Backups, restore drills and disaster recovery for everything in the repo that holds state."

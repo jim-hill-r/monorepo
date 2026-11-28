@@ -17,6 +17,7 @@ config_roots = [
   "athenaeum",
   "athenaeum/learning/computer_science/algorithms/neet_code_150",
   "auth_sdk",
+  "backups",
   "bear_down",
   "bear_down/cloudflare",
   "bear_down/web",

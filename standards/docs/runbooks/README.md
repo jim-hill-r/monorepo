@@ -43,6 +43,8 @@ run book in the task."
 | [List the Squarespace domains](squarespace-domains.md) | one-time, then every 90 days | `list-squarespace-domains.md` |
 | [Get a free EIN and open a separate free account for project money](open-project-bank-account-and-ein.md) | one-time | `open-project-bank-account-and-ein.md` |
 | [Turn off GitHub email notifications on the three jimhillr accounts](github-email-notifications-off.md) | one-time per account, checked every 180 days | `github-email-notifications-off.md` |
+| [Save the account recovery codes offline](account-recovery-codes.md) | one-time, checked every 365 days | `save-account-recovery-codes.md` |
+| [Make the backup encryption key](backup-encryption-key.md) | one-time | `make-the-backup-key.md` |
 
 The Infra Mint workflow (`.github/workflows/infra-mint.yml`, decision 0011)
 makes every other infra secret from the bootstrap credentials and the GitHub App below: the state
@@ -59,6 +61,8 @@ and apply tokens, the Auth0 read and apply apps and the Android release key.
 | [Set or raise a budget](set-a-budget.md) | An agent asks for a budget number |
 | [Approve a new vendor](approve-a-vendor.md) | A decision record or PR proposes a vendor outside the approved list |
 | [Rotate or revoke a secret](rotate-a-secret.md) | A token is about to expire, a check says one is wrong, or one may have leaked |
+| [Recover from a disaster](disaster-recovery.md) | Something in `backups/docs/inventory.md` is lost, and the yearly tabletop drill |
+| [Keep an offline copy of the repo](offline-backup-copy.md) | Every 90 days (settings check `offline-backup-copy`) |
 
 ### Done once (keep for a rebuild)
 

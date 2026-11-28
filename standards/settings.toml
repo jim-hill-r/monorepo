@@ -346,3 +346,29 @@ where = "rapidapi.com > My Apps > the homer app > Authorization"
 expect = "The application key was regenerated within the last 365 days and RAPIDAPI_KEY where you run homer has the new one (standards/docs/runbooks/rapidapi-zillow.md)."
 why = "It lives outside GitHub, on your machine, so only a reminder rotates it."
 every = "365d"
+
+# Backups and disaster recovery (decision 0030).
+
+[[setting]]
+id = "offline-backup-copy"
+vendor = "GitHub"
+where = "Your own computer or backup drive, from github.com/jimhillr/monorepo (git clone --mirror, or Code > Download ZIP)"
+expect = "A copy of the repo dated within the last 90 days is on your own computer or drive, and its cookbook/content folder has recipes in it (standards/docs/runbooks/offline-backup-copy.md)."
+why = "It is the only copy of the cookbook that survives losing both GitHub and Cloudflare (BACK-001)."
+every = "90d"
+
+[[setting]]
+id = "account-recovery-codes"
+vendor = "GitHub"
+where = "Your password manager and the paper sheet, for GitHub, Cloudflare, Auth0, PostHog, Squarespace, Claude and your email"
+expect = "Every account in standards/docs/runbooks/account-recovery-codes.md has 2FA on and saved, unused recovery codes or a second passkey."
+why = "Losing an account is the one disaster no backup undoes."
+every = "365d"
+
+[[setting]]
+id = "disaster-recovery-tabletop"
+vendor = "GitHub"
+where = "A thread with an agent, reading case F of standards/docs/runbooks/disaster-recovery.md"
+expect = "You and an agent walked through restoring after losing GitHub within the last 365 days, and the agent's PR fixed every wrong step."
+why = "A restore plan that has never been read against today's setup is out of date when it is needed."
+every = "365d"
