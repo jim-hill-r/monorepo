@@ -468,7 +468,8 @@ rules are in the plan's
 [Verdicts](./plans/2026-11-eval-engine.md#verdicts) sections, plus the
 human-check rules above. `verdicts.json` lists each project's requirements
 with their verdict and reasons, how many active `must` requirements it
-has and how many have an eval in a production stage, and its [eval
+has and how many have a stored result from a production stage (an eval
+planned for `cd` that has never run doesn't count), and its [eval
 coverage](#eval-coverage); the file's top-level `coverage` is the repo's.
 
 To see the current verdicts, run
