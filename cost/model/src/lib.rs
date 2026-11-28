@@ -1,7 +1,8 @@
 //! The cost model: the `docs/cost.toml` each project keeps, the free limits
 //! in `standards/radar/limits.toml`, the vendor blips in
 //! `standards/radar/radar.json`, the detectors in `standards/radar/detectors.toml`, and the rules
-//! (COST-001 to COST-010) that hold them together, plus the per-PR summary and the renewals list.
+//! (COST-001 to COST-010) that hold them together, plus the per-PR summary, the renewals list,
+//! and the financial ledger and runway (`money`).
 //! The convention is in `standards/docs/cost.md`.
 //!
 //! No I/O: callers read the files and pass their text in, so pane and the
@@ -11,6 +12,7 @@ mod cost_file;
 mod detectors;
 mod finding;
 mod limits;
+mod money;
 mod month;
 mod radar;
 mod render;
@@ -24,6 +26,11 @@ pub use detectors::{
 };
 pub use finding::{Code, Finding};
 pub use limits::{Limit, LimitsFile, Scope, parse_limits};
+pub use money::{
+    BANK, Books, Line, OWNER, REPO_WIDE, RUNWAY_FILE, Runway, RunwayFile, Statement, Status,
+    Totals, expense_account, ledger, month_lines, parse_runway_file, revenue_account, runway,
+    split_shared_costs, totals,
+};
 pub use month::Month;
 pub use radar::{Blip, Radar, parse_radar};
 pub use render::render_limits;

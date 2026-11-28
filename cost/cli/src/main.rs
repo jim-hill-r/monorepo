@@ -3,6 +3,7 @@
 mod check;
 mod evals;
 mod git;
+mod money;
 mod render;
 mod summary;
 
@@ -84,6 +85,20 @@ enum Command {
         /// The date to count from, YYYY-MM-DD. Defaults to today (UTC).
         #[arg(long)]
         today: Option<NaiveDate>,
+    },
+    /// Write the financial ledger's statement for a month and the runway:
+    /// <out>/statements/<yyyy-mm>.json and <out>/runway.json. Needs the full
+    /// git history (the merged PRs split the shared costs).
+    Money {
+        /// Repo root. Defaults as for `check`.
+        #[arg(long)]
+        root: Option<PathBuf>,
+        /// The month, YYYY-MM. Defaults to this month (UTC), so far.
+        #[arg(long)]
+        month: Option<cost_model::Month>,
+        /// Where to write. The monthly statement PR uses standards/money.
+        #[arg(long, default_value = "target/money")]
+        out: PathBuf,
     },
     /// Rewrite the limit tables in standards/docs/free-tiers.md from
     /// standards/radar/limits.toml.
@@ -175,11 +190,43 @@ fn run(cli: Cli) -> Result<ExitCode> {
             print!("{}", cost_model::render_renewals(&due, today, within));
             Ok(ExitCode::SUCCESS)
         }
+        Command::Money { root, month, out } => {
+            let root = find_root(root)?;
+            let month = match month {
+                Some(month) => month,
+                None => this_month()?,
+            };
+            let out = if out.is_absolute() {
+                out
+            } else {
+                root.join(out)
+            };
+            let written = money::money(&root, month, &out)?;
+            if let Some(path) = &written.statement {
+                println!("cost money: wrote {}", path.display());
+            }
+            let r = &written.status;
+            println!(
+                "cost money: wrote {}: {} after {}, balance {} cents, burn {} cents a month",
+                written.runway.display(),
+                serde_json::to_string(&r.status)?.trim_matches('"'),
+                r.month,
+                r.balance_cents,
+                r.burn_cents
+            );
+            Ok(ExitCode::SUCCESS)
+        }
         Command::Render { root, check } => {
             let root = find_root(root)?;
             render::render(&root, check)
         }
     }
+}
+
+fn this_month() -> Result<cost_model::Month> {
+    let today = chrono::Utc::now().date_naive();
+    cost_model::Month::new(today.year(), today.month())
+        .ok_or_else(|| anyhow::anyhow!("today's month is out of range"))
 }
 
 fn find_root(root: Option<PathBuf>) -> Result<PathBuf> {
