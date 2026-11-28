@@ -1,0 +1,83 @@
+# Shared mise tasks for Rust Cloudflare Workers (workers-rs) that serve a web
+# app's build as Workers static assets and run the Worker only for the paths
+# in run_worker_first (usually /api/*). pane uses it, and bear_down's plan
+# serves from Workers static assets the same way.
+#
+# The project holds wrangler.toml with an [assets] directory pointing at the
+# web app's release output and a [build] command that runs worker-build.
+# Override [tasks."release:assets"] in the project's mise.toml to build that
+# web app, and set the production URL as DEPLOY_URL in its [env] (CI links it
+# from the GitHub deployment). Keep the Worker's logic in modules that build
+# natively, so `cargo test` checks it, and gate the workers-rs glue behind
+# cfg(target_arch = "wasm32"). deploy needs CLOUDFLARE_API_TOKEN (with
+# Workers Scripts Write) and CLOUDFLARE_ACCOUNT_ID, and creates the Worker
+# only while the account stays inside its Workers budget
+# (standards/docs/free-tiers.md). ci also runs the ignored tests/e2e.rs when
+# the project has one (pane/cloudflare's serves the Worker with wrangler dev).
+# Needs in [tools]: rust with the wasm32-unknown-unknown target, node,
+# "npm:wrangler", "cargo:worker-build".
+
+[fmt-check]
+run = "cargo fmt --all --check"
+
+[lint]
+run = [
+  "cargo clippy -- -D warnings",
+  "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
+]
+
+[build]
+run = "cargo build --target wasm32-unknown-unknown"
+
+[test]
+run = "cargo test"
+
+["ci:deps"]
+description = "System packages CI needs; override in a project's mise.toml"
+run = "true"
+
+[ci]
+description = "Everything CI checks; makes no artifacts (test reports go in target/evals-reports)"
+depends = ["ci:deps"]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy -- -D warnings",
+  "cargo clippy --target wasm32-unknown-unknown -- -D warnings",
+  "cargo build --target wasm32-unknown-unknown",
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" report cargo-test cargo test",
+  # A project's tests/e2e.rs (an ignored test) builds the Worker and checks it under wrangler dev.
+  "[ ! -f tests/e2e.rs ] || cargo test --test e2e -- --ignored",
+]
+
+[fix]
+run = [
+  "cargo fmt --all",
+  "cargo clippy --all-targets --fix --allow-dirty --allow-staged",
+]
+
+["release:assets"]
+description = "Build the web app the Worker serves; override in mise.toml"
+run = "echo 'release:assets: override in mise.toml to build the web app this Worker serves'"
+
+[release]
+description = "Build the web app's assets, then the Worker bundle wrangler deploys"
+run = [
+  "mise run release:assets",
+  "worker-build --release",
+]
+
+[dev]
+description = "Serve the Worker and its assets locally with wrangler dev (run release first)"
+run = "wrangler dev"
+
+[deploy]
+description = "Deploy the Worker and its assets, creating the Worker only within the free tier Workers budget"
+depends = ["release"]
+run = [
+  "bash \"$(git rev-parse --show-toplevel)/standards/scripts/free-tiers.sh\" worker",
+  "wrangler deploy",
+]
+
+[evals]
+description = "Turn the reports ci saved into eval results (standards/docs/evals.md)"
+run = "bash \"$(git rev-parse --show-toplevel)/standards/scripts/evals.sh\" run"
