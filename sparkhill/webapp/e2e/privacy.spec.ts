@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
+import { saveSettings } from './settings-panel';
 
 /**
  * Nothing a learner types or draws leaves the device (SPRK-006): the app
@@ -39,7 +40,7 @@ test('a learner\'s name and tracings never leave the device @smoke @req:SPRK-006
   page.on('request', (request) => requests.push(request));
 
   await page.goto('/');
-  await page.getByPlaceholder('Your name').fill(NAME);
+  await saveSettings(page, { student: NAME, sequence: 'b, c, hi' });
   await page.getByRole('link', { name: 'Begin' }).click();
   await page.getByRole('button', { name: 'Start' }).click();
   await traceRight(page);
