@@ -10,9 +10,11 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod shell_scripts;
 mod sweep;
 mod tiers;
 mod user_docs;
+mod wrapped_checks;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -188,6 +190,29 @@ enum Command {
         /// Also write the report as JSON to this file.
         #[arg(long)]
         json: Option<PathBuf>,
+    },
+    /// The evals check (EVL-*, standards/docs/evals.md): run the evals
+    /// project's `evals check` once any project has a docs/requirements.md
+    /// or evals.toml. Warnings only, so it always exits 0. Run by
+    /// `mise run //:audit`.
+    EvalsCheck,
+    /// The threat check (THR-*, standards/docs/security.md): run the threat
+    /// project's `threat check` with these arguments (such as `--projects
+    /// a,b`); without any, THREAT_PROJECTS or else COST_PROJECTS becomes
+    /// `--projects` when set. Warnings only, so it always exits 0. Run by
+    /// `mise run //:audit`.
+    ThreatCheck {
+        /// Arguments for `threat check`.
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+    /// QUAL-404: fail on a tracked .sh file not listed in
+    /// standards/shell-scripts.toml, or a listed one that is gone. Scripts
+    /// stay Rust-only; the list only shrinks. Run by `mise run //:audit`.
+    ShellScripts {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
     },
     /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
     /// agent-generated and dated today.
@@ -411,6 +436,28 @@ fn run() -> Result<ExitCode> {
                 return Ok(ExitCode::FAILURE);
             }
         }
+        Command::EvalsCheck => {
+            if let Some(check) = wrapped_checks::evals(&root)? {
+                run_wrapped(&root, &check);
+            }
+        }
+        Command::ThreatCheck { args } => {
+            let threat = std::env::var("THREAT_PROJECTS").ok();
+            let cost = std::env::var("COST_PROJECTS").ok();
+            let check = wrapped_checks::threat(&args, threat.as_deref(), cost.as_deref());
+            run_wrapped(&root, &check);
+        }
+        Command::ShellScripts { json } => {
+            let report = shell_scripts::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", shell_scripts::render(&report));
+            }
+            if !report.ok() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
         Command::NewIssue {
             folder,
             slug,
@@ -471,6 +518,14 @@ fn run() -> Result<ExitCode> {
         }
     }
     Ok(ExitCode::SUCCESS)
+}
+
+/// Run a warnings-only check and print why it didn't run, if it didn't.
+fn run_wrapped(root: &Path, check: &wrapped_checks::Wrapped) {
+    let outcome = wrapped_checks::run(root, check);
+    if let Some(w) = wrapped_checks::warning(check.label, outcome) {
+        println!("{w}");
+    }
 }
 
 fn read_input(path: &Path) -> Result<String> {

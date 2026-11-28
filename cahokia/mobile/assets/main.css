@@ -7,3 +7,14 @@ body {
 .appearance {
     margin-top: var(--ds-space-6);
 }
+
+/* Sign-in status beside the navbar's Login, Cancel and Sign out buttons. */
+.auth-user,
+.auth-status,
+.auth-error {
+    margin-left: var(--ds-space-3);
+}
+
+.auth-error {
+    color: var(--ds-color-danger);
+}

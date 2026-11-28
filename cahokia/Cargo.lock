@@ -3257,7 +3257,10 @@ dependencies = [
  "design_system_dioxus",
  "dioxus",
  "dioxus-ssr",
+ "tokio",
+ "tracing",
  "ui",
+ "webbrowser",
 ]
 
 [[package]]

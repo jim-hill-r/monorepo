@@ -61,6 +61,16 @@ c new-human-task --slug make-state-passwords --title "Make the OpenTofu state pa
 # standards/user-docs.toml; run by `mise run //:audit`. Exit 1 on an error.
 c user-docs
 c user-docs --json
+
+# QUAL-404: fail on a tracked .sh file not in standards/shell-scripts.toml
+# (scripts stay Rust-only; the list only shrinks), or a stale line there.
+c shell-scripts
+
+# Warnings-only audit checks that run another project's CLI and always exit
+# 0: EVL-* (evals check, once a project has requirements or evals) and THR-*
+# (threat check; COST_PROJECTS or THREAT_PROJECTS picks the projects).
+c evals-check
+c threat-check --projects cookbook,pane
 ```
 
 ```bash
@@ -81,6 +91,7 @@ c sweep --live live.json --claims claims.tsv --json report.json
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
 | `sweep` | none (`resources.sh sweep` in All Free Tier Usage) | Sorting a live inventory against the claims by hand, or a longer embedded script |
+| `shell-scripts`, `evals-check`, `threat-check` | `mise run //:audit` (any skill's hooks) | `standards/scripts/evals-check.sh` and `threat-check.sh`, and a reviewer spotting a new `.sh` file |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command
