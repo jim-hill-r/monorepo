@@ -1,0 +1,3 @@
+[project]
+name = "jimhillr"
+description = "A Cargo workspace for code about the repository itself, such as the tests for its GitHub Actions workflows."

@@ -9,6 +9,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Documentation](./documentation.md) - Documentation standards
 - [Cost](./cost.md) - Each project's cost analysis (`docs/cost.toml`), the cost check and how an expense is approved
 - [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
+- [Money](./money.md) - The financial ledger's monthly statements and the runway, written by `cost money`
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
 - [Infrastructure as code](./infra.md) - Dashboard settings as code in `infra`: adding a resource, the plan guards, state, drift, and why IaC never destroys

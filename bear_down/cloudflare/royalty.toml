@@ -1,0 +1,3 @@
+[project]
+name = "bear_down_cloudflare"
+description = "Deploys the bear_down site to Cloudflare Pages, running the season simulation into the page's rooting data at release."

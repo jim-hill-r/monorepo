@@ -5,6 +5,7 @@
 #![cfg_attr(test, allow(clippy::expect_used, clippy::unwrap_used))]
 
 mod badges;
+mod conflict_markers;
 mod gate;
 mod issues;
 mod new_issue;
@@ -209,6 +210,13 @@ enum Command {
         /// Also write the report as JSON to this file.
         #[arg(long)]
         json: Option<PathBuf>,
+    },
+    /// Check that no tracked file holds an unresolved merge conflict marker
+    /// (STD-005). Exits 1 on any. Run by `mise run //:audit`.
+    ConflictMarkers {
+        /// Print JSON instead of text.
+        #[arg(long)]
+        json: bool,
     },
     /// The evals check (EVL-*, standards/docs/evals.md): run the evals
     /// project's `evals check` once any project has a docs/requirements.md
@@ -456,6 +464,17 @@ fn run() -> Result<ExitCode> {
             }
             print!("{}", sweep::render(&report));
             if report.failures().next().is_some() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::ConflictMarkers { json } => {
+            let findings = conflict_markers::check(&root)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&findings)?);
+            } else {
+                print!("{}", conflict_markers::render(&findings));
+            }
+            if !findings.is_empty() {
                 return Ok(ExitCode::FAILURE);
             }
         }

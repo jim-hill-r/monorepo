@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use ui::Navbar;
 use views::{FamilyTree, Home};
 
+mod auth;
 mod views;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -37,12 +38,7 @@ fn DesktopNavbar() -> Element {
         Navbar {
             Link { to: Route::Home {}, "Home" }
             Link { to: Route::FamilyTree {}, "Family Tree" }
-            button {
-                onclick: move |_| {
-                    // TODO: Implement desktop authentication when auth_sdk supports desktop platforms
-                },
-                "Login"
-            }
+            auth::DesktopAuth {}
         }
 
         Outlet::<Route> {}
