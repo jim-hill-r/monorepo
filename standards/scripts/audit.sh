@@ -16,7 +16,7 @@
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (`chores evals-check`); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
-#   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh); warnings only for now.
+#   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh).
 #   THR-*    Each project's docs/threat.toml (`chores threat-check`); warnings only for now.
 #   QUAL-404 No new tracked .sh files: the ones left to port are listed in
 #            standards/shell-scripts.toml (`chores shell-scripts`).
@@ -92,8 +92,8 @@ fi
 # COST-*: per-project cost analyses against the budgets. Warnings only.
 bash standards/scripts/cost-check.sh
 
-# ROY-001, RTOML-*: every project's royalty.toml. Warnings only.
-bash standards/scripts/royalty-check.sh
+# ROY-001, RTOML-*: every project's royalty.toml.
+bash standards/scripts/royalty-check.sh || errors=$((errors + 1))
 
 # THR-*: per-project threat models against the security rules. Warnings
 # only; COST_PROJECTS (or THREAT_PROJECTS) picks the affected projects.

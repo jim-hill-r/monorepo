@@ -1,0 +1,3 @@
+[project]
+name = "content_provider"
+description = "The cards and sections of content shown on the profile websites."
