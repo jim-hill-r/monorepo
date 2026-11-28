@@ -1,6 +1,6 @@
 # Plan: an archive of past weeks' guides
 
-- Status: proposed (2026-11-27), phase 1 in progress
+- Status: proposed (2026-11-27), phases 1 and 2 done, phase 3 next
 - Issue: the backlog's "Archive of past weeks' guides"
   ([0008](../decisions/0008-v1-scope.md) left it out of v1)
 - Builds on: [0001](../decisions/0001-static-site-rebuilt-weekly.md) and
@@ -58,7 +58,10 @@ Each is one PR.
    and week list) and `archive/<season>-week-<nn>.json`. It shows a week
    picker under the guide, with the past guide in the same layout and a
    "rebuilt with today's model" line. Includes Playwright tests and
-   screenshots of the picker on a phone.
+   screenshots of the picker on a phone. The index is
+   `{"weeks": [{"season": 2026, "week": 11}, ...]}` in any order; the page
+   offers them newest first, leaving out the week the live guide shows, and
+   shows no picker while there is no index (`docs/rooting-json.md`).
 3. **Build the archive on deploy.** The `cloudflare` release task builds
    every past week of the current season into `web/public/archive/`, plus
    the index. Waits for the deploy path fix in PR #774, which changes the

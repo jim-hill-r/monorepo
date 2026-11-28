@@ -45,7 +45,7 @@ id = "COOK-T2"
 stride = "elevation-of-privilege"
 what = "Script injected into the page (XSS) steals the Auth0 session."
 <<<<<<< HEAD
-mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts only from self and PostHog's script host us-assets.i.posthog.com, no inline script), frame-ancestors 'none', and Dioxus escaping rendered text."
+mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts only from self and PostHog's script host us-assets.i.posthog.com and Cloudflare Web Analytics' static.cloudflareinsights.com, no inline script), frame-ancestors 'none', and Dioxus escaping rendered text."
 =======
 mitigation = "A strict CSP in _headers and a matching <meta> CSP (default-src 'none', scripts and stylesheets only from self, no inline styles), frame-ancestors 'none', and Dioxus escaping rendered text."
 >>>>>>> origin/main

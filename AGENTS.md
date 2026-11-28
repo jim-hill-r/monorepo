@@ -39,6 +39,12 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   value. A change that makes or needs one adds its entry in the same PR; the
   weekly digest asks Jim to re-check each one on its schedule ("Human
   checks" in `standards/docs/evals.md`).
+- **Dashboard settings go into `infra` (decision 0007).** A setting made
+  in a vendor dashboard goes into the `infra` project when an OpenTofu
+  provider covers it, instead of a human task or a settings check; only
+  what no provider can express, or what would put a secret in state,
+  stays by hand. How to add one, the plan guards, state and drift are in
+  [standards/docs/infra.md](standards/docs/infra.md).
 - **Pull requests always open as drafts.** Mark a PR ready for review only once
   you judge it ready for human review. The `open-pull-request` skill has the
   full checklist. Don't hand a PR to a human (or present it as awaiting their
