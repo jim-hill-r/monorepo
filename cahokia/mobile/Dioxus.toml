@@ -1,0 +1,10 @@
+# dx settings for the mobile app. Run dx from this folder: dx reads
+# ios_info_plist relative to where it runs.
+
+[application]
+# dx uses this file as it is (it doesn't merge), so it carries the bundle
+# settings dx would write plus the sign-in URL scheme.
+ios_info_plist = "ios/Info.plist"
+
+[bundle]
+identifier = "com.jimhillr.cahokia"

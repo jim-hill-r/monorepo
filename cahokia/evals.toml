@@ -195,3 +195,47 @@ requirement = "CAHO-007"
 stages = ["ci"]
 kind = "playwright"
 description = "Drag to pan, zoom with buttons, wheel, pinch and Fit, and pick a focus person by click or from the list."
+
+# CAHO-009: The iOS app signs in through the browser
+
+[[eval]]
+id = "mobile-sign-in-custom-scheme"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_sign_in_round_trips_through_the_custom_scheme"
+
+[[eval]]
+id = "mobile-forged-state-refused"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_callback_with_the_wrong_state_is_refused"
+
+[[eval]]
+id = "mobile-info-plist-scheme"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_info_plist_registers_the_scheme"
+
+[[eval]]
+id = "mobile-signing-in-state"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_signing_in_points_at_the_browser_and_can_cancel"
+
+[[eval]]
+id = "mobile-signed-in-name"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "mobile_signed_in_shows_the_name_and_sign_out"
+
+[[eval]]
+id = "mobile-android-not-yet"
+requirement = "CAHO-009"
+stages = ["ci"]
+kind = "cargo"
+filter = "android_says_sign_in_is_not_available_yet"

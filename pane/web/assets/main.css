@@ -410,6 +410,13 @@ h1 {
   border-color: var(--ds-color-danger);
 }
 
+/* Waits for a human's approval ("Human review" in pull-requests.md). */
+.badge.human-review {
+  color: var(--ds-color-danger);
+  border-color: var(--ds-color-danger);
+  font-weight: 600;
+}
+
 .meta a.approve {
   font-weight: 600;
 }
