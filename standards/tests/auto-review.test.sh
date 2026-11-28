@@ -20,10 +20,10 @@ pr() { # draft, author, labels JSON, additions, base, body
 }
 green='{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},
   {"name":"PR summary","status":"completed","conclusion":"success"},
-  {"name":"Human review gate","status":"completed","conclusion":"success"},
+  {"name":"Human review label","status":"completed","conclusion":"success"},
   {"name":"Analyze (rust)","status":"completed","conclusion":"skipped"},
   {"name":"Auto review","status":"in_progress","conclusion":null}],
-  "statuses":[{"context":"Human review","state":"success"}]}'
+  "statuses":[]}'
 
 check() { # name, files, checks JSON, reviews JSON, expected prefix
   printf '%s\n' "$2" >"$tmp/files.txt"
@@ -55,19 +55,12 @@ check "security headers" "pane/web/public/_headers" "$green" '[]' "skip: touches
 check "a failing check" "pane/web/src/main.rs" \
   '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"failure"}],"statuses":[]}' '[]' "skip: check CI result is failure"
 check "a pending check" "pane/web/src/main.rs" \
-  '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},{"name":"PR summary","status":"completed","conclusion":"success"},{"name":"CodeQL","status":"queued"}],"statuses":[{"context":"Human review","state":"success"}]}' '[]' "skip: check CodeQL is queued"
+  '{"check_runs":[{"name":"CI result","status":"completed","conclusion":"success"},{"name":"PR summary","status":"completed","conclusion":"success"},{"name":"CodeQL","status":"queued"}],"statuses":[]}' '[]' "skip: check CodeQL is queued"
 check "CI result missing" "pane/web/src/main.rs" \
   '{"check_runs":[{"name":"PR summary","status":"completed","conclusion":"success"}],"statuses":[]}' '[]' "skip: check CI result has not passed"
 check "a failing commit status" "pane/web/src/main.rs" \
   "$(jq -c '.statuses = [{"context":"deploy","state":"pending"}]' <<<"$green")" '[]' "skip: check deploy is pending"
 
-check "Human review missing" "pane/web/src/main.rs" \
-  "$(jq -c '.statuses = []' <<<"$green")" '[]' "skip: check Human review has not passed"
-check "Human review waiting for a human" "pane/web/src/main.rs" \
-  "$(jq -c '.statuses = [{"context":"Human review","state":"pending"}]' <<<"$green")" '[]' "skip: check Human review is pending"
-check "an older Human review check run still counts" "pane/web/src/main.rs" \
-  "$(jq -c '.statuses = [] | .check_runs += [{"name":"Human review","status":"completed","conclusion":"success"}]' <<<"$green")" \
-  '[]' "approve:"
 check "an older cancelled run of a check doesn't count" "pane/web/src/main.rs" \
   "$(jq -c '.check_runs += [{"name":"CI result","status":"completed","conclusion":"cancelled","started_at":"2026-01-01T00:00:00Z"}]
     | (.check_runs[] | select(.name == "CI result" and .conclusion == "success")).started_at = "2026-01-01T00:01:00Z"' <<<"$green")" \

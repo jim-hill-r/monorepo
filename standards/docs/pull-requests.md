@@ -55,8 +55,11 @@ Dependabot PRs are exempt: their bodies are generated.
 Jim, 2026-11-27: "There are some badges I want at the top of a PR to let me
 know how much attention I should give. First is if a fundamental
 requirement is changing. Second if anything affecting a threat/risk is
-changing", and the cost tag above. The Attention section lists exactly one
-tag from each group, from this closed set (`Tag` in `chores/src/badges.rs`;
+changing", and the cost tag above. Jim, 2026-11-28: "Let's add a domain
+for our attention section in PRs. 'docs' and add a docs-reviewer. i want
+the attention section to state if it is only docs being updated which
+includes plans." The Attention section lists exactly one tag from each
+group, from this closed set (`Tag` in `chores/src/badges.rs`;
 the shell check lists the same names). `chores badges` (or `chores
 pr-body`, which calls it) works them out from the PR's diff against
 `origin/main`:
@@ -67,6 +70,7 @@ pr-body`, which calls it) works them out from the PR's diff against
 - 🔴 must-requirement-changed: `COOK-001`
 - 🟠 cost-changed: `cookbook/docs/cost.toml` (the Cost summary check says what moved)
 - 🟢 threat-risk-unchanged
+- 🟢 docs-changed: `cookbook/docs/requirements.md` alongside other files
 ```
 
 | Group | Tag | When |
@@ -78,6 +82,9 @@ pr-body`, which calls it) works them out from the PR's diff against
 | Cost | 🟢 `cost-unchanged` | No cost file changed |
 | Threat/risk | 🟠 `threat-risk-changed` | A risk file changed |
 | Threat/risk | 🟢 `threat-risk-unchanged` | No risk file changed |
+| Docs | 🔵 `docs-only` | Every changed file is docs. The `docs-reviewer` reviews it (decision 0019) |
+| Docs | 🟢 `docs-changed` | Docs changed alongside other files |
+| Docs | 🟢 `docs-unchanged` | No docs changed |
 
 Cost files are the files the [PR cost summary](cost.md) reads: each
 project's `docs/cost.toml`, `standards/radar/limits.toml`,
@@ -92,6 +99,15 @@ plus sign-in and credential code and the secrets rules: `auth_sdk/src/`,
 `infra/src/`, `infra/scripts/`, `standards/settings.toml`,
 `standards/docs/security.md`, `standards/docs/secret-rotation.md`, the
 secret and security check scripts, `SECURITY.md` and `CODEOWNERS`.
+
+Docs files are Markdown anywhere (`.md`, `.markdown`, `.mdx`): plans,
+decisions, retros, user guides, READMEs, review decks, issue files, skills
+and `AGENTS.md`, plus images (`.png`, `.jpg`, `.gif`, `.svg`, `.webp`) in
+a `docs/` folder. `is_docs_file` in `chores/src/badges.rs` decides it from
+each path alone, so every project is covered without a list to keep. A
+docs file can also be a requirements, cost or risk file (a
+`docs/requirements.md`, `standards/docs/security.md`), and then its own
+group says so too: `docs-only` never hides a red or orange tag.
 
 The tags are pointers, not gates: a requirement change still gets
 `needs-human` ([evals.md](evals.md)), the Cost summary job still labels
@@ -130,9 +146,10 @@ thread opened, once all of these hold:
   reviewer has an outstanding "changes requested". The approval can come from
   any reviewer except the PR's author, so an agent PR needs a reviewer other
   than `jimhillr-agt`.
-- Its checks are green (see below). That includes the **Human review**
-  check: a PR with a red attention tag or a cost change needs a human's
-  approval (see "Human review").
+- Its checks are green (see below).
+- A PR with a red attention tag or a cost change (labelled `human-review`)
+  has its approval from a human, never from `jimhillr-reviewer` or an agent
+  (see "Human review").
 
 An approval says the reviewer has judged the change safe, so merging needs
 nothing more. The safe-to-approve rules below are what a reviewer, including
@@ -173,53 +190,43 @@ a collaborator never count.
 
 A PR that needs a human:
 
-1. **Waits on the `Human review` status** (PR-004,
+1. **Is labelled `human-review`** (PR-004,
    `.github/workflows/pull-request-human-review.yml`, the logic in `chores
-   gate`): it is `pending` (yellow, "Waiting for a human to approve ...")
-   until a human collaborator approves its current head commit, with no
-   later "changes requested" from one, and `failure` (red) only while a
-   human's last word is "changes requested". The workflow runs again on
-   every review, so that approval turns it green. A PR a human collaborator
-   opened passes. The workflow builds `chores` from the base branch, so a
-   PR can't change the rules it is judged by.
-2. **Is labelled `human-review`** by that check while it waits, and the
-   check takes the label off again once a human approves. It is not
-   `needs-human`: that label still means a sign-off or manual step beyond
-   the approval, which the gate can't see.
-3. **May merge on the human's approval** (Jim, 2026-11-28: "Yes, merge on
-   my approval"). The check no longer turns auto-merge off, and an agent
-   may turn it on for a held PR under "Auto-merge" below once every other
-   check is green. Only a human's approval can then merge it, because
-   `jimhillr-reviewer` refuses it, agents never approve, and the `main`
-   ruleset dismisses an approval when commits are pushed. Without
-   auto-merge, that human, PR triage or any agent merges it by hand under
-   the merge rule once the human has approved and every check is green.
-4. **Is never approved by anyone but a human.** `jimhillr-reviewer`
-   refuses it (rules v2), and so do triage and agents.
+   gate`) until a human collaborator approves its current head commit,
+   with no later "changes requested" from one; the label comes off then.
+   The workflow runs again on every push, edit, label change and review.
+   A PR a human collaborator opened is never labelled. The workflow builds
+   `chores` from the base branch, so a PR can't change the rules it is
+   judged by. `human-review` is not `needs-human`: that label still means
+   a sign-off or manual step beyond the approval.
+2. **Is never approved by anyone but a human.** `jimhillr-reviewer`
+   refuses the label, red and orange attention tags and every protected
+   path (`cost.toml` and `requirements.md` among them), and triage and
+   agents never approve it. The `main` ruleset needs one approval and
+   dismisses it when commits are pushed, so only a human's approval of the
+   head can merge the PR.
+3. **Merges on the human's approval** (Jim, 2026-11-28: "Yes, merge on my
+   approval"). An agent marks it ready and turns auto-merge on as soon as
+   its checks are green, the same as any agent PR, so the approval is the
+   last step. Without auto-merge, that human, PR triage or any agent merges
+   it by hand under the merge rule.
 
-`Human review` is the one check that waits for a person, so a held PR is
-marked ready for review once every *other* check is green; its pending
-`Human review` is the approval it is waiting for, not a failure to fix.
+**It is not a CI check** (Jim, 2026-11-28: "this new human review check is
+causing all kinds of problems. It is preventing claude from marking PRs as
+ready for review and it shows CI as red which makes it hard for me to
+happily approve/rubber stamp a PR"). Earlier versions failed a `Human
+review` check (PR 904), then held a pending `Human review` commit status
+(PR 920); both made a PR waiting for Jim look broken, and agents waited for
+it to go green before marking the PR ready. Now the workflow posts no
+status, its job (`Human review label`) is green whenever it ran, and CI
+shows only real results. On a commit that still carries an old pending
+`Human review` status it posts `success` once to clear it. A fork's or
+Dependabot's token can't label, so those PRs show the reason only in the
+job summary; `jimhillr-reviewer` never approves them anyway.
 
-`Human review` is a **commit status**, not a check run (Jim, 2026-11-28,
-after PR 916: "I don't think that should block the merge once I
-approve"). The workflow runs once per event, and each run used to leave
-its own `Human review` check run on the commit, so the failed runs from
-before an approval stayed red beside the passing one and the PR still
-looked failed. A commit status has one context that each run replaces,
-so the latest verdict is the only one. The workflow's own job is called
-`Human review gate`; it is green whenever the gate ran, pending or not,
-and red only when the gate itself broke (it then posts the status as
-`error`). A fork's token can't post statuses, so a fork PR gets no
-`Human review` status and its `Human review gate` job fails; a human
-merges those by hand.
-
-Every other PR passes `Human review` at once. Once the `CI` ruleset in the
-`github` stack of `infra` is applied, `main` requires both `CI result` and
-`Human review`, so GitHub itself won't merge a held PR. Until then, the
-merge rule's "checks are green" is what holds it: a pending `Human
-review` is not green. A check that ran more than once on the head commit
-counts by its latest run.
+Nothing GitHub itself enforces checks the tags; the hold is the approval
+rule above. The `CI` ruleset in the `github` stack of `infra` requires only
+`CI result`.
 
 ## Auto-merge
 
@@ -232,13 +239,11 @@ these hold:
 - The PR meets the `open-pull-request` ready checklist: complete, every check
   finished and green on the head commit, and nothing left for a human to
   decide. A PR labelled `needs-human` or `credential-change` never gets
-  auto-merge. One held by `Human review` (a red or `cost-changed`
-  attention tag, the `cost` label, the `human-review` label) may, once
-  every other check is green, with `Human review` still pending: the
-  human's approval is then the last step (Jim, 2026-11-28; see "Human
+  auto-merge. One labelled `human-review` (or `cost`, or with a red or
+  `cost-changed` attention tag) does: only a human's approval can merge it,
+  so that approval is the last step (Jim, 2026-11-28; see "Human
   review").
-- No check is red, not even one also failing on `main`. (A pending `Human
-  review` status is not red.) Auto-merge can't
+- No check is red, not even one also failing on `main`. Auto-merge can't
   apply the "also failing on `main`" exception, so that PR is merged by hand
   under the merge rule instead.
 
@@ -309,10 +314,10 @@ judged by.
 1. Opened by `jimhillr-agt`, out of draft, based on `main` (a stack is
    approved as its retargeted top PR).
 2. Every check run on the head commit finished and passed (skipped and
-   neutral count), every commit status is success, and `CI result`, `PR
-   summary` and `Human review` all passed. Nothing pending.
-3. No red or orange attention label: `needs-human`, `credential-change`,
-   `security` or `cost`.
+   neutral count), every commit status is success, and `CI result` and `PR
+   summary` both passed. Nothing pending.
+3. No red or orange attention label: `needs-human`, `human-review`,
+   `credential-change`, `security` or `cost`.
 4. A `## Attention` section in the description with no red or orange
    tag: no `must-requirement-changed`, `cost-changed` or
    `threat-risk-changed` (rules v2, Jim, 2026-11-27).
@@ -376,9 +381,9 @@ A PR is safe only if all of these hold:
   can do and need Jim's own approval, whoever opened them (decision 0010).
 - It has no red or `cost-changed` attention tag (in its diff or its
   description) and no `cost` label. Those need a human's approval (see
-  "Human review"), so triage never approves them or turns on their
-  auto-merge, and merges them only once a human has approved and `Human
-  review` is green.
+  "Human review"), so triage never approves them; it turns their
+  auto-merge on like any agent PR's, and merges them by hand only once a
+  human has approved the head.
 
 ### Dependabot PRs
 

@@ -17,21 +17,6 @@
 # Needs in [tools]: rust with the wasm32-unknown-unknown target, node,
 # "npm:wrangler", "cargo:worker-build".
 
-["ci:check-tools"]
-description = "Fail, naming what is missing, when ci can't run here"
-# A cloud sandbox often can't install wrangler (npm provenance needs a
-# blocked sigstore host) or worker-build, which tests/e2e.rs needs. The git
-# hooks then skip the project and PR CI checks it (standards/docs/git-hooks.md).
-run = """
-[ -f tests/e2e.rs ] || exit 0
-missing=""
-command -v wrangler >/dev/null 2>&1 || missing="$missing wrangler"
-command -v worker-build >/dev/null 2>&1 || missing="$missing worker-build"
-[ -z "$missing" ] && exit 0
-echo "missing$missing, which tests/e2e.rs needs"
-exit 1
-"""
-
 [fmt-check]
 run = "cargo fmt --all --check"
 

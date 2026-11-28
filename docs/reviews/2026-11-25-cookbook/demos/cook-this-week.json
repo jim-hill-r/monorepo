@@ -1,0 +1,32 @@
+{
+  "title": "Cookbook: find today's recipe and plan the week",
+  "url": "https://jimhillr-cookbook.pages.dev",
+  "poster": 1,
+  "steps": [
+    {
+      "say": "This is the cookbook, live on Cloudflare Pages. It has one recipe for every day of the year, and a meal plan for every week.",
+      "hold": 0.5
+    },
+    {
+      "say": "Browse Recipes opens today's recipe, with its prep and cook times and how many it serves.",
+      "actions": [{ "click": ".recipe-card a:has-text(\"Browse Recipes\")" }]
+    },
+    {
+      "say": "Below that are the ingredients and the numbered instructions.",
+      "actions": [{ "scroll": 500 }]
+    },
+    {
+      "say": "At the bottom, Next day steps through the year one recipe at a time.",
+      "actions": [{ "click": "nav[aria-label=\"Other days\"] a:has-text(\"Next day\")" }]
+    },
+    {
+      "say": "Plans opens this week's meal plan. The shopping list adds up every ingredient for the week's seven recipes, so you can shop in one trip.",
+      "actions": [{ "click": "nav.header-nav a:has-text(\"Plans\")" }]
+    },
+    {
+      "say": "Staples you probably have already are listed apart, and the week's recipes follow, one for each day.",
+      "actions": [{ "scroll": 700 }],
+      "hold": 1
+    }
+  ]
+}

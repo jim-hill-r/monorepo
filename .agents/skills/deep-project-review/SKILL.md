@@ -58,6 +58,16 @@ commit or PR link. Say plainly when something is a guess.
   loading, accessibility (keyboard, contrast, labels), mobile layout, and
   anything confusing or broken. If it doesn't build or run, that is a
   finding: record the exact error.
+- **Feature demos.** For a project with a live web app, pick the two or
+  three journeys that matter most to its users (the goals and features
+  above say which) and write a narrated demo script for each in
+  `docs/reviews/<folder>/demos/<name>.json`, about a minute each, in the
+  format in [`docs/reviews/demo-recorder/README.md`](../../../docs/reviews/demo-recorder/README.md).
+  Reuse the selectors from the project's own Playwright tests. The
+  `Review decks` run on the PR records them against production with a
+  voice and captions; if a demo fails there, fix its script. Skip demos for
+  a project with nothing live to show (a library or CLI), and say so on the
+  demo slide.
 - **Architecture.** Crates or packages, modules, data model, data flow,
   external services, deploy targets, and the dependency tree (`cargo tree
   --depth 1`, `package.json`).
@@ -128,25 +138,27 @@ these sections, one or more slides each, in this order:
 4. **Progress against goals and what is holding it up** (step 3).
 5. **Features**: a table of every feature with its status (works, partial,
    broken, stub).
-6. **User experience**: journeys walked, screenshots, what works, what hurts.
-7. **Architecture**: components, data flow, dependencies, deployment. Draw
+6. **Feature demos**: one slide per demo video, each with a heading that
+   names the journey and the `<video>` tag from the recorder's README.
+7. **User experience**: journeys walked, screenshots, what works, what hurts.
+8. **Architecture**: components, data flow, dependencies, deployment. Draw
    diagrams as text in a fenced code block or as a table; Marp doesn't render
    Mermaid.
-8. **Security**: threat model, then findings by severity.
-9. **Performance**: measurements, then findings.
-10. **Code quality and testing**: CI result, coverage of tests, gaps against
+9. **Security**: threat model, then findings by severity.
+10. **Performance**: measurements, then findings.
+11. **Code quality and testing**: CI result, coverage of tests, gaps against
     the standards.
-11. **Operations and cost**: build, deploy, observability, vendors, cost.
-12. **Tech selection against the radar**: a table of every technology and
+12. **Operations and cost**: build, deploy, observability, vendors, cost.
+13. **Tech selection against the radar**: a table of every technology and
     vendor the project uses, with its ring, whether its use fits the radar,
     whether the decision behind it still holds (and what changed, with
     sources), and the recommended radar change if any (move ring, add or
     drop a blip, add or drop this project as an exemplar).
-13. **Risks and technical debt**.
-14. **Recommendations**: a prioritized table with impact, effort (S, M, L)
+14. **Risks and technical debt**.
+15. **Recommendations**: a prioritized table with impact, effort (S, M, L)
     and the area each one moves forward.
-15. **Questions for Jim**: decisions or facts only Jim can give.
-16. **Appendix**: method, commands run with their results, and evidence
+16. **Questions for Jim**: decisions or facts only Jim can give.
+17. **Appendix**: method, commands run with their results, and evidence
     links.
 
 Aim for 25 to 45 slides. Keep each slide to what fits on one screen: split a
@@ -177,7 +189,7 @@ folder (`priority: priority`, tagged `[agent-generated]`, in the shape the
 PR accepts them; Jim can delete any he disagrees with in review. Don't add an
 issue that duplicates an existing one.
 
-Apply the radar changes from section 12 in the same PR: edit
+Apply the radar changes from section 13 in the same PR: edit
 `standards/radar/radar.json` (ring, description, exemplars, sources, and
 `isNew` set to `"TRUE"` for a blip that moved), then run
 `bash standards/scripts/radar.sh render`. List each change in the PR
@@ -192,8 +204,8 @@ Deliver with the `open-pull-request` skill, with these differences:
 
 - A review PR only adds docs, so it doesn't wait for other agent PRs to
   close, and there is no project CI to run beyond `standards` when the radar
-  changed. The `Review decks` check builds
-  the deck to HTML and PDF and attaches them to the run.
+  changed. The `Review decks` check records the deck's demo videos and
+  builds the deck to HTML and PDF, and attaches them all to the run.
 - Title: `<project>: deep review <YYYY-MM-DD>`.
 - The description has the sections "Pull request descriptions" in
   `standards/docs/pull-requests.md` requires, with What changed and Why

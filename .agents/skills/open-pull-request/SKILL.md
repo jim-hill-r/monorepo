@@ -28,8 +28,9 @@ as "Pull request descriptions" in `standards/docs/pull-requests.md` says
 (Jim, 2026-11-27), following `.github/pull_request_template.md`:
 
 1. The attribution lines your platform requires, if any, first.
-2. `## Attention`: the attention tags, one requirements, one cost and one
-   threat/risk tag, from `chores badges` (never written by hand).
+2. `## Attention`: the attention tags, one requirements, one cost, one
+   threat/risk and one docs tag, from `chores badges` (never written by
+   hand).
 3. `## What changed`: at most 50 words.
 4. `## Why`: at most 50 words, with any engineering tradeoffs.
 5. `## Cost changes`: under 25 words, or `None.`
@@ -65,7 +66,8 @@ The **Attention** section comes from `chores badges --base origin/main`
 (commit first so the diff is complete): 🔴 `must-requirement-changed`,
 🟡 `requirement-changed` or 🟢 `requirements-unchanged`; 🟠
 `cost-changed` or 🟢 `cost-unchanged`; 🟠 `threat-risk-changed` or 🟢
-`threat-risk-unchanged` ("Attention tags" in
+`threat-risk-unchanged`; 🔵 `docs-only` (every changed file is docs,
+plans included), 🟢 `docs-changed` or 🟢 `docs-unchanged` ("Attention tags" in
 `standards/docs/pull-requests.md`). Never edit the tags by hand. When a
 later push changes which files the PR touches, run `chores badges` and
 replace the section. A red requirement tag means the PR gets
@@ -103,10 +105,10 @@ as a reviewer approves it. Skip this when the PR is labelled `needs-human` or
 `credential-change`, or a check is red, even one also failing on `main`.
 A PR labelled `cost` or `human-review`, or whose Attention section has a
 red tag (`must-requirement-changed`) or `cost-changed`, needs a human's
-approval (the `Human review` status, "Human review" in
-`standards/docs/pull-requests.md`): mark it ready and turn auto-merge on
-once every other check is green and `Human review` is pending, so his
-approval merges it (Jim, 2026-11-28: "Yes, merge on my approval").
+approval ("Human review" in `standards/docs/pull-requests.md`). That is
+not a check to wait for: mark it ready and turn auto-merge on once its
+checks are green, like any other PR, so his approval merges it (Jim,
+2026-11-28: "Yes, merge on my approval").
 The auto-merge rules are under
 "Auto-merge" in `standards/docs/pull-requests.md`. You still never approve
 your own PR, so it waits for a human's approval either way.
