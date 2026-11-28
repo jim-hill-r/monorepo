@@ -53,36 +53,44 @@ own session) can start threads.
 
 | Option | Money | Free-tier effect | Build effort |
 | --- | --- | --- | --- |
-| A. Hourly Claude scheduled task that wakes a standing "credit window" thread, which reads the rate-limit events and asks the coordinator to start threads (chosen) | $0 (part of the plan) | Uses the five-hour window up to about 95%, keeping the seven-day window on pace | One PR and one scheduled task |
+| A. Hourly Claude scheduled task that wakes a standing "credit window" thread, which reads the rate-limit events and asks the coordinator to start threads (chosen first, replaced by E on 2026-11-28) | $0 (part of the plan) | Uses the five-hour window up to about 95%, keeping the seven-day window on pace | One PR and one scheduled task |
 | B. Hourly scheduled task fired at the coordinator's session | $0 | Same | Tried first and failed: the run arrives as a separate routine session with no session-API or thread tools, so it can neither read usage nor start threads |
 | C. GitHub Actions cron | $0 | n/a | Not possible: Actions can't read Claude's usage |
 | D. Keep the flat 5 threads | $0 | Leaves part of most windows unused | None |
+| E. Hourly Claude scheduled task that starts a fresh run each hour, which reads the usage, counts the threads, messages the coordinator and resolves itself (chosen, Jim 2026-11-28: "We shouldn't have a thread running this process. Can we use a schedule task instead?") | $0 | Same as A | One PR and one scheduled task; each run reloads the project context, a little more per run than A |
 
 ## Decision
 
-Option A. A recurring Claude scheduled task, "Credit window check", fires
-every hour into the session of the thread that built it ("Use up credits
-before each 5-hour window closes"). A scheduled task bound to a thread's own
-session resumes that thread with its full tools, which was verified on
-2026-11-27: the first run read the usage, counted the threads and messaged
-the coordinator. Its exact prompt is in
+Option E. A recurring Claude scheduled task, "Credit window check", runs
+every hour at :53 UTC and starts a fresh run each time. A fresh run is a
+short project thread with the project's own tools: the session API
+(`list_events`) to read usage, `list_threads` to count threads, and
+`message_coordinator`. That was verified on 2026-11-28; the first attempt
+(option B) failed because it was bound to the coordinator's session.
+Option A worked but kept a standing thread open all the time, which Jim
+didn't want (2026-11-28). Its exact prompt is in
 [scheduled-tasks/credit-window.md](../scheduled-tasks/credit-window.md).
-Each run the credit window thread:
+Each run:
 
-1. Reads the newest `rate_limit_event`s of the coordinator's session and
-   its own, and lists the project's threads.
+1. Reads the newest `rate_limit_event`s of the coordinator's session (its
+   own when the coordinator has none recent), and lists the project's
+   working threads.
 2. Applies the rule below.
-3. When the rule asks for threads (or says stop), sends the coordinator one
-   message with the number and the numbers behind it. The coordinator,
-   the only session that can start threads, starts them with the
-   `start-a-new-task` skill under the usual limits (one project per
-   thread where possible, skip on-hold projects and mise migration
+3. When the rule asks for threads (or says hold or stop), sends the
+   coordinator one message with the number and the numbers behind it.
+   The coordinator, the only session that can start threads, starts them
+   with the `start-a-new-task` skill under the usual limits (one project
+   per thread where possible, skip on-hold projects and mise migration
    files; no cap on open threads, Jim 2026-11-27: "Lets remove the 30
    caps in an effort to keep credit window maximized. I will catch up
-   eventually"). Otherwise it sends nothing, so hourly runs don't flood anyone.
+   eventually"). Otherwise it sends nothing, so hourly runs don't flood
+   anyone.
+4. Resolves its own thread, so no thread stays open for the process. It
+   posts to Jim only when usage can't be read or on a stop.
 
-The credit window thread stays open while the task runs; it is the
-process, not finished work.
+A fresh run has no memory of the last one, so the burn rate comes from a
+pair of rate-limit events 10 to 30 minutes apart, which still shows a
+recent burst of new threads.
 
 ### The rule
 
@@ -95,9 +103,9 @@ nothing.
 1. **Stop.** If `isUsingOverage` is true or any status is `rejected`
    (`allowed_warning`, the 90% notice, is not a stop),
    start nothing and tell Jim (the overage rule in AGENTS.md wins).
-2. **Burn rate.** `r` = the larger of the rise in `u5` per hour since
-   the newest event at least 10 minutes older, and the rise since the last
-   burst of threads started, both in the same window (same `resetsAt`).
+2. **Burn rate.** `r` = the rise in `u5` per hour between the newest
+   event and the newest event at least 10 minutes older (a pair 10 to 30
+   minutes apart where there is one), in the same window (same `resetsAt`).
    Freshly started threads burn fastest (on 2026-11-27, 8 new threads
    took the window from 3% to 19% in 8 minutes), so an hour-old sample
    must not hide a recent burst. With no usable pair, `r = 0.04 × W`. The
@@ -113,8 +121,9 @@ nothing.
    `n = ceil((0.95 − p) / (t × max(h, 0.5)))` threads, at most 8 a run. There is
    no cap on open threads: threads waiting on Jim don't use credits, so
    they don't hold back new work.
-6. **Ease off.** If `p > 1.0` and `h > 1`, start nothing beyond the
-   5-thread floor; running threads finish their work. This holds even
+6. **Ease off.** If `p > 1.0` and `h > 1`, or the window would reach
+   100% more than an hour before reset, start nothing, not even floor
+   threads; running threads finish their work. This holds even
    when a longer average looks lower: reaching the limit early stalls
    every thread until the reset.
 7. **Floor.** In every other case keep the existing floor of 5 working
@@ -129,10 +138,9 @@ unused points.
 - Most five-hour windows end nearly used, and the seven-day window still
   lasts the week.
 - The hourly wake itself uses a little of the window (one short turn).
-- If the credit window thread's session ends, the task stops waking
-  anything. The weekly settings check `claude-scheduled-tasks` catches a
-  task that stopped running; the fix is a new thread that recreates the
-  task bound to itself.
+- Each run is its own short thread, resolved at the end, so nothing
+  depends on one long-lived session. The weekly settings check
+  `claude-scheduled-tasks` catches a task that stopped running.
 - The coordinator's "at least 5 threads" rule becomes the floor of this
   rule rather than the whole rule (AGENTS.md "Credit window").
 - The 0.04-per-thread default and the 0.85/0.95 thresholds are first
