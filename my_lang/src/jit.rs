@@ -287,9 +287,18 @@ mod tests {
     }
 
     #[test]
-    fn test_jit_body_ending_in_assignment_gives_zero() {
-        let runner = make_runner("function store() { x = 10 }");
-        assert_eq!(runner.call("store", &[]).expect("call should succeed"), 0);
+    fn test_jit_function_without_value_is_an_error() {
+        let context = Context::create();
+        let err = JitRunner::new(&context, "function store() { x = 10 }")
+            .err()
+            .expect("compile should fail");
+        assert!(err.to_string().contains("function 'store' gives no value"));
+    }
+
+    #[test]
+    fn test_jit_function_with_early_return_compiles() {
+        let runner = make_runner("function store() { return 3 x = 10 }");
+        assert_eq!(runner.call("store", &[]).expect("call should succeed"), 3);
     }
 
     #[test]
