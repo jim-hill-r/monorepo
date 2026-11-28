@@ -64,7 +64,7 @@ usage run has not run yet (its first scheduled run is Monday 2026-11-30).
 
 | Resource | Free limit | Our budget | Expected | Live 2026-11-27 | Measured automatically by | Gap |
 | --- | --- | --- | --- | --- | --- | --- |
-| Cloudflare Pages projects | 100 | 25 | 7 | 10 (3 are the old names waiting for deletion, `issues/human/delete-old-pages-projects-after-jimhillr-rename.md`) | `free-tiers.sh usage` weekly; `pages-project` guard on every deploy | none |
+| Cloudflare Pages projects | 100 | 25 | 7 | 10 (3 were the old names, which Jim deleted on 2026-11-28) | `free-tiers.sh usage` weekly; `pages-project` guard on every deploy | none |
 | Cloudflare Pages builds | 500 a month | 0 | 0 | not read | nothing; we deploy by direct upload | low risk, FT checks the config |
 | Cloudflare Workers | 100 | 25 | 2 | 1 (`jimhillr-tofu-state`; telemetry not deployed yet) | `free-tiers.sh usage`; `worker` guard on deploy | none |
 | Workers requests (incl. Pages Functions) | 100,000 a day | none | not estimated | not read | nothing | **phase 1: GraphQL analytics** |

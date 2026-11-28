@@ -37,7 +37,7 @@ run book in the task."
 | [Create the read-only infra GitHub App](github-app-infra-read.md) | one-time | `github-app-infra-read.md` |
 | [Set up the jimhillr-reviewer account](jimhillr-reviewer-account.md) | one-time, token yearly | `jimhillr-reviewer-account.md` |
 | [Turn on GitHub code security](github-code-security.md) | one-time (private vulnerability reporting only; the `github` stack does the rest) | `github-settings-code-security-turn-secret.md` |
-| [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-old-pages-projects-after-jimhillr-rename.md` |
+| [Delete old Pages projects](delete-old-pages-projects.md) | on demand | `delete-jimhillr-pane-pages-project-after-worker.md` |
 | [Open the terrars upstream PRs](terrars-upstream-prs.md) | one-time, optional | `open-terrars-upstream-prs.md` |
 | [Make the billing read credentials](billing-read-credentials.md) | one-time, then yearly | `billing-read-credentials.md` |
 | [Check there is no payment method](payment-method-check.md) | recurring, every 30 days | `check-there-still-no-payment-method.md` |
