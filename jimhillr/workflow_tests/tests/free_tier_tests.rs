@@ -423,6 +423,7 @@ fn run_usage(dir: &Path, pages: usize) -> (Output, String) {
     let existing: Vec<String> = (0..pages).map(|i| format!("site-{i}")).collect();
     let path = stub_bin(dir, &existing);
     let summary = dir.join("summary.md");
+    let json = dir.join("usage.json");
     let out = Command::new("bash")
         .arg(script())
         .arg("usage")
@@ -431,9 +432,60 @@ fn run_usage(dir: &Path, pages: usize) -> (Output, String) {
         .env("CLOUDFLARE_ACCOUNT_ID", "test-account")
         .env_remove("GH_TOKEN")
         .env("GITHUB_STEP_SUMMARY", &summary)
+        .env("FREE_TIERS_JSON", &json)
         .output()
         .expect("run free-tiers.sh");
     (out, fs::read_to_string(summary).unwrap_or_default())
+}
+
+/// The JSON `usage` wrote next to the summary in `dir`.
+fn usage_json(dir: &Path) -> serde_yaml::Value {
+    let text = fs::read_to_string(dir.join("usage.json")).expect("usage.json written");
+    // JSON is YAML, so the crate already used for the workflows reads it.
+    serde_yaml::from_str(&text).expect("usage.json is JSON")
+}
+
+#[test]
+fn test_usage_writes_the_rows_as_json() {
+    let dir = temp_dir("usage-json");
+    let (out, _) = run_usage(&dir, 3);
+    assert!(out.status.success(), "{}", stdout(&out));
+    let json = usage_json(&dir);
+    assert_eq!(json["version"], 1);
+    assert_eq!(json["over"], 0);
+    assert!(json["taken_at"].as_str().is_some_and(|t| t.ends_with('Z')));
+    let items = json["items"].as_sequence().expect("items");
+    let pages = &items[0];
+    assert_eq!(pages["item"], "Cloudflare Pages projects");
+    assert_eq!(pages["used"], 3);
+    assert_eq!(pages["warn_at"], 25);
+    assert_eq!(pages["limit"], "100");
+    assert_eq!(pages["status"], "ok");
+    // Without GH_TOKEN the GitHub row is skipped, with no number.
+    let github = items
+        .iter()
+        .find(|i| i["item"] == "GitHub")
+        .expect("GitHub row");
+    assert_eq!(github["status"], "skipped");
+    assert!(github["used"].is_null());
+}
+
+#[test]
+fn test_usage_json_marks_an_item_over_its_budget() {
+    let dir = temp_dir("usage-json-over");
+    let (out, _) = run_usage(&dir, 25);
+    assert!(!out.status.success());
+    let json = usage_json(&dir);
+    assert_eq!(json["over"], 1);
+    assert_eq!(json["items"][0]["status"], "over");
+}
+
+#[test]
+fn test_usage_workflow_uploads_the_json() {
+    let path = get_workflow_path("all-free-tier-usage.yml");
+    let content = fs::read_to_string(&path).expect("read all-free-tier-usage.yml");
+    assert!(content.contains("FREE_TIERS_JSON:"));
+    assert!(content.contains("name: free-tier-usage"));
 }
 
 #[test]
