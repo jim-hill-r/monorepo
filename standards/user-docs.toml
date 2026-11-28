@@ -11,10 +11,8 @@
 [missing]
 athenaeum = "athenaeum/docs/issues/write-user-guide.md"
 auth_sdk = "auth_sdk/docs/issues/write-user-guide.md"
-blueeel = "blueeel/docs/issues/write-user-guide.md"
 bogan = "bogan/docs/issues/write-user-guide.md"
 chores = "chores/docs/issues/write-user-guide.md"
-controlled_chaos = "controlled_chaos/docs/issues/write-user-guide.md"
 cost = "cost/docs/issues/write-user-guide.md"
 design_system = "design_system/docs/issues/write-user-guide.md"
 evals = "evals/docs/issues/write-user-guide.md"

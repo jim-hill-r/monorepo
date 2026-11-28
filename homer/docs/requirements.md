@@ -19,7 +19,10 @@ Zillow API, never the live one.
   type, price (the Zestimate when there is no list price), bedrooms,
   bathrooms (keeping halves, such as 2.5), square footage, year built and a
   Zillow link; a value Zillow doesn't report is left out of the text and is
-  `null` in JSON, never a wrong or truncated number.
+  `null` in JSON, never a wrong or truncated number. The address shown is
+  the one Zillow matched, with its ZPID, and the typed address is shown
+  beside it when they differ, so a loose match to another house is never
+  mistaken for the one searched.
 
 ## HOME-002: A property is scored against Jim's preferences
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { animationsDone, pageReady } from './nav';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -40,12 +41,14 @@ test.describe('Design system themes', { tag: '@req:COOK-005' }, () => {
 
           for (const path of pages) {
             await page.goto(path);
-            await page.waitForLoadState('networkidle');
+            await pageReady(page);
 
             const html = page.locator('html');
             await expect(html).toHaveAttribute('data-theme', theme);
             await expect(html).toHaveAttribute('data-scheme', scheme);
             await expect(html).toHaveAttribute('data-a11y', a11y);
+            // The theme's colours fade in once its attributes are set.
+            await animationsDone(page);
 
             const aa = await new AxeBuilder({ page })
               .withTags(['wcag2a', 'wcag2aa'])
@@ -66,7 +69,7 @@ test.describe('Design system themes', { tag: '@req:COOK-005' }, () => {
 
   test('the appearance picker changes and saves the theme', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     const html = page.locator('html');
     await expect(html).toHaveAttribute('data-theme', 'earthy');
 
@@ -77,7 +80,7 @@ test.describe('Design system themes', { tag: '@req:COOK-005' }, () => {
     await expect(html).toHaveAttribute('data-scheme', 'dark');
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
     await expect(html).toHaveAttribute('data-theme', 'gamey');
     await expect(html).toHaveAttribute('data-scheme', 'dark');
   });
