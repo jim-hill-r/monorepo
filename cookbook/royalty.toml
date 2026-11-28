@@ -1,0 +1,3 @@
+[project]
+name = "cookbook"
+description = "A recipe and weekly meal plan site with a shopping list, built as a Dioxus workspace in Rust."

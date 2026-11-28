@@ -9,8 +9,10 @@ This directory contains development standards and guidelines for the monorepo.
 - [Documentation](./documentation.md) - Documentation standards
 - [Cost](./cost.md) - Each project's cost analysis (`docs/cost.toml`), the cost check and how an expense is approved
 - [Evals](./evals.md) - Product requirements (`docs/requirements.md`) and the evals that check them (`evals.toml`)
+- [Money](./money.md) - The financial ledger's monthly statements and the runway, written by `cost money`
 - [Free Tiers](./free-tiers.md) - Free tier limits of every service we use, and the guards that keep us inside them
 - [Git hooks](./git-hooks.md) - lefthook hooks that run the CI checks before every commit and push
+- [Infrastructure as code](./infra.md) - Dashboard settings as code in `infra`: adding a resource, the plan guards, state, drift, and why IaC never destroys
 - [Issue Management](./issue-management.md) - Issue tracking and TODO conventions
 - [Runbooks](./runbooks/README.md) - Step-by-step runbooks for every task only a person can do
 - [Naming](./naming.md) - Naming conventions
@@ -25,6 +27,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
 - [Tech radar](./tech-radar.md) - Every approved, evaluated and held technology and vendor, with exemplar projects
 - [TypeScript](./typescript.md) - TypeScript coding standards
+- [Websites](./web.md) - Search (SEO), AI agent readiness and web performance rules (WEB-1xx to WEB-4xx) for every site we deploy, checked by Lighthouse CI and `chores site-check`
 
 ---
 

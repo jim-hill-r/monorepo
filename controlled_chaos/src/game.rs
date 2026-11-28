@@ -196,6 +196,9 @@ pub enum ActionOutcome {
     Ignored,
     /// The active player drew a card.
     Drew,
+    /// The active player's hand was too full to draw, so the Draw phase
+    /// ended without a card.
+    SkippedDraw,
     /// The deck was empty when the player tried to draw, so the game ended.
     DeckExhausted,
     /// The active player played this card to attack.
@@ -228,8 +231,9 @@ pub fn awaits_human(engine: &RulesEngine, ai_present: bool) -> bool {
 ///
 /// This is the one place keyboard and touch input change the game:
 ///
-/// - **Advance** draws a card in the Draw phase (or ends the game when the
-///   deck is empty) and ends the turn in the End phase.
+/// - **Advance** draws a card in the Draw phase (skips the draw when the
+///   hand is too full, or ends the game when the deck is empty) and ends the
+///   turn in the End phase.
 /// - **PickCard(i)** plays card `i` to attack in the Play phase, or defends
 ///   with card `i` against `attacker` in the Battle phase.
 ///
@@ -247,6 +251,15 @@ pub fn apply_player_action(
     }
 
     match (&engine.phase, action) {
+        (TurnPhase::Draw, PlayerAction::Advance) if !engine.active_player_may_draw() => {
+            match engine.skip_draw() {
+                Ok(()) => ActionOutcome::SkippedDraw,
+                Err(e) => {
+                    warn!("skip_draw failed: {e}");
+                    ActionOutcome::Ignored
+                }
+            }
+        }
         (TurnPhase::Draw, PlayerAction::Advance) => match deck.draw() {
             Some(card) => match engine.draw_card(card) {
                 Ok(()) => ActionOutcome::Drew,
@@ -405,6 +418,14 @@ fn ai_handle_draw_phase(
     let engine = &mut engine_res.0;
 
     if engine.phase != TurnPhase::Draw || engine.is_game_over() || engine.active_player != 1 {
+        return;
+    }
+
+    if !engine.active_player_may_draw() {
+        match engine.skip_draw() {
+            Ok(()) => info!("CPU's hand is full, so it skips the draw."),
+            Err(e) => warn!("AI skip_draw failed: {e}"),
+        }
         return;
     }
 
@@ -753,6 +774,7 @@ pub fn advance_button_label(engine: &RulesEngine, ai_present: bool) -> Option<&'
         return None;
     }
     match engine.phase {
+        TurnPhase::Draw if !engine.active_player_may_draw() => Some("Skip draw"),
         TurnPhase::Draw => Some("Draw card"),
         TurnPhase::End => Some("End turn"),
         TurnPhase::Play | TurnPhase::Battle => None,
@@ -942,6 +964,10 @@ fn instructions_text(
 
     let active = &engine.players[engine.active_player];
     match engine.phase {
+        TurnPhase::Draw if !active.may_draw() => format!(
+            "{}: Your hand is full, so no draw. Tap Skip draw or press SPACE",
+            active.name
+        ),
         TurnPhase::Draw => format!(
             "{}: Tap Draw card or press SPACE  ({} cards in deck)",
             active.name, deck_remaining
@@ -1340,6 +1366,75 @@ mod tests {
         assert_eq!(engine.phase, TurnPhase::Play);
         assert_eq!(engine.players[0].hand.len(), 3);
         assert_eq!(deck.remaining(), 0);
+    }
+
+    fn give_cards(engine: &mut RulesEngine, player: usize, count: usize) {
+        for i in 0..count {
+            engine.players[player].receive_card(Card::new(format!("Extra {i}"), 3));
+        }
+    }
+
+    #[test]
+    fn advance_with_a_full_hand_skips_the_draw() {
+        let mut engine = make_engine_with_hands();
+        let full = Player::MAX_HAND_TO_DRAW + 1;
+        let held = engine.players[0].hand.len();
+        give_cards(&mut engine, 0, full - held);
+        let mut deck = deck_of(&[9]);
+        let outcome =
+            apply_player_action(&mut engine, &mut deck, None, true, PlayerAction::Advance);
+        assert_eq!(outcome, ActionOutcome::SkippedDraw);
+        assert_eq!(engine.phase, TurnPhase::Play);
+        assert_eq!(engine.players[0].hand.len(), full);
+        assert_eq!(deck.remaining(), 1, "the deck is untouched");
+    }
+
+    #[test]
+    fn advance_with_a_full_hand_and_empty_deck_does_not_end_the_game() {
+        let mut engine = make_engine_with_hands();
+        let held = engine.players[0].hand.len();
+        give_cards(&mut engine, 0, Player::MAX_HAND_TO_DRAW + 1 - held);
+        let outcome = apply_player_action(
+            &mut engine,
+            &mut Deck::new(),
+            None,
+            true,
+            PlayerAction::Advance,
+        );
+        assert_eq!(outcome, ActionOutcome::SkippedDraw);
+        assert!(!engine.is_game_over());
+    }
+
+    #[test]
+    fn full_hand_shows_skip_draw_button_and_instructions() {
+        let mut engine = make_engine_with_hands();
+        let held = engine.players[0].hand.len();
+        give_cards(&mut engine, 0, Player::MAX_HAND_TO_DRAW + 1 - held);
+        assert_eq!(advance_button_label(&engine, true), Some("Skip draw"));
+        assert_eq!(
+            instructions_text(&engine, 9, None, true),
+            "Alice: Your hand is full, so no draw. Tap Skip draw or press SPACE"
+        );
+    }
+
+    #[test]
+    fn cpu_with_a_full_hand_skips_the_draw() {
+        let mut app = make_test_app();
+        let mut engine = make_engine_with_hands();
+        engine.active_player = 1;
+        let held = engine.players[1].hand.len();
+        give_cards(&mut engine, 1, Player::MAX_HAND_TO_DRAW + 1 - held);
+        app.insert_resource(RulesEngineResource(engine));
+        app.insert_resource(ActionDeckResource(deck_of(&[9])));
+        app.insert_resource(AiOpponent);
+        app.world_mut().run_system_once(ai_handle_draw_phase);
+        let engine = &app.world().resource::<RulesEngineResource>().0;
+        assert_eq!(engine.phase, TurnPhase::Play);
+        assert_eq!(engine.players[1].hand.len(), Player::MAX_HAND_TO_DRAW + 1);
+        assert_eq!(
+            app.world().resource::<ActionDeckResource>().0.remaining(),
+            1
+        );
     }
 
     #[test]

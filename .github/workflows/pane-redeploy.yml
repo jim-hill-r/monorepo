@@ -1,0 +1,42 @@
+---
+# Redeploy pane after each eval run, so its Requirements section and light
+# show the results just stored on the evals-results branch: pane's snapshot
+# reads them at build time (pane/snapshot/README.md). Push Main CI/CD,
+# Nightly CI and Nightly CD store their results after their own jobs ran,
+# so a pane deploy inside them would show the run before. This deploys
+# pane/cloudflare (which builds pane/web) from the latest main once a
+# storing run finishes, whatever its result, since failing evals are stored
+# too.
+name: Pane redeploy
+
+'on':
+  workflow_run:
+    workflows:
+      - Push Main CI/CD
+      - Nightly CI
+      - Nightly CD
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only the newest results matter, so a newer eval run replaces a pending or
+# running redeploy.
+concurrency:
+  group: pane-redeploy
+  cancel-in-progress: true
+
+jobs:
+  redeploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'cancelled' }}
+    uses: ./.github/workflows/mise-projects.yml
+    with:
+      project: pane/cloudflare
+      deploy: true
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

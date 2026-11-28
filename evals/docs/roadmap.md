@@ -33,7 +33,7 @@ checks:
 | Verdict thresholds | [`evals/verdicts.toml`](../verdicts.toml) |
 | Each project's promises and checks | `<project>/docs/requirements.md` and `<project>/evals.toml` (12 projects on 2026-11-28) |
 | The format and rules | [`standards/docs/evals.md`](../../standards/docs/evals.md) |
-| CI and deploy wiring | `.github/workflows/mise-projects.yml`, `push-main.yml`, `nightly-ci.yml`, `nightly-cd.yml`, and `standards/scripts/evals.sh` and `evals-check.sh` |
+| CI and deploy wiring | `.github/workflows/mise-projects.yml`, `push-main.yml`, `nightly-ci.yml`, `nightly-cd.yml`, and `standards/scripts/evals.sh` and `chores evals-check` |
 | Storing results, triage and the fire drill | `.github/workflows/evals-store.yml`, `evals-triage.yml`, `evals-fire-drill.yml` |
 | Results and verdicts | the `evals-results` branch (`results/*.jsonl`, `verdicts.json`, `badges/`) |
 | Issues the verdicts raise | `<project>/issues/eval-<id>-*.md`, written by triage |
@@ -71,7 +71,7 @@ What the deck's recommendations led to:
 | 3 | Triage on a free workflow | Done: `evals triage` and the daily `evals-triage.yml` (PRs 841, 842). It hasn't filed anything yet |
 | 4 | One fire drill | Done: [retro](fire-drill-2026-11-27.md) and the repeatable `evals-fire-drill.yml`. Two of its findings are still open (below) |
 | 5 | Read-only Requirements page in pane | Not started (`pane/issues/requirements-view-page-requirement-verdict-evals.md`) |
-| 6 | "Every must has a production check" as an error | Not yet: 16 musts have none (EVL-004) |
+| 6 | "Every must has a production check" as an error | Not yet: 13 musts have none (EVL-004) |
 | 7 | Pause the in-app toolbar | Jim said no. It moves to the feedback component instead (below) |
 
 So the lights now cover most products, but most of them are grey, and the
@@ -132,7 +132,6 @@ production. Requirement PRs need Jim's approval, so these land at his pace.
 | 60 | [Make EVL-004 an error](../issues/evl-004-an-error.md) | S |
 | 70 | [`trycmd` against release binaries, and the `script` kind](../issues/trycmd-cd-and-script-kind.md) | M |
 | 80 | [design_system DSGN-002 production eval](../../design_system/issues/dsgn-002-production-eval.md) | S |
-| 90 | [my_lang production evals with the CLI](../../my_lang/issues/production-evals-with-the-cli.md) | S |
 | 100 | [tofu_state `cd` evals after deploy](../../tofu_state/issues/run-cd-evals-after-deploy.md) | S |
 
 royalty's nine musts get production evals as its Phase 1 code ships (its
@@ -175,8 +174,8 @@ The engine's own health, apart from what it checks.
 
 ### Next
 
-- Port `standards/scripts/evals.sh` and `evals-check.sh` into `evals`
-  subcommands, under the code quality rule that scripts stay Rust-only
+- Port `standards/scripts/evals.sh` into `evals` subcommands
+  (`evals-check.sh` is already `chores evals-check`, PR 977), under the code quality rule that scripts stay Rust-only
   ([decision 0015](../../standards/docs/decisions/0015-code-quality-process.md)),
   as the [code quality epic](../../issues/code-quality-phase-2-port-shell-scripts.md)
   reaches them (M).

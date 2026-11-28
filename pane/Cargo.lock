@@ -2037,6 +2037,7 @@ version = "0.1.0"
 dependencies = [
  "cost_model",
  "pane_model",
+ "serde",
  "serde_json",
  "toml",
 ]

@@ -53,6 +53,9 @@ export default defineConfig({
     trace: liveURL ? 'on' : 'on-first-retry',
     screenshot: liveURL ? 'on' : 'off',
     video: liveURL ? 'on' : 'off',
+    /* A sandbox whose Chromium doesn't match this Playwright can point at it
+       (the e2e task in standards/tasks/dioxus-web.toml sets it). */
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined },
   },
 
   projects: [
