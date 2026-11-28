@@ -1,6 +1,7 @@
 # 0020. User feedback, support and in-app user guides as platform libraries
 
-- Status: Proposed (for Jim; his first answers are folded in)
+- Status: Accepted
+- Decided by: Jim (approved and merged PR 915, 2026-11-28)
 - Date: 2026-11-28
 - Asked by: Jim (project thread, 2026-11-28)
 - Plan: [2026-11-user-feedback.md](../plans/2026-11-user-feedback.md)

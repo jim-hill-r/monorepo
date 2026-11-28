@@ -30,7 +30,7 @@ And his answers to the first draft's three questions (2026-11-28):
 >    migrate to isolated tables if necessary. Explore all the options and
 >    propose a good one
 
-Status: **proposed**, second draft, for Jim. Decisions:
+Status: **approved** by Jim (PR 915, 2026-11-28). Decisions:
 [0020](../decisions/0020-user-feedback-and-support.md) (this component)
 and [0021](../decisions/0021-tenant-scoped-product-data.md) (where product
 data lives). The work items are issue files with `epic: User feedback`,

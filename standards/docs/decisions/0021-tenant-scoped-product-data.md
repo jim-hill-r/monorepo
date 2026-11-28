@@ -1,6 +1,7 @@
 # 0021. Product runtime data in one shared D1 database, in tenant-scoped tables
 
-- Status: Proposed (for Jim)
+- Status: Accepted
+- Decided by: Jim (approved and merged PR 915, 2026-11-28)
 - Date: 2026-11-28
 - Asked by: Jim (project thread, 2026-11-28)
 - Plan: [2026-11-user-feedback.md](../plans/2026-11-user-feedback.md#data-where-product-data-lives)
