@@ -108,7 +108,7 @@ above, which the Worker validates.
 | 1 | **Format and display** (built with this plan): `pane_model::signoff`, the snapshot reads `signoffs/` into each review, and the Reviews and Review pages show who signed off, the verdict, and each feedback item as open or done | Nothing |
 | 2 | **Access for pane**: the review dashboard plan's order 110, with GitHub as the login method and the internal Access group. A credential change (an Access policy): Jim's second approval (decision 0010) | Nothing |
 | 3 | **Sign-off form** on the Review page, validated in the browser with `pane_model::signoff::files` | Nothing (it posts to phase 4's route) |
-| 4 | **Sign-off route**: the Worker route, the Access token check, the reviewer handle, and the commit to the `pane-edit` PR | 2, the pane Worker (PR #759), the `/api/edits` write path (order 190) and its token |
+| 4 | **Sign-off route**: the Worker route, the Access token check, the reviewer handle, and the commit to the `pane-edit` PR | 2, the pane Worker (merged in #759), the `/api/edits` write path (order 190) and its token |
 
 Until phase 4 lands, a reviewer can sign off by committing the sign-off
 and issue files by hand (or asking an agent to), in exactly the format above;
