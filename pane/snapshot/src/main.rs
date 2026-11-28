@@ -1,18 +1,20 @@
 //! `pane_snapshot`: write `snapshot.json` for a checkout of the monorepo.
 //!
 //! ```text
-//! pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME] [--audit FILE]
+//! pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME] [--audit FILE] [--evals DIR]
 //! ```
 //!
 //! `--repo` defaults to the git top level of the current directory, `--out`
 //! to `snapshot.json`, `--commit` to `git rev-parse HEAD` in the repo, and
 //! `--taken-at` to now (UTC). `--audit` is the saved output of
-//! `mise run //:audit`; without it the Standards light is grey.
+//! `mise run //:audit`; without it the Standards light is grey. `--evals` is a
+//! checkout of the `evals-results` branch; without it, or when it has no
+//! `verdicts.json`, the Requirements light is grey.
 
 use std::path::PathBuf;
 use std::process::{Command, ExitCode};
 
-use pane_snapshot::{repo, time};
+use pane_snapshot::{evals, repo, time};
 
 struct Args {
     repo: Option<PathBuf>,
@@ -20,6 +22,7 @@ struct Args {
     commit: Option<String>,
     taken_at: Option<String>,
     audit: Option<PathBuf>,
+    evals: Option<PathBuf>,
 }
 
 fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
@@ -29,6 +32,7 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
         commit: None,
         taken_at: None,
         audit: None,
+        evals: None,
     };
     while let Some(flag) = args.next() {
         let mut value = || args.next().ok_or_else(|| format!("{flag} needs a value"));
@@ -38,9 +42,10 @@ fn parse_args(mut args: impl Iterator<Item = String>) -> Result<Args, String> {
             "--commit" => parsed.commit = Some(value()?),
             "--taken-at" => parsed.taken_at = Some(value()?),
             "--audit" => parsed.audit = Some(PathBuf::from(value()?)),
+            "--evals" => parsed.evals = Some(PathBuf::from(value()?)),
             "-h" | "--help" => {
                 return Err(
-                    "usage: pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME] [--audit FILE]"
+                    "usage: pane_snapshot [--repo DIR] [--out FILE] [--commit SHA] [--taken-at TIME] [--audit FILE] [--evals DIR]"
                         .to_owned(),
                 );
             }
@@ -78,6 +83,16 @@ fn run() -> Result<(), String> {
     let mut snapshot = repo::build(&repo_dir, &commit, &taken_at)?;
     if let Some(file) = &args.audit {
         snapshot.audit = repo::audit(file, &snapshot)?;
+    }
+    if let Some(dir) = &args.evals {
+        snapshot.requirements = evals::read(dir)?;
+        if snapshot.requirements.is_none() {
+            eprintln!(
+                "pane_snapshot: {} has no {}; Requirements stays grey",
+                dir.display(),
+                evals::VERDICTS
+            );
+        }
     }
     let json = snapshot.to_json().map_err(|e| e.to_string())?;
     if let Some(parent) = args.out.parent().filter(|p| !p.as_os_str().is_empty()) {

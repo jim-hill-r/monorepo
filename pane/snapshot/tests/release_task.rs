@@ -84,3 +84,51 @@ fn release_saves_the_audit_and_passes_it_to_the_snapshot() -> TestResult {
     assert!(ignored.success(), "target/audit.txt must be gitignored");
     Ok(())
 }
+
+#[test]
+fn release_and_dev_pass_the_eval_results_to_the_snapshot() -> TestResult {
+    let mise: toml::Table = toml::from_str(&std::fs::read_to_string(web_dir().join("mise.toml"))?)?;
+    let tasks = mise.get("tasks").ok_or("pane/web/mise.toml has no tasks")?;
+    let fetch = tasks
+        .get("eval-results")
+        .and_then(|t| t.get("run"))
+        .and_then(|r| r.as_str())
+        .ok_or("pane/web/mise.toml has no eval-results task")?;
+    assert!(
+        fetch.contains("evals-results") && fetch.contains("target/evals-results"),
+        "eval-results must copy the evals-results branch into target/evals-results"
+    );
+    for task in ["release", "dev"] {
+        let steps: Vec<&str> = tasks
+            .get(task)
+            .and_then(|r| r.get("run"))
+            .and_then(|r| r.as_array())
+            .ok_or(format!("no [tasks.{task}] run list"))?
+            .iter()
+            .filter_map(|s| s.as_str())
+            .collect();
+        let copy = steps
+            .iter()
+            .position(|s| s.starts_with("mise run eval-results"))
+            .ok_or(format!("{task} doesn't run eval-results"))?;
+        assert!(
+            steps[copy].ends_with("|| true"),
+            "missing eval results are data for pane, not a failed {task}"
+        );
+        let snapshot = steps
+            .iter()
+            .position(|s| s.contains("pane_snapshot") && s.contains("--evals target/evals-results"))
+            .ok_or(format!("{task} doesn't pass --evals target/evals-results"))?;
+        assert!(
+            copy < snapshot,
+            "{task} must copy the results before the snapshot"
+        );
+    }
+    let ignored = Command::new("git")
+        .arg("-C")
+        .arg(web_dir())
+        .args(["check-ignore", "-q", "target/evals-results/verdicts.json"])
+        .status()?;
+    assert!(ignored.success(), "target/evals-results must be gitignored");
+    Ok(())
+}
