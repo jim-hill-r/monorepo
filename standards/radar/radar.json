@@ -468,6 +468,37 @@
     "budget": 0
   },
   {
+    "name": "oha",
+    "ring": "Assess",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Proposed in decision 0032: a Rust HTTP load generator (MIT), pinned through mise, that the evals CLI's load eval kind runs against a Worker on the runner (wrangler dev --local with a seeded local D1), never against Cloudflare. Budgets live in evals.toml (standards/docs/performance.md). k6, Goose, Artillery, Locust and hosted load services were compared.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0032-performance-testing.md",
+      "standards/docs/performance.md",
+      "https://github.com/hatoo/oha"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "k6",
+    "ring": "Hold",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Compared in decision 0032 and not chosen: its tests are JavaScript (against the repo's languages rule), it is AGPL-3.0 and its thresholds would duplicate the eval engine's budgets. The fallback if a Worker ever needs a scripted multi-step load flow that oha can't express. Grafana Cloud k6 is a separate vendor and not approved.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0032-performance-testing.md",
+      "https://github.com/grafana/k6"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Marp",
     "ring": "Adopt",
     "quadrant": "Tools",

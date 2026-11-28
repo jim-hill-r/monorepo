@@ -293,6 +293,17 @@ repo, rather than in any one agent tool's settings.
   ([decision 0028](standards/docs/decisions/0028-web-checks.md)). A PR
   that adds or changes a site's pages keeps it within its rules and its
   baseline in `standards/web.toml`.
+- **Performance is tested, and production is never loaded (Jim,
+  2026-11-28).** "How are we handling performance testing? We need to add
+  a tech solution for that?" Speed budgets are evals that must stay green
+  ([standards/docs/performance.md](standards/docs/performance.md),
+  [decision 0032](standards/docs/decisions/0032-performance-testing.md)):
+  Workers get `load` evals run with oha against a local `wrangler dev` and
+  D1 on the runner, including D1 rows per request; timed flows get `@perf`
+  Playwright tests; production is only probed and watched through
+  Cloudflare analytics. Never point load at anything Cloudflare runs for
+  us, previews included (PERF-201). A PR that adds a Worker route adds its
+  load eval.
 - **Cloudflare Pages names (Jim, 2026-11-26).** Every Pages project is
   named `jimhillr-<project>` (served at `jimhillr-<project>.pages.dev`), so
   it never collides with another account's `*.pages.dev` name. The audit

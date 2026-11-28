@@ -68,6 +68,14 @@ test('home page loads correctly', async ({ page }) => {
 });
 ```
 
+### Performance tests
+
+How fast things are is tested too, in [performance.md](performance.md):
+a flow with a time in its requirement gets a `@perf` Playwright test that
+asserts that time (PERF-301), and a Cloudflare Worker gets `load` evals run
+against a local `wrangler dev` (PERF-1xx). Page loads are Lighthouse CI's
+job ([web.md](web.md)).
+
 ### SSG Bundle Tests
 
 Tests that validate static site generation (like `ssg-bundle.spec.ts`) do not require a dev server:
