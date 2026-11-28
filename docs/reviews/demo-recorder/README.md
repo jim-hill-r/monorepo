@@ -5,7 +5,7 @@ Records narrated demo videos of a live app, with closed captions, for the
 change the words or the clicks and record it again, and the same script
 gives the same narration every time. Why it works this way, and the options
 it was chosen over, are in
-[decision 0021](../../../standards/docs/decisions/0021-review-deck-demo-videos.md).
+[decision 0023](../../../standards/docs/decisions/0023-review-deck-demo-videos.md).
 
 ## How it works
 

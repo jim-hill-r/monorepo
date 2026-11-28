@@ -80,7 +80,7 @@ style: |
 
 Each deck shows the project's most important features working in the live
 app, as short videos with a voiceover and closed captions
-([decision 0021](../../standards/docs/decisions/0021-review-deck-demo-videos.md)).
+([decision 0023](../../standards/docs/decisions/0023-review-deck-demo-videos.md)).
 A demo is a script in `<folder>/demos/<name>.json`: the lines to say and the
 clicks to make while saying them. The
 [demo recorder](demo-recorder/README.md) turns it into an MP4, a WebVTT

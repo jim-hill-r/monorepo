@@ -54,6 +54,16 @@ See [standards/docs/plans/2026-11-cost-check.md](../standards/docs/plans/2026-11
 See [standards/docs/plans/2026-11-threat-check.md](../standards/docs/plans/2026-11-threat-check.md)
 (approved by Jim, 2026-11-26). One group per phase.
 
+## User feedback
+
+See [standards/docs/plans/2026-11-user-feedback.md](../standards/docs/plans/2026-11-user-feedback.md)
+and decisions 0020 and 0021 (proposed, 2026-11-28): in-app help from each
+project's user guide, support requests and feedback, built as libraries
+each product runs on its own origin, with product data in tenant-scoped
+D1 tables. One issue per phase, in this folder and in `sparkhill/` and
+`bear_down/` `issues/`. Phase 1 replaces the eval engine's phase 6 model
+issue.
+
 ## Design system
 
 See [standards/docs/plans/2026-11-design-system.md](../standards/docs/plans/2026-11-design-system.md)
