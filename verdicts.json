@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-27T23:45:11.098140240Z",
+  "generated_at": "2026-11-28T00:03:21.712187451Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 12.8,
-    "musts_percent": 38.3,
-    "judged_percent": 17.6,
+    "percent": 12.7,
+    "musts_percent": 37.5,
+    "judged_percent": 16.9,
     "warn_below": 80.0,
     "warning": true
   },
@@ -647,14 +647,14 @@
     },
     {
       "project": "pane",
-      "musts": 4,
+      "musts": 5,
       "musts_in_production": 4,
       "coverage": {
-        "requirements": 12,
+        "requirements": 13,
         "met": 5,
-        "percent": 41.7,
+        "percent": 38.5,
         "musts_met": 4,
-        "musts_percent": 100.0,
+        "musts_percent": 80.0,
         "warning": false
       },
       "requirements": [
@@ -721,7 +721,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-27 23:31:39.398405324 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-28 00:01:15.314690949 UTC"
           ]
         },
         {
@@ -750,6 +750,15 @@
           "title": "Jim reviews every merged pull request after the fact",
           "priority": "must",
           "verdict": "met"
+        },
+        {
+          "requirement": "PANE-013",
+          "title": "Project money adds up to the totals",
+          "priority": "must",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
         }
       ]
     },
