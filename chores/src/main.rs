@@ -10,6 +10,7 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod retire;
 mod shell_scripts;
 mod tiers;
 mod user_docs;
@@ -160,6 +161,24 @@ enum Command {
         /// Also write the verdict as JSON to this file.
         #[arg(long)]
         json: Option<PathBuf>,
+    },
+    /// Which temporary resources to delete ("Temporary resources" in
+    /// standards/docs/resources.md): Pages previews older than 14 days
+    /// (keeping the newest of each open PR's branch), non-current production
+    /// deployments older than 30 days, and branches 7 days after their PR
+    /// closed. Reads the live list the `all-retire-resources.yml` workflow
+    /// writes, prints the run summary and never deletes anything itself.
+    RetireTemporary {
+        /// The live list as JSON: `default_branch`, `pages` (name,
+        /// canonical, deployments), `branches` and `pulls`.
+        #[arg(long)]
+        live: PathBuf,
+        /// Also write the plan as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
+        /// Today's date, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<String>,
     },
     /// Check every project's user guide, <project>/docs/user/README.md
     /// (DOC-005 to DOC-008, "User docs" in standards/docs/documentation.md),
@@ -386,6 +405,10 @@ fn run() -> Result<ExitCode> {
             if !gate::run(&root, &args)? {
                 return Ok(ExitCode::FAILURE);
             }
+        }
+        Command::RetireTemporary { live, json, today } => {
+            let plan = retire::run(&live, today.as_deref(), json.as_deref())?;
+            print!("{}", retire::render(&plan));
         }
         Command::UserDocs { json } => {
             let report = user_docs::check(&root)?;
