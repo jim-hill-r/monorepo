@@ -17,7 +17,7 @@ need an account.
 2. The home page has two buttons. **Browse Recipes** opens today's recipe,
    and **View Meal Plans** opens this week's plan.
 3. To come back to a page, bookmark it. Each recipe and plan has its own web
-   address, such as `/recipe/32` for the recipe for 1 February or `/plan/48`
+   address, such as `/recipe/32` for recipe 32 or `/plan/48`
    for week 48.
 
 The top of every page has a menu button (☰) that opens and closes the
@@ -34,12 +34,13 @@ needs it yet, so you can ignore it.
 
 ## How to find a recipe
 
-Each day of the year has its own recipe, numbered by the day: day 1 is
-1 January and day 365 is 31 December. On 31 December of a leap year, the
-site shows day 365's recipe again.
+The cookbook has 365 recipes, numbered 1 to 365. Each week's plan puts
+seven of them on the days from Monday to Sunday, and today's recipe is the
+one this week's plan puts on today.
 
 - **Today's recipe:** press **Recipes** at the top (or in the sidebar on a
-  phone), or **Browse Recipes** on the home page.
+  phone), or **Browse Recipes** on the home page. It's the same recipe as
+  today's date in the sidebar and in this week's plan.
 - **This week's recipes:** open the sidebar. **Daily Recipes** lists this
   week's plan, one recipe a day from Monday to Sunday, by date.
 - **The day before or after:** at the bottom of a recipe, press **← Previous
@@ -111,11 +112,6 @@ The site remembers your choice in that browser.
   menu button (☰) at the top left; they are at the top of the sidebar.
 - **The sidebar covers the page.** Press the menu button (☰) again to close
   it.
-- **The plan's recipe for today isn't the one Recipes opens.** That's a
-  known problem. **Recipes** opens the recipe numbered for today's date,
-  while the plan sets out its seven recipes in its own order, so the two
-  can differ. If you shop from the plan, cook from the plan (or the sidebar's
-  **Daily Recipes**, which follows it).
 - **"Today" shows the wrong day.** The site uses your device's date and time
   zone, so check those are right.
 - **A sign-in error shows at the top right.** You can ignore it; every
