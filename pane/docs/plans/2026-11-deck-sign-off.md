@@ -61,7 +61,7 @@ snapshot, the browser and the Worker share one tested implementation.
 ## Who the reviewer is
 
 Internal people (Jim, reviewers, engineers) and product users sign in
-through separate systems, so nobody internal has an account in a product's
+through separate systems ([decision 0024](../../../standards/docs/decisions/0024-internal-sign-in.md)), so nobody internal has an account in a product's
 user pool (Jim, 2026-11-28: "The risk is that our end users would be in the
 same auth domain as our internal use cases. That is not my favorite
 idea."). Products keep Auth0; internal tools such as pane use Cloudflare

@@ -62,6 +62,10 @@ device (SPRK-006) under a `connect-src 'self'` CSP.
    to the product's own inbox; product owner and engineering feedback go
    to pane, as ratings and issue files. An unpacked browser extension can
    load the staff modes where a product's build leaves them out.
+   [Decision 0024](0024-internal-sign-in.md) changes this: product owners
+   and engineers are internal, so they sign in through pane's Cloudflare
+   Access login, and their staff modes come only through the extension,
+   never in a product's build. App managers stay on Auth0.
 
 ## Alternatives considered
 

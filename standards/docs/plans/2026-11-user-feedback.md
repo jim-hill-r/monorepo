@@ -105,11 +105,13 @@ button, and who is signed in picks what it does:
   a staff sign-in returns a role, so a user's page never runs it and
   SPRK-006 holds. The production builds of strict products can leave the
   module out entirely and rely on the browser extension (Phase 8).
-- **Staff sign-in** uses Auth0, as the management apps do (decision 0018):
-  a popup returns a short-lived token with the role, kept in
-  `sessionStorage`. Product owner and engineering roles are platform roles
-  held in pane; app manager is a per-product role, so one product's
-  managers can't send as another's.
+- **Staff sign-in** is split by who signs in
+  ([decision 0024](../decisions/0024-internal-sign-in.md)). App managers use
+  the product's Auth0 sign-in, as the management apps do (decision 0018),
+  so one product's managers can't send as another's. Product owners and
+  engineers are internal: they sign in through pane's Cloudflare Access
+  login, and their staff modes come only through the browser extension
+  (Phase 8), which sends to pane. No product build carries their code.
 - **Same origin for product data.** User and app manager feedback goes to
   the product's own `/api/feedback`. Product owner and engineering
   feedback is about how we build software, so it goes to pane, the
