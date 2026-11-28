@@ -380,9 +380,9 @@ PR #585 is merged.
 - `pane/health.toml` with the thresholds above, and the health rules in
   `pane/model`, unit tested signal by signal.
 - The Health page and the drill-down sections on project and system pages.
-- The `audit.sh` findings per project in the snapshot (the audit runs in
-  pane's release and its output is parsed, or the audit gains a
-  machine-readable output).
+- The `audit.sh` findings per project in the snapshot: the audit runs in
+  pane's release and `pane_model::audit` parses its output (done, order
+  152).
 - Signal history: the Worker keeps the last 14 daily health results in KV
   (one write a day, far below the free 1,000).
 

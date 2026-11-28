@@ -50,3 +50,37 @@ fn snapshot_output_is_gitignored() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn release_saves_the_audit_and_passes_it_to_the_snapshot() -> TestResult {
+    let mise: toml::Table = toml::from_str(&std::fs::read_to_string(web_dir().join("mise.toml"))?)?;
+    let steps: Vec<&str> = mise
+        .get("tasks")
+        .and_then(|t| t.get("release"))
+        .and_then(|r| r.get("run"))
+        .and_then(|r| r.as_array())
+        .ok_or("pane/web/mise.toml has no [tasks.release] run list")?
+        .iter()
+        .filter_map(|s| s.as_str())
+        .collect();
+    let audit = steps
+        .iter()
+        .position(|s| s.contains("standards/scripts/audit.sh") && s.contains("> target/audit.txt"))
+        .ok_or("release doesn't save the audit to target/audit.txt")?;
+    let snapshot = steps
+        .iter()
+        .position(|s| s.contains("pane_snapshot") && s.contains("--audit target/audit.txt"))
+        .ok_or("release doesn't pass --audit target/audit.txt to pane_snapshot")?;
+    assert!(audit < snapshot, "the audit must run before the snapshot");
+    assert!(
+        steps[audit].ends_with("|| true"),
+        "a failing audit is data for pane, not a failed release"
+    );
+    let ignored = Command::new("git")
+        .arg("-C")
+        .arg(web_dir())
+        .args(["check-ignore", "-q", "target/audit.txt"])
+        .status()?;
+    assert!(ignored.success(), "target/audit.txt must be gitignored");
+    Ok(())
+}

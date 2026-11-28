@@ -48,6 +48,10 @@ pub struct Snapshot {
     /// applies the same rules the snapshot was built with.
     #[serde(default)]
     pub thresholds: health::Thresholds,
+    /// The repo audit's findings (`mise run //:audit`), or `None` when the
+    /// snapshot was built without them (the Standards light is then grey).
+    #[serde(default)]
+    pub audit: Option<audit::Audit>,
 }
 
 impl Snapshot {
@@ -66,6 +70,7 @@ impl Snapshot {
             retros: Vec::new(),
             costs: costs::Costs::default(),
             thresholds: health::Thresholds::default(),
+            audit: None,
         }
     }
 
@@ -345,6 +350,8 @@ pub mod acks;
 pub mod costs;
 pub mod money;
 pub mod queue;
+
+pub mod audit;
 
 #[cfg(test)]
 mod tests {

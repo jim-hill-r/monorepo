@@ -16,6 +16,7 @@ cargo run -p pane_snapshot -- --out snapshot.json
 | `--out FILE` | `snapshot.json` (parent directories are created) |
 | `--commit SHA` | `git rev-parse HEAD` in the repo |
 | `--taken-at TIME` | Now, UTC, RFC 3339 |
+| `--audit FILE` | None: the saved output of `mise run //:audit`, which pane's release writes to `pane/web/target/audit.txt`. Without it `audit` is null and Standards is grey. |
 
 It exits non-zero, writing nothing, if the root `mise.toml` has no
 `[monorepo].config_roots`, if any project's `docs/cost.toml`,
@@ -46,6 +47,7 @@ doesn't start with `YYYY-MM`.
 | `costs.account` | Each account-wide limit in `standards/radar/limits.toml`: every project's expected use summed and held against the budget, or the free limit when there is none (COST-005). |
 | `costs.budgets` | Each vendor blip in `standards/radar/radar.json` with its monthly budget and what projects' own costs spend with it this month (COST-006), then any vendor a cost names that the radar doesn't list. Without `standards/radar/` there are no limits and no radar vendors. |
 | `thresholds` | `pane/health.toml`, so the web app lights signals with the same thresholds. Missing keys take the plan's values; an unknown key fails the snapshot. The plan's values when the file isn't there. |
+| `audit` | The `--audit` file: each `error[CODE]` and `warning[CODE]` line with its project (the longest config root containing the first word of the message, `:line` suffixes dropped) and file, or none for a repo-wide finding. Null when the file has no closing `audit: ok` or `audit: N error(s)` line, so an audit that crashed never shows as clean. A file that can't be read fails the snapshot. |
 
 Everywhere, `target/`, `node_modules/`, `dist/` and hidden directories are
 skipped, as are code blocks in Markdown.
