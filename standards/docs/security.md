@@ -39,7 +39,7 @@ vulnerability is in the root [SECURITY.md](../../SECURITY.md).
 
 | Code | What fails | Where it runs | Since |
 | --- | --- | --- | --- |
-| SEC-001 | A secret in a commit: gitleaks' default rules plus ours in [`.gitleaks.toml`](../../.gitleaks.toml) (PostHog personal keys, Auth0 client secrets). | Pre-commit (the staged diff), pre-push (the pushed commits), PR CI (the **Secret scan** job over the PR's commits, part of **CI result**), and weekly over the whole history (`all-free-tier-usage.yml`). All through [`standards/scripts/secrets-check.sh`](../scripts/secrets-check.sh). | Phase 1, as an error |
+| SEC-001 | A secret in a commit: gitleaks' default rules plus ours in [`.gitleaks.toml`](../../.gitleaks.toml) (PostHog personal keys, Auth0 client secrets). | Pre-commit (the staged diff), pre-push (the pushed commits), PR CI (the **Secret scan** job over the PR's commits, part of **CI result**), and weekly over the whole history (`all-security-scans.yml`). All through [`standards/scripts/secrets-check.sh`](../scripts/secrets-check.sh). | Phase 1, as an error |
 | SEC-002 | `.gitignore` doesn't ignore `.env`, `.dev.vars`, `*.pem`, `*.key`, `*.p12`, `*.jks` or `*.keystore`, or a tracked file is one of them (`*.example` files are allowed). | `//:audit`, through [`standards/scripts/security-check.sh`](../scripts/security-check.sh). | Phase 1, as an error |
 | SEC-007 | A workflow, shared script or shared task file runs `git push` other than `evals.sh store`'s push of eval results to the `evals-results` branch `coverage.sh store`'s push of coverage results to the `coverage-results` branch `feedback.sh store`'s push of fan feedback to the `feedback-data` branch, and `evals.sh triage`'s push (or delete) of the `evals-triage` branch, which PR triage opens a reviewed pull request from, so CI never writes `main`. | `//:audit`, through `security-check.sh`. | Phase 1, as an error |
 | SEC-006 | A tracked `Cargo.lock` or `package-lock.json` has no entry in `.github/dependabot.yml`, or an entry's directory doesn't exist or has no lockfile (a Cargo workspace has one entry, at its root). | `//:audit`, through `security-check.sh`. | Phase 1, as an error |
@@ -47,7 +47,7 @@ vulnerability is in the root [SECURITY.md](../../SECURITY.md).
 | SEC-004 | A `package-lock.json` has a high or critical advisory in a production dependency (`npm audit --omit=dev --audit-level=high`). | Same as SEC-003. | Phase 1, as a warning |
 | SEC-005 | A workflow has a medium or high [zizmor](https://docs.zizmor.sh/audits/) finding: `pull_request_target` or `workflow_run` running PR code, template injection into `run:`, secrets reaching PR code, broad permissions or app tokens, credentials persisted by `actions/checkout`, or an action not pinned to a commit. Offline, with our ignores in [`.github/zizmor.yml`](../../.github/zizmor.yml). | The hooks and PR CI (**Workflow audit**, as annotations on the lines) for the workflows a change touches (every workflow when `.github/zizmor.yml` changed), and nightly over all of them (`all-dependency-audit.yml`). All through [`standards/scripts/workflows-check.sh`](../scripts/workflows-check.sh). | Phase 3, as a warning |
 | THR-* | A project's [threat model](#threat-models) is missing, breaks a rule above, or has drifted from its code (THR-004). | `//:audit` (and so the hooks and PR CI, for the affected projects), through [`standards/scripts/threat-check.sh`](../scripts/threat-check.sh). | Phase 2 (THR-004 phase 3), as warnings |
-| Live | What is deployed doesn't match the threat models (see [Live check](#live-check)). | Weekly, the **Live threat check** job of `all-free-tier-usage.yml`, through [`standards/scripts/threat-live.sh`](../scripts/threat-live.sh). | Phase 3, as an error |
+| Live | What is deployed doesn't match the threat models (see [Live check](#live-check)). | Weekly, the **Live threat check** job of `all-security-scans.yml`, through [`standards/scripts/threat-live.sh`](../scripts/threat-live.sh). | Phase 3, as an error |
 
 CodeQL scans our own code (not dependencies): JavaScript/TypeScript and
 GitHub Actions on every PR, and Rust weekly, in
@@ -280,5 +280,5 @@ The `github` stack in `infra` holds secret scanning, push protection,
 Dependabot alerts and security updates. Private vulnerability reporting has
 no OpenTofu resource, so Jim set it by hand
 ([runbook](runbooks/github-code-security.md)), and the weekly **GitHub
-security settings** job of `all-free-tier-usage.yml` fails if it is ever
+security settings** job of `all-security-scans.yml` fails if it is ever
 turned off.

@@ -309,16 +309,41 @@ case "$url" in
   *pages/projects*)
     page=$(sed -E 's/.*page=([0-9]+)$/\1/' <<<"$url")
     jq -c --argjson p "$page" '{{success: true, result: .[(($p - 1) * 10):($p * 10)]}}' "{dir}/all-pages.json" ;;
+  */schedules) cat "{dir}/schedules.json" ;;
   *workers/scripts*) cat "{dir}/workers.json" ;;
   *d1/database*) jq -c '{{success: true, result: .}}' "{dir}/d1.json" ;;
+  *r2/buckets) cat "{dir}/r2.json" ;;
+  */graphql) cat "{dir}/graphql.json" ;;
+  */actions/cache/usage) echo '{{"active_caches_size_in_bytes": 1000}}' ;;
+  */actions/artifacts*) echo '{{"artifacts": [{{"expired": false, "size_in_bytes": 500}}]}}' ;;
+  */repos/*) cat "{dir}/repo.json" ;;
   *) echo "unexpected url $url" >&2; exit 22 ;;
 esac
 "#,
             dir = dir.display()
         ),
     );
-    if !dir.join("d1.json").exists() {
-        write(&dir.join("d1.json"), "[]");
+    // Defaults for the usage reads; a test writes its own file first to
+    // change one.
+    for (file, body) in [
+        ("d1.json", "[]"),
+        (
+            "schedules.json",
+            r#"{"success":true,"result":{"schedules":[{"cron":"0 6 * * 2"}]}}"#,
+        ),
+        (
+            "r2.json",
+            r#"{"success":false,"errors":[{"code":10042,"message":"Please enable R2 through the Cloudflare Dashboard."}]}"#,
+        ),
+        (
+            "graphql.json",
+            r#"{"data":{"viewer":{"accounts":[{"workers":[],"pages":[],"d1":[]}]}}}"#,
+        ),
+        ("repo.json", r#"{"private":false}"#),
+    ] {
+        if !dir.join(file).exists() {
+            write(&dir.join(file), body);
+        }
     }
     // `wrangler d1 create NAME` adds NAME to d1.json, as Cloudflare would.
     write_exe(
@@ -420,21 +445,29 @@ fn test_pages_project_needs_credentials() {
 }
 
 fn run_usage(dir: &Path, pages: usize) -> (Output, String) {
+    run_usage_with(dir, pages, &[])
+}
+
+/// `free-tiers.sh usage` against the stubs, with extra environment
+/// variables (say GH_TOKEN and GITHUB_REPOSITORY to read GitHub too).
+fn run_usage_with(dir: &Path, pages: usize, envs: &[(&str, &str)]) -> (Output, String) {
     let existing: Vec<String> = (0..pages).map(|i| format!("site-{i}")).collect();
     let path = stub_bin(dir, &existing);
     let summary = dir.join("summary.md");
     let json = dir.join("usage.json");
-    let out = Command::new("bash")
-        .arg(script())
+    let mut cmd = Command::new("bash");
+    cmd.arg(script())
         .arg("usage")
         .env("PATH", path)
         .env("CLOUDFLARE_API_TOKEN", "test-token")
         .env("CLOUDFLARE_ACCOUNT_ID", "test-account")
         .env_remove("GH_TOKEN")
         .env("GITHUB_STEP_SUMMARY", &summary)
-        .env("FREE_TIERS_JSON", &json)
-        .output()
-        .expect("run free-tiers.sh");
+        .env("FREE_TIERS_JSON", &json);
+    for (k, v) in envs {
+        cmd.env(k, v);
+    }
+    let out = cmd.output().expect("run free-tiers.sh");
     (out, fs::read_to_string(summary).unwrap_or_default())
 }
 
@@ -451,16 +484,20 @@ fn test_usage_writes_the_rows_as_json() {
     let (out, _) = run_usage(&dir, 3);
     assert!(out.status.success(), "{}", stdout(&out));
     let json = usage_json(&dir);
-    assert_eq!(json["version"], 1);
-    assert_eq!(json["over"], 0);
+    assert_eq!(json["version"], 2);
+    assert_eq!(json["red"], 0);
+    assert_eq!(json["yellow"], 0);
     assert!(json["taken_at"].as_str().is_some_and(|t| t.ends_with('Z')));
     let items = json["items"].as_sequence().expect("items");
     let pages = &items[0];
     assert_eq!(pages["item"], "Cloudflare Pages projects");
     assert_eq!(pages["used"], 3);
-    assert_eq!(pages["warn_at"], 25);
+    assert_eq!(pages["budget"], 25);
+    assert_eq!(pages["free"], 100);
+    assert_eq!(pages["yellow_at"], 20);
+    assert_eq!(pages["red_at"], 25);
     assert_eq!(pages["limit"], "100");
-    assert_eq!(pages["status"], "ok");
+    assert_eq!(pages["status"], "green");
     // Without GH_TOKEN the GitHub row is skipped, with no number.
     let github = items
         .iter()
@@ -476,8 +513,8 @@ fn test_usage_json_marks_an_item_over_its_budget() {
     let (out, _) = run_usage(&dir, 25);
     assert!(!out.status.success());
     let json = usage_json(&dir);
-    assert_eq!(json["over"], 1);
-    assert_eq!(json["items"][0]["status"], "over");
+    assert_eq!(json["red"], 1);
+    assert_eq!(json["items"][0]["status"], "red");
 }
 
 #[test]
@@ -493,8 +530,11 @@ fn test_usage_passes_under_budget_and_writes_a_summary() {
     let dir = temp_dir("usage-ok");
     let (out, summary) = run_usage(&dir, 3);
     assert!(out.status.success(), "{}", stdout(&out));
-    assert!(summary.contains("| Cloudflare Pages projects | 3 | 25 | 100 | ok |"));
-    assert!(summary.contains("| Cloudflare Workers | 1 | 25 | 100 | ok |"));
+    assert!(
+        summary.contains("| Cloudflare Pages projects | 3 | 20 | 25 | 100 | green |"),
+        "{summary}"
+    );
+    assert!(summary.contains("| Cloudflare Workers | 1 | 20 | 25 | 100 | green |"));
 }
 
 #[test]
@@ -502,7 +542,154 @@ fn test_usage_fails_at_the_budget() {
     let dir = temp_dir("usage-over");
     let (out, summary) = run_usage(&dir, 25);
     assert!(!out.status.success());
-    assert!(summary.contains("| Cloudflare Pages projects | 25 | 25 | 100 | OVER |"));
+    assert!(summary.contains("| Cloudflare Pages projects | 25 | 20 | 25 | 100 | red |"));
+}
+
+#[test]
+fn test_usage_warns_but_passes_at_80_percent_of_the_budget() {
+    let dir = temp_dir("usage-yellow");
+    let (out, summary) = run_usage(&dir, 20);
+    assert!(
+        out.status.success(),
+        "yellow doesn't fail: {}",
+        stdout(&out)
+    );
+    assert!(summary.contains("| Cloudflare Pages projects | 20 | 20 | 25 | 100 | yellow |"));
+    assert!(stdout(&out).contains("::warning::Cloudflare Pages projects"));
+    assert_eq!(usage_json(&dir)["yellow"], 1);
+}
+
+#[test]
+fn test_usage_counts_cron_triggers_on_every_worker() {
+    let dir = temp_dir("usage-crons");
+    let (out, summary) = run_usage(&dir, 1);
+    assert!(out.status.success(), "{}", stdout(&out));
+    // One Worker (telemetry) with one schedule, budget 3 of the free 5.
+    assert!(
+        summary.contains("| Cron Triggers | 1 | 3 | 3 | 5 | green |"),
+        "{summary}"
+    );
+}
+
+#[test]
+fn test_usage_reads_d1_against_the_free_limit() {
+    let dir = temp_dir("usage-d1");
+    let dbs: Vec<String> = (0..8)
+        .map(|i| format!(r#"{{"uuid":"u{i}","name":"jimhillr-db{i}","file_size":1000}}"#))
+        .collect();
+    write(&dir.join("d1.json"), &format!("[{}]", dbs.join(",")));
+    let (out, summary) = run_usage(&dir, 1);
+    // No budget: yellow from 50% of the free 10, red from 80%.
+    assert!(!out.status.success());
+    assert!(
+        summary.contains("| D1 databases | 8 | 5 | 8 | 10 | red |"),
+        "{summary}"
+    );
+    assert!(
+        summary.contains("| D1 storage (bytes) | 8000 | 2684354560 | 4294967296 | 5 GB | green |")
+    );
+}
+
+#[test]
+fn test_usage_reads_r2_as_an_overrun_switch() {
+    let dir = temp_dir("usage-r2-off");
+    let (out, summary) = run_usage(&dir, 1);
+    assert!(out.status.success(), "{}", stdout(&out));
+    assert!(
+        summary.contains("| R2 buckets | 0 | 1 | 1 | - | green |"),
+        "{summary}"
+    );
+
+    let dir = temp_dir("usage-r2-on");
+    write(
+        &dir.join("r2.json"),
+        r#"{"success":true,"result":{"buckets":[{"name":"b"}]}}"#,
+    );
+    let (out, summary) = run_usage(&dir, 1);
+    assert!(!out.status.success(), "any bucket is red");
+    assert!(
+        summary.contains("| R2 buckets | 1 | 1 | 1 | - | red |"),
+        "{summary}"
+    );
+}
+
+#[test]
+fn test_usage_takes_the_busiest_day_from_analytics() {
+    let dir = temp_dir("usage-graphql");
+    write(
+        &dir.join("graphql.json"),
+        r#"{"data":{"viewer":{"accounts":[{
+          "workers":[{"sum":{"requests":40000},"dimensions":{"date":"2026-11-27"}},
+                     {"sum":{"requests":5000},"dimensions":{"date":"2026-11-26"}}],
+          "pages":[{"sum":{"requests":20000},"dimensions":{"date":"2026-11-27"}}],
+          "d1":[{"sum":{"rowsRead":100,"rowsWritten":90000},"dimensions":{"date":"2026-11-26"}}]}]}}}"#,
+    );
+    let (out, summary) = run_usage(&dir, 1);
+    assert!(!out.status.success(), "rows written are red");
+    // Workers and Pages Functions requests on the same day add up.
+    assert!(
+        summary.contains(
+            "| Workers requests, busiest day of 7 | 60000 | 50000 | 80000 | 100000 | yellow |"
+        ),
+        "{summary}"
+    );
+    assert!(summary.contains(
+        "| D1 rows read, busiest day of 7 | 100 | 2500000 | 4000000 | 5000000 | green |"
+    ));
+    assert!(
+        summary.contains(
+            "| D1 rows written, busiest day of 7 | 90000 | 50000 | 80000 | 100000 | red |"
+        )
+    );
+}
+
+#[test]
+fn test_usage_skips_reads_the_token_cannot_make() {
+    let dir = temp_dir("usage-skips");
+    write(
+        &dir.join("graphql.json"),
+        r#"{"data":null,"errors":[{"message":"not authorized"}]}"#,
+    );
+    write(
+        &dir.join("r2.json"),
+        r#"{"success":false,"errors":[{"code":10000,"message":"Authentication error"}]}"#,
+    );
+    let (out, summary) = run_usage(&dir, 1);
+    assert!(
+        out.status.success(),
+        "a skipped read never fails: {}",
+        stdout(&out)
+    );
+    assert!(
+        summary.contains("| Workers and D1 daily use | ? |"),
+        "{summary}"
+    );
+    assert!(summary.contains("| R2 buckets | ? |"));
+    assert!(summary.contains("| skipped |"));
+}
+
+#[test]
+fn test_usage_turns_red_when_the_repo_goes_private() {
+    let gh = [
+        ("GH_TOKEN", "gh-token"),
+        ("GITHUB_REPOSITORY", "jimhillr/example"),
+        ("FREE_TIERS_GH_API", "https://api.github.test"),
+    ];
+    let dir = temp_dir("usage-public");
+    let (out, summary) = run_usage_with(&dir, 1, &gh);
+    assert!(out.status.success(), "{}", stdout(&out));
+    assert!(
+        summary.contains("| GitHub repo private (1 = yes) | 0 | 1 | 1 | - | green |"),
+        "{summary}"
+    );
+    assert!(summary.contains("| GitHub Actions cache (bytes) | 1000 |"));
+    assert!(summary.contains("| GitHub Actions artifacts (bytes) | 500 |"));
+
+    let dir = temp_dir("usage-private");
+    write(&dir.join("repo.json"), r#"{"private":true}"#);
+    let (out, summary) = run_usage_with(&dir, 1, &gh);
+    assert!(!out.status.success());
+    assert!(summary.contains("| GitHub repo private (1 = yes) | 1 | 1 | 1 | - | red |"));
 }
 
 #[test]
@@ -523,6 +710,30 @@ fn test_usage_workflow_only_reads() {
         "the nightly run can call it"
     );
     assert!(content.contains("free-tiers.sh usage"));
+}
+
+/// The usage run is daily (cost tracking phase 1); the security scans stay
+/// weekly in their own workflow, so a daily run can't hide their result.
+#[test]
+fn test_usage_runs_daily_and_the_security_scans_weekly() {
+    let read = |name: &str| -> serde_yaml::Value {
+        let content = fs::read_to_string(get_workflow_path(name)).expect("read workflow");
+        serde_yaml::from_str(&content).expect("parse workflow")
+    };
+    let usage = read("all-free-tier-usage.yml");
+    assert_eq!(usage["on"]["schedule"][0]["cron"], "0 7 * * *");
+    let jobs: Vec<&str> = usage["jobs"]
+        .as_mapping()
+        .expect("jobs")
+        .keys()
+        .filter_map(|k| k.as_str())
+        .collect();
+    assert_eq!(jobs, ["usage", "billing"]);
+    let security = read("all-security-scans.yml");
+    assert_eq!(security["on"]["schedule"][0]["cron"], "0 15 * * 1");
+    for job in ["secrets-history", "repo-security", "threat-live"] {
+        assert!(security["jobs"][job].is_mapping(), "{job} runs weekly");
+    }
 }
 
 #[test]
@@ -559,8 +770,8 @@ fn test_billing_check_runs_only_from_main_in_infra() {
 
 #[test]
 fn test_weekly_run_scans_the_whole_history_for_secrets() {
-    let path = get_workflow_path("all-free-tier-usage.yml");
-    let content = fs::read_to_string(&path).expect("read all-free-tier-usage.yml");
+    let path = get_workflow_path("all-security-scans.yml");
+    let content = fs::read_to_string(&path).expect("read all-security-scans.yml");
     let yaml: serde_yaml::Value = serde_yaml::from_str(&content).expect("parse workflow");
     let steps =
         serde_yaml::to_string(&yaml["jobs"]["secrets-history"]["steps"]).unwrap_or_default();

@@ -49,7 +49,7 @@ None.
 The page shows each one as enabled, and the Security tab lists Dependabot
 and Secret scanning. The `github-dependabot` settings check covers the
 Dependabot part every 90 days, and the weekly **GitHub security settings**
-job of `all-free-tier-usage.yml` fails if private vulnerability reporting
+job of `all-security-scans.yml` fails if private vulnerability reporting
 is turned off.
 
 ## Undo or rotate

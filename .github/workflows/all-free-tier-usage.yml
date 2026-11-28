@@ -1,31 +1,28 @@
 name: All Free Tier Usage
 
-# Checks the live usage of the services the repo runs on (Cloudflare Pages
-# and Workers counts, GitHub Actions cache and artifact storage) against the
-# budgets in standards/docs/free-tiers.md, and goes red when anything reaches
-# its warning level. It only reads; it never creates, deletes or upgrades
-# anything. The nightly run is to call it first and stop if it fails.
+# Daily cost check (cost tracking phase 1,
+# standards/docs/plans/2026-11-cost-tracking.md). Reads the live usage of
+# every free allowance an API shows (Cloudflare Pages projects, Workers,
+# Cron Triggers, D1 databases and storage, R2 buckets, the busiest day's
+# Workers requests and D1 rows, repo visibility, Actions cache and
+# artifacts) and rates each on the green, yellow and red ladder against the
+# budgets in standards/radar/limits.toml. Yellow is a warning in the run;
+# red fails it, so the "Free tier usage" badge goes red within a day. It
+# only reads; it never creates, deletes or upgrades anything. The nightly
+# run is to call it first and stop if it fails.
 #
 # A `billing` job checks, with read-only billing credentials, that
 # Cloudflare, GitHub and PostHog still have no payment method, paid plan or
-# charge (standards/scripts/billing-check.sh).
+# charge (standards/scripts/billing-check.sh), so a switched-on bill is
+# found within a day too.
 #
-# The same weekly run scans the whole git history for secrets (SEC-001, the
-# threat check's full-history scan, standards/docs/security.md), so a new
-# gitleaks rule catches an old commit within a week.
-#
-# A `repo-security` job fails if private vulnerability reporting is turned
-# off; the `github` infra stack holds the other code security settings.
-#
-# A `threat-live` job compares what is deployed on Cloudflare with the
-# threat models (standards/scripts/threat-live.sh, "Live check" in
-# standards/docs/security.md): unclaimed Pages projects or Workers, sites
-# behind Access that aren't, APIs that answer without a token and public
-# sites missing security headers. Same read-only token as `usage`.
+# The weekly full-history secret scan, the GitHub security settings and the
+# live threat check are in all-security-scans.yml, so they stay weekly and
+# a daily run can't hide their result on the badge.
 on:
   schedule:
-    # Mondays at 3 PM UTC (7 AM Pacific)
-    - cron: '0 15 * * 1'
+    # Every day at 7 AM UTC (11 PM Pacific), after the day's limits reset
+    - cron: '0 7 * * *'
   workflow_dispatch:
   workflow_call:
     secrets:
@@ -69,9 +66,8 @@ jobs:
           name: free-tier-usage
           path: ${{ runner.temp }}/free-tier-usage.json
           if-no-files-found: ignore
-          # RES-003: the run is weekly, and pane reads the latest run's
-          # file, so it must outlive the 7 days until the next run.
-          retention-days: 8
+          # The run is daily and pane reads the latest run's file.
+          retention-days: 2
 
   # Read-only billing credentials prove there is still no payment method,
   # paid plan or charge where the vendor's API can show it
@@ -98,73 +94,3 @@ jobs:
           POSTHOG_BILLING_READ_KEY: ${{ secrets.POSTHOG_BILLING_READ_KEY }}
           POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST || 'https://us.posthog.com' }}
         run: bash standards/scripts/billing-check.sh all
-
-  secrets-history:
-    name: Secret scan (full history)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
-        with:
-          install: false
-
-      - name: gitleaks over every commit
-        env:
-          GITHUB_TOKEN: ${{ github.token }}  # mise's gitleaks download
-          MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
-        run: bash standards/scripts/secrets-check.sh history
-
-  # Private vulnerability reporting has no OpenTofu resource, so the
-  # `github` infra stack can't hold it on. Anyone can read it on a public
-  # repo, so this needs no admin token ("GitHub security settings" in
-  # standards/docs/security.md).
-  repo-security:
-    name: GitHub security settings
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Private vulnerability reporting is on
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          enabled=$(gh api "repos/$REPO/private-vulnerability-reporting" --jq .enabled)
-          if [ "$enabled" != "true" ]; then
-            echo "::error::Private vulnerability reporting is off; turn it on (standards/docs/runbooks/github-code-security.md)"
-            exit 1
-          fi
-          echo "Private vulnerability reporting is on." >>"$GITHUB_STEP_SUMMARY"
-
-  threat-live:
-    name: Live threat check
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Deployed sites against their threat models
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          THREAT_LIVE_OUT: ${{ runner.temp }}/threat-live
-        run: bash standards/scripts/threat-live.sh
-
-      # The issue files for unclaimed deployments, for PR triage to commit
-      # (standards/docs/repo-health.md); CI never pushes to main.
-      - name: Keep the report and issue files
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: threat-live
-          path: |
-            ${{ runner.temp }}/threat-live/report.md
-            ${{ runner.temp }}/threat-live/issues/
-          if-no-files-found: ignore
-          retention-days: 7

@@ -35,9 +35,14 @@
 #       Otherwise it stops and creates nothing. Messages go to stderr.
 #
 #   free-tiers.sh usage
-#       Live usage check (Cloudflare and GitHub). Writes a table to
-#       $GITHUB_STEP_SUMMARY when set and exits non-zero when anything is at
-#       or over its warning level, so the scheduled run goes red.
+#       Live usage check (Cloudflare and GitHub), run daily. Reads Pages
+#       projects, Workers, Cron Triggers, D1 databases and storage, R2
+#       buckets, the busiest day's Workers requests and D1 rows (GraphQL
+#       analytics), repo visibility, and Actions cache and artifacts. Rates
+#       each green, yellow or red (the ladder in level() below), writes a
+#       table to $GITHUB_STEP_SUMMARY and, with FREE_TIERS_JSON set, the
+#       same rows as JSON. Yellow is a warning; any red exits non-zero, so
+#       the scheduled run goes red.
 #
 # Budgets can be lowered with environment variables, never raised past the
 # free limit: the script clamps them.
@@ -66,6 +71,12 @@ PAGES_PROJECTS_LIMIT=$(limit pages_projects free)
 WORKERS_LIMIT=$(limit workers free)
 CRON_TRIGGERS_LIMIT=$(limit cron_triggers free)
 D1_DATABASES_LIMIT=$(limit d1_databases free)
+D1_STORAGE_LIMIT_BYTES=$(limit d1_storage_bytes free)
+D1_ROWS_READ_LIMIT=$(limit d1_rows_read_per_day free)
+D1_ROWS_WRITTEN_LIMIT=$(limit d1_rows_written_per_day free)
+WORKERS_REQUESTS_LIMIT=$(limit workers_requests_per_day free)
+GITHUB_CACHE_LIMIT_BYTES=$(limit github_cache_bytes free)
+GITHUB_ARTIFACTS_LIMIT_BYTES=$(limit github_artifact_bytes free)
 PAGES_PROJECTS_BUDGET=${FREE_TIERS_PAGES_PROJECTS_BUDGET:-$(limit pages_projects budget)}
 WORKERS_BUDGET=${FREE_TIERS_WORKERS_BUDGET:-$(limit workers budget)}
 CRON_TRIGGERS_BUDGET=${FREE_TIERS_CRON_TRIGGERS_BUDGET:-$(limit cron_triggers budget)}
@@ -267,22 +278,105 @@ d1_database() {
 
 # --------------------------------------------------------------- usage ----
 
-usage_check() {
-  local rows=() items=() over=0 value status
+# level USED BUDGET FREE: green, yellow or red on the ladder in
+# standards/docs/plans/2026-11-cost-tracking.md ("Thresholds"). With a
+# budget: yellow from 80% of it, red from 100%. Without one ("-"): yellow
+# from 50% of the free limit, red from 80%. A budget of 0 means "never":
+# any use at all is red. Prints "yellow_at red_at level".
+level() {
+  local used=$1 budget=$2 free=$3 yellow red
+  if [ "$budget" != "-" ]; then
+    yellow=$(( (budget * 80 + 99) / 100 )); red=$budget
+    [ "$budget" -gt 0 ] || { yellow=1; red=1; }
+  elif [ "$free" != "-" ]; then
+    yellow=$(( (free * 50 + 99) / 100 )); red=$(( (free * 80 + 99) / 100 ))
+  else
+    echo "- - green"; return
+  fi
+  if [ "$used" -ge "$red" ]; then echo "$yellow $red red"
+  elif [ "$used" -ge "$yellow" ]; then echo "$yellow $red yellow"
+  else echo "$yellow $red green"; fi
+}
 
-  row() {  # name, used, warn-at, limit, note
-    status=ok
+# cf_graphql QUERY: POST a GraphQL query (no variables) to Cloudflare's
+# analytics API. Needs Account Analytics Read, which the deploy token has.
+cf_graphql() {
+  curl -fsS -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data "$(jq -nc --arg q "$1" '{query: $q}')" "$CF_API/graphql"
+}
+
+# The busiest day of the last seven (daily limits reset at 00:00 UTC):
+# "<workers requests> <d1 rows read> <d1 rows written>", Pages Functions
+# counted with Workers as Cloudflare does.
+cf_busiest_day() {
+  local since body
+  since=$(date -u -d '7 days ago' +%Y-%m-%d 2>/dev/null || date -u -v-7d +%Y-%m-%d)
+  body=$(cf_graphql "{ viewer { accounts(filter: {accountTag: \"$CLOUDFLARE_ACCOUNT_ID\"}) {
+    workers: workersInvocationsAdaptive(limit: 10000, filter: {date_geq: \"$since\"}) { sum { requests } dimensions { date } }
+    pages: pagesFunctionsInvocationsAdaptiveGroups(limit: 10000, filter: {date_geq: \"$since\"}) { sum { requests } dimensions { date } }
+    d1: d1AnalyticsAdaptiveGroups(limit: 10000, filter: {date_geq: \"$since\"}) { sum { rowsRead rowsWritten } dimensions { date } }
+  } } }") || return 1
+  jq -e '(.errors // []) | length == 0' >/dev/null <<<"$body" || return 1
+  jq -r '
+    .data.viewer.accounts[0] as $a
+    | def busiest(groups; f): [groups // [] | group_by(.dimensions.date)[] | map(f) | add] | max // 0;
+      "\(busiest(($a.workers // []) + ($a.pages // []); .sum.requests))"
+      + " \(busiest($a.d1; .sum.rowsRead)) \(busiest($a.d1; .sum.rowsWritten))"' <<<"$body"
+}
+
+# Cron Triggers on every Worker in the account (Pages can't have any).
+cf_cron_count() {
+  local names name body total=0
+  names=$(cf_workers) || return 1
+  for name in $names; do
+    body=$(cf_get "workers/scripts/$name/schedules") || return 1
+    total=$((total + $(jq '.result.schedules // [] | length' <<<"$body")))
+  done
+  echo "$total"
+}
+
+# R2 buckets in the account. R2 not enabled at all answers error 10042,
+# which is what we want: 0 buckets.
+cf_r2_buckets() {
+  local body
+  body=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+    "$CF_API/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets") || return 1
+  if jq -e '.success == true' >/dev/null <<<"$body"; then
+    jq '.result.buckets // [] | length' <<<"$body"
+  elif jq -e '[.errors[]?.code] | index(10042)' >/dev/null <<<"$body"; then
+    echo 0
+  else
+    return 1
+  fi
+}
+
+usage_check() {
+  local rows=() items=() red=0 yellow=0 value status
+
+  # row NAME USED BUDGET FREE NOTE [FREE_SHOWN]: one line of the table.
+  # USED is a whole number or "?" (not read, so skipped). BUDGET and FREE
+  # are whole numbers or "-" for none. FREE_SHOWN is how the free limit is
+  # printed (say "10 GB"), FREE itself by default.
+  row() {
+    local yellow_at=- red_at=- shown=${6:-$4} l
     if [ "$2" = "?" ]; then
       status=skipped
-    elif [ "$2" -ge "$3" ]; then
-      status=OVER
-      over=$((over + 1))
+    else
+      read -r yellow_at red_at status < <(level "$2" "$3" "$4")
+      case $status in
+        red) red=$((red + 1)) ;;
+        yellow) yellow=$((yellow + 1)); echo "::warning::$1 is at $2, past its yellow level of $yellow_at. See standards/docs/free-tiers.md" ;;
+      esac
     fi
-    rows+=("| $1 | $2 | $3 | $4 | $status | $5 |")
-    items+=("$(jq -nc --arg item "$1" --arg used "$2" --argjson warn "$3" \
-      --arg limit "$4" --arg status "$status" --arg note "$5" \
-      '{item: $item, used: ($used | tonumber? // null), warn_at: $warn,
-        limit: $limit, status: ($status | ascii_downcase), note: $note}')")
+    rows+=("| $1 | $2 | $yellow_at | $red_at | $shown | $status | $5 |")
+    items+=("$(jq -nc --arg item "$1" --arg used "$2" --arg budget "$3" --arg free "$4" \
+      --arg yellow "$yellow_at" --arg red "$red_at" --arg limit "$shown" \
+      --arg status "$status" --arg note "$5" \
+      '{item: $item, used: ($used | tonumber? // null),
+        budget: ($budget | tonumber? // null), free: ($free | tonumber? // null),
+        yellow_at: ($yellow | tonumber? // null), red_at: ($red | tonumber? // null),
+        limit: $limit, status: $status, note: $note}')")
   }
 
   if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
@@ -290,22 +384,53 @@ usage_check() {
     projects=$(cf_pages_projects)  # exits the script if the API call fails
     value=$(grep -c . <<<"$projects" || true)
     row "Cloudflare Pages projects" "$value" "$PAGES_PROJECTS_BUDGET" "$PAGES_PROJECTS_LIMIT" "budget, not the hard limit"
-    # The deploy token may not have Workers Scripts read access yet; report
-    # that rather than failing the whole check.
+    # The token may not have every read permission; a read it can't make is
+    # skipped with a note rather than failing the whole check.
     if value=$(cf_workers_count 2>/dev/null); then
       row "Cloudflare Workers" "$value" "$WORKERS_BUDGET" "$WORKERS_LIMIT" "budget, not the hard limit"
     else
       row "Cloudflare Workers" "?" "$WORKERS_BUDGET" "$WORKERS_LIMIT" "token cannot list Workers (needs Workers Scripts: Read)"
     fi
+    if value=$(cf_cron_count 2>/dev/null); then
+      row "Cron Triggers" "$value" "$CRON_TRIGGERS_BUDGET" "$CRON_TRIGGERS_LIMIT" "per account"
+    else
+      row "Cron Triggers" "?" "$CRON_TRIGGERS_BUDGET" "$CRON_TRIGGERS_LIMIT" "token cannot read Worker schedules (needs Workers Scripts: Read)"
+    fi
+    local dbs
+    if dbs=$(cf_get "d1/database?per_page=100" 2>/dev/null) && jq -e '.success == true' >/dev/null <<<"$dbs"; then
+      row "D1 databases" "$(jq '.result | length' <<<"$dbs")" - "$D1_DATABASES_LIMIT" "no budget, so the ladder uses the free limit"
+      row "D1 storage (bytes)" "$(jq '[.result[].file_size // 0] | add // 0' <<<"$dbs")" - "$D1_STORAGE_LIMIT_BYTES" "all databases together" "5 GB"
+    else
+      row "D1 databases" "?" - "$D1_DATABASES_LIMIT" "token cannot list D1 databases (needs D1: Read)"
+    fi
+    if value=$(cf_r2_buckets 2>/dev/null); then
+      row "R2 buckets" "$value" 0 - "R2 is on hold (budget 0); a bucket means R2 is on, an overrun switch"
+    else
+      row "R2 buckets" "?" 0 - "token cannot list R2 buckets (needs Workers R2 Storage: Read)"
+    fi
+    local busiest rows_read rows_written
+    if busiest=$(cf_busiest_day 2>/dev/null) && [ -n "$busiest" ]; then
+      read -r value rows_read rows_written <<<"$busiest"
+      row "Workers requests, busiest day of 7" "$value" - "$WORKERS_REQUESTS_LIMIT" "includes Pages Functions; resets 00:00 UTC"
+      row "D1 rows read, busiest day of 7" "$rows_read" - "$D1_ROWS_READ_LIMIT" "resets 00:00 UTC"
+      row "D1 rows written, busiest day of 7" "$rows_written" - "$D1_ROWS_WRITTEN_LIMIT" "resets 00:00 UTC"
+    else
+      row "Workers and D1 daily use" "?" - "$WORKERS_REQUESTS_LIMIT" "analytics API not readable (needs Account Analytics: Read)"
+    fi
   else
-    row "Cloudflare" "?" 0 - "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set"
+    row "Cloudflare" "?" - - "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID not set"
   fi
 
   if [ -n "${GH_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ]; then
     local gh=(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+    # A private repo starts counting Actions minutes against a limit, so
+    # the repo going private is an overrun switch: red at once.
+    value=$("${gh[@]}" "$GH_API/repos/$GITHUB_REPOSITORY" | jq 'if .private then 1 else 0 end') ||
+      die "could not read the repository"
+    row "GitHub repo private (1 = yes)" "$value" 0 - "an overrun switch: Actions minutes are billed on a private repo"
     value=$("${gh[@]}" "$GH_API/repos/$GITHUB_REPOSITORY/actions/cache/usage" | jq '.active_caches_size_in_bytes // 0') ||
       die "could not read the GitHub Actions cache usage"
-    row "GitHub Actions cache (bytes)" "$value" "$GITHUB_CACHE_WARN_BYTES" "10 GB" "evicted past 10 GB, not billed"
+    row "GitHub Actions cache (bytes)" "$value" "$GITHUB_CACHE_WARN_BYTES" "$GITHUB_CACHE_LIMIT_BYTES" "evicted past 10 GB, not billed" "10 GB"
     local page=1 total=0 body n
     while :; do
       body=$("${gh[@]}" "$GH_API/repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100&page=$page") ||
@@ -316,16 +441,18 @@ usage_check() {
       page=$((page + 1))
       [ "$page" -le 50 ] || break
     done
-    row "GitHub Actions artifacts (bytes)" "$total" "$GITHUB_ARTIFACTS_WARN_BYTES" "500 MB" "free on a public repo; the limit applies if it goes private"
+    row "GitHub Actions artifacts (bytes)" "$total" "$GITHUB_ARTIFACTS_WARN_BYTES" "$GITHUB_ARTIFACTS_LIMIT_BYTES" "free on a public repo; the limit applies if it goes private" "500 MB"
   else
-    row "GitHub" "?" 0 - "GH_TOKEN or GITHUB_REPOSITORY not set"
+    row "GitHub" "?" - - "GH_TOKEN or GITHUB_REPOSITORY not set"
   fi
 
   {
     echo "### Free tier usage"
     echo
-    echo "| Item | Used | Warn at | Free limit | Status | Note |"
-    echo "| --- | --- | --- | --- | --- | --- |"
+    echo "Yellow from 80% of our budget (50% of the free limit where there is no budget), red from 100% (80%)."
+    echo
+    echo "| Item | Used | Yellow at | Red at | Free limit | Status | Note |"
+    echo "| --- | --- | --- | --- | --- | --- | --- |"
     printf '%s\n' "${rows[@]}"
     echo
     echo "Limits and what to do when one is reached: standards/docs/free-tiers.md"
@@ -335,12 +462,12 @@ usage_check() {
   # The workflow uploads this file as the run's `free-tier-usage` artifact.
   if [ -n "${FREE_TIERS_JSON:-}" ]; then
     printf '%s\n' "${items[@]}" | jq -s \
-      --arg taken_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson over "$over" \
-      '{version: 1, taken_at: $taken_at, over: $over, items: .}' >"$FREE_TIERS_JSON"
+      --arg taken_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson red "$red" --argjson yellow "$yellow" \
+      '{version: 2, taken_at: $taken_at, red: $red, yellow: $yellow, items: .}' >"$FREE_TIERS_JSON"
   fi
 
-  if [ "$over" -gt 0 ]; then
-    echo "::error::$over item(s) at or over their free tier warning level. See standards/docs/free-tiers.md"
+  if [ "$red" -gt 0 ]; then
+    echo "::error::$red item(s) red: at or over their budget, or past 80% of a free limit with no budget. See standards/docs/free-tiers.md"
     return 1
   fi
 }
