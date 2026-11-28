@@ -20,28 +20,7 @@ The work is tracked as issue files in [`../issues/`](../issues/), grouped
 into the epics below; the epic notes are in
 [`../issues/README.md`](../issues/README.md).
 
-## Mission
-
-Publish *The Engineer's 365 Cookbook* as a book: 365 recipes and 53 weekly
-plans that Jim and his wife have cooked, tested and chosen themselves.
-
-## Vision
-
-The website is the book's test kitchen. Anyone can cook from it for free,
-while Jim and his wife, the cookbook's two **curators**, use a private
-management app to log what they cooked, rate and fix recipes, swap in
-better ones and arrange the weeks, until every recipe is marked book-ready
-and the manuscript can be exported.
-
-Three things follow from that:
-
-1. **The content is the product.** Tooling that helps the curators test and
-   improve recipes comes before features for readers.
-2. **Sign-in is for curators only.** Only Jim and his wife can sign in, and
-   only to the management app. The public site needs no account, so its
-   sign-in goes once the management app works.
-3. **The look is the brand.** The earthy theme should be warm and pleasant,
-   a strength of the app, not harsh.
+The mission and vision are in [mission.md](mission.md).
 
 ## Where it stands (2026-11-28)
 
@@ -68,22 +47,30 @@ Most of the review's quick fixes have landed since 2026-11-25:
 
 ## Product roadmap
 
-### Now: curation foundations (epic "Content curation")
+### Now
+
+Curation foundations (epic "Content curation").
 
 Make the content model fit a book before building the tools that edit it.
 
-1. **A recipe format for the book**: a written spec,
+1. **A recipe format for the book** ([issue](../issues/recipe-book-format.md)): a written spec,
    `docs/content-format.md`, and new fields on every recipe: a `Status`
    (`placeholder`, `draft`, `tested`, `book-ready`), `Yield`, `Source`
    (who it came from, for attribution in the book) and `Equipment`. Every
    generated recipe is marked `placeholder`, so progress toward the book is
    a number anyone can see.
-2. **Weekly themes and staples** (COOK-008): each plan names its theme and
+2. **Weekly themes and staples** (COOK-008, [issue](../issues/plan-themes-and-staples.md)): each plan names its theme and
    lists the staples the week assumes, shown on the plan page.
-3. **Show progress on the public site**: a small "kitchen-tested" mark on
+3. **Show progress on the public site** ([issue](../issues/kitchen-tested-mark.md)): a small "kitchen-tested" mark on
    recipes the curators have tested, so readers know which ones to trust.
 
-### Next: the management app (epic "Management app")
+### Next
+
+The management app (epic "Management app"). Its first three phases are
+priority issues, so agents start them alongside the content epic:
+[who can sign in](../issues/manage-auth0-curator-role.md), [the app
+shell](../issues/manage-app-shell.md) and [the server
+check](../issues/manage-api-token-check.md).
 
 A separate Dioxus app at `cookbook/manage`, deployed as the Pages project
 `jimhillr-cookbook-manage`, named and built the way
@@ -131,7 +118,9 @@ All content, cooking notes included, stays Markdown in this repo, the
 book's source (Jim, 2026-11-28: "Let's do A, but I don't think we need
 private notes"). There is no database.
 
-### Later: the book (epic "Book")
+### Later
+
+The book (epic "Book").
 
 1. **Book progress**: a page in the management app showing recipes by
    status, which weeks are complete, and what to cook next to finish a
@@ -156,29 +145,38 @@ management app uses the same theme, so it picks up the redesign for free.
 
 ## Technical roadmap
 
+### Now
+
 - **Split `web/src/main.rs`** into modules and move date and plan logic
-  into `core` (in progress in its own thread). The public-site changes
-  above that touch `web/src/main.rs` (themes on the plan page, the tested
-  mark, removing sign-in) wait for it to merge, to avoid conflicts.
+  into `core` ([issue](../issues/split-web-src-main-rs-1.md), in progress in its
+  own thread). The public-site changes above that touch `web/src/main.rs`
+  (themes on the plan page, the tested mark, removing sign-in) wait for it
+  to merge, to avoid conflicts.
 - **One content library for both apps.** `core` and `data_md` already
   hold the model and the Markdown format; the management app uses them as
   they are, so the public site and the management app can never disagree
   on what a recipe is. `data_md` gains a writer that round-trips every new
-  field.
+  field ([issue](../issues/recipe-book-format.md)).
+
+### Next
+
 - **Token checks on Cloudflare.** The management app's Pages Function
   verifies Auth0 tokens in Rust (`workers-rs`). It is the first such
   server check in the repo; decision 0018's flags Worker can reuse it.
-- **Retire what is done**: the four migration binaries in `recipe_gen`,
-  and the deprecated `Recipe.id` (`day-N`) and `Plan.recipe_days`, with an
-  index by UUID instead of a scan.
-- **Small fixes** left from the review: the 404 page's debug dump and the
-  emoji-only recipe labels.
 - **Evals**: each phase adds its requirements to
   [`requirements.md`](requirements.md) and their evals to
   [`../evals.toml`](../evals.toml) as it ships. The management app gets
   requirements for "only curators can sign in or call the API", "a
   curator can log a cook", "a curator can edit a recipe without git" and
   "the public site shows the curators' edits after the next deploy".
+
+### Later
+
+- **Retire what is done**: the four migration binaries in `recipe_gen`,
+  and the deprecated `Recipe.id` (`day-N`) and `Plan.recipe_days`, with an
+  index by UUID instead of a scan.
+- **Small fixes** left from the review: the 404 page's debug dump and the
+  emoji-only recipe labels.
 
 ## Cost
 

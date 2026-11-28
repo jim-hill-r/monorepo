@@ -9,7 +9,7 @@ it (find a recipe, follow a week's plan, use the shopping list on a phone),
 read the [user guide](docs/user/README.md).
 
 The content is the product and will become a book; where the project is
-heading is in the [roadmap](docs/roadmap.md).
+heading is in the [mission](docs/mission.md) and [roadmap](docs/roadmap.md).
 
 ## Development
 
