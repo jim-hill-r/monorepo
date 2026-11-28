@@ -1,6 +1,6 @@
 ---
 name: write-issue
-description: Write an issue file (a TODO or FIX in an issues/ folder) or a human task with its runbook in this monorepo, using the chores command so the format and the audit are right the first time. Use whenever you record new work, split an issue into phases, or ask Jim for something only a person can do.
+description: Write an issue file (a TODO or FIX in a docs/issues/ folder) or a human task with its runbook in this monorepo, using the chores command so the format and the audit are right the first time. Use whenever you record new work, split an issue into phases, or ask Jim for something only a person can do.
 ---
 
 # Write an issue
@@ -25,9 +25,11 @@ c new-issue --folder <project or sub-project, or . for repo-wide> \
 
 Your judgment:
 
-- **Where:** the project's own folder (`cookbook`, `cahokia/web`), or `.`
-  for work across projects. Never a project under `# On Hold Projects` in
-  `issues/README.md` unless Jim asked.
+- **Where:** the project's own folder (`cookbook`, `cahokia/web`); the file
+  goes in its `docs/issues/`. Work across projects goes to the platform
+  project that owns it (`evals`, `infra`, `threat`, `cost`), or `.` for
+  `standards` when none fits. Never a project under `# On Hold Projects` in
+  `standards/docs/issues/README.md` unless Jim asked.
 - **Priority:** `priority` only for work that should come before the
   project's other issues; most new findings are `backlog`.
 - **Text:** one task, specific enough to start without asking: the file
@@ -45,13 +47,15 @@ A credential automation could make belongs in `infra/scripts/mint.sh`
 instead (AGENTS.md).
 
 ```bash
-c new-human-task --slug <short-kebab-slug> --title "<the task in plain words>" \
+c new-human-task --folder <project> --slug <short-kebab-slug> --title "<the task in plain words>" \
   --requirement "<what to do, where, and what it unblocks>" \
   --why "<why no workflow or agent can do it>" \
   [--unblocks "<what it unblocks>"] [--runbook <existing runbook name>]
 ```
 
-It writes `issues/human/<slug>.md` with the three sections the audit needs
+It writes `<project>/docs/issues/human/<slug>.md` (the project the task
+belongs to; `--folder` defaults to `standards` for repo-wide tasks) with
+the three sections the audit needs
 (ISS-004). Unless `--runbook` names an existing runbook, it also starts
 `standards/docs/runbooks/<slug>.md` from `TEMPLATE.md`; fill in every
 section (kind, time, cost, steps, where secrets go, verify, undo) before you

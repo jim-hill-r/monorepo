@@ -1,0 +1,13 @@
+# tofu_state issues
+
+One file per issue; see [issue-management.md](../../../standards/docs/issue-management.md).
+
+# Epic notes
+
+## Eval engine
+
+See
+[standards/docs/plans/2026-11-eval-engine.md](../../../standards/docs/plans/2026-11-eval-engine.md)
+and decision 0003. Work the phases in order. Phases 0 and 1 depend on
+nothing; later phases need the "Feedback on every change" issues. The pane
+pages for it are in [pane/docs/issues/](../../../pane/docs/issues/).

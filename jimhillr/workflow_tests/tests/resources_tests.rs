@@ -229,7 +229,7 @@ fn test_res002_skips_dated_history_and_longer_names() {
         "standards/docs/plans/2026-11-rename.md",
         "standards/docs/decisions/0001-x.md",
         "pane/docs/reviews/2026-11-27.md",
-        "issues/human/delete-old.md",
+        "infra/docs/issues/human/delete-old.md",
         "CHANGELOG.md",
     ] {
         write(&dir, path, "Old site: https://pane-dbc.pages.dev\n");

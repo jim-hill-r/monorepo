@@ -7,7 +7,7 @@
 //! from a date to the day the snapshot was taken, so the result depends
 //! only on the snapshot, never on a clock. The signals that need live
 //! GitHub data (Build, Deploy and UAT, Pull requests) come later; see
-//! `pane/issues/`. Standards reads the audit findings the snapshot was
+//! `pane/docs/issues/`. Standards reads the audit findings the snapshot was
 //! built with ([`Snapshot::audit`]).
 
 use crate::audit::Finding;
@@ -79,7 +79,8 @@ pub fn retros(snapshot: &Snapshot, project: &str) -> Signal {
 }
 
 /// **Open issues**: the project's `FIX` items, aged from their `added`
-/// date, and the human issues whose `unblocks` names the project.
+/// date, and the human issues in the project's own `docs/issues/human/` or
+/// whose `unblocks` names the project.
 pub fn open_issues(snapshot: &Snapshot, project: &str) -> Signal {
     let today = snapshot.taken_at.as_str();
     let fixes: Vec<&WorkItem> = snapshot
@@ -99,7 +100,10 @@ pub fn open_issues(snapshot: &Snapshot, project: &str) -> Signal {
     let blocking: Vec<&HumanIssue> = snapshot
         .human_issues
         .iter()
-        .filter(|h| h.unblocks.as_deref().is_some_and(|u| names(u, project)))
+        .filter(|h| {
+            h.project.as_deref() == Some(project)
+                || h.unblocks.as_deref().is_some_and(|u| names(u, project))
+        })
         .collect();
     let mut signal = health::open_issues(&ages, blocking.len(), &snapshot.thresholds.open_issues);
     signal.evidence.extend(
@@ -254,7 +258,7 @@ mod tests {
             kind: WorkKind::Fix,
             text: "Broken thing.".into(),
             project: Some(project.into()),
-            file: format!("{project}/issues/broken.md"),
+            file: format!("{project}/docs/issues/broken.md"),
             line: 7,
             source: WorkSource::IssuesFile,
             section: None,
@@ -276,12 +280,13 @@ mod tests {
     fn human(unblocks: &str) -> HumanIssue {
         HumanIssue {
             text: "Make a token.".into(),
-            file: "issues/human/token.md".into(),
+            file: "standards/docs/issues/human/token.md".into(),
             line: 9,
             added: Some("2026-11-20".into()),
             unblocks: Some(unblocks.into()),
             why: None,
             runbook: None,
+            project: None,
         }
     }
 
@@ -430,7 +435,7 @@ mod tests {
         assert_eq!(signal.health, Health::Amber, "14 days is not more than 14");
         assert_eq!(
             signal.evidence[0].url,
-            format!("{REPO_URL}/blob/main/pane/issues/broken.md#L7")
+            format!("{REPO_URL}/blob/main/pane/docs/issues/broken.md#L7")
         );
 
         s.work_items.push(fix("pane", Some("2026-11-12")));
@@ -456,6 +461,17 @@ mod tests {
         assert_eq!(signal.evidence.len(), 1);
         assert!(signal.evidence[0].label.starts_with("Human issue:"));
         assert_eq!(open_issues(&s, "cookbook").health, Health::Amber);
+    }
+
+    #[test]
+    fn a_projects_own_human_issues_block_it() {
+        let mut s = snapshot();
+        let mut own = human("the next deploy");
+        own.file = "pane/docs/issues/human/token.md".into();
+        own.project = Some("pane".into());
+        s.human_issues.push(own);
+        assert_eq!(open_issues(&s, "pane").health, Health::Amber);
+        assert_eq!(open_issues(&s, "cookbook").health, Health::Green);
     }
 
     #[test]

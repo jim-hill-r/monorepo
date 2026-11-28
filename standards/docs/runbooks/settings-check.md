@@ -3,7 +3,7 @@
 - **Kind:** recurring. Each setting in `standards/settings.toml` has its own
   period (`every`, 30 or 90 days).
 - **Status:** ongoing. Each due check is an
-  `issues/human/settings-check-<id>.md` task, written by the weekly digest.
+  `standards/docs/issues/human/settings-check-<id>.md` task, written by the weekly digest.
 - **Time:** about 1 to 3 minutes per check
 - **Cost:** $0
 

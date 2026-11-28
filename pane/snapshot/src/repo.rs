@@ -27,7 +27,9 @@ const SKIP_DIRS: &[&str] = &["target", "node_modules", "dist"];
 pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, String> {
     let root_mise = read(&root.join("mise.toml"))?;
     let roots = parse::config_roots(&root_mise)?;
-    let lists = parse::root_lists(&read_optional(&root.join("issues/README.md")));
+    let lists = parse::root_lists(&read_optional(
+        &root.join("standards/docs/issues/README.md"),
+    ));
 
     let mut snapshot = Snapshot::new(commit, taken_at);
     let health = root.join(HEALTH_TOML);
@@ -72,7 +74,7 @@ pub fn build(root: &Path, commit: &str, taken_at: &str) -> Result<Snapshot, Stri
         } else if issue_kind == Some(parse::IssueFile::Human) {
             snapshot
                 .human_issues
-                .extend(parse::human_issue_file(&rel, &read(&file)?));
+                .extend(parse::human_issue_file(&rel, project, &read(&file)?));
         } else if let Some(kind) = parse::doc_kind(&rel) {
             let contents = read(&file)?;
             if kind == DeliverableKind::Retro {

@@ -15,7 +15,9 @@ use evals_model::{
 use crate::check::{EVALS, SETTING_CHECKS, SETTINGS};
 
 /// Where human tasks live, relative to the repo root.
-pub const HUMAN_ISSUES: &str = "issues/human";
+/// Settings checks are repo-wide (`standards/settings.toml`), so their
+/// tasks go in the standards project.
+pub const HUMAN_ISSUES: &str = "standards/docs/issues/human";
 
 /// Reads and validates the manifest.
 pub fn read_settings(root: &Path) -> Result<Vec<Setting>> {
@@ -74,7 +76,7 @@ pub fn covered_requirements(root: &Path) -> Result<BTreeMap<String, Vec<String>>
 }
 
 /// One line per check due at `now`. With `write`, also writes a human task
-/// file in `issues/human/` for up to `limit` due checks that don't have one
+/// file in `standards/docs/issues/human/` for up to `limit` due checks that don't have one
 /// yet, and marks those lines `wrote <path>:`; a check whose file already
 /// exists is marked `open <path>:`.
 pub fn due(root: &Path, now: DateTime<Utc>, write: Option<usize>) -> Result<String> {
@@ -219,18 +221,23 @@ every = "30d"
         let now = time("2026-12-01T00:00:00Z");
         let out = due(root, now, Some(1))?;
         let lines: Vec<&str> = out.lines().collect();
-        assert!(
-            lines[0].starts_with("wrote issues/human/settings-check-auth0-cookbook-app.md: Check")
-        );
+        assert!(lines[0].starts_with(
+            "wrote standards/docs/issues/human/settings-check-auth0-cookbook-app.md: Check"
+        ));
         assert!(lines[1].starts_with("Check claude-connectors:"), "{out}");
-        let file =
-            fs::read_to_string(root.join("issues/human/settings-check-auth0-cookbook-app.md"))?;
+        let file = fs::read_to_string(
+            root.join("standards/docs/issues/human/settings-check-auth0-cookbook-app.md"),
+        )?;
         assert!(file.starts_with("---\nadded: 2026-12-01\n"), "{file}");
 
         // Next run: the first is open, the second gets written.
         let out = due(root, now, Some(5))?;
-        assert!(out.starts_with("open issues/human/settings-check-auth0-cookbook-app.md: "));
-        assert!(out.contains("wrote issues/human/settings-check-claude-connectors.md: "));
+        assert!(out.starts_with(
+            "open standards/docs/issues/human/settings-check-auth0-cookbook-app.md: "
+        ));
+        assert!(
+            out.contains("wrote standards/docs/issues/human/settings-check-claude-connectors.md: ")
+        );
 
         assert!(close_task(root, "claude-connectors")?);
         assert!(!close_task(root, "claude-connectors")?);

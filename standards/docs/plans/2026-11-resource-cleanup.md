@@ -16,9 +16,9 @@ And later the same day:
 
 Status: **approved** by Jim (PR #669, 2026-11-26), with the recommended
 answer to every question (see "Decisions" near the end). The work items
-are issue files in the root [issues/](../../../issues/) under the epic
+are issue files in the root [issues/](../issues/) under the epic
 "Resource cleanup", one group per phase, and the steps only Jim can do are
-in [issues/human/](../../../issues/human/). Part 6 (onboarding every live
+in [issues/human/](../issue-management.md#human-issues). Part 6 (onboarding every live
 resource to infrastructure as code) was added after approval and is
 **proposed** until Jim approves the PR that adds it.
 

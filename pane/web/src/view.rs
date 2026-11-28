@@ -611,8 +611,8 @@ mod tests {
     #[test]
     fn links_lines_on_github_at_the_commit() {
         assert_eq!(
-            github_line_url("abc", "pane/issues/x.md", 7),
-            "https://github.com/jimhillr/monorepo/blob/abc/pane/issues/x.md#L7"
+            github_line_url("abc", "pane/docs/issues/x.md", 7),
+            "https://github.com/jimhillr/monorepo/blob/abc/pane/docs/issues/x.md#L7"
         );
     }
 
@@ -771,12 +771,13 @@ mod tests {
     fn sorts_human_issues_oldest_first_undated_last() {
         let issue = |line: u32, added: Option<&str>| HumanIssue {
             text: format!("line {line}"),
-            file: "issues/human/x.md".into(),
+            file: "standards/docs/issues/human/x.md".into(),
             line,
             added: added.map(str::to_owned),
             unblocks: None,
             why: None,
             runbook: None,
+            project: None,
         };
         let mut s = Snapshot::new("a", "t");
         s.human_issues = vec![

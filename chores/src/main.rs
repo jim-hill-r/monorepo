@@ -26,7 +26,7 @@ use clap::{Parser, Subcommand};
 )]
 struct Cli {
     /// Repo root. Defaults to the nearest directory above the current one
-    /// that holds AGENTS.md and issues/README.md.
+    /// that holds AGENTS.md and standards/docs/issues/README.md.
     #[arg(long, global = true)]
     root: Option<PathBuf>,
     #[command(subcommand)]
@@ -39,7 +39,7 @@ enum Command {
     /// and print it with its text and epic notes.
     NextTask {
         /// Only issues of these projects (`cookbook`, `cahokia/web`, or
-        /// `repo` for the root issues/ folder). Comma separated or repeated.
+        /// `repo` for repo-wide work in standards). Comma separated or repeated.
         #[arg(long, value_delimiter = ',')]
         project: Vec<String>,
         /// Skip these projects or epics (`epic:<name>`), such as ones other
@@ -168,11 +168,11 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Write an agent issue file, <folder>/issues/<slug>.md, tagged
+    /// Write an agent issue file, <folder>/docs/issues/<slug>.md, tagged
     /// agent-generated and dated today.
     NewIssue {
         /// The project or sub-project folder (`cookbook`, `cahokia/web`), or
-        /// `.` for the root issues/ folder.
+        /// `.` for repo-wide work, which lives in standards.
         #[arg(long)]
         folder: String,
         /// Kebab-case file name without .md.
@@ -198,11 +198,15 @@ enum Command {
         #[arg(long)]
         date: Option<String>,
     },
-    /// Write a task only a person can do, issues/human/<slug>.md, with the
+    /// Write a task only a person can do, <folder>/docs/issues/human/<slug>.md, with the
     /// three sections the audit needs, and start its runbook from
     /// standards/docs/runbooks/TEMPLATE.md unless --runbook names one that
     /// exists.
     NewHumanTask {
+        /// The project the task belongs to (`cost`, `infra`); repo-wide
+        /// tasks go in `standards`.
+        #[arg(long, default_value = "standards")]
+        folder: String,
         /// Kebab-case file name without .md.
         #[arg(long)]
         slug: String,
@@ -229,12 +233,13 @@ enum Command {
 
 fn find_root(start: &Path) -> Result<PathBuf> {
     for dir in start.ancestors() {
-        if dir.join("AGENTS.md").is_file() && dir.join("issues/README.md").is_file() {
+        if dir.join("AGENTS.md").is_file() && dir.join("standards/docs/issues/README.md").is_file()
+        {
             return Ok(dir.to_path_buf());
         }
     }
     bail!(
-        "no repo root (a folder with AGENTS.md and issues/README.md) above {}; pass --root",
+        "no repo root (a folder with AGENTS.md and standards/docs/issues/README.md) above {}; pass --root",
         start.display()
     )
 }
@@ -401,6 +406,7 @@ fn run() -> Result<ExitCode> {
             println!("wrote {path}");
         }
         Command::NewHumanTask {
+            folder,
             slug,
             title,
             requirement,
@@ -412,6 +418,7 @@ fn run() -> Result<ExitCode> {
             let (task, runbook, new) = new_issue::write_human_task(
                 &root,
                 &new_issue::HumanTask {
+                    folder,
                     slug,
                     title,
                     requirement,

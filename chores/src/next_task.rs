@@ -1,11 +1,13 @@
 //! `chores next-task`: pick the next issue the way the `start-a-new-task`
 //! skill orders them.
 //!
-//! 1. `priority` issues in the root `issues/` folder.
-//! 2. `priority` issues of each project under `# Priority Projects` in the
-//!    root `issues/README.md`, in list order.
-//! 3. Any other `priority` issue, then backlog issues (root first, then the
-//!    priority projects in list order, then the rest by name).
+//! 1. `priority` issues of each project under `# Priority Projects` in
+//!    `standards/docs/issues/README.md`, in list order.
+//! 2. Any other `priority` issue, then backlog issues (the priority
+//!    projects in list order, then the rest by name).
+//!
+//! Every issue lives in its project's `docs/issues/`; repo-wide work is in
+//! `standards/docs/issues/`.
 //!
 //! Within a group, issues sort by project, epic, phase, `order` and path, so
 //! an epic's earliest phase and lowest order come first. Human tasks,
@@ -31,7 +33,8 @@ use crate::tiers::{self, Balance, Side};
 #[derive(Debug, Default)]
 pub struct Options {
     /// Only issues of these projects (a top-level folder, or a path prefix
-    /// such as `cahokia/web`). `repo` means the root `issues/` folder.
+    /// such as `cahokia/web`). `repo` means `standards`, home of repo-wide
+    /// work.
     pub projects: Vec<String>,
     /// Skip these projects or epics: work another thread already has.
     pub exclude: Vec<String>,
@@ -39,7 +42,7 @@ pub struct Options {
     /// open PR already deletes.
     pub skip: Vec<String>,
     /// How many to pick. With more than one, each pick is from a different
-    /// project (or, in the root folder, a different epic).
+    /// project (or, in `standards`, a different epic).
     pub count: usize,
     /// Projects (or `epic:` names, `repo`) of the threads working now, one
     /// entry per thread, for the tier balance.
@@ -124,45 +127,42 @@ fn group(issue: &Issue, lists: &ProjectLists) -> (u8, usize, String) {
     let listed = project.and_then(|p| lists.priority.iter().position(|l| l == p));
     let name = project.unwrap_or("").to_string();
     let priority = issue.priority == "priority";
-    match (priority, project, listed) {
-        (true, None, _) => (0, 0, name),
-        (true, Some(_), Some(i)) => (1, i, name),
-        (true, Some(_), None) => (2, 0, name),
-        (false, None, _) => (3, 0, name),
-        (false, Some(_), Some(i)) => (4, i, name),
-        (false, Some(_), None) => (5, 0, name),
+    match (priority, listed) {
+        (true, Some(i)) => (1, i, name),
+        (true, None) => (2, 0, name),
+        (false, Some(i)) => (4, i, name),
+        (false, None) => (5, 0, name),
     }
 }
 
 fn reason(issue: &Issue, lists: &ProjectLists) -> String {
     let (g, i, name) = group(issue, lists);
     match g {
-        0 => "priority issue in the root issues/ folder".to_string(),
         1 => format!("priority issue of priority project #{} ({name})", i + 1),
         2 => format!("priority issue of {name}"),
-        3 => "backlog issue in the root issues/ folder".to_string(),
         4 => format!("backlog issue of priority project #{} ({name})", i + 1),
         _ => format!("backlog issue of {name}"),
     }
 }
 
+/// The project holding repo-wide work, whose picks are keyed by epic so
+/// several threads can share it.
+const REPO_WIDE: &str = "standards";
+
 /// The project or epic a pick takes up.
 pub fn key(issue: &Issue) -> String {
-    match issue.project() {
-        Some(p) => p.to_string(),
-        None => match issue.epic_name() {
-            Some(e) => format!("epic:{e}"),
-            None => format!("repo:{}", issue.path),
-        },
+    match (issue.project(), issue.epic_name()) {
+        (Some(REPO_WIDE), Some(e)) => format!("epic:{e}"),
+        (Some(REPO_WIDE), None) => format!("repo:{}", issue.path),
+        (Some(p), _) => p.to_string(),
+        (None, _) => format!("repo:{}", issue.path),
     }
 }
 
 fn matches_project(issue: &Issue, wanted: &str) -> bool {
     let wanted = wanted.trim_end_matches('/');
-    match issue.project() {
-        None => wanted == "repo" || wanted == "issues",
-        Some(_) => issue.path.starts_with(&format!("{wanted}/")),
-    }
+    let wanted = if wanted == "repo" { REPO_WIDE } else { wanted };
+    issue.path.starts_with(&format!("{wanted}/"))
 }
 
 fn excluded(issue: &Issue, exclude: &[String]) -> bool {
@@ -442,15 +442,19 @@ mod tests {
 
     fn all() -> Vec<Issue> {
         vec![
-            issue("pane/issues/p.md", "priority", ""),
-            issue("cookbook/issues/c.md", "priority", ""),
-            issue("sparkhill/webapp/issues/s.md", "priority", ""),
-            issue("issues/r.md", "priority", ""),
-            issue("issues/b.md", "backlog", ""),
-            issue("luggage/issues/l.md", "priority", ""),
-            issue("homer/issues/h.md", "backlog", ""),
-            issue("issues/human/x.md", "priority", ""),
-            issue("bogan/issues/i.md", "priority", "tags: [agent-ignore]\n"),
+            issue("pane/docs/issues/p.md", "priority", ""),
+            issue("cookbook/docs/issues/c.md", "priority", ""),
+            issue("sparkhill/webapp/docs/issues/s.md", "priority", ""),
+            issue("standards/docs/issues/r.md", "priority", ""),
+            issue("standards/docs/issues/b.md", "backlog", ""),
+            issue("luggage/docs/issues/l.md", "priority", ""),
+            issue("homer/docs/issues/h.md", "backlog", ""),
+            issue("cost/docs/issues/human/x.md", "priority", ""),
+            issue(
+                "bogan/docs/issues/i.md",
+                "priority",
+                "tags: [agent-ignore]\n",
+            ),
         ]
     }
 
@@ -463,12 +467,12 @@ mod tests {
         assert_eq!(
             paths(&pick(&all(), &lists(), &opts)),
             vec![
-                "issues/r.md",
-                "sparkhill/webapp/issues/s.md",
-                "cookbook/issues/c.md",
-                "pane/issues/p.md",
-                "issues/b.md",
-                "homer/issues/h.md",
+                "sparkhill/webapp/docs/issues/s.md",
+                "cookbook/docs/issues/c.md",
+                "pane/docs/issues/p.md",
+                "standards/docs/issues/r.md",
+                "homer/docs/issues/h.md",
+                "standards/docs/issues/b.md",
             ]
         );
     }
@@ -477,30 +481,30 @@ mod tests {
     fn earliest_phase_and_lowest_order_first() {
         let all = vec![
             issue(
-                "issues/b.md",
+                "standards/docs/issues/b.md",
                 "priority",
                 "epic: \"Cost / Phase 2: x\"\norder: 10\n",
             ),
             issue(
-                "issues/a.md",
+                "standards/docs/issues/a.md",
                 "priority",
                 "epic: \"Cost / Phase 1: y\"\norder: 20\n",
             ),
             issue(
-                "issues/c.md",
+                "standards/docs/issues/c.md",
                 "priority",
                 "epic: \"Cost / Phase 1: y\"\norder: 10\n",
             ),
         ];
         let picks = pick(&all, &lists(), &Options::default());
-        assert_eq!(paths(&picks), vec!["issues/c.md"]);
+        assert_eq!(paths(&picks), vec!["standards/docs/issues/c.md"]);
         assert_eq!(picks[0].key, "epic:Cost");
     }
 
     #[test]
     fn one_pick_per_project_and_exclusions() {
         let mut all = all();
-        all.push(issue("cookbook/web/issues/w.md", "priority", ""));
+        all.push(issue("cookbook/web/docs/issues/w.md", "priority", ""));
         let opts = Options {
             count: 3,
             exclude: vec!["sparkhill".into()],
@@ -508,7 +512,11 @@ mod tests {
         };
         assert_eq!(
             paths(&pick(&all, &lists(), &opts)),
-            vec!["issues/r.md", "cookbook/issues/c.md", "pane/issues/p.md"]
+            vec![
+                "cookbook/docs/issues/c.md",
+                "pane/docs/issues/p.md",
+                "standards/docs/issues/r.md"
+            ]
         );
     }
 
@@ -520,11 +528,11 @@ mod tests {
         };
         assert_eq!(
             paths(&pick(&all(), &lists(), &opts)),
-            vec!["cookbook/issues/c.md"]
+            vec!["cookbook/docs/issues/c.md"]
         );
         let opts = Options {
             projects: vec!["cookbook".into()],
-            skip: vec!["cookbook/issues/c.md".into()],
+            skip: vec!["cookbook/docs/issues/c.md".into()],
             ..Options::default()
         };
         assert!(pick(&all(), &lists(), &opts).is_empty());
@@ -533,7 +541,10 @@ mod tests {
             exclude: vec!["epic:Nope".into()],
             ..Options::default()
         };
-        assert_eq!(paths(&pick(&all(), &lists(), &opts)), vec!["issues/r.md"]);
+        assert_eq!(
+            paths(&pick(&all(), &lists(), &opts)),
+            vec!["standards/docs/issues/r.md"]
+        );
     }
 
     fn product_side(i: &Issue) -> Side {
@@ -557,22 +568,28 @@ mod tests {
         };
         let picks = pick_balanced(&all(), &lists(), &opts, Some(balance), &product_side);
         // Products first until the share reaches half (3 of 6), then the
-        // plain order resumes with the root priority issue.
+        // plain order resumes with pane, and the next product (a backlog
+        // one) is preferred over the standards priority issue.
         assert_eq!(
             paths(&picks),
             vec![
-                "sparkhill/webapp/issues/s.md",
-                "cookbook/issues/c.md",
-                "issues/r.md",
-                "homer/issues/h.md",
+                "sparkhill/webapp/docs/issues/s.md",
+                "cookbook/docs/issues/c.md",
+                "pane/docs/issues/p.md",
+                "homer/docs/issues/h.md",
             ]
         );
         assert!(
             picks[0]
                 .reason
-                .contains("product preferred over issues/r.md")
+                .contains("first in order and a product issue")
         );
         assert_eq!(picks[2].side, Side::Platform);
+        assert!(
+            picks[3]
+                .reason
+                .contains("product preferred over standards/docs/issues/r.md")
+        );
     }
 
     #[test]
@@ -586,7 +603,10 @@ mod tests {
             working_platform: 2,
             ..Balance::default()
         };
-        let plain = vec!["issues/r.md", "sparkhill/webapp/issues/s.md"];
+        let plain = vec![
+            "sparkhill/webapp/docs/issues/s.md",
+            "cookbook/docs/issues/c.md",
+        ];
         assert_eq!(
             paths(&pick_balanced(
                 &all(),
@@ -612,8 +632,8 @@ mod tests {
     #[test]
     fn falls_back_to_platform_when_no_product_issue_is_left() {
         let only_platform = vec![
-            issue("issues/r.md", "priority", ""),
-            issue("pane/issues/p.md", "backlog", ""),
+            issue("standards/docs/issues/r.md", "priority", ""),
+            issue("pane/docs/issues/p.md", "backlog", ""),
         ];
         let behind = Balance {
             working_platform: 5,
@@ -624,7 +644,10 @@ mod tests {
             ..Options::default()
         };
         let picks = pick_balanced(&only_platform, &lists(), &opts, Some(behind), &product_side);
-        assert_eq!(paths(&picks), vec!["issues/r.md", "pane/issues/p.md"]);
+        assert_eq!(
+            paths(&picks),
+            vec!["standards/docs/issues/r.md", "pane/docs/issues/p.md"]
+        );
         assert!(picks[0].reason.contains("no product issue left"));
     }
 
@@ -632,9 +655,9 @@ mod tests {
     fn falls_back_to_todo_comments() -> Result<()> {
         let dir = tempfile::tempdir()?;
         let root = dir.path();
-        fs::create_dir_all(root.join("issues"))?;
+        fs::create_dir_all(root.join("standards/docs/issues"))?;
         fs::write(
-            root.join("issues/README.md"),
+            root.join("standards/docs/issues/README.md"),
             "# Priority Projects\n\n# On Hold Projects\n- luggage\n",
         )?;
         fs::create_dir_all(root.join("homer/src"))?;
@@ -657,13 +680,13 @@ mod tests {
     fn reads_epic_notes_from_the_folder_readme() -> Result<()> {
         let dir = tempfile::tempdir()?;
         let root = dir.path();
-        fs::create_dir_all(root.join("issues"))?;
+        fs::create_dir_all(root.join("standards/docs/issues"))?;
         fs::write(
-            root.join("issues/README.md"),
+            root.join("standards/docs/issues/README.md"),
             "# Priority Projects\n- cookbook\n\n# Epic notes\n\n## Cost check\n\nSee the plan.\n",
         )?;
         fs::write(
-            root.join("issues/x.md"),
+            root.join("standards/docs/issues/x.md"),
             "---\nkind: fix\npriority: priority\nepic: \"Cost check / Phase 3: strict\"\norder: 10\nadded: 2026-11-27\n---\n\nMake it strict.\n",
         )?;
         let outcome = run(root, &Options::default())?;
@@ -673,10 +696,8 @@ mod tests {
             Some("See the plan.")
         );
         let text = render(&outcome);
-        assert!(text.contains("1. issues/x.md"));
-        assert!(
-            text.contains("priority FIX | platform | priority issue in the root issues/ folder")
-        );
+        assert!(text.contains("1. standards/docs/issues/x.md"));
+        assert!(text.contains("priority FIX | platform | priority issue of standards"));
         assert!(text.contains("   Make it strict."));
         assert!(text.contains("   > See the plan."));
         Ok(())

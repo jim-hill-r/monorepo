@@ -13,7 +13,8 @@
 #   DOC-005 to DOC-008  User guides against the baseline in
 #            standards/user-docs.toml (`chores user-docs`, Rust).
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
-#            front matter, human tasks only in issues/human/.
+#            front matter, in a project's docs/issues/ folder, human
+#            tasks only in a docs/issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
 #   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh); warnings only for now.
@@ -34,7 +35,7 @@ errors=0
 err() { echo "error[$1] $2"; errors=$((errors + 1)); }
 
 # Top-level directories that are not projects.
-skip_top='^(\.[^/]*|docs|issues)$'  # hidden directories are not projects; docs/ holds only review decks (docs/reviews), issues/ only repo-wide issue files
+skip_top='^(\.[^/]*|docs)$'  # hidden directories are not projects; docs/ holds only review decks (docs/reviews)
 
 for d in $(git ls-files | cut -d/ -f1 | sort -u); do
   [ -d "$d" ] || continue

@@ -40,7 +40,7 @@ met).
    `evals/model/src/verdict.rs`).
 2. **A build failure leaves no eval result.** The PR check fails, so nothing
    ships, but the verdicts can't see it.
-   [issues/eval-build-failure-leaves-no-result.md](../../issues/eval-build-failure-leaves-no-result.md).
+   [evals/docs/issues/eval-build-failure-leaves-no-result.md](issues/eval-build-failure-leaves-no-result.md).
 3. **Triage was the missing link.** Red verdicts reached `verdicts.json`,
    but nothing filed the `FIX`. The daily `evals-triage.yml` now does, and
    `evals drill` checks that a dry run of triage picks the requirement up.
@@ -51,7 +51,7 @@ met).
    change it.
 5. **COOK-005 (accessibility, a must) is always `unknown`.** Its `cd`
    Playwright eval never runs, because no smoke step runs after deploy yet
-   (`issues/nightly-uat-smoke-step-after-deploy.md`), yet the coverage line
+   (`standards/docs/issues/nightly-uat-smoke-step-after-deploy.md`), yet the coverage line
    says "3 of 3 musts evaluated in production". The coverage metric issue
    should count musts with production results, not musts with evals.
 

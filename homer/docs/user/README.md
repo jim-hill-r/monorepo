@@ -139,4 +139,4 @@ Common problems:
 
 homer has no feedback button. To report a problem or ask for a feature, tell
 Jim with the command you ran and what homer printed (leave your API key
-out), and it will be recorded as an issue in `homer/issues/`.
+out), and it will be recorded as an issue in `homer/docs/issues/`.

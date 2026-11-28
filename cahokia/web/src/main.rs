@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_redirect_url_matches_auth0_callback_urls() {
-        // These must stay in Auth0's Allowed Callback URLs (issues/human/):
+        // These must stay in Auth0's Allowed Callback URLs (a human task):
         // the redirect URI is the site root from every page, never the
         // current page URL.
         assert_eq!(

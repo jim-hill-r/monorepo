@@ -28,7 +28,7 @@
 # address or billing-portal details. A credential that isn't set yet is a
 # warning, not a failure, and the vendor shows as "not checked" in the run
 # summary. Exit 1 when anything is found, or a call fails. What no API can
-# show stays on issues/human/check-there-still-no-payment-method.md
+# show stays on cost/docs/issues/human/check-there-still-no-payment-method.md
 # ("Billing checks" in standards/docs/free-tiers.md).
 set -euo pipefail
 

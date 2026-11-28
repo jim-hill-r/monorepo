@@ -33,4 +33,4 @@ scripts that check the repo.
 `standards` CLI that used to audit naming (NAM-002, NAM-004), documentation
 (DOC-001 to DOC-004) and lint (LIN-001, LIN-002) rules and write ISSUES.md
 TODOs was removed with Cast; porting those checks to `audit.sh` is tracked
-in [issues/](./issues/).
+in [docs/issues/](docs/issues/).

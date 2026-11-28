@@ -1,6 +1,6 @@
 ---
 name: human-issues-digest
-description: Gather the tasks only a person can do (the issue files in issues/human/, due checks of settings made by hand, and open needs-human PRs) and post one short digest to Jim. Use for the weekly scheduled digest, when asked what is waiting on Jim or on a human, or when Jim answers a settings check.
+description: Gather the tasks only a person can do (the issue files in docs/issues/human/, due checks of settings made by hand, and open needs-human PRs) and post one short digest to Jim. Use for the weekly scheduled digest, when asked what is waiting on Jim or on a human, or when Jim answers a settings check.
 ---
 
 # Human issues digest
@@ -10,18 +10,18 @@ message. Read `AGENTS.md` first. The process is in
 `standards/docs/issue-management.md` ("Human issues"), and the checks of
 settings made by hand are under "Human checks" in `standards/docs/evals.md`.
 This skill changes the repo only to add due settings checks to
-`issues/human/` (step 2) and to record Jim's answers (step 5), each
+`docs/issues/human/` (step 2) and to record Jim's answers (step 5), each
 through one PR; it never changes anything on GitHub or in a dashboard
 itself.
 
 ## 1. Gather
 
-1. On the latest `main`, read every task in the root `issues/human/` (one
+1. On the latest `main`, read every task in a project's `docs/issues/human/` (one
    file each, not `README.md`): `mise run //:issues -- --human` lists them
    oldest first with what each unblocks.
 2. Find the tasks added in the last 7 days: those whose `added` date is
    within the week, or
-   `git log --since="7 days ago" --diff-filter=A --name-only -- issues/human/`.
+   `git log --since="7 days ago" --diff-filter=A --name-only -- '*/docs/issues/human/'`.
 3. List open pull requests labelled `needs-human` or `human-review` (the
    Human review workflow's hold: waiting only for a human's approval, which
    merges it). Until PR triage has renamed it, also include PRs still
@@ -32,7 +32,7 @@ itself.
    section (`mise run //:issues -- --check` reports ISS-004); list it under
    "Misfiled" so an agent adds them.
 5. Look for stray manual tasks the process missed: issues tagged
-   `agent-ignore` in any other `issues/` folder that say "Needs Jim" or name a
+   `agent-ignore` in any other `docs/issues/` folder that say "Needs Jim" or name a
    dashboard, secret or account. List them under "Misfiled" so they can be
    moved.
 6. In `cost/`, run `cargo run -q -p cost_cli -- renewals --within 60`. It
@@ -49,7 +49,7 @@ billing) are listed in `standards/settings.toml`, each with how often Jim
 checks it.
 
 1. In `evals/`, run `cargo run -q -p evals_cli -- human-checks due --write`.
-   It writes `issues/human/settings-check-<id>.md` for each setting that was never
+   It writes `standards/docs/issues/human/settings-check-<id>.md` for each setting that was never
    checked, was last checked longer ago than its `every`, or was last
    answered "not ok", skipping any whose file already exists, and at most
    five a week (`--limit`) so the digest stays short; the rest come up next
@@ -77,7 +77,7 @@ Post one message. If nothing is open, say so in one line. Otherwise:
   runbook (the file's `runbook` field, as a GitHub link on `main`). PRs as
   `#<n> <title>: <reason>`.
 - **Checks due**, only when there are any: every open
-  `issues/human/settings-check-*.md` task, new or not. These go here and not under
+  `standards/docs/issues/human/settings-check-*.md` task, new or not. These go here and not under
   the lists above.
 - **Renewals**, only when there are any: one line per renewal from step 1.6,
   with its price and date, and "consider dropping" on a domain nothing
@@ -91,7 +91,7 @@ look up.
 
 ## 5. When Jim says a task is done, or answers a check
 
-Delete its file from `issues/human/` and open a PR with the
+Delete its file from its project's `docs/issues/human/` and open a PR with the
 `open-pull-request` skill. If the task unblocks an agent issue, mention it in
 the PR description.
 
@@ -102,8 +102,8 @@ For a `settings-check-<id>.md` task, record his answer instead, in one PR, from
   `cargo run -q -p evals_cli -- human-checks answer <id> --ok`
 - Anything wrong:
   `cargo run -q -p evals_cli -- human-checks answer <id> --not-ok "<his words>"`,
-  then file the fix: a `kind: fix` issue in the owning project's `issues/`
-  when an agent can fix it, or a new `issues/human/` task saying what to
+  then file the fix: a `kind: fix` issue in the owning project's `docs/issues/`
+  when an agent can fix it, or a new `docs/issues/human/` task saying what to
   change when only Jim can. The check comes up again next week until a later
   "ok".
 

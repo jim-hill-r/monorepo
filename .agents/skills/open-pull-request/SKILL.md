@@ -85,7 +85,7 @@ on the edit.
 Mark the PR ready for review once **all** of these hold:
 
 - The change is complete for the issue; nothing is left as "follow-up" unless
-  it's recorded as an issue file tagged `[agent-generated]` in an `issues/`
+  it's recorded as an issue file tagged `[agent-generated]` in a `docs/issues/`
   folder.
 - CI for the changed projects passes on the PR's head commit.
 - The `TODO`/`FIX` you fixed is removed and docs are updated.

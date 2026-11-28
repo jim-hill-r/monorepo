@@ -85,10 +85,10 @@ pub struct Orphan {
 }
 
 impl Orphan {
-    /// Its file name in the root `issues/`.
+    /// Its path from the repo root, in the threat project's `docs/issues/`.
     pub fn issue_path(&self) -> String {
         format!(
-            "issues/claim-or-delete-{}-{}.md",
+            "threat/docs/issues/claim-or-delete-{}-{}.md",
             self.kind,
             slug(&self.name)
         )
@@ -101,7 +101,7 @@ impl Orphan {
             _ => format!("Cloudflare Worker `{}`", self.name),
         };
         format!(
-            "---\nkind: fix\npriority: priority\ntags: [agent-generated]\nepic: Threat check\nadded: {today}\n---\n\nThe weekly live threat check found the {what} deployed, but no project's `docs/threat.toml` has a surface on it, so nothing checks its access or headers. Claim it (add the surface to the owning project's threat model) or, if nothing uses it, delete it; deleting a Cloudflare project is a human task in `issues/human/` with a runbook.\n"
+            "---\nkind: fix\npriority: priority\ntags: [agent-generated]\nepic: Threat check\nadded: {today}\n---\n\nThe weekly live threat check found the {what} deployed, but no project's `docs/threat.toml` has a surface on it, so nothing checks its access or headers. Claim it (add the surface to the owning project's threat model) or, if nothing uses it, delete it; deleting a Cloudflare project is a human task in the owning project's `docs/issues/human/` with a runbook.\n"
         )
     }
 }
@@ -583,8 +583,8 @@ previews = "cloudflare-access"
         assert_eq!(
             orphans.iter().map(Orphan::issue_path).collect::<Vec<_>>(),
             [
-                "issues/claim-or-delete-pages-pane-dbc.md",
-                "issues/claim-or-delete-worker-stray.md"
+                "threat/docs/issues/claim-or-delete-pages-pane-dbc.md",
+                "threat/docs/issues/claim-or-delete-worker-stray.md"
             ]
         );
         let text = orphans[0].issue_text("2026-11-30");
@@ -664,7 +664,7 @@ previews = "cloudflare-access"
         let report = render_live(&account(), 5, &findings, &orphans, "2026-11-30");
         assert!(report.contains("| (none) | a \\| b |"), "{report}");
         assert!(
-            report.contains("`issues/claim-or-delete-pages-pane-dbc.md`"),
+            report.contains("`threat/docs/issues/claim-or-delete-pages-pane-dbc.md`"),
             "{report}"
         );
         let clean = render_live(&account(), 5, &[], &[], "2026-11-30");

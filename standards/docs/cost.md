@@ -113,7 +113,7 @@ here follows these rules ([decision 0016](decisions/0016-holding-and-handling-mo
 The checks: pane's `attribution_gaps` (PANE-013) proves the per-project
 money adds up to the month's totals; the double-entry balance check comes
 with the financial ledger
-([issue](../../cost/issues/ledger-double-entry-balance-check.md)).
+([issue](../../cost/docs/issues/ledger-double-entry-balance-check.md)).
 
 ## The check
 
@@ -151,7 +151,7 @@ COST-007 in the project's own files. See
 [`standards/radar/detectors.toml`](../radar/detectors.toml) maps what is in
 a project's files to the vendor blip it implies, and sometimes to a limit it
 counts. The detectors read the project's whole tree (git's tracked files,
-skipping `docs/`, `issues/`, build output and lockfiles), not the diff, so a
+skipping `docs/`, `docs/issues/`, build output and lockfiles), not the diff, so a
 hook, PR CI and `main` get the same answer, and a project can't drift
 through a series of small PRs. Comment lines don't count.
 

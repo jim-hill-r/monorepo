@@ -9,7 +9,7 @@ Drafted by an agent on 2026-11-27 from the README, `docs/threat.toml`,
 deep review yet, so these are a first guess at Jim's intent. It is a Rust
 library today, with no command line tool, release or deploy, so every eval
 runs in `ci`. Its production evals arrive with the CLI
-([issues/production-evals-with-the-cli.md](../issues/production-evals-with-the-cli.md)).
+([docs/issues/production-evals-with-the-cli.md](issues/production-evals-with-the-cli.md)).
 
 ## LANG-001: A program runs and gives the right answer
 

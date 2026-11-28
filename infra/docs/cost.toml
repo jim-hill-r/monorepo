@@ -6,7 +6,7 @@ summary = "Rust synth of Terraform JSON, checked in PR CI with OpenTofu. No vend
 blip = "GitHub (Actions, Dependabot, CodeQL)"
 plan = "free"
 why = "PR CI runs `mise run ci` (build, tests, synth check, `tofu validate`), about a minute a run on a standard runner."
-notes = "infra-plan.yml, infra-apply.yml and infra-drift.yml add a few minutes per PR and merge that touches infra/, and one drift plan per stack a week. Each run gets one Auth0 machine-to-machine token per stack (about 30 to 60 a month, decision 0007), which needs Jim to raise the auth0_m2m_tokens_per_month budget from 0 first (issues/human/auth0-iac-credentials.md); until the secrets exist, the workflows skip. The github stack adds one plan job per run (plus one in drift), and a GitHub App installation token per job, which is free; its settings (secret scanning, push protection, Dependabot alerts and security updates, rulesets) are free on this public repo."
+notes = "infra-plan.yml, infra-apply.yml and infra-drift.yml add a few minutes per PR and merge that touches infra/, and one drift plan per stack a week. Each run gets one Auth0 machine-to-machine token per stack (about 30 to 60 a month, decision 0007), which needs Jim to raise the auth0_m2m_tokens_per_month budget from 0 first (docs/issues/human/auth0-iac-credentials.md); until the secrets exist, the workflows skip. The github stack adds one plan job per run (plus one in drift), and a GitHub App installation token per job, which is free; its settings (secret scanning, push protection, Dependabot alerts and security updates, rulesets) are free on this public repo."
 
 [[service]]
 blip = "Cloudflare Pages"

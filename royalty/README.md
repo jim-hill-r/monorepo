@@ -31,7 +31,7 @@ manifests, and writes a report for manual payment. The full
 `royalty.toml` format is in the [royalty.toml reference](docs/royalty-toml.md).
 The design, the phases and Jim's answers to its decisions are in the
 [royalty plan](docs/plans/2026-11-royalty-plan.md). The work items are in
-[issues/](issues/README.md).
+[docs/issues/](docs/issues/README.md).
 
 ## Usage
 

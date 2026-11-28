@@ -64,7 +64,7 @@ usage run has not run yet (its first scheduled run is Monday 2026-11-30).
 
 | Resource | Free limit | Our budget | Expected | Live 2026-11-27 | Measured automatically by | Gap |
 | --- | --- | --- | --- | --- | --- | --- |
-| Cloudflare Pages projects | 100 | 25 | 7 | 10 (3 are the old names waiting for deletion, `issues/human/delete-old-pages-projects-after-jimhillr-rename.md`) | `free-tiers.sh usage` weekly; `pages-project` guard on every deploy | none |
+| Cloudflare Pages projects | 100 | 25 | 7 | 10 (3 are the old names waiting for deletion, `infra/docs/issues/human/delete-old-pages-projects-after-jimhillr-rename.md`) | `free-tiers.sh usage` weekly; `pages-project` guard on every deploy | none |
 | Cloudflare Pages builds | 500 a month | 0 | 0 | not read | nothing; we deploy by direct upload | low risk, FT checks the config |
 | Cloudflare Workers | 100 | 25 | 2 | 1 (`jimhillr-tofu-state`; telemetry not deployed yet) | `free-tiers.sh usage`; `worker` guard on deploy | none |
 | Workers requests (incl. Pages Functions) | 100,000 a day | none | not estimated | not read | nothing | **phase 1: GraphQL analytics** |
@@ -79,7 +79,7 @@ usage run has not run yet (its first scheduled run is Monday 2026-11-30).
 | GitHub release assets | 2 GB a file | one prerelease per game | n/a | n/a | the release workflow replaces assets | none |
 | Auth0 MAU | 25,000 | none | 10 | not read | nothing | phase 3, needs a token |
 | Auth0 M2M tokens | 1,000 a month | 0 (Jim to set, about 60) | 0 | not read | nothing | count our own token requests (phase 3) |
-| PostHog events and recordings | 1M and 5k a month | none | 0 (not added yet) | n/a | nothing | `issues/when-posthog-added-extend-free-tiers.md` |
+| PostHog events and recordings | 1M and 5k a month | none | 0 (not added yet) | n/a | nothing | `standards/docs/issues/when-posthog-added-extend-free-tiers.md` |
 | RapidAPI (Zillow) requests | the free quota | stop at quota | n/a | n/a | homer saves the quota header and stops at zero | runs by hand only (FT-002); no change |
 | Claude Code usage | the plan's allowance | $25 a month | n/a | not on overage (this session) | session API, overage flag | **phase 2** |
 
@@ -134,7 +134,7 @@ $25.
 | PR triage | reads the badge and fixes or reports red (repo-health.md); phase 2 adds the Claude overage check | three times a day | partly done |
 | Weekly human issues digest | phase 2 adds a short **Cost** section: money this month, every yellow and red limit, any switch whose check is due | weekly | new |
 | pane Money page | headroom table and money per project | on each pane build | planned (pane Phase 7 issues) |
-| Monthly cost file | `standards/cost/usage/<yyyy-mm>.json`: live peak usage against expected and budget, for trends and the monthly review | monthly | planned (`issues/cost-check-phase-4-replaces-old.md`) |
+| Monthly cost file | `standards/cost/usage/<yyyy-mm>.json`: live peak usage against expected and budget, for trends and the monthly review | monthly | planned (`cost/docs/issues/cost-check-phase-4-replaces-old.md`) |
 
 So a problem reaches Jim through at most three channels, in this order: a
 red badge (within a day), the triage report (within hours of the badge),
@@ -163,7 +163,7 @@ Each phase is an issue file with `epic: Cost tracking`.
 - The usage run moves from weekly to daily (07:00 UTC), on its own workflow
   so the weekly full-history secret scan stays weekly. It writes
   `usage.json` as an artifact (shared with pane's issue
-  `pane/issues/give-free-tiers-sh-usage-json.md`), and applies the
+  `pane/docs/issues/give-free-tiers-sh-usage-json.md`), and applies the
   green/yellow/red ladder above, read from `limits.toml`.
 - New live reads: repo visibility, Cron Triggers, D1 databases and size, R2
   buckets, and the busiest day's Workers requests and D1 rows from the
@@ -210,7 +210,7 @@ list comes from Jim once and is then kept true by a settings check.
 ### Then
 
 The monthly cost file, `cost render --ledger` and the `review-costs` skill
-are already planned in `issues/cost-check-phase-4-replaces-old.md`; they
+are already planned in `cost/docs/issues/cost-check-phase-4-replaces-old.md`; they
 read phase 1's `usage.json` instead of a new source.
 
 ## Cost of this process

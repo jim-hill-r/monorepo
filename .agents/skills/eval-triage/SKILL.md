@@ -70,7 +70,7 @@ once it exists), or an eval keeps failing while the product plainly works.
 
 1. Quote his words, and say which eval (`id`, project, stage) and what it
    checks today (its entry in the project's `evals.toml`).
-2. Write a `TODO` with the `write-issue` skill in the project's `issues/`,
+2. Write a `TODO` with the `write-issue` skill in the project's `docs/issues/`,
    `eval-<eval-id>-disputed.md`, unless an open issue already names the
    eval. Say what the eval should check instead, or that it should be
    retired, and that its requirement stays as it is unless Jim changes it

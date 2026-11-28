@@ -12,12 +12,12 @@ with the live app at <https://blue.eel.education>. The Perseus `website`
 has no requirements yet.
 
 Drafted by an agent on 2026-11-27 from the web app's README, the "Blue Eel
-parity" epic in [issues/README.md](../issues/README.md), the parity PRs
+parity" epic in [standards/docs/issues/README.md](../../standards/docs/issues/README.md), the parity PRs
 (#709, #762, #767) and the threat model. When these were drafted
 cloud sandboxes couldn't load blue.eel.education, so "like the live app"
 meant what its page head and public pattern data showed. Sandboxes can
 load it since 2026-11-27; the gaps that turned up are in
-[issues/README.md](../issues/README.md).
+[standards/docs/issues/README.md](../../standards/docs/issues/README.md).
 
 ## SPRK-001: A learner can start practising straight away
 

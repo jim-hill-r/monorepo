@@ -15,7 +15,7 @@ one column under 720 px.
 | `/projects/<path>` | One project, such as `/projects/pane`: status, type, README summary, live URL, sub-projects, latest plan, decision and retro, its latest review and its scorecard counts, its deliverables, its open TODOs and FIXes (sub-projects included), and its Money: this month's revenue, direct cost, shared cost and net, its services and plans, and its own cost and revenue lines from `docs/cost.toml` |
 | `/money` | Money (`src/money.rs`): this month's revenue, direct cost, shared-cost share and net for each project with any, a totals row, the total net for the last 12 months as a bar chart (and as a table), and each vendor's monthly radar budget against projects' spend. Every number links to its line in `docs/cost.toml` or to `standards/radar/radar.json` on GitHub |
 | `/work` | Every `TODO` and `FIX` from issue files and code comments, FIXes first, filterable by project, kind, where it sits (priority, backlog, other, code comments) and tag, each linking to its line on GitHub |
-| `/human-issues` | Each open human task (a file in `issues/human/`), oldest first, with its age, what it unblocks and a link to the file on GitHub |
+| `/human-issues` | Each open human task, gathered from every project's `docs/issues/human/`, oldest first, with its project, age, what it unblocks and a link to the file on GitHub |
 | `/deliverables` | Live sites (`DEPLOY_URL`), game downloads (`RELEASE_TAG`), review decks, and plans, decisions and retros |
 | `/docs/<path>` | One plan, decision or retro rendered from its Markdown (`src/markdown.rs`), with a link to the file on GitHub |
 | `/reviews` | The review rotation from `docs/reviews/README.md`, newest first: date, project, the deck's slides and PDF, its scorecard's ratings counted (such as 2 Good · 4 Fair · 1 Poor), and its pull request |
@@ -177,4 +177,4 @@ This project uses Dioxus 0.7 for building web applications with Rust, and
 Phases 0 and 1 of the plan: the shell, the Today, Projects and Project, Work, Human issues and Deliverables pages, and smoke tests. Pane redeploys on every push to `main` (`# deploy-on-every-push` in `../cloudflare/mise.toml`). Pane is becoming one place to review the whole
 monorepo; see the plan in
 [../docs/plans/2026-11-review-dashboard.md](../docs/plans/2026-11-review-dashboard.md)
-and the phased issues in [../issues/](../issues/).
+and the phased issues in [../docs/issues/](../docs/issues/).

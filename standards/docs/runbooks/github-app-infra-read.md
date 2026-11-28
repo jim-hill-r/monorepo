@@ -1,7 +1,7 @@
 # Create the read-only infra GitHub App
 
 - **Kind:** one-time, and again only to rotate or revoke the key
-- **Status:** open (`issues/human/github-app-infra-read.md`)
+- **Status:** open (`infra/docs/issues/human/github-app-infra-read.md`)
 - **Time:** about 10 minutes
 - **Cost:** $0, because GitHub Apps are free
 

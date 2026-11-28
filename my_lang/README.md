@@ -282,7 +282,7 @@ mise run ci
 
 ## Future Work
 
-See [issues/](./issues/) for planned features and improvements.
+See [docs/issues/](docs/issues/) for planned features and improvements.
 
 ## Project Type
 

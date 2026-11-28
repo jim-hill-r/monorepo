@@ -173,12 +173,13 @@ mod tests {
     fn human(text: &str) -> HumanIssue {
         HumanIssue {
             text: text.into(),
-            file: "issues/human/x.md".into(),
+            file: "standards/docs/issues/human/x.md".into(),
             line: 1,
             added: None,
             unblocks: None,
             why: None,
             runbook: None,
+            project: None,
         }
     }
 

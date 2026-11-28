@@ -37,7 +37,7 @@ the reference's examples is tested too. Tests that check a requirement
 start with its ID in snake case (`royl_007_...`) and are listed in
 [evals.toml](evals.toml).
 
-Check the repo standards, which include the issue files in `issues/`:
+Check the repo standards, which include the issue files in `docs/issues/`:
 
 ```bash
 mise run //:audit
@@ -54,6 +54,6 @@ labelled `needs-human`.
 
 ## Working an issue
 
-Issues are one file each in [issues/](issues/README.md), in the format of
+Issues are one file each in [docs/issues/](docs/issues/README.md), in the format of
 [issue-management.md](../standards/docs/issue-management.md). An issue with a
 "Blocked on" or "Waits on" line waits for what it names.

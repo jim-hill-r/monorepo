@@ -16,7 +16,7 @@ And, later the same day:
 
 Status: **approved** by Jim (PR #657, 2026-11-26), with the recommended
 answer to every question (see [Decisions](#decisions)). The work items are
-issue files in the root [issues/](../../../issues/) with `epic: Design
+issue files in the root [issues/](../issues/) with `epic: Design
 system`, one group per phase.
 
 ## Goal

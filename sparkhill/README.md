@@ -12,5 +12,5 @@ holds no code, only the shared decisions and issues.
 | [`webapp_cloudflare/`](webapp_cloudflare/README.md) | Deploys Blue Eel to <https://jimhillr-sparkhill-webapp.pages.dev>. |
 
 Decisions are in [docs/decisions](docs/decisions/README.md) and open work
-in [issues/](issues/). How to build and test each project is in
+in [docs/issues/](docs/issues/). How to build and test each project is in
 [CONTRIBUTING.md](CONTRIBUTING.md).

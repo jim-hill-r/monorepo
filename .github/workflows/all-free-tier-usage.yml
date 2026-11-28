@@ -150,6 +150,6 @@ jobs:
           name: threat-live
           path: |
             ${{ runner.temp }}/threat-live/report.md
-            ${{ runner.temp }}/threat-live/issues/
+            ${{ runner.temp }}/threat-live/threat/docs/issues/
           if-no-files-found: ignore
           retention-days: 7

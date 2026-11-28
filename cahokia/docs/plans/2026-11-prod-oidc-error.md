@@ -88,5 +88,5 @@ to end once all three are done. They touch `cahokia/web/src/main.rs`, which
 the family tree work is also changing, so whoever picks them up should rebase
 on that work first.
 
-The TODOs are in `cahokia/issues/` and `auth_sdk/issues/`; the Auth0 step
+The TODOs are in `cahokia/issues/` and `auth_sdk/docs/issues/`; the Auth0 step
 is in `issues/human/`.

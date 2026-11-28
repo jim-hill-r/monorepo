@@ -1,6 +1,6 @@
 # User docs baseline: the projects that don't have a passing user guide
 # yet (DOC-005 to DOC-007), each with the issue file that tracks writing it,
-# or "on hold" for a project under "# On Hold Projects" in issues/README.md.
+# or "on hold" for a project under "# On Hold Projects" in standards/docs/issues/README.md.
 # Checked by `chores user-docs` in `mise run //:audit` (DOC-008). Rules in
 # "User docs" in standards/docs/documentation.md, decision 0017.
 #
@@ -9,25 +9,25 @@
 # add one. A new project ships with its guide.
 
 [missing]
-athenaeum = "athenaeum/issues/write-user-guide.md"
-auth_sdk = "auth_sdk/issues/write-user-guide.md"
-blueeel = "blueeel/issues/write-user-guide.md"
-bogan = "bogan/issues/write-user-guide.md"
-chores = "chores/issues/write-user-guide.md"
-controlled_chaos = "controlled_chaos/issues/write-user-guide.md"
-cost = "cost/issues/write-user-guide.md"
-design_system = "design_system/issues/write-user-guide.md"
-evals = "evals/issues/write-user-guide.md"
-infra = "infra/issues/write-user-guide.md"
-jimhillr = "jimhillr/issues/write-user-guide.md"
+athenaeum = "athenaeum/docs/issues/write-user-guide.md"
+auth_sdk = "auth_sdk/docs/issues/write-user-guide.md"
+blueeel = "blueeel/docs/issues/write-user-guide.md"
+bogan = "bogan/docs/issues/write-user-guide.md"
+chores = "chores/docs/issues/write-user-guide.md"
+controlled_chaos = "controlled_chaos/docs/issues/write-user-guide.md"
+cost = "cost/docs/issues/write-user-guide.md"
+design_system = "design_system/docs/issues/write-user-guide.md"
+evals = "evals/docs/issues/write-user-guide.md"
+infra = "infra/docs/issues/write-user-guide.md"
+jimhillr = "jimhillr/docs/issues/write-user-guide.md"
 luggage = "on hold"
-my_lang = "my_lang/issues/write-user-guide.md"
-pane = "pane/issues/write-user-guide.md"
+my_lang = "my_lang/docs/issues/write-user-guide.md"
+pane = "pane/docs/issues/write-user-guide.md"
 profiles = "on hold"
-royalty = "royalty/issues/write-user-guide.md"
-sparkhill = "sparkhill/issues/write-user-guide.md"
-standards = "standards/issues/write-user-guide.md"
+royalty = "royalty/docs/issues/write-user-guide.md"
+sparkhill = "sparkhill/docs/issues/write-user-guide.md"
+standards = "standards/docs/issues/write-user-guide.md"
 starcraft = "on hold"
-telemetry = "telemetry/issues/write-user-guide.md"
-threat = "threat/issues/write-user-guide.md"
-tofu_state = "tofu_state/issues/write-user-guide.md"
+telemetry = "telemetry/docs/issues/write-user-guide.md"
+threat = "threat/docs/issues/write-user-guide.md"
+tofu_state = "tofu_state/docs/issues/write-user-guide.md"

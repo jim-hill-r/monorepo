@@ -124,7 +124,7 @@ Done (2026-11-27): `pane/cloudflare` is the Worker `jimhillr-pane` at
 <https://jimhillr-pane.jim-hill-r.workers.dev>, built from
 `standards/tasks/cloudflare-worker-assets.toml`, with one route
 (`/api/health`) so far. Deleting the retired Pages project `jimhillr-pane`
-is a human task (`issues/human/delete-jimhillr-pane-pages-project-after-worker.md`).
+is a human task (`pane/docs/issues/human/delete-jimhillr-pane-pages-project-after-worker.md`).
 
 ### Access and the write path
 

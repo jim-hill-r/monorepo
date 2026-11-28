@@ -76,7 +76,7 @@ reach. Only the `All Auto Review` workflow on `main` reads it.
 2. Run it again without the box. An approvable PR gets a review from
    `jimhillr-reviewer` whose text starts "jimhillr-reviewer rules v1".
 3. Tell an agent: it deletes
-   [the human task](../../../issues/human/jimhillr-reviewer-account.md).
+   [the human task](../issues/human/jimhillr-reviewer-account.md).
    The settings checks `github-reviewer-account` and
    `rotate-reviewer-token` cover it from then on.
 

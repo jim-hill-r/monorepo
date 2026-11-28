@@ -21,7 +21,7 @@ ignore = []
 [licenses]
 # Not checked yet: deps-check.sh runs advisories and sources only, because our
 # own crates have no `license` or `publish = false` and so fail as unlicensed.
-# issues/threat-check-cargo-deny-licences.md turns this on.
+# threat/docs/issues/threat-check-cargo-deny-licences.md turns this on.
 # Permissive licences and weak copyleft that doesn't spread to our code.
 allow = [
   "0BSD",

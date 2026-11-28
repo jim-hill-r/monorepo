@@ -1,7 +1,7 @@
 # Check there is no payment method
 
 - **Kind:** recurring, every 30 days
-- **Status:** open (`issues/human/check-there-still-no-payment-method.md`);
+- **Status:** open (`cost/docs/issues/human/check-there-still-no-payment-method.md`);
   the `*-billing` and `*-budget` settings checks in
   `standards/settings.toml` ask the same each period
 - **Time:** about 4 minutes

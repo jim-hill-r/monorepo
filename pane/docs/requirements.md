@@ -25,7 +25,7 @@ later phases and have no evals until they are built.
 - Priority: must
 - Why: A dashboard that is out of date or misses a project misleads Jim.
 - Accept: every deploy builds a fresh snapshot of main before the site is
-  bundled; it covers every project in `config_roots`, every `issues/` file
+  bundled; it covers every project in `config_roots`, every `docs/issues/` file
   and every human issue, plan, decision and retro; the footer shows the
   snapshot's commit and how old it is.
 
@@ -118,7 +118,7 @@ later phases and have no evals until they are built.
   started, newest first, with its summary and attention badges, until he
   acknowledges it (one at a time or all shown), and remembers that across
   reloads; "Flag for follow-up" opens GitHub's editor with a `fix` issue
-  file for that PR in its project's `issues/`.
+  file for that PR in its project's `docs/issues/`.
 
 ## PANE-013: Project money adds up to the totals
 

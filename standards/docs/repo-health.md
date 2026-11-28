@@ -60,17 +60,17 @@ Each triage run, after the PR paths in
 ## What triage does about a red badge
 
 First check that nobody is on it already: an open PR whose title or branch
-names the workflow or the failing check, or an issue file in `issues/` or
-`issues/human/` about it. If there is one, list it in the report and move on.
+names the workflow or the failing check, or an issue file in `docs/issues/` or
+`docs/issues/human/` about it. If there is one, list it in the report and move on.
 
 | Cause | Action |
 | --- | --- |
 | A flake: a runner, network or registry error, or a timeout, and the code didn't change since the last green run | Re-run the failed jobs once (`gh run rerun <id> --failed`). If it fails again, treat it as a code failure. |
 | A code, test, lint, audit, eval or dependency failure the repo can fix (a new clippy lint, a toolchain change, a broken test, an audit rule, an advisory with a fixed version) | Fix it in one draft PR, following the `open-pull-request` skill, and drive it like any agent PR. Run the CI task for every project it changes first. |
-| Needs a person: an expired or missing secret or token, a dashboard or account setting, billing, a credential change, a GitHub ruleset or environment | Add an `issues/human/` file with its runbook in `standards/docs/runbooks/` (AGENTS.md "Every human task has a runbook") in a PR, unless one exists, and list it under "Needs a human" in the report. |
+| Needs a person: an expired or missing secret or token, a dashboard or account setting, billing, a credential change, a GitHub ruleset or environment | Add a `docs/issues/human/` file in the owning project with its runbook in `standards/docs/runbooks/` (AGENTS.md "Every human task has a runbook") in a PR, unless one exists, and list it under "Needs a human" in the report. |
 | Infra drift | Never apply to make it go away. Compare with `infra/` and git history: if `main` already describes the wanted state, it is a hand change to undo, so file a human issue; if the live change was intended, open a PR that updates the `infra` stack to match and label it `needs-human`. |
 | A free-tier budget reached | Stop what uses it if automation caused it, never raise a limit or turn on a paid plan, and report it under "Needs a human". |
-| The live threat check failed | Download the run's `threat-live` artifact (`gh run download <id> -n threat-live`). Commit each issue file in its `issues/` (an unclaimed Pages project or Worker) to the root `issues/` in one PR, unless a file about it exists. For any other finding (Access, a token check, headers) add a `kind: fix` issue file to the project's `issues/`, or fix it in the one fix PR. Never delete a Cloudflare project yourself. |
+| The live threat check failed | Download the run's `threat-live` artifact (`gh run download <id> -n threat-live`). Commit each issue file in its `docs/issues/` (an unclaimed Pages project or Worker) to `standards/docs/issues/` in one PR, unless a file about it exists. For any other finding (Access, a token check, headers) add a `kind: fix` issue file to the project's `docs/issues/`, or fix it in the one fix PR. Never delete a Cloudflare project yourself. |
 | A secret found in history | Report it under "Needs a human" at once: the secret must be rotated by a person. Never paste it into a PR, issue or report. |
 | Too big for one PR, or unclear | Add an issue file (`kind: fix`, `priority: priority`, `tags: [agent-generated]`) describing the failure and the run link, in a PR, and report it. |
 

@@ -1,7 +1,7 @@
 # Get a free EIN and open a separate free account for project money
 
 - **Kind:** one-time
-- **Status:** open (issues/human/open-project-bank-account-and-ein.md)
+- **Status:** open (cost/docs/issues/human/open-project-bank-account-and-ein.md)
 - **Time:** about 60 minutes (10 for the EIN, the rest for the account)
 - **Cost:** $0 (the EIN is free from the IRS; pick an account with no
   monthly fee and no minimum balance). Never pay a third-party site for an

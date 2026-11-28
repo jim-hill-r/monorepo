@@ -142,13 +142,15 @@ pub fn project_of<'a>(title: &str, projects: &'a [String]) -> Option<&'a str> {
 }
 
 /// A link to GitHub's new-file editor, filled in with a `fix` issue file
-/// for a follow-up on `m`, in its project's `issues/` folder (or the root
-/// `issues/` when the title names no project). Committing it from GitHub
+/// for a follow-up on `m`, in its project's `docs/issues/` folder (or the
+/// repo-wide `standards/docs/issues/` when the title names no project). Committing it from GitHub
 /// opens a PR from Jim's own account, so pane needs no token to flag.
 #[must_use]
 pub fn flag_url(m: &Merged, projects: &[String], today: &str) -> String {
-    let dir = project_of(&m.title, projects)
-        .map_or_else(|| "issues".to_owned(), |p| format!("{p}/issues"));
+    let dir = project_of(&m.title, projects).map_or_else(
+        || "standards/docs/issues".to_owned(),
+        |p| format!("{p}/docs/issues"),
+    );
     let filename = format!("{dir}/follow-up-pr-{}.md", m.number);
     let title = m.title.replace(['\n', '\r'], " ");
     let value = format!(
@@ -229,12 +231,12 @@ mod tests {
         let merged = parse_merged(PAGE)?;
         let projects = vec!["pane".to_owned(), "pane/web".to_owned()];
         let url = flag_url(&merged[0], &projects, "2026-11-28");
-        assert!(url.starts_with("https://github.com/jimhillr/monorepo/new/main?filename=pane%2Fissues%2Ffollow-up-pr-5.md&value="));
+        assert!(url.starts_with("https://github.com/jimhillr/monorepo/new/main?filename=pane%2Fdocs%2Fissues%2Ffollow-up-pr-5.md&value="));
         assert!(url.contains("kind%3A%20fix"));
         assert!(url.contains("added%3A%202026-11-28"));
-        // No project prefix: the root issues/ folder.
+        // No project prefix: the repo-wide standards/docs/issues/ folder.
         let root = flag_url(&merged[2], &projects, "2026-11-28");
-        assert!(root.contains("filename=issues%2Ffollow-up-pr-7.md"));
+        assert!(root.contains("filename=standards%2Fdocs%2Fissues%2Ffollow-up-pr-7.md"));
         Ok(())
     }
 

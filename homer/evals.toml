@@ -5,7 +5,7 @@
 # eval runs against a mock of the Zillow API. The trycmd evals name the
 # existing case files in tests/cmd/ with `glob`. They list the `cd` stage
 # for the run against the release binary that eval engine phase 2 adds
-# (issues/eval-engine-phase-2-trycmd-script.md); until then their results
+# (evals/docs/issues/eval-engine-phase-2-trycmd-script.md); until then their results
 # come from the `cli-transcripts` cargo eval, which runs every case.
 
 prefix = "HOME"

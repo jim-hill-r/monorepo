@@ -417,7 +417,7 @@ filter = "test_all_365_day_files_exist"
         assert!(outcomes[3].contains("COOK-001"), "{outcomes:?}");
         assert_eq!(outcomes[4], "`met` (result `pass`)");
         // Nothing was written.
-        assert!(!root.path().join("cookbook/issues").exists());
+        assert!(!root.path().join("cookbook/docs/issues").exists());
         let stored = fs::read_to_string(dir.path().join("results/cookbook/2026-11.jsonl"))?;
         assert_eq!(stored.lines().count(), 2);
         Ok(())

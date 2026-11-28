@@ -369,6 +369,9 @@ fn HumanIssueRow(issue: HumanIssue, commit: String, now: i64) -> Element {
                 if let Some(age) = age {
                     span { class: "badge", "{age}" }
                 }
+                if let Some(project) = &issue.project {
+                    span { class: "project", "{project}" }
+                }
                 if let Some(added) = &issue.added {
                     span { "Added {added}" }
                 }
@@ -945,7 +948,7 @@ fn ReviewPage(folder: String) -> Element {
 fn HumanIssues() -> Element {
     rsx! {
         h1 { "Human issues" }
-        p { class: "muted", "Tasks only you can do, oldest first. Mark done and add a note come in Phase 5." }
+        p { class: "muted", "Tasks only you can do, gathered from every project's docs/issues/human/, oldest first. Mark done and add a note come in Phase 5." }
         WithSnapshot {
             body: move |s: Snapshot| {
                 let now = now();

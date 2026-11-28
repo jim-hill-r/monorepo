@@ -21,7 +21,7 @@ c() { cargo run --quiet --manifest-path "$(git rev-parse --show-toplevel)/chores
 c next-task
 c next-task --project cookbook            # scoped to one project
 c next-task --count 5 --exclude pane,epic:Cost check   # one per project, for new threads
-c next-task --skip cookbook/issues/x.md   # an open PR already has it
+c next-task --skip cookbook/docs/issues/x.md   # an open PR already has it
 c next-task --count 5 --working cookbook,pane,repo   # prefer products while under half
 c next-task --json
 
@@ -68,7 +68,7 @@ c user-docs --json
 
 | Command | Skill that calls it | Replaces |
 | --- | --- | --- |
-| `next-task` | `start-a-new-task` | Reading the issue list, `issues/README.md`, folder READMEs and issue files to apply the pick order |
+| `next-task` | `start-a-new-task` | Reading the issue list, `standards/docs/issues/README.md`, folder READMEs and issue files to apply the pick order |
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |

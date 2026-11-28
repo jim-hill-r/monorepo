@@ -6,7 +6,7 @@ evals that check each requirement are in [evals.toml](../evals.toml).
 
 Drafted by an agent on 2026-11-27 from the [README](../README.md), the
 [official rules](official_rules.md), the controlled_chaos issues in the
-root `issues/` (scripted runs, Bevy UAT, in-app feedback) and the existing
+`standards/docs/issues/` (scripted runs, Bevy UAT, in-app feedback) and the existing
 tests. Controlled Chaos has no deep review yet, so these are a first guess
 at Jim's intent.
 

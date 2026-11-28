@@ -325,7 +325,7 @@ pub fn readme_summary(readme: &str) -> Option<String> {
 }
 
 /// Projects listed under `# Priority Projects` and `# On Hold Projects` in
-/// the root `issues/README.md`.
+/// `standards/docs/issues/README.md`.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct RootLists {
     pub priority: Vec<String>,
@@ -402,10 +402,11 @@ pub fn parse_marker(text: &str) -> Option<(WorkKind, Vec<String>, String)> {
     Some((kind, tags, rest.to_owned()))
 }
 
-/// What kind of issue file a repo path is, if any: a file in an `issues/`
-/// folder (`issues/<slug>.md` or `<project>/issues/<slug>.md`), or a human
-/// task in the root `issues/human/`. Each folder's `README.md` is notes, not
-/// an issue.
+/// What kind of issue file a repo path is, if any: a file in a project's
+/// `docs/issues/` folder (`<project>/docs/issues/<slug>.md`), or a human
+/// task in a project's `docs/issues/human/`. Each folder's `README.md` is
+/// notes, not an issue. There is no root issue folder: repo-wide work lives
+/// in `standards/docs/issues/`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IssueFile {
     Work,
@@ -417,9 +418,9 @@ pub fn issue_file_kind(rel: &str) -> Option<IssueFile> {
     if name == "README.md" || !name.ends_with(".md") {
         return None;
     }
-    if dir == "issues/human" {
+    if dir.ends_with("/docs/issues/human") {
         Some(IssueFile::Human)
-    } else if dir == "issues" || dir.ends_with("/issues") {
+    } else if dir.ends_with("/docs/issues") {
         Some(IssueFile::Work)
     } else {
         None
@@ -545,13 +546,14 @@ pub fn owning_project<'a>(path: &str, roots: &'a [String]) -> Option<&'a str> {
         .map(String::as_str)
 }
 
-/// One human task file (`issues/human/<slug>.md`): the front matter's
+/// One human task file (`<project>/docs/issues/human/<slug>.md`) of
+/// `project`: the front matter's
 /// `added` (a `YYYY-MM-DD` date), `unblocks` and `runbook` give its age,
 /// what it unblocks and its runbook. The text is the body's
 /// `## Requirement` section, and `why` its `## Why it can't be automated`
 /// section (ISS-004 in `standards/scripts/issues.sh`); a body without them
 /// is all text. `None` without front matter.
-pub fn human_issue_file(file: &str, contents: &str) -> Option<HumanIssue> {
+pub fn human_issue_file(file: &str, project: Option<&str>, contents: &str) -> Option<HumanIssue> {
     let FrontMatter { fields, body, line } = front_matter(contents)?;
     let (text, why) = human_sections(&body);
     Some(HumanIssue {
@@ -564,6 +566,7 @@ pub fn human_issue_file(file: &str, contents: &str) -> Option<HumanIssue> {
         unblocks: field(&fields, "unblocks").map(|u| u.trim_end_matches('.').to_owned()),
         why,
         runbook: field(&fields, "runbook").map(str::to_owned),
+        project: project.map(str::to_owned),
     })
 }
 
@@ -811,21 +814,26 @@ mod tests {
     use super::*;
 
     const ROOT_MISE: &str = include_str!("../tests/fixtures/repo/mise.toml.fixture");
-    const ROOT_ISSUES: &str = include_str!("../tests/fixtures/repo/issues/README.md.fixture");
+    const ROOT_ISSUES: &str =
+        include_str!("../tests/fixtures/repo/standards/docs/issues/README.md.fixture");
     const APP_MISE: &str = include_str!("../tests/fixtures/repo/app/mise.toml.fixture");
     const APP_WEB_MISE: &str = include_str!("../tests/fixtures/repo/app/web/mise.toml.fixture");
     const APP_README: &str = include_str!("../tests/fixtures/repo/app/README.md.fixture");
-    const FLAT: &str = include_str!("../tests/fixtures/repo/app/issues/a-flat-item.md.fixture");
-    const EPIC: &str = include_str!("../tests/fixtures/repo/app/issues/b-epic-item.md.fixture");
-    const PHASE: &str = include_str!("../tests/fixtures/repo/app/issues/c-phase-item.md.fixture");
-    const LATER: &str = include_str!("../tests/fixtures/repo/app/issues/d-later.md.fixture");
+    const FLAT: &str =
+        include_str!("../tests/fixtures/repo/app/docs/issues/a-flat-item.md.fixture");
+    const EPIC: &str =
+        include_str!("../tests/fixtures/repo/app/docs/issues/b-epic-item.md.fixture");
+    const PHASE: &str =
+        include_str!("../tests/fixtures/repo/app/docs/issues/c-phase-item.md.fixture");
+    const LATER: &str = include_str!("../tests/fixtures/repo/app/docs/issues/d-later.md.fixture");
     const NO_FRONT: &str =
-        include_str!("../tests/fixtures/repo/app/issues/e-no-front-matter.md.fixture");
+        include_str!("../tests/fixtures/repo/app/docs/issues/e-no-front-matter.md.fixture");
 
-    const HUMAN: &str =
-        include_str!("../tests/fixtures/repo/issues/human/do-the-dashboard-thing.md.fixture");
+    const HUMAN: &str = include_str!(
+        "../tests/fixtures/repo/app/docs/issues/human/do-the-dashboard-thing.md.fixture"
+    );
     const HUMAN_NO_NOTE: &str =
-        include_str!("../tests/fixtures/repo/issues/human/no-note.md.fixture");
+        include_str!("../tests/fixtures/repo/standards/docs/issues/human/no-note.md.fixture");
     const CODE: &str = include_str!("../tests/fixtures/repo/app/src/main.rs.fixture");
     const PLAN: &str =
         include_str!("../tests/fixtures/repo/app/docs/plans/2026-11-big-plan.md.fixture");
@@ -943,14 +951,17 @@ mod tests {
 
     #[test]
     fn reads_human_issue_files() -> Result<(), String> {
-        let issue = human_issue_file("issues/human/d.md", HUMAN).ok_or("no issue")?;
+        let issue =
+            human_issue_file("app/docs/issues/human/d.md", Some("app"), HUMAN).ok_or("no issue")?;
         assert_eq!(issue.text, "Do the dashboard thing.");
         assert_eq!(issue.added.as_deref(), Some("2026-11-20"));
         assert_eq!(issue.unblocks.as_deref(), Some("the app deploy: step 2"));
         assert_eq!(issue.line, 6);
-        assert_eq!(issue.file, "issues/human/d.md");
+        assert_eq!(issue.file, "app/docs/issues/human/d.md");
+        assert_eq!(issue.project.as_deref(), Some("app"));
 
-        let bare = human_issue_file("issues/human/n.md", HUMAN_NO_NOTE).ok_or("no issue")?;
+        let bare = human_issue_file("standards/docs/issues/human/n.md", None, HUMAN_NO_NOTE)
+            .ok_or("no issue")?;
         assert_eq!(bare.text, "No note on this one.");
         assert_eq!(bare.added, None);
         assert_eq!(bare.unblocks, None);
@@ -959,7 +970,7 @@ mod tests {
         assert_eq!(bare.runbook, None);
 
         assert_eq!(
-            human_issue_file("issues/human/x.md", "No front matter.\n"),
+            human_issue_file("app/docs/issues/human/x.md", None, "No front matter.\n"),
             None
         );
         Ok(())
@@ -968,7 +979,8 @@ mod tests {
     #[test]
     fn reads_a_human_issue_with_its_runbook() -> Result<(), String> {
         let contents = "---\nadded: 2026-11-27\nrunbook: standards/docs/runbooks/x.md\n---\n\n## Requirement\n\nMake the\ntoken.\n\n## Why it can't be automated\n\nNo API.\n\n## Runbook\n\n[Make the token](../../standards/docs/runbooks/x.md)\n";
-        let issue = human_issue_file("issues/human/x.md", contents).ok_or("no issue")?;
+        let issue = human_issue_file("app/docs/issues/human/x.md", Some("app"), contents)
+            .ok_or("no issue")?;
         assert_eq!(issue.text, "Make the token.");
         assert_eq!(issue.why.as_deref(), Some("No API."));
         assert_eq!(
@@ -1027,17 +1039,29 @@ mod tests {
 
     #[test]
     fn classifies_issue_files() {
-        assert_eq!(issue_file_kind("issues/a.md"), Some(IssueFile::Work));
         assert_eq!(
-            issue_file_kind("app/web/issues/a.md"),
+            issue_file_kind("standards/docs/issues/a.md"),
             Some(IssueFile::Work)
         );
-        assert_eq!(issue_file_kind("issues/human/a.md"), Some(IssueFile::Human));
-        assert_eq!(issue_file_kind("issues/README.md"), None);
-        assert_eq!(issue_file_kind("issues/human/README.md"), None);
-        assert_eq!(issue_file_kind("app/issues/notes.txt"), None);
+        assert_eq!(
+            issue_file_kind("app/web/docs/issues/a.md"),
+            Some(IssueFile::Work)
+        );
+        assert_eq!(
+            issue_file_kind("cost/docs/issues/human/a.md"),
+            Some(IssueFile::Human)
+        );
+        assert_eq!(issue_file_kind("issues/a.md"), None, "no root folder");
+        assert_eq!(issue_file_kind("issues/human/a.md"), None);
+        assert_eq!(issue_file_kind("app/issues/a.md"), None, "retired");
+        assert_eq!(issue_file_kind("standards/docs/issues/README.md"), None);
+        assert_eq!(
+            issue_file_kind("standards/docs/issues/human/README.md"),
+            None
+        );
+        assert_eq!(issue_file_kind("app/docs/issues/notes.txt"), None);
         assert_eq!(issue_file_kind("app/myissues/a.md"), None);
-        assert_eq!(issue_file_kind("app/issues/deeper/a.md"), None);
+        assert_eq!(issue_file_kind("app/docs/issues/deeper/a.md"), None);
         assert_eq!(issue_file_kind("ISSUES.md"), None);
     }
 
@@ -1280,10 +1304,10 @@ mod tests {
     #[test]
     fn issue_file_keeps_its_added_date() -> Result<(), String> {
         let with = "---\nkind: fix\npriority: priority\nadded: 2026-11-20\n---\n\nBroken.\n";
-        let item = issue_file("app/issues/x.md", Some("app"), with).ok_or("no item")?;
+        let item = issue_file("app/docs/issues/x.md", Some("app"), with).ok_or("no item")?;
         assert_eq!(item.added.as_deref(), Some("2026-11-20"));
         let odd = with.replace("2026-11-20", "last week");
-        let item = issue_file("app/issues/x.md", Some("app"), &odd).ok_or("no item")?;
+        let item = issue_file("app/docs/issues/x.md", Some("app"), &odd).ok_or("no item")?;
         assert_eq!(item.added, None);
         Ok(())
     }
@@ -1292,7 +1316,7 @@ mod tests {
     fn reads_issue_files_with_sections_and_epics() {
         let items: Vec<_> = [FLAT, EPIC, PHASE, LATER]
             .into_iter()
-            .filter_map(|c| issue_file("app/issues/x.md", Some("app"), c))
+            .filter_map(|c| issue_file("app/docs/issues/x.md", Some("app"), c))
             .collect();
         let summary: Vec<_> = items
             .iter()
@@ -1339,11 +1363,14 @@ mod tests {
         );
         assert_eq!(items[2].tags, vec!["agent-ignore".to_owned()]);
         assert!(items.iter().all(|i| i.project.as_deref() == Some("app")
-            && i.file == "app/issues/x.md"
+            && i.file == "app/docs/issues/x.md"
             && i.source == WorkSource::IssuesFile));
-        assert_eq!(issue_file("app/issues/e.md", Some("app"), NO_FRONT), None);
         assert_eq!(
-            issue_file("a/issues/k.md", None, "---\nkind: idea\n---\nText\n"),
+            issue_file("app/docs/issues/e.md", Some("app"), NO_FRONT),
+            None
+        );
+        assert_eq!(
+            issue_file("a/docs/issues/k.md", None, "---\nkind: idea\n---\nText\n"),
             None,
             "unknown kind"
         );
@@ -1353,11 +1380,11 @@ mod tests {
     fn owning_project_picks_the_longest_root() {
         let roots = vec!["app".to_owned(), "app/web".to_owned()];
         assert_eq!(
-            owning_project("app/web/issues/a.md", &roots),
+            owning_project("app/web/docs/issues/a.md", &roots),
             Some("app/web")
         );
-        assert_eq!(owning_project("app/issues/a.md", &roots), Some("app"));
-        assert_eq!(owning_project("application/issues/a.md", &roots), None);
+        assert_eq!(owning_project("app/docs/issues/a.md", &roots), Some("app"));
+        assert_eq!(owning_project("application/docs/issues/a.md", &roots), None);
         assert_eq!(owning_project("issues/a.md", &roots), None);
     }
 

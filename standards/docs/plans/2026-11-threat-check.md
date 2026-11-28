@@ -9,9 +9,9 @@ Started 2026-11-26 from Jim's request:
 
 Status: **approved** by Jim (PR #654, 2026-11-26), with the recommended
 answer to every question (see "Decisions" near the end). The work items are
-issue files in the root [issues/](../../../issues/) with `epic: Threat
+issue files in the root [issues/](../issues/) with `epic: Threat
 check`, one group per phase, and the GitHub settings only Jim can switch are
-in [issues/human/](../../../issues/human/).
+in [issues/human/](../issue-management.md#human-issues).
 
 This plan is the security twin of the
 [cost check](2026-11-cost-check.md): the same shape (a structured file per

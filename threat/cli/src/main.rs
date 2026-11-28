@@ -74,7 +74,7 @@ enum Command {
         #[arg(long)]
         probes: Option<PathBuf>,
         /// Write an issue file for each unclaimed Pages project or Worker
-        /// under this directory (as issues/<name>.md).
+        /// under this directory (as threat/docs/issues/<name>.md).
         #[arg(long)]
         issues_dir: Option<PathBuf>,
         /// The date for new issue files, YYYY-MM-DD. Defaults to today (UTC).

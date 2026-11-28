@@ -104,7 +104,7 @@ test('merged PRs are acknowledged after the fact or flagged @req:PANE-012', asyn
   await expect(rows.first()).toHaveAttribute('data-attention', 'look');
   await expect(rows.nth(1).getByRole('link', { name: 'Flag for follow-up' })).toHaveAttribute(
     'href',
-    /^https:\/\/github\.com\/jimhillr\/monorepo\/new\/main\?filename=pane%2Fissues%2Ffollow-up-pr-21\.md&value=/,
+    /^https:\/\/github\.com\/jimhillr\/monorepo\/new\/main\?filename=pane%2Fdocs%2Fissues%2Ffollow-up-pr-21\.md&value=/,
   );
 
   await rows.first().getByRole('button', { name: 'Acknowledge' }).click();

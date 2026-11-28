@@ -19,5 +19,5 @@ and the requirements are in [docs/requirements.md](docs/requirements.md).
 | [`web/`](web/README.md) | `pane_web` | The Dioxus web app that shows the snapshot. |
 | [`cloudflare/`](cloudflare/README.md) | `pane_cloudflare` | Deploys the web app to Cloudflare. |
 
-Open work is in [issues/](issues/), and how to build and test pane is in
+Open work is in [docs/issues/](docs/issues/), and how to build and test pane is in
 [CONTRIBUTING.md](CONTRIBUTING.md).

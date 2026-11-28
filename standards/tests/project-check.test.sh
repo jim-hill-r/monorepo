@@ -115,13 +115,13 @@ expect "a heading with spaces for underscores is enough" "$r" 0 "" "DOC-002"
 r=$(new_repo doc2the); mkdir -p "$r/psy_ents"; echo '[tools]' >"$r/psy_ents/mise.toml"; docs "$r/psy_ents" "The Psy Ents"; add_all "$r"
 expect "a spaced heading after The is enough" "$r" 0 "" "DOC-002"
 
-r=$(new_repo held); mkdir -p "$r/issues" "$r/old/sub"; echo '[tools]' >"$r/old/mise.toml"; echo '[tools]' >"$r/old/sub/mise.toml"
+r=$(new_repo held); mkdir -p "$r/standards/docs/issues" "$r/old/sub"; echo '[tools]' >"$r/old/mise.toml"; echo '[tools]' >"$r/old/sub/mise.toml"
 printf '[package]\nname = "old"\n' >"$r/old/Cargo.toml"
-printf '# Priority Projects\n- app\n\n# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/issues/README.md"; add_all "$r"
+printf '# Priority Projects\n- app\n\n# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/standards/docs/issues/README.md"; add_all "$r"
 expect "on hold projects are exempt from DOC and LIN" "$r" 0 "" "old"
 
-r=$(new_repo notheld); mkdir -p "$r/issues"; rm "$r/tool/CONTRIBUTING.md"
-printf '# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/issues/README.md"; add_all "$r"
+r=$(new_repo notheld); mkdir -p "$r/standards/docs/issues"; rm "$r/tool/CONTRIBUTING.md"
+printf '# On Hold Projects\n- old\n\n# Epic notes\n- tool\n' >"$r/standards/docs/issues/README.md"; add_all "$r"
 expect "only the On Hold list exempts a project" "$r" 1 "error[DOC-003] tool has no CONTRIBUTING.md"
 
 r=$(new_repo doc3); rm "$r/tool/CONTRIBUTING.md"; add_all "$r"

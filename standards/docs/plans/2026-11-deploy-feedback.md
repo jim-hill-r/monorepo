@@ -2,7 +2,7 @@
 
 Started 2026-11-26. The decision behind this plan is
 [../decisions/0001-deploy-feedback-loop.md](../decisions/0001-deploy-feedback-loop.md).
-The work items are issue files in the root [issues/](../../../issues/) with
+The work items are issue files in the root [issues/](../issues/) with
 `epic: Feedback on every change`, in the order below.
 
 ## Goal

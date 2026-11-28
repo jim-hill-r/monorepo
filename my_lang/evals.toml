@@ -5,7 +5,7 @@
 # is a `cargo` eval in the `ci` stage, naming existing tests with `filter`.
 # The `must` requirements get production-stage (`cd`) trycmd evals against
 # the release binary once the CLI exists
-# (issues/production-evals-with-the-cli.md); until then `evals check`
+# (docs/issues/production-evals-with-the-cli.md); until then `evals check`
 # warns EVL-004 for them.
 
 prefix = "LANG"

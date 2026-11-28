@@ -7,7 +7,7 @@
 # body, so they never store a data point and can't send a body; a POST with
 # no body answering 202 (not 400) is how production shows the drop works.
 # TELE-004 has no production eval yet: it needs the `metric` kind
-# (issues/eval-engine-phase-3-metric-eval.md) to read the stored data.
+# (evals/docs/issues/eval-engine-phase-3-metric-eval.md) to read the stored data.
 
 prefix = "TELE"
 

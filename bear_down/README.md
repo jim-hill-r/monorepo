@@ -36,7 +36,7 @@ the nflverse schedule, runs the simulation and writes `rooting.json`
 `bear_down --week <n> [--season <year>]` rebuilds a past week's guide from
 the results before it, for the [archive](docs/plans/2026-11-archive.md).
 The decisions are recorded in [docs/decisions](docs/decisions/README.md) and
-the remaining work to build v1 is listed in [issues/](issues/).
+the remaining work to build v1 is listed in [docs/issues/](docs/issues/).
 
 ## Layout
 

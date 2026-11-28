@@ -4,7 +4,7 @@
 section. A section that doesn't apply says "None" and why. See README.md. -->
 
 - **Kind:** one-time | recurring (every N days) | on demand (when X happens)
-- **Status:** open (issues/human/<file>.md) | done <date> (keep for a rebuild)
+- **Status:** open (<project>/docs/issues/human/<file>.md) | done <date> (keep for a rebuild)
 - **Time:** about N minutes
 - **Cost:** $0 (which free tier it uses, and how close to its limit)
 

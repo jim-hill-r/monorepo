@@ -137,7 +137,7 @@ pub struct Project {
     pub status: ProjectStatus,
 }
 
-/// Where a project stands in the root `issues/README.md`.
+/// Where a project stands in `standards/docs/issues/README.md`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProjectStatus {
@@ -195,7 +195,7 @@ pub enum WorkSource {
     CodeComment,
 }
 
-/// One task for a person: a file in the root `issues/human/`.
+/// One task for a person: a file in a project's `docs/issues/human/`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HumanIssue {
     pub text: String,
@@ -214,6 +214,10 @@ pub struct HumanIssue {
     /// Its runbook's path from the repo root, from the file's `runbook`.
     #[serde(default)]
     pub runbook: Option<String>,
+    /// The project whose `docs/issues/human/` holds it; every project keeps
+    /// its own human tasks and pane gathers them all.
+    #[serde(default)]
+    pub project: Option<String>,
 }
 
 /// Something pane offers to view or download.
@@ -370,7 +374,7 @@ mod tests {
             kind: WorkKind::Todo,
             text: "Add a model crate.".into(),
             project: Some("pane".into()),
-            file: "pane/issues/x.md".into(),
+            file: "pane/docs/issues/x.md".into(),
             line: 14,
             source: WorkSource::IssuesFile,
             section: Some("Priority Issues".into()),
@@ -380,12 +384,13 @@ mod tests {
         });
         s.human_issues.push(HumanIssue {
             text: "Create the Access application.".into(),
-            file: "issues/human/x.md".into(),
+            file: "standards/docs/issues/human/x.md".into(),
             line: 3,
             added: Some("2026-11-20".into()),
             unblocks: Some("pane Phase 3".into()),
             why: None,
             runbook: None,
+            project: None,
         });
         s.deliverables.push(Deliverable {
             kind: DeliverableKind::Plan,

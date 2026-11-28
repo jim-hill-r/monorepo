@@ -1,5 +1,6 @@
-//! Issue files: one Markdown file per issue in an `issues/` folder, with
-//! `key: value` front matter (standards/docs/issue-management.md).
+//! Issue files: one Markdown file per issue in a project's `docs/issues/`
+//! folder (human tasks in `docs/issues/human/`), with `key: value` front
+//! matter (standards/docs/issue-management.md).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -23,26 +24,23 @@ pub struct Issue {
 }
 
 impl Issue {
-    /// True for tasks in the root `issues/human/`.
+    /// True for tasks in a project's `docs/issues/human/`.
     pub fn is_human(&self) -> bool {
-        self.path.starts_with("issues/human/")
+        self.folder().ends_with("docs/issues/human")
     }
 
     pub fn has_tag(&self, tag: &str) -> bool {
         self.tags.iter().any(|t| t == tag)
     }
 
-    /// The top-level project the issue belongs to, or `None` for the root
-    /// `issues/` folder (repo-wide work).
+    /// The top-level project the issue belongs to. `None` only for a path
+    /// with no folder, which the walk never returns: every issue lives in a
+    /// project (repo-wide work in `standards`).
     pub fn project(&self) -> Option<&str> {
-        if self.path.starts_with("issues/") {
-            None
-        } else {
-            self.path.split('/').next()
-        }
+        self.path.split_once('/').map(|(p, _)| p)
     }
 
-    /// The folder holding the issue file, such as `cookbook/web/issues`.
+    /// The folder holding the issue file, such as `cookbook/web/docs/issues`.
     pub fn folder(&self) -> &str {
         self.path.rsplit_once('/').map_or("", |(d, _)| d)
     }
@@ -64,8 +62,8 @@ impl Issue {
     }
 }
 
-/// Every issue file under `root`: `issues/*.md`, `issues/human/*.md` and
-/// `<dir>/issues/*.md`, never `README.md`. Skips `target`, `node_modules`
+/// Every issue file under `root`: `<dir>/docs/issues/*.md` and
+/// `<dir>/docs/issues/human/*.md`, never `README.md`. Skips `target`, `node_modules`
 /// and hidden folders. Sorted by path.
 pub fn issue_paths(root: &Path) -> Result<Vec<PathBuf>> {
     let mut out = Vec::new();
@@ -87,22 +85,24 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
                 continue;
             }
             walk(root, &path, out)?;
-        } else if file_type.is_file() && name.ends_with(".md") && name != "README.md" {
-            let parent = dir.file_name().map(|n| n.to_string_lossy().into_owned());
-            let grandparent = dir
-                .parent()
-                .and_then(Path::file_name)
-                .map(|n| n.to_string_lossy().into_owned());
-            let in_issues = parent.as_deref() == Some("issues");
-            let in_human = parent.as_deref() == Some("human")
-                && grandparent.as_deref() == Some("issues")
-                && dir.parent().and_then(Path::parent) == Some(root);
-            if in_issues || in_human {
-                out.push(path);
-            }
+        } else if file_type.is_file()
+            && name.ends_with(".md")
+            && name != "README.md"
+            && is_issue_folder(&relative(root, dir))
+        {
+            out.push(path);
         }
     }
     Ok(())
+}
+
+/// True for a folder (from the repo root) that holds issue files:
+/// `<dir>/docs/issues` or `<dir>/docs/issues/human`, never at the root.
+pub fn is_issue_folder(folder: &str) -> bool {
+    let folder = folder.strip_suffix("/human").unwrap_or(folder);
+    folder
+        .strip_suffix("/docs/issues")
+        .is_some_and(|project| !project.is_empty())
 }
 
 /// Reads every issue file under `root`. Files without front matter are
@@ -198,8 +198,12 @@ pub fn quote(value: &str) -> String {
     }
 }
 
-/// The `# Priority Projects` and `# On Hold Projects` lists in the root
-/// `issues/README.md`: each bullet's first word.
+/// The README holding the `# Priority Projects` and `# On Hold Projects`
+/// lists: the standards project's issue folder, home of repo-wide work.
+pub const LISTS_README: &str = "standards/docs/issues/README.md";
+
+/// The `# Priority Projects` and `# On Hold Projects` lists in
+/// [`LISTS_README`]: each bullet's first word.
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct ProjectLists {
     pub priority: Vec<String>,
@@ -207,7 +211,7 @@ pub struct ProjectLists {
 }
 
 pub fn project_lists(root: &Path) -> Result<ProjectLists> {
-    let path = root.join("issues/README.md");
+    let path = root.join(LISTS_README);
     let text = fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     Ok(parse_project_lists(&text))
 }
@@ -264,7 +268,7 @@ mod tests {
 
     #[test]
     fn parses_the_standards_example() {
-        let issue = parse("pane/issues/work-page.md", EXAMPLE).expect("front matter");
+        let issue = parse("pane/docs/issues/work-page.md", EXAMPLE).expect("front matter");
         assert_eq!(issue.kind, "todo");
         assert_eq!(issue.priority, "priority");
         assert_eq!(issue.tags, vec!["agent-generated"]);
@@ -274,17 +278,21 @@ mod tests {
         assert_eq!(issue.added, "2026-11-26");
         assert_eq!(issue.body, "Build the Work page.");
         assert_eq!(issue.project(), Some("pane"));
-        assert_eq!(issue.folder(), "pane/issues");
+        assert_eq!(issue.folder(), "pane/docs/issues");
     }
 
     #[test]
-    fn root_issues_have_no_project() {
-        let issue = parse("issues/x.md", EXAMPLE).expect("front matter");
-        assert_eq!(issue.project(), None);
+    fn human_tasks_live_in_each_project() {
+        let issue = parse("standards/docs/issues/x.md", EXAMPLE).expect("front matter");
+        assert_eq!(issue.project(), Some("standards"));
         assert!(!issue.is_human());
-        let human = parse("issues/human/x.md", "---\nadded: 2026-11-27\n---\nDo it.")
-            .expect("front matter");
+        let human = parse(
+            "cost/docs/issues/human/x.md",
+            "---\nadded: 2026-11-27\n---\nDo it.",
+        )
+        .expect("front matter");
         assert!(human.is_human());
+        assert_eq!(human.project(), Some("cost"));
     }
 
     #[test]
@@ -324,14 +332,17 @@ mod tests {
         let dir = tempfile::tempdir()?;
         let root = dir.path();
         for p in [
-            "issues/a.md",
-            "issues/README.md",
-            "issues/human/h.md",
-            "cookbook/issues/c.md",
-            "cookbook/web/issues/w.md",
+            "issues/old-root.md",
+            "docs/issues/no-project.md",
+            "standards/docs/issues/README.md",
+            "standards/docs/issues/a.md",
+            "cost/docs/issues/human/h.md",
+            "cookbook/docs/issues/c.md",
+            "cookbook/web/docs/issues/w.md",
             "cookbook/docs/not.md",
-            "cookbook/target/issues/no.md",
-            "cookbook/issues/human/no.md",
+            "cookbook/issues/old.md",
+            "cookbook/target/docs/issues/no.md",
+            "cookbook/docs/issues/human/deeper/no.md",
         ] {
             let path = root.join(p);
             fs::create_dir_all(path.parent().expect("parent"))?;
@@ -344,10 +355,10 @@ mod tests {
         assert_eq!(
             found,
             vec![
-                "cookbook/issues/c.md",
-                "cookbook/web/issues/w.md",
-                "issues/a.md",
-                "issues/human/h.md"
+                "cookbook/docs/issues/c.md",
+                "cookbook/web/docs/issues/w.md",
+                "cost/docs/issues/human/h.md",
+                "standards/docs/issues/a.md",
             ]
         );
         Ok(())

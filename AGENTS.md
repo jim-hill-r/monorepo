@@ -12,22 +12,28 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
 - **Standards are the source of truth.** Coding, testing, documentation, naming
   and workflow rules live in `standards/docs/`. If this file disagrees with
   them, the standards win; fix this file.
-- **Work is tracked as one file per issue** in `issues/` folders (the root
-  `issues/` for repo-wide work, `<project>/issues/` for a project's), not in
-  GitHub issues and not in `ISSUES.md` files, which are retired so parallel
-  PRs stop conflicting (decision 0006). Add an issue by adding a file, close
-  it by deleting the file, and see the list with `mise run //:issues`; never
-  commit a generated index. The format is in
+- **Work is tracked as one file per issue** in each project's
+  `docs/issues/` folder (`<project>/docs/issues/`; repo-wide work goes in
+  the platform project that owns it, `standards/docs/issues/` when no other
+  fits), not in GitHub issues and not in `ISSUES.md` files, which are
+  retired so parallel PRs stop conflicting (decision 0006). There is no
+  root `issues/` folder (Jim, 2026-11-28: "Issues should live in the
+  docs/issues directory in a given project"). Add an issue by adding a
+  file, close it by deleting the file, and see the list with
+  `mise run //:issues`; never commit a generated index. The format is in
   `standards/docs/issue-management.md`.
 - **Tasks only a person can do** (dashboards, accounts, secrets, billing,
-  sign-offs) go in the root `issues/human/`, one file each, never in a
-  project's `issues/` and never only in a chat thread. Agents don't work
-  them. A weekly Claude scheduled task, "Weekly human issues digest", reports
-  them to Jim with the `human-issues-digest` skill (decision 0002).
+  sign-offs) go in the owning project's `docs/issues/human/`, one file
+  each, never among its agent issues and never only in a chat thread.
+  Agents don't work them. Pane's Human issues page gathers them from every
+  project (Jim, 2026-11-28: "Pane should aggregate human issues from all
+  the projects"), and a weekly Claude scheduled task, "Weekly human issues
+  digest", reports them to Jim with the `human-issues-digest` skill
+  (decision 0002).
 - **Every human task has a runbook (Jim, 2026-11-27).** "Whenever asking
   for human help, document the requirement, why it can't be automated and
   create a run book. Link the run book in the task." Each
-  `issues/human/` file has `## Requirement`, `## Why it can't be automated`
+  `docs/issues/human/` file has `## Requirement`, `## Why it can't be automated`
   and `## Runbook` sections and a `runbook:` front matter field, and its
   runbook (steps, permissions, where secrets go, how to verify, cost) is
   in `standards/docs/runbooks/`, added in the same PR. Runbooks outlive
@@ -189,7 +195,7 @@ repo, rather than in any one agent tool's settings.
   feedback to our todo process should be the way in which individual
   projects improve their eval coverage." So every requirement's verdict
   should be green; any requirement that is not met, at risk or unknown
-  becomes a `FIX` or `TODO` issue file in its project's `issues/`, and the
+  becomes a `FIX` or `TODO` issue file in its project's `docs/issues/`, and the
   normal agent loop works it. Each project grows its own eval coverage
   through those issues: requirements for anything it ships, evals that
   check real content in production, and an eval coverage figure and badge
@@ -409,9 +415,9 @@ artifacts) are in [standards/docs/mise.md](standards/docs/mise.md). CI runs
 
 | Skill | Use it to |
 | --- | --- |
-| `start-a-new-task` | Pick one issue from the `issues/` folders and complete it end to end. |
+| `start-a-new-task` | Pick one issue from the projects' `docs/issues/` folders and complete it end to end. |
 | `code-review` | Review one project against the standards and record five TODOs. |
-| `human-issues-digest` | Report the open `issues/human/` tasks and `needs-human` PRs to Jim. |
+| `human-issues-digest` | Report every project's open `docs/issues/human/` tasks and `needs-human` PRs to Jim. |
 | `open-pull-request` | Branch, commit, open a draft PR, and mark it ready when it is. |
 | `write-issue` | Write an issue file or a human task with its runbook through the `chores` command. |
 | `eval-triage` | On demand, for the eval calls the daily triage workflow can't make: rollback advice for a deploy that failed its evals, and an eval Jim disputes. |

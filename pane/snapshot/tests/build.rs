@@ -28,9 +28,9 @@ impl FixtureRepo {
             ".git",
             "app/dist",
         ] {
-            fs::create_dir_all(dir.join(skipped).join("issues"))?;
+            fs::create_dir_all(dir.join(skipped).join("docs/issues"))?;
             fs::write(
-                dir.join(skipped).join("issues/skip.md"),
+                dir.join(skipped).join("docs/issues/skip.md"),
                 "---\nkind: todo\npriority: priority\n---\n\nMust be skipped.\n",
             )?;
             fs::write(
@@ -116,25 +116,25 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
         items,
         [
             (
-                "app/issues/a-flat-item.md",
+                "app/docs/issues/a-flat-item.md",
                 Some("app"),
                 WorkKind::Todo,
                 "Flat item."
             ),
             (
-                "app/issues/b-epic-item.md",
+                "app/docs/issues/b-epic-item.md",
                 Some("app"),
                 WorkKind::Todo,
                 "Epic item."
             ),
             (
-                "app/issues/c-phase-item.md",
+                "app/docs/issues/c-phase-item.md",
                 Some("app"),
                 WorkKind::Fix,
                 "Phase item. ```markdown - TODO (agent-ignore): Inside a code block, part of the text. ```"
             ),
             (
-                "app/issues/d-later.md",
+                "app/docs/issues/d-later.md",
                 Some("app"),
                 WorkKind::Todo,
                 "Later."
@@ -164,7 +164,7 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
                 "After commented-out code."
             ),
             (
-                "issues/repo-wide-item.md",
+                "standards/docs/issues/repo-wide-item.md",
                 None,
                 WorkKind::Todo,
                 "Repo-wide item."
@@ -178,10 +178,21 @@ fn collects_every_issues_file_and_skips_build_dirs() -> TestResult {
 fn collects_human_issues_docs_and_retros() -> TestResult {
     let repo_dir = FixtureRepo::new("docs")?;
     let s = repo::build(&repo_dir.0, "abc", "2026-11-26T12:00:00Z")?;
-    assert_eq!(s.human_issues.len(), 2);
+    // Human tasks come from every project's docs/issues/human/.
+    let human: Vec<_> = s
+        .human_issues
+        .iter()
+        .map(|h| (h.file.as_str(), h.project.as_deref()))
+        .collect();
     assert_eq!(
-        s.human_issues[0].file,
-        "issues/human/do-the-dashboard-thing.md"
+        human,
+        [
+            (
+                "app/docs/issues/human/do-the-dashboard-thing.md",
+                Some("app")
+            ),
+            ("standards/docs/issues/human/no-note.md", None),
+        ]
     );
 
     let docs: Vec<_> = s

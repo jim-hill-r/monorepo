@@ -10,7 +10,7 @@ item, where it came from and each hop it took on the way to the buyer.
 Bogan has one seller rule that big marketplaces lack: no white-labelled or
 copy-cat listings. A seller may not relabel generic goods as their own
 brand or list knock-offs of another seller's product. How the rule is
-enforced is part of the product brief (`issues/write-product-brief.md`).
+enforced is part of the product brief (`docs/issues/write-product-brief.md`).
 
 Bogan is Algonquin for a quiet tributary or backwater. Bogan brings
 transparency to all the tributaries that feed into a big marketplace: we
@@ -23,4 +23,4 @@ Bogan is in early design and has no code yet.
 - Payments: use existing currencies, or treat Bogan as the front for
   bringing money into a more centralized socialist currency. This is an
   open question, to be settled in a decision record before any payment code
-  is written (`issues/propose-payments-decision.md`).
+  is written (`docs/issues/propose-payments-decision.md`).

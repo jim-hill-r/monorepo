@@ -18,7 +18,6 @@ This document describes the organization and structure of this monorepo to help 
 ├── standards/           # Standards (standards/docs/), shared mise tasks (standards/tasks/) and repo scripts
 ├── athenaeum/           # Learning resources (algorithms, system design, etc.)
 ├── docs/reviews/        # Weekly deep project review decks (Marp), see docs/reviews/README.md
-├── issues/              # Repo-wide issues, one file each; issues/human/ for tasks only a person can do
 ├── [other projects]     # Various projects and applications
 ├── mise.toml            # mise monorepo root: lists projects, //:audit and //:affected tasks
 ├── AGENTS.md            # Repo-wide instructions for AI agents (CLAUDE.md imports it)
@@ -71,7 +70,7 @@ See `.github/workflows/README.md` and `standards/docs/workflow-conventions.md` f
 
 ## Finding Issues/TODOs
 
-1. Run `mise run //:issues` to list the issue files (`issues/` at the root and in each project, one file per issue)
+1. Run `mise run //:issues` to list the issue files (each project's `docs/issues/`, one file per issue; repo-wide work in `standards/docs/issues/`)
 2. Use the TODO Tree extension to find TODOs in code
 3. AI agents work on issues using the `start-a-new-task` skill in `.agents/skills/`
 

@@ -35,7 +35,7 @@ mise run ci
 
 `mise run ci` is the docs-only task from `standards/tasks/docs.toml`. It
 checks nothing yet (see
-[docs-only-ci-checks-nothing](../issues/docs-only-ci-checks-nothing.md)), so
+[docs-only-ci-checks-nothing](../standards/docs/issues/docs-only-ci-checks-nothing.md)), so
 read the deck in the preview before opening a pull request.
 
 ## Writing a story
