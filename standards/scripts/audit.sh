@@ -18,10 +18,12 @@
 #            in exactly one tier.
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
-#   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
+#   EVL-*    Requirements and evals (`chores evals-check`); warnings only for now.
 #   COST-*   Each project's docs/cost.toml (cost-check.sh); warnings only for now.
 #   ROY-001, RTOML-*  Each project's royalty.toml (royalty-check.sh); warnings only for now.
-#   THR-*    Each project's docs/threat.toml (threat-check.sh); warnings only for now.
+#   THR-*    Each project's docs/threat.toml (`chores threat-check`); warnings only for now.
+#   QUAL-404 No new tracked .sh files: the ones left to port are listed in
+#            standards/shell-scripts.toml (`chores shell-scripts`).
 #   RES-*    Resources (resources.sh check, standards/docs/resources.md):
 #            dropped claims retired (with a base), no references to
 #            retired names, artifact retention, valid resources.toml.
@@ -79,22 +81,19 @@ done
 # NAM-002, NAM-004 (errors), DOC-*, LIN-* (warnings): per-project checks.
 bash standards/scripts/project-check.sh || errors=$((errors + 1))
 
-# DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
+chores=(cargo run --quiet --manifest-path chores/Cargo.toml --)
 if command -v cargo >/dev/null 2>&1; then
-  cargo run --quiet --manifest-path chores/Cargo.toml -- user-docs || errors=$((errors + 1))
+  # DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
+  "${chores[@]}" user-docs || errors=$((errors + 1))
+  # QUAL-404: no new shell scripts (standards/shell-scripts.toml).
+  "${chores[@]}" shell-scripts || errors=$((errors + 1))
+  # REV-001, REV-002: who may approve what (decision 0019).
+  "${chores[@]}" reviewers || errors=$((errors + 1))
+  # EVL-*: requirements and evals. Warnings only; never fails the audit.
+  "${chores[@]}" evals-check || true
 else
-  echo "warning: user docs check skipped: cargo is not installed"
+  echo "warning: user docs, shell script, review roles, evals and threat checks skipped: cargo is not installed"
 fi
-
-# REV-001, REV-002: who may approve what (decision 0019).
-if command -v cargo >/dev/null 2>&1; then
-  cargo run --quiet --manifest-path chores/Cargo.toml -- reviewers || errors=$((errors + 1))
-else
-  echo "warning: review roles check skipped: cargo is not installed"
-fi
-
-# EVL-*: requirements and evals. Warnings only; never fails the audit.
-bash standards/scripts/evals-check.sh
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.
 bash standards/scripts/cost-check.sh
@@ -102,8 +101,11 @@ bash standards/scripts/cost-check.sh
 # ROY-001, RTOML-*: every project's royalty.toml. Warnings only.
 bash standards/scripts/royalty-check.sh
 
-# THR-*: per-project threat models against the security rules. Warnings only.
-bash standards/scripts/threat-check.sh
+# THR-*: per-project threat models against the security rules. Warnings
+# only; COST_PROJECTS (or THREAT_PROJECTS) picks the affected projects.
+if command -v cargo >/dev/null 2>&1; then
+  "${chores[@]}" threat-check || true
+fi
 
 # SEC-002, SEC-006: repo-wide security guards (see standards/docs/security.md).
 bash standards/scripts/security-check.sh || errors=$((errors + 1))

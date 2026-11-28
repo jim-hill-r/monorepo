@@ -82,6 +82,14 @@ kind = "cargo"
 filter = "draw_card_"
 
 [[eval]]
+id = "full-hand-skips-the-draw"
+requirement = "CHAOS-002"
+stages = ["ci"]
+kind = "cargo"
+filter = "skip_draw"
+description = "A player with five or fewer cards draws; with six or more the draw is skipped."
+
+[[eval]]
 id = "play-then-battle"
 requirement = "CHAOS-002"
 stages = ["ci"]
