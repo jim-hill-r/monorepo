@@ -31,6 +31,7 @@ set the property meets) and each criterion it misses:
 
 ```text
 Address:    123 Main St, Seattle, WA 98101
+ZPID:       48749425
 Type:       SINGLE_FAMILY
 Price:      $750,000
 Bedrooms:   3
@@ -41,6 +42,16 @@ Year Built: 1998
 Match:      2 of 3 criteria met
 ✗ This property does not meet all your preferences:
   - Square footage: 1850 sqft (need at least 2000 sqft)
+```
+
+The address is the one Zillow matched, with its property id (ZPID). Zillow
+matches addresses loosely, so when the matched address differs from the one
+you typed (ignoring case, spaces and punctuation), homer adds a line with
+yours, so a different house is never mistaken for the one you searched:
+
+```text
+Address:    1230 Main St, Seattle, WA 98102
+Searched:   123 Main, Seattle, WA (Zillow matched a different address)
 ```
 
 Prices print with thousands separators. A value Zillow doesn't report counts
@@ -63,6 +74,8 @@ homer --address "123 Main St, Seattle, WA 98101" --min-bedrooms 3 --json
 {
   "details": {
     "address": "123 Main St, Seattle, WA 98101",
+    "matched_address": "123 Main St, Seattle, WA 98101",
+    "zpid": 48749425,
     "price": 750000,
     "bedrooms": 3,
     "bathrooms": 2.5,
@@ -79,7 +92,8 @@ homer --address "123 Main St, Seattle, WA 98101" --min-bedrooms 3 --json
 }
 ```
 
-A value Zillow doesn't report is `null`. Warnings, such as a low RapidAPI
+`address` is what you typed and `matched_address` is what Zillow matched. A
+value Zillow doesn't report is `null`. Warnings, such as a low RapidAPI
 quota, go to stderr, so stdout is always just the JSON.
 
 ## Options
