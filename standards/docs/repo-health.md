@@ -24,7 +24,8 @@ task check them and try to fix them"). This page is the policy it follows.
 | Threats: CodeQL | `all-codeql.yml` | push to `main`, weekly (Rust) | the scan itself failed; alerts show in the Security tab, not on the badge |
 | Threats: advisories | `all-dependency-audit.yml` | daily | the audit itself failed. Advisories are warnings for now, so read the log even when it is green |
 | Threats: Dependabot | Dependabot Updates (dynamic) | Dependabot's schedule | Dependabot couldn't update a manifest |
-| Secrets and free tiers | `all-free-tier-usage.yml` | weekly | gitleaks found a secret in history, a service reached its free-tier budget, or the live threat check found a deployment that doesn't match its threat model |
+| Free tiers | `all-free-tier-usage.yml` | daily | a free allowance went red on the ladder (at our budget, or 80% of a free limit with no budget), an overrun switch is on (the repo went private, an R2 bucket), or the billing check found a payment method, paid plan or charge. Yellow items are warnings in the run summary |
+| Secrets and live threats | `all-security-scans.yml` | weekly | gitleaks found a secret in history, private vulnerability reporting is off, or the live threat check found a deployment that doesn't match its threat model |
 | Infra apply | `infra-apply.yml` | push to `main` | a plan guard (IAC-001 to IAC-005) failed, or the plan or apply failed |
 | Infra drift | `infra-drift.yml` | weekly | a live setting differs from OpenTofu state, usually a change made by hand |
 | tofu_state | `tofu-state-deploy.yml` | push to `main` | the state Worker didn't deploy |

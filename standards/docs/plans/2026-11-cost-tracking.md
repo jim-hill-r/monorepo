@@ -160,6 +160,16 @@ Each phase is an issue file with `epic: Cost tracking`.
 
 ### Phase 1: measure everything an API shows
 
+Status (2026-11-28): built. The usage and billing jobs run daily in
+`all-free-tier-usage.yml`; the secret scan, GitHub security settings and
+live threat check moved to the weekly `all-security-scans.yml`, so the
+daily run can't hide their result on a shared badge. The ladder is code
+(`level()` in `free-tiers.sh`), so `limits.toml` gained no fields. The
+analytics read needed no new credential: the deploy token already has
+Account Analytics Read. R2 read is not on it yet, so that row is skipped
+until `issues/cost-tracking-phase-1-r2-read.md` adds it.
+
+
 - The usage run moves from weekly to daily (07:00 UTC), on its own workflow
   so the weekly full-history secret scan stays weekly. It writes
   `usage.json` as an artifact (shared with pane's issue

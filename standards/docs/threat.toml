@@ -12,14 +12,14 @@ notes = "Each workflow sets permissions; secrets go only to deploy and scheduled
 [[secret]]
 name = "CLOUDFLARE_API_TOKEN"
 where = "github"
-used_by = ["push-main.yml", "nightly-cd.yml", "mise-projects.yml deploy step", "all-free-tier-usage.yml (usage and threat-live jobs; both only read)"]
+used_by = ["push-main.yml", "nightly-cd.yml", "mise-projects.yml deploy step", "all-free-tier-usage.yml (usage job, only reads)", "all-security-scans.yml (threat-live job, only reads)"]
 scope = "jimhillr-deploy: Pages, Workers Scripts and D1 Write, Account Analytics Read, this account only"
 setting = "cloudflare-api-token-scopes"
 
 [[secret]]
 name = "CLOUDFLARE_ACCOUNT_ID"
 where = "github"
-used_by = ["push-main.yml", "nightly-cd.yml", "all-free-tier-usage.yml"]
+used_by = ["push-main.yml", "nightly-cd.yml", "all-free-tier-usage.yml", "all-security-scans.yml"]
 scope = "An identifier, not a credential; kept as a secret so logs never show it"
 setting = "github-secret-cloudflare-account-id"
 

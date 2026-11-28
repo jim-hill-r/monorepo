@@ -236,13 +236,15 @@ only for now, so it stays green; findings are in the log.
 
 ## all-free-tier-usage.yml
 
-Weekly (Mondays, 7 AM Pacific), by hand, or called from another workflow:
-runs `standards/scripts/free-tiers.sh usage`, which reads how many Cloudflare
-Pages projects and Workers exist and how much Actions cache and artifact
-storage the repo uses, writes a table to the run summary, and fails when
-anything reaches its budget in
-[standards/docs/free-tiers.md](../../standards/docs/free-tiers.md). It only
-reads.
+Daily (7 AM UTC), by hand, or called from another workflow: runs
+`standards/scripts/free-tiers.sh usage`, which reads every free allowance an
+API shows (Pages projects, Workers, Cron Triggers, D1 databases and storage,
+R2 buckets, the busiest day's Workers requests and D1 rows, repo
+visibility, Actions cache and artifacts), rates each green, yellow or red,
+writes a table to the run summary and the `free-tier-usage` JSON artifact,
+warns on yellow and fails on red (see "Usage check" in
+[standards/docs/free-tiers.md](../../standards/docs/free-tiers.md#usage-check)).
+It only reads.
 
 A **Billing check** job runs `standards/scripts/billing-check.sh all` in
 the `infra` environment, from `main` only: read-only billing credentials
@@ -250,11 +252,18 @@ show that Cloudflare, GitHub and PostHog still have no payment method, paid
 plan or charge (see "Billing checks" in
 [free-tiers.md](../../standards/docs/free-tiers.md#billing-checks)).
 
-A further job, **Secret scan (full history)**, runs gitleaks over every commit
-(`standards/scripts/secrets-check.sh history`), so a new rule catches an old
-commit within a week.
-
 Tests: `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
+
+## all-security-scans.yml
+
+Weekly (Mondays, 7 AM Pacific) or by hand. **Secret scan (full history)**
+runs gitleaks over every commit (`standards/scripts/secrets-check.sh
+history`), so a new rule catches an old commit within a week. **GitHub
+security settings** fails if private vulnerability reporting is off.
+**Live threat check** compares what is deployed on Cloudflare with the
+threat models (`standards/scripts/threat-live.sh`). They were jobs of
+`all-free-tier-usage.yml` until it went daily; they stay weekly here, with
+their own badge.
 
 ## all-codeql.yml
 

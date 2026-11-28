@@ -181,6 +181,36 @@ Our AI coding platform and the one paid service: budget $25 a month (Jim,
 2026-11-26). Jim's own subscription; no agent, workflow or script changes
 its plan or adds usage-based billing.
 
+## Usage check
+
+`free-tiers.sh usage` answers "how close is each free allowance to running
+out, and is any overrun switch on?" every day (cost tracking phase 1,
+[plan](plans/2026-11-cost-tracking.md)). It reads, with the read-only use of
+the deploy token and the workflow's `GITHUB_TOKEN`:
+
+| Item | Read from | Budget used for the ladder |
+| --- | --- | --- |
+| Pages projects, Workers | Cloudflare `pages/projects`, `workers/scripts` | `pages_projects`, `workers` budgets |
+| Cron Triggers | each Worker's `schedules` | `cron_triggers` budget (3 of 5) |
+| D1 databases and storage | `d1/database` (count, summed `file_size`) | free limit (no budget) |
+| R2 buckets | `r2/buckets` (R2 not enabled counts as 0) | 0: any bucket is red, an overrun switch |
+| Workers requests (with Pages Functions), D1 rows read and written | GraphQL analytics, busiest day of the last 7 (daily limits reset at 00:00 UTC) | free limit (no budget) |
+| Repo visibility | `GET /repos/{repo}` | 0: private is red, an overrun switch (Actions minutes would bill) |
+| Actions cache, artifacts | Actions API | `github_cache_bytes`, `github_artifact_bytes` budgets |
+
+Each item gets one level on the plan's ladder:
+
+| Level | Budget set | No budget | What happens |
+| --- | --- | --- | --- |
+| Green | below 80% of budget | below 50% of free | nothing |
+| Yellow | 80% of budget or more | 50% of free or more | a warning in the run; the digest and pane show it |
+| Red | 100% of budget or more (any use at all when the budget is 0) | 80% of free or more | the run fails, so the **Free tiers** badge goes red and PR triage acts on it ([repo health](repo-health.md)) |
+
+A read the token can't make (say R2 without Workers R2 Storage read) is
+`skipped` with a note and never fails the run. The JSON artifact
+(`version: 2`) has `red` and `yellow` counts and, per item, `used`,
+`budget`, `free`, `yellow_at`, `red_at` and `status`.
+
 ## Guards
 
 All guards live in [`standards/scripts/free-tiers.sh`](../scripts/free-tiers.sh)
@@ -191,11 +221,13 @@ and are tested in `jimhillr/workflow_tests/tests/free_tier_tests.rs`.
 | `free-tiers.sh check` | Every CI run, as part of `mise run //:audit` | FT-001 only standard runners; FT-002 no workflow uses the RapidAPI key; FT-003 Pages projects and Workers in the repo within budget; FT-004 Cron Triggers within budget; FT-005 no paid-only wrangler settings; FT-006 Pages projects named `jimhillr-<project>` |
 | `free-tiers.sh pages-project` | Before every Cloudflare Pages deploy (`mise run deploy` in a `cloudflare` project) | Creates the Pages project named in `wrangler.toml` only if it is missing, the account is under the Pages budget and the name has the `jimhillr-` prefix; otherwise stops the deploy |
 | `free-tiers.sh worker` | Before every Cloudflare Worker deploy (`mise run deploy` in a project using `standards/tasks/cloudflare-worker.toml`, such as `telemetry`) | Passes if the Worker named in `wrangler.toml` exists or one more stays within the Workers budget; otherwise stops the deploy before `wrangler deploy` can create it |
-| `billing-check.sh all` | Weekly, from the **Billing check** job of [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), in the `infra` environment | With read-only billing credentials, fails on a payment method or paid subscription on Cloudflare, any GitHub charge this month, or an active PostHog subscription or charge. See [Billing checks](#billing-checks) |
-| `free-tiers.sh usage` | Weekly, from [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), and (planned) first in the nightly run before it deploys | Reads live counts (Pages projects, Workers, Actions cache and artifacts), writes a table to the run summary (and, with `FREE_TIERS_JSON` set, the same rows as JSON, kept as the run's `free-tier-usage` artifact for pane), and fails when any reaches its warning level |
+| `billing-check.sh all` | Daily, from the **Billing check** job of [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), in the `infra` environment | With read-only billing credentials, fails on a payment method or paid subscription on Cloudflare, any GitHub charge this month, or an active PostHog subscription or charge. See [Billing checks](#billing-checks) |
+| `free-tiers.sh usage` | Daily at 07:00 UTC, from [All Free Tier Usage](../../.github/workflows/all-free-tier-usage.yml), and (planned) first in the nightly run before it deploys | Reads live usage (see [Usage check](#usage-check)), rates each item green, yellow or red, writes a table to the run summary (and, with `FREE_TIERS_JSON` set, the same rows as JSON, kept as the run's `free-tier-usage` artifact for pane), warns on yellow and fails on red |
 
 `free-tiers.sh` reads its free limits and budgets (`pages_projects`,
-`workers`, `cron_triggers`, `github_cache_bytes`, `github_artifact_bytes`)
+`workers`, `cron_triggers`, `d1_databases`, `d1_storage_bytes`,
+`d1_rows_read_per_day`, `d1_rows_written_per_day`,
+`workers_requests_per_day`, `github_cache_bytes`, `github_artifact_bytes`)
 from [`limits.toml`](../radar/limits.toml). Budgets can be lowered with
 environment variables (`FREE_TIERS_PAGES_PROJECTS_BUDGET`,
 `FREE_TIERS_WORKERS_BUDGET`, `FREE_TIERS_CRON_TRIGGERS_BUDGET`), never
@@ -219,7 +251,7 @@ blip in [`radar.json`](../radar/radar.json) has a `billing` entry saying how
 it is checked, and `radar.sh check` fails an Adopt or Trial vendor with no
 check (RAD-007). The table is in the
 [tech radar](tech-radar.md#billing-checks), and each weekly run's summary
-lists every vendor. Where a vendor's API shows billing, a read-only credential checks it weekly
+lists every vendor. Where a vendor's API shows billing, a read-only credential checks it daily
 ([`billing-check.sh`](../scripts/billing-check.sh), the **Billing check**
 job of All Free Tier Usage). Each credential can read billing but never add
 a card, change a plan or spend, and each is a secret of the `infra`
@@ -256,7 +288,9 @@ files in the root [issues/human/](../../issues/human/):
   and GitHub's Actions budget is $0 with "stop usage" on. Cloudflare and
   PostHog only until the Billing check shows them checked.
 - The `CLOUDFLARE_API_TOKEN` secret has no Billing permission. For the
-  usage check it needs Pages read (it already has Pages edit) and Workers
-  Scripts read. Infra Mint makes it as `jimhillr-deploy` with Workers
+  usage check it needs Pages read (it already has Pages edit), Workers
+  Scripts read, D1 read (it has D1 edit), Account Analytics read (it has
+  it) and, still to add, Workers R2 Storage read
+  (`issues/cost-tracking-phase-1-r2-read.md`). Infra Mint makes it as `jimhillr-deploy` with Workers
   Scripts write, which the `telemetry` and `tofu_state` deploys need.
 - The RapidAPI Zillow plan is the free one, and its monthly quota.
