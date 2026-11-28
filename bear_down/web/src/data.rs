@@ -263,6 +263,79 @@ pub fn timestamp(rfc3339: &str) -> String {
     }
 }
 
+/// `archive/index.json`: the past weeks whose guides the site has rebuilt
+/// ([archive plan](../../docs/plans/2026-11-archive.md)). Each week's guide
+/// is `archive/<season>-week-<nn>.json`, in the `rooting.json` format.
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct ArchiveIndex {
+    pub weeks: Vec<ArchiveWeek>,
+}
+
+/// One past week in the archive.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ArchiveWeek {
+    pub season: u16,
+    pub week: u8,
+}
+
+impl ArchiveIndex {
+    pub fn parse(json: &str) -> Result<Self, String> {
+        serde_json::from_str(json).map_err(|e| format!("archive/index.json is not valid: {e}"))
+    }
+
+    /// The weeks to offer, newest first, once each, leaving out `current`
+    /// (the week the live guide shows).
+    pub fn newest_first(&self, current: Option<ArchiveWeek>) -> Vec<ArchiveWeek> {
+        let mut weeks: Vec<ArchiveWeek> = self
+            .weeks
+            .iter()
+            .copied()
+            .filter(|week| Some(*week) != current)
+            .collect();
+        weeks.sort_unstable_by(|a, b| b.cmp(a));
+        weeks.dedup();
+        weeks
+    }
+}
+
+impl ArchiveWeek {
+    /// The week's guide, as in `/archive/2026-week-07.json`.
+    pub fn path(self) -> String {
+        format!("/archive/{}-week-{:02}.json", self.season, self.week)
+    }
+
+    /// The picker's value for the week, as in `2026-07`.
+    pub fn value(self) -> String {
+        format!("{}-{:02}", self.season, self.week)
+    }
+
+    /// The week a picker value names; `None` for anything else, such as
+    /// the empty "this week" value.
+    pub fn from_value(value: &str) -> Option<Self> {
+        let (season, week) = value.split_once('-')?;
+        Some(Self {
+            season: season.parse().ok()?,
+            week: week.parse().ok().filter(|week| *week >= 1)?,
+        })
+    }
+
+    /// "Week 7, 2026 season".
+    pub fn label(self) -> String {
+        format!("Week {}, {} season", self.week, self.season)
+    }
+}
+
+impl Rooting {
+    /// The week this guide is for, as an archive entry; `None` once the
+    /// regular season is over.
+    pub fn archive_week(&self) -> Option<ArchiveWeek> {
+        self.week.map(|week| ArchiveWeek {
+            season: self.season,
+            week,
+        })
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -466,5 +539,47 @@ mod tests {
         assert!(!r.bears_eliminated());
         r.bears.odds.playoffs = 0.0;
         assert!(r.bears_eliminated());
+    }
+    #[test]
+    fn archive_weeks_are_offered_newest_first_without_the_current_one() {
+        let index = match ArchiveIndex::parse(
+            r#"{"weeks":[{"season":2026,"week":2},{"season":2026,"week":11},{"season":2025,"week":18},{"season":2026,"week":2},{"season":2026,"week":12}]}"#,
+        ) {
+            Ok(index) => index,
+            Err(error) => panic!("index should parse: {error}"),
+        };
+        let week = |season, week| ArchiveWeek { season, week };
+        assert_eq!(
+            index.newest_first(Some(week(2026, 12))),
+            vec![week(2026, 11), week(2026, 2), week(2025, 18)]
+        );
+        assert_eq!(index.newest_first(None).len(), 4);
+        assert!(ArchiveIndex::parse("<!doctype html>").is_err());
+    }
+
+    #[test]
+    fn archive_weeks_name_their_files_and_picker_values() {
+        let week = ArchiveWeek {
+            season: 2026,
+            week: 7,
+        };
+        assert_eq!(week.path(), "/archive/2026-week-07.json");
+        assert_eq!(week.value(), "2026-07");
+        assert_eq!(week.label(), "Week 7, 2026 season");
+        assert_eq!(ArchiveWeek::from_value("2026-07"), Some(week));
+        assert_eq!(ArchiveWeek::from_value(""), None);
+        assert_eq!(ArchiveWeek::from_value("2026-00"), None);
+        assert_eq!(ArchiveWeek::from_value("week"), None);
+        let rooting = match Rooting::parse(SAMPLE) {
+            Ok(rooting) => rooting,
+            Err(error) => panic!("sample should parse: {error}"),
+        };
+        assert_eq!(
+            rooting.archive_week(),
+            Some(ArchiveWeek {
+                season: 2026,
+                week: 12
+            })
+        );
     }
 }

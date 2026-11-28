@@ -104,6 +104,20 @@ A swing object has:
 }
 ```
 
+## The archive
+
+The site also serves past weeks' guides for the archive
+([plan](plans/2026-11-archive.md)), each in this same format:
+
+- `archive/<season>-week-<nn>.json`, such as `archive/2026-week-07.json`:
+  the guide `bear_down --week <n> --season <year>` writes, so its `week` is
+  that week.
+- `archive/index.json`: the weeks there are, as
+  `{"weeks": [{"season": 2026, "week": 7}, ...]}`. Order doesn't matter.
+  The page reads it (`ArchiveIndex` in `web/src/data.rs`), lists the weeks
+  newest first without the current one, and shows no picker when the file
+  is missing or isn't valid.
+
 ## Running the CLI
 
 From `bear_down/`:
