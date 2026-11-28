@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T11:40:41.967527308Z",
+  "generated_at": "2026-11-28T11:42:10.752819776Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -259,7 +259,7 @@
           "priority": "must",
           "verdict": "not-met",
           "reasons": [
-            "live-game-wasm failed in cd at 2026-11-28 04:25:07.843728636 UTC"
+            "live-game-wasm failed in cd at 2026-11-28 11:41:20.784305680 UTC"
           ]
         },
         {
