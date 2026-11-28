@@ -176,6 +176,8 @@ work. Sources: [llmstxt.org](https://llmstxt.org/), Lighthouse's
   The list lives once in `standards/web.toml`, and the build writes it into
   each site's `robots.txt`, so a change is one edit. The site check fails a
   `robots.txt` that doesn't match it.
+  Jim asked for the stance to be re-evaluated on the product roadmaps
+  (`issues/web-standard-reevaluate-training-crawlers.md`).
 - **WEB-207: Agentic Browsing score at least 90.** Lighthouse's Agentic
   Browsing category scores at least 0.9. It is asserted as a **warning**
   while Google calls the category experimental; then it fails like the
