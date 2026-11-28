@@ -1,6 +1,6 @@
 # Plan: native sign-in in auth_sdk
 
-Status: phase 1 done, 2026-11-27. Asked for so cahokia's desktop and mobile
+Status: phases 1 and 2 done, 2026-11-28. Asked for so cahokia's desktop and mobile
 Login buttons (the `TODO`s in `cahokia/desktop/src/main.rs` and
 `cahokia/mobile/src/main.rs`) can sign in with the same Auth0 tenant as the
 web app.
@@ -53,7 +53,13 @@ So most of the work is shared with the browser flow. Only "open a URL" and
   [Are port wildcards supported?](https://community.auth0.com/t/are-port-wildcards-supported-pkce-for-desktop-apps/34132)
   and [Allow wildcard port as per RFC 8252](https://community.auth0.com/t/allow-wildcard-port-in-redirect-uri-as-per-rfc-8252/98409)).
   So the listener tries a short, fixed list of ports, all registered on the
-  Auth0 application, and uses the first free one. Phase 3 checks whether
+  Auth0 application, and uses the first free one: `DEFAULT_PORTS`, 53682 to
+  53685 (phase 2). It binds `127.0.0.1` only, answers one `GET /callback`
+  with a "you can close this tab" page and a 404 to anything else, gives up
+  after a timeout (five minutes by default), and closes the port as soon as
+  the callback arrives. Each connection gets its own task with a short read
+  timeout, so a browser's speculative preconnect that never sends can't
+  block the real callback. Phase 3 checks whether
   Auth0 has since relaxed this; if it has, the list shrinks to port 0.
 - **Tokens stay in memory** until phase 6. Staying signed in across
   restarts needs a refresh token in the OS keychain, which is its own
@@ -66,7 +72,7 @@ Each phase is an issue file with the `Native sign-in` epic.
 | Phase | What | Where | Issue |
 | --- | --- | --- | --- |
 | 1 | Shared `flow`, `NativeAuthClient`, tests with a fake provider | auth_sdk | done in this PR |
-| 2 | Loopback listener and system browser for desktop | auth_sdk | [native-sign-in-phase-2-loopback.md](../../issues/native-sign-in-phase-2-loopback.md) |
+| 2 | Loopback listener and system browser for desktop | auth_sdk | done: `native::loopback` |
 | 3 | A native Auth0 application for cahokia, through IaC | infra | [native-sign-in-phase-3-auth0-native-app.md](../../../infra/issues/native-sign-in-phase-3-auth0-native-app.md) |
 | 4 | cahokia desktop Login button signs in | cahokia/desktop | [native-sign-in-phase-4-desktop-login.md](../../../cahokia/desktop/issues/native-sign-in-phase-4-desktop-login.md) |
 | 5 | cahokia mobile Login with a custom URL scheme | cahokia/mobile | [native-sign-in-phase-5-mobile-login.md](../../../cahokia/mobile/issues/native-sign-in-phase-5-mobile-login.md) |
