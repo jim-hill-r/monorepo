@@ -1,6 +1,8 @@
 {
   "details": {
     "address": "123 Main St, Seattle, WA 98101",
+    "matched_address": "123 Main St, Seattle, WA 98101",
+    "zpid": 48749425,
     "price": 750000,
     "bedrooms": 3,
     "bathrooms": 2.5,

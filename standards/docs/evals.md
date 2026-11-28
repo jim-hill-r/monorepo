@@ -158,7 +158,7 @@ Each kind adds its own fields. The engine doesn't run `cargo`, `playwright`,
 | `playwright` | Playwright JSON reporter results | `grep` (optional, defaults to `@req:<ID>`) | `@req:COOK-001` in the test title, alongside tags such as `@smoke` |
 | `trycmd` | CLI transcript tests, from the `Testing <case> ... ok` lines trycmd prints inside the saved `cargo test` output | `glob` (optional, defaults to `tests/cmd/<ID>-*.toml`; `*` matches within one path segment) | Case file named `tests/cmd/COOK-001-<what>.toml` |
 | `script` | A Bevy scripted run | `script`, `check` | A named check in the script file |
-| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains`, `asset_contains` (see [Checking a live page](#checking-a-live-page)) and `max_ms` (the slowest acceptable response, body included) | Declared inline |
+| `http` | One request | `url` (or `path`, joined to `DEPLOY_URL`), `method` (default `GET`; a `HEAD` reply's body is never read, so pair it with `status` or `header`, not `body_contains`), `status` (default 200), optional `header` (`"name: value"`: the value contains it, ignoring case), `body_contains`, `asset_contains` (see [Checking a live page](#checking-a-live-page)) and `max_ms` (the slowest acceptable response, body included) | Declared inline |
 | `metric` | A query against observability data | `source` (`web-analytics`, `analytics-engine`, `posthog`, `github`), `metric`, `min` and/or `max`, `window` (`1h`, `7d`, ...) | Declared inline |
 | `fault` | A Playwright test run with a fault injected | `fault` (a name from the plan's fault catalogue), `grep` | `@req:<ID>` in the test title |
 | `judge` | An agent grades the live product | `rubric`: what passes and what fails, in plain words | Declared inline |
@@ -254,7 +254,9 @@ to `main` and nightly CI), through the shared tasks and
    `$EVALS_RESULTS`. A project with no `evals.toml` collects nothing. A
    sub-project's job (`cookbook/web`), or a top-level project that has
    sub-projects, passes `--partial`, so it reports only the evals its own
-   tests cover; each part's job reports its share.
+   tests cover; each part's job reports its share. A build that fails
+   before its tests run fails the `cargo` and `trycmd` evals it hid
+   ("build failed: ..."), partial or not.
 3. The workflow then writes the job summary table (`evals.sh publish`) and
    uploads the results file as a 14-day `evals-results-<project>` artifact.
 4. On pushes to `main` and nightly CI (never pull requests, whose results

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { pageReady } from './nav';
 import AxeBuilder from '@axe-core/playwright';
 
 /**
@@ -17,7 +18,7 @@ import AxeBuilder from '@axe-core/playwright';
 test.describe('Accessibility', { tag: ['@req:COOK-005', '@smoke'] }, () => {
   test('home page should have no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -28,7 +29,7 @@ test.describe('Accessibility', { tag: ['@req:COOK-005', '@smoke'] }, () => {
 
   test('recipe page should have no critical accessibility violations', async ({ page }) => {
     await page.goto('/recipe/1');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -39,7 +40,7 @@ test.describe('Accessibility', { tag: ['@req:COOK-005', '@smoke'] }, () => {
 
   test('plan page should have no critical accessibility violations', async ({ page }) => {
     await page.goto('/plan/1');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -50,7 +51,7 @@ test.describe('Accessibility', { tag: ['@req:COOK-005', '@smoke'] }, () => {
 
   test('404 page should have no critical accessibility violations', async ({ page }) => {
     await page.goto('/invalid-route');
-    await page.waitForLoadState('networkidle');
+    await pageReady(page);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])

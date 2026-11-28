@@ -6,6 +6,10 @@
 
 A reading education application built with Dioxus that provides comprehensive reading instruction and support for learners of all ages.
 
+## User guide
+
+How to run the app and find your way around it: [docs/user/README.md](docs/user/README.md).
+
 ## About
 
 Blue Eel is inspired by the mission of blue.eel.education to help everyone develop strong reading skills. The application offers:

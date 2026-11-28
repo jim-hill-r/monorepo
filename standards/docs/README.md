@@ -27,6 +27,7 @@ This directory contains development standards and guidelines for the monorepo.
 - [Toolchain](./toolchain.md) - Toolchain management and requirements
 - [Tech radar](./tech-radar.md) - Every approved, evaluated and held technology and vendor, with exemplar projects
 - [TypeScript](./typescript.md) - TypeScript coding standards
+- [Websites](./web.md) - Search (SEO), AI agent readiness and web performance rules (WEB-1xx to WEB-4xx) for every site we deploy, checked by Lighthouse CI and `chores site-check`
 
 ---
 

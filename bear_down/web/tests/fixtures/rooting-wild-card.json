@@ -1,0 +1,334 @@
+{
+  "generated_at": "2026-11-28T11:09:04Z",
+  "season": 2020,
+  "week": 18,
+  "round": "wild_card",
+  "simulations": 4000,
+  "latest_game": {
+    "id": "2020_17_WAS_PHI",
+    "gameday": "2021-01-03",
+    "away": "WAS",
+    "home": "PHI",
+    "away_score": 20,
+    "home_score": 14
+  },
+  "bears": {
+    "record": {
+      "wins": 8,
+      "losses": 8,
+      "ties": 0
+    },
+    "odds": {
+      "playoffs": 1.0,
+      "divisional_round": 0.20775,
+      "conference_game": 0.04475,
+      "super_bowl": 0.01375,
+      "champion": 0.0035
+    },
+    "division_lead": -5.0,
+    "division_rival": "GB"
+  },
+  "banner": null,
+  "nfc_north_divisional": 0.0,
+  "games": [
+    {
+      "id": "2020_18_IND_BUF",
+      "gameday": "2021-01-09",
+      "away": "IND",
+      "home": "BUF",
+      "home_win_probability": 0.6986236680328497,
+      "champion": {
+        "if_home_wins": 0.003375,
+        "if_away_wins": 0.003875,
+        "swing": -0.0005,
+        "std_error": 0.0002164702635467514,
+        "root_for": "IND",
+        "tier": "small",
+        "why": [
+          "An AFC playoff game: the winner could be the Bears' Super Bowl opponent, and a Colts win leaves them a better one on average.",
+          "A small edge: a Colts win is better by 0.050 give or take 0.022 Super Bowl points, close to the 0.05-point line.",
+          "Super Bowl opponent (who wins the AFC): a Colts win helps the Bears by 0.050 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "super_bowl_opponent",
+            "cause": null,
+            "favors": "IND",
+            "share": 0.0005,
+            "std_error": 0.0002164702635467514,
+            "seasons": 0.57175
+          }
+        ]
+      },
+      "playoffs": {
+        "if_home_wins": 1.0,
+        "if_away_wins": 1.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Colts at Bills moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Colts (11-5) could still be the Super Bowl opponent and the Bills (13-3) could still be the Super Bowl opponent."
+        ],
+        "channels": []
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Colts at Bills measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
+      }
+    },
+    {
+      "id": "2020_18_LA_SEA",
+      "gameday": "2021-01-09",
+      "away": "LA",
+      "home": "SEA",
+      "home_win_probability": 0.5882510122416368,
+      "champion": {
+        "if_home_wins": 0.0035625,
+        "if_away_wins": 0.00375,
+        "swing": -0.00018749999999999973,
+        "std_error": 0.0001653528129013081,
+        "root_for": null,
+        "tier": "small",
+        "why": [
+          "Too close to call: Rams at Seahawks moves the Bears' Super Bowl odds by 0.019 give or take 0.017 Super Bowl points, near the 0.05-point line.",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Rams (10-6) are still in the NFC race and the Seahawks (12-4) are still in the NFC race."
+        ],
+        "channels": []
+      },
+      "playoffs": {
+        "if_home_wins": 1.0,
+        "if_away_wins": 1.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Rams at Seahawks moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Rams (10-6) are still in the NFC race and the Seahawks (12-4) are still in the NFC race."
+        ],
+        "channels": []
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Rams at Seahawks measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
+      }
+    },
+    {
+      "id": "2020_18_TB_WAS",
+      "gameday": "2021-01-09",
+      "away": "TB",
+      "home": "WAS",
+      "home_win_probability": 0.2285911296882558,
+      "champion": {
+        "if_home_wins": 0.0043125,
+        "if_away_wins": 0.0035,
+        "swing": 0.0008125000000000003,
+        "std_error": 0.0002252553889130624,
+        "root_for": "WAS",
+        "tier": "small",
+        "why": [
+          "An NFC playoff game: the winner stays in the Bears' bracket, and a Commanders win leaves them a better path.",
+          "A small edge: a Commanders win is better by 0.081 give or take 0.023 Super Bowl points, close to the 0.05-point line.",
+          "NFC bracket (who advances, and who the Bears could face): a Commanders win helps the Bears by 0.081 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "bracket",
+            "cause": null,
+            "favors": "WAS",
+            "share": 0.0008125,
+            "std_error": 0.0002252553889130624,
+            "seasons": 1.0
+          }
+        ]
+      },
+      "playoffs": {
+        "if_home_wins": 1.0,
+        "if_away_wins": 1.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Buccaneers at Commanders moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Buccaneers (11-5) are still in the NFC race and the Commanders (7-9) are still in the NFC race."
+        ],
+        "channels": []
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Buccaneers at Commanders measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
+      }
+    },
+    {
+      "id": "2020_18_BAL_TEN",
+      "gameday": "2021-01-10",
+      "away": "BAL",
+      "home": "TEN",
+      "home_win_probability": 0.39734592239681255,
+      "champion": {
+        "if_home_wins": 0.00325,
+        "if_away_wins": 0.003125,
+        "swing": 0.00012499999999999968,
+        "std_error": 0.00012499218725584412,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Ravens at Titans moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0.012 give or take 0.012 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Ravens (11-5) could still be the Super Bowl opponent and the Titans (11-5) could still be the Super Bowl opponent."
+        ],
+        "channels": []
+      },
+      "playoffs": {
+        "if_home_wins": 1.0,
+        "if_away_wins": 1.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Ravens at Titans moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Ravens (11-5) could still be the Super Bowl opponent and the Titans (11-5) could still be the Super Bowl opponent."
+        ],
+        "channels": []
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Ravens at Titans measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
+      }
+    },
+    {
+      "id": "2020_18_CHI_NO",
+      "gameday": "2021-01-10",
+      "away": "CHI",
+      "home": "NO",
+      "home_win_probability": 0.7932768824873696,
+      "champion": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.018,
+        "swing": -0.018,
+        "std_error": 0.002102141764962582,
+        "root_for": "CHI",
+        "tier": "matters",
+        "why": [
+          "The Bears' own playoff game: a win over the Saints keeps their season going.",
+          "NFC bracket (who advances, and who the Bears could face): a Bears win helps the Bears by 1.8 Super Bowl points."
+        ],
+        "channels": [
+          {
+            "channel": "bracket",
+            "cause": null,
+            "favors": "CHI",
+            "share": 0.018,
+            "std_error": 0.002102141764962582,
+            "seasons": 1.0
+          }
+        ]
+      },
+      "playoffs": {
+        "if_home_wins": 1.0,
+        "if_away_wins": 1.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Bears at Saints moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Bears play in it and the Saints (12-4) are still in the NFC race."
+        ],
+        "channels": []
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Bears at Saints measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
+      }
+    },
+    {
+      "id": "2020_18_CLE_PIT",
+      "gameday": "2021-01-10",
+      "away": "CLE",
+      "home": "PIT",
+      "home_win_probability": 0.6449594054188141,
+      "champion": {
+        "if_home_wins": 0.00325,
+        "if_away_wins": 0.00325,
+        "swing": 0.0,
+        "std_error": 0.00017677669529663688,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Browns at Steelers moves the Bears' Super Bowl odds by under 0.05 points (the difference, 0 give or take 0.018 Super Bowl points, is within the simulation's noise).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Browns (11-5) could still be the Super Bowl opponent and the Steelers (12-4) could still be the Super Bowl opponent."
+        ],
+        "channels": []
+      },
+      "playoffs": {
+        "if_home_wins": 1.0,
+        "if_away_wins": 1.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: Browns at Steelers moves the Bears' playoff odds by under 0.05 points (no simulated season came out differently for the Bears).",
+          "How it could reach the Bears, though too slightly to show up in the simulation: the Browns (11-5) could still be the Super Bowl opponent and the Steelers (12-4) could still be the Super Bowl opponent."
+        ],
+        "channels": []
+      },
+      "nfc_north": {
+        "if_home_wins": 0.0,
+        "if_away_wins": 0.0,
+        "swing": 0.0,
+        "std_error": 0.0,
+        "root_for": null,
+        "tier": "negligible",
+        "why": [
+          "Doesn't matter: neither result of Browns at Steelers measurably moves the chance that all four NFC North teams reach the divisional round."
+        ],
+        "channels": []
+      }
+    }
+  ]
+}

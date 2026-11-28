@@ -452,6 +452,22 @@
     "budget": 0
   },
   {
+    "name": "Lighthouse CI",
+    "ring": "Assess",
+    "quadrant": "Tools",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Proposed in decision 0028: @lhci/cli (pinned) runs Lighthouse's performance, SEO, accessibility and Agentic Browsing audits in GitHub Actions on the runner's Chrome, on each site's build in PR CI and on the live site after deploy, with assertions per site (standards/docs/web.md). Reports stay as Actions artifacts, never temporary-public-storage. PageSpeed Insights API, Unlighthouse, sitespeed.io and Cloudflare Observatory were compared.",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0028-web-checks.md",
+      "standards/docs/web.md",
+      "https://github.com/GoogleChrome/lighthouse-ci"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
     "name": "Marp",
     "ring": "Adopt",
     "quadrant": "Tools",
@@ -1282,6 +1298,37 @@
       "standards/docs/decisions/0007-infrastructure-as-code.md",
       "standards/docs/decisions/0007-terrars-spike.md",
       "standards/docs/infra.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "WebMCP",
+    "ring": "Assess",
+    "quadrant": "Languages & Frameworks",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Browser API for a page to register tools and declarative forms that AI agents can call; Lighthouse 13 checks it. Too new to require; worth trying in an interactive app (web.md WEB-208).",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0028-web-checks.md",
+      "standards/docs/web.md"
+    ],
+    "claude": "",
+    "budget": 0
+  },
+  {
+    "name": "Cloudflare Markdown for Agents",
+    "ring": "Hold",
+    "quadrant": "Platforms",
+    "isNew": "TRUE",
+    "kind": "technology",
+    "description": "Cloudflare converts HTML to Markdown for clients that ask for text/markdown, but only on Pro plans and up and only for zones, so not for our free *.pages.dev sites. We build our own .md copies instead (web.md WEB-203).",
+    "exemplars": [],
+    "sources": [
+      "standards/docs/decisions/0028-web-checks.md",
+      "standards/docs/web.md",
+      "https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/"
     ],
     "claude": "",
     "budget": 0

@@ -1,0 +1,2 @@
+output write(x) { return x + 1 }
+function main() { return write(41) }

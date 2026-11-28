@@ -6,6 +6,8 @@
 #            standards/tasks/<type>.toml, and that file exists.
 #   STD-003  Every shared task file defines the standard tasks.
 #   STD-004  The root mise.toml lists every project in [monorepo].config_roots.
+#   STD-005  No tracked file holds an unresolved merge conflict marker
+#            (`chores conflict-markers`, Rust).
 #   NAM-001  Project directory names are snake_case.
 #   NAM-002, NAM-004, DOC-*, LIN-*  Package names, README.md and
 #            CONTRIBUTING.md, Cargo lints (project-check.sh); DOC-* and
@@ -84,12 +86,14 @@ if command -v cargo >/dev/null 2>&1; then
   "${chores[@]}" user-docs || errors=$((errors + 1))
   # DOC-009: plans live in a project's docs/plans/ (standards/docs/documentation.md#plans).
   "${chores[@]}" plans-check || errors=$((errors + 1))
+  # STD-005: no unresolved merge conflict markers in tracked files.
+  "${chores[@]}" conflict-markers || errors=$((errors + 1))
   # QUAL-404: no new shell scripts (standards/shell-scripts.toml).
   "${chores[@]}" shell-scripts || errors=$((errors + 1))
   # EVL-*: requirements and evals. Warnings only; never fails the audit.
   "${chores[@]}" evals-check || true
 else
-  echo "warning: user docs, shell script, evals and threat checks skipped: cargo is not installed"
+  echo "warning: user docs, conflict marker, shell script, evals and threat checks skipped: cargo is not installed"
 fi
 
 # COST-*: per-project cost analyses against the budgets. Warnings only.

@@ -82,6 +82,14 @@ See [standards/docs/plans/2026-11-resource-cleanup.md](../standards/docs/plans/2
 (approved by Jim, 2026-11-26; Part 6 and phase 5, onboarding every live
 resource to IaC, added in PR #674). One group per phase.
 
+## Web standard
+
+Goal: every deployed site meets [web.md](../standards/docs/web.md) (search,
+agents, performance), checked by Lighthouse CI and `chores site-check`
+([decision 0028](../standards/docs/decisions/0028-web-checks.md)). Phase 1
+lists the sites; phases 2 and 3 add the checks as warnings with a baseline
+per site. Each site's own fixes are issue files in its project.
+
 ## Review roles
 
 See [decision 0019](../standards/docs/decisions/0019-review-roles.md): who
