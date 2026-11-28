@@ -81,3 +81,24 @@ add pages: it puts a summary on top of them and makes the rest drill-downs.
   ([keep-last-14-daily-health-results](../issues/keep-last-14-daily-health-results.md)).
 - **Telemetry routes** for the observability scorecard
   ([api-telemetry-routes-query-analytics-engine](../issues/api-telemetry-routes-query-analytics-engine.md)).
+
+## Cost at scale
+
+Projects now: 27 (`ls */docs/cost.toml | wc -l`, 2026-11-28). Pane is one
+site for the whole repo, so "implemented everywhere" means every project
+shows up in its dashboard, not that each project runs its own pane.
+
+| Scale | Projects | Money a month | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 27 | $0 | Workers static asset size: `snapshot.json` is 2.2 MB of the 25 MiB per-file limit (9%) | 4 PRs once (the Simple dashboard issues), about $3 of the $25 budget, then $0 a month |
+| 5x | 135 | $0 | Workers static asset size, about 11 MB of 25 MiB (45%) | Same 4 PRs once; scorecards cover new projects without new code |
+| 100x | 2,700 | $0 | Workers static asset size, about 220 MB, past the 25 MiB limit | One more PR to split the snapshot into a file per project, then $0 a month |
+
+Why the money stays $0: the badge images are GitHub's, served free, and
+the badges are per check, not per project, so their number barely grows.
+The snapshot is built in CI on a public repository (unlimited Actions
+minutes) and served as static assets, which Workers serves free and
+without counting requests. What gives first is the size of the one
+snapshot file: before 25 MiB (around 250 projects) pane splits it into a
+summary file and one file per project, loaded on drill-down, which also
+keeps the top-level dashboard fast. Nothing here needs a paid plan.
