@@ -96,8 +96,10 @@ ruleset.
 Runs when a pull request is opened, edited, reopened, pushed to or marked ready, and
 warns (PR-001, `mise run //:pr-summary`, `standards/scripts/pr-summary-check.sh`)
 when its description is missing a section (Attention, What changed, Why,
-Cost changes, Risk changes, Details), has an unknown attention tag, or has a
-summary over its word limit ("Pull request descriptions" in
+Cost changes, Risk changes, Details), has an unknown attention tag, has a
+summary over its word limit, or changes a plan or decision (from the merge
+commit's diff, so it checks out two commits) without the Now, 5x and 100x
+cost estimates ("Pull request descriptions" in
 [standards/docs/pull-requests.md](../../standards/docs/pull-requests.md)).
 Warnings only, so it never fails and CI result doesn't wait for it. It runs
 on edits, so fixing the description clears the warning without re-running

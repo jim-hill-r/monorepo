@@ -23,7 +23,7 @@ See "Pull request descriptions" in standards/docs/pull-requests.md.
 
 ## Cost changes
 
-<Under 25 words: money, free-tier usage or Claude budget this changes, or "None.">
+<Under 25 words: money, free-tier usage or Claude budget this changes, or "None.". A PR that adds or edits a plan or decision names its cost Now, at 5x and at 100x the projects instead (standards/docs/cost.md, "Cost at scale").>
 
 ## Risk changes
 

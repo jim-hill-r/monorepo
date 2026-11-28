@@ -6,6 +6,10 @@ supersede an earlier one. Decisions that belong to one project live in that
 project's own `docs/decisions/` folder (for example
 [bear_down](../../../bear_down/docs/decisions/README.md)).
 
+Every new record has a `## Cost at scale` section: the decision's cost as
+implemented across all current projects, and at 5x and 100x as many
+(Jim, 2026-11-28; ["Cost at scale"](../cost.md#cost-at-scale-plans-and-decisions)).
+
 Earlier repo-wide decisions about the move to mise are listed in
 [../mise.md](../mise.md#decisions).
 

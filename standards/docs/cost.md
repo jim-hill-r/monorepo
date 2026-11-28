@@ -233,6 +233,60 @@ The free limits and budgets themselves live in
 [free-tiers.md](free-tiers.md) are generated from it (`mise run fix` in
 `standards`), and `standards` CI fails when they differ.
 
+## Cost at scale (plans and decisions)
+
+Jim, 2026-11-28: "A lot of plan PR say cost is zero, but in a planning pr,
+it should estimate the cost as implemented by all current projects and if
+we had 5x more projects and 100x more projects." So every plan and decision
+record (Markdown in a `plans/` or `decisions/` folder) has a
+`## Cost at scale` section, and the PR that adds or edits one gives the
+three figures in its Cost changes section (PR-001 warns when `Now`, `5x`
+or `100x` is missing; see
+[pull-requests.md](pull-requests.md#pull-request-descriptions)).
+
+- **Projects now** are the top-level folders with a `docs/cost.toml`: 27
+  on 2026-11-28, so 5x is 135 and 100x is 2,700. Count them again when you
+  write the estimate (`ls */docs/cost.toml | wc -l`).
+- **Implemented everywhere:** estimate the plan as if every current
+  project adopted it, even when it starts in one. Per-project usage grows
+  with the project count unless the plan says why not, and per-account
+  limits (one Cloudflare account, one GitHub repository, the Claude budget)
+  are shared by every project.
+- **Each row** gives the money a month, the free limit that binds first
+  and how much of it is used ([limits.toml](../radar/limits.toml),
+  [free-tiers.md](free-tiers.md)), and the Claude Code effort (build once,
+  then a month) against the $25 a month budget. When a free limit runs out
+  at a scale, say which plan would replace it and its price; the plan
+  stops there rather than pays (the free tiers rule in
+  [AGENTS.md](../../AGENTS.md)).
+- **"$0" is a result, not an estimate.** Write why it stays $0 at that
+  scale, such as "Actions minutes are unlimited on a public repository".
+- **Estimates are not spend.** They live only in plans, decisions and PR
+  descriptions: never in the financial ledger, which books only actual
+  spend ([money.md](money.md)), and not in a project's `docs/cost.toml`,
+  which holds the expected usage of what is built today.
+
+A section to copy (the figures are only an example):
+
+```markdown
+## Cost at scale
+
+Projects now: 27 (`ls */docs/cost.toml | wc -l`, 2026-11-28).
+
+| Scale | Projects | Money a month | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 27 | $0 | Actions cache, 3 of 10 GB (30%) | 3 PRs once, then about $0.50 a month |
+| 5x | 135 | $0 | Actions cache, 9 of 10 GB (90%) | 3 PRs once, then about $2 a month |
+| 100x | 2,700 | $5 (Workers Paid) | Workers requests, past 100,000 a day | 3 PRs once, then about $40 a month, over budget |
+
+What gives first as it grows, and what we would do then: ...
+```
+
+In the PR, under 25 words, for example: `Now: $0. 5x: $0 (cache 90%).
+100x: $5/mo, Workers Paid. [Cost at scale](plans/x.md#cost-at-scale).`
+Estimates alone don't make a PR `cost-changed`; that tag still comes from
+the cost files it changes.
+
 ## Cost approval
 
 Any expense, however small, is Jim's decision (the vendor and free-tier

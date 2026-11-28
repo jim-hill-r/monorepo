@@ -28,7 +28,8 @@ c next-task --json
 
 # A PR description in the shape pull-requests.md asks for, checked against
 # PR-001 (exit 1 with the warnings when a section is missing or empty, an
-# attention tag is unknown, or a summary is over its word limit).
+# attention tag is unknown, a summary is over its word limit, or the branch
+# adds or edits a plan or decision and --cost doesn't name Now, 5x and 100x).
 c pr-body --login jimhillr-agt --requested-by Jim --thread-url <url> \
   --what "At most 50 words." --why "At most 50 words." \
   --cost "Under 25 words (default None.)" --risk "Under 25 words (default None.)" \
