@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T01:24:49.041736314Z",
+  "generated_at": "2026-11-28T01:32:48.985779762Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
@@ -721,7 +721,7 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "snapshot-reviews-live failed in cd at 2026-11-28 01:24:07.484488153 UTC"
+            "snapshot-reviews-live failed in cd at 2026-11-28 01:28:59.044001309 UTC"
           ]
         },
         {
@@ -901,54 +901,58 @@
           "requirement": "SPRK-001",
           "title": "A learner can start practising straight away",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "first-session-judged has no judge results yet",
+            "home-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-002",
           "title": "Every letter is shown being written before the learner tries it",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "app-loads-live failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "app-loads-live failed 3 of its last 7 cd runs",
+            "demonstrations-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-003",
           "title": "A tracing is checked fairly",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "tracing-page-live failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "tracing-judged has no judge results yet",
+            "tracing-page-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-004",
           "title": "Learners move from letters to words to capitals",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "capital-level-live failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "capital-level-live failed 3 of its last 7 cd runs"
           ]
         },
         {
           "requirement": "SPRK-005",
           "title": "Each learner's progress is kept on their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "home-page-live-for-progress failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "home-page-live-for-progress failed 3 of its last 7 cd runs",
+            "progress-judged has no judge results yet"
           ]
         },
         {
           "requirement": "SPRK-006",
           "title": "Nothing a learner types or draws leaves their device",
           "priority": "must",
-          "verdict": "not-met",
+          "verdict": "at-risk",
           "reasons": [
-            "connects-only-to-itself-live failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "connects-only-to-itself-live failed 3 of its last 7 cd runs"
           ]
         },
         {
@@ -957,9 +961,9 @@
           "priority": "should",
           "verdict": "at-risk",
           "reasons": [
-            "home-screen-icon-live failed in cd at 2026-11-28 01:04:39.706589313 UTC",
-            "manifest-live failed in cd at 2026-11-28 01:04:39.706589313 UTC",
-            "no-zoom-live failed in cd at 2026-11-28 01:04:39.706589313 UTC"
+            "home-screen-icon-live failed 3 of its last 7 cd runs",
+            "manifest-live failed 3 of its last 7 cd runs",
+            "no-zoom-live failed 3 of its last 7 cd runs"
           ]
         },
         {
