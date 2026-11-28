@@ -114,13 +114,11 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// The `Human review` check (PR-004): a PR with a red attention tag or a
+    /// The `human-review` label (PR-004): a PR with a red attention tag or a
     /// cost change, from its diff, its description or the `cost` label,
     /// passes only once a human (not an `-agt` account, the reviewer account
     /// or a bot) has approved its head commit.
-    /// Prints "pass: ...", "wait: ..." (pending a human) or "block: ..."
-    /// (a human asked for changes); exits 1 unless it passes. `--json`
-    /// writes the commit status `state` and `description` to post.
+    /// Prints "pass: ..." or "hold: ..."; exits 1 while it holds.
     Gate {
         /// The branch the PR merges into, for the diff's tags.
         #[arg(long, default_value = "origin/main")]

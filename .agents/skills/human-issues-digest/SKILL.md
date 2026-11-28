@@ -23,7 +23,7 @@ itself.
    within the week, or
    `git log --since="7 days ago" --diff-filter=A --name-only -- issues/human/`.
 3. List open pull requests labelled `needs-human` or `human-review` (the
-   `Human review` check's hold: waiting only for a human's approval, which
+   Human review workflow's hold: waiting only for a human's approval, which
    merges it). Until PR triage has renamed it, also include PRs still
    labelled `needs-jim`. For each, note the
    number, title, how many days it has been open, and the reason it needs a
