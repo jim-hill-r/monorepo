@@ -1,0 +1,22 @@
+# Actual money spent and paid out, for the financial ledger (`cost money`,
+# standards/docs/money.md). Only real money goes here, each entry with the
+# receipt, invoice or bank record it comes from: never a budget or an
+# estimate (Jim, 2026-11-28: "A budget is not actual spend. Our accounting
+# should only count actual spend.").
+#
+# Until the project has its own bank account, Jim pays for everything
+# (paid_by = "jim"), and the ledger books it as owed back to him.
+#
+# [[spend]]
+# month = "2026-11"          # the month it serves
+# vendor = "Claude Code"     # a vendor blip in standards/radar/radar.json
+# cents = 0                  # what was actually charged, in whole cents
+# paid_by = "jim"            # "jim" or "bank"
+# source = "Anthropic receipt #..., 2026-11-.."
+# project = "cookbook"       # optional; leave out to split by merged PRs
+#
+# [[payment]]
+# month = "2027-01"
+# payee = "jim-expenses"     # jim-expenses, jim-loans, jim-salary or planet
+# cents = 0
+# source = "bank transfer ..."

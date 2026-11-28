@@ -214,6 +214,16 @@ repo, rather than in any one agent tool's settings.
   remainder. The rules are under "Accounting rules" in
   [standards/docs/cost.md](standards/docs/cost.md)
   ([decision 0016](standards/docs/decisions/0016-holding-and-handling-money.md)).
+- **Actual money only, Jim paid back (Jim, 2026-11-28).** "Until we get
+  the actual financial accounts everything will be paid by me so we should
+  have some accounting of that so I can get paid back eventually. Also, 1%
+  of all revenue should be paid to me as salary with a ceiling of 1
+  million dollars per year. 1% for the planet as well. ... A budget is not
+  actual spend. Our accounting should only count actual spend." The
+  financial ledger books only actual spend and revenue, never a budget or
+  estimate; what Jim pays is owed back to him; 1% of revenue accrues as
+  his salary (capped at $1,000,000 a year) and 1% to 1% for the Planet
+  ([money.md](standards/docs/money.md)).
 - **Products are separate companies (Jim, 2026-11-28).** "Assume
   products are owned by different companies during architecture. We
   should have shared technical platform services, just libraries and

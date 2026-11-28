@@ -1,7 +1,8 @@
 //! `cost money`: the financial ledger's statement for a month and the
-//! runway, from `standards/money/runway.toml`, every project's
-//! `docs/cost.toml`, the radar's shared budgets and the PRs merged on the
-//! checkout's first-parent history. See `standards/docs/money.md`.
+//! runway, from `standards/money/runway.toml`, the actual spend and
+//! payments in `standards/money/actuals.toml`, every project's
+//! `[[revenue]]` and the PRs merged on the checkout's first-parent history.
+//! See `standards/docs/money.md`.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -10,10 +11,11 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Datelike};
 use cost_model::{
-    Books, Month, RUNWAY_FILE, Runway, Statement, ledger, parse_radar, parse_runway_file, runway,
+    ACTUALS_FILE, Books, Month, RUNWAY_FILE, Runway, Statement, ledger, parse_actuals,
+    parse_runway_file, runway,
 };
 
-use crate::check::{self, RADAR};
+use crate::check;
 use crate::git::git;
 
 /// What `cost money` wrote.
@@ -63,23 +65,19 @@ fn write_json<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
         .with_context(|| format!("writing {}", path.display()))
 }
 
-/// Every parsed project file, the radar's shared vendor budgets and the
-/// merged PRs since `start`.
+/// Every parsed project file, the actual spend and payments, and the merged
+/// PRs since `start`.
 fn books(root: &Path, start: Month) -> Result<Books> {
-    let radar_text =
-        fs::read_to_string(root.join(RADAR)).with_context(|| format!("reading {RADAR}"))?;
-    let radar = parse_radar(&radar_text).map_err(|e| anyhow::anyhow!("{RADAR}: {e}"))?;
-    let shared = radar
-        .blips
-        .iter()
-        .filter(|b| b.is_vendor() && b.budget_cents() > 0)
-        .map(|b| (b.name.clone(), b.budget_cents()))
-        .collect();
+    let actuals = parse_actuals(
+        &fs::read_to_string(root.join(ACTUALS_FILE))
+            .with_context(|| format!("reading {ACTUALS_FILE}"))?,
+    )
+    .map_err(|e| anyhow::anyhow!("{ACTUALS_FILE}: {e}"))?;
     let names = check::projects(root)?;
     let known: BTreeSet<&str> = names.iter().map(String::as_str).collect();
     Ok(Books {
         projects: check::parsed_projects(root)?,
-        shared,
+        actuals,
         merged: merged_prs(root, start, &known)?,
     })
 }
@@ -245,9 +243,8 @@ homer/src/main.rs
         let root = dir.path();
         write(
             root,
-            RADAR,
-            r#"[{"name": "Claude Code", "ring": "Adopt", "kind": "vendor", "budget": 25},
-                {"name": "Squarespace", "ring": "Adopt", "kind": "vendor", "budget": 0}]"#,
+            ACTUALS_FILE,
+            "[[spend]]\nmonth = \"2026-11\"\nvendor = \"Claude Code\"\ncents = 2500\npaid_by = \"bank\"\nsource = \"invoice 1\"\n",
         )?;
         write(
             root,
@@ -275,12 +272,12 @@ homer/src/main.rs
             month: 11,
         };
         let written = money(root, nov, &out)?;
-        assert_eq!(written.status.balance_cents, 7500);
+        assert_eq!(written.status.position.net_cents, 7500);
         assert_eq!(written.status.status, Status::Funded);
         let path = written.statement.ok_or("no statement")?;
         assert!(path.ends_with("statements/2026-11.json"));
         let json: serde_json::Value = serde_json::from_str(&fs::read_to_string(path)?)?;
-        assert_eq!(json["closing_cents"], 7500);
+        assert_eq!(json["closing"]["bank_cents"], 7500);
         // PR 1 touched cookbook and pane, PR 2 only pane: 1/4 and 3/4.
         let shares: Vec<(String, u64)> = json["lines"]
             .as_array()
@@ -308,7 +305,7 @@ homer/src/main.rs
     fn test_money_before_the_start_writes_only_the_runway() -> TestResult {
         let dir = tempfile::tempdir()?;
         let root = dir.path();
-        write(root, RADAR, "[]")?;
+        write(root, ACTUALS_FILE, "")?;
         write(
             root,
             RUNWAY_FILE,

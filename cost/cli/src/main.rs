@@ -207,11 +207,13 @@ fn run(cli: Cli) -> Result<ExitCode> {
             }
             let r = &written.status;
             println!(
-                "cost money: wrote {}: {} after {}, balance {} cents, burn {} cents a month",
+                "cost money: wrote {}: {} after {}, net {} cents (bank {}, owed to Jim {}), burn {} cents a month",
                 written.runway.display(),
                 serde_json::to_string(&r.status)?.trim_matches('"'),
                 r.month,
-                r.balance_cents,
+                r.position.net_cents,
+                r.position.bank_cents,
+                r.position.owed_to_jim_cents,
                 r.burn_cents
             );
             Ok(ExitCode::SUCCESS)
