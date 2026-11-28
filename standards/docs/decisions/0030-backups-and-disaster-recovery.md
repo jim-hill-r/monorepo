@@ -182,6 +182,27 @@ would lose their own data with their account.
   a public repo) are recorded in `backups/docs/cost.toml` when the export
   job lands.
 
+## Cost at scale
+
+Projects now: 28 (`ls */docs/cost.toml | wc -l`, 2026-11-28, counting
+`backups`). "Implemented everywhere" means every project's D1 data is in
+the nightly export and the drill, and the repo holds every project.
+
+| Scale | Projects | Money a month | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 28 | $0 | D1 rows read, under 1,000 of 5,000,000 a day (<1%) for the nightly export of `jimhillr-tofu-state` | 2 PRs once (export job, drill, inventory check), then about $0.25 a month for drill failures |
+| 5x | 140 | $0 | D1 rows read, about 140,000 a day (3%), assuming 1,000 rows a project in decision 0021's shared D1 | 2 PRs once, then about $1 a month |
+| 100x | 2,800 | $0 | D1 rows read, about 2,800,000 a day (56%); the shared D1's 500 MB a database limit binds before backups do | 2 PRs once, then about $10 a month, 40% of the budget |
+
+Why $0 stays $0: Actions minutes and artifact storage are free on a
+public repository at any scale, encryption (age) and git are free tools,
+the offline copy is Jim's own disk (the repo is about 7 MB now, under
+1 GB at 100x), and no vendor is added. What gives first is D1 reads:
+past about 4,500 projects the nightly full export would pass 5,000,000
+rows a day, so we would export each tenant's tables on a rota (a seventh
+of them each night) rather than pay for Workers Paid. Estimates are not
+spend and never go in the financial ledger.
+
 ## Revisit
 
 - If the repo goes private: Actions artifacts and minutes count against
