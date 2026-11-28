@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-28T04:37:48.600859791Z",
+  "generated_at": "2026-11-28T11:07:38.471323296Z",
   "coverage": {
     "projects": 27,
     "projects_with_requirements": 12,
-    "percent": 13.4,
+    "percent": 13.3,
     "musts_percent": 37.5,
     "judged_percent": 16.9,
     "warn_below": 80.0,
@@ -154,9 +154,9 @@
       "musts": 2,
       "musts_in_production": 2,
       "coverage": {
-        "requirements": 7,
+        "requirements": 8,
         "met": 1,
-        "percent": 14.3,
+        "percent": 12.5,
         "musts_met": 1,
         "musts_percent": 50.0,
         "warning": true
@@ -217,6 +217,15 @@
           "requirement": "CAHO-007",
           "title": "A person can explore the tree around one relative",
           "priority": "could",
+          "verdict": "unknown",
+          "reasons": [
+            "no production-stage results yet"
+          ]
+        },
+        {
+          "requirement": "CAHO-009",
+          "title": "The iOS app signs in through the browser",
+          "priority": "should",
           "verdict": "unknown",
           "reasons": [
             "no production-stage results yet"
