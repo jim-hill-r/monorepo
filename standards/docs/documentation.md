@@ -61,6 +61,43 @@ Open the site on a phone or computer...
 If a recipe page is blank, ... Report a problem with the feedback button.
 ```
 
+## Plans and decisions
+
+Plans and decision records are Markdown next to what they are about
+(AGENTS.md): repo-wide ones in `standards/docs/plans/` and
+`standards/docs/decisions/` ([decisions README](decisions/README.md)), a
+project's in `<project>/docs/plans/` and `<project>/docs/decisions/`.
+
+Each new one has a `## Cost at scale` section: its cost as implemented across
+all current projects, and at 5x and 100x as many projects, with a row per
+scale for money a month, the tightest free limit and the Claude Code
+effort (Jim, 2026-11-28). "$0" alone is not an estimate. The rules and a
+table to copy are under
+["Cost at scale"](cost.md#cost-at-scale-plans-and-decisions), and the PR
+that adds or edits a plan or decision repeats the three figures in its
+Cost changes section. A decision record's options each carry their own
+cost too ("Cost in every decision question" in AGENTS.md).
+
+```markdown
+# <Plan title>
+
+## Goal
+
+## Design
+
+## Phases
+
+## Cost at scale
+
+| Scale | Projects | Money a month | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 27 | | | |
+| 5x | 135 | | | |
+| 100x | 2,700 | | | |
+
+## Questions for Jim
+```
+
 ## Retros
 
 A retro looks back on a piece of work (a project phase, an incident, a

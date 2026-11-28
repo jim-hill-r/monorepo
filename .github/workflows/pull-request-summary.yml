@@ -1,8 +1,9 @@
 ---
 # PR-001: warns when a pull request description is missing one of its
 # sections (Attention, What changed, Why, Cost changes, Risk changes,
-# Details), has an unknown attention tag, or has a summary over its word
-# limit (standards/docs/pull-requests.md, "Pull request descriptions"). Warnings only, so it never fails and CI
+# Details), has an unknown attention tag, has a summary over its word
+# limit, or changes a plan or decision without the Now, 5x and 100x cost
+# estimates (standards/docs/pull-requests.md, "Pull request descriptions"). Warnings only, so it never fails and CI
 # result doesn't wait for it. Runs on edits too, so fixing the description
 # clears the warning without re-running project CI.
 name: PR summary
@@ -29,6 +30,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The merge commit and its first parent (the base), for the files
+          # the PR changes.
+          fetch-depth: 2
 
       # The root installs no tools; skip the monorepo-wide install.
       - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
@@ -39,4 +43,8 @@ jobs:
         env:
           # Passed through the environment, never interpolated into the script.
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: mise run --quiet //:pr-summary
+        run: |
+          # Added and edited files, so a plan PR needs its scaled cost estimates.
+          PR_FILES=$(git diff --name-only --diff-filter=AMR HEAD^1 HEAD)
+          export PR_FILES
+          mise run --quiet //:pr-summary

@@ -157,6 +157,11 @@ pub struct Attention {
     /// How many changed files are not docs.
     #[serde(default)]
     pub non_docs: usize,
+    /// Plans and decision records the PR adds or edits (not ones it only
+    /// deletes). Their PR's Cost changes section gives the plan's cost now,
+    /// at 5x and at 100x the projects (Jim, 2026-11-28; PR-001).
+    #[serde(default)]
+    pub plans: Vec<String>,
 }
 
 /// Files whose change affects a threat or risk. Keep the first group in
@@ -226,6 +231,26 @@ pub fn is_docs_file(path: &str) -> bool {
 fn is_threat_file(path: &str) -> bool {
     path.strip_suffix("/docs/threat.toml")
         .is_some_and(|project| !project.is_empty() && !project.contains('/'))
+}
+
+/// A plan or decision record: Markdown in a `plans/` or `decisions/`
+/// folder (`standards/docs/plans/`, `<project>/docs/decisions/`), other than
+/// the folder's README and test fixtures. A PR that adds or edits one is a
+/// planning PR, so its Cost changes section needs the three scaled
+/// estimates (Jim, 2026-11-28). Keep in step with `is_plan_file` in
+/// `standards/scripts/pr-summary-check.sh`.
+pub fn is_plan_file(path: &str) -> bool {
+    let Some((dir, name)) = path.rsplit_once('/') else {
+        return false;
+    };
+    let name = name.to_ascii_lowercase();
+    let dirs: Vec<&str> = dir.split('/').collect();
+    std::path::Path::new(&name)
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("md"))
+        && name != "readme.md"
+        && dirs.iter().any(|d| matches!(*d, "plans" | "decisions"))
+        && !dirs.contains(&"fixtures")
 }
 
 /// A project's requirements file: `<project>/docs/requirements.md`.
@@ -310,6 +335,9 @@ pub fn attention(changed: &[String], read: impl Fn(&str, bool) -> Option<String>
             out.docs.push(path.clone());
         } else {
             out.non_docs += 1;
+        }
+        if is_plan_file(path) && read(path, true).is_some() {
+            out.plans.push(path.clone());
         }
         if is_requirements_file(path) {
             let before = read(path, false).unwrap_or_default();
@@ -521,6 +549,39 @@ mod tests {
         ] {
             assert!(!is_docs_file(p), "{p}");
         }
+    }
+
+    #[test]
+    fn plan_files() {
+        for p in [
+            "standards/docs/plans/2026-11-cost-check.md",
+            "standards/docs/decisions/0028-web-checks.md",
+            "bear_down/docs/decisions/0003-x.MD",
+            "pane/docs/plans/roadmap.md",
+        ] {
+            assert!(is_plan_file(p), "{p}");
+        }
+        for p in [
+            "standards/docs/decisions/README.md",
+            "standards/docs/cost.md",
+            "infra/tests/fixtures/plans/apply.json",
+            "pane/snapshot/tests/fixtures/repo/app/docs/plans/x.md",
+            "plans.md",
+            "docs/plans.md",
+        ] {
+            assert!(!is_plan_file(p), "{p}");
+        }
+        let changed: Vec<String> = [
+            "standards/docs/plans/new.md",
+            "standards/docs/plans/gone.md",
+        ]
+        .iter()
+        .map(|f| (*f).to_string())
+        .collect();
+        let a = attention(&changed, |p, after| {
+            (after && p.ends_with("new.md")).then(String::new)
+        });
+        assert_eq!(a.plans, ["standards/docs/plans/new.md"]);
     }
 
     #[test]

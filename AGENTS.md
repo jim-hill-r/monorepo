@@ -69,6 +69,16 @@ procedures live as [Agent Skills](https://agentskills.io) in `.agents/skills/`
   `standards/docs/pull-requests.md` and in
   `.github/pull_request_template.md`; the PR summary check (PR-001) warns
   on a missing section, an unknown tag or a summary over its limit.
+- **Plans cost out at scale (Jim, 2026-11-28).** "A lot of plan PR say
+  cost is zero, but in a planning pr, it should estimate the cost as
+  implemented by all current projects and if we had 5x more projects and
+  100x more projects." Every plan and decision record has a `## Cost at
+  scale` section (money a month, tightest free limit and Claude Code
+  effort, Now, at 5x and at 100x the projects), and the PR that adds or
+  edits one names `Now`, `5x` and `100x` in its Cost changes instead of
+  `None.` (PR-001 warns). Estimates live only in plans and PRs, never in
+  the financial ledger. The rules are under "Cost at scale" in
+  [standards/docs/cost.md](standards/docs/cost.md).
 - **Back to draft before working on a PR (Jim, 2026-11-26).** Before an agent
   starts any work on an existing PR (a fix, a review answer, a merge from
   `main`, any push), it first converts the PR to draft, and marks it ready for

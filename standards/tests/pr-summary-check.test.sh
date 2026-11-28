@@ -3,8 +3,9 @@
 # (Attention, What changed, Why, Cost changes, Risk changes, Details) are
 # found by heading, attention tags come from the closed set with one per
 # group, each summary is held to its word limit, links count as their
-# text, and missing, empty, long or placeholder sections warn without
-# failing.
+# text, missing, empty, long or placeholder sections warn without
+# failing, and a PR that changes a plan or decision needs its Now, 5x and
+# 100x cost estimates.
 #   bash standards/tests/pr-summary-check.test.sh
 set -uo pipefail
 
@@ -12,9 +13,9 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 script=$root/standards/scripts/pr-summary-check.sh
 failures=0
 
-check() { # name, body, expected substring
+check() { # name, body, expected substring[, PR_FILES]
   local out
-  out=$(PR_BODY=$2 GITHUB_ACTIONS='' GITHUB_STEP_SUMMARY='' bash "$script" 2>&1)
+  out=$(PR_BODY=$2 PR_FILES=${4-} GITHUB_ACTIONS='' GITHUB_STEP_SUMMARY='' bash "$script" 2>&1)
   local status=$?
   if [ "$status" -ne 0 ] || ! grep -qF -- "$3" <<<"$out"; then
     echo "FAIL $1: wanted '$3' (exit $status), got:"
@@ -116,6 +117,21 @@ check "comments ignored" "$att$(printf '## What changed\n<!--\nlots of guidance 
 
 check "template placeholder" "$(cat "$root/.github/pull_request_template.md")" \
   "\"## What changed\" section is still the template's placeholder."
+
+plan_files=$'cookbook/src/main.rs\nstandards/docs/plans/2026-11-x.md\nbear_down/docs/decisions/0011-y.md'
+scaled='Now (27 projects): $0. 5x: $0, D1 at 40%. 100X: $5/mo, Workers Paid.'
+
+check "plan PR with None." "$(body "$good_what" "$good_why" "None." "None." "x")" \
+  "This PR changes a plan or decision (\`standards/docs/plans/2026-11-x.md\` and 1 more), so \"## Cost changes\" must estimate" "$plan_files"
+
+check "plan PR names what is missing" "$(body "$good_what" "$good_why" "Now \$0; 5× \$0; 1.5x more." "None." "x")" \
+  "(missing 100x)" "$plan_files"
+
+check "plan PR with three estimates" "$(body "$good_what" "$good_why" "$scaled" "None." "x")" \
+  "PR-001 ok: What changed 10, Why 12, Cost changes 13, Risk changes 1 words." "$plan_files"
+
+check "README and fixtures are not plans" "$(body "$good_what" "$good_why" "None." "None." "x")" \
+  "PR-001 ok:" $'standards/docs/decisions/README.md\npane/snapshot/tests/fixtures/repo/app/docs/plans/x.md\ndocs/plans.md'
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures pr-summary-check test(s) failed"

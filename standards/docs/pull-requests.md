@@ -25,7 +25,11 @@ Every PR description, from any agent, has, in this order:
 3. `## What changed`: at most **50 words** on what the PR changes.
 4. `## Why`: at most **50 words** on why, and any engineering tradeoffs.
 5. `## Cost changes`: under **25 words** on money, free-tier usage or
-   Claude budget the PR moves, or `None.`
+   Claude budget the PR moves, or `None.` A **planning PR**, one that adds
+   or edits a plan or decision record, never says just `None.`: it gives
+   the plan's cost as implemented across all current projects, at 5x and
+   at 100x as many, naming `Now`, `5x` and `100x` (Jim, 2026-11-28;
+   ["Cost at scale"](cost.md#cost-at-scale-plans-and-decisions)).
 6. `## Risk changes`: under **25 words** on security, threat, requirement
    or reliability risk the PR moves, or `None.`
 7. `## Details`: anything else, with no limit: the issue it closes, how it
@@ -44,7 +48,10 @@ shape, and `chores pr-body` writes it. The **PR summary** check (PR-001,
 `.github/workflows/pull-request-summary.yml`, and `chores pr-body --check`
 with the same rules) warns when a section is missing, empty or still the
 template's placeholder, a summary is over its limit, or the Attention
-section has an unknown tag or not exactly one tag per group. It is a
+section has an unknown tag or not exactly one tag per group, or a
+planning PR's Cost changes leaves out `Now`, `5x` or `100x` (the
+workflow passes the PR's added and edited files as `PR_FILES`; `chores
+pr-body` reads them from git). It is a
 warning only, so it never blocks a merge; fix the description and the
 check reruns on the edit.
 

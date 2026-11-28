@@ -6,6 +6,13 @@
 //! section of tags from [`crate::badges::Tag`], then What changed and Why
 //! (at most 50 words each), Cost changes and Risk changes (under 25 words
 //! each), then Details (anything else, no limit).
+//!
+//! A planning PR, one that adds or edits a plan or decision record
+//! ([`badges::is_plan_file`]), can't say "None." for cost (Jim,
+//! 2026-11-28): its Cost changes section estimates the plan's cost as
+//! implemented across all current projects, at 5x and at 100x as many
+//! (`Now`, `5x` and `100x`), as "Cost at scale" in
+//! `standards/docs/cost.md` says.
 
 use crate::badges::{self, Group, Tag};
 
@@ -222,9 +229,47 @@ fn check_attention(body: &str, warnings: &mut Vec<String>) {
     }
 }
 
+/// The scale markers a planning PR's Cost changes section names, each as
+/// a whole word (letters and digits on neither side), in any case.
+pub const SCALES: [&str; 3] = ["now", "5x", "100x"];
+
+/// Which of [`SCALES`] the text leaves out. `×` counts as `x`.
+pub fn missing_scales(text: &str) -> Vec<&'static str> {
+    let text = text.to_ascii_lowercase().replace('×', "x");
+    let words: Vec<&str> = text
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|w| !w.is_empty())
+        .collect();
+    SCALES.into_iter().filter(|s| !words.contains(s)).collect()
+}
+
+/// The warning for a planning PR whose Cost changes section lacks a scaled
+/// estimate; `None` when it has all three or the PR changes no plan.
+fn check_plan_costs(body: &str, plans: &[String]) -> Option<String> {
+    let first = plans.first()?;
+    let text = section(body, "Cost changes")?;
+    let missing = missing_scales(&text);
+    if missing.is_empty() {
+        return None;
+    }
+    let more = if plans.len() > 1 {
+        format!(" and {} more", plans.len() - 1)
+    } else {
+        String::new()
+    };
+    Some(format!(
+        "This PR changes a plan or decision (`{first}`{more}), so \"## Cost changes\" must \
+         estimate its cost as implemented across all current projects, at 5x and at 100x as \
+         many: name Now, 5x and 100x (missing {}). See \"Cost at scale\" in \
+         standards/docs/cost.md.",
+        missing.join(", ")
+    ))
+}
+
 /// PR-001: the word count of each summary section and the warnings for a
-/// description; no warnings when it passes.
-pub fn check(body: &str) -> (Vec<(&'static str, usize)>, Vec<String>) {
+/// description; no warnings when it passes. `plans` are the plans and
+/// decision records the PR adds or edits ([`badges::Attention::plans`]).
+pub fn check(body: &str, plans: &[String]) -> (Vec<(&'static str, usize)>, Vec<String>) {
     let mut counts = Vec::new();
     let mut warnings = Vec::new();
     check_attention(body, &mut warnings);
@@ -262,6 +307,7 @@ pub fn check(body: &str) -> (Vec<(&'static str, usize)>, Vec<String>) {
             ));
         }
     }
+    warnings.extend(check_plan_costs(body, plans));
     if section(body, DETAILS).is_none() {
         warnings.push(format!("The description has no \"## {DETAILS}\" section."));
     }
@@ -278,6 +324,11 @@ pub fn ok_line(counts: &[(&str, usize)]) -> String {
 mod tests {
     use super::*;
     use crate::badges::Attention;
+
+    /// PR-001 for a PR that changes no plan.
+    fn check(body: &str) -> (Vec<(&'static str, usize)>, Vec<String>) {
+        super::check(body, &[])
+    }
 
     fn parts() -> Parts {
         Parts {
@@ -388,6 +439,29 @@ mod tests {
             Some("\nTwo words\n")
         );
         assert_eq!(section(body, "Why"), None);
+    }
+
+    #[test]
+    fn planning_prs_need_scaled_cost_estimates() {
+        let plans = vec!["standards/docs/plans/x.md".to_string()];
+        let w = super::check(&render(&parts()), &plans).1;
+        assert_eq!(w.len(), 1, "{w:?}");
+        assert!(w[0].contains("`standards/docs/plans/x.md`"), "{w:?}");
+        assert!(w[0].contains("missing now, 5x, 100x"), "{w:?}");
+        let mut p = parts();
+        p.cost = "Now (27 projects): $0. 5x: $0, D1 at 40%. 100X: $5/mo, Workers Paid.".into();
+        assert!(super::check(&render(&p), &plans).1.is_empty());
+        p.cost = "Now $0; 5× $0; 1.5x nothing else.".into();
+        let w = super::check(&render(&p), &plans).1;
+        assert!(w[0].contains("missing 100x"), "{w:?}");
+        // Not a planning PR: None. is fine.
+        assert!(super::check(&render(&parts()), &[]).1.is_empty());
+    }
+
+    #[test]
+    fn scale_markers_are_whole_words() {
+        assert_eq!(missing_scales("nowhere 15x 1100x"), ["now", "5x", "100x"]);
+        assert!(missing_scales("NOW: $0 | 5x: $0 | 100x: $3").is_empty());
     }
 
     #[test]

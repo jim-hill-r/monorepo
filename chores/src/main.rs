@@ -77,7 +77,8 @@ enum Command {
     /// Why, Cost changes, Risk changes, Details, footer) and check it
     /// against PR-001. Exits 1, printing the warnings, when a section is
     /// missing or empty, an attention tag is unknown, or a summary is over
-    /// its word limit. With --check, checks an existing description instead.
+    /// its word limit, or a planning PR's Cost changes lacks its Now, 5x and
+    /// 100x estimates. With --check, checks an existing description instead.
     PrBody {
         /// Check this description file (`-` for stdin) instead of writing one.
         #[arg(long, conflicts_with_all = ["what", "why", "cost", "risk", "details"])]
@@ -88,7 +89,9 @@ enum Command {
         /// Why it changed, and any tradeoffs, at most 50 words.
         #[arg(long, required_unless_present = "check")]
         why: Option<String>,
-        /// Cost changes, under 25 words ("None." when nothing changes).
+        /// Cost changes, under 25 words ("None." when nothing changes). A PR
+        /// that adds or edits a plan or decision gives its cost Now, at 5x
+        /// and at 100x the projects instead.
         #[arg(long, default_value = "None.")]
         cost: String,
         /// Risk changes, under 25 words ("None." when nothing changes).
@@ -112,8 +115,8 @@ enum Command {
         /// The branch the PR merges into, for the attention tags.
         #[arg(long, default_value = "origin/main")]
         base: String,
-        /// Leave out the Attention section (only when git can't compare
-        /// with the base; say so in the PR).
+        /// Leave out the Attention section and the plan cost check (only
+        /// when git can't compare with the base; say so in the PR).
         #[arg(long)]
         no_badges: bool,
         /// Also write the description to this file.
@@ -349,17 +352,26 @@ fn run() -> Result<ExitCode> {
             no_badges,
             out,
         } => {
+            // The diff gives the tags and the plans that need scaled cost
+            // estimates. A check without git to compare with skips the plans.
+            let diff = if no_badges {
+                None
+            } else if check.is_some() {
+                badges::for_repo(&root, &base)
+                    .inspect_err(|e| {
+                        eprintln!("note: not checking plan cost estimates: {e:#}");
+                    })
+                    .ok()
+            } else {
+                Some(badges::for_repo(&root, &base)?)
+            };
             let body = match check {
                 Some(path) => read_input(&path)?,
                 None => pr_body::render(&pr_body::Parts {
                     login,
                     requested_by,
                     thread_url,
-                    attention: if no_badges {
-                        None
-                    } else {
-                        Some(badges::render(&badges::for_repo(&root, &base)?))
-                    },
+                    attention: diff.as_ref().map(badges::render),
                     what: what.unwrap_or_default(),
                     why: why.unwrap_or_default(),
                     cost,
@@ -368,7 +380,8 @@ fn run() -> Result<ExitCode> {
                     footer,
                 }),
             };
-            let (counts, warnings) = pr_body::check(&body);
+            let plans = diff.map(|d| d.plans).unwrap_or_default();
+            let (counts, warnings) = pr_body::check(&body, &plans);
             if let Some(out) = out {
                 std::fs::write(&out, &body)?;
             }
