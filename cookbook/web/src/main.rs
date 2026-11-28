@@ -264,16 +264,22 @@ fn render_auth_section() -> Element {
     rsx! { div { "Login (test mode)" } }
 }
 
-/// Map a date to its recipe day (1-365).
+/// Map a date to its recipe day (1-365): the recipe the week's plan puts on
+/// that date, so the Recipes link, the sidebar and the plan agree.
 ///
-/// The cookbook has one recipe per day for 365 days. Day 366 (31 December of a
-/// leap year) reuses the recipe for day 365, so the link never points past the
-/// last recipe.
+/// Plans are tied to an ISO week, not a year, so the plan's recipe for a date
+/// is usually not the one numbered for its day of the year. If the week has no
+/// plan, it falls back to the day of the year, with day 366 (31 December of a
+/// leap year) reusing day 365, so the link never points past the last recipe.
 fn recipe_day_for_date(date: NaiveDate) -> u32 {
-    date.ordinal().min(MAX_DAY_OF_YEAR)
+    let index = date.weekday().num_days_from_monday() as usize;
+    get_week_recipes(date.iso_week().week())
+        .get(index)
+        .map(|(day, _title)| *day)
+        .filter(|day| (1..=MAX_DAY_OF_YEAR).contains(day))
+        .unwrap_or_else(|| date.ordinal().min(MAX_DAY_OF_YEAR))
 }
 
-/// Get today's recipe day (1-365) in local time
 /// The recipe days before and after `day`, wrapping round the year: day 1
 /// follows day 365, as the recipes repeat every year.
 fn adjacent_recipe_days(day: u32) -> (u32, u32) {
@@ -282,6 +288,7 @@ fn adjacent_recipe_days(day: u32) -> (u32, u32) {
     (previous, next)
 }
 
+/// Today's recipe day (1-365) in local time: the plan's recipe for today.
 fn get_current_day_of_year() -> u32 {
     recipe_day_for_date(Local::now().date_naive())
 }
@@ -1232,31 +1239,38 @@ mod tests {
     }
 
     #[test]
-    fn test_recipe_day_for_date_first_of_january() {
-        let date = test_date(2028, 1, 1);
-        assert_eq!(recipe_day_for_date(date), 1);
+    fn test_recipe_day_for_date_is_the_plans_recipe_for_that_date() {
+        // Saturday 28 Nov 2026 is day 332 of the year, but week 48's plan
+        // puts day 335 on its Saturday, and today's recipe follows the plan.
+        let date = test_date(2026, 11, 28);
+        assert_eq!(date.ordinal(), 332);
+        assert_eq!(recipe_day_for_date(date), 335);
     }
 
     #[test]
-    fn test_recipe_day_for_date_end_of_common_year() {
-        let date = test_date(2027, 12, 31);
-        assert_eq!(recipe_day_for_date(date), 365);
-    }
-
-    #[test]
-    fn test_recipe_day_for_date_end_of_leap_year_reuses_day_365() {
+    fn test_recipe_day_for_date_end_of_leap_year_is_a_real_recipe() {
+        // 31 Dec 2028 is day 366, a Sunday in ISO week 52: week 52's Sunday.
         let date = test_date(2028, 12, 31);
         assert_eq!(date.ordinal(), 366);
-        assert_eq!(recipe_day_for_date(date), 365);
+        assert_eq!(recipe_day_for_date(date), 364);
     }
 
     #[test]
-    fn test_recipe_day_for_date_leap_day_and_after() {
-        // 29 Feb 2028 is day 60, and every later day keeps its own ordinal
-        let leap_day = test_date(2028, 2, 29);
-        assert_eq!(recipe_day_for_date(leap_day), 60);
-        let penultimate = test_date(2028, 12, 30);
-        assert_eq!(recipe_day_for_date(penultimate), 365);
+    fn test_recipe_day_for_date_matches_the_sidebar_and_plan_every_day() {
+        // The Recipes link and the sidebar's dated link for today must open
+        // the same recipe on every date (COOK-001, COOK-006).
+        for year in [2026, 2027, 2028] {
+            let days = test_date(year, 1, 1)
+                .iter_days()
+                .take_while(|date| date.year() == year);
+            for date in days {
+                let index = date.weekday().num_days_from_monday() as usize;
+                let sidebar = sidebar_recipe_days(date);
+                let (plan_day, label) = &sidebar[index];
+                assert_eq!(*label, format_recipe_day(date), "{date}");
+                assert_eq!(recipe_day_for_date(date), *plan_day, "{date}");
+            }
+        }
     }
 
     #[test]
