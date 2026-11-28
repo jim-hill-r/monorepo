@@ -52,7 +52,10 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
 
     let is_complete = state.read().is_complete() && *phase.read() != PracticePhase::Start;
 
-    let on_start = move |_| async move {
+    // Start the level: with the query's or saved technique, carrying on
+    // from saved progress (`again: None`), or afresh with `again`'s
+    // technique once the level has been finished with the one before.
+    let begin = move |again: Option<Technique>| async move {
         // `?practice=b,c` practises only those letters or words.
         let query = eval("return window.location.search;")
             .join::<String>()
@@ -64,7 +67,13 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                 .await
                 .unwrap_or_default(),
         );
-        technique.set(Technique::choose(&query, chosen.technique.as_str()));
+        match again {
+            Some(next) => {
+                eval(&next.save_js());
+                technique.set(next);
+            }
+            None => technique.set(Technique::choose(&query, chosen.technique.as_str())),
+        }
         let level = level_name.read().clone();
         if let Some(expressions) = practice_from_query(&query) {
             progress_key.set(None);
@@ -77,11 +86,15 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             let sequence = settings::sequence_for_level(&chosen.sequence, &level);
             let key =
                 progress::progress_key(&settings::learner(&chosen), &level, sequence.as_deref());
-            let saved = eval(&progress::load_js(&key))
-                .join::<String>()
-                .await
-                .unwrap_or_default();
-            progress_key.set(Some(key));
+            let saved = if again.is_some() {
+                String::new()
+            } else {
+                eval(&progress::load_js(&key))
+                    .join::<String>()
+                    .await
+                    .unwrap_or_default()
+            };
+            progress_key.set(Some(key.clone()));
             match progress::restore(&saved) {
                 Some(saved) => state.set(saved),
                 None => {
@@ -90,6 +103,9 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
                         fresh.practise_only(expressions);
                     }
                     fresh.start_practice();
+                    if let Some(js) = progress::save_js(&key, &fresh) {
+                        eval(&js);
+                    }
                     state.set(fresh);
                 }
             }
@@ -98,6 +114,7 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         if let Some(ref letter) = expr {
             // Animate the letter demonstration from the bundled patterns
             let letter = letter.clone();
+            feedback.set("Have fun!".to_string());
             phase.set(PracticePhase::Watching);
             eval(&format!(
                 "window.eelCanvas.clear(); window.eelCanvas.init('{CANVAS_ID}', function() {{ window._eelAnimDone = true; }}); {}",
@@ -105,6 +122,8 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
             ));
         }
     };
+
+    let on_start = move |_| begin(None);
 
     let on_ready = move |_| {
         // User indicates they're ready to try - enable recording
@@ -171,10 +190,17 @@ pub fn Practice(state: Signal<AppState>, level: String) -> Element {
         }
     };
 
-    let on_go = move |_| {
-        // After letters come words; after words, the congratulations page.
+    let on_go = move |_| async move {
+        // A level finished with Tracing starts again with Pattern, then
+        // Freeform; after Freeform "Go" opens the next level, with Tracing.
         eval("window.eelCanvas.clear();");
-        navigator().push(next_route(&level));
+        match technique().next() {
+            Some(next) => begin(Some(next)).await,
+            None => {
+                eval(&Technique::Tracing.save_js());
+                navigator().push(next_route(&level_name.peek()));
+            }
+        }
     };
 
     rsx! {
