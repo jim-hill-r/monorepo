@@ -64,6 +64,7 @@ test.describe("Today's recipe link on 31 December of a leap year", { tag: '@req:
 
     await headerLink.click();
     await expect(page).toHaveURL(/\/recipe\/364$/);
-    await expect(page.getByRole('heading', { level: 1 })).not.toHaveText('Invalid Day');
+    await expect(page.locator('.recipe-container h1')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Invalid Day' })).toHaveCount(0);
   });
 });
