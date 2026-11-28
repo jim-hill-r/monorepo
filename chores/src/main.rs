@@ -10,6 +10,8 @@ mod issues;
 mod new_issue;
 mod next_task;
 mod pr_body;
+mod quality;
+mod quality_run;
 mod tiers;
 mod user_docs;
 
@@ -198,6 +200,12 @@ enum Command {
         #[arg(long)]
         date: Option<String>,
     },
+    /// The code quality ratchet (QUAL-501): run clippy's strict profile
+    /// (pedantic, cognitive complexity and the thresholds in
+    /// standards/quality/clippy.toml) and the 800-line file check over each
+    /// project, and compare the counts per lint with its docs/quality.toml.
+    /// --check exits 1 when a count rose or a baseline is missing.
+    Quality(quality_run::Args),
     /// Write a task only a person can do, issues/human/<slug>.md, with the
     /// three sections the audit needs, and start its runbook from
     /// standards/docs/runbooks/TEMPLATE.md unless --runbook names one that
@@ -370,6 +378,11 @@ fn run() -> Result<ExitCode> {
                 print!("{}", user_docs::render(&report));
             }
             if !report.errors.is_empty() {
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Quality(args) => {
+            if !quality_run::run(&root, &args)? {
                 return Ok(ExitCode::FAILURE);
             }
         }

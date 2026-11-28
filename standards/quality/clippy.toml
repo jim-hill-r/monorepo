@@ -1,0 +1,10 @@
+# The strict profile's thresholds (QUAL-202 to QUAL-205 in
+# standards/docs/code-quality.md, plan standards/docs/plans/2026-11-code-quality.md).
+# `chores quality` points clippy here with CLIPPY_CONF_DIR; plain CI clippy
+# doesn't read it. A project with its own clippy.toml (cahokia) copies these.
+too-many-lines-threshold = 60
+cognitive-complexity-threshold = 15
+too-many-arguments-threshold = 5
+excessive-nesting-threshold = 4
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

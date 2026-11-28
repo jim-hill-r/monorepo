@@ -62,6 +62,18 @@ c user-docs
 c user-docs --json
 ```
 
+```bash
+# The code quality ratchet (QUAL-501 in standards/docs/code-quality.md):
+# clippy's strict profile (pedantic, cognitive complexity and the thresholds
+# in standards/quality/clippy.toml) plus the 800-line file check, counted
+# per lint against each project's docs/quality.toml. Runs cargo clippy, so
+# the first run of a project builds it.
+c quality --check cookbook --base origin/main   # exit 1 when a count rose, naming the findings
+c quality --update cookbook                     # write docs/quality.toml from today's counts
+c quality --report                              # every Rust project, as a table
+c quality --report --json                       # with every finding, for quality triage
+```
+
 `new-human-task` starts the runbook from
 `standards/docs/runbooks/TEMPLATE.md` (title and status filled in) unless
 `--runbook` names one that exists; the agent still writes its sections.
@@ -72,6 +84,7 @@ c user-docs --json
 | `pr-body`, `badges` | `open-pull-request` | Rebuilding the description shape, fixing PR-001 warnings after the fact, and Jim judging from the file list how closely to look |
 | `gate` | none (the `Human review` workflow) | Judging by hand whether a PR's red or cost tags let anyone but a human approve or auto-merge it |
 | `user-docs` | `mise run //:audit` (any skill's hooks) | A bash check, and a reviewer noticing a project has no user guide |
+| `quality` | none yet (the hooks and PR CI's **Quality** job, code quality phase 1) | Counting clippy findings by hand and a reviewer noticing a project got worse |
 | `new-issue`, `new-human-task` | `write-issue` | Re-reading the issue and runbook formats, and an audit retry |
 
 ## Adding a command
