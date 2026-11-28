@@ -1,0 +1,5 @@
+# A source file that isn't there is reported by name, not a panic.
+bin.name = "my_lang"
+args = ["run", "nope.my"]
+env.remove = ["RUST_BACKTRACE", "RUST_LIB_BACKTRACE"]
+status.code = 1

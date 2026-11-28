@@ -1,12 +1,12 @@
 # How each requirement in docs/requirements.md is checked.
 # Format: standards/docs/evals.md.
 #
-# my_lang is a library with no CLI, release or deploy yet, so every eval
-# is a `cargo` eval in the `ci` stage, naming existing tests with `filter`.
-# The `must` requirements get production-stage (`cd`) trycmd evals against
-# the release binary once the CLI exists
-# (issues/production-evals-with-the-cli.md); until then `evals check`
-# warns EVL-004 for them.
+# Most evals are `cargo` evals in the `ci` stage, naming existing tests with
+# `filter`. Each `must` requirement also has a `trycmd` eval: transcripts of
+# the real `my_lang` binary in tests/cmd/ (run by tests/cli_transcripts.rs).
+# They list the `cd` stage for the run against the release binary that the
+# eval engine adds (evals' trycmd-cd issue); until then their results come
+# from `cargo test` in `ci`.
 
 prefix = "LANG"
 
@@ -56,6 +56,14 @@ requirement = "LANG-001"
 stages = ["ci"]
 kind = "cargo"
 filter = "test_function_call"
+
+[[eval]]
+id = "cli-runs-programs"
+requirement = "LANG-001"
+stages = ["ci", "cd"]
+kind = "trycmd"
+glob = "tests/cmd/LANG-001-*.toml"
+description = "The my_lang binary runs a program and prints main's result, with arguments passed to main."
 
 # LANG-002: A mistake gives a clear error, never a crash
 
@@ -140,6 +148,14 @@ stages = ["ci"]
 kind = "cargo"
 filter = "test_argument_count_mismatch_message"
 
+[[eval]]
+id = "cli-reports-mistakes"
+requirement = "LANG-002"
+stages = ["ci", "cd"]
+kind = "trycmd"
+glob = "tests/cmd/LANG-002-*.toml"
+description = "A parse error, an undefined function and a missing file each print one error line and exit 1, with no panic."
+
 # LANG-003: Side effects stay where they are declared
 
 [[eval]]
@@ -183,6 +199,14 @@ requirement = "LANG-003"
 stages = ["ci"]
 kind = "cargo"
 filter = "test_input_declaration_compiled"
+
+[[eval]]
+id = "cli-keeps-side-effects-declared"
+requirement = "LANG-003"
+stages = ["ci", "cd"]
+kind = "trycmd"
+glob = "tests/cmd/LANG-003-*.toml"
+description = "The my_lang binary rejects `return` in an `input` declaration and runs one in an `output` declaration."
 
 # LANG-004: The compiled LLVM IR can be read
 

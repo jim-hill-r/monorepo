@@ -20,3 +20,8 @@ clap = { version = "4", features = ["derive"] }
 # unsafe block that calls JIT-compiled code, in src/jit.rs, can opt out with
 # #[allow(unsafe_code)] and a SAFETY comment. No other code may use unsafe.
 unsafe_code = "deny"
+
+[dev-dependencies]
+# CLI transcript tests in tests/cmd/ (tests/cli_transcripts.rs), the
+# trycmd evals in evals.toml
+trycmd = "1.2.1"
