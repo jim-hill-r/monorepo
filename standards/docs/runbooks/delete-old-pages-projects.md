@@ -2,9 +2,10 @@
 
 - **Kind:** on demand (after a Pages project is renamed or retired)
 - **Status:** open (`issues/human/delete-old-pages-projects-after-jimhillr-rename.md`)
-  for `cahokia-web`, `pane` and `controlled-chaos`, and
-  (`issues/human/delete-jimhillr-pane-pages-project-after-worker.md`) for
-  `jimhillr-pane`, which pane left for a Worker
+  for `cahokia-web`, `pane` and `controlled-chaos`. `jimhillr-pane`, which
+  pane left for a Worker, is now deleted by the weekly All Retire Resources
+  run once its `delete_after` date passes; the section below is the manual
+  fallback
 - **Time:** about 5 minutes
 - **Cost:** $0. Frees three of the 25 budgeted Pages projects.
 

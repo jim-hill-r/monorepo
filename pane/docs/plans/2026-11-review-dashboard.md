@@ -123,8 +123,8 @@ too, so the shared task file for that kind of project should serve both.
 Done (2026-11-27): `pane/cloudflare` is the Worker `jimhillr-pane` at
 <https://jimhillr-pane.jim-hill-r.workers.dev>, built from
 `standards/tasks/cloudflare-worker-assets.toml`, with one route
-(`/api/health`) so far. Deleting the retired Pages project `jimhillr-pane`
-is a human task (`issues/human/delete-jimhillr-pane-pages-project-after-worker.md`).
+(`/api/health`) so far. The weekly All Retire Resources run deletes the
+retired Pages project `jimhillr-pane` once its `delete_after` date passes.
 
 ### Access and the write path
 

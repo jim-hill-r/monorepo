@@ -354,6 +354,11 @@ input when a kind is onboarded to IaC.
 
 ### Phase 3: approved deletion
 
+Status: the deletion workflow shipped (Pages projects; `chores
+retire-approved`). Data store dumps and Access removal wait for the first
+such resource
+(`issues/resource-cleanup-phase-3-data-stores-and-access.md`).
+
 - `all-retire-resources.yml` deletes `[[retired]]` entries in the safe
   order, with the guards and a dry run by default.
 - First use: the `jimhillr-{project}` rename has merged, so

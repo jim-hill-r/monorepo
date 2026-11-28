@@ -101,11 +101,30 @@ sign-in codes.
    hostname go last, so private content is never public in between.
 5. **Verify.** The next sweep confirms it is gone, and `deleted` is set.
 
-Each deletion is skipped while the name is still claimed on `main`, while a
-Pages project has had a production deployment in the last 7 days, or while
-any inbound reference remains. Until the cleanup workflow exists, a person
-deletes by following a runbook, such as
-[Delete old Pages projects](runbooks/delete-old-pages-projects.md).
+The weekly
+[All Retire Resources](../../.github/workflows/all-retire-resources.yml)
+run does steps 3 and 5 for Pages projects, the one kind the deploy token
+may delete (`chores retire-approved` plans it, the workflow deletes). It
+deletes only `[[retired]]` entries past `delete_after`, only from the
+default branch (a manual run is a dry run unless `dry_run` is false), and
+holds an entry, as a hard stop, while:
+
+- its `name` is still claimed on `main` for the same kind (a Worker of the
+  same name is no claim on the Pages project);
+- its `replaced_by` is set but nothing on `main` claims that name;
+- the Pages project had a production deployment in the last 7 days, or a
+  production deployment's date can't be read;
+- any open human task (an `issues/human/` file) names its `url` or host,
+  or its `name` as a whole word unless `match_name = false`. This is how
+  step 2 waits for a person: the retirement PR adds a human task to remove
+  the Auth0 URLs, and deletion starts once that file is deleted;
+- Pages projects couldn't be listed at all.
+
+Every other kind (Worker, D1, KV, DNS) is listed in the run summary as
+"delete by hand" and follows a runbook, such as
+[Delete old Pages projects](runbooks/delete-old-pages-projects.md), until
+the token gets that permission. Step 4 (Access applications) is by hand
+too; today no retired resource has one.
 
 ## Temporary resources
 

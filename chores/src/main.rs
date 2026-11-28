@@ -12,6 +12,7 @@ mod new_issue;
 mod next_task;
 mod pr_body;
 mod retire;
+mod retire_approved;
 mod shell_scripts;
 mod sweep;
 mod tiers;
@@ -175,6 +176,26 @@ enum Command {
         /// canonical, deployments), `branches` and `pulls`.
         #[arg(long)]
         live: PathBuf,
+        /// Also write the plan as JSON to this file.
+        #[arg(long)]
+        json: Option<PathBuf>,
+        /// Today's date, YYYY-MM-DD. Defaults to today (UTC).
+        #[arg(long)]
+        today: Option<String>,
+    },
+    /// Which `[[retired]]` entries in standards/resources.toml are due for
+    /// deletion and pass every guard (not claimed on `main`, no production
+    /// deploy in 7 days, no open human task naming them). Reads the live
+    /// list the `all-retire-resources.yml` workflow writes, prints the run
+    /// summary and never deletes anything itself.
+    RetireApproved {
+        /// The live list as JSON: `pages_listed` and `pages` (name,
+        /// deployments).
+        #[arg(long)]
+        live: PathBuf,
+        /// The claims, `kind<TAB>name` per line, from `resources.sh claims`.
+        #[arg(long)]
+        claims: PathBuf,
         /// Also write the plan as JSON to this file.
         #[arg(long)]
         json: Option<PathBuf>,
@@ -438,6 +459,16 @@ fn run() -> Result<ExitCode> {
         Command::RetireTemporary { live, json, today } => {
             let plan = retire::run(&live, today.as_deref(), json.as_deref())?;
             print!("{}", retire::render(&plan));
+        }
+        Command::RetireApproved {
+            live,
+            claims,
+            json,
+            today,
+        } => {
+            let plan =
+                retire_approved::run(&root, &live, &claims, today.as_deref(), json.as_deref())?;
+            print!("{}", retire_approved::render(&plan));
         }
         Command::UserDocs { json } => {
             let report = user_docs::check(&root)?;

@@ -1,5 +1,6 @@
-//! all-retire-resources.yml: the weekly deletion of temporary resources
-//! ("Temporary resources" in standards/docs/resources.md).
+//! all-retire-resources.yml: the weekly deletion of temporary resources and
+//! approved retired ones ("Temporary resources" and "Safe deletion order" in
+//! standards/docs/resources.md).
 
 use std::fs;
 use workflow_tests::*;
@@ -68,4 +69,42 @@ fn inputs_and_secrets_reach_scripts_through_env() {
             "Expressions must reach run scripts through env:\n{script}"
         );
     }
+}
+
+fn step<'a>(yaml: &'a serde_yaml::Value, name: &str) -> &'a serde_yaml::Value {
+    yaml["jobs"]["temporary"]["steps"]
+        .as_sequence()
+        .expect("temporary job has steps")
+        .iter()
+        .find(|s| s["name"] == name)
+        .unwrap_or_else(|| panic!("no step named {name}"))
+}
+
+#[test]
+fn approved_deletions_are_planned_by_chores_retire_approved() {
+    let (content, yaml) = workflow();
+    assert!(content.contains("retire-approved --live"));
+    assert!(content.contains("resources.sh claims"));
+    // An empty Pages list must not read as "every retired project is gone".
+    assert!(content.contains("pages_listed: $pages_listed"));
+    let run = step(&yaml, "Plan approved deletions")["run"]
+        .as_str()
+        .expect("run script");
+    assert!(run.contains("--claims"));
+}
+
+#[test]
+fn approved_resources_are_deleted_only_from_the_default_branch() {
+    let (_, yaml) = workflow();
+    let s = step(&yaml, "Delete approved Pages projects");
+    assert_eq!(
+        s["env"]["ON_DEFAULT"],
+        "${{ github.ref_name == github.event.repository.default_branch }}"
+    );
+    assert_eq!(s["env"]["DRY_RUN"], "${{ steps.plan.outputs.dry-run }}");
+    let run = s["run"].as_str().expect("run script");
+    assert!(run.contains(r#"[ "$ON_DEFAULT" != "true" ]"#));
+    // Only Pages projects, and the deletion is verified.
+    assert!(run.contains(r#"[ "$kind" = "pages" ] || continue"#));
+    assert!(run.contains("404"));
 }
