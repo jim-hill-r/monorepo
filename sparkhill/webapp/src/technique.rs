@@ -1,15 +1,15 @@
 //! The practice technique: how much of a letter the demonstration shows.
 //!
 //! The live app (blue.eel.education) has three, picked under Technique in
-//! its settings or with a `?tech=` query:
+//! its settings panel (`settings.rs`) or with a `?tech=` query:
 //!
 //! - **Tracing** animates every stroke, start dot to end dot.
 //! - **Pattern** shows only each stroke's start (green) and end (orange)
 //!   dots, which stay on the canvas while the learner draws between them.
 //! - **Freeform** shows nothing: the learner writes the letter from memory.
 //!
-//! The choice is kept in this browser's `localStorage`, like the learner's
-//! name (`progress.rs`). Nothing leaves the device.
+//! The choice is kept in this browser's `localStorage` under `TECHNIQUE_KEY`,
+//! with the other settings. Nothing leaves the device.
 
 /// How the demonstration shows the letter, and what stays on the canvas
 /// while the learner draws.
@@ -72,22 +72,6 @@ impl Technique {
     }
 }
 
-/// JavaScript that returns the saved technique's name, or "" when there is
-/// none or storage is blocked.
-pub fn get_technique_js() -> String {
-    format!(
-        "try {{ return localStorage.getItem('{TECHNIQUE_KEY}') || ''; }} catch (e) {{ return ''; }}"
-    )
-}
-
-/// JavaScript that saves `technique` as the one to practise with.
-pub fn set_technique_js(technique: Technique) -> String {
-    format!(
-        "try {{ localStorage.setItem('{TECHNIQUE_KEY}', '{}'); }} catch (e) {{}}",
-        technique.as_str()
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -138,13 +122,5 @@ mod tests {
         assert!(Technique::Pattern.drawing_canvas_js().contains("showMarks"));
         assert!(Technique::Tracing.drawing_canvas_js().contains("clear"));
         assert!(Technique::Freeform.drawing_canvas_js().contains("clear"));
-    }
-
-    #[test]
-    fn the_saved_technique_stays_on_the_device() {
-        let js = set_technique_js(Technique::Pattern);
-        assert!(js.contains("localStorage.setItem('blueeel.technique', 'Pattern')"));
-        assert!(!js.contains("fetch"));
-        assert!(get_technique_js().contains("localStorage.getItem('blueeel.technique')"));
     }
 }

@@ -10,6 +10,8 @@
 #   NAM-002, NAM-004, DOC-*, LIN-*  Package names, README.md and
 #            CONTRIBUTING.md, Cargo lints (project-check.sh); DOC-* and
 #            LIN-* are warnings only for now.
+#   DOC-005 to DOC-008  User guides against the baseline in
+#            standards/user-docs.toml (`chores user-docs`, Rust).
 #   ISS-*    Issue files (issues.sh --check): one file per issue, valid
 #            front matter, human tasks only in issues/human/.
 #   EVL-*    Requirements and evals (evals-check.sh); warnings only for now.
@@ -72,6 +74,13 @@ done
 
 # NAM-002, NAM-004 (errors), DOC-*, LIN-* (warnings): per-project checks.
 bash standards/scripts/project-check.sh || errors=$((errors + 1))
+
+# DOC-005 to DOC-008: every project's user guide (standards/docs/documentation.md#user-docs).
+if command -v cargo >/dev/null 2>&1; then
+  cargo run --quiet --manifest-path chores/Cargo.toml -- user-docs || errors=$((errors + 1))
+else
+  echo "warning: user docs check skipped: cargo is not installed"
+fi
 
 # EVL-*: requirements and evals. Warnings only; never fails the audit.
 bash standards/scripts/evals-check.sh

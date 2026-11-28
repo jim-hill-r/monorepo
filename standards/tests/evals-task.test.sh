@@ -2,7 +2,9 @@
 # Tests standards/scripts/evals.sh, the eval steps of the shared mise tasks:
 # `report` saves a command's output and keeps its exit status, `run` passes
 # the saved reports to the evals CLI (cargo is a stub) and does nothing for a
-# project without an evals.toml, and `publish` skips a missing results file.
+# project without an evals.toml, `smoke` runs the @smoke Playwright tests
+# against DEPLOY_URL (npm and npx are stubs) or skips with a note, and
+# `publish` skips a missing results file.
 # Run from anywhere:
 #   bash standards/tests/evals-task.test.sh
 set -uo pipefail
@@ -89,6 +91,65 @@ evals "$repo/cookbook/web" publish
 touch "$repo/cookbook/web/target/evals-reports/evals-results.jsonl"
 evals "$repo/cookbook/web" publish
 expect publish "publish --results $repo/cookbook/web/target/evals-reports/evals-results.jsonl" "$calls"
+
+# smoke: a deploying project (cookbook/cloudflare) next to its web app, with
+# npm and npx stubs that log their calls (with BASE_URL and the JSON report
+# path) and fail when FAIL_<tool> is part of their arguments.
+mkdir -p "$repo/cookbook/cloudflare"
+for tool in npm npx; do
+  cat >"$work/stubs/$tool" <<SH
+#!/bin/sh
+echo "$tool \$* BASE_URL=\${BASE_URL:-} JSON=\${PLAYWRIGHT_JSON_OUTPUT_FILE:-} in \$(basename "\$PWD")" >>"$work/calls"
+if [ -n "\${FAIL_$tool:-}" ]; then
+  case "\$*" in *"\${FAIL_$tool}"*) exit 1 ;; esac
+fi
+exit 0
+SH
+  chmod +x "$work/stubs/$tool"
+done
+# smoke CASE WANT [VAR=value ...]: runs `evals.sh smoke` in cookbook/cloudflare.
+smoke() {
+  local name=$1 want=$2
+  shift 2
+  : >"$work/calls"
+  out=$(cd "$repo/cookbook/cloudflare" && env -u CI -u SMOKE_DIR -u DEPLOY_URL -u SMOKE_PROJECT \
+    -u FAIL_npm -u FAIL_npx PATH="$work/stubs:/usr/bin:/bin" "$@" bash "$script" smoke 2>&1)
+  status=$?
+  calls=$(cat "$work/calls")
+  [ "$status" -eq "$want" ] || fail "smoke $name: exit $status, want $want" "$out"
+}
+url=https://jimhillr-example.pages.dev
+cd_dir="$repo/cookbook/cloudflare/target/evals-reports/cd"
+
+smoke no-smoke-dir 0 DEPLOY_URL=$url
+expect smoke-no-smoke-dir "no smoke tests yet" "$out"
+refuse smoke-no-smoke-dir "npm" "$calls"
+smoke no-url 2 SMOKE_DIR=../web
+expect smoke-no-url "DEPLOY_URL is not set" "$out"
+smoke no-package 2 SMOKE_DIR=../web DEPLOY_URL=$url
+expect smoke-no-package "no package.json" "$out"
+
+touch "$repo/cookbook/web/package.json"
+smoke runs 0 SMOKE_DIR=../web DEPLOY_URL=$url
+expect smoke-runs "npx playwright install --with-deps chromium" "$calls"
+expect smoke-runs "npx playwright test --grep @smoke --project chromium" "$calls"
+expect smoke-runs "BASE_URL=$url" "$calls"
+expect smoke-runs "JSON=$cd_dir/playwright.json in web" "$calls"
+expect smoke-runs "--output $cd_dir/test-results" "$calls"
+[ -d "$cd_dir" ] || fail "smoke runs: no target/evals-reports/cd"
+smoke project 0 SMOKE_DIR=../web DEPLOY_URL=$url SMOKE_PROJECT="Mobile Chrome"
+expect smoke-project "--project Mobile Chrome" "$calls"
+
+# A failing test fails the run, in CI or not.
+smoke test-fails 1 SMOKE_DIR=../web DEPLOY_URL=$url FAIL_npx="test --grep"
+smoke test-fails-ci 1 SMOKE_DIR=../web DEPLOY_URL=$url CI=true FAIL_npx="test --grep"
+# Outside CI a tool that can't be installed skips with a note; in CI it fails.
+smoke no-browser 0 SMOKE_DIR=../web DEPLOY_URL=$url FAIL_npx=install
+expect smoke-no-browser "couldn't install Playwright's Chromium" "$out"
+refuse smoke-no-browser "--grep @smoke" "$calls"
+smoke no-npm-packages 0 SMOKE_DIR=../web DEPLOY_URL=$url FAIL_npm=ci
+expect smoke-no-npm-packages "couldn't install the npm packages" "$out"
+smoke no-browser-ci 1 SMOKE_DIR=../web DEPLOY_URL=$url CI=true FAIL_npx=install
 
 if [ "$failures" -gt 0 ]; then
   echo "evals-task: $failures failure(s)"
