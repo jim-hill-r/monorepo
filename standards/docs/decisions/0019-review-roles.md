@@ -1,6 +1,7 @@
 # 0019. Review roles: who may approve what, as relationships in one file
 
-- Status: Proposed (Jim answered the first four questions on 2026-11-27; answers are logged at the end, with three follow-ups)
+- Status: Accepted
+- Decided by: Jim (answers in this thread and one decision card, 2026-11-27, logged under "Jim's answers")
 - Date: 2026-11-27
 - Asked by: Jim
 - Builds on: [0010](0010-credential-second-approval.md) (the second
@@ -97,11 +98,11 @@ risk. We want strict protections on the software-development-platform as
 changes to that can result in changing how we make code and how we protect
 and guard things."
 
-| Tier | What it is | Protection | Proposed projects |
+| Tier | What it is | Protection | Projects |
 | --- | --- | --- | --- |
 | `software-development-platform` | How we make, check, deploy and guard software, and the rules agents follow | Strict | `standards`, `chores`, `pane`, `athenaeum`, `evals`, `cost`, `threat`, `infra`, `tofu_state`, `jimhillr`, `issues`, `docs`, and the root files and dot folders (`AGENTS.md`, `.github/`, `.agents/`, `mise.toml`) |
-| `technical-platform` | Reusable components products are built from | Reviewed | `auth_sdk`, `design_system`, `telemetry` |
-| `product` | What an end user uses | Fast lane | `bear_down`, `blueeel`, `bogan`, `cahokia`, `controlled_chaos`, `cookbook`, `homer`, `luggage`, `my_lang`, `profiles`, `psy_ents`, `royalty`, `sparkhill`, `starcraft` |
+| `technical-platform` | Reusable components products are built from | Reviewed | `auth_sdk`, `design_system`, `telemetry`, `royalty` (Jim: "even though we may someday release it") |
+| `product` | What an end user uses | Fast lane | `bear_down`, `blueeel`, `bogan`, `cahokia`, `controlled_chaos`, `cookbook`, `homer`, `luggage`, `my_lang`, `profiles`, `psy_ents`, `sparkhill`, `starcraft` |
 
 Every top-level folder is in exactly one tier, listed in
 `standards/reviewers.toml`; the audit fails a folder in none or in two
@@ -124,7 +125,7 @@ is too generic and not meaningful").
 | `requirements` | `requirements-reviewer` | Any `docs/requirements.md` changes (the `requirement-changed` and `must-requirement-changed` tags) |
 | `cost` | `cost-reviewer` | The `cost-changed` tag or the `cost` label |
 | `threat` | `threat-reviewer` | The `threat-risk-changed` tag or the `security` label |
-| `quality` | `quality-reviewer` | A quality baseline goes up or a lint or complexity limit is loosened (decision 0015) |
+| `quality` | `quality-reviewer` | A quality baseline goes up or a lint or complexity limit is loosened (decision 0015). Jim: "fine for now"; other threads are working out what quality means, and this trigger follows them |
 | `credential` | `credential-reviewer` | IaC adds or changes something that creates a credential: the `credential-change` label from the plan guard (IAC-005) |
 | `minting` | `minting-reviewer` | It changes something that can mint other credentials: `infra/scripts/mint.sh`, `infra-mint.yml`, the bootstrap credentials or the environment that holds them |
 
@@ -178,7 +179,7 @@ tested, not in the policy:
 
 ## The policy file
 
-`standards/reviewers.toml`, in the strict tier. This is the whole proposed
+`standards/reviewers.toml`, in the strict tier. This is the whole
 starting state.
 
 ```toml
@@ -194,13 +195,13 @@ root = true                    # root files and dot folders belong here
 
 [tiers.technical-platform]
 protection = "reviewed"        # a human always approves
-projects = ["auth_sdk", "design_system", "telemetry"]
+projects = ["auth_sdk", "design_system", "telemetry", "royalty"]
 
 [tiers.product]
 protection = "fast"            # `auto` may approve a plain change
 projects = ["bear_down", "blueeel", "bogan", "cahokia", "controlled_chaos",
   "cookbook", "homer", "luggage", "my_lang", "profiles", "psy_ents",
-  "royalty", "sparkhill", "starcraft"]
+  "sparkhill", "starcraft"]
 
 # Grants: who holds each domain's role, and over what.
 # A scope is "repo", "tier:<name>" or "project:<name>".
@@ -267,7 +268,7 @@ What changes from today's behavior:
   approve small green changes in `chores`, `evals`, `cost`, `pane`,
   `telemetry`, `design_system` and `athenaeum`.
 - Infra Mint moves to its own `infra-mint` environment, so minting and
-  credential applies can have different reviewers (follow-up question 2).
+  credential applies can have different reviewers.
 
 ## Where it is enforced
 
@@ -372,23 +373,22 @@ Second round:
    (minting-reviewer maybe?) and a crednential-reviewer when some IaC has
    been added that creates credentials."
 
-## Follow-up questions for Jim
+Third round:
 
-Each costs $0 either way.
+1. *Are the tier placements right?* "royalty should be technical platform
+   even though we may someday release it." The rest stand.
+2. *Should Infra Mint get its own `infra-mint` environment?* "Yes clear
+   lines here are probably good."
+3. *What counts as a quality change (a raised baseline or a loosened
+   limit)?* "That's fine for now. There are other threads working through
+   what software quality means."
 
-1. **Are the tiers right for the projects you didn't name?** You placed
-   `pane`, `athenaeum` and `standards` (software development platform) and
-   `auth_sdk` and `design_system` (technical platform). My placements to
-   check: `infra` and `tofu_state` as software development platform (they
-   deploy and guard); `evals`, `cost`, `threat` and `chores` there too
-   (they are the checks); `telemetry` as technical platform; `royalty` and
-   `my_lang` as products.
-2. **Should Infra Mint get its own `infra-mint` environment?**
-   Recommended: yes. Today minting and credential applies share
-   `infra-credentials`, so the two roles couldn't have different members.
-   It is one more environment for you to create by hand (about 5
-   minutes, free on a public repo).
-3. **What should count as a quality change?** You listed quality as a
-   domain. Recommended: a PR that raises a project's quality baseline or
-   loosens a lint or complexity limit (decision 0015). Ordinary code that
-   keeps the ratchet passing wouldn't need the `quality-reviewer`.
+## Consequences
+
+- The build is the plan above, one issue file per phase in the root
+  `issues/` folder (epic "Review roles").
+- Until phase 1 merges, the `Human review` check (PR-004) stays as it is:
+  any human collaborator's approval passes a red or cost PR. Today that is
+  only Jim, so nothing is looser in the meantime.
+- Jim makes the `infra-mint` environment by hand in phase 3, from a human
+  task with a runbook.
