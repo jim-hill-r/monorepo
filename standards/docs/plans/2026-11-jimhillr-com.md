@@ -145,6 +145,28 @@ cookbook and cahokia last because of sign-in.
 | Route 53 hosted zone, if that's where DNS is today | saves $0.50 a month once deleted | none |
 | Claude Code | about 12 small PRs over the phases, a few dollars | counts against the $25 a month budget |
 
+## Cost at scale
+
+Projects now: 27 (`ls */docs/cost.toml | wc -l`, 2026-11-28). Implemented
+everywhere means every project has a site on its own subdomain: one Pages
+project (or Worker) and one DNS record each, plus about 5 records for
+email and verification. Limits: [limits.toml](../radar/limits.toml); the
+DNS record limit is Cloudflare's for free zones created since September
+2024 (200), to add to limits.toml in phase 3.
+
+| Scale | Projects | Money a month | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 27 | $0: the zone, records, custom domains and certificates are free, and the renewal is already paid | Pages projects, 27 of 100 (27%), over the budget of 25, so Jim raises it; DNS records 32 of 200 (16%) | About 12 small PRs once (a few dollars), then about $0.10 a month for each new project's subdomain |
+| 5x | 135 | $0, as above | Pages projects (and Workers scripts), past the account's 100. DNS records 140 of 200 (70%) | Same, plus moving sites into a second free Cloudflare account; DNS stays in one zone |
+| 100x | 2,700 | $0 with a wildcard record and a router Worker, or about $25 a month for Cloudflare Pro (3,500 records) | DNS records, 2,705 of 200; a router Worker would then hit Workers requests (100,000 a day) | About 2 PRs for the router, then about $0.10 a month per new project, and the plan stops rather than pays |
+
+What gives first as it grows: the Pages project limit, which is about
+hosting, not DNS; a second free account handles it, since a Pages custom
+domain only needs a `CNAME`, not a zone in the same account. DNS records
+give out next, near 200 sites. Before paying for Pro we would use one
+wildcard record and a routing Worker, and promoted products move to their
+own domains anyway (decision 0029), which frees their records.
+
 ## Risks
 
 - **A missed record breaks something on the domain** (email most likely).

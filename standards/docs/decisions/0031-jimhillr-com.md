@@ -79,3 +79,14 @@ change.
   credential change.
 - The dangling DNS check
   (`issues/resource-cleanup-phase-4-dangling-dns.md`) gets a zone to check.
+
+## Cost at scale
+
+Projects now: 27 (2026-11-28). The full table is in the
+[plan](../plans/2026-11-jimhillr-com.md#cost-at-scale).
+
+| Scale | Projects | Money a month | Tightest free limit | Claude Code effort |
+| --- | --- | --- | --- | --- |
+| Now | 27 | $0 (free zone, records and certificates; renewal already paid) | Pages projects 27 of 100 (27%), over the budget of 25; DNS records 32 of 200 (16%) | About 12 small PRs once, then about $0.10 a month |
+| 5x | 135 | $0 | Pages projects past the account's 100, so a second free account; DNS records 140 of 200 (70%) | Same, plus the account split |
+| 100x | 2,700 | $0 with a wildcard record and router Worker, else about $25 a month for Pro | DNS records 2,705 of 200 | About 2 more PRs, and the plan stops rather than pays |
